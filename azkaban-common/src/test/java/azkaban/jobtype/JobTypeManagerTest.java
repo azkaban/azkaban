@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.Job;
 import azkaban.utils.Props;
 import com.google.common.io.Resources;
@@ -111,9 +112,8 @@ public class JobTypeManagerTest {
     assertEquals("commonprivate3", priv.getString("commonprivate3"));
 
     // Testing the anothertestjobtype
-    final Class<? extends Job> aPluginClass =
-        pluginSet.getPluginClass("anothertestjob");
-    assertEquals("azkaban.jobtype.FakeJavaJob", aPluginClass.getName());
+    assertEquals("azkaban.jobtype.FakeJavaJob",
+        pluginSet.getPluginClassName("anothertestjob"));
     final Props ajobProps = pluginSet.getPluginJobProps("anothertestjob");
     final Props aloadProps = pluginSet.getPluginLoaderProps("anothertestjob");
 
@@ -130,8 +130,8 @@ public class JobTypeManagerTest {
     assertEquals("commonprop3", ajobProps.get("commonprop3"));
     assertNull(ajobProps.get("commonprivate1"));
 
-    final Class<? extends Job> tPluginClass = pluginSet.getPluginClass("testjob");
-    assertEquals("azkaban.jobtype.FakeJavaJob2", tPluginClass.getName());
+    assertEquals("azkaban.jobtype.FakeJavaJob2",
+        pluginSet.getPluginClassName("testjob"));
     final Props tjobProps = pluginSet.getPluginJobProps("testjob");
     final Props tloadProps = pluginSet.getPluginLoaderProps("testjob");
 
@@ -177,6 +177,8 @@ public class JobTypeManagerTest {
     assertEquals("commonprop2", props.get("commonprop2"));
     assertEquals("commonprop3", props.get("commonprop3"));
     assertNull(props.get("commonprivate1"));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
   }
 
   /**
@@ -202,6 +204,31 @@ public class JobTypeManagerTest {
     assertEquals("commonprop2", props.get("commonprop2"));
     assertEquals("pluginprops", props.get("commonprop3"));
     assertNull(props.get("commonprivate1"));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH));
+    assertNull(props.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
+  }
+
+  /**
+   * Configure a {@link JobPropsProcessor} for a jobtype plugin and verify the JobPropsProcessor
+   * are invoked correctly for jobs of that type.
+   */
+  @Test
+  public void testJobPropsProcessor() throws Exception {
+    final Props jobProps = new Props();
+    jobProps.put("type", "testjobwithpropsprocessor");
+    final Job job = this.manager.buildJobExecutor("testjobwithpropsprocessor", jobProps, this.logger);
+
+    assertTrue(job instanceof FakeJavaJob);
+    final FakeJavaJob fjj = (FakeJavaJob) job;
+
+    final Props props = fjj.getJobProps();
+    assertEquals("commonprop1", props.get("commonprop1"));
+    assertEquals("commonprop2", props.get("commonprop2"));
+    assertEquals("commonprop3", props.get("commonprop3"));
+    assertNull(props.get("commonprivate1"));
+
+    assertEquals(TestJobPropsProcessor.INJECTED_ADDITION_PROP,
+        props.get(TestJobPropsProcessor.INJECTED_ADDITION_PROP));
   }
 
   /**
@@ -265,8 +292,8 @@ public class JobTypeManagerTest {
     assertNull(commonPrivateProps.get("commonprivate2"));
 
     // Verify anothertestjob changes
-    final Class<? extends Job> atjClass = pluginSet.getPluginClass("anothertestjob");
-    assertEquals("azkaban.jobtype.FakeJavaJob", atjClass.getName());
+    assertEquals("azkaban.jobtype.FakeJavaJob",
+        pluginSet.getPluginClassName("anothertestjob"));
     final Props ajobProps = pluginSet.getPluginJobProps("anothertestjob");
     assertEquals("1", ajobProps.get("test1"));
     assertEquals("2", ajobProps.get("test2"));
@@ -279,8 +306,8 @@ public class JobTypeManagerTest {
     assertEquals("commonprivate3", aloadProps.get("commonprivate3"));
 
     // Verify testjob changes
-    final Class<? extends Job> tjClass = pluginSet.getPluginClass("testjob");
-    assertEquals("azkaban.jobtype.FakeJavaJob2", tjClass.getName());
+    assertEquals("azkaban.jobtype.FakeJavaJob2",
+        pluginSet.getPluginClassName("testjob"));
     final Props tjobProps = pluginSet.getPluginJobProps("testjob");
     assertEquals("1", tjobProps.get("commonprop1"));
     assertEquals("2", tjobProps.get("newcommonprop1"));
@@ -299,8 +326,8 @@ public class JobTypeManagerTest {
     assertEquals("private3", tloadProps.get("commonprivate3"));
 
     // Verify newtestjob
-    final Class<? extends Job> ntPluginClass = pluginSet.getPluginClass("newtestjob");
-    assertEquals("azkaban.jobtype.FakeJavaJob2", ntPluginClass.getName());
+    assertEquals("azkaban.jobtype.FakeJavaJob2",
+        pluginSet.getPluginClassName("newtestjob"));
     final Props ntjobProps = pluginSet.getPluginJobProps("newtestjob");
     final Props ntloadProps = pluginSet.getPluginLoaderProps("newtestjob");
 

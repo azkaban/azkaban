@@ -174,4 +174,9 @@ public class CommonJobProperties {
   public static final String FLOW_START_TIMEZONE =
       "azkaban.flow.start.timezone";
 
+  public static final String JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES = "jobtype.dependency.components";
+  public static final String JOB_CLUSTER_COMPONENTS_DEPENDENCIES = "job.dependency.components";
+  public static final String JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES_EXCLUDED = "jobtype.dependency.components.excluded";
+  public static final String TARGET_CLUSTER_CLASSPATH = "azkaban.job.cluster.classpaths";
+  public static final String TARGET_CLUSTER_NATIVE_LIB = "azkaban.job.cluster.nativelib";
 }
