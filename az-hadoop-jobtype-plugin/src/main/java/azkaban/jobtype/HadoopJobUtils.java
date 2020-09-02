@@ -26,8 +26,6 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
@@ -109,40 +107,6 @@ public class HadoopJobUtils {
     if (tokenFile.exists()) {
       tokenFile.delete();
     }
-  }
-
-  /**
-   * Based on the HADOOP_SECURITY_MANAGER_CLASS_PARAM setting in the incoming props, finds the
-   * correct HadoopSecurityManager Java class
-   *
-   * @return a HadoopSecurityManager object. Will throw exception if any errors occur (including not
-   * finding a class)
-   * @throws RuntimeException : If any errors happen along the way.
-   */
-  public static HadoopSecurityManager loadHadoopSecurityManager(final Props props, final Logger log)
-      throws RuntimeException {
-
-    final Class<?> hadoopSecurityManagerClass = props
-        .getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
-            HadoopJobUtils.class.getClassLoader());
-    log.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
-    HadoopSecurityManager hadoopSecurityManager = null;
-
-    try {
-      final Method getInstanceMethod = hadoopSecurityManagerClass
-          .getMethod("getInstance", Props.class);
-      hadoopSecurityManager = (HadoopSecurityManager) getInstanceMethod.invoke(
-          hadoopSecurityManagerClass, props);
-    } catch (final InvocationTargetException e) {
-      final String errMsg = "Could not instantiate Hadoop Security Manager "
-          + hadoopSecurityManagerClass.getName() + e.getCause();
-      log.error(errMsg);
-      throw new RuntimeException(errMsg, e);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    return hadoopSecurityManager;
   }
 
   /**
