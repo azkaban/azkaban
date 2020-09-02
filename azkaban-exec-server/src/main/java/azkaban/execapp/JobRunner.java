@@ -98,7 +98,6 @@ public class JobRunner extends EventHandler implements Runnable {
   private long delayStartMs = 0;
   private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
-  private final ClassLoader threadClassLoader;
 
   private volatile long timeInQueue = -1;
   private volatile long jobKillTime = -1;
@@ -122,7 +121,6 @@ public class JobRunner extends EventHandler implements Runnable {
         JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
-    this.threadClassLoader = Thread.currentThread().getContextClassLoader();
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {
@@ -579,8 +577,6 @@ public class JobRunner extends EventHandler implements Runnable {
     } catch (final Exception e) {
       serverLogger.error("Unexpected exception", e);
       throw e;
-    } finally {
-      Thread.currentThread().setContextClassLoader(this.threadClassLoader);
     }
   }
 
@@ -745,10 +741,7 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       try {
-        final JobTypeManager.JobParams jobParams = this.jobtypeManager
-            .createJobParams(this.jobId, this.props, this.logger);
-        Thread.currentThread().setContextClassLoader(jobParams.jobClassLoader);
-        this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
+        this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
         return null;

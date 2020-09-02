@@ -18,7 +18,6 @@ package azkaban.jobExecutor;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.utils.process.ProcessFailureException;
 import azkaban.utils.Props;
 import java.io.File;
