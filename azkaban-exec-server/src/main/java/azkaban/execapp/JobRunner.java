@@ -23,6 +23,7 @@ import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
+import azkaban.executor.ClusterInfo;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -749,6 +750,24 @@ public class JobRunner extends EventHandler implements Runnable {
             .createJobParams(this.jobId, this.props, this.logger);
         Thread.currentThread().setContextClassLoader(jobParams.jobClassLoader);
         this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
+
+        if (jobParams.jobProps.containsKey(CommonJobProperties.TARGET_CLUSTER_ID)) {
+          // save the information of the cluster that the job may be routed to
+          final String clusterId = jobParams.jobProps.getString(
+              CommonJobProperties.TARGET_CLUSTER_ID);
+          final String hadoopClusterURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.HADOOP_CLUSTER_URL);
+          final String rmURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.RESOURCE_MANAGER_JOB_URL);
+          final String hsURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.HISTORY_SERVER_JOB_URL);
+          final String shsURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL);
+          final ClusterInfo clusterInfo =
+              new ClusterInfo(clusterId, hadoopClusterURL, rmURL, hsURL, shsURL);
+          this.node.setClusterInfo(clusterInfo);
+        }
+
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
         return null;

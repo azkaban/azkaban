@@ -227,6 +227,7 @@
             <th class="elapse">Elapsed</th>
             <th class="status">Status</th>
             <th class="logs">Details</th>
+            <th class="cluster">Cluster</th>
           </tr>
           </thead>
           <tbody id="executableBody">
