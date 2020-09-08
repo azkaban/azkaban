@@ -748,7 +748,7 @@ public class JobRunner extends EventHandler implements Runnable {
       try {
         final JobTypeManager.JobParams jobParams = this.jobtypeManager
             .createJobParams(this.jobId, this.props, this.logger);
-        Thread.currentThread().setContextClassLoader(jobParams.jobClassLoader);
+        Thread.currentThread().setContextClassLoader(jobParams.contextClassLoader);
         this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
 
         if (jobParams.jobProps.containsKey(CommonJobProperties.TARGET_CLUSTER_ID)) {

@@ -350,21 +350,20 @@ public class JobTypeManager {
       Cluster targetCluster = null;
       final Collection<String> components = getClusterComponents(jobProps,
           pluginSet.getPluginLoaderProps(jobType), false);
+      ClassLoader jobContextClassLoader = this.parentLoader;
       if (!components.isEmpty()) {
         targetCluster = this.clusterRouter.getCluster(jobId, jobProps, logger,
             components);
         if (targetCluster != null && !Cluster.UNKNOWN.equals(targetCluster)) {
-          List<URL> clusterUrls = targetCluster.getClusterComponentURLs(components);
-          jobClassLoaderUrls.addAll(clusterUrls);
+          jobContextClassLoader = targetCluster.getSecurityManagerClassLoader();
           jobProps.put(CommonJobProperties.TARGET_CLUSTER_ID, targetCluster.clusterId);
         }
       }
-      // construct a classloader with both jobtype and cluster libraries
       logger.info(String.format("JobClassLoader URLs: %s", jobClassLoaderUrls.stream()
           .map(URL::toString).collect(Collectors.joining(", "))));
       final ClassLoader jobClassLoader = new JobClassLoader(
           jobClassLoaderUrls.toArray(new URL[jobClassLoaderUrls.size()]),
-          JobTypeManager.class.getClassLoader(), jobId);
+          jobContextClassLoader, jobId);
 
 
       // load the jobtype from JobClassLoader
@@ -382,7 +381,7 @@ public class JobTypeManager {
       jobProps = PropsUtils.resolveProps(jobProps);
 
       return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
-          pluginLoadProps);
+          pluginLoadProps, jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());
@@ -464,15 +463,16 @@ public class JobTypeManager {
   public static final class JobParams {
 
     public final Class<? extends Object> jobClass;
-    public final ClassLoader jobClassLoader;
+    public final ClassLoader contextClassLoader;
     public final Props jobProps;
     public final Props pluginLoadProps;
     public final Props pluginPrivateProps;
 
     public JobParams(final Class<? extends Object> jobClass, final Props jobProps,
-                     final Props pluginPrivateProps, final Props pluginLoadProps) {
+                     final Props pluginPrivateProps, final Props pluginLoadProps,
+                     final ClassLoader contextClassLoader) {
       this.jobClass = jobClass;
-      this.jobClassLoader = jobClass.getClassLoader();
+      this.contextClassLoader = contextClassLoader;
       this.jobProps = jobProps;
       this.pluginLoadProps = pluginLoadProps;
       this.pluginPrivateProps = pluginPrivateProps;
@@ -499,7 +499,7 @@ public class JobTypeManager {
     Props sourceProps;
 
     if (cluster != null && !Cluster.UNKNOWN.equals(cluster)){
-      sourceProps = cluster.properties;
+      sourceProps = cluster.getProperties();
       clusterProps.putAll(sourceProps);
     } else {
       // fall back to the existing mechanism if no cluster is found/configured

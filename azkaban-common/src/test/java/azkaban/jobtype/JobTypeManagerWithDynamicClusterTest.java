@@ -19,11 +19,13 @@ import static azkaban.test.Utils.initServiceProvider;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import azkaban.cluster.Cluster;
+import azkaban.cluster.Cluster.HadoopSecurityManagerClassLoader;
 import azkaban.cluster.ClusterRegistry;
 import azkaban.cluster.ClusterRouter;
 import azkaban.cluster.DefaultClusterRouter;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.Job;
+import azkaban.jobtype.JobTypeManager.JobParams;
 import azkaban.utils.Props;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -60,7 +62,7 @@ public class JobTypeManagerWithDynamicClusterTest {
     clusterRegistry.addCluster(this.defaultCluster.clusterId, this.defaultCluster);
     this.clusterRouter = new DefaultClusterRouter(clusterRegistry, new Configuration());
 
-    this.testPluginDirPath = Resources.getResource("plugins/jobtypes").getPath();
+    this.testPluginDirPath = Resources.getResource("plugins/jobtypeswithrouting").getPath();
   }
 
   private Cluster createDefaultCluster() throws IOException {
@@ -106,8 +108,12 @@ public class JobTypeManagerWithDynamicClusterTest {
     Props jobProps = new Props();
     jobProps.put("type", "anothertestjob");
     jobProps.put("propB", "b");
-    final Job job = manager.buildJobExecutor("anothertestjob", jobProps, LOG);
 
+    final JobParams jobParams = manager.createJobParams("anothertestjob", jobProps, LOG);
+    Assert.assertTrue(
+        jobParams.contextClassLoader instanceof HadoopSecurityManagerClassLoader);
+
+    final Job job = JobTypeManager.createJob("anothertestjob", jobParams, LOG);
     jobProps = ((FakeJavaJob) job).getJobProps();
 
     final String clusterClassPath = jobProps
@@ -132,8 +138,12 @@ public class JobTypeManagerWithDynamicClusterTest {
     jobProps.put("type", "anothertestjob");
     jobProps.put("propB", "b");
     jobProps.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, "hive");
-    final Job job = manager.buildJobExecutor("anothertestjob", jobProps, LOG);
 
+    final JobParams jobParams = manager.createJobParams("anothertestjob", jobProps, LOG);
+    Assert.assertTrue(
+        jobParams.contextClassLoader instanceof HadoopSecurityManagerClassLoader);
+
+    final Job job = JobTypeManager.createJob("anothertestjob", jobParams, LOG);
     jobProps = ((FakeJavaJob) job).getJobProps();
 
     final String clusterClassPath = jobProps
@@ -159,8 +169,12 @@ public class JobTypeManagerWithDynamicClusterTest {
     jobProps.put("type", "testjob");
     jobProps.put("propA", "a");
     jobProps.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, "hadoop");
-    final Job job = manager.buildJobExecutor("testjob", jobProps, LOG);
 
+    final JobParams jobParams = manager.createJobParams("testjob", jobProps, LOG);
+    Assert.assertTrue(
+        jobParams.contextClassLoader instanceof HadoopSecurityManagerClassLoader);
+
+    final Job job = JobTypeManager.createJob("testjob", jobParams, LOG);
     jobProps = ((FakeJavaJob2) job).getJobProps();
 
     final String clusterClassPath = jobProps
@@ -186,6 +200,29 @@ public class JobTypeManagerWithDynamicClusterTest {
     jobProps.put("type", "anothertestjob");
     jobProps.put("propB", "b");
     jobProps.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, "unknown");
-    manager.buildJobExecutor("anothertestjob", jobProps, LOG);
+    manager.createJobParams("anothertestjob", jobProps, LOG);
+  }
+
+  /**
+   * Unit test of JobTypeManager's setup for jobs that depend on no components of the
+   * default cluster.
+   */
+  @Test
+  public void testJobTypeManagerJobSetupWithoutAnyComponentDependency() {
+    final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
+        this.getClass().getClassLoader(), this.clusterRouter);
+
+    Props jobProps = new Props();
+    jobProps.put("type", "testjob");
+    jobProps.put("propA", "a");
+
+    final JobParams jobParams = manager.createJobParams("testjob", jobProps, LOG);
+    Assert.assertFalse(
+        jobParams.contextClassLoader instanceof HadoopSecurityManagerClassLoader);
+
+    final Job job = JobTypeManager.createJob("testjob", jobParams, LOG);
+    jobProps = ((FakeJavaJob2) job).getJobProps();
+    Assert.assertNull(jobProps.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH));
+    Assert.assertNull(jobProps.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
   }
 }

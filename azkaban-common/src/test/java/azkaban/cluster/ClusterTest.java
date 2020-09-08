@@ -17,6 +17,7 @@ package azkaban.cluster;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import azkaban.cluster.Cluster.HadoopSecurityManagerClassLoader;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -208,5 +209,26 @@ public class ClusterTest {
 
     Assert.assertTrue(javaLibraryPaths.contains("hive-native-library/"));
     Assert.assertTrue(javaLibraryPaths.contains("hadoop-native-library/"));
+  }
+
+  /**
+   * Test loading of the HadoopSecurityManager class figured for a given cluster
+   * from its dedicated HadoopSecurityManagerClassLoader instance.
+   */
+  @Test
+  public void testGetClusterSecurityManager() throws ClassNotFoundException {
+    final String fakeHadoopSecurityManagerClassName = "org.hello.world.HelloWorld";
+    final Props clusterProps = new Props();
+    final File hadoopSecurityManagerJar =
+        new File(getClass().getClassLoader().getResource("helloworld.jar").getFile());
+    clusterProps.put(Cluster.LIBRARY_PATH_PREFIX + "hadoopsecuritymanager",
+        hadoopSecurityManagerJar.getParentFile().getPath());
+    clusterProps.put(Cluster.HADOOP_SECURITY_MANAGER_DEPENDENCY_COMPONENTS, "hadoopsecuritymanager");
+    clusterProps.put(Cluster.HADOOP_SECURITY_MANAGER_CLASS_PROP, fakeHadoopSecurityManagerClassName);
+
+    final Cluster cluster = new Cluster("default", clusterProps);
+    final HadoopSecurityManagerClassLoader classLoader = cluster.getSecurityManagerClassLoader();
+
+    classLoader.loadClass(fakeHadoopSecurityManagerClassName);
   }
 }
