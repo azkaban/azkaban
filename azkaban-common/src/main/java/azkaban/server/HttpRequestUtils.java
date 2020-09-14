@@ -127,6 +127,9 @@ public class HttpRequestUtils {
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
     execOptions.addAllFlowParameters(flowParamGroup);
 
+    final Map<String, Map<String, String>> jobParamGroup = getMapParamGroup(req, "jobOverride");
+    execOptions.addAllJobParameters(jobParamGroup);
+
     if (hasParam(req, "disabled")) {
       final String disabled = getParam(req, "disabled");
       if (!disabled.isEmpty()) {
@@ -315,6 +318,9 @@ public class HttpRequestUtils {
     return defaultVal;
   }
 
+  /**
+   * Read params like groupName[key]: value
+   */
   public static Map<String, String> getParamGroup(final HttpServletRequest request,
       final String groupName) throws ServletException {
     final Enumeration<String> enumerate = request.getParameterNames();
@@ -326,6 +332,31 @@ public class HttpRequestUtils {
       if (str.startsWith(matchString)) {
         groupParam.put(str.substring(matchString.length(), str.length() - 1),
             request.getParameter(str));
+      }
+
+    }
+    return groupParam;
+  }
+
+  /**
+   * Read params like groupName[level1Key][level2Key]: value
+   */
+  public static Map<String, Map<String, String>> getMapParamGroup(final HttpServletRequest request,
+      final String groupName) {
+    final Enumeration<String> enumerate = request.getParameterNames();
+    final String matchString = groupName + "[";
+
+    final Map<String, Map<String, String>> groupParam = new HashMap<>();
+    while (enumerate.hasMoreElements()) {
+      final String str = enumerate.nextElement();
+      if (str.startsWith(matchString)) {
+        final int level1KeyEnd = str.indexOf("]");
+
+        final String level1Key = str.substring(matchString.length(), level1KeyEnd);
+        groupParam.putIfAbsent(level1Key, new HashMap<>());
+
+        final String level2Key = str.substring(level1KeyEnd + 2, str.length() - 1);
+        groupParam.get(level1Key).put(level2Key, request.getParameter(str));
       }
 
     }

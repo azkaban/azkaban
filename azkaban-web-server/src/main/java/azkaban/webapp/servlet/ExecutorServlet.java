@@ -729,6 +729,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("successEmails", options.getSuccessEmails());
     ret.put("failureEmails", options.getFailureEmails());
     ret.put("flowParam", options.getFlowParameters());
+    ret.put("jobParams", options.getJobParameters());
 
     final FailureAction action = options.getFailureAction();
     String failureAction = null;

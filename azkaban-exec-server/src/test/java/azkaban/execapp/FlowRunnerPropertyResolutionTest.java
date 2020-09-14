@@ -29,6 +29,7 @@ import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,6 +66,78 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
   public void testPropertyResolution() throws Exception {
     this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
     assertProperties(false);
+  }
+
+  @Test
+  public void testJobOverrides() throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
+
+    final HashMap<String, String> flowProps = new HashMap<>();
+    flowProps.put("props7", "execflow7");
+    flowProps.put("props6", "execflow6");
+    flowProps.put("props5", "execflow5");
+
+    // enable overriding also for existing job props
+    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, null, flowProps,
+        Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, "true"));
+    // Set some job-specific overrides
+    runner.getExecutableFlow().getExecutionOptions().addAllJobParameters(ImmutableMap.of(
+        "job2", ImmutableMap.of("job-prop-2", "job2-val-2", "props6", "job2-val-6"),
+        "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
+        // overrides by nested job id: this is the most specific, so always wins
+        "innerflow:job4", ImmutableMap.of(
+            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5"),
+        // overrides by plain job id: most specific after full nested id
+        "job4", ImmutableMap.of(
+            "props4", "job4-val-4", "props5", "job4-val-5", "props7", "job4-val-7")
+    ));
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
+    createNodeMap(runner.getExecutableFlow(), nodeMap);
+    final ExecutableFlow flow = runner.getExecutableFlow();
+
+    // 1. Start flow. Job 2 should start
+    FlowRunnerTestUtil.startThread(runner);
+    InteractiveTestJob.getTestJob("job2").succeedJob();
+    InteractiveTestJob.getTestJob("innerflow:job1").succeedJob();
+    InteractiveTestJob.getTestJob("innerflow:job4").succeedJob();
+
+    final Props job2Props = nodeMap.get("job2").getInputProps();
+    Assert.assertEquals("shared1", job2Props.get("props1"));
+    Assert.assertEquals("job2", job2Props.get("props2"));
+    Assert.assertEquals("moo3", job2Props.get("props3"));
+    Assert.assertEquals("execflow7", job2Props.get("props7"));
+    Assert.assertEquals("execflow5", job2Props.get("props5"));
+    // should've been overridden by jobOverride
+    Assert.assertEquals("job2-val-6", job2Props.get("props6"));
+    Assert.assertEquals("shared4", job2Props.get("props4"));
+    Assert.assertEquals("shared8", job2Props.get("props8"));
+    // entirely new prop via jobOverride
+    Assert.assertEquals("job2-val-2", job2Props.get("job-prop-2"));
+
+    final Props job1Props = nodeMap.get("innerflow:job1").getInputProps();
+    Assert.assertEquals("job1", job1Props.get("props1"));
+    Assert.assertEquals("job2", job1Props.get("props2"));
+    Assert.assertEquals("job8", job1Props.get("props8"));
+    // jobOverride by the sub-flow parent
+    Assert.assertEquals("innerflow-val-6", job1Props.get("props6"));
+    Assert.assertEquals("execflow5", job1Props.get("props5"));
+    Assert.assertEquals("execflow7", job1Props.get("props7"));
+    Assert.assertEquals("moo3", job1Props.get("props3"));
+    Assert.assertEquals("innerflow-val-4", job1Props.get("props4"));
+
+    final Props job4Props = nodeMap.get("innerflow:job4").getInputProps();
+    Assert.assertEquals("job8", job4Props.get("props8"));
+    Assert.assertEquals("job9", job4Props.get("props9"));
+    // jobOverride by the sub-flow parent
+    Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
+    // jobOverride with plain job id
+    Assert.assertEquals("job4-val-7", job4Props.get("props7"));
+    // jobOverride with nested id
+    Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
+    Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
+    Assert.assertEquals("shared1", job4Props.get("props1"));
+    Assert.assertEquals("shared2", job4Props.get("props2"));
+    Assert.assertEquals("moo3", job4Props.get("props3"));
   }
 
   /**

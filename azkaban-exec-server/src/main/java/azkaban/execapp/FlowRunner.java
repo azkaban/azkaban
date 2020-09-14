@@ -312,6 +312,16 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
         loadAllProperties();
       }
+      final Map<String, String> flowParam =
+          this.flow.getExecutionOptions().getFlowParameters();
+      if (flowParam != null && !flowParam.isEmpty()) {
+        this.logger.info("FlowOverride Props: " + flowParam);
+      }
+      final Map<String, Map<String, String>> jobParams = this.flow.getExecutionOptions()
+          .getJobParameters();
+      if (jobParams != null && !jobParams.isEmpty()) {
+        this.logger.info("jobOverride Props: " + jobParams);
+      }
 
       this.fireEventListeners(
           Event.create(this, EventType.FLOW_STARTED, new EventData(this.getExecutableFlow())));
@@ -345,7 +355,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         this.fireEventListeners(
             Event.create(this, EventType.FLOW_FINISHED, new EventData(this.flow)));
         this.logger
-            .info("Created " + EventType.FLOW_FINISHED + " event for " + this.flow.getExecutionId());
+            .info(
+                "Created " + EventType.FLOW_FINISHED + " event for " + this.flow.getExecutionId());
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
@@ -923,7 +934,30 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
     }
 
+    // 6. If there are any job-specific flow overrides, we also apply them
+    final Map<String, Map<String, String>> jobParams = this.flow.getExecutionOptions()
+        .getJobParameters();
+    if (jobParams != null && !jobParams.isEmpty()) {
+      applyJobOverrides(node, jobParams, props);
+    }
+
     node.setInputProps(props);
+  }
+
+  private void applyJobOverrides(final ExecutableNode node,
+      final Map<String, Map<String, String>> jobParams, final Props props) {
+    if (node.getParentFlow() != null) {
+      // apply recursively top->down
+      applyJobOverrides(node.getParentFlow(), jobParams, props);
+    }
+    // overrides by plain node id
+    if (jobParams.containsKey(node.getId())) {
+      props.putAll(jobParams.get(node.getId()));
+    }
+    // full nested id path overrides plain node id
+    if (jobParams.containsKey(node.getNestedId())) {
+      props.putAll(jobParams.get(node.getNestedId()));
+    }
   }
 
   /**
@@ -1032,7 +1066,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     // Attach Ramp Props if there is any desired properties
     final String jobId = node.getId();
-    final String jobType = Optional.ofNullable(node.getInputProps()).map(props -> props.getString("type"))
+    final String jobType = Optional.ofNullable(node.getInputProps())
+        .map(props -> props.getString("type"))
         .orElse(null);
     if (jobType != null && jobId != null) {
       final Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
