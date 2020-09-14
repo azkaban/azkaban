@@ -161,11 +161,12 @@ public final class HttpRequestUtilsTest {
   @Test
   public void testGetJsonBodyForSingleMapObject() throws IOException, ServletException {
     final HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-    final String originalString = "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
-        + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n"
-        + "    \"values\": {\n"
-        + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n"
-        + "  }\n";
+    final String originalString =
+        "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
+            + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n"
+            + "    \"values\": {\n"
+            + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n"
+            + "  }\n";
     final InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
     final InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
     final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
@@ -185,13 +186,13 @@ public final class HttpRequestUtilsTest {
 
   @Test
   public void testParseFlowOptionsSla() throws Exception {
-    HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
+    final HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
         // job_name, status, duration, is_email, is_kill
         "slaSettings[1]", ",FINISH,2:30,true,false",
         "slaSettings[2]", "test_job,SUCCESS,12:00,false,true",
         "slaSettings[3]", ",SUCCESS,12:00,true,true"));
-    ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
-    List<SlaOption> slaOptions = options.getSlaOptions();
+    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
+    final List<SlaOption> slaOptions = options.getSlaOptions();
     final List<SlaOption> expected = Arrays.asList(
         new SlaOption(SlaType.FLOW_FINISH, "test-flow", "", Duration.ofMinutes(150),
             ImmutableSet.of(SlaAction.ALERT), ImmutableList.of()),
@@ -205,19 +206,19 @@ public final class HttpRequestUtilsTest {
 
   @Test
   public void testParseFlowOptionsSlaWithEmail() throws Exception {
-    HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
+    final HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
         "slaSettings[1]", ",FINISH,2:30,true,false",
         "slaEmails", "sla1@example.com,sla2@example.com"));
-    ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
-    List<SlaOption> slaOptions = options.getSlaOptions();
+    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
+    final List<SlaOption> slaOptions = options.getSlaOptions();
     final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "test-flow",
         "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
         ImmutableList.of("sla1@example.com", "sla2@example.com")));
     Assert.assertEquals(expected, slaOptions);
   }
 
-  private static HttpServletRequest mockRequestWithSla(Map<String, String> params) {
-    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+  private static HttpServletRequest mockRequestWithSla(final Map<String, String> params) {
+    final HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
     Mockito.when(req.getParameterNames()).thenReturn(Collections.enumeration(params.keySet()));
     Mockito.when(req.getParameter(Mockito.anyString()))
         .thenAnswer(i -> params.get(i.getArgument(0, String.class)));
