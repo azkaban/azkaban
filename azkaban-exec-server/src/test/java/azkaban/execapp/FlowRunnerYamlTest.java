@@ -133,7 +133,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     final ExecutionOptions executionOptions = new ExecutionOptions();
     executionOptions.setFailureEmails(Arrays.asList("test@example.com"));
     final Props azkabanProps = new Props();
-    azkabanProps.put(ConfigurationKeys.AZKABAN_POLL_MODEL, "true");
+    azkabanProps.put(ConfigurationKeys.AZKABAN_DISPATCH_MODEL, "poll");
     this.runner = this.testUtil
         .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
@@ -156,7 +156,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     final ExecutionOptions executionOptions = new ExecutionOptions();
     executionOptions.setNotifyOnFirstFailure(true);
     final Props azkabanProps = new Props();
-    azkabanProps.put(ConfigurationKeys.AZKABAN_POLL_MODEL, "true");
+    azkabanProps.put(ConfigurationKeys.AZKABAN_DISPATCH_MODEL, "poll");
     this.runner = this.testUtil
         .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
     final ExecutableFlow flow = this.runner.getExecutableFlow();

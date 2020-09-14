@@ -18,6 +18,8 @@
 package azkaban.webapp;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
+import azkaban.executor.ContainerizedExecutionManager;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -87,8 +89,15 @@ public class AzkabanWebServerModule extends AbstractModule {
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
-    return this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)
-        ? ExecutionController.class : ExecutorManager.class;
+    switch(DispatchMethod.getDispatchModel(this.props)) {
+      case POLL:
+        return ExecutionController.class;
+      case CONTAINERIZED:
+        return ContainerizedExecutionManager.class;
+      case PUSH:
+      default:
+        return ExecutorManager.class;
+    }
   }
 
   private Class<? extends WebMetrics> resolveWebMetricsClass() {

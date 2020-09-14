@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Controls flow executions on web server. This module implements the polling model
- * in the new AZ dispatching design. It's injected only when azkaban.poll.model is configured to
- * true. It will ultimately replace ExecutorManager in the future.
+ * in the new AZ dispatching design. It's injected only when azkaban.dispatch.model is configured to
+ * poll. It will ultimately replace ExecutorManager in the future.
  */
 @Singleton
 public class ExecutionController extends EventHandler implements ExecutorManagerAdapter {

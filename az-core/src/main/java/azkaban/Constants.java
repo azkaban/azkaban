@@ -132,9 +132,9 @@ public class Constants {
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
-
+    // Property to enable appropriate dispatch model
+    public static final String AZKABAN_DISPATCH_MODEL = "azkaban.dispatch.model";
     // Configures Azkaban to use new polling model for dispatching
-    public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
     public static final String AZKABAN_POLLING_LOCK_ENABLED = "azkaban.polling.lock.enabled";
     public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =

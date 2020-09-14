@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
@@ -265,7 +266,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
 
-    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (DispatchMethod.getDispatchModel(azkabanProps) == DispatchMethod.POLL) {
       long pollingIntervalMillis =
           this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
           Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
@@ -917,7 +918,7 @@ public class FlowRunnerManager implements EventListener<Event>,
    */
   public void shutdown() {
     LOGGER.warn("Shutting down FlowRunnerManager...");
-    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (DispatchMethod.getDispatchModel(azkabanProps) == DispatchMethod.POLL) {
       this.pollingService.shutdown();
     }
     this.executorService.shutdown();
@@ -940,7 +941,7 @@ public class FlowRunnerManager implements EventListener<Event>,
    */
   public void shutdownNow() {
     LOGGER.warn("Shutting down FlowRunnerManager now...");
-    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (DispatchMethod.getDispatchModel(azkabanProps) == DispatchMethod.POLL) {
       this.pollingService.shutdown();
     }
     this.executorService.shutdownNow();
