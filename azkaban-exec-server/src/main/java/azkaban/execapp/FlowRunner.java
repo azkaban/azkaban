@@ -865,6 +865,13 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       props = jobSource;
     }
 
+    // 5. If there are any runtime flow overrides, we apply them now.
+    final Map<String, String> flowParam =
+        this.flow.getExecutionOptions().getFlowParameters();
+    if (flowParam != null && !flowParam.isEmpty()) {
+      props.putAll(flowParam);
+    }
+
     node.setInputProps(props);
   }
 
