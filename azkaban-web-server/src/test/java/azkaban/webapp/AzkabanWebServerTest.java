@@ -25,9 +25,13 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.ServiceProviderTest.assertSingleton;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
@@ -163,5 +167,64 @@ public class AzkabanWebServerTest {
     assertSingleton(QuartzScheduler.class, injector);
 
     SERVICE_PROVIDER.unsetInjector();
+  }
+
+  @Test
+  public void testDispatchMethod()throws Exception {
+    // Test for PUSH method
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"PUSH");
+    final Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule(props)
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(injector);
+
+    final ExecutorManagerAdapter executorManagerAdapter =
+        injector.getInstance(ExecutorManagerAdapter.class);
+    assertNotNull(executorManagerAdapter);
+    assertEquals(executorManagerAdapter.getDispatchMethod(), DispatchMethod.PUSH);
+
+    // Test for POLL method
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"POLL");
+    final Injector pollInjector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule(props)
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(pollInjector);
+
+    final ExecutorManagerAdapter pollExecutorManagerAdapter =
+        pollInjector.getInstance(ExecutorManagerAdapter.class);
+    assertNotNull(pollExecutorManagerAdapter);
+    assertEquals(pollExecutorManagerAdapter.getDispatchMethod(), DispatchMethod.POLL);
+
+    // Test for PUSH_CONTAINERIZED method
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"PUSH_CONTAINERIZED");
+    final Injector containerizedInjector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule(props)
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(containerizedInjector);
+
+    final ExecutorManagerAdapter containerizedInjectorInstance =
+        containerizedInjector.getInstance(ExecutorManagerAdapter.class);
+    assertNotNull(containerizedInjectorInstance);
+    assertEquals(containerizedInjectorInstance.getDispatchMethod(), DispatchMethod.PUSH_CONTAINERIZED);
+
+    // Test default method
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"UNKNOWN");
+    final Injector defaultInjector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule(props)
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(defaultInjector);
+
+    final ExecutorManagerAdapter defaultInjectorInstance =
+        defaultInjector.getInstance(ExecutorManagerAdapter.class);
+    assertNotNull(defaultInjectorInstance);
+    assertEquals(defaultInjectorInstance.getDispatchMethod(), DispatchMethod.PUSH);
   }
 }

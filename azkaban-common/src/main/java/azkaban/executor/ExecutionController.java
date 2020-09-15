@@ -17,6 +17,7 @@ package azkaban.executor;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.event.EventHandler;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
@@ -343,6 +344,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       this.logger.error("Failed to get flows queued for a long time.", e);
     }
     return size;
+  }
+
+  @Override
+  public DispatchMethod getDispatchMethod() {
+    return DispatchMethod.POLL;
   }
 
   @Override

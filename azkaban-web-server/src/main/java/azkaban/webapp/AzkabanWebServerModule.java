@@ -17,6 +17,7 @@
 
 package azkaban.webapp;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.executor.ContainerizedExecutionManager;
@@ -89,10 +90,11 @@ public class AzkabanWebServerModule extends AbstractModule {
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
-    switch(DispatchMethod.getDispatchModel(this.props)) {
+    switch (DispatchMethod.getDispatchMethod(this.props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "PUSH"))) {
       case POLL:
         return ExecutionController.class;
-      case CONTAINERIZED:
+      case PUSH_CONTAINERIZED:
         return ContainerizedExecutionManager.class;
       case PUSH:
       default:

@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
@@ -553,6 +554,11 @@ public class ExecutorManager extends EventHandler implements
   public long getAgedQueuedFlowSize() {
     // ToDo(anish-mal) Implement this for push based dispatch logic.
     return 0;
+  }
+
+  @Override
+  public DispatchMethod getDispatchMethod() {
+    return DispatchMethod.PUSH;
   }
 
   /* Helper method to flow ids of all running flows */

@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -43,6 +44,8 @@ public interface ExecutorManagerAdapter {
   public long getQueuedFlowSize();
 
   public long getAgedQueuedFlowSize();
+
+  public DispatchMethod getDispatchMethod();
 
   /**
    * <pre>

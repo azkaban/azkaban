@@ -1,14 +1,21 @@
 package azkaban;
 
-import azkaban.utils.Props;
+import org.apache.log4j.Logger;
 
 public enum DispatchMethod {
-    PUSH,
-    POLL,
-    CONTAINERIZED;
+  PUSH,
+  POLL,
+  PUSH_CONTAINERIZED;
+  private static final Logger logger = Logger.getLogger(DispatchMethod.class);
 
-    public static DispatchMethod getDispatchModel(Props azkabanProps) {
-        return DispatchMethod.valueOf(
-                azkabanProps.getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "PUSH").toUpperCase());
+  public static DispatchMethod getDispatchMethod(String value) {
+    try {
+      logger.info("Value of dispatch method is : " + value);
+      return DispatchMethod.valueOf(value.toUpperCase());
+    } catch (IllegalArgumentException iae) {
+      logger.info("Incorrect value is set for dispatch method. The default dispatch method, PUSH,"
+          + " is used");
+      return DispatchMethod.PUSH;
     }
+  }
 }
