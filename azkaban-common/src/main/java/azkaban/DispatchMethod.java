@@ -9,6 +9,6 @@ public enum DispatchMethod {
 
     public static DispatchMethod getDispatchModel(Props azkabanProps) {
         return DispatchMethod.valueOf(
-                azkabanProps.getString(Constants.ConfigurationKeys.AZKABAN_DISPATCH_MODEL, "PUSH").toUpperCase());
+                azkabanProps.getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "PUSH").toUpperCase());
     }
 }
