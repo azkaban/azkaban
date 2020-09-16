@@ -266,9 +266,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
 
-    if (DispatchMethod.isPollMethodEnabled(azkabanProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
-            DispatchMethod.PUSH.name()))) {
+    if (isPollDispatchMethodEnabled()) {
       long pollingIntervalMillis =
           this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
               Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
@@ -920,9 +918,7 @@ public class FlowRunnerManager implements EventListener<Event>,
    */
   public void shutdown() {
     LOGGER.warn("Shutting down FlowRunnerManager...");
-    if (DispatchMethod.isPollMethodEnabled(azkabanProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
-            DispatchMethod.PUSH.name()))) {
+    if (isPollDispatchMethodEnabled()) {
       this.pollingService.shutdown();
     }
     this.executorService.shutdown();
@@ -945,13 +941,17 @@ public class FlowRunnerManager implements EventListener<Event>,
    */
   public void shutdownNow() {
     LOGGER.warn("Shutting down FlowRunnerManager now...");
-    if (DispatchMethod.isPollMethodEnabled(azkabanProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
-            DispatchMethod.PUSH.name()))) {
+    if (isPollDispatchMethodEnabled()) {
       this.pollingService.shutdown();
     }
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
+  }
+
+  private boolean isPollDispatchMethodEnabled() {
+    return DispatchMethod.isPollMethodEnabled(azkabanProps
+        .getString(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   /**
