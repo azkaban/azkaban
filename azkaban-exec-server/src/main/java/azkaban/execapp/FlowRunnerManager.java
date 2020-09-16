@@ -237,20 +237,23 @@ public class FlowRunnerManager implements EventListener<Event>,
           props.getDouble(ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
       projectCacheThrottlePercentage =
           props.getDouble(ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
-      this.LOGGER.info("Configuring Cache Cleaner with {} % as threshold", projectCacheSizePercentage);
+      this.LOGGER
+          .info("Configuring Cache Cleaner with {} % as threshold", projectCacheSizePercentage);
       cleaner = new ProjectCacheCleaner(this.projectDirectory,
           projectCacheSizePercentage,
           projectCacheThrottlePercentage);
       this.LOGGER.info("ProjectCacheCleaner configured.");
     } catch (final UndefinedPropertyException ex) {
       if (projectCacheSizePercentage == 0.0) {
-        this.LOGGER.info("Property {} not set. Project Cache directory will not be auto-cleaned as it gets full",
+        this.LOGGER.info(
+            "Property {} not set. Project Cache directory will not be auto-cleaned as it gets full",
             ConfigurationKeys.PROJECT_CACHE_SIZE_PERCENTAGE);
       } else {
         // Exception must have been fired because Throttle percentage is not set. Initialize the cleaner
         // with the default throttle value
-        this.LOGGER.info("Property {} not set. Initializing with default value of Throttle Percentage",
-            ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
+        this.LOGGER
+            .info("Property {} not set. Initializing with default value of Throttle Percentage",
+                ConfigurationKeys.PROJECT_CACHE_THROTTLE_PERCENTAGE);
         cleaner = new ProjectCacheCleaner(this.projectDirectory, projectCacheSizePercentage);
       }
     }
@@ -266,9 +269,9 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.cleanerThread.start();
 
     if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
-      long pollingIntervalMillis =
+      final long pollingIntervalMillis =
           this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
-          Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
+              Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
       this.LOGGER.info("Starting polling service with a time interval of %d milliseconds.",
           pollingIntervalMillis);
       this.pollingService = new PollingService(pollingIntervalMillis,
@@ -280,12 +283,13 @@ public class FlowRunnerManager implements EventListener<Event>,
   /**
    * Change the polling interval to the newly specified value and also update the value that's
    * specified in the props
+   *
    * @param pollingIntervalMillis The new polling interval.
    * @return true if the Polling interval has changed successfully
    */
-  public boolean changePollingInterval(long pollingIntervalMillis) {
-    long oldVal = this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
-            Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
+  public boolean changePollingInterval(final long pollingIntervalMillis) {
+    final long oldVal = this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
+        Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
     if (!this.pollingService.restart(pollingIntervalMillis)) {
       return false;
     }
@@ -417,7 +421,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     }
     final long tsBeforeFlowRunnerCreation = System.currentTimeMillis();
     final FlowRunner runner = createFlowRunner(execId);
-    runner.setFlowCreateTime(System.currentTimeMillis()-tsBeforeFlowRunnerCreation);
+    runner.setFlowCreateTime(System.currentTimeMillis() - tsBeforeFlowRunnerCreation);
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -596,7 +600,7 @@ public class FlowRunnerManager implements EventListener<Event>,
 
     // account for those unexpected cases where a completed execution remains in the runningFlows
     //collection due to, for example, the FLOW_FINISHED event not being emitted/handled.
-    if(Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus())) {
+    if (Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus())) {
       LOGGER.warn("Found a finished execution in the list of running flows: " + execId);
       throw new ExecutorManagerException("Execution " + execId + " is already finished.");
     }
@@ -930,7 +934,7 @@ public class FlowRunnerManager implements EventListener<Event>,
         LOGGER.error(e.getMessage());
       }
     }
-    flowPreparer.shutdown();
+    this.flowPreparer.shutdown();
     LOGGER.warn("Shutdown FlowRunnerManager complete.");
   }
 
@@ -1077,15 +1081,15 @@ public class FlowRunnerManager implements EventListener<Event>,
     }
 
     public void start() {
-      futureTask = this.scheduler.scheduleAtFixedRate(() -> pollExecution(), 0L,
+      this.futureTask = this.scheduler.scheduleAtFixedRate(() -> pollExecution(), 0L,
           this.pollingIntervalMs, TimeUnit.MILLISECONDS);
 
-      if (futureTask == null) {
+      if (this.futureTask == null) {
         FlowRunnerManager.LOGGER.error(String.format("Unable to start a polling interval of %d "
-                + "milliseconds", pollingIntervalMs));
+            + "milliseconds", this.pollingIntervalMs));
       } else {
         FlowRunnerManager.LOGGER.info(String.format("Successfully started polling with an interval "
-            + "of %d milliseconds", pollingIntervalMs));
+            + "of %d milliseconds", this.pollingIntervalMs));
       }
     }
 
@@ -1099,25 +1103,25 @@ public class FlowRunnerManager implements EventListener<Event>,
     public boolean restart(final long newPollingIntervalMs) {
       if (newPollingIntervalMs <= 0) {
         FlowRunnerManager.LOGGER.error(String.format("Can not set a negative polling interval: %d "
-                + "milliseconds", newPollingIntervalMs));
+            + "milliseconds", newPollingIntervalMs));
         return false;
       }
 
-      if (futureTask != null) {
+      if (this.futureTask != null) {
         FlowRunnerManager.LOGGER.info(String.format("Canceling the existing polling schedule (%d "
-                + "ms)", pollingIntervalMs));
-        if (!futureTask.cancel(false)) {
+            + "ms)", this.pollingIntervalMs));
+        if (!this.futureTask.cancel(false)) {
           FlowRunnerManager.LOGGER.error(String.format(
               "Failure in canceling the existing polling schedule (%d ms) prevented us from "
                   + "setting a new polling schedule (%d ms)",
-              pollingIntervalMs, newPollingIntervalMs));
+              this.pollingIntervalMs, newPollingIntervalMs));
           return false;
         }
       }
 
       this.pollingIntervalMs = newPollingIntervalMs;
       start();
-      return (futureTask != null);
+      return (this.futureTask != null);
     }
 
     private void pollExecution() {
@@ -1135,13 +1139,15 @@ public class FlowRunnerManager implements EventListener<Event>,
       } else if (this.pollingCriteria.shouldPoll()) {
         try {
           final int execId;
-          if (FlowRunnerManager.this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
+          if (FlowRunnerManager.this.azkabanProps
+              .getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecutionWithLocking(
                 this.executorId, FlowRunnerManager.this.active);
           } else {
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecution(this.executorId,
                 FlowRunnerManager.this.active);
           }
+          FlowRunnerManager.this.execMetrics.markOnePoll();
           if (execId == -1) {
             FlowRunnerManager.LOGGER.info("Polling found no flow in the queue.");
           } else {
