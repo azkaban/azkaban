@@ -29,7 +29,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -172,7 +171,7 @@ public class AzkabanWebServerTest {
   @Test
   public void testDispatchMethod()throws Exception {
     // Test for PUSH method
-    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"PUSH");
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, DispatchMethod.PUSH.name());
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(props)

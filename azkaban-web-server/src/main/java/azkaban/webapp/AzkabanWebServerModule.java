@@ -91,7 +91,8 @@ public class AzkabanWebServerModule extends AbstractModule {
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
     switch (DispatchMethod.getDispatchMethod(this.props
-        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "PUSH"))) {
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()))) {
       case POLL:
         return ExecutionController.class;
       case PUSH_CONTAINERIZED:

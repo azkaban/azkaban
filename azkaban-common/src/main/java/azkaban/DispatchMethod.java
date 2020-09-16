@@ -18,4 +18,8 @@ public enum DispatchMethod {
       return DispatchMethod.PUSH;
     }
   }
+
+  public static boolean isPollMethodEnabled(String dispatchMethod) {
+    return DispatchMethod.getDispatchMethod(dispatchMethod) == DispatchMethod.POLL;
+  }
 }
