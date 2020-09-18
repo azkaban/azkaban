@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
@@ -265,10 +266,10 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.cleanerThread = new CleanerThread();
     this.cleanerThread.start();
 
-    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (isPollDispatchMethodEnabled()) {
       long pollingIntervalMillis =
           this.azkabanProps.getLong(ConfigurationKeys.AZKABAN_POLLING_INTERVAL_MS,
-          Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
+              Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
       this.LOGGER.info("Starting polling service with a time interval of %d milliseconds.",
           pollingIntervalMillis);
       this.pollingService = new PollingService(pollingIntervalMillis,
@@ -917,7 +918,7 @@ public class FlowRunnerManager implements EventListener<Event>,
    */
   public void shutdown() {
     LOGGER.warn("Shutting down FlowRunnerManager...");
-    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (isPollDispatchMethodEnabled()) {
       this.pollingService.shutdown();
     }
     this.executorService.shutdown();
@@ -940,11 +941,17 @@ public class FlowRunnerManager implements EventListener<Event>,
    */
   public void shutdownNow() {
     LOGGER.warn("Shutting down FlowRunnerManager now...");
-    if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+    if (isPollDispatchMethodEnabled()) {
       this.pollingService.shutdown();
     }
     this.executorService.shutdownNow();
     this.triggerManager.shutdown();
+  }
+
+  private boolean isPollDispatchMethodEnabled() {
+    return DispatchMethod.isPollMethodEnabled(azkabanProps
+        .getString(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   /**

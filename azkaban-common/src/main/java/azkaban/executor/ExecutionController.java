@@ -17,6 +17,7 @@ package azkaban.executor;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.event.EventHandler;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
@@ -47,8 +48,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Controls flow executions on web server. This module implements the polling model
- * in the new AZ dispatching design. It's injected only when azkaban.poll.model is configured to
- * true. It will ultimately replace ExecutorManager in the future.
+ * in the new AZ dispatching design. It's injected only when azkaban.execution.dispatch.method is configured to
+ * POLL. It will ultimately replace ExecutorManager in the future.
  */
 @Singleton
 public class ExecutionController extends EventHandler implements ExecutorManagerAdapter {
@@ -343,6 +344,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
       this.logger.error("Failed to get flows queued for a long time.", e);
     }
     return size;
+  }
+
+  @Override
+  public DispatchMethod getDispatchMethod() {
+    return DispatchMethod.POLL;
   }
 
   @Override
