@@ -22,4 +22,12 @@ public enum DispatchMethod {
   public static boolean isPollMethodEnabled(String dispatchMethod) {
     return DispatchMethod.getDispatchMethod(dispatchMethod) == DispatchMethod.POLL;
   }
+
+  public static boolean isPushMethodEnabled(String dispatchMethod) {
+    return DispatchMethod.getDispatchMethod(dispatchMethod) == DispatchMethod.PUSH;
+  }
+
+  public static boolean isPushContainerizedMethodEnabled(String dispatchMethod) {
+    return DispatchMethod.getDispatchMethod(dispatchMethod) == DispatchMethod.PUSH_CONTAINERIZED;
+  }
 }
