@@ -21,9 +21,12 @@ import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
 import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
 import static azkaban.Constants.UTF_8;
 
+import azkaban.ServiceProvider;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
+import azkaban.spi.AzkabanEventReporter;
+import azkaban.spi.EventType;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
@@ -85,6 +88,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private File webResourceDirectory = null;
   private MultipartParser multipartParser;
   private boolean shouldLogRawUserAgent = false;
+  private final AzkabanEventReporter azkabanEventReporter =
+      ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
 
   public LoginAbstractAzkabanServlet(final List<AzkabanAPI> apiEndpoints) {
     super(apiEndpoints);
@@ -121,6 +126,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       resp.sendRedirect(req.getContextPath());
       if (session != null) {
         getApplication().getSessionCache().removeSession(session.getSessionId());
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, session.getUser().getUserId(),
+            WebUtils.getRealClientIpAddr(req));
+      } else {
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, null,
+            WebUtils.getRealClientIpAddr(req), false, "Not logged in");
       }
       return;
     }
@@ -448,6 +458,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return createSession(username, password, ip);
   }
 
+  // todo: report! But what to do if session is rejected in handleAjaxLoginAction?
   private Session createSession(final String username, final String password, final String ip)
       throws UserManagerException {
     final UserManager manager = getApplication().getUserManager();
