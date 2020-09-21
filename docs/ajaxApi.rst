@@ -395,8 +395,8 @@ structure of those jobs.
 |                                   |      "type": "job.type"           |
 |                                   |      "in": ["job.ids that this job|
 |                                   |      is directly depending upon.  |
-|                                   |      Indirect ancestors are not in |
-|                                   |      cluded in this list"]        |
+|                                   |      Indirect ancestors are not   |
+|                                   |      included in this list"]      |
 |                                   |    }                              |
 |                                   |                                   |
 |                                   |                                   |
@@ -672,7 +672,7 @@ this API by disabling all other jobs in the same flow.
 +-----------------------------------+-----------------------------------+
 | failureEmails (optional)          | A list of emails to be notified   |
 |                                   | if the execution fails. All       |
-|                                   | emails are delimited with        |
+|                                   | emails are delimited with         |
 |                                   | [,|;|\\s+].                       |
 |                                   |                                   |
 |                                   | **Example Values:**               |
