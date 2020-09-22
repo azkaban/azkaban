@@ -171,14 +171,17 @@ public class WebUtils {
    */
   public static void reportLoginEvent(final EventType eventType, final String username,
       final String ip, final boolean isSuccess, final String message) {
+
     if (azkabanEventReporter != null) {
-      azkabanEventReporter.report(eventType, ImmutableMap.of(
-          "azkabanHost", AzkabanWebServer.getAzkabanProperties().getString(AZKABAN_SERVER_HOST_NAME,
-              hostName),
-          "sessionUser", Strings.isNullOrEmpty(username) ? "unknown" : username,
-          "sessionIP", ip,
-          "reason", message,
-          "appOutcome", isSuccess ? "SUCCESS" : "FAILURE"));
+      final Map<String, String> metadata = new HashMap<>();
+      metadata.put("azkabanHost",
+          AzkabanWebServer.getAzkabanProperties().getString(AZKABAN_SERVER_HOST_NAME, hostName));
+      metadata.put("sessionUser", Strings.isNullOrEmpty(username) ? "unknown" : username);
+      metadata.put("sessionIP", ip);
+      metadata.put("reason", message);
+      metadata.put("appOutcome", isSuccess ? "SUCCESS" : "FAILURE");
+
+      azkabanEventReporter.report(eventType, metadata);
     }
   }
 
