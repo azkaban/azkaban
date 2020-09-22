@@ -1875,7 +1875,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       // get the locked flows for the project, so that they can be locked again after upload
-      final List<String> lockedFlows = getLockedFlows(project);
+      final List<Pair<String, String>> lockedFlows = getLockedFlows(project);
 
       final Map<String, ValidationReport> reports = this.projectManager
           .uploadProject(project, archiveFile, lowercaseExtension, user, props, uploaderIPAddr);
@@ -2021,11 +2021,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * @return the list of locked flows for the specified project.
+   * @return the list of locked flows and corresponding error messages for the specified project.
    */
-  private List<String> getLockedFlows(final Project project) {
+  private List<Pair<String, String>> getLockedFlows(final Project project) {
     final List<Flow> flows = project.getFlows();
-    return flows.stream().filter(flow -> flow.isLocked()).map(flow -> flow.getId())
+    return flows.stream()
+        .filter(flow -> flow.isLocked())
+        .map(flow -> new Pair<>(flow.getId(), flow.getFlowLockErrorMessage()))
         .collect(Collectors.toList());
   }
 
@@ -2033,13 +2035,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * Lock the specified flows for the project.
    *
    * @param project     the project
-   * @param lockedFlows list of flow IDs of flows to lock
+   * @param lockedFlows list of IDs of flows to lock and corresponding lock error messages
    */
-  private void lockFlowsForProject(final Project project, final List<String> lockedFlows) {
-    for (final String flowId : lockedFlows) {
-      final Flow flow = project.getFlow(flowId);
+  private void lockFlowsForProject(final Project project,
+      final List<Pair<String, String>> lockedFlows) {
+    for (final Pair<String, String> idMsgPair : lockedFlows) {
+      final Flow flow = project.getFlow(idMsgPair.getFirst());
       if (flow != null) {
         flow.setLocked(true);
+        flow.setFlowLockErrorMessage(idMsgPair.getSecond());
       }
     }
   }
