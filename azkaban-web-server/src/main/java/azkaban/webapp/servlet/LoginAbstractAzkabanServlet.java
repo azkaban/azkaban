@@ -458,6 +458,15 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return createSession(username, password, ip, true);
   }
 
+  /**
+   * Brief note on extra parameter use.
+   *
+   * @param isSuccessFinal {@code createSession} is a good place to invoke event reporter for all
+   *     but one use case where the outcome of createSession itself is not final -- the login
+   *     success is not yet assured. This parameter is to handle that one case. If set to {@code
+   *     false}, then it is caller's responsibility to report the final outcome of the login
+   *     event if {@code createSession} was successful.
+   */
   private Session createSession(final String username, final String password, final String ip,
       final boolean isSuccessFinal)
       throws UserManagerException {
