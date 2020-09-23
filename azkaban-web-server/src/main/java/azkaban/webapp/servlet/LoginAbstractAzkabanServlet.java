@@ -21,11 +21,9 @@ import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
 import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
 import static azkaban.Constants.UTF_8;
 
-import azkaban.ServiceProvider;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
-import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.user.Permission;
 import azkaban.user.Role;
@@ -88,8 +86,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private File webResourceDirectory = null;
   private MultipartParser multipartParser;
   private boolean shouldLogRawUserAgent = false;
-  private final AzkabanEventReporter azkabanEventReporter =
-      ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
 
   public LoginAbstractAzkabanServlet(final List<AzkabanAPI> apiEndpoints) {
     super(apiEndpoints);
