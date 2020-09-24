@@ -24,6 +24,7 @@ import static azkaban.Constants.UTF_8;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
+import azkaban.spi.EventType;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
@@ -121,6 +122,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       resp.sendRedirect(req.getContextPath());
       if (session != null) {
         getApplication().getSessionCache().removeSession(session.getSessionId());
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, session.getUser().getUserId(),
+            WebUtils.getRealClientIpAddr(req));
+      } else {
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, null,
+            WebUtils.getRealClientIpAddr(req), false, "Not logged in");
       }
       return;
     }
@@ -379,7 +385,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         final String ip = WebUtils.getRealClientIpAddr(req);
 
         try {
-          session = createSession(username, password, ip);
+          session = createSession(username, password, ip, true);
         } catch (final UserManagerException e) {
           writeResponse(resp, "Login error: " + e.getMessage());
           return;
@@ -445,18 +451,35 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     final String password = getParam(req, "password");
     final String ip = WebUtils.getRealClientIpAddr(req);
 
-    return createSession(username, password, ip);
+    return createSession(username, password, ip, true);
   }
 
-  private Session createSession(final String username, final String password, final String ip)
+  /**
+   * Brief note on extra parameter use.
+   *
+   * @param isSuccessFinal {@code createSession} is a good place to invoke event reporter for all
+   *     but one use case where the outcome of createSession itself is not final -- the login
+   *     success is not yet assured. This parameter is to handle that one case. If set to {@code
+   *     false}, then it is caller's responsibility to report the final outcome of the login
+   *     event if {@code createSession} was successful.
+   */
+  private Session createSession(final String username, final String password, final String ip,
+      final boolean isSuccessFinal)
       throws UserManagerException {
-    final UserManager manager = getApplication().getUserManager();
-    final User user = manager.getUser(username, password);
+    try {
+      final UserManager manager = getApplication().getUserManager();
+      final User user = manager.getUser(username, password);
 
-    final String randomUID = UUID.randomUUID().toString();
-    final Session session = new Session(randomUID, user, ip);
+      if (isSuccessFinal) {
+        WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip);
+      }
 
-    return session;
+      final String randomUID = UUID.randomUUID().toString();
+      return new Session(randomUID, user, ip);
+    } catch (Exception e) {
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, e.getMessage());
+      throw e;
+    }
   }
 
   protected boolean hasPermission(final Project project, final User user,
@@ -535,7 +558,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final String ip, final HttpServletResponse resp, final Map<String, Object> ret) {
     Session session = null;
     try {
-      session = createSession(username, password, ip);
+      session = createSession(username, password, ip, false);
     } catch (final UserManagerException e) {
       ret.put("error", "Incorrect Login. " + e.getMessage());
       return;
@@ -556,10 +579,13 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     if (sessionAdded) {
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip);
     } else {
-      ret.put("error", "Potential DDoS found, the number of sessions for this user and IP "
+      final String message = "Potential DDoS found, the number of sessions for this user and IP "
           + "reached allowed limit (" + getApplication().getSessionCache()
-          .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
+          .getMaxNumberOfSessionsPerIpPerUser().get() + ").";
+      ret.put("error", message);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, message);
     }
   }
 
