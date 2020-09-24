@@ -18,8 +18,10 @@ package azkaban.webapp.servlet;
 
 import static org.junit.Assert.assertEquals;
 
+import azkaban.spi.EventType;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -75,4 +77,22 @@ public class WebUtilsTest {
     assertEquals(ip, "192.168.1.1");
   }
 
+  @Test
+  @Ignore  // will fail right now
+  public void testIPv6NoPort() {
+
+    final String clientIp = "fe80::aede:48ff:.55805";
+    // or ::1, or fe80::1cc4:170d:463d:99d1%en0, or http://[fe80::1ff:fe23:4567:890a%25eth0]:443/
+    final Map<String, String> headers = new HashMap<>();
+    final String ip = WebUtils.getRealClientIpAddr(headers, clientIp);
+
+    assertEquals(ip, "fe80::aede:48ff");
+  }
+
+  @Test
+  public void testReportLoginEvent() {
+    // can't really test much without a way to inject a mock of AzkabanEventReporter into
+    // WebUtils, but let's at least invoke it anyway:
+    WebUtils.reportLoginEvent(EventType.USER_LOGIN, "itsme", "127.0.0.1");
+  }
 }
