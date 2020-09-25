@@ -129,6 +129,11 @@ public class Constants {
   // Used (or should be used) wherever a string representation of UTF_8 charset is needed:
   public static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.toString();
 
+  // Specifies the source(adhoc, scheduled, flow_trigger) from where flow execution is triggered
+  public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
+  public static final String EXECUTION_SOURCE_SCHEDULED = "scheduled";
+  public static final String EXECUTION_SOURCE_FLOW_TRIGGER = "flow_trigger";
+
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";

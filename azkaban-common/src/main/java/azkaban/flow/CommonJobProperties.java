@@ -143,7 +143,7 @@ public class CommonJobProperties {
   /**
    * Represents whether the flow is a scheduled flow or an adhoc execution
    */
-  public static final String EXECUTION_TYPE = "azkaban.flow.executiontype";
+  public static final String EXECUTION_SOURCE = "azkaban.flow.executionsource";
   /**
    * A uuid assigned to every execution
    */

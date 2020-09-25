@@ -17,7 +17,6 @@ package azkaban.executor;
 
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowExecutionType;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
@@ -91,9 +90,9 @@ public class ExecutableFlowBase extends ExecutableNode {
     return -1;
   }
 
-  public FlowExecutionType getExecutionType() {
+  public String getExecutionSource() {
     if (this.getParentFlow() != null) {
-      return this.getParentFlow().getExecutionType();
+      return this.getParentFlow().getExecutionSource();
     }
 
     return null;

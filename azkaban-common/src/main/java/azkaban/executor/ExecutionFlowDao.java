@@ -19,7 +19,6 @@ package azkaban.executor;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
-import azkaban.flow.FlowExecutionType;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -31,7 +30,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
@@ -69,7 +67,7 @@ public class ExecutionFlowDao {
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
         + "use_executor, flow_priority, execution_type) values (?,?,?,?,?,?,?,?,?,?)";
     final long submitTime = flow.getSubmitTime();
-    final String executionType = FlowExecutionType.getString(flow.getExecutionType());
+    final String executionType = flow.getExecutionSource();
 
     /**
      * Why we need a transaction to get last insert ID?

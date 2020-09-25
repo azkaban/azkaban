@@ -27,7 +27,6 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowExecutionType;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.TriggerInstance;
@@ -958,7 +957,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
-    exflow.setExecutionType(FlowExecutionType.ADHOC);
+    exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options;
     try {
