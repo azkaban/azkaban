@@ -1,7 +1,7 @@
 {
   "_comment": "This json is called by npm install",
   "name": "azkaban",
-  "description": "Azkaban 3 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban) ========",
+  "description": "Azkaban 3 [![Build Status](https://travis-ci.com/azkaban/azkaban.svg?branch=master)](https://travis-ci.com/azkaban/azkaban) ========",
   "dependencies": {
     "chai": "3.5.0",
     "later": "1.2.0",
