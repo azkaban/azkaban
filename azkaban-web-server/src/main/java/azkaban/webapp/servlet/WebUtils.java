@@ -24,13 +24,14 @@ import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.webapp.AzkabanWebServer;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
+import com.google.inject.ConfigurationException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.log4j.Logger;
 
 public class WebUtils {
 
@@ -40,8 +41,16 @@ public class WebUtils {
   private static final long ONE_GB = 1024 * ONE_MB;
   private static final long ONE_TB = 1024 * ONE_GB;
 
-  private static final AzkabanEventReporter azkabanEventReporter =
-      ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
+  private static AzkabanEventReporter azkabanEventReporter;
+
+  static {
+    try {
+      azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER
+          .getInstance(AzkabanEventReporter.class);
+    } catch (NullPointerException | ConfigurationException e) {
+      Logger.getLogger(WebUtils.class.getName()).warn("AzkabanEventReporter not configured", e);
+    }
+  }
 
   public static String displayBytes(final long sizeBytes) {
     final NumberFormat nf = NumberFormat.getInstance();
