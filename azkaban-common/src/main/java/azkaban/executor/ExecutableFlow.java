@@ -50,7 +50,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
-  public static final String EXECUTION_SOURCE = "execution_source";
+  public static final String EXECUTION_SOURCE = "executionSource";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;

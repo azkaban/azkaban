@@ -141,7 +141,7 @@ public class CommonJobProperties {
   public static final String SUBMIT_USER = "azkaban.flow.submituser";
 
   /**
-   * Represents whether the flow is a scheduled flow or an adhoc execution
+   * Represents the source of execution - adhoc, schedule or event
    */
   public static final String EXECUTION_SOURCE = "azkaban.flow.executionsource";
   /**
