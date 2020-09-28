@@ -1,12 +1,13 @@
 package azkaban;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum DispatchMethod {
   PUSH,
   POLL,
   PUSH_CONTAINERIZED;
-  private static final Logger logger = Logger.getLogger(DispatchMethod.class);
+  private static final Logger logger = LoggerFactory.getLogger(DispatchMethod.class);
 
   public static DispatchMethod getDispatchMethod(String value) {
     try {
