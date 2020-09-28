@@ -1,9 +1,13 @@
 languages: java
-# TODO: Add openjdk8 once it is available in Travis.
 jdk:
-  - oraclejdk8
-dist: trusty
-sudo: false
+  - openjdk8
+os: linux
+dist: xenial
+
+before_install:
+  - sudo apt update
+  - sudo apt install openjfx
+
 script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
