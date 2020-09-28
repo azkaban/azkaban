@@ -16,24 +16,41 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.test.Utils.initServiceProvider;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.server.AzkabanServer;
+import azkaban.server.session.Session;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.user.User;
 import azkaban.utils.Props;
+import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.CSRFTokenUtility;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.velocity.app.VelocityEngine;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ProjectManagerServletTest {
 
@@ -71,6 +88,72 @@ public class ProjectManagerServletTest {
         });
     Assert.assertEquals(2, schedules.size());
     Assert.assertTrue(schedules.containsAll(Arrays.asList(sched2, sched3)));
+  }
+
+  @Test
+  public void verifyCallingAddCSRFTokenForPermissionsPage() throws ServletException, IOException {
+    Session session = new Session(UUID.randomUUID().toString(), new User("luke"), "0.0.0.0");
+
+    ProjectManagerServlet projectManagerServlet = getSpyProjectManagerServlet();
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse resp = mock(HttpServletResponse.class);
+    doReturn("testProject").when(req).getParameter("project");
+    doReturn(Boolean.TRUE).when(projectManagerServlet).hasParam(req, "project");
+    doReturn(Boolean.TRUE).when(projectManagerServlet).hasParam(req, "permissions");
+
+    projectManagerServlet.handleGet(req, resp, session);
+    Mockito.verify(projectManagerServlet, times(1))
+        .addCSRFTokenToPage(Mockito.any(), Mockito.any());
+  }
+
+  @Test
+  public void verifyCallingValidateCSRFToken()
+      throws ServletException, IOException {
+    assertCallingValidateCSRFToken("removeProxyUser");
+    assertCallingValidateCSRFToken("addProxyUser");
+    assertCallingValidateCSRFToken("addPermission");
+    assertCallingValidateCSRFToken("changePermission");
+  }
+
+  private void assertCallingValidateCSRFToken(String type) throws IOException, ServletException {
+    Session session = new Session(UUID.randomUUID().toString(), new User("luke"), "0.0.0.0");
+    CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
+    String csrfTokenFromSession = csrfTokenUtility.getCSRFTokenFromSession(session);
+
+    ProjectManagerServlet projectManagerServlet = getSpyProjectManagerServlet();
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse resp = mock(HttpServletResponse.class);
+    doReturn(csrfTokenFromSession).when(req).getHeader("CSRFTOKEN");
+    doReturn(Boolean.TRUE).when(projectManagerServlet).hasParam(req, "project");
+    doReturn("testProject").when(req).getParameter("project");
+    doReturn(Boolean.TRUE).when(projectManagerServlet).hasParam(req, "ajax");
+
+    // Following relies on the order of the else-if statement of
+    //method azkaban.webapp.servlet.ProjectManagerServlet.handleAJAXAction
+
+    doReturn(type).when(req).getParameter("ajax");
+    projectManagerServlet.handlePost(req, resp, session);
+    Mockito.verify(projectManagerServlet, times(1))
+        .validateCSRFToken(Mockito.any());
+  }
+
+  private ProjectManagerServlet getSpyProjectManagerServlet() throws IOException {
+    initServiceProvider();
+
+    AzkabanWebServer mockAzkbanServer = mock(AzkabanWebServer.class);
+    VelocityEngine mockVelocityEngine = mock(VelocityEngine.class);
+    ProjectManager mockProjectManager = mock(ProjectManager.class);
+
+    Project testProject = new Project(123, "testProject");
+    doReturn(testProject).when(mockProjectManager).getProject("testProject");
+
+    when(mockAzkbanServer.getVelocityEngine()).thenReturn(mockVelocityEngine);
+    ProjectManagerServlet projectManagerServlet = Mockito.spy(ProjectManagerServlet.class);
+    when(projectManagerServlet.getApplication()).thenReturn(mockAzkbanServer);
+    projectManagerServlet.setProjectManager(mockProjectManager);
+    doNothing().when(projectManagerServlet).writeJSON(Mockito.any(), Mockito.any());
+
+    return projectManagerServlet;
   }
 
 }

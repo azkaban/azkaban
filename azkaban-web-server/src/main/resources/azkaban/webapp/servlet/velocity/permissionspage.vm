@@ -21,7 +21,7 @@
   #parse ("azkaban/webapp/servlet/velocity/style.vm")
   #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js?v=1568065399"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js?v=1601287289"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
@@ -34,6 +34,13 @@
   </script>
 </head>
 <body>
+
+  <form id="csrf-form">
+    <fieldset>
+      <input type="hidden" name="csrf-token" id="csrf-token"
+             value=${csrfToken}>
+    </fieldset>
+  </form>
 
   #set ($current_page = "all")
   #parse ("azkaban/webapp/servlet/velocity/nav.vm")
