@@ -71,7 +71,7 @@ function executeFlow(executingData) {
     }
   };
 
-  $.get(executeURL, executingData, successHandler, "json");
+  $.post(executeURL, executingData, successHandler, "json");
 }
 
 function fetchFlowInfo(model, projectName, flowId, execId) {
