@@ -16,6 +16,7 @@
 
 package azkaban.viewer.reportal;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -1182,6 +1183,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
     exflow.addAllProxyUsers(project.getProxyUsers());
+    exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options = exflow.getExecutionOptions();
 

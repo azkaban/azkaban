@@ -14,6 +14,7 @@ CREATE TABLE execution_flows (
   executor_id INT                   DEFAULT NULL,
   use_executor INT                  DEFAULT NULL,
   flow_priority TINYINT    NOT NULL DEFAULT 5,
+  execution_source VARCHAR(32)        DEFAULT NULL,
   PRIMARY KEY (exec_id)
 );
 
