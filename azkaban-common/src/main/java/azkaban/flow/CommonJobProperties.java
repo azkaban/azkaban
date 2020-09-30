@@ -94,7 +94,7 @@ public class CommonJobProperties {
    * The job's log file absolute path.
    */
   public static final String JOB_LOG_FILE = "azkaban.job.log.file";
-  
+
   /**
    * The executing flow id
    */
@@ -145,6 +145,10 @@ public class CommonJobProperties {
    */
   public static final String SUBMIT_USER = "azkaban.flow.submituser";
 
+  /**
+   * Represents the source of execution - adhoc, schedule or event
+   */
+  public static final String EXECUTION_SOURCE = "azkaban.flow.executionsource";
   /**
    * A uuid assigned to every execution
    */
