@@ -47,7 +47,7 @@ public class WebUtils {
     try {
       azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER
           .getInstance(AzkabanEventReporter.class);
-    } catch (NullPointerException | ConfigurationException e) {
+    } catch (Exception e) {
       Logger.getLogger(WebUtils.class.getName()).warn("AzkabanEventReporter not configured", e);
     }
   }
