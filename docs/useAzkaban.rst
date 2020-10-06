@@ -4,7 +4,7 @@ Using Azkaban
 =============
 
 This section covers how to use Azkaban Web UI to create, view and
-execution your flows.
+execute your flows.
 
 
 .. _createProjects:
@@ -21,9 +21,9 @@ a role with READ or ADMIN will not appear.
 .. image:: figures/emptyprojectpage.png
 
 If you are just starting out, the project page may be empty. However
-you can see all the existing projects by clicking on All Projects .
+you can see all the existing projects by clicking on All Projects.
 
-Clicking on **Create Projects** will pop open a dialog box. Enter in a
+Clicking on **Create Projects** will pop open a dialog box. Enter a
 unique project name and description of the project. The description
 can be changed in the future, but the project name cannot be. If you
 don't see this button, it is likely that the ability to create new
@@ -60,7 +60,7 @@ contain the ``*.job`` files and any files needed to run your jobs. Job
 names must be unique in a project.
 
 Azkaban will validate the contents of the zip to make sure that
-dependencies are met and that there's no cyclical dependencies
+dependencies are met and that there are no cyclical dependencies
 detected. If it finds any invalid flows, the upload will fail.
 
 Uploads overwrite all files in the project. Any changes made to jobs
@@ -125,7 +125,7 @@ the project.
 
 
 Every user is validated through the UserManager to prevent invalid
-users from being added. Groups and Proxy users are also check to make
+users from being added. Groups and Proxy users are also checked to make
 sure they are valid and to see if the admin is allowed to add them to
 the project.
 
@@ -228,17 +228,17 @@ If the flow execution is invoked while the flow is concurrently
 executing, several options can be set.
 
 
-+ **Skip Execution** option will not run the flow if its already running.
-+ **Run Concurrently** option will run the flow regardless of if its
++ **Skip Execution** option will not run the flow if it's already running.
++ **Run Concurrently** option will run the flow regardless of if it's
   running. Executions are given different working directories.
-+ **Pipeline** runs the the flow in a manner that the new execution will
++ **Pipeline** runs the flow in a manner that the new execution will
   not overrun the concurrent execution.
 
-    + Level 1: blocks executing **job A** until the the previous flow's **job A**
+    + Level 1: blocks executing **job A** until the previous flow's **job A**
       has completed.
-    + Level 2: blocks executing **job A** until the the children of the
+    + Level 2: blocks executing **job A** until the children of the
       previous flow's **job A** has completed. This is useful if you need to run
-      your flows a few steps behind an already executin flow.
+      your flows a few steps behind an already executing flow.
 
 
 .. image:: figures/executeflowconcurrent.png
@@ -336,7 +336,7 @@ Any flow options set will be preserved for the scheduled flow. For
 instance, if jobs are disabled, then the scheduled flow's jobs will
 also be disabled.
 
-With new flexible scheduling feature in Azkaban 3.3, User are able to
+With new flexible scheduling features in Azkaban 3.3, Users are able to
 define a cron job following `Quartz syntax <http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html>`_. One important change
 different from Quartz or cron is that Azkaban functions at the minute
 granularity at most. Therefore, second field in UI is labeled as a
