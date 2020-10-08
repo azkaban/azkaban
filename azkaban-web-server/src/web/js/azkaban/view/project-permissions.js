@@ -75,6 +75,7 @@ azkaban.RemoveProxyView = Backbone.View.extend({
   handleRemoveProxy: function () {
     var requestURL = contextURL + "/manager";
     var proxyName = this.el.proxyName;
+    var csrfTokenVal = $('#csrf-token').val().trim();
     var requestData = {
       "project": projectName,
       "name": proxyName,
@@ -91,7 +92,14 @@ azkaban.RemoveProxyView = Backbone.View.extend({
       window.location.replace(replaceURL);
     };
 
-    $.get(requestURL, requestData, successHandler, "json");
+    $.ajax({
+      url: requestURL,
+      data: requestData,
+      type: "POST",
+      headers: { 'X-CSRF-TOKEN': csrfTokenVal },
+      success: successHandler,
+      dataType: "json"
+    });
   }
 });
 
@@ -114,6 +122,7 @@ azkaban.AddProxyView = Backbone.View.extend({
   handleAddProxy: function () {
     var requestURL = contextURL + "/manager";
     var name = $('#proxy-user-box').val().trim();
+    var csrfTokenVal = $('#csrf-token').val().trim();
     var requestData = {
       "project": projectName,
       "name": name,
@@ -131,7 +140,14 @@ azkaban.AddProxyView = Backbone.View.extend({
       var replaceURL = requestURL + "?project=" + projectName + "&permissions";
       window.location.replace(replaceURL);
     };
-    $.get(requestURL, requestData, successHandler, "json");
+    $.ajax({
+      url: requestURL,
+      data: requestData,
+      type: "POST",
+      headers: { 'X-CSRF-TOKEN': csrfTokenVal },
+      success: successHandler,
+      dataType: "json"
+    });
   }
 });
 
@@ -279,6 +295,7 @@ azkaban.ChangePermissionView = Backbone.View.extend({
   handleChangePermissions: function (evt) {
     var requestURL = contextURL + "/manager";
     var name = $('#user-box').val().trim();
+    var csrfTokenVal = $('#csrf-token').val().trim();
     var command = this.newPerm ? "addPermission" : "changePermission";
     var group = this.group;
 
@@ -307,8 +324,14 @@ azkaban.ChangePermissionView = Backbone.View.extend({
       var replaceURL = requestURL + "?project=" + projectName + "&permissions";
       window.location.replace(replaceURL);
     };
-
-    $.get(requestURL, requestData, successHandler, "json");
+    $.ajax({
+      url: requestURL,
+      data: requestData,
+      type: "POST",
+      headers: { 'X-CSRF-TOKEN': csrfTokenVal },
+      success: successHandler,
+      dataType: "json"
+    });
   }
 });
 

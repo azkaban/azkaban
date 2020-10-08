@@ -54,6 +54,8 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -146,6 +148,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   public ProjectManagerServlet() {
     super(createAPIEndpoints());
+  }
+
+  @VisibleForTesting
+  void setProjectManager(ProjectManager projectManager) {
+    this.projectManager = projectManager;
   }
 
   @Override
@@ -345,18 +352,34 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           ajaxGetProxyUsers(project, ret);
         }
       } else if (API_CHANGE_PERMISSION.equals(ajaxName)) {
+        if (session != null && !validateCSRFToken(req)) {
+          writeJSON(resp, ImmutableMap.of("error", "CSRF validation failed."));
+          return;
+        }
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxChangePermissions(project, ret, req, user);
         }
       } else if (API_ADD_PERMISSION.equals(ajaxName)) {
+        if (session != null && !validateCSRFToken(req)) {
+          writeJSON(resp, ImmutableMap.of("error", "CSRF validation failed."));
+          return;
+        }
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxAddPermission(project, ret, req, user);
         }
       } else if (API_ADD_PROXY_USER.equals(ajaxName)) {
+        if (session != null && !validateCSRFToken(req)) {
+          writeJSON(resp, ImmutableMap.of("error", "CSRF validation failed."));
+          return;
+        }
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxAddProxyUser(project, ret, req, user);
         }
       } else if (API_REMOVE_PROXY_USER.equals(ajaxName)) {
+        if (session != null && !validateCSRFToken(req)) {
+          writeJSON(resp, ImmutableMap.of("error", "CSRF validation failed."));
+          return;
+        }
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxRemoveProxyUser(project, ret, req, user);
         }
@@ -1031,6 +1054,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private void ajaxAddPermission(final Project project, final HashMap<String, Object> ret,
       final HttpServletRequest req, final User user) throws ServletException {
+
     final String name = getParam(req, "name");
     final boolean group = Boolean.parseBoolean(getParam(req, "group"));
 
@@ -1385,10 +1409,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handlePermissionPage(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/permissionspage.vm");
+    if(!addCSRFTokenToPage(page, session)) {
+      writeJSON(resp, ImmutableMap.of("error", "Unable to load the page."));
+      return;
+    }
     final String projectName = getParam(req, "project");
     final User user = session.getUser();
     PageUtils
