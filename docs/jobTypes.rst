@@ -833,7 +833,7 @@ Azkaban is configured to run on. When this property is present, Azkaban
 will try request a HDFS_DELEGATION_TOKEN for each of the specified HDFS
 NameNodes.
 
-The value of this propety is in the form of comma separated list of
+The value of this property is in the form of comma separated list of
 NameNode URLs.
 
 For example: **other_namenodes=webhdfs://host1:50070,hdfs://host2:9000**
@@ -872,7 +872,7 @@ HTTP Method
 ~~~~~~~~~~~
 
 
-The supported method are **GET** and **POST**. The default method is
+The supported methods are **GET** and **POST**. The default method is
 **GET**
 
 Headers
@@ -1077,7 +1077,7 @@ users. Often times, configuration changes of existing job types would
 create significantly different behavior to the end users. For example,
 in LinkedIn, apart from the *pig* types, we also have *pigLi* types that
 come with all the useful library jars pre-registered and imported. This
-way, normal users only need to provide their pig scripts, and the their
+way, normal users only need to provide their pig scripts, and their
 own udf jars to Azkaban. The pig job should run as if it is run on the
 gateway machine from pig grunt. In comparison, if users are required to
 use the basic *pig* job types, they will need to package all the
@@ -1114,7 +1114,7 @@ New Types by Extending Existing Ones
 
 For the most flexibility, one can always build new types by extending
 the existing ones. Azkaban uses reflection to load job types that
-implements the ``job`` interface, and tries to construct a sample object
+implement the ``job`` interface, and tries to construct a sample object
 upon loading for basic testing. When executing a real job, Azkaban calls
 the ``run`` method to run the job, and ``cancel`` method to cancel it.
 
@@ -1137,7 +1137,7 @@ System Statistics
 *****
 
 
-Azkaban server maintains certain system statistics and they be seen
+Azkaban server maintains certain system statistics and they can be seen
 http:<host>:<port>/stats
 
 To enable this feature, add the following property
@@ -1211,7 +1211,7 @@ We need to install
 `Hadoop <https://archive.apache.org/dist/hadoop/core/hadoop-2.6.1/>`__ and
 `Pig <https://archive.apache.org/dist/pig/pig-0.11.0/>`__ on the solo-server by
 expanding the tar into /export/apps/hadoop/latest and /export/apps/pig/latest
-resepectively. Then set the HADOOP_HOME and PIG_HOME variables with their paths:
+respectively. Then set the HADOOP_HOME and PIG_HOME variables with their paths:
 
 .. code-block:: guess
 
