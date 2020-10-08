@@ -174,7 +174,7 @@ programs. It is different from the "javaprocess" job type in that
 Azkaban already provides a ``main`` method, called
 ``JavaJobRunnerMain``. Inside ``JavaJobRunnerMain``, it looks for the
 ``run`` method which can be specified by ``method.run`` (default is
-``run``). User can also specify a ``cancel`` method in the case the user
+``run``). Users can also specify a ``cancel`` method in the case the user
 wants to gracefully terminate the job in the middle of the run.
 
 For the most part, using ``java`` type should be no different from
@@ -224,7 +224,7 @@ during its execution. After the job finishes, Azkaban takes care of
 canceling these tokens from name node and job tracker.
 
 Since Azkaban only obtains the tokens at the beginning of the job run,
-and does not requesting new tokens or renew old tokens during the
+and does not request new tokens or renew old tokens during the
 execution, it is important that the job does not run longer than
 configured token life.
 
@@ -336,7 +336,7 @@ Sample Job Package
 
 Here is a sample job package that does a word count. It relies on a Pig
 job to first upload the text file onto HDFS. One can also manually
-upload a file and run the word count program alone.The source code is in
+upload a file and run the word count program alone. The source code is in
 ``azkaban-plugins/plugins/jobtype/src/azkaban/jobtype/examples/java/WordCount.java``
 
 `Download
@@ -649,7 +649,7 @@ following properties go into private.properties:
 +-----------------------------------+-----------------------------------+
 | hive.home                         | ``$HIVE_HOME``                    |
 +-----------------------------------+-----------------------------------+
-| hive.classpath.items              | Those that needs to be on hive    |
+| hive.classpath.items              | Those that need to be on hive     |
 |                                   | classpath, include the conf       |
 |                                   | directory                         |
 +-----------------------------------+-----------------------------------+
