@@ -323,13 +323,13 @@ running Azkaban instances.
 **Introduction**
 
 
-Jobtype plugins determine how individual jobs are run locally
-or on a remote cluster. It gives great benefits: one can add or change
-any job type without touching Azkaban core code; one can easily extend
-Azkaban to run on different hadoop versions or distributions; one can
-keep old versions around while adding new versions of the same types.
-However, it is really up to the admin who manages these plugins to make
-sure they are installed and configured correctly.
+Jobtype plugins determine how individual jobs are run locally or on a 
+remote cluster. It gives great benefits: one can add or changeany job 
+type without touching Azkaban core code; one can easily extendAzkaban
+to run on different hadoop versions or distributions; one cankeep old 
+versions around while adding new versions of the same types.However, 
+it is really up to the admin who manages these plugins to make sure 
+they are installed and configured correctly.
 
 Upon AzkabanExecutorServer start up, Azkaban will try to load all the
 job type plugins it can find. Azkaban will do very simple tests and drop
