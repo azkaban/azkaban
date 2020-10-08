@@ -11,7 +11,7 @@ flow management.
 Here we provide a common set of plugins that should be useful to most
 hadoop related use cases, as well as sample job packages. Most of these
 job types are being used in LinkedIn's production clusters, only with
-different configurations. We also give a simple guide how one can create
+different configurations. We also give a simple guide on how one can create
 new job types, either from scratch or by extending the old ones.
 
 --------------
@@ -83,7 +83,7 @@ process during its execution. After the job finishes, Azkaban takes care
 of canceling these tokens from name node and job tracker.
 
 Since Azkaban only obtains the tokens at the beginning of the job run,
-and does not requesting new tokens or renew old tokens during the
+and does not request new tokens or renew old tokens during the
 execution, it is important that the job does not run longer than
 configured token life.
 
