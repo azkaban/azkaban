@@ -29,8 +29,7 @@
      * used by all the views whenever APIs need to be called. Those wrapper functions should
      * apply application related parameters common to all requests such as this header.
     *#
-  #set ( $d = "$" )
-  ${d}.ajaxSetup({
+  ${esc.d}.ajaxSetup({
     headers: {'Azkaban-Trace-Origin': 'webapp'}
   });
 </script>
