@@ -35,7 +35,7 @@ $(function() {
         location.reload(true);
       }
     };
-    $.post("", requestData, successHandler);
+    ${esc.d}.post("", requestData, successHandler);
   });
 
   $('#proxyname').keyup(function(event) {
