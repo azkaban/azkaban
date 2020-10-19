@@ -374,9 +374,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     }
 
     // Velocity needs the jar resource paths to be set.
-    final String jarResourcePath = StringUtils.join(jarPaths, ", ");
-    logger.info("Setting jar resource path " + jarResourcePath);
-    ve.addProperty("jar.resource.loader.path", jarResourcePath);
+    // ...but only when path is not empty! https://github.com/azkaban/azkaban/issues/917
+    if (!jarPaths.isEmpty()) {
+      final String jarResourcePath = StringUtils.join(jarPaths, ", ");
+      logger.info("Setting jar resource path " + jarResourcePath);
+      ve.addProperty("jar.resource.loader.path", jarResourcePath);
+    }
   }
 
   public FlowTriggerService getFlowTriggerService() {
