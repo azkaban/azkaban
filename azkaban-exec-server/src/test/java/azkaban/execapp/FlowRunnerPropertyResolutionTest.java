@@ -40,10 +40,10 @@ import org.junit.Test;
  * The tests are contained in execpropstest, and should be resolved in the following fashion, where
  * the later props take precedence over the previous ones.
  *
- * 1. Global props (set in the FlowRunner) 2. Shared job props (depends on job directory) 3.
- * Previous job outputs to the embedded flow (Only if contained in embedded flow) 4. Embedded flow
- * properties (Only if contained in embedded flow) 5. Previous job outputs (if exists) 6. Job Props
- * 7. Flow Override properties
+ * 1. Global props (set in the FlowRunner) 2. Shared job props (depends on job directory) 3. Flow
+ * Override properties 4. Previous job outputs to the embedded flow (Only if contained in embedded
+ * flow) 5. Embedded flow properties (Only if contained in embedded flow) 6. Previous job outputs
+ * (if exists) 7. Job Props
  *
  * The test contains the following structure: job2 -> innerFlow (job1 -> job4 ) -> job3
  *
@@ -107,7 +107,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("shared1", job2Props.get("props1"));
     Assert.assertEquals("job2", job2Props.get("props2"));
     Assert.assertEquals("moo3", job2Props.get("props3"));
-    Assert.assertEquals("flow7", job2Props.get("props7"));
+    Assert.assertEquals("job7", job2Props.get("props7"));
     Assert.assertEquals("flow5", job2Props.get("props5"));
     Assert.assertEquals("flow6", job2Props.get("props6"));
     Assert.assertEquals("shared4", job2Props.get("props4"));
@@ -115,7 +115,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
 
     // Job 1 is inside another flow, and is nested in a different directory
     // The priority order should be:
-    // job1->innerflow->job2.output->job1.sharedprops->flow.overrides
+    // job1->innerflow->job2.output->flow.overrides->job1 shared props
     final Props job2Generated = new Props();
     job2Generated.put("props6", "gjob6");
     job2Generated.put("props9", "gjob9");
@@ -129,15 +129,16 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("job8", job1Props.get("props8"));
     Assert.assertEquals("gjob9", job1Props.get("props9"));
     Assert.assertEquals("gjob10", job1Props.get("props10"));
-    Assert.assertEquals("flow6", job1Props.get("props6"));
-    Assert.assertEquals("flow5", job1Props.get("props5"));
+    Assert.assertEquals("innerflow6", job1Props.get("props6"));
+    Assert.assertEquals("innerflow5", job1Props.get("props5"));
     Assert.assertEquals("flow7", job1Props.get("props7"));
     Assert.assertEquals("moo3", job1Props.get("props3"));
     Assert.assertEquals("moo4", job1Props.get("props4"));
 
     // Job 4 is inside another flow and takes output from job 1
     // The priority order should be:
-    // job4->job1.output->innerflow->job2.output->job4.sharedprops->flow.overrides
+    // job4->job1.output->innerflow->job2.output->flow.overrides->job4 shared
+    // props
     final Props job1GeneratedProps = new Props();
     job1GeneratedProps.put("props9", "g2job9");
     job1GeneratedProps.put("props7", "g2job7");
@@ -147,9 +148,9 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     final Props job4Props = nodeMap.get("innerflow:job4").getInputProps();
     Assert.assertEquals("job8", job4Props.get("props8"));
     Assert.assertEquals("job9", job4Props.get("props9"));
-    Assert.assertEquals("flow7", job4Props.get("props7"));
-    Assert.assertEquals("flow5", job4Props.get("props5"));
-    Assert.assertEquals("flow6", job4Props.get("props6"));
+    Assert.assertEquals("g2job7", job4Props.get("props7"));
+    Assert.assertEquals("innerflow5", job4Props.get("props5"));
+    Assert.assertEquals("innerflow6", job4Props.get("props6"));
     Assert.assertEquals("gjob10", job4Props.get("props10"));
     Assert.assertEquals("shared4", job4Props.get("props4"));
     Assert.assertEquals("shared1", job4Props.get("props1"));
@@ -158,7 +159,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
 
     // Job 3 is a normal job taking props from an embedded flow
     // The priority order should be:
-    // job3->innerflow.output->job3.sharedprops->flow.overrides
+    // job3->innerflow.output->flow.overrides->job3.sharedprops
     final Props job4GeneratedProps = new Props();
     job4GeneratedProps.put("props9", "g4job9");
     job4GeneratedProps.put("props6", "g4job6");
@@ -167,7 +168,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     assertStatus(flow, FLOW_NAME, Status.RUNNING);
     final Props job3Props = nodeMap.get("job3").getInputProps();
     Assert.assertEquals("job3", job3Props.get("props3"));
-    Assert.assertEquals("flow6", job3Props.get("props6"));
+    Assert.assertEquals("g4job6", job3Props.get("props6"));
     Assert.assertEquals("g4job9", job3Props.get("props9"));
     Assert.assertEquals("flow7", job3Props.get("props7"));
     Assert.assertEquals("flow5", job3Props.get("props5"));
