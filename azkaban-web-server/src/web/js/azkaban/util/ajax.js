@@ -14,8 +14,7 @@
  * the License.
  */
 
-function ajaxCall(requestURL, data, successCallback, beforeSendCallback,
-    requestType) {
+function ajaxCall(requestURL, data, successCallback, beforeSendCallback, requestType) {
   var successHandler = function (data) {
     if (data.error == "session") {
       // We need to relogin.
