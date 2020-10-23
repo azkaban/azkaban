@@ -18,16 +18,17 @@ package azkaban.restli;
 
 import azkaban.restli.user.User;
 import azkaban.server.session.Session;
+import azkaban.spi.EventType;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.servlet.WebUtils;
 import com.linkedin.restli.server.annotations.Action;
 import com.linkedin.restli.server.annotations.ActionParam;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
 import java.util.Set;
 import java.util.UUID;
-import javax.servlet.ServletException;
 import org.apache.log4j.Logger;
 
 @RestLiActions(name = "user", namespace = "azkaban.restli")
@@ -42,13 +43,18 @@ public class UserManagerResource extends ResourceContextHolder {
 
   @Action(name = "login")
   public String login(@ActionParam("username") final String username,
-      @ActionParam("password") final String password) throws UserManagerException,
-      ServletException {
+      @ActionParam("password") final String password) throws UserManagerException {
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
-    logger
-        .info("Attempting to login for " + username + " from ip '" + ip + "'");
+    logger.info("Attempting to login for " + username + " from ip '" + ip + "'");
 
-    final Session session = createSession(username, password, ip);
+    final Session session;
+    try {
+      session = createSession(username, password, ip);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip);
+    } catch (Exception e) {
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, e.getMessage());
+      throw e;
+    }
 
     final Set<Session> sessionsOfSameIP = getAzkaban().getSessionCache()
         .findSessionsByIP(session.getIp());

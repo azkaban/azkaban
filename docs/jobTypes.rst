@@ -11,7 +11,7 @@ flow management.
 Here we provide a common set of plugins that should be useful to most
 hadoop related use cases, as well as sample job packages. Most of these
 job types are being used in LinkedIn's production clusters, only with
-different configurations. We also give a simple guide how one can create
+different configurations. We also give a simple guide on how one can create
 new job types, either from scratch or by extending the old ones.
 
 --------------
@@ -83,7 +83,7 @@ process during its execution. After the job finishes, Azkaban takes care
 of canceling these tokens from name node and job tracker.
 
 Since Azkaban only obtains the tokens at the beginning of the job run,
-and does not requesting new tokens or renew old tokens during the
+and does not request new tokens or renew old tokens during the
 execution, it is important that the job does not run longer than
 configured token life.
 
@@ -174,7 +174,7 @@ programs. It is different from the "javaprocess" job type in that
 Azkaban already provides a ``main`` method, called
 ``JavaJobRunnerMain``. Inside ``JavaJobRunnerMain``, it looks for the
 ``run`` method which can be specified by ``method.run`` (default is
-``run``). User can also specify a ``cancel`` method in the case the user
+``run``). Users can also specify a ``cancel`` method in the case the user
 wants to gracefully terminate the job in the middle of the run.
 
 For the most part, using ``java`` type should be no different from
@@ -224,7 +224,7 @@ during its execution. After the job finishes, Azkaban takes care of
 canceling these tokens from name node and job tracker.
 
 Since Azkaban only obtains the tokens at the beginning of the job run,
-and does not requesting new tokens or renew old tokens during the
+and does not request new tokens or renew old tokens during the
 execution, it is important that the job does not run longer than
 configured token life.
 
@@ -336,7 +336,7 @@ Sample Job Package
 
 Here is a sample job package that does a word count. It relies on a Pig
 job to first upload the text file onto HDFS. One can also manually
-upload a file and run the word count program alone.The source code is in
+upload a file and run the word count program alone. The source code is in
 ``azkaban-plugins/plugins/jobtype/src/azkaban/jobtype/examples/java/WordCount.java``
 
 `Download
@@ -649,7 +649,7 @@ following properties go into private.properties:
 +-----------------------------------+-----------------------------------+
 | hive.home                         | ``$HIVE_HOME``                    |
 +-----------------------------------+-----------------------------------+
-| hive.classpath.items              | Those that needs to be on hive    |
+| hive.classpath.items              | Those that need to be on hive     |
 |                                   | classpath, include the conf       |
 |                                   | directory                         |
 +-----------------------------------+-----------------------------------+
@@ -833,7 +833,7 @@ Azkaban is configured to run on. When this property is present, Azkaban
 will try request a HDFS_DELEGATION_TOKEN for each of the specified HDFS
 NameNodes.
 
-The value of this propety is in the form of comma separated list of
+The value of this property is in the form of comma separated list of
 NameNode URLs.
 
 For example: **other_namenodes=webhdfs://host1:50070,hdfs://host2:9000**
@@ -872,7 +872,7 @@ HTTP Method
 ~~~~~~~~~~~
 
 
-The supported method are **GET** and **POST**. The default method is
+The supported methods are **GET** and **POST**. The default method is
 **GET**
 
 Headers
@@ -1077,7 +1077,7 @@ users. Often times, configuration changes of existing job types would
 create significantly different behavior to the end users. For example,
 in LinkedIn, apart from the *pig* types, we also have *pigLi* types that
 come with all the useful library jars pre-registered and imported. This
-way, normal users only need to provide their pig scripts, and the their
+way, normal users only need to provide their pig scripts, and their
 own udf jars to Azkaban. The pig job should run as if it is run on the
 gateway machine from pig grunt. In comparison, if users are required to
 use the basic *pig* job types, they will need to package all the
@@ -1114,7 +1114,7 @@ New Types by Extending Existing Ones
 
 For the most flexibility, one can always build new types by extending
 the existing ones. Azkaban uses reflection to load job types that
-implements the ``job`` interface, and tries to construct a sample object
+implement the ``job`` interface, and tries to construct a sample object
 upon loading for basic testing. When executing a real job, Azkaban calls
 the ``run`` method to run the job, and ``cancel`` method to cancel it.
 
@@ -1137,7 +1137,7 @@ System Statistics
 *****
 
 
-Azkaban server maintains certain system statistics and they be seen
+Azkaban server maintains certain system statistics and they can be seen
 http:<host>:<port>/stats
 
 To enable this feature, add the following property
@@ -1211,7 +1211,7 @@ We need to install
 `Hadoop <https://archive.apache.org/dist/hadoop/core/hadoop-2.6.1/>`__ and
 `Pig <https://archive.apache.org/dist/pig/pig-0.11.0/>`__ on the solo-server by
 expanding the tar into /export/apps/hadoop/latest and /export/apps/pig/latest
-resepectively. Then set the HADOOP_HOME and PIG_HOME variables with their paths:
+respectively. Then set the HADOOP_HOME and PIG_HOME variables with their paths:
 
 .. code-block:: guess
 

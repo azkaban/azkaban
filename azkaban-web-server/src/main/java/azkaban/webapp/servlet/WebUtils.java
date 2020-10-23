@@ -16,11 +16,22 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
+
+import azkaban.ServiceProvider;
 import azkaban.executor.Status;
+import azkaban.spi.AzkabanEventReporter;
+import azkaban.spi.EventType;
+import azkaban.webapp.AzkabanWebServer;
+import com.google.common.base.Strings;
+import com.google.inject.ConfigurationException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.log4j.Logger;
 
 public class WebUtils {
 
@@ -29,6 +40,17 @@ public class WebUtils {
   private static final long ONE_MB = 1024 * ONE_KB;
   private static final long ONE_GB = 1024 * ONE_MB;
   private static final long ONE_TB = 1024 * ONE_GB;
+
+  private static AzkabanEventReporter azkabanEventReporter;
+
+  static {
+    try {
+      azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER
+          .getInstance(AzkabanEventReporter.class);
+    } catch (Exception e) {
+      Logger.getLogger(WebUtils.class.getName()).warn("AzkabanEventReporter not configured", e);
+    }
+  }
 
   public static String displayBytes(final long sizeBytes) {
     final NumberFormat nf = NumberFormat.getInstance();
@@ -106,6 +128,7 @@ public class WebUtils {
     }
 
     // Strip off port and only get IP address
+    // todo: this is broken for IPv6, where e.g. a "loopback" address looks like "0:0:0:0:0:0:0:1"
     final String[] parts = clientIp.split(":");
     clientIp = parts[0];
 
@@ -135,5 +158,43 @@ public class WebUtils {
         req.getHeader(WebUtils.X_FORWARDED_FOR_HEADER.toLowerCase()));
 
     return WebUtils.getRealClientIpAddr(headers, req.getRemoteAddr());
+  }
+
+  private static String hostName;
+
+  static {
+    try {
+      hostName = InetAddress.getLocalHost().getCanonicalHostName();
+    } catch (UnknownHostException e) {
+      hostName = "unknown";
+    }
+  }
+
+  /**
+   * Report login/logout events via {@link AzkabanEventReporter}, if configured.
+   * @param eventType login or logout
+   * @param username if known
+   * @param ip address of originating host
+   * @param isSuccess AKA outcome
+   * @param message AKA reason
+   */
+  public static void reportLoginEvent(final EventType eventType, final String username,
+      final String ip, final boolean isSuccess, final String message) {
+
+    if (azkabanEventReporter != null) {
+      final Map<String, String> metadata = new HashMap<>();
+      metadata.put("azkabanHost",
+          AzkabanWebServer.getAzkabanProperties().getString(AZKABAN_SERVER_HOST_NAME, hostName));
+      metadata.put("sessionUser", Strings.isNullOrEmpty(username) ? "unknown" : username);
+      metadata.put("sessionIP", ip);
+      metadata.put("reason", message);
+      metadata.put("appOutcome", isSuccess ? "SUCCESS" : "FAILURE");
+
+      azkabanEventReporter.report(eventType, metadata);
+    }
+  }
+
+  public static void reportLoginEvent(final EventType eventType, final String username, final String ip) {
+    reportLoginEvent(eventType, username, ip, true, null);
   }
 }

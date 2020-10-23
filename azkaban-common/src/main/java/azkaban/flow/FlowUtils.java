@@ -47,6 +47,7 @@ public class FlowUtils {
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
     props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
+    props.put(CommonJobProperties.EXECUTION_SOURCE, flow.getExecutionSource());
 
     final DateTime loadTime = new DateTime();
 
