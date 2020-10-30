@@ -65,7 +65,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   @Override
   public long getAgedQueuedFlowSize() {
     long size = 0L;
-    int minimum_age_minutes = this.azkProps.getInt(
+    final int minimum_age_minutes = this.azkProps.getInt(
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
 
@@ -76,7 +76,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
           .size();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get flows queued for a long time.", e);
+      logger.error("Failed to get flows queued for a long time.", e);
     }
     return size;
   }
@@ -96,17 +96,14 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   @Override
   public List<ExecutableFlow> getExecutableFlows(final int skip, final int size)
       throws ExecutorManagerException {
-    final List<ExecutableFlow> flows = this.executorLoader.fetchFlowHistory(skip, size);
-    return flows;
+    return this.executorLoader.fetchFlowHistory(skip, size);
   }
 
   @Override
   public List<ExecutableFlow> getExecutableFlows(final String flowIdContains,
       final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableFlow> flows =
-        this.executorLoader.fetchFlowHistory(null, '%' + flowIdContains + '%', null,
-            0, -1, -1, skip, size);
-    return flows;
+    return this.executorLoader.fetchFlowHistory(null, '%' + flowIdContains + '%', null,
+        0, -1, -1, skip, size);
   }
 
   @Override
@@ -114,10 +111,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final String flowContain, final String userContain, final int status, final long begin,
       final long end,
       final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableFlow> flows =
-        this.executorLoader.fetchFlowHistory(projContain, flowContain, userContain,
-            status, begin, end, skip, size);
-    return flows;
+    return this.executorLoader.fetchFlowHistory(projContain, flowContain, userContain,
+        status, begin, end, skip, size);
   }
 
   @Override
@@ -180,42 +175,13 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   @Override
-  public Map<String, String> doRampActions(List<Map<String, Object>> rampActions)
+  public Map<String, String> doRampActions(final List<Map<String, Object>> rampActions)
       throws ExecutorManagerException {
     return this.executorLoader.doRampActions(rampActions);
   }
 
-  /**
-   * When a flow is submitted, insert a new execution into the database queue. {@inheritDoc}
-   */
-  @Override
-  public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
-      throws ExecutorManagerException {
-    if (exflow.isLocked()) {
-      // Skip execution for locked flows.
-      final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
-          exflow.getProjectName());
-      logger.info(message);
-      return message;
-    }
-
-    final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
-    // Use project and flow name to prevent race condition when same flow is submitted by API and
-    // schedule at the same time
-    // causing two same flow submission entering this piece.
-    synchronized (exFlowKey.intern()) {
-      final String flowId = exflow.getFlowId();
-      logger.info("Submitting execution flow " + flowId + " by " + userId);
-
-      String message = uploadExecutableFlow(exflow, userId, flowId, "");
-
-      this.commonMetrics.markSubmitFlowSuccess();
-      message += "Execution queued successfully with exec id " + exflow.getExecutionId();
-      return message;
-    }
-  }
-
-  protected String uploadExecutableFlow(ExecutableFlow exflow, String userId, String flowId,
+  protected String uploadExecutableFlow(
+      final ExecutableFlow exflow, final String userId, final String flowId,
       String message) throws ExecutorManagerException {
     final int projectId = exflow.getProjectId();
     exflow.setSubmitUser(userId);
@@ -282,9 +248,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   @Override
   public List<ExecutableJobInfo> getExecutableJobs(final Project project,
       final String jobId, final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableJobInfo> nodes =
-        this.executorLoader.fetchJobHistory(project.getId(), jobId, skip, size);
-    return nodes;
+    return this.executorLoader.fetchJobHistory(project.getId(), jobId, skip, size);
   }
 
   @Override
@@ -293,8 +257,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return this.executorLoader.fetchNumExecutableNodes(project.getId(), jobId);
   }
 
-  protected LogData getFlowLogData(ExecutableFlow exFlow, int offset, int length,
-      Pair<ExecutionReference, ExecutableFlow> pair) throws ExecutorManagerException {
+  protected LogData getFlowLogData(final ExecutableFlow exFlow, final int offset, final int length,
+      final Pair<ExecutionReference, ExecutableFlow> pair) throws ExecutorManagerException {
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "flow");
       final Pair<String, String> offsetParam =
@@ -307,15 +271,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, offsetParam, lengthParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      final LogData value =
-          this.executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
-              length);
-      return value;
+      return this.executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
+          length);
     }
   }
 
-  protected LogData getJobLogData(ExecutableFlow exFlow, String jobId, int offset, int length,
-      int attempt, Pair<ExecutionReference, ExecutableFlow> pair) throws ExecutorManagerException {
+  protected LogData getJobLogData(final ExecutableFlow exFlow, final String jobId, final int offset,
+      final int length,
+      final int attempt, final Pair<ExecutionReference, ExecutableFlow> pair)
+      throws ExecutorManagerException {
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "job");
       final Pair<String, String> jobIdParam =
@@ -332,15 +296,14 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      final LogData value =
-          this.executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
-              offset, length);
-      return value;
+      return this.executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
+          offset, length);
     }
   }
 
-  protected List<Object> getExecutionJobStats(ExecutableFlow exFlow, String jobId, int attempt,
-      Pair<ExecutionReference, ExecutableFlow> pair) throws ExecutorManagerException {
+  protected List<Object> getExecutionJobStats(
+      final ExecutableFlow exFlow, final String jobId, final int attempt,
+      final Pair<ExecutionReference, ExecutableFlow> pair) throws ExecutorManagerException {
     if (pair == null) {
       return this.executorLoader.fetchAttachments(exFlow.getExecutionId(), jobId,
           attempt);
@@ -360,8 +323,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return jobStats;
   }
 
-  protected Map<String, Object> modifyExecutingJobs(ExecutableFlow exFlow, String command,
-      String userId, Pair<ExecutionReference, ExecutableFlow> pair, String[] jobIds)
+  protected Map<String, Object> modifyExecutingJobs(final ExecutableFlow exFlow,
+      final String command,
+      final String userId, final Pair<ExecutionReference, ExecutableFlow> pair,
+      final String[] jobIds)
       throws ExecutorManagerException {
     if (pair == null) {
       throw new ExecutorManagerException("Execution "
@@ -460,7 +425,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       while (data != null && data.getLength() > 0) {
-        this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+        logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
         String logData = data.getData();
         final int indexOfLastSpace = logData.lastIndexOf(' ');
@@ -477,7 +442,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+      logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
     return applicationIds;

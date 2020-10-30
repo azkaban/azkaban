@@ -20,7 +20,6 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,7 +48,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
 
 
   @Inject
-  protected ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
+  ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
   ExecutorHealthChecker executorHealthChecker) {
@@ -59,7 +58,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   }
 
   @Override
-  public void setupExecutors() throws ExecutorManagerException {
+  public void setupExecutors() {
     // Todo: deprecate this method
   }
 
@@ -159,8 +158,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   }
 
   @Override
-  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
-      throws IOException {
+  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor() {
     final List<Pair<ExecutableFlow, Optional<Executor>>> flows = new ArrayList<>();
     try {
       getActiveFlowsWithExecutorHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
@@ -199,6 +197,36 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     return isRunning;
   }
 
+  /**
+   * When a flow is submitted, insert a new execution into the database queue. {@inheritDoc}
+   */
+  @Override
+  public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
+      throws ExecutorManagerException {
+    if (exflow.isLocked()) {
+      // Skip execution for locked flows.
+      final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
+          exflow.getProjectName());
+      logger.info(message);
+      return message;
+    }
+
+    final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
+    // Use project and flow name to prevent race condition when same flow is submitted by API and
+    // schedule at the same time
+    // causing two same flow submission entering this piece.
+    synchronized (exFlowKey.intern()) {
+      final String flowId = exflow.getFlowId();
+      logger.info("Submitting execution flow " + flowId + " by " + userId);
+
+      String message = uploadExecutableFlow(exflow, userId, flowId, "");
+
+      this.commonMetrics.markSubmitFlowSuccess();
+      message += "Execution queued successfully with exec id " + exflow.getExecutionId();
+      return message;
+    }
+  }
+
   /* Search a running flow in a collection */
   private boolean isFlowRunningHelper(final int projectId, final String flowId,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
@@ -230,7 +258,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
    */
   private void getFlowsHelper(final ArrayList<ExecutableFlow> flows,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    collection.stream().forEach(ref -> flows.add(ref.getSecond()));
+    collection.forEach(ref -> flows.add(ref.getSecond()));
   }
 
   /**
@@ -241,7 +269,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flow ids.", e);
+      logger.error("Failed to get running flow ids.", e);
     }
     return allIds;
   }
@@ -254,7 +282,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow ids.", e);
+      logger.error("Failed to get queued flow ids.", e);
     }
     return allIds;
   }
@@ -262,7 +290,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   /* Helper method to get all execution ids from collection in sorted order. */
   private void getExecutionIdsHelper(final List<Integer> allIds,
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    collection.stream().forEach(ref -> allIds.add(ref.getSecond().getExecutionId()));
+    collection.forEach(ref -> allIds.add(ref.getSecond().getExecutionId()));
     Collections.sort(allIds);
   }
 
@@ -278,7 +306,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     try {
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow size.", e);
+      logger.error("Failed to get queued flow size.", e);
     }
     return size;
   }
@@ -380,14 +408,13 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> modifyExecutingJobs(final ExecutableFlow exFlow,
+  private void modifyExecutingJobs(final ExecutableFlow exFlow,
       final String command, final String userId, final String... jobIds)
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
           this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
-      return modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
+      modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
     }
   }
 

@@ -30,7 +30,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
-import java.io.IOException;
 import java.lang.Thread.State;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,8 +64,6 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
   private final RunningExecutions runningExecutions;
   private final RunningExecutionsUpdaterThread updaterThread;
-  private final int maxConcurrentRunsOneFlow;
-  private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
   private final ActiveExecutors activeExecutors;
@@ -96,8 +93,6 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
     this.updaterThread = updaterThread;
-    this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
-    this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
   }
 
@@ -113,7 +108,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     this.loadQueuedFlows();
     this.cacheDir = new File(this.azkProps.getString("cache.directory", "cache"));
     // TODO extract QueueProcessor as a separate class, move all of this into it
-    setupExecutotrComparatorWeightsMap();
+    setupExecutorComparatorWeightsMap();
     setupExecutorFilterList();
     this.queueProcessor = setupQueueProcessor();
   }
@@ -137,7 +132,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
         this.sleepAfterDispatchFailure);
   }
 
-  private void setupExecutotrComparatorWeightsMap() {
+  private void setupExecutorComparatorWeightsMap() {
     // initialize comparator feature weights for executor selector from azkaban.properties
     final Map<String, String> compListStrings = this.azkProps
         .getMapByPrefix(ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
@@ -383,8 +378,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
    */
   @Override
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
-    final List<Integer> executionIds = new ArrayList<>();
-    executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
+    final List<Integer> executionIds = new ArrayList<>(getRunningFlowsHelper(projectId, flowId,
         this.queuedFlows.getAllEntries()));
     // it's possible an execution is runningCandidate, meaning it's in dispatching state neither in queuedFlows nor runningFlows,
     // so checks the runningCandidate as well.
@@ -405,8 +399,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
    * @see azkaban.executor.ExecutorManagerAdapter#getActiveFlowsWithExecutor()
    */
   @Override
-  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
-      throws IOException {
+  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor() {
     final List<Pair<ExecutableFlow, Optional<Executor>>> flows =
         new ArrayList<>();
     getActiveFlowsWithExecutorHelper(flows, this.queuedFlows.getAllEntries());
@@ -617,14 +610,13 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> modifyExecutingJobs(final ExecutableFlow exFlow,
+  private void modifyExecutingJobs(final ExecutableFlow exFlow,
       final String command, final String userId, final String... jobIds)
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
           this.runningExecutions.get().get(exFlow.getExecutionId());
-      return modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
+      modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
     }
   }
 
@@ -846,7 +838,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
           ExecutorManager.this.runningCandidate = null;
         }
 
-        // do not count failed flow processsing (flows still in queue)
+        // do not count failed flow processing (flows still in queue)
         if (ExecutorManager.this.queuedFlows.getFlow(exflow.getExecutionId()) == null) {
           currentContinuousFlowProcessed++;
         }
@@ -921,7 +913,8 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
           exflow.getExecutionId(), reference.getNumErrors()));
     }
 
-    /* Helper method to fetch  overriding Executor, if a valid user has specifed otherwise return null */
+    /* Helper method to fetch  overriding Executor, if a valid user has specified otherwise
+    return null */
     private Executor getUserSpecifiedExecutor(final ExecutionOptions options,
         final int executionId) {
       Executor executor = null;
