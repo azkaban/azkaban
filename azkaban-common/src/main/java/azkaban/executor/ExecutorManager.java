@@ -19,14 +19,10 @@ package azkaban.executor;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
-import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
-import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
-import azkaban.project.Project;
-import azkaban.project.ProjectWhitelist;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -42,8 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,20 +60,11 @@ import org.apache.log4j.Logger;
  */
 @Singleton
 @Deprecated
-public class ExecutorManager extends EventHandler implements
-    ExecutorManagerAdapter {
+public class ExecutorManager extends AbstractExecutorManagerAdapter {
 
-  // 12 weeks
-  private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
-      * 24 * 60 * 60 * 1000L;
-  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
   private final RunningExecutions runningExecutions;
-  private final Props azkProps;
-  private final CommonMetrics commonMetrics;
-  private final ExecutorLoader executorLoader;
   private final RunningExecutionsUpdaterThread updaterThread;
-  private final ExecutorApiGateway apiGateway;
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private final ExecutorManagerUpdaterStage updaterStage;
@@ -104,11 +89,8 @@ public class ExecutorManager extends EventHandler implements
       final ActiveExecutors activeExecutors,
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
-      final RunningExecutionsUpdaterThread updaterThread) throws ExecutorManagerException {
-    this.azkProps = azkProps;
-    this.commonMetrics = commonMetrics;
-    this.executorLoader = executorLoader;
-    this.apiGateway = apiGateway;
+      final RunningExecutionsUpdaterThread updaterThread) {
+    super(azkProps, executorLoader, commonMetrics, apiGateway);
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;
@@ -417,19 +399,6 @@ public class ExecutorManager extends EventHandler implements
     return executionIds;
   }
 
-  /* Helper method for getRunningFlows */
-  private List<Integer> getRunningFlowsHelper(final int projectId, final String flowId,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    final List<Integer> executionIds = new ArrayList<>();
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      if (ref.getSecond().getFlowId().equals(flowId)
-          && ref.getSecond().getProjectId() == projectId) {
-        executionIds.add(ref.getFirst().getExecId());
-      }
-    }
-    return executionIds;
-  }
-
   /**
    * {@inheritDoc}
    *
@@ -485,19 +454,8 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /**
-   * Fetch ExecutableFlow from database {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#getExecutableFlow(int)
-   */
-  @Override
-  public ExecutableFlow getExecutableFlow(final int execId)
-      throws ExecutorManagerException {
-    return this.executorLoader.fetchExecutableFlow(execId);
-  }
-
-  /**
    * Get all active (running, non-dispatched) flows
-   *
+   * <p>
    * {@inheritDoc}
    *
    * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows()
@@ -570,81 +528,11 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
-  public List<ExecutableFlow> getRecentlyFinishedFlows() {
-    List<ExecutableFlow> flows = new ArrayList<>();
-    try {
-      flows = this.executorLoader.fetchRecentlyFinishedFlows(
-          RECENTLY_FINISHED_LIFETIME);
-    } catch (final ExecutorManagerException e) {
-      //Todo jamiesjc: fix error handling.
-      logger.error("Failed to fetch recently finished flows.", e);
-    }
-    return flows;
-  }
-
-  @Override
-  public List<ExecutableFlow> getExecutableFlows(final int skip, final int size)
-      throws ExecutorManagerException {
-    final List<ExecutableFlow> flows = this.executorLoader.fetchFlowHistory(skip, size);
-    return flows;
-  }
-
-  @Override
-  public List<ExecutableFlow> getExecutableFlows(final String flowIdContains,
-      final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableFlow> flows =
-        this.executorLoader.fetchFlowHistory(null, '%' + flowIdContains + '%', null,
-            0, -1, -1, skip, size);
-    return flows;
-  }
-
-  @Override
-  public List<ExecutableFlow> getExecutableFlows(final String projContain,
-      final String flowContain, final String userContain, final int status, final long begin,
-      final long end,
-      final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableFlow> flows =
-        this.executorLoader.fetchFlowHistory(projContain, flowContain, userContain,
-            status, begin, end, skip, size);
-    return flows;
-  }
-
-  @Override
-  public List<ExecutableJobInfo> getExecutableJobs(final Project project,
-      final String jobId, final int skip, final int size) throws ExecutorManagerException {
-    final List<ExecutableJobInfo> nodes =
-        this.executorLoader.fetchJobHistory(project.getId(), jobId, skip, size);
-    return nodes;
-  }
-
-  @Override
-  public int getNumberOfJobExecutions(final Project project, final String jobId)
-      throws ExecutorManagerException {
-    return this.executorLoader.fetchNumExecutableNodes(project.getId(), jobId);
-  }
-
-  @Override
   public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
       final int length) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
         this.runningExecutions.get().get(exFlow.getExecutionId());
-    if (pair != null) {
-      final Pair<String, String> typeParam = new Pair<>("type", "flow");
-      final Pair<String, String> offsetParam =
-          new Pair<>("offset", String.valueOf(offset));
-      final Pair<String, String> lengthParam =
-          new Pair<>("length", String.valueOf(length));
-
-      @SuppressWarnings("unchecked") final Map<String, Object> result =
-          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
-              typeParam, offsetParam, lengthParam);
-      return LogData.createLogDataFromObject(result);
-    } else {
-      final LogData value =
-          this.executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
-              length);
-      return value;
-    }
+    return getFlowLogData(exFlow, offset, length, pair);
   }
 
   @Override
@@ -652,27 +540,7 @@ public class ExecutorManager extends EventHandler implements
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
         this.runningExecutions.get().get(exFlow.getExecutionId());
-    if (pair != null) {
-      final Pair<String, String> typeParam = new Pair<>("type", "job");
-      final Pair<String, String> jobIdParam =
-          new Pair<>("jobId", jobId);
-      final Pair<String, String> offsetParam =
-          new Pair<>("offset", String.valueOf(offset));
-      final Pair<String, String> lengthParam =
-          new Pair<>("length", String.valueOf(length));
-      final Pair<String, String> attemptParam =
-          new Pair<>("attempt", String.valueOf(attempt));
-
-      @SuppressWarnings("unchecked") final Map<String, Object> result =
-          this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.LOG_ACTION,
-              typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
-      return LogData.createLogDataFromObject(result);
-    } else {
-      final LogData value =
-          this.executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
-              offset, length);
-      return value;
-    }
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
   }
 
   @Override
@@ -680,96 +548,7 @@ public class ExecutorManager extends EventHandler implements
       final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
         this.runningExecutions.get().get(exFlow.getExecutionId());
-    if (pair == null) {
-      return this.executorLoader.fetchAttachments(exFlow.getExecutionId(), jobId,
-          attempt);
-    }
-
-    final Pair<String, String> jobIdParam = new Pair<>("jobId", jobId);
-    final Pair<String, String> attemptParam =
-        new Pair<>("attempt", String.valueOf(attempt));
-
-    @SuppressWarnings("unchecked") final Map<String, Object> result =
-        this.apiGateway.callWithReference(pair.getFirst(), ConnectorParams.ATTACHMENTS_ACTION,
-            jobIdParam, attemptParam);
-
-    @SuppressWarnings("unchecked") final List<Object> jobStats = (List<Object>) result
-        .get("attachments");
-
-    return jobStats;
-  }
-
-  /**
-   * If the Resource Manager and Job History server urls are configured, find all the
-   * Hadoop/Spark application ids present in the Azkaban job's log and then construct the url to
-   * job logs in the Hadoop/Spark server for each application id found. Application ids are
-   * returned in the order they appear in the Azkaban job log.
-   *
-   * @param exFlow The executable flow.
-   * @param jobId The job id.
-   * @param attempt The job execution attempt.
-   * @return The map of (application id, job log url)
-   */
-  @Override
-  public Map<String, String> getExternalJobLogUrls(final ExecutableFlow exFlow, final String jobId,
-      final int attempt) {
-
-    final Map<String, String> jobLogUrlsByAppId = new LinkedHashMap<>();
-    if (!this.azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL) ||
-        !this.azkProps.containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL) ||
-        !this.azkProps.containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
-      return jobLogUrlsByAppId;
-    }
-    final Set<String> applicationIds = getApplicationIds(exFlow, jobId, attempt);
-    for (final String applicationId : applicationIds) {
-      final String jobLogUrl = ExecutionControllerUtils
-          .createJobLinkUrl(exFlow, jobId, applicationId, this.azkProps);
-      if (jobLogUrl != null) {
-        jobLogUrlsByAppId.put(applicationId, jobLogUrl);
-      }
-    }
-
-    return jobLogUrlsByAppId;
-  }
-
-  /**
-   * Find all the Hadoop/Spark application ids present in the Azkaban job log. When iterating
-   * over the set returned by this method the application ids are in the same order they appear
-   * in the log.
-   *
-   * @param exFlow The executable flow.
-   * @param jobId The job id.
-   * @param attempt The job execution attempt.
-   * @return The application ids found.
-   */
-  Set<String> getApplicationIds(final ExecutableFlow exFlow, final String jobId,
-      final int attempt) {
-    final Set<String> applicationIds = new LinkedHashSet<>();
-    int offset = 0;
-    try {
-      LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
-      while (data != null && data.getLength() > 0) {
-        this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
-            + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
-        String logData = data.getData();
-        final int indexOfLastSpace = logData.lastIndexOf(' ');
-        final int indexOfLastTab = logData.lastIndexOf('\t');
-        final int indexOfLastEoL = logData.lastIndexOf('\n');
-        final int indexOfLastDelim = Math
-            .max(indexOfLastEoL, Math.max(indexOfLastSpace, indexOfLastTab));
-        if (indexOfLastDelim > -1) {
-          // index + 1 to avoid looping forever if indexOfLastDelim is zero
-          logData = logData.substring(0, indexOfLastDelim + 1);
-        }
-        applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(logData));
-        offset = data.getOffset() + logData.length();
-        data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
-      }
-    } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
-          ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
-    }
-    return applicationIds;
+    return getExecutionJobStats(exFlow, jobId, attempt, pair);
   }
 
   /**
@@ -845,40 +624,7 @@ public class ExecutorManager extends EventHandler implements
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
           this.runningExecutions.get().get(exFlow.getExecutionId());
-      if (pair == null) {
-        throw new ExecutorManagerException("Execution "
-            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
-            + " isn't running.");
-      }
-
-      final Map<String, Object> response;
-      if (jobIds != null && jobIds.length > 0) {
-        for (final String jobId : jobIds) {
-          if (!jobId.isEmpty()) {
-            final ExecutableNode node = exFlow.getExecutableNode(jobId);
-            if (node == null) {
-              throw new ExecutorManagerException("Job " + jobId
-                  + " doesn't exist in execution " + exFlow.getExecutionId()
-                  + ".");
-            }
-          }
-        }
-        final String ids = StringUtils.join(jobIds, ',');
-        response =
-            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
-                ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
-                new Pair<>(
-                    ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command),
-                new Pair<>(ConnectorParams.MODIFY_JOBS_LIST, ids));
-      } else {
-        response =
-            this.apiGateway.callWithReferenceByUser(pair.getFirst(),
-                ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
-                new Pair<>(
-                    ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command));
-      }
-
-      return response;
+      return modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
     }
   }
 
@@ -911,65 +657,7 @@ public class ExecutorManager extends EventHandler implements
         logger.error(message);
         this.commonMetrics.markSubmitFlowFail();
       } else {
-        final int projectId = exflow.getProjectId();
-        exflow.setSubmitUser(userId);
-        exflow.setStatus(Status.PREPARING);
-        exflow.setSubmitTime(System.currentTimeMillis());
-
-        // Get collection of running flows given a project and a specific flow name
-        final List<Integer> running = getRunningFlows(projectId, flowId);
-
-        ExecutionOptions options = exflow.getExecutionOptions();
-        if (options == null) {
-          options = new ExecutionOptions();
-        }
-
-        if (options.getDisabledJobs() != null) {
-          FlowUtils.applyDisabledJobs(options.getDisabledJobs(), exflow);
-        }
-
-        if (!running.isEmpty()) {
-          final int maxConcurrentRuns = ExecutorUtils.getMaxConcurrentRunsForFlow(
-              exflow.getProjectName(), flowId, this.maxConcurrentRunsOneFlow,
-              this.maxConcurrentRunsPerFlowMap);
-          if (running.size() > maxConcurrentRuns) {
-            this.commonMetrics.markSubmitFlowSkip();
-            throw new ExecutorManagerException("Flow " + flowId
-                + " has more than " + maxConcurrentRuns + " concurrent runs. Skipping",
-                ExecutorManagerException.Reason.SkippedExecution);
-          } else if (options.getConcurrentOption().equals(
-              ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
-            Collections.sort(running);
-            final Integer runningExecId = running.get(running.size() - 1);
-
-            options.setPipelineExecutionId(runningExecId);
-            message =
-                "Flow " + flowId + " is already running with exec id "
-                    + runningExecId + ". Pipelining level "
-                    + options.getPipelineLevel() + ". \n";
-          } else if (options.getConcurrentOption().equals(
-              ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
-            this.commonMetrics.markSubmitFlowSkip();
-            throw new ExecutorManagerException("Flow " + flowId
-                + " is already running. Skipping execution.",
-                ExecutorManagerException.Reason.SkippedExecution);
-          } else {
-            // The settings is to run anyways.
-            message =
-                "Flow " + flowId + " is already running with exec id "
-                    + StringUtils.join(running, ",")
-                    + ". Will execute concurrently. \n";
-          }
-        }
-
-        final boolean memoryCheck =
-            !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectId(),
-                ProjectWhitelist.WhitelistType.MemoryCheck);
-        options.setMemoryCheck(memoryCheck);
-
-        // The exflow id is set by the loader. So it's unavailable until after
-        // this call.
-        this.executorLoader.uploadExecutableFlow(exflow);
+        message = uploadExecutableFlow(exflow, userId, flowId, message);
 
         // We create an active flow reference in the datastore. If the upload
         // fails, we remove the reference.
@@ -986,54 +674,6 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
-  public Map<String, String> doRampActions(final List<Map<String, Object>> rampActions)
-      throws ExecutorManagerException {
-    return this.executorLoader.doRampActions(rampActions);
-  }
-
-  /**
-   * Manage servlet call for stats servlet in Azkaban execution server {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#callExecutorStats(int, java.lang.String,
-   * azkaban.utils.Pair[])
-   */
-  @Override
-  public Map<String, Object> callExecutorStats(final int executorId, final String action,
-      final Pair<String, String>... params) throws IOException, ExecutorManagerException {
-    final Executor executor = fetchExecutor(executorId);
-
-    final List<Pair<String, String>> paramList =
-        new ArrayList<>();
-
-    // if params = null
-    if (params != null) {
-      paramList.addAll(Arrays.asList(params));
-    }
-
-    paramList
-        .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
-
-    return this.apiGateway.callForJsonObjectMap(executor.getHost(), executor.getPort(),
-        "/stats", paramList);
-  }
-
-  @Override
-  public Map<String, Object> callExecutorJMX(final String hostPort, final String action,
-      final String mBean) throws IOException {
-    final List<Pair<String, String>> paramList =
-        new ArrayList<>();
-
-    paramList.add(new Pair<>(action, ""));
-    if (mBean != null) {
-      paramList.add(new Pair<>(ConnectorParams.JMX_MBEAN, mBean));
-    }
-
-    final String[] hostPortSplit = hostPort.split(":");
-    return this.apiGateway.callForJsonObjectMap(hostPortSplit[0],
-        Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
-  }
-
-  @Override
   public void shutdown() {
     if (null != this.queueProcessor) {
       this.queueProcessor.shutdown();
@@ -1041,23 +681,6 @@ public class ExecutorManager extends EventHandler implements
     if (null != this.updaterThread) {
       this.updaterThread.shutdown();
     }
-  }
-
-  @Override
-  public int getExecutableFlows(final int projectId, final String flowId, final int from,
-      final int length, final List<ExecutableFlow> outputList)
-      throws ExecutorManagerException {
-    final List<ExecutableFlow> flows =
-        this.executorLoader.fetchFlowHistory(projectId, flowId, from, length);
-    outputList.addAll(flows);
-    return this.executorLoader.fetchNumExecutableFlows(projectId, flowId);
-  }
-
-  @Override
-  public List<ExecutableFlow> getExecutableFlows(final int projectId, final String flowId,
-      final int from, final int length, final Status status) throws ExecutorManagerException {
-    return this.executorLoader.fetchFlowHistory(projectId, flowId, from, length,
-        status);
   }
 
   /**
