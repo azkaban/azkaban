@@ -148,7 +148,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
     final List<Integer> executionIds = new ArrayList<>();
     try {
-      executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
+      executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
           this.executorLoader.fetchUnfinishedFlows().values()));
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get running flows for project " + projectId + ", flow "

@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -362,20 +361,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     }
     return response;
   }
-
-  /* Helper method for getRunningFlows */
-  protected List<Integer> getRunningFlowsHelper(final int projectId, final String flowId,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    final List<Integer> executionIds = new ArrayList<>();
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      if (ref.getSecond().getFlowId().equals(flowId)
-          && ref.getSecond().getProjectId() == projectId) {
-        executionIds.add(ref.getFirst().getExecId());
-      }
-    }
-    return executionIds;
-  }
-
+  
   /**
    * If the Resource Manager and Job History server urls are configured, find all the Hadoop/Spark
    * application ids present in the Azkaban job's log and then construct the url to job logs in the

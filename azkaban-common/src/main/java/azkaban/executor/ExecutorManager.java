@@ -378,16 +378,19 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
    */
   @Override
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
-    final List<Integer> executionIds = new ArrayList<>(getRunningFlowsHelper(projectId, flowId,
-        this.queuedFlows.getAllEntries()));
+    final List<Integer> executionIds =
+        new ArrayList<>(ExecutorUtils.getRunningFlowsHelper(projectId,
+            flowId,
+            this.queuedFlows.getAllEntries()));
     // it's possible an execution is runningCandidate, meaning it's in dispatching state neither in queuedFlows nor runningFlows,
     // so checks the runningCandidate as well.
     if (this.runningCandidate != null) {
       executionIds
           .addAll(
-              getRunningFlowsHelper(projectId, flowId, Lists.newArrayList(this.runningCandidate)));
+              ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
+                  Lists.newArrayList(this.runningCandidate)));
     }
-    executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
+    executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
         this.runningExecutions.get().values()));
     Collections.sort(executionIds);
     return executionIds;
