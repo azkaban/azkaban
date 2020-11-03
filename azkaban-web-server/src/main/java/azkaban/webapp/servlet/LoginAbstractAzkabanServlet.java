@@ -521,7 +521,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final User user = manager.getUser(username, password);
 
       if (isSuccessFinal) {
-        WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip);
+        WebUtils.reportLoginEvent(EventType.USER_LOGIN, user.getUserId(), ip);
       }
 
       final String randomUID = UUID.randomUUID().toString();
@@ -629,13 +629,13 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     if (sessionAdded) {
       ret.put("status", "success");
       ret.put(SESSION_ID_KEY, session.getSessionId());
-      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, session.getUser().getUserId(), ip);
     } else {
       final String message = "Potential DDoS found, the number of sessions for this user and IP "
           + "reached allowed limit (" + getApplication().getSessionCache()
           .getMaxNumberOfSessionsPerIpPerUser().get() + ").";
       ret.put("error", message);
-      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, message);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, session.getUser().getUserId(), ip, false, message);
     }
   }
 
