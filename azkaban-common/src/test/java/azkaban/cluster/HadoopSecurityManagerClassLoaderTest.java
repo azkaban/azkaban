@@ -74,7 +74,7 @@ public class HadoopSecurityManagerClassLoaderTest {
    * Test the case where the define job class does not exist.
    */
   @Test(expected = ClassNotFoundException.class)
-  public void testNonexistClass() throws ClassNotFoundException {
+  public void testNonExistClass() throws ClassNotFoundException {
     final ClassLoader currentClassLoader = getClass().getClassLoader();
     final ClassLoader hadoopSecurityManagerClassLoader =
         new HadoopSecurityManagerClassLoader(

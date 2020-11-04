@@ -30,7 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import joptsimple.internal.Strings;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A in-memory representation of a Hadoop cluster loaded by {@link ClusterLoader} for each directory
@@ -51,7 +52,7 @@ import org.apache.log4j.Logger;
  * as part of their job properties.
  */
 public class Cluster {
-  private static final Logger LOGGER = Logger.getLogger(Cluster.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Cluster.class);
 
   public static final Cluster UNKNOWN = new Cluster("UNKNOWN", new Props());
   public static final String DEFAULT_CLUSTER = "default";
@@ -283,7 +284,7 @@ public class Cluster {
    * A per-cluster classloader for HadoopSecurityManager.
    */
   public static class HadoopSecurityManagerClassLoader extends URLClassLoader {
-    private final static Logger LOG = Logger.getLogger(HadoopSecurityManagerClassLoader.class);
+    private final static Logger LOG = LoggerFactory.getLogger(HadoopSecurityManagerClassLoader.class);
 
     private static final String LOG4J_CLASS_PREFIX =
         Logger.class.getPackage().getName();
