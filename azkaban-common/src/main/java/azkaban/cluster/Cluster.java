@@ -16,9 +16,11 @@
 package azkaban.cluster;
 
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,7 +28,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import joptsimple.internal.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A in-memory representation of a Hadoop cluster loaded by {@link ClusterLoader} for each directory
@@ -47,6 +52,7 @@ import joptsimple.internal.Strings;
  * as part of their job properties.
  */
 public class Cluster {
+  private static final Logger LOGGER = LoggerFactory.getLogger(Cluster.class);
 
   public static final Cluster UNKNOWN = new Cluster("UNKNOWN", new Props());
   public static final String DEFAULT_CLUSTER = "default";
@@ -62,10 +68,14 @@ public class Cluster {
   // org.apache.xalan.processor.TransformerFactoryImpl, a behavior conflicts with JDK.
   public static final String EXCLUDED_LIBRARY_PATTERNS = "library.excluded.patterns";
 
+  public static final String HADOOP_SECURITY_MANAGER_DEPENDENCY_COMPONENTS =
+      "hadoop.security.manager.dependency.components";
+
   public final String clusterId;
-  public final Props properties;
+  private final Props properties;
   private final List<Pattern> excludedLibraryPatterns;
   private final Map<String, List<URL>> componentURLs = new ConcurrentHashMap<>();
+  private volatile HadoopSecurityManagerClassLoader securityManagerClassLoader;
 
   public Cluster(final String clusterId, final Props properties) {
     this.clusterId = clusterId;
@@ -76,6 +86,42 @@ public class Cluster {
     for (final String exclusion : exclusionPatterns) {
       this.excludedLibraryPatterns.add(Pattern.compile(exclusion));
     }
+  }
+
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public Props getProperties() {
+    return properties;
+  }
+
+  public HadoopSecurityManagerClassLoader getSecurityManagerClassLoader() {
+    if (this.securityManagerClassLoader == null) {
+      synchronized(this) {
+        if (this.securityManagerClassLoader == null) {
+          final List<String> hadoopSecurityManagerDependencyComponents = this.properties.getStringList(
+              HADOOP_SECURITY_MANAGER_DEPENDENCY_COMPONENTS);
+          final List<URL> clusterUrls;
+          try {
+            clusterUrls = getClusterComponentURLs(hadoopSecurityManagerDependencyComponents);
+          } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(
+                String.format("Invalid dependency components for " +
+                    HadoopSecurityManagerClassLoader.class.getName() + " of cluster %s", clusterId));
+          }
+          final URL[] urls = new URL[clusterUrls.size()];
+          clusterUrls.toArray(urls);
+          this.securityManagerClassLoader =
+              new HadoopSecurityManagerClassLoader(urls, Cluster.class.getClassLoader(), clusterId);
+          LOGGER.info(String.format(HadoopSecurityManagerClassLoader.class.getName() + " for "
+                  + "cluster %s is loaded with URLs:  %s", clusterId,
+              clusterUrls.stream().map(URL::toString).collect(Collectors.joining(", "))));
+        }
+      }
+    }
+
+    return this.securityManagerClassLoader;
   }
 
   @Override
@@ -226,7 +272,113 @@ public class Cluster {
       if (libPath != null) {
         classpaths.add(libPath);
       }
+      if (libPath == null) {
+        throw new IllegalArgumentException(
+            String.format("Could not find libraries for component: %s ", component));
+      }
     }
     return classpaths.isEmpty() ? Strings.EMPTY : String.join(PATH_DELIMITER, classpaths);
+  }
+
+  /**
+   * A per-cluster classloader for HadoopSecurityManager.
+   */
+  public static class HadoopSecurityManagerClassLoader extends URLClassLoader {
+    private final static Logger LOG = LoggerFactory.getLogger(HadoopSecurityManagerClassLoader.class);
+
+    private static final String LOG4J_CLASS_PREFIX =
+        org.apache.log4j.Logger.class.getPackage().getName();
+
+    private final ClassLoader parent;
+
+    static {
+       if (!ClassLoader.registerAsParallelCapable()) {
+          LOG.warn("HadoopSecurityManagerClassLoader's request of registering as parallel capable"
+              + " failed.");
+       }
+    }
+
+    public HadoopSecurityManagerClassLoader(URL[] urls, ClassLoader parent, String clusterId) {
+      super(urls, Cluster.class.getClassLoader());
+      this.parent = Cluster.class.getClassLoader();
+    }
+
+    /**
+     * Try to load resources from this classloader's URLs. Note that this is like the servlet spec,
+     * not the usual Java behaviour where we ask the parent classloader to attempt to load first.
+     */
+    @Override
+    public URL getResource(final String name) {
+      URL url = findResource(name);
+      // borrowed from Hadoop, if the resource that starts with '/' is not found, and tries again
+      // with the leading '/' removed, in case the resource name was incorrectly specified
+      if (url == null && name.startsWith("/")) {
+        LOG.debug("Remove leading / off " + name);
+        url = findResource(name.substring(1));
+      }
+
+      if (url == null) {
+        url = this.parent.getResource(name);
+      }
+
+      if (url != null) {
+        LOG.debug("getResource(" + name + ")=" + url);
+      }
+
+      return url;
+    }
+
+    /**
+     * Try to load class from this classloader's URLs. Note that this is like servlet, not the
+     * standard behaviour where we ask the parent to attempt to load first.
+     */
+    @Override
+    protected Class<?> loadClass(final String name, final boolean resolve)
+        throws ClassNotFoundException {
+
+      synchronized (getClassLoadingLock(name)) {
+        Class<?> c = findLoadedClass(name);
+        ClassNotFoundException ex = null;
+
+        if (c == null && !name.startsWith(LOG4J_CLASS_PREFIX) && !name.equals(Props.class.getName())) {
+          // if this class has not been loaded before
+          try {
+            c = findClass(name);
+            if (c != null) {
+              LOG.debug("Loaded class: " + name);
+            }
+          } catch (final ClassNotFoundException e) {
+            LOG.debug(e.toString());
+            ex = e;
+          }
+        }
+
+
+        // try parent
+        if (c == null) {
+          c = this.parent.loadClass(name);
+          if (c != null) {
+            LOG.debug("Loaded class from parent: " + name);
+          }
+        }
+
+        if (c == null) {
+          throw ex != null ? ex : new ClassNotFoundException(name);
+        }
+
+        if (resolve) {
+          // link the specified class as described in the "Execution" chapter of
+          // "The Java Language Specification"
+          resolveClass(c);
+        }
+        return c;
+      }
+
+    }
+
+    @VisibleForTesting
+    void addURL(Class clazz) {
+      super.addURL(clazz.getProtectionDomain().getCodeSource().getLocation());
+    }
   }
 }

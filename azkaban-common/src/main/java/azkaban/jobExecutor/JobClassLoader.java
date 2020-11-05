@@ -24,14 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The classloader associated with a job being executed. It is set to the context classloader of the
- * JobRunner thread executing the job.
+ * A per-job classloader in which only jobtype plugin classes are loaded.
+ * NOTE classes in package azkaban.security and its dependencies, log4j
+ * classes and {@link Props} are loaded from its parent classloader.
  */
 public class JobClassLoader extends URLClassLoader {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobClassLoader.class);
   private static final String LOG4J_CLASS_PREFIX =
       org.apache.log4j.Logger.class.getPackage().getName();
+  private static final String AZKABAN_SECURITY_CLASS = "azkaban.security";
   private final String jobId;
   private final ClassLoader parent;
 
@@ -86,7 +88,8 @@ public class JobClassLoader extends URLClassLoader {
 
     // A Job instance is instantiated with an instance of Logger and Props loaded from the parent class
     // in JobTypeManager. We must delegate loading of them both to the parent class as such.
-    if (c == null && !name.startsWith(LOG4J_CLASS_PREFIX) && !name.equals(Props.class.getName())) {
+    if (c == null && !name.startsWith(LOG4J_CLASS_PREFIX) && !name.equals(Props.class.getName())
+        && !name.startsWith(AZKABAN_SECURITY_CLASS)) {
       // if this class has not been loaded before
       try {
         c = findClass(name);
