@@ -32,14 +32,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 100, false
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(100)
+            .setActive(false)
+            .build())
+        .build();
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 
@@ -52,14 +63,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        true, 100, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(true)
+            .setRampStage(100)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 
@@ -72,14 +94,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 0, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(0)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 
@@ -92,14 +125,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 1, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(1)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 
@@ -112,14 +156,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 2, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(2)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertTrue(policy.check(executableFlow, executableRamp));
   }
 
@@ -132,14 +187,26 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID2);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 2, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(2)
+            .setActive(true)
+            .build())
+        .build();
+
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 
@@ -152,14 +219,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 3, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(3)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertTrue(policy.check(executableFlow, executableRamp));
   }
 
@@ -172,14 +250,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID2);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 3, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(3)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 
@@ -192,14 +281,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 4, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(4)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertTrue(policy.check(executableFlow, executableRamp));
   }
 
@@ -212,14 +312,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, 5, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(5)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertTrue(policy.check(executableFlow, executableRamp));
   }
 
@@ -232,14 +343,25 @@ public class SimpleQuickRampPolicyTest {
     Project project = new Project(1, PROJECT_ID);
     Flow flow = new Flow(FLOW_ID);
     ExecutableFlow executableFlow = new ExecutableFlow(project, flow);
-    ExecutableRamp executableRamp = ExecutableRamp.createInstance(
-        RAMP_ID,
-        RAMP_POLICY,
-        4, 3, false,
-        timeStamp, 0, timeStamp,
-        6, 2, 0, 4,
-        false, -1, true
-    );
+    ExecutableRamp executableRamp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(4)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(0)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(-1)
+            .setActive(true)
+            .build())
+        .build();
     Assert.assertFalse(policy.check(executableFlow, executableRamp));
   }
 }

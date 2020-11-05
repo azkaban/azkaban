@@ -16,8 +16,10 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -40,35 +42,46 @@ import org.apache.log4j.Logger;
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(ProjectServlet.class
-      .getName());
-  private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
-      "lockdown.create.projects";
+  private static final String API_FETCH_ALL_PROJECTS = "fetchallprojects";
+  private static final String API_FETCH_USER_PROJECTS = "fetchuserprojects";
+
+  private static final Logger logger = Logger.getLogger(ProjectServlet.class.getName());
+
   private static final long serialVersionUID = -1;
 
   private UserManager userManager;
 
   private boolean lockdownCreateProjects = false;
 
+  public ProjectServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
 
     this.userManager = server.getUserManager();
     this.lockdownCreateProjects =
-        server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+        server.getServerProps().getBoolean(ConfigurationKeys.LOCKDOWN_CREATE_PROJECTS_KEY, false);
     if (this.lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_ALL_PROJECTS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_USER_PROJECTS));
+    return apiEndpoints;
   }
 
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
 
-    final ProjectManager manager =
-        ((AzkabanWebServer) getApplication()).getProjectManager();
+    final ProjectManager manager = getApplication().getProjectManager();
 
     if (hasParam(req, "ajax")) {
       handleAjaxAction(req, resp, session, manager);
@@ -92,12 +105,12 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     final String ajaxName = getParam(req, "ajax");
     final HashMap<String, Object> ret = new HashMap<>();
 
-    if (ajaxName.equals("fetchallprojects")) {
+    if (API_FETCH_ALL_PROJECTS.equals(ajaxName)) {
       final List<Project> projects = manager.getProjects();
       final List<SimplifiedProject> simplifiedProjects =
           toSimplifiedProjects(projects);
       ret.put("projects", simplifiedProjects);
-    } else if (ajaxName.equals("fetchuserprojects")) {
+    } else if (API_FETCH_USER_PROJECTS.equals(ajaxName)) {
       handleFetchUserProjects(req, session, manager, ret);
     }
 
@@ -194,8 +207,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   private void handleFilter(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session, final String searchTerm) {
     final User user = session.getUser();
-    final ProjectManager manager =
-        ((AzkabanWebServer) getApplication()).getProjectManager();
+    final ProjectManager manager = getApplication().getProjectManager();
     final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
     if (hasParam(req, "all")) {

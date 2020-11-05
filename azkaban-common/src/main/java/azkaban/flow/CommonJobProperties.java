@@ -70,6 +70,11 @@ public class CommonJobProperties {
   public static final String AZKABAN_URL = "azkaban.url";
 
   /**
+   * Azkaban host name
+   */
+  public static final String AZKABAN_WEBSERVERHOST = "azkaban.webserverhost";
+
+  /**
    * The attempt number of the executing job.
    */
   public static final String JOB_ATTEMPT = "azkaban.job.attempt";
@@ -89,7 +94,7 @@ public class CommonJobProperties {
    * The job's log file absolute path.
    */
   public static final String JOB_LOG_FILE = "azkaban.job.log.file";
-  
+
   /**
    * The executing flow id
    */
@@ -140,6 +145,10 @@ public class CommonJobProperties {
    */
   public static final String SUBMIT_USER = "azkaban.flow.submituser";
 
+  /**
+   * Represents the source of execution - adhoc, schedule or event
+   */
+  public static final String EXECUTION_SOURCE = "azkaban.flow.executionsource";
   /**
    * A uuid assigned to every execution
    */

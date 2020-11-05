@@ -20,9 +20,11 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import javax.servlet.ServletConfig;
@@ -33,17 +35,29 @@ import org.joda.time.format.DateTimeFormat;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH = "fetch";
+
   private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManagerAdapter;
   private ProjectManager projectManager;
 
+  public HistoryServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH));
+    return apiEndpoints;
   }
 
   @Override
@@ -67,7 +81,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
-    if (ajaxName.equals("fetch")) {
+    if (API_FETCH.equals(ajaxName)) {
       fetchHistoryData(req, resp, ret);
     }
 

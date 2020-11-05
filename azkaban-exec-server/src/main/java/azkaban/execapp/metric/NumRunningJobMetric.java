@@ -27,7 +27,7 @@ import azkaban.spi.EventType;
  * Metric to keep track of number of running jobs in Azkaban exec server
  */
 public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> implements
-    EventListener {
+    EventListener<Event> {
 
   public static final String NUM_RUNNING_JOB_METRIC_NAME = "NumRunningJobMetric";
   private static final String NUM_RUNNING_JOB_METRIC_TYPE = "uint16";

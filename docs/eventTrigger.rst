@@ -11,7 +11,7 @@ Kafka Event Based trigger
 ..
    Todo:: Link to the data trigger documentation if available
 
-Currently Azkaban supports launching flows via scheduling it or Ajax API. However, they are limited because sometimes jobs need to be executed automatically on demand. Event trigger is a new feature introduced by Azkaban. It defines a new paradigm of triggering flows - triggering a flow on Kafka event arrival. This concept enables users to define events that the flow depends on. Once all of the events become ready, a workflow will be triggered.
+Currently, Azkaban supports launching flows via scheduling it or Ajax API. However, they are limited because sometimes jobs need to be executed automatically on demand. Event trigger is a new feature introduced by Azkaban. It defines a new paradigm of triggering flows - triggering a flow on Kafka event arrival. This concept enables users to define events that the flow depends on. Once all of the events become ready, a workflow will be triggered.
 
 Apache Kafka is a Publish & Subscribe data streaming system. By utilizing Kafka, we do the regular expression match on the Kafka event payload. With the contain-a logic matching, a dependency will be marked as satisfied only if the whole payload contains the Regex pattern that user predefines.
 
@@ -34,7 +34,7 @@ The following commands run on *nix platforms like Linux, OS X. For building Flow
   # Build without running tests
   ../../gradlew build -x test
 
-These are all standard Gradle commands. Please look at Gradle documentation for more info.
+These are all standard Gradle commands. Please look at the Gradle documentation for more info.
 
 
 
@@ -82,20 +82,20 @@ Event Trigger Instance Configuration
 *****
 Event trigger is part of flow definition and each flow can only have one event trigger at most. 
 Defining an event trigger is supported via Hadoop DSL.
-The trigger needs to be configurated within the flow file along with the project zip that users upload.
+The trigger needs to be configured within the flow file along with the project zip that users upload.
 Event trigger is composed of a list of event dependencies, max wait time and schedule.
-Take the following figure as example:
+Take the following figure as an example:
 
 .. image:: figures/TriggerExample.png
 
-- **Max Wait Time**: How long the trigger will wait for all dependencies to be available before cancelling it.
+- **Max Wait Time**: How long the trigger will wait for all dependencies to be available before canceling it.
 - **Trigger.schedule**: The schedule to perform this workflow on the regular basis. We use the cron time format here to specify, creating a trigger followed by the project workflow every 2 minutes 
 
 
-- **triggerDependencies**: The params here is to clarify what regex pattern happening in the event coming from specific topic channel. The trigger kick-starts the flow if all of predefined dependency conditions are met. 
+- **triggerDependencies**: The params here are to clarify what regex pattern happening in the event coming from a specific topic channel. The trigger kick-starts the flow if all of the predefined dependency conditions are met. 
 
 
-Therefore, this trigger example will launch the flow once detecting Kafka event with anything in ``AzEvent_Topic4``, ``.*Partition[A-Z]....Event`` string in event comming from ``AzEvent_Topic4`` and ``hadoop?.*`` in ``AzEvent_Topic1``.
+Therefore, this trigger example will launch the flow once detecting Kafka event with anything in ``AzEvent_Topic4``, ``.*Partition[A-Z]....Event`` string in event coming from ``AzEvent_Topic4`` and ``hadoop?.*`` in ``AzEvent_Topic1``.
 
 The matching mechanism can be extended other than regex since now it is implemented as a generic interface.
 
@@ -103,7 +103,7 @@ The matching mechanism can be extended other than regex since now it is implemen
 *****
 Event Based Trigger Example with Azkaban UI
 *****
-All scheduled data trigger will show up Azkaban Flow Trigger section. Also, project admins are able to pause and resume a scheduled trigger for undesirable situation.
+All scheduled data trigger will show up Azkaban Flow Trigger section. Also, project admins are able to pause and resume a scheduled trigger for an undesirable situation.
 
 
 **Trigger info page for a specific flow:**
@@ -140,7 +140,7 @@ Here is how my ``recordPartition.json`` looks like:
         "event":"MetastorePartitionAuditEvent"
     }
 
-Once this event arrived, Azkaban will mark this specific event dependency  as success. 
+Once this event arrived, Azkaban will mark this specific event dependency as success. 
 
 .. image:: figures/Success.png
 

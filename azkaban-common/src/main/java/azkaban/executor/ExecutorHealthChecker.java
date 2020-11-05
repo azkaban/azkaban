@@ -19,6 +19,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +31,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,8 @@ public class ExecutorHealthChecker {
     this.executorMaxFailureCount = azkProps.getInt(ConfigurationKeys
         .AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, DEFAULT_EXECUTOR_MAX_FAILURE_COUNT);
     this.alertEmails = azkProps.getStringList(ConfigurationKeys.AZKABAN_ADMIN_ALERT_EMAIL);
-    this.scheduler = Executors.newSingleThreadScheduledExecutor();
+    this.scheduler = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setNameFormat("azk-health-checker").build());
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
@@ -99,11 +100,20 @@ public class ExecutorHealthChecker {
    */
   public void checkExecutorHealthQuietly() {
     try {
+      logger.info("Begin executor healthcheck routine.");
       checkExecutorHealth();
     } catch (final RuntimeException e) {
-      logger.error("Unexepected error during executor healthcheck. Cause: "
-          + ExceptionUtils.getStackTrace(e));
+      logger.error("Unexepected error during executor healthcheck.", e);
+    } finally {
+      logger.info("End executor healthcheck routine.");
     }
+  }
+
+  private static String executorDetailString(Executor executor) {
+    return String.format("executor-id: %d, executor-host: %s, executor-port: %d",
+        executor.getId(),
+        executor.getHost(),
+        executor.getPort());
   }
 
   /**
@@ -122,24 +132,41 @@ public class ExecutorHealthChecker {
       }
 
       final Executor executor = executorOption.get();
+      Optional<ExecutorManagerException> healthcheckException = Optional.empty();
+      Map<String, Object> results = null;
       try {
         // Todo jamiesjc: add metrics to monitor the http call return time
-        final Map<String, Object> results = this.apiGateway
+        results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
                 ConnectorParams.PING_ACTION, null, null);
+      } catch (final ExecutorManagerException e) {
+        healthcheckException = Optional.of(e);
+      } catch (final RuntimeException re) {
+        logger.error("Unexepected exception while reaching executor - "
+            + executorDetailString(executor), re);
+      }
+      if (!healthcheckException.isPresent()) {
         if (results == null || results.containsKey(ConnectorParams.RESPONSE_ERROR) || !results
             .containsKey(ConnectorParams.STATUS_PARAM) || !results.get(ConnectorParams.STATUS_PARAM)
             .equals(ConnectorParams.RESPONSE_ALIVE)) {
-          throw new ExecutorManagerException("Status of executor " + executor.getId() + " is "
-              + "not alive.");
-        } else {
-          // Executor is alive. Clear the failure count.
-          if (this.executorFailureCount.containsKey(executor.getId())) {
-            this.executorFailureCount.put(executor.getId(), 0);
-          }
+          healthcheckException = Optional.of(
+              new ExecutorManagerException("Status of executor - " + executorDetailString(executor)
+                  + " is not alive."));
         }
-      } catch (final ExecutorManagerException e) {
-        handleExecutorNotAliveCase(executor, entry.getValue(), e);
+      }
+
+      if (healthcheckException.isPresent()){
+        try {
+          handleExecutorNotAliveCase(executor, entry.getValue(), healthcheckException.get());
+        } catch (RuntimeException re) {
+          logger.error("Unchecked exception during failure handling for executor - "
+              + executorDetailString(executor), re);
+        }
+      } else {
+        // Executor is alive. Clear the failure count.
+        if (this.executorFailureCount.containsKey(executor.getId())) {
+          this.executorFailureCount.put(executor.getId(), 0);
+        }
       }
     }
   }
@@ -159,8 +186,7 @@ public class ExecutorHealthChecker {
         ExecutionControllerUtils
             .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
       } catch (RuntimeException e) {
-        logger.error(String.format("Unchecked exception while finalizing execution: %d. "
-            + "Exception: %s", flow.getExecutionId(), ExceptionUtils.getStackTrace(e)));
+        logger.error("Unchecked exception while finalizing execution: " + flow.getExecutionId(), e);
       }
     }
   }
@@ -184,8 +210,7 @@ public class ExecutorHealthChecker {
         flows.add(runningFlow.getSecond());
       }
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get flow to executor map. Exception reported: " + ExceptionUtils
-          .getStackTrace(e));
+      logger.error("Failed to get flow to executor map. Exception reported: ", e);
     }
     return exFlowMap;
   }
@@ -200,16 +225,21 @@ public class ExecutorHealthChecker {
    */
   private void handleExecutorNotAliveCase(final Executor executor, final List<ExecutableFlow> flows,
       final ExecutorManagerException e) {
-    logger.error("Failed to get update from executor " + executor.getId(), e);
+    logger.error("Failed to get update from executor - " + executorDetailString(executor), e);
     this.executorFailureCount.put(executor.getId(), this.executorFailureCount.getOrDefault
         (executor.getId(), 0) + 1);
     if (this.executorFailureCount.get(executor.getId()) % this.executorMaxFailureCount == 0) {
       if (!this.alertEmails.isEmpty()) {
         logger.info(String.format("Executor failure count is %d. Sending alert emails to %s.",
             this.executorFailureCount.get(executor.getId()), this.alertEmails));
-        this.alerterHolder.get("email")
-            .alertOnFailedExecutorHealthCheck(executor, flows, e,
-                this.alertEmails);
+        try {
+          this.alerterHolder.get("email")
+              .alertOnFailedExecutorHealthCheck(executor, flows, e,
+                  this.alertEmails);
+        } catch (final RuntimeException re) {
+          logger.error("Unchecked exception while sending admin alert mails for executor - "
+              + executorDetailString(executor), re);
+        }
       }
       this.cleanupForMissingExecutor(executor, flows);
     }
@@ -229,7 +259,8 @@ public class ExecutorHealthChecker {
    * @param executor
    * @param executions
    */
-  private void cleanupForMissingExecutor(Executor executor, List<ExecutableFlow> executions) {
+  @VisibleForTesting
+  void cleanupForMissingExecutor(Executor executor, List<ExecutableFlow> executions) {
     String finalizeReason =
         String.format("Executor was unreachable, executor-id: %s, executor-host: %s, "
                 + "executor-port: %d", executor.getId(), executor.getHost(), executor.getPort());

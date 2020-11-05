@@ -25,7 +25,6 @@ import azkaban.project.validator.ValidationReport;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.UserManagerException;
-import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import com.linkedin.restli.common.HttpStatus;
@@ -67,7 +66,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     final ProjectManager projectManager = getAzkaban().getProjectManager();
     final Project project = projectManager.getProject(projectName);
 
-    final FlowTriggerScheduler scheduler = getAzkaban().getScheduler();
+    final FlowTriggerScheduler scheduler = getAzkaban().getFlowTriggerScheduler();
     final boolean enableQuartz = getAzkaban().getServerProps().getBoolean(ConfigurationKeys
         .ENABLE_QUARTZ, false);
 

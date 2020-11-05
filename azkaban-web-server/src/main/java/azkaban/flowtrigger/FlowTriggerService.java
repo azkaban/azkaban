@@ -95,13 +95,14 @@ public class FlowTriggerService {
       final FlowTriggerExecutionCleaner cleaner) {
     // Give the thread a name to make debugging easier.
     ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-        .setNameFormat("FlowTrigger-service").build();
+        .setNameFormat("azk-flowtrigger-service").build();
     this.flowTriggerExecutorService = Executors.newSingleThreadExecutor(namedThreadFactory);
     namedThreadFactory = new ThreadFactoryBuilder()
-        .setNameFormat("FlowTrigger-cancel").build();
+        .setNameFormat("azk-flowtrigger-cancel-pool-%d").build();
     this.cancelExecutorService = Executors
         .newFixedThreadPool(CANCEL_EXECUTOR_POOL_SIZE, namedThreadFactory);
-    this.timeoutService = Executors.newScheduledThreadPool(TIMEOUT_EXECUTOR_POOL_SIZE);
+    this.timeoutService = Executors.newScheduledThreadPool(TIMEOUT_EXECUTOR_POOL_SIZE,
+        new ThreadFactoryBuilder().setNameFormat("azk-flowtrigger-timeout-pool-%d").build());
     this.runningTriggers = new ArrayList<>();
     this.triggerPluginManager = pluginManager;
     this.triggerProcessor = triggerProcessor;

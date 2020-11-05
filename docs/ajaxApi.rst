@@ -13,10 +13,10 @@ API Documentation
      Content-Type:     application/x-www-form-urlencoded
      X-Requested-With: XMLHttpRequest
 
-However, currently for most of APIs in this version, it is not checking
+However, currently for most of the APIs in this version, it is not checking
 the request header. Many APIs still treat a request as an ajax call if
 ``request`` simply contains the parameter ``ajax``. Or even, several
-APIs is implicitly assuming it is an ajax call even without this
+APIs are implicitly assuming it is an ajax call even without this
 keyword. For ease of use though, it is recommended to always keep the
 correct request header.
 
@@ -38,7 +38,7 @@ A session expires if you log out, change machines, browsers or
 locations, if Azkaban is restarted, or if the session expires. The
 default session timeout is 24 hours (one day). You can re-login whether
 the session has expired or not. For the same user, a new session will
-always override old one.
+always override the old one.
 
 **Importantly,** ``session.id`` should be provided for almost all API
 calls (other than authentication). ``session.id`` can be simply appended
@@ -212,7 +212,7 @@ Upload a Project Zip
 --------------------
 
 | The ajax call to upload a project zip file. The zip file structure
-  should follows the requirements described in `Upload
+  should follow the requirements described in `Upload
   Projects </docs/2.5/#upload-projects>`__.
 | **Notice:** This API should be called after a project is successfully
   created.
@@ -395,8 +395,8 @@ structure of those jobs.
 |                                   |      "type": "job.type"           |
 |                                   |      "in": ["job.ids that this job|
 |                                   |      is directly depending upon.  |
-|                                   |      Indirect ancestors is not in |
-|                                   |      cluded in this list"]        |
+|                                   |      Indirect ancestors are not   |
+|                                   |      included in this list"]      |
 |                                   |    }                              |
 |                                   |                                   |
 |                                   |                                   |
@@ -490,7 +490,7 @@ pagination.
 | Parameter                         | Description                       |
 +===================================+===================================+
 | executions                        | A list of execution objects, with |
-|                                   | the resquested start index and    |
+|                                   | the requested start index and    |
 |                                   | length.                           |
 +-----------------------------------+-----------------------------------+
 | total                             | The total number of all relevant  |
@@ -664,7 +664,7 @@ this API by disabling all other jobs in the same flow.
 +-----------------------------------+-----------------------------------+
 | successEmails (optional)          | A list of emails to be notified   |
 |                                   | if the execution succeeds. All    |
-|                                   | emails are delimitted with        |
+|                                   | emails are delimited with        |
 |                                   | [,|;|\\s+].                       |
 |                                   |                                   |
 |                                   | **Example Values:**               |
@@ -672,7 +672,7 @@ this API by disabling all other jobs in the same flow.
 +-----------------------------------+-----------------------------------+
 | failureEmails (optional)          | A list of emails to be notified   |
 |                                   | if the execution fails. All       |
-|                                   | emails are delimitted with        |
+|                                   | emails are delimited with         |
 |                                   | [,|;|\\s+].                       |
 |                                   |                                   |
 |                                   | **Example Values:**               |
@@ -710,7 +710,7 @@ this API by disabling all other jobs in the same flow.
 |                                   | finishPossible                    |
 +-----------------------------------+-----------------------------------+
 | concurrentOption (Optional)       | Concurrent choices. Use ignore if |
-|                                   | nothing specifical is required.   |
+|                                   | nothing specific is required.   |
 |                                   |                                   |
 |                                   | **Possible Values:** ignore,      |
 |                                   | pipeline, skip                    |
@@ -1144,7 +1144,7 @@ This API call sets a SLA.
 | ajax=setSla                       | The fixed parameter indicating    |
 |                                   | the action is to set a SLA.       |
 +-----------------------------------+-----------------------------------+
-| scheduleId                        | The id of the shchedule. You can  |
+| scheduleId                        | The id of the schedule. You can  |
 |                                   | find this with `Fetch a           |
 |                                   | Schedule <#api-fetch-schedule>`__ |
 |                                   | .                                 |
@@ -1206,7 +1206,7 @@ Given a schedule id, this API call fetches the SLA.
 | ajax=slaInfo                      | The fixed parameter indicating    |
 |                                   | the SLA.                          |
 +-----------------------------------+-----------------------------------+
-| scheduleId                        | The id of the shchedule. You can  |
+| scheduleId                        | The id of the schedule. You can  |
 |                                   | find this with `Fetch a           |
 |                                   | Schedule <#api-fetch-schedule>`__ |
 |                                   | .                                 |
@@ -1296,7 +1296,7 @@ Resume a Flow Execution
 
 Given an execution id, this API resumes a paused running flow. If an
 execution has already been resumed, it will not return any errors; if an
-execution is not runnning, it will return an error message.
+execution is not running, it will return an error message.
 
 -  **Method:** GET
 -  **Request URL:** /executor?ajax=resumeFlow
@@ -1374,7 +1374,7 @@ executions.
 **Response Object**
 ~~~~~~~~~~~~~~~~~~~
 
-It returns a detailed information about the execution (check the example
+It returns detailed information about the execution (check the example
 below). One thing to notice is that the field ``nodes[i].in`` actually
 indicates what are the dependencies of this node.
 
@@ -1452,7 +1452,7 @@ Fetch Execution Job Logs
 ------------------------
 
 Given an execution id and a job id, this API call fetches the
-correponding job logs. The log text can be quite large sometimes, so
+corresponding job logs. The log text can be quite large sometimes, so
 this API call also expects the parameters ``offset`` and ``length`` to
 be specified.
 

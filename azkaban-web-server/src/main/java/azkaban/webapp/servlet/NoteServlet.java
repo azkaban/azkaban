@@ -16,13 +16,15 @@
  */
 package azkaban.webapp.servlet;
 
+import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
-import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -32,18 +34,30 @@ import org.apache.log4j.Logger;
 
 public class NoteServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_ADD_NOTE = "addNote";
+  private static final String API_REMOVE_NOTE = "removeNote";
+
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(NoteServlet.class);
 
   public static String type = null;
   public static String message = null;
   public static String url = null;
-  private AzkabanWebServer server;
+
+  public NoteServlet() {
+    super(createAPIEndpoints());
+  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    this.server = (AzkabanWebServer) getApplication();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_NOTE));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_REMOVE_NOTE));
+    return apiEndpoints;
   }
 
   @Override
@@ -88,14 +102,13 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
     try {
-      if (ajaxName.equals("addNote")) {
+      if (API_ADD_NOTE.equals(ajaxName)) {
         ajaxAddNotes(req, ret);
-      } else if (ajaxName.equals("removeNote")) {
+      } else if (API_REMOVE_NOTE.equals(ajaxName)) {
         ajaxRemoveNotes(ret);
       } else {
         ret.put("error", "Can not find the ajax operation");
@@ -124,6 +137,6 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
   }
 
   private boolean isAdmin(final User user) {
-    return HttpRequestUtils.hasPermission(this.server.getUserManager(), user, Type.ADMIN);
+    return HttpRequestUtils.hasPermission(getApplication().getUserManager(), user, Type.ADMIN);
   }
 }

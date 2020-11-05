@@ -16,7 +16,7 @@
 
 package azkaban.event;
 
-public interface EventListener {
+public interface EventListener<T> {
 
-  public void handleEvent(Event event);
+  public void handleEvent(T event);
 }

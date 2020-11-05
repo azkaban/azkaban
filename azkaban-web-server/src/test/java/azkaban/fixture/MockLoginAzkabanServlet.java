@@ -17,27 +17,32 @@
 package azkaban.fixture;
 
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import azkaban.server.session.Session;
 import azkaban.server.session.SessionCache;
-import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.velocity.app.VelocityEngine;
-import org.mortbay.jetty.Server;
 
 public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
   private static final long serialVersionUID = 5872898140052356540L;
+
+  public MockLoginAzkabanServlet() {
+    super(new ArrayList<>());
+  }
 
   public static HttpServletRequest getRequestWithNoUpstream(final String clientIp,
       final String sessionId,
@@ -95,16 +100,18 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
     final MockLoginAzkabanServlet servlet = new MockLoginAzkabanServlet();
 
-    final Server server = mock(Server.class);
     final Props props = new Props();
-    final UserManager userManager = mock(UserManager.class);
 
     // Need to mock and inject an application instance into the servlet
     final AzkabanWebServer app = mock(AzkabanWebServer.class);
 
     final MockLoginAzkabanServlet servletSpy = spy(servlet);
 
-    when(servletSpy.getApplication()).thenReturn(app);
+    // Mock AbstractAzkabanServlet#getApplication()
+    doReturn(app).when(servletSpy).getApplication();
+
+    // Mock AbstractAzkabanServlet#getWebMetrics()
+    doReturn(new DummyWebMetricsImpl()).when(servletSpy).getWebMetrics();
 
     // Create a concrete SessionCache so a session will get persisted
     // and can get looked up

@@ -30,6 +30,7 @@ plugins {
   id 'com.gradle.build-scan' version '1.9'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
+  id 'idea'
 }
 
 buildScan {
@@ -51,17 +52,23 @@ allprojects {
   repositories {
     mavenCentral()
     mavenLocal()
+//  need this for rest.li/pegasus 28.* artifacts until they are in Maven Central:
+    maven {
+      url 'https://linkedin.bintray.com/maven'
+    }
   }
 }
 
-ext.versions = [hadoop: '2.6.1',
+ext.versions = [hadoop: '2.7.4',
                 hive  : '1.1.0',
                 pig   : '0.11.0',
-                restli: '1.15.7',
+                restli: '28.3.11',
                 slf4j : '1.7.18',]
 
 ext.deps = [
     // External dependencies
+    // restli 1.* had this one included transitively. restli 28.* doesn't. But we still need it:
+    json                 : 'org.json:json:20170516',
     assertj              : 'org.assertj:assertj-core:3.8.0',
     awaitility           : 'org.awaitility:awaitility:3.0.0',
     collections          : 'commons-collections:commons-collections:3.2.2',

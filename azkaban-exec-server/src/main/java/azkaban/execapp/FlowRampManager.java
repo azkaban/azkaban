@@ -44,6 +44,7 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TimeUtils;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * Flow Ramp Manager
  */
 @Singleton
-public class FlowRampManager implements EventListener, ThreadPoolExecutingListener {
+public class FlowRampManager implements EventListener<Event>, ThreadPoolExecutingListener {
 
   private static final String JAR_DEPENDENCY_PREFIX = "jar:";
   private static String LIB_JAR_REG_EXP_FORMATTER = "^(%s)-\\d.*(.jar)$";
@@ -204,15 +205,13 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
    * This shuts down the flow ramp. The call is blocking and awaits execution of all jobs.
    */
   public void shutdown() {
-    LOGGER.warn("Shutting down FlowRampManager...");
     if (isRampPollingServiceEnabled) {
+      LOGGER.warn("Shutting down FlowRampManager...");
       pollingService.shutdown();
+      // Persistent cached data into DB
+      saveSettings();
+      LOGGER.warn("Shutdown FlowRampManager complete.");
     }
-
-    // Persistent cached data into DB
-    saveSettings();
-
-    LOGGER.warn("Shutdown FlowRampManager complete.");
   }
 
   /**
@@ -220,8 +219,8 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
    * finish but interrupts all threads.
    */
   public void shutdownNow() {
-    LOGGER.warn("Shutting down FlowRampManager now...");
     if (isRampPollingServiceEnabled) {
+      LOGGER.warn("Shutting down FlowRampManager now...");
       pollingService.shutdown();
     }
   }
@@ -708,7 +707,8 @@ public class FlowRampManager implements EventListener, ThreadPoolExecutingListen
 
     public PollingService(final int statusPollingIntervalMinutes, final FlowRampManager.PollingCriteria pollingCriteria) {
       this.statusPollingIntervalMinutes = statusPollingIntervalMinutes;
-      this.scheduler = Executors.newSingleThreadScheduledExecutor();
+      this.scheduler = Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder().setNameFormat("azk-flowramp-sched").build());
       this.pollingCriteria = pollingCriteria;
     }
 

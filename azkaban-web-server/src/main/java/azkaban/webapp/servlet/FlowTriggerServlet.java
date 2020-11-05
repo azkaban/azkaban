@@ -22,12 +22,15 @@ import azkaban.project.CronSchedule;
 import azkaban.project.FlowTrigger;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -39,17 +42,33 @@ import org.slf4j.LoggerFactory;
 
 public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH_TRIGGER = "fetchTrigger";
+  private static final String API_PAUSE_TRIGGER = "pauseTrigger";
+  private static final String API_RESUME_TRIGGER = "resumeTrigger";
+
   private static final long serialVersionUID = 1L;
   private FlowTriggerScheduler scheduler;
   private ProjectManager projectManager;
   private static final Logger logger = LoggerFactory.getLogger(FlowTriggerServlet.class);
 
+  public FlowTriggerServlet() {
+    super(createAPIEndpoints());
+  }
+
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.scheduler = server.getScheduler();
+    final AzkabanWebServer server = getApplication();
+    this.scheduler = server.getFlowTriggerScheduler();
     this.projectManager = server.getProjectManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_TRIGGER));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_PAUSE_TRIGGER));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RESUME_TRIGGER));
+    return apiEndpoints;
   }
 
   @Override
@@ -73,8 +92,8 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
 
     if (res != null) {
       final Map<String, Object> jsonObj = new HashMap<>();
-      FlowTrigger flowTrigger = res.getFlowTrigger();
-      CronSchedule schedule = flowTrigger.getSchedule();
+      final FlowTrigger flowTrigger = res.getFlowTrigger();
+      final CronSchedule schedule = flowTrigger.getSchedule();
       jsonObj.put("cronExpression", schedule.getCronExpression());
       jsonObj.put("submitUser", res.getSubmitUser());
       jsonObj.put("firstSchedTime",
@@ -100,17 +119,16 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
-    if (ajaxName.equals("fetchTrigger")) {
+    if (API_FETCH_TRIGGER.equals(ajaxName)) {
       if (checkProjectIdAndFlowId(req)) {
         final int projectId = getIntParam(req, "projectId");
         final String flowId = getParam(req, "flowId");
         ajaxFetchTrigger(projectId, flowId, session, ret);
       }
-    } else if (ajaxName.equals("pauseTrigger") || ajaxName.equals("resumeTrigger")) {
+    } else if (API_PAUSE_TRIGGER.equals(ajaxName) || API_RESUME_TRIGGER.equals(ajaxName)) {
       if (checkProjectIdAndFlowId(req)) {
         final int projectId = getIntParam(req, "projectId");
         final String flowId = getParam(req, "flowId");
@@ -122,7 +140,7 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
           ret.put("error", "Permission denied. Need ADMIN access.");
         } else {
           try {
-            if (ajaxName.equals("pauseTrigger")) {
+            if (API_PAUSE_TRIGGER.equals(ajaxName)) {
               if (this.scheduler.pauseFlowTriggerIfPresent(projectId, flowId)) {
                 logger.info("Flow trigger for flow {}.{} is paused", project.getName(), flowId);
               } else {

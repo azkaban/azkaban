@@ -20,27 +20,27 @@ import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EventHandler {
+public class EventHandler<T> {
 
-  private final HashSet<EventListener> listeners = new HashSet<>();
+  private final HashSet<EventListener<T>> listeners = new HashSet<>();
   private static final Logger logger = LoggerFactory.getLogger(EventHandler.class);
 
   public EventHandler() {
   }
 
-  public EventHandler addListener(final EventListener listener) {
+  public EventHandler addListener(final EventListener<T> listener) {
     this.listeners.add(listener);
     return this;
   }
 
-  public EventHandler addListeners(final EventListener... listeners) {
+  public EventHandler addListeners(final EventListener<T>... listeners) {
     for (int i = listeners.length - 1; i >= 0; i--) {
       this.listeners.add(listeners[i]);
     }
     return this;
   }
 
-  public void fireEventListeners(final Event event) {
+  public void fireEventListeners(final T event) {
     final ArrayList<EventListener> listeners =
         new ArrayList<>(this.listeners);
     for (final EventListener listener : listeners) {
@@ -53,7 +53,7 @@ public class EventHandler {
     }
   }
 
-  public void removeListener(final EventListener listener) {
+  public void removeListener(final EventListener<T> listener) {
     this.listeners.remove(listener);
   }
 }

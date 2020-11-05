@@ -27,7 +27,7 @@ import azkaban.spi.EventType;
 /**
  * Metric to keep track of number of failed jobs in between the tracking events
  */
-public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
+public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implements EventListener<Event> {
 
   public static final String NUM_FAILED_JOB_METRIC_NAME = "NumFailedJobMetric";
   private static final String NUM_FAILED_JOB_METRIC_TYPE = "uint16";

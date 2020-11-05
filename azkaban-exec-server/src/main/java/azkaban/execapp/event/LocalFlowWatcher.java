@@ -54,7 +54,7 @@ public class LocalFlowWatcher extends FlowWatcher {
     super.unblockAllWatches();
   }
 
-  public class LocalFlowWatcherListener implements EventListener {
+  public class LocalFlowWatcherListener implements EventListener<Event> {
 
     @Override
     public void handleEvent(final Event event) {

@@ -31,6 +31,7 @@ import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -42,6 +43,7 @@ import org.apache.log4j.Logger;
 public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
 
   private static final Logger logger = Logger.getLogger(JobSummaryServlet.class);
+  private static final long serialVersionUID = 2057998465288828864L;
 
   private final Props props;
   private final File webResourcesPath;
@@ -52,6 +54,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
 
   public JobSummaryServlet(final Props props) {
+    super(new ArrayList<>());
     this.props = props;
     this.viewerName = props.getString("viewer.name");
     this.viewerPath = props.getString("viewer.path");
@@ -66,7 +69,7 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
   }

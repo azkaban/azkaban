@@ -88,12 +88,16 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testBasicRun() throws IOException {
+  public void testBasicRun() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
         createJobRunner(1, "testJob", 0, false, loader, eventCollector);
     final ExecutableNode node = runner.getNode();
+    // Job starts to queue
+    runner.setTimeInQueue(System.currentTimeMillis());
+    // ensure that queue duration should be > 0
+    Thread.sleep(1L);
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
@@ -107,6 +111,7 @@ public class JobRunnerTest {
         node.getStatus() == Status.SUCCEEDED);
     Assert.assertTrue(node.getStartTime() >= 0 && node.getEndTime() >= 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
+    Assert.assertTrue(runner.getQueueDuration() > 0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
@@ -176,6 +181,10 @@ public class JobRunnerTest {
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
+    // Check failureMessage and modifiedBy
+    Assert.assertEquals("unknown", runner.getNode().getModifiedBy());
+    Assert.assertEquals("java.lang.RuntimeException: Forced"
+            + " failure of testJob", runner.getNode().getFailureMessage());
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
@@ -257,6 +266,7 @@ public class JobRunnerTest {
     final Thread thread = startThread(runner);
 
     StatusTestUtils.waitForStatus(node, Status.RUNNING);
+    runner.getNode().setModifiedBy("dementor1");
     runner.kill();
     assertThreadIsNotAlive(thread);
 
@@ -267,6 +277,10 @@ public class JobRunnerTest {
     // Give it some time to fail.
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
+    // Check job kill time, user killed the job, and failure message
+    Assert.assertEquals("dementor1", runner.getNode().getModifiedBy());
+    Assert.assertTrue(runner.getJobKillTime() != -1);
+    Assert.assertTrue(runner.getKillDuration() >= 0);
 
     // Log file and output files should not exist.
     final File logFile = new File(runner.getLogFilePath());

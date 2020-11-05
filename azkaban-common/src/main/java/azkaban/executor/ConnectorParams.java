@@ -45,6 +45,11 @@ public interface ConnectorParams {
   public static final String MODIFY_RETRY_FAILURES = "retryFailures";
   public static final String MODIFY_JOBS_LIST = "jobIds";
 
+  public static final String MODIFY_PROPERTY_ACTION = "modifyProperty";
+  public static final String PROPERTY_NAME_PARAM = "propertyName";
+  public static final String POLLING_INTERVAL_MILLIS_PROPERTY_NAME = "pollingIntervalMillis";
+  public static final String PROPERTY_VALUE_PARAM = "propertyValue";
+
   public static final String START_PARAM = "start";
   public static final String END_PARAM = "end";
   public static final String STATUS_PARAM = "status";

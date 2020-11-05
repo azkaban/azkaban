@@ -27,6 +27,7 @@ import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.TimeUtils;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -60,7 +61,8 @@ public class TriggerInstanceProcessor {
     this.emailer = emailer;
     this.executorManager = executorManager;
     this.flowTriggerInstanceLoader = flowTriggerInstanceLoader;
-    this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE,
+        new ThreadFactoryBuilder().setNameFormat("azk-trigger-instance-pool-%d").build());
   }
 
   private void executeFlowAndUpdateExecID(final TriggerInstance triggerInst) {
@@ -70,6 +72,7 @@ public class TriggerInstanceProcessor {
       final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
       // execute the flow with default execution option(concurrency option being "ignore
       // currently running")
+      executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_EVENT);
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
     } catch (final Exception ex) {

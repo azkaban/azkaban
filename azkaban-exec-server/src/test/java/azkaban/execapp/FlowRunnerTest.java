@@ -55,6 +55,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
     compareFinishedRuntime(this.runner);
 
+    // Check flowVersion
+    assertFlowVersion(this.runner.getExecutableFlow(), 1.0);
+
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2", Status.SUCCEEDED);
     assertStatus("job3", Status.SUCCEEDED);
@@ -120,6 +123,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     Assert.assertTrue(!this.runner.isKilled());
     waitForAndAssertFlowStatus(Status.FAILED);
+    // Check failed job that leads to the failure of flow
+    Assert.assertEquals("job2d", this.runner.getExecutableFlow().getFailedJobId());
 
     assertStatus("job1", Status.SUCCEEDED);
     assertStatus("job2d", Status.FAILED);
@@ -133,7 +138,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,  EventType.FLOW_FINISHED);
   }
 
   @Test
@@ -150,6 +155,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertThreadShutDown();
 
     Assert.assertTrue(this.runner.isKilled());
+    // Check flow kill duration
+    Assert.assertTrue(this.runner.getFlowKillDuration() > 0);
+    Assert.assertTrue(this.runner.getFlowKillTime() != -1);
 
     waitForAndAssertFlowStatus(Status.KILLED);
 
@@ -164,7 +172,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    // Two FLOW_STATUS_CHANGED events fired, one for FAILED and one for KILLED
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,
+        EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
   @Test
@@ -193,7 +203,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
   @Test
@@ -228,7 +238,11 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
 
-    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
+    // Check flow kill duration and uerId killed the flow
+    Assert.assertFalse(this.runner.getFlowKillTime() == -1);
+    Assert.assertEquals("me", this.runner.getExecutableFlow().getModifiedBy());
+
+    eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
   @Test(expected = IllegalStateException.class)
@@ -287,7 +301,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     FlowRunner.propagateMetadataFromProps(metadataMap, inputProps, "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
 
-    Assert.assertEquals("Metadata not propagated correctly.", metadataMap.size(), 2);
+    Assert.assertEquals("Metadata not propagated correctly.", 2, metadataMap.size());
     Assert.assertEquals("Metadata not propagated correctly.", "value1", metadataMap.get("my.prop1"));
     Assert.assertEquals("Metadata not propagated correctly.", "value2", metadataMap.get("my.prop2"));
 
@@ -296,7 +310,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     metadataMap = new HashMap<>();
     FlowRunner.propagateMetadataFromProps(metadataMap, new Props(), "flow", "dummyFlow",
         Logger.getLogger(FlowRunnerTest.class));
-    Assert.assertEquals("Metadata propagation backward compatibility has issues.", metadataMap.size(), 0);
+    Assert.assertEquals("Metadata propagation backward compatibility has issues.", 0, metadataMap.size());
 
     // Test negative path
     try {
@@ -335,6 +349,26 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
             flowMetadata.get("projectFileName"));
     Assert.assertEquals("Event metadata not created as expected.", "1",
             flowMetadata.get("projectFileUploadTime"));
+    Assert.assertEquals("Event metadata not created as expected.", "null",
+        flowMetadata.get("slaOptions"));
+  }
+
+  @Test
+  public void pauseAndResume() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+
+    FlowRunnerTestUtil.startThread(this.runner);
+    this.runner.pause("dementor");
+    waitForAndAssertFlowStatus(Status.PAUSED);
+    this.runner.resume("dementor");
+
+    // Check flow pause duration and uerId killed the flow
+    Assert.assertTrue(this.runner.getFlowPauseDuration() >= 0);
+    Assert.assertTrue(this.runner.getFlowPauseTime() != -1);
+    Assert.assertEquals("dementor", this.runner.getExecutableFlow().getModifiedBy());
   }
 
   private void assertAttempts(final String name, final int attempt) {

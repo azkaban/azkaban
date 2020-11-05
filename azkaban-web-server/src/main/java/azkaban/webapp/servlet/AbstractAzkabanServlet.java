@@ -18,13 +18,14 @@ package azkaban.webapp.servlet;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.server.AzkabanServer;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -40,6 +42,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.joda.time.DateTime;
 
 /**
@@ -48,18 +51,19 @@ import org.joda.time.DateTime;
 public abstract class AbstractAzkabanServlet extends HttpServlet {
 
   public static final String JSON_MIME_TYPE = "application/json";
+  private static final String AZKABAN_SUCCESS_MESSAGE = "azkaban.success.message";
+  private static final String AZKABAN_WARN_MESSAGE = "azkaban.warn.message";
+  private static final String AZKABAN_FAILURE_MESSAGE = "azkaban.failure.message";
+  public static final String HTTP_HEADER_AZKABAN_TRACE_ORIGIN = "Azkaban-Trace-Origin";
+  public static final String HTTP_HEADER_VALUE_AZKABAN_TRACE_ORIGIN = "webapp";
+
+  public static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
   public static final String jarVersion = AbstractAzkabanServlet.class.getPackage()
       .getImplementationVersion();
-  private static final String AZKABAN_SUCCESS_MESSAGE =
-      "azkaban.success.message";
-  private static final String AZKABAN_WARN_MESSAGE =
-      "azkaban.warn.message";
-  private static final String AZKABAN_FAILURE_MESSAGE =
-      "azkaban.failure.message";
   private static final long serialVersionUID = -1;
 
   protected String passwordPlaceholder;
-  private AzkabanServer application;
+  private AzkabanWebServer application;
   private String name;
   private String label;
   private String color;
@@ -69,28 +73,29 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
   private int displayExecutionPageSize;
 
-  public static String createJsonResponse(final String status, final String message,
-      final String action, final Map<String, Object> params) {
-    final HashMap<String, Object> response = new HashMap<>();
-    response.put("status", status);
-    if (message != null) {
-      response.put("message", message);
-    }
-    if (action != null) {
-      response.put("action", action);
-    }
-    if (params != null) {
-      response.putAll(params);
-    }
+  private final List<AzkabanAPI> apiEndpoints;
 
-    return JSONUtils.toJSON(response);
+  public AbstractAzkabanServlet() {
+    this.apiEndpoints = new ArrayList<>();
+  }
+
+  public AbstractAzkabanServlet(final List<AzkabanAPI> apiEndpoints) {
+    this.apiEndpoints = apiEndpoints;
+  }
+
+  public List<AzkabanAPI> getApiEndpoints() {
+    return this.apiEndpoints;
   }
 
   /**
    * To retrieve the application for the servlet
    */
-  public AzkabanServer getApplication() {
+  public AzkabanWebServer getApplication() {
     return this.application;
+  }
+
+  public WebMetrics getWebMetrics() {
+    return this.application.getWebMetrics();
   }
 
   @Override
@@ -109,12 +114,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
     this.displayExecutionPageSize = props.getInt(ConfigurationKeys.DISPLAY_EXECUTION_PAGE_SIZE, 16);
 
-    if (this.application instanceof AzkabanWebServer) {
-      final AzkabanWebServer server = (AzkabanWebServer) this.application;
-      this.viewerPlugins = PluginRegistry.getRegistry().getViewerPlugins();
-      this.triggerPlugins =
-          new ArrayList<>(server.getTriggerPlugins().values());
-    }
+    this.viewerPlugins = PluginRegistry.getRegistry().getViewerPlugins();
+    this.triggerPlugins = new ArrayList<>(this.application.getTriggerPlugins().values());
   }
 
   /**
@@ -377,5 +378,52 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
   protected int getDisplayExecutionPageSize() {
     return this.displayExecutionPageSize;
+  }
+
+  public static String createJsonResponse(final String status, final String message,
+      final String action, final Map<String, Object> params) {
+    final HashMap<String, Object> response = new HashMap<>();
+    response.put("status", status);
+    if (message != null) {
+      response.put("message", message);
+    }
+    if (action != null) {
+      response.put("action", action);
+    }
+    if (params != null) {
+      response.putAll(params);
+    }
+
+    return JSONUtils.toJSON(response);
+  }
+
+  public Optional<AzkabanAPI> getAzkabanAPI(final HttpServletRequest request) {
+    // Inspect parameters contained in the query string or posted form data
+    for (final AzkabanAPI api : getApiEndpoints()) {
+      final String paramName = api.getRequestParameter();
+      final String paramValue = api.getParameterValue();
+      if (request.getParameter(paramName) != null && (paramValue.isEmpty() ||
+          paramValue.equals(request.getParameter(paramName)))) {
+        return Optional.of(api);
+      }
+    }
+
+    // Handle multipart/form-data requests
+    if (ServletFileUpload.isMultipartContent(request)) {
+      // At the time this code was added servlet 2.5 was used which doesn't support
+      // multipart/form-data requests natively. To parse parameters of such requests Apache
+      // Commons was the way to go but it can only be called once. As this is done already in
+      // LoginAbstracAzkabanServlet.java (this.multipartParser.parseMultipart(req)) and Azkaban only
+      // has one API endpoint with multipart/form-data content type, opting for a more hardcoded
+      // approach to determine the Azkaban API being used.
+      final String reqOrigin = request.getHeader(HTTP_HEADER_AZKABAN_TRACE_ORIGIN);
+      final boolean isReqFromWebApp = HTTP_HEADER_VALUE_AZKABAN_TRACE_ORIGIN.equals(reqOrigin);
+      final String paramName = isReqFromWebApp ? "action" : "ajax";
+      return this.apiEndpoints.stream().filter(
+          a -> a.getRequestParameter().equals(paramName) &&
+              a.getParameterValue().equals(ProjectManagerServlet.API_UPLOAD))
+          .findAny();
+    }
+    return Optional.empty();
   }
 }

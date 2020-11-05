@@ -78,12 +78,13 @@ Multiple Executor Mode Parameters
 |                                                      | list of hard filters  |                       |
 |                                                      | to be used while      |                       |
 |                                                      | dispatching. To be    |                       |
-|                                                      | choosen from          |                       |
+|                                                      | chosen from          |                       |
 |                                                      | StaticRemaining,      |                       |
 |                                                      | FlowSize,             |                       |
 |                                                      | MinimumFreeMemory and |                       |
 |                                                      | CpuStatus. Order of   |                       |
-|                                                      | filter do not matter. |                       |
+|                                                      | filter does not       |                       |
+|                                                      | matter.               |                       |
 +------------------------------------------------------+-----------------------+-----------------------+
 | azkaban.executorselector.comparator.{ComparatorName} | Integer weight to be  |                       |
 |                                                      | used to rank          |                       |
@@ -103,7 +104,7 @@ Multiple Executor Mode Parameters
 |                                                      | tor.comparator.Memory |                       |
 |                                                      | =2                    |                       |
 +------------------------------------------------------+-----------------------+-----------------------+
-| azkaban.queueprocessing.enabled                      | Hhould queue          | true                  |
+| azkaban.queueprocessing.enabled                      | Should queue          | true                  |
 |                                                      | processor be enabled  |                       |
 |                                                      | from webserver        |                       |
 |                                                      | initialization        |                       |
@@ -300,7 +301,7 @@ Executor Server Properties
 |                                           | executions            |                       |
 +-------------------------------------------+-----------------------+-----------------------+
 | executor.flow.threads                     | The number of         | 30                    |
-|                                           | simulateous flows     |                       |
+|                                           | simultaneous flows     |                       |
 |                                           | that can be run.      |                       |
 |                                           | These threads are     |                       |
 |                                           | mostly idle.          |                       |
@@ -311,7 +312,7 @@ Executor Server Properties
 +-------------------------------------------+-----------------------+-----------------------+
 | job.log.backup.index                      | The number of log     | 4                     |
 |                                           | chunks. The max size  |                       |
-|                                           | of each logs is then  |                       |
+|                                           | of each log is then  |                       |
 |                                           | the index \*          |                       |
 |                                           | chunksize             |                       |
 +-------------------------------------------+-----------------------+-----------------------+

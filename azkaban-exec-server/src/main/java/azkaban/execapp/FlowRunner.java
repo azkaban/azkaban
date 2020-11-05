@@ -25,8 +25,7 @@ import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_ON_JOB_STATUS_PA
 import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN;
 
 import azkaban.Constants;
-import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.JobProperties;
+import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -69,6 +68,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.security.AccessControlContext;
@@ -103,7 +103,7 @@ import org.apache.log4j.PatternLayout;
 /**
  * Class that handles the running of a ExecutableFlow DAG
  */
-public class FlowRunner extends EventHandler implements Runnable {
+public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private static final Splitter SPLIT_ON_COMMA = Splitter.on(",").omitEmptyStrings().trimResults();
 
@@ -153,7 +153,28 @@ public class FlowRunner extends EventHandler implements Runnable {
   private volatile boolean flowFinished = false;
   private volatile boolean flowKilled = false;
   private volatile boolean flowIsRamping = false;
+
+  public long getFlowKillTime() { return this.flowKillTime; }
+
   private volatile long flowKillTime = -1;
+
+  private volatile long flowKillDuration = 0;
+
+  public long getFlowKillDuration() { return this.flowKillDuration; }
+
+  public long getFlowPauseTime() { return this.flowPauseTime; }
+
+  public void setFlowCreateTime(long flowCreateTime) { this.flowCreateTime = flowCreateTime; }
+
+  private volatile long flowPauseTime = -1;
+
+  private volatile long flowPauseDuration = 0;
+
+  public long getFlowPauseDuration() { return this.flowPauseDuration; }
+
+  public long getFlowCreateTime() { return this.flowCreateTime; }
+
+  private volatile long flowCreateTime = -1;
 
   // For flow related metrics
   private final CommonMetrics commonMetrics;
@@ -254,7 +275,8 @@ public class FlowRunner extends EventHandler implements Runnable {
   public void run() {
     try {
       if (this.executorService == null) {
-        this.executorService = Executors.newFixedThreadPool(this.numJobThreads);
+        this.executorService = Executors.newFixedThreadPool(this.numJobThreads,
+            new ThreadFactoryBuilder().setNameFormat("azk-job-pool-%d").build());
       }
       setupFlowExecution();
       this.flow.setStartTime(System.currentTimeMillis());
@@ -272,7 +294,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     } catch (final Throwable t) {
       if (this.logger != null) {
         this.logger
-            .error("An error has occurred during the running of the flow. Quiting.", t);
+            .error("An error has occurred during the running of the flow. Quitting.", t);
       }
       if (Status.KILLING.equals(this.flow.getStatus())) {
         this.execMetrics.decrementFlowKillingCount();
@@ -302,12 +324,18 @@ public class FlowRunner extends EventHandler implements Runnable {
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
-        if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+        if (isPollDispatchMethodEnabled()) {
           ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
       }
     }
+  }
+
+  private boolean isPollDispatchMethodEnabled() {
+    return DispatchMethod.isPollMethodEnabled(azkabanProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   private void reportFlowFinishedMetrics() {
@@ -321,8 +349,11 @@ public class FlowRunner extends EventHandler implements Runnable {
         break;
       case KILLED:
         this.execMetrics.markFlowKilled();
-        this.execMetrics.addFlowTimeToKill(
-            this.flowKillTime == -1 ? -1 : System.currentTimeMillis() - this.flowKillTime);
+        // Compute the duration to kill a flow
+        if (this.flowKillDuration == 0 && flowKillTime != -1) {
+          this.flowKillDuration = System.currentTimeMillis() - this.flowKillTime;
+        }
+        this.execMetrics.addFlowTimeToKill( this.flowKillDuration );
         break;
       default:
         break;
@@ -535,6 +566,9 @@ public class FlowRunner extends EventHandler implements Runnable {
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
           setFlowFailed(node);
+          // Report FLOW_STATUS_CHANGED EVENT when status changes from running to failed
+          this.fireEventListeners(
+              Event.create(this, EventType.FLOW_STATUS_CHANGED, new EventData(this.getExecutableFlow())));
         } else {
           nodesToCheck.add(node);
           continue;
@@ -600,6 +634,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     if (shouldFail) {
+      this.getExecutableFlow().setFailedJobId(node.getId());
       propagateStatusAndAlert(node.getParentFlow(),
           node.getStatus() == Status.KILLED ? Status.KILLED : Status.FAILED_FINISHING);
       if (this.failureAction == FailureAction.CANCEL_ALL) {
@@ -702,7 +737,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       }
       if (base.getParentFlow() != null) {
         propagateStatusAndAlert(base.getParentFlow(), status);
-      } else if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      } else if (isPollDispatchMethodEnabled()) {
         // Alert on the root flow if the first error is encountered.
         // Todo jamiesjc: Add a new FLOW_STATUS_CHANGED event type and alert on that event.
         if (shouldAlert && base.getStatus() == Status.FAILED_FINISHING) {
@@ -964,6 +999,8 @@ public class FlowRunner extends EventHandler implements Runnable {
     final JobRunner runner = createJobRunner(node);
     this.logger.info("Submitting job '" + node.getNestedId() + "' to run.");
     try {
+      // Job starts to queue
+      runner.setTimeInQueue(System.currentTimeMillis());
       this.executorService.submit(runner);
       this.activeJobRunners.add(runner);
     } catch (final RejectedExecutionException e) {
@@ -1125,6 +1162,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     final JobRunner jobRunner =
         new JobRunner(node, path.getParentFile(), this.executorLoader,
             this.jobtypeManager, this.azkabanProps);
+
     if (this.watcher != null) {
       jobRunner.setPipeline(this.watcher, this.pipelineLevel);
     }
@@ -1172,6 +1210,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       if (!this.isKilled() && !this.flowFinished) {
         this.flowPaused = true;
         this.flow.setStatus(Status.PAUSED);
+        // Record the time the flow is paused
+        this.flowPauseTime = System.currentTimeMillis();
+        this.getExecutableFlow().setModifiedBy(user);
         updateFlow();
         this.logger.info("Execution " + this.execId + " has been paused.");
       } else {
@@ -1200,7 +1241,10 @@ public class FlowRunner extends EventHandler implements Runnable {
         } else {
           this.flow.setStatus(Status.RUNNING);
         }
-
+        if (this.flowPauseTime != -1 && this.flowPauseDuration == 0) {
+          this.flowPauseDuration = System.currentTimeMillis() - this.flowPauseTime;
+        }
+        this.getExecutableFlow().setModifiedBy(user);
         updateFlow();
       }
     }
@@ -1210,6 +1254,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public void kill(final String user) {
     this.logger.info("Flow killed by " + user);
+    this.getExecutableFlow().setModifiedBy(user);
     kill();
   }
 
@@ -1234,8 +1279,13 @@ public class FlowRunner extends EventHandler implements Runnable {
             .info("Watcher cancelled status is " + this.watcher.isWatchCancelled());
       }
 
+      // Report FLOW_STATUS_CHANGED EVENT when status changes from running to killing
+      this.fireEventListeners(
+          Event.create(this, EventType.FLOW_STATUS_CHANGED, new EventData(this.getExecutableFlow())));
+
       this.logger.info("Killing " + this.activeJobRunners.size() + " jobs.");
       for (final JobRunner runner : this.activeJobRunners) {
+        runner.getNode().setModifiedBy(this.getExecutableFlow().getModifiedBy());
         runner.kill();
       }
       updateFlow();
@@ -1435,7 +1485,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   // Class helps report the flow start and stop events.
   @VisibleForTesting
-  class FlowRunnerEventListener implements EventListener {
+  class FlowRunnerEventListener implements EventListener<Event> {
 
     public FlowRunnerEventListener() {
     }
@@ -1457,8 +1507,18 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("executionId", String.valueOf(flow.getExecutionId()));
       metaData.put("startTime", String.valueOf(flow.getStartTime()));
       metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
+      // Flow_Status_Changed event attributes: flowVersion, failedJobId, modifiedBy
+      metaData.put("flowVersion", String.valueOf(flow.getAzkabanFlowVersion()));
+      metaData.put("failedJobId", flow.getFailedJobId());
+      metaData.put("modifiedBy", flow.getModifiedBy());
+      // Flow_Status_Changed event elapsed time
+      metaData.put("flowKillDuration", String.valueOf(flowRunner.getFlowKillDuration()));
+      metaData.put("flowPauseDuration", String.valueOf(flowRunner.getFlowPauseDuration()));
+      metaData.put("flowPreparationDuration", String.valueOf(flowRunner.flowCreateTime));
+      // FLow SLA option string
+      metaData.put("slaOptions", flow.getSlaOptionStr());
 
-      // project upload info
+      // Project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
       metaData.put("projectFileUploadUser", handler.getUploader());
       metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
@@ -1496,6 +1556,15 @@ public class FlowRunner extends EventHandler implements Runnable {
         final ExecutableFlow flow = flowRunner.getExecutableFlow();
         FlowRunner.this.logger.info("Flow started: " + flow.getId());
         FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
+      } else if (event.getType() == EventType.FLOW_STATUS_CHANGED){
+        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+        final ExecutableFlow flow = flowRunner.getExecutableFlow();
+        if (flow.getStatus() == Status.KILLING || flow.getStatus() == Status.KILLED) {
+          FlowRunner.this.logger.info("Flow is killed by " + flow.getModifiedBy() + ": " + flow.getId());
+        }
+        final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
+        flowMetadata.put("flowStatus", flow.getStatus().name());
+        FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
       } else if (event.getType() == EventType.FLOW_FINISHED) {
         final FlowRunner flowRunner = (FlowRunner) event.getRunner();
         final ExecutableFlow flow = flowRunner.getExecutableFlow();
@@ -1509,7 +1578,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   @VisibleForTesting
-  class JobRunnerEventListener implements EventListener {
+  class JobRunnerEventListener implements EventListener<Event> {
 
     public JobRunnerEventListener() {
     }
@@ -1522,7 +1591,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       metaData.put("jobId", node.getId());
       // Flow specific properties
       final ExecutableFlow executableFlow = node.getExecutableFlow();
-      metaData.put("executionID", String.valueOf(executableFlow.getExecutionId()));
+      metaData.put("executionId", String.valueOf(executableFlow.getExecutionId()));
       metaData.put("flowName", executableFlow.getId());
       metaData.put("projectName", executableFlow.getProjectName());
 
@@ -1536,7 +1605,12 @@ public class FlowRunner extends EventHandler implements Runnable {
           props.getString("jetty.hostname", "localhost")));
       metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
       // attempt id
-      metaData.put("attemptID", String.valueOf(node.getAttempt()));
+      metaData.put("attemptId", String.valueOf(node.getAttempt()));
+      // Job time in queue, kill time, killed by, and failure Message
+      metaData.put("modifiedBy", node.getModifiedBy());
+      metaData.put("jobKillDuration", String.valueOf(jobRunner.getKillDuration()));
+      metaData.put("queueDuration", String.valueOf(jobRunner.getQueueDuration()));
+      metaData.put("failureMessage", node.getFailureMessage());
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
@@ -1629,15 +1703,15 @@ public class FlowRunner extends EventHandler implements Runnable {
   static void propagateMetadataFromProps(final Map<String, String> metaData, final Props inputProps,
       final String nodeType, final String nodeName, final Logger logger) {
 
+    if (null == metaData || null == inputProps || null == logger ||
+        Strings.isNullOrEmpty(nodeType) || Strings.isNullOrEmpty(nodeName)) {
+      throw new IllegalArgumentException("Input params should not be null or empty.");
+    }
+
     // Backward compatibility: Unless user specifies, this will be absent from flows and jobs
     // .. if so, do a no-op like before
     if (!inputProps.containsKey(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE)) {
       return;
-    }
-
-    if (null == metaData || null == inputProps || null == logger ||
-        Strings.isNullOrEmpty(nodeType) || Strings.isNullOrEmpty(nodeName)) {
-      throw new IllegalArgumentException("Input params should not be null or empty.");
     }
 
     final String propsToPropagate = inputProps

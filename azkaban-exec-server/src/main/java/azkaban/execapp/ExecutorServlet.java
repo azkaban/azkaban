@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -120,6 +122,10 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           setActive(false, respMap);
         } else if (action.equals(ConnectorParams.SHUTDOWN)) {
           shutdown(respMap);
+        } else if (action.equals(ConnectorParams.MODIFY_PROPERTY_ACTION)) {
+          String propName = getParam(req, ConnectorParams.PROPERTY_NAME_PARAM);
+          String propValue = getParam(req, ConnectorParams.PROPERTY_VALUE_PARAM);
+          handleModifyProperty(propName, propValue, respMap);
         } else {
           final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
           final String user = getParam(req, ConnectorParams.USER_PARAM, null);
@@ -160,6 +166,70 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     }
     writeJSON(resp, respMap);
     resp.flushBuffer();
+  }
+
+  private void handleModifyProperty(@Nullable final String propName,
+      @Nullable final String propValue, final HashMap<String, Object> respMap)
+      throws ServletException {
+    if (propName == null || propValue == null) {
+      String errMsg =
+          String.format("Both %s and %s need to be provided for action %s. "  +
+              "(%s, %s) = (%s, %s)", ConnectorParams.PROPERTY_NAME_PARAM, ConnectorParams.PROPERTY_VALUE_PARAM,
+          ConnectorParams.MODIFY_PROPERTY_ACTION, ConnectorParams.PROPERTY_NAME_PARAM,
+          ConnectorParams.PROPERTY_VALUE_PARAM, propName, propValue);
+      logger.error(errMsg);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, errMsg);
+      return;
+    }
+
+    if (propName.equals(ConnectorParams.POLLING_INTERVAL_MILLIS_PROPERTY_NAME)) {
+      modifyPollingInterval(propValue, respMap);
+    } else {
+      String errMsg = String.format("Modification of %s property is not supported.", propName);
+      logger.error(errMsg);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, errMsg);
+    }
+  }
+
+  /**
+   * Modifies the time interval at which the executor is polling the queue for unassigned jobs, and
+   * assigning a job(s) to itself.
+   *
+   * @param newPollingIntervalMillis The desired polling interval. It needs to be a positive
+   *                                 integer (milliseconds) in String format.
+   * @param respMap The response map.
+   */
+
+  private void modifyPollingInterval(@Nonnull final String newPollingIntervalMillis,
+      final HashMap<String, Object> respMap) {
+    int pollingIntervalMillis = 0;
+    boolean isValidValue = false;
+    try {
+      pollingIntervalMillis = Integer.parseUnsignedInt(newPollingIntervalMillis);
+      isValidValue =  (pollingIntervalMillis > 0);
+    } catch (NumberFormatException ex) {
+      // isValidValue will continue to be false, which we will used for error handling.
+      // No need to do anything additional in the catch block.
+    }
+
+    if (!isValidValue) {
+      String errMsg = String.format("%s doesn't look like a positive integer." +
+              " (%s, %s) = (%s, %s)", newPollingIntervalMillis, ConnectorParams.PROPERTY_NAME_PARAM,
+          ConnectorParams.PROPERTY_VALUE_PARAM, ConnectorParams.POLLING_INTERVAL_MILLIS_PROPERTY_NAME,
+          newPollingIntervalMillis);
+      logger.error(errMsg);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, errMsg);
+      return;
+    }
+
+    if (flowRunnerManager.changePollingInterval(pollingIntervalMillis)) {
+      respMap.put(ConnectorParams.STATUS_ACTION, String.format("Changed polling interval to %s ms",
+          newPollingIntervalMillis));
+    } else {
+      respMap.put(ConnectorParams.RESPONSE_ERROR, "Failed to change polling interval. Please check"
+          + " the logs for error messages from underlying functions. Please retry if existing "
+          + "schedule got canceled and new one didn't start.");
+    }
   }
 
   private void handleModifyExecutionRequest(final Map<String, Object> respMap,

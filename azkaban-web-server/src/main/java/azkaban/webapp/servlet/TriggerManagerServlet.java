@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerManager;
@@ -23,6 +24,7 @@ import azkaban.trigger.TriggerManagerException;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,16 +36,27 @@ import org.apache.log4j.Logger;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_EXPIRE_TRIGGER = "expireTrigger";
+
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger
-      .getLogger(TriggerManagerServlet.class);
+  private static final Logger logger = Logger.getLogger(TriggerManagerServlet.class);
   private TriggerManager triggerManager;
+
+  public TriggerManagerServlet() {
+    super(createAPIEndpoints());
+  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.triggerManager = server.getTriggerManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_EXPIRE_TRIGGER));
+    return apiEndpoints;
   }
 
   @Override
@@ -57,13 +70,12 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
     try {
-      if (ajaxName.equals("expireTrigger")) {
+      if (API_EXPIRE_TRIGGER.equals(ajaxName)) {
         ajaxExpireTrigger(req, ret, session.getUser());
       }
     } catch (final Exception e) {
@@ -80,8 +92,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
       IOException {
 
     final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/triggerspage.vm");
+        newPage(req, resp, session, "azkaban/webapp/servlet/velocity/triggerspage.vm");
 
     final List<Trigger> triggers = this.triggerManager.getTriggers();
     page.add("triggers", triggers);

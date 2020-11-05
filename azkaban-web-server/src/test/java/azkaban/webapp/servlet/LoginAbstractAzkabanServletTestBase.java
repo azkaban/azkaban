@@ -32,7 +32,7 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
-import azkaban.webapp.WebMetrics;
+import azkaban.webapp.metrics.WebMetrics;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import java.io.IOException;

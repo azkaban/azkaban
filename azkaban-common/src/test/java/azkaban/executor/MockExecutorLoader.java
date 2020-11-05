@@ -487,24 +487,27 @@ public class MockExecutorLoader implements ExecutorLoader {
   public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
     ExecutableRampMap map = ExecutableRampMap.createInstance();
     map.add("rampId",
-        ExecutableRamp.createInstance(
-        "dali",
-        "RampPolicy",
-        5,
-        10,
-        false,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-        0,
-        true
-        )
+        ExecutableRamp.builder("dali", "RampPolicy")
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(5)
+                .setMaxFailureToRampDown(10)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(0)
+                .setActive(true)
+                .build())
+            .build()
     );
+
     return map;
   }
 

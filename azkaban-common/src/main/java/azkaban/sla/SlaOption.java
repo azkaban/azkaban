@@ -20,6 +20,7 @@ import azkaban.sla.SlaType.ComponentType;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.GsonBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -255,6 +256,10 @@ public class SlaOption {
     SlaOptionDeprecated slaOption = new SlaOptionDeprecated(slaType, slaActions, slaInfo);
     return slaOption.toObject();
 
+  }
+
+  public String toJSON() {
+    return new GsonBuilder().setPrettyPrinting().create().toJson(toObject());
   }
 
   /**

@@ -12,7 +12,7 @@ Flow 2.0 Basics
 *****
 
 ########
-Using Azkaban Flow 2.0 can be simple and straightforward. Just start with below severals steps:
+Using Azkaban Flow 2.0 can be simple and straightforward. Just start with below several steps:
 
 Step 1:
 ######## 
@@ -65,12 +65,12 @@ You can use ``dependsOn`` section to list all the parent jobs. In the below exam
       config:
         command: pwd
 
-You can zip the new ``basic.flow`` and ``flow20.project`` again and then upload to Azkaban. Try to execute the flow and see the difference.
+You can zip the new ``basic.flow`` and ``flow20.project`` again and then upload it to Azkaban. Try to execute the flow and see the difference.
 
 *****
 Job Config
 *****
-Azkaban supports many job types. You just need to specify it in ``type``, and other job-related info goes to ``config`` section in the format of ``key: value`` pairs. Here is an example for a Pig job:
+Azkaban supports many job types. You just need to specify it in ``type``, and other job-related info goes to ``config`` section in the format of ``key: value`` pairs. Here is an example of a Pig job:
 ::
   nodes:
     - name: pigJob
@@ -83,7 +83,7 @@ You need to write your own pig script and put it in your project zip and then sp
 *****
 Flow Config
 *****
-Not only can you configure individual jobs, you can also config the flow parameters for the entire flow.
+Not only can you configure individual jobs, but you can also config the flow parameters for the entire flow.
 Simply add a ``config`` section at the beginning of the ``basic.flow`` file. For example:
 ::
   ---

@@ -16,7 +16,7 @@
 
 <script type="text/javascript">
 
-$.namespace('azkaban');
+${esc.d}.namespace('azkaban');
 
 azkaban.HdfsSchemaModel = Backbone.Model.extend({
   initialize: function() {
@@ -39,7 +39,7 @@ azkaban.HdfsSchemaModel = Backbone.Model.extend({
         model.set('schema', data.schema);
       }
     };
-    $.get(requestURL, requestData, successHandler, 'json');
+    ${esc.d}.get(requestURL, requestData, successHandler, 'json');
   }
 });
 
@@ -97,7 +97,7 @@ azkaban.HdfsFileModel = Backbone.Model.extend({
       }
       model.set('contents', data);
     };
-    $.get(requestURL, requestData, successHandler, 'text');
+    ${esc.d}.get(requestURL, requestData, successHandler, 'text');
   }
 });
 

@@ -44,6 +44,7 @@ import azkaban.utils.ValidatorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -111,6 +112,20 @@ class AzkabanProjectLoader {
       final File archive, final String fileType, final User uploader, final Props additionalProps,
       final String uploaderIPAddr)
       throws ProjectManagerException, ExecutorManagerException {
+    // Set up project upload start time
+    final long startUploadTimeStamp = System.currentTimeMillis();
+    String errorMessage = null;
+    final Map<String, Object> eventData = new HashMap<>();
+    // Fetch project properties
+    eventData.put("projectId", project.getId());
+    eventData.put("projectName", project.getName());
+    eventData.put("projectVersion", project.getVersion());
+    // Get zip size, modifiedBy and uploader IP address
+    final long fileSize = FileUtils.sizeOf(archive);
+    eventData.put("projectZipSize", fileSize);
+    eventData.put("modifiedBy", uploader.getUserId());
+    eventData.put("uploaderIPAddress", uploaderIPAddr);
+
     log.info("Uploading files to " + project.getName());
     final Map<String, ValidationReport> reports;
 
@@ -122,6 +137,12 @@ class AzkabanProjectLoader {
 
       final File startupDependencies = getStartupDependenciesFile(folder);
       final boolean isThinProject = startupDependencies.exists();
+      // Get zip type
+      if (isThinProject){
+        eventData.put("zipType", "THIN_ZIP");
+      } else {
+        eventData.put("zipType", "FAT_ZIP");
+      }
 
       reports = isThinProject
           ? this.archiveUnthinner.validateThinProject(project, folder,
@@ -154,7 +175,30 @@ class AzkabanProjectLoader {
         commonMetrics.markUploadFatProject();
       }
 
+    } catch (Exception e){
+      errorMessage = e.toString();
+      throw e;
     } finally {
+      // Compute upload time
+      final long projectUploadTime = System.currentTimeMillis() - startUploadTimeStamp;
+      if (projectUploadTime >= 0) {
+        eventData.put("projectUploadTime", projectUploadTime);
+      } else{
+        eventData.put("projectUploadTime", 0);
+      }
+      // Set zipType to default value
+      eventData.putIfAbsent("zipType", "null");
+      // Set upload project event status
+      if (errorMessage == null){
+        eventData.put("projectEventStatus", "SUCCESS");
+        eventData.put("errorMessage", "null");
+      } else {
+        eventData.put("projectEventStatus", "ERROR");
+        eventData.put("errorMessage", errorMessage);
+      }
+      // Fire project upload event listener
+      project.fireEventListeners(ProjectEvent.create(project, azkaban.spi.EventType.PROJECT_UPLOADED, eventData));
+
       FlowLoaderUtils.cleanUpDir(folder);
     }
 

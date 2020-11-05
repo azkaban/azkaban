@@ -90,6 +90,14 @@ public class ExecutableFlowBase extends ExecutableNode {
     return -1;
   }
 
+  public String getExecutionSource() {
+    if (this.getParentFlow() != null) {
+      return this.getParentFlow().getExecutionSource();
+    }
+
+    return null;
+  }
+
   public String getLastModifiedByUser() {
     if (this.getParentFlow() != null) {
       return this.getParentFlow().getLastModifiedByUser();

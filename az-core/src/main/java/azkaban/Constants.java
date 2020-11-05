@@ -74,6 +74,8 @@ public class Constants {
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
+  // Configures the form limits for the web application
+  public static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
   public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
@@ -119,13 +121,25 @@ public class Constants {
   public static final boolean DEFAULT_AZKABAN_RAMP_STATUS_POOLING_ENABLED = false;
   // How often executors will poll ramp status in Poll Dispatch model
   public static final int DEFAULT_AZKABAN_RAMP_STATUS_POLLING_INTERVAL = 10;
+  // Username to be sent to UserManager when OAuth is in use, and real username is not available:
+  public static final String OAUTH_USERNAME_PLACEHOLDER = "<OAuth>";
+  // Used by UserManager for password validation (to tell apart real passwords from auth codes).
+  // Empirically, passwords are shorter than this, and ACs are longer:
+  public static final int OAUTH_MIN_AUTHCODE_LENGTH = 80;
+  // Used (or should be used) wherever a string representation of UTF_8 charset is needed:
+  public static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.toString();
+
+  // Specifies the source(adhoc, scheduled, event) from where flow execution is triggered
+  public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
+  public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
+  public static final String EXECUTION_SOURCE_EVENT = "event";
 
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
-
+    // Property to enable appropriate dispatch model
+    public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
     // Configures Azkaban to use new polling model for dispatching
-    public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
     public static final String AZKABAN_POLLING_LOCK_ENABLED = "azkaban.polling.lock.enabled";
     public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =
@@ -209,9 +223,25 @@ public class Constants {
 
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
+    // Jetty server configurations.
+    public static final String JETTY_HEADER_BUFFER_SIZE = "jetty.headerBufferSize";
+    public static final String JETTY_USE_SSL = "jetty.use.ssl";
+    public static final String JETTY_SSL_PORT = "jetty.ssl.port";
+    public static final String JETTY_PORT = "jetty.port";
+
     public static final String EXECUTOR_PORT_FILE = "executor.portfile";
     // To set a fixed port for executor-server. Otherwise some available port is used.
     public static final String EXECUTOR_PORT = "executor.port";
+
+    public static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
+
+    // Boolean config set on the Web server to prevent users from creating projects. When set to
+    // true only admins or users with CREATEPROJECTS permission can create projects.
+    public static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
+
+    // Boolean config set on the Web server to prevent users from uploading projects. When set to
+    // true only admins or users with UPLOADPROJECTS permission can upload projects.
+    public static final String LOCKDOWN_UPLOAD_PROJECTS_KEY = "lockdown.upload.projects";
 
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.
@@ -219,7 +249,8 @@ public class Constants {
 
     // Maximum number of tries to download a dependency (no more retry attempts will be made after this many download failures)
     public static final String AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES = "azkaban.dependency.max.download.tries";
-
+    public static final String AZKABAN_DEPENDENCY_DOWNLOAD_THREADPOOL_SIZE =
+        "azkaban.dependency.download.threadpool.size";
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
     public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
     public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";
@@ -341,6 +372,23 @@ public class Constants {
         "execution.logs.cleanup.interval.seconds";
     public static final String EXECUTION_LOGS_CLEANUP_RECORD_LIMIT =
         "execution.logs.cleanup.record.limit";
+
+    // Oauth2.0 configuration keys. If missing, no OAuth will be attempted, and the old
+    // username/password{+2FA} prompt will be given for interactive login:
+    public static final String OAUTH_PROVIDER_URI_KEY = "oauth.provider_uri";  // where to send user for OAuth flow, e.g.:
+    //    oauth.provider_uri=https://login.microsoftonline.com/tenant-id/oauth2/v2.0/authorize\
+    //        ?client_id=client_id\
+    //        &response_type=code\
+    //        &scope=openid\
+    //        &response_mode=form_post\
+    //        &state={state}\
+    //        &redirect_uri={redirect_uri}
+    // Strings {state} and {redirect_uri}, if present verbatim in the property value, will be
+    // substituted at runtime with (URL-encoded) navigation target and OAuth responce handler URIs,
+    // respectively. See handleOauth() in LoginAbstractServlet.java for details.
+    public static final String OAUTH_REDIRECT_URI_KEY = "oauth.redirect_uri";  // how OAuth calls us back, e.g.:
+    //    oauth.redirect_uri=http://localhost:8081/?action=oauth_callback
+
   }
 
   public static class FlowProperties {

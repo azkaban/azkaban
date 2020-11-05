@@ -15,10 +15,15 @@
  */
 package azkaban.server;
 
+import static azkaban.Constants.AZKABAN_PRIVATE_PROPERTIES_FILE;
+import static azkaban.Constants.AZKABAN_PROPERTIES_FILE;
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_SSL_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static azkaban.Constants.DEFAULT_CONF_PATH;
 import static azkaban.Constants.DEFAULT_PORT_NUMBER;
 import static azkaban.Constants.DEFAULT_SSL_PORT_NUMBER;
 
-import azkaban.Constants;
 import azkaban.server.session.SessionCache;
 import azkaban.user.UserManager;
 import azkaban.utils.Props;
@@ -82,10 +87,10 @@ public abstract class AzkabanServer {
   }
 
   private static void updateDerivedConfigs(final Props azkabanSettings) {
-    final boolean isSslEnabled = azkabanSettings.getBoolean("jetty.use.ssl", true);
+    final boolean isSslEnabled = azkabanSettings.getBoolean(JETTY_USE_SSL, true);
     final int port = isSslEnabled
-        ? azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER)
-        : azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
+        ? azkabanSettings.getInt(JETTY_SSL_PORT, DEFAULT_SSL_PORT_NUMBER)
+        : azkabanSettings.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER);
 
     // setting stats configuration for connectors
     final String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
@@ -95,8 +100,8 @@ public abstract class AzkabanServer {
   }
 
   public static Props loadAzkabanConfigurationFromDirectory(final File dir) {
-    final File azkabanPrivatePropsFile = new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
-    final File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
+    final File azkabanPrivatePropsFile = new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
+    final File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
     try {
@@ -135,7 +140,7 @@ public abstract class AzkabanServer {
       return null;
     }
 
-    final File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
+    final File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger.error(azkabanHome + " does not contain a readable conf directory.");
       return null;

@@ -25,6 +25,7 @@ import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.SlaRequestUtils;
 import azkaban.server.session.Session;
@@ -54,6 +55,15 @@ import org.joda.time.format.DateTimeFormat;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_SLA_INFO = "slaInfo";
+  private static final String API_SET_SLA = "setSla";
+  private static final String API_FETCH_SCHEDULES = "fetchSchedules";
+  private static final String API_FETCH_SCHEDULE = "fetchSchedule";
+  private static final String API_LOAD_FLOW = "loadFlow";
+  private static final String API_SCHEDULE_FLOW = "scheduleFlow";
+  private static final String API_SCHEDULE_CRON_FLOW = "scheduleCronFlow";
+  private static final String API_REMOVE_SCHED = "removeSched";
+
   public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
   public static final String PARAM_SETTINGS = "settings";
@@ -71,14 +81,33 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private ScheduleManager scheduleManager;
   private UserManager userManager;
 
+  public ScheduleServlet() {
+    super(createAPIEndpoints());
+  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.scheduleManager = server.getScheduleManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_SLA_INFO));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_SET_SLA));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_SCHEDULES));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_SCHEDULE));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_LOAD_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_SCHEDULE_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_SCHEDULE_CRON_FLOW));
+
+    apiEndpoints.add(new AzkabanAPI("action", API_SCHEDULE_FLOW));
+    apiEndpoints.add(new AzkabanAPI("action", API_SCHEDULE_CRON_FLOW));
+    apiEndpoints.add(new AzkabanAPI("action", API_REMOVE_SCHED));
+    return apiEndpoints;
   }
 
   @Override
@@ -92,23 +121,22 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
-    if (ajaxName.equals("slaInfo")) {
+    if (API_SLA_INFO.equals(ajaxName)) {
       ajaxSlaInfo(req, ret, session.getUser());
-    } else if (ajaxName.equals("setSla")) {
+    } else if (API_SET_SLA.equals(ajaxName)) {
       ajaxSetSla(req, ret, session.getUser());
       // alias loadFlow is preserved for backward compatibility
-    } else if (ajaxName.equals("fetchSchedules") || ajaxName.equals("loadFlow")) {
+    } else if (API_FETCH_SCHEDULES.equals(ajaxName) || API_LOAD_FLOW.equals(ajaxName)) {
       ajaxFetchSchedules(ret);
-    } else if (ajaxName.equals("scheduleFlow")) {
+    } else if (API_SCHEDULE_FLOW.equals(ajaxName)) {
       ajaxScheduleFlow(req, ret, session.getUser());
-    } else if (ajaxName.equals("scheduleCronFlow")) {
+    } else if (API_SCHEDULE_CRON_FLOW.equals(ajaxName)) {
       ajaxScheduleCronFlow(req, ret, session.getUser());
-    } else if (ajaxName.equals("fetchSchedule")) {
+    } else if (API_FETCH_SCHEDULE.equals(ajaxName)) {
       ajaxFetchSchedule(req, ret, session.getUser());
     }
 
@@ -205,7 +233,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
   }
-
+  
   private void ajaxFetchSchedule(final HttpServletRequest req,
       final HashMap<String, Object> ret, final User user) throws ServletException {
 
@@ -309,8 +337,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleGetAllSchedules(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
 
     final Page page =
         newPage(req, resp, session,
@@ -335,11 +362,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       final HashMap<String, Object> ret = new HashMap<>();
       if (hasParam(req, "action")) {
         final String action = getParam(req, "action");
-        if (action.equals("scheduleFlow")) {
+        if (API_SCHEDULE_FLOW.equals(action)) {
           ajaxScheduleFlow(req, ret, session.getUser());
-        } else if (action.equals("scheduleCronFlow")) {
+        } else if (API_SCHEDULE_CRON_FLOW.equals(action)) {
           ajaxScheduleCronFlow(req, ret, session.getUser());
-        } else if (action.equals("removeSched")) {
+        } else if (API_REMOVE_SCHED.equals(action)) {
           ajaxRemoveSched(req, ret, session.getUser());
         }
       }
@@ -588,6 +615,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
         user.getUserId(), "Schedule " + schedule.toString()
             + " has been added.");
+    this.projectManager.postScheduleEvent(project, azkaban.spi.EventType.SCHEDULE_CREATED, user,
+            schedule, null);
 
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
     ret.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());

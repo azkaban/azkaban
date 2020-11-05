@@ -84,7 +84,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
   private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
-  private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
 
   private static AzkabanExecutorServer app;
 
@@ -220,10 +219,10 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   }
 
   private static void setupTimeZone(final Props azkabanSettings) {
-    if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
-      final String timezoneId = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
+    if (azkabanSettings.containsKey(ConfigurationKeys.DEFAULT_TIMEZONE_ID)) {
+      final String timezoneId = azkabanSettings.getString(ConfigurationKeys.DEFAULT_TIMEZONE_ID);
       System.setProperty("user.timezone", timezoneId);
-      TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
       TimeZone.setDefault(timeZone);
       DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
       logger.info("Setting timezone to " + timezoneId);
@@ -525,8 +524,10 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     logger.info("Registering MBeans...");
 
     this.mbeanRegistrationManager.registerMBean("executorJetty", new JmxJettyServer(this.server));
-    this.mbeanRegistrationManager.registerMBean("flowRunnerManager", new JmxFlowRunnerManager(this.runnerManager));
-    this.mbeanRegistrationManager.registerMBean("flowRampManager", new JmxFlowRampManager(this.rampManager));
+    this.mbeanRegistrationManager
+        .registerMBean("flowRunnerManager", new JmxFlowRunnerManager(this.runnerManager));
+    this.mbeanRegistrationManager
+        .registerMBean("flowRampManager", new JmxFlowRampManager(this.rampManager));
     this.mbeanRegistrationManager.registerMBean("jobJMXMBean", JmxJobMBeanManager.getInstance());
 
     if (JobCallbackManager.isInitialized()) {

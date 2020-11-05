@@ -15,6 +15,14 @@
  */
 package azkaban.viewer.hdfs;
 
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.security.commons.HadoopSecurityManagerException;
+import azkaban.server.session.Session;
+import azkaban.user.User;
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
+import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
+import azkaban.webapp.servlet.Page;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -30,93 +38,85 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.log4j.Logger;
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.security.commons.HadoopSecurityManagerException;
-import azkaban.user.User;
-import azkaban.utils.Props;
-import azkaban.server.session.Session;
-import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
-import azkaban.webapp.servlet.Page;
 
 
 public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
+
   private static final long serialVersionUID = 1L;
-  private static final String PROXY_USER_SESSION_KEY =
-      "hdfs.browser.proxy.user";
-  private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM =
-      "hadoop.security.manager.class";
-  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE =
-      "viewer.access_denied_message";
+  private static final String PROXY_USER_SESSION_KEY = "hdfs.browser.proxy.user";
+  private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM = "hadoop.security.manager.class";
+  private static final String HDFSVIEWER_ACCESS_DENIED_MESSAGE = "viewer.access_denied_message";
 
   private static final int DEFAULT_FILE_MAX_LINES = 1000;
-  private static Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
-  private int fileMaxLines;
-  private int defaultStartLine;
-  private int defaultEndLine;
-  private ArrayList<HdfsFileViewer> viewers = new ArrayList<HdfsFileViewer>();
+  private static final Logger logger = Logger.getLogger(HdfsBrowserServlet.class);
+  private final int fileMaxLines;
+  private final int defaultStartLine;
+  private final int defaultEndLine;
+  private final ArrayList<HdfsFileViewer> viewers = new ArrayList<>();
 
   private HdfsFileViewer defaultViewer;
 
-  private Props props;
+  private final Props props;
   private boolean shouldProxy;
   private boolean allowGroupProxy;
 
-  private String viewerName;
-  private String viewerPath;
+  private final String viewerName;
+  private final String viewerPath;
 
   private HadoopSecurityManager hadoopSecurityManager;
 
-  public HdfsBrowserServlet(Props props) {
+  public HdfsBrowserServlet(final Props props) {
+    super(new ArrayList<>());
     this.props = props;
-    viewerName = props.getString("viewer.name");
-    viewerPath = props.getString("viewer.path");
-    fileMaxLines = props.getInt("file.max.lines", DEFAULT_FILE_MAX_LINES);
-    defaultStartLine = 1;
-    defaultEndLine = fileMaxLines;
+    this.viewerName = props.getString("viewer.name");
+    this.viewerPath = props.getString("viewer.path");
+    this.fileMaxLines = props.getInt("file.max.lines", DEFAULT_FILE_MAX_LINES);
+    this.defaultStartLine = 1;
+    this.defaultEndLine = this.fileMaxLines;
   }
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(final ServletConfig config) throws ServletException {
     super.init(config);
 
-    shouldProxy = props.getBoolean("azkaban.should.proxy", false);
-    allowGroupProxy = props.getBoolean("allow.group.proxy", false);
-    logger.info("Hdfs browser should proxy: " + shouldProxy);
+    this.shouldProxy = this.props.getBoolean("azkaban.should.proxy", false);
+    this.allowGroupProxy = this.props.getBoolean("allow.group.proxy", false);
+    logger.info("Hdfs browser should proxy: " + this.shouldProxy);
 
-    props.put("fs.hdfs.impl.disable.cache", "true");
+    this.props.put("fs.hdfs.impl.disable.cache", "true");
 
     try {
-      hadoopSecurityManager = loadHadoopSecurityManager(props, logger);
-    } catch (RuntimeException e) {
+      this.hadoopSecurityManager = loadHadoopSecurityManager(this.props, logger);
+    } catch (final RuntimeException e) {
       e.printStackTrace();
       throw new RuntimeException("Failed to get hadoop security manager!"
           + e.getCause());
     }
 
-    defaultViewer = new TextFileViewer();
+    this.defaultViewer = new TextFileViewer();
 
-    viewers.add(new HtmlFileViewer());
-    viewers.add(new ORCFileViewer());
-    viewers.add(new AvroFileViewer());
-    viewers.add(new ParquetFileViewer());
+    this.viewers.add(new HtmlFileViewer());
+    this.viewers.add(new ORCFileViewer());
+    this.viewers.add(new AvroFileViewer());
+    this.viewers.add(new ParquetFileViewer());
 //    viewers.add(new JsonSequenceFileViewer());
-    viewers.add(new ImageFileViewer());
-    viewers.add(new BsonFileViewer());
+    this.viewers.add(new ImageFileViewer());
+    this.viewers.add(new BsonFileViewer());
 
-    viewers.add(defaultViewer);
+    this.viewers.add(this.defaultViewer);
 
     logger.info("HDFS Browser initiated");
   }
 
-  private HadoopSecurityManager loadHadoopSecurityManager(Props props,
-      Logger logger) throws RuntimeException {
+  private HadoopSecurityManager loadHadoopSecurityManager(final Props props,
+      final Logger logger) throws RuntimeException {
 
-    Class<?> hadoopSecurityManagerClass =
+    final Class<?> hadoopSecurityManagerClass =
         props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, true,
             HdfsBrowserServlet.class.getClassLoader());
     logger.info("Initializing hadoop security manager "
@@ -141,36 +141,36 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     return hadoopSecurityManager;
   }
 
-  private FileSystem getFileSystem(String username)
+  private FileSystem getFileSystem(final String username)
       throws HadoopSecurityManagerException {
-    return hadoopSecurityManager.getFSAsUser(username);
+    return this.hadoopSecurityManager.getFSAsUser(username);
   }
 
-  private void errorPage(String user, HttpServletRequest req,
-      HttpServletResponse resp, Session session, String error) {
-    Page page =
+  private void errorPage(final String user, final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session, final String error) {
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/hdfs/velocity/hdfs-browser.vm");
     page.add("error_message", "Error: " + error);
     page.add("user", user);
-    page.add("allowproxy", allowGroupProxy);
+    page.add("allowproxy", this.allowGroupProxy);
     page.add("no_fs", "true");
-    page.add("viewerName", viewerName);
+    page.add("viewerName", this.viewerName);
     page.render();
   }
 
-  private void errorAjax(HttpServletResponse resp, Map<String, Object> ret,
-      String error) throws IOException {
+  private void errorAjax(final HttpServletResponse resp, final Map<String, Object> ret,
+      final String error) throws IOException {
     ret.put("error", error);
     this.writeJSON(resp, ret);
   }
 
-  private String getUsername(HttpServletRequest req, Session session)
+  private String getUsername(final HttpServletRequest req, final Session session)
       throws ServletException {
-    User user = session.getUser();
+    final User user = session.getUser();
     String username = user.getUserId();
-    if (allowGroupProxy) {
-      String proxyName =
+    if (this.allowGroupProxy) {
+      final String proxyName =
           (String) session.getSessionData(PROXY_USER_SESSION_KEY);
       if (proxyName != null) {
         username = proxyName;
@@ -180,35 +180,35 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
-    String username = getUsername(req, session);
-    boolean ajax = hasParam(req, "ajax");
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
+    final String username = getUsername(req, session);
+    final boolean ajax = hasParam(req, "ajax");
     try {
       if (ajax) {
         handleAjaxAction(username, req, resp, session);
       } else {
         handleFsDisplay(username, req, resp, session);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new IllegalStateException("Error processing request: "
           + e.getMessage(), e);
     }
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
-    User user = session.getUser();
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
+    final User user = session.getUser();
     if (!hasParam(req, "action")) {
       return;
     }
 
-    HashMap<String, String> results = new HashMap<String, String>();
-    String action = getParam(req, "action");
+    final HashMap<String, String> results = new HashMap<>();
+    final String action = getParam(req, "action");
     if (action.equals("changeProxyUser")) {
       if (hasParam(req, "proxyname")) {
-        String newProxyname = getParam(req, "proxyname");
+        final String newProxyname = getParam(req, "proxyname");
         if (user.getUserId().equals(newProxyname)
             || user.isInGroup(newProxyname)
             || user.getRoles().contains("admin")) {
@@ -225,8 +225,8 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     this.writeJSON(resp, results);
   }
 
-  private Path getPath(HttpServletRequest req) {
-    String prefix = req.getContextPath() + req.getServletPath();
+  private Path getPath(final HttpServletRequest req) {
+    final String prefix = req.getContextPath() + req.getServletPath();
     String fsPath = req.getRequestURI().substring(prefix.length());
     if (fsPath.length() == 0) {
       fsPath = "/";
@@ -234,8 +234,8 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     return new Path(fsPath);
   }
 
-  private void getPathSegments(Path path, List<Path> paths,
-      List<String> segments) {
+  private void getPathSegments(final Path path, final List<Path> paths,
+      final List<String> segments) {
     Path curr = path;
     while (curr.getParent() != null) {
       paths.add(curr);
@@ -246,26 +246,26 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     Collections.reverse(segments);
   }
 
-  private String getHomeDir(FileSystem fs) {
-    String homeDirString = fs.getHomeDirectory().toString();
+  private String getHomeDir(final FileSystem fs) {
+    final String homeDirString = fs.getHomeDirectory().toString();
     if (homeDirString.startsWith("file:")) {
       return homeDirString.substring("file:".length());
     }
     return homeDirString.substring(fs.getUri().toString().length());
   }
 
-  private void handleFsDisplay(String user, HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws IOException,
+  private void handleFsDisplay(final String user, final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws IOException,
       ServletException, IllegalArgumentException, IllegalStateException {
     FileSystem fs = null;
     try {
       fs = getFileSystem(user);
-    } catch (HadoopSecurityManagerException e) {
+    } catch (final HadoopSecurityManagerException e) {
       errorPage(user, req, resp, session, "Cannot get FileSystem.");
       return;
     }
 
-    Path path = getPath(req);
+    final Path path = getPath(req);
     if (logger.isDebugEnabled()) {
       logger.debug("path: '" + path.toString() + "'");
     }
@@ -277,7 +277,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
         fs.close();
         return;
       }
-    } catch (IOException ioe) {
+    } catch (final IOException ioe) {
       logger.error("Got exception while checking for existence of path '"
           + path + "'", ioe);
       errorPage(user, req, resp, session, path.toUri().getPath()
@@ -299,19 +299,19 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     fs.close();
   }
 
-  private void displayDirPage(FileSystem fs, String user,
-      HttpServletRequest req, HttpServletResponse resp, Session session,
-      Path path) throws IOException {
+  private void displayDirPage(final FileSystem fs, final String user,
+      final HttpServletRequest req, final HttpServletResponse resp, final Session session,
+      final Path path) throws IOException {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session,
             "azkaban/viewer/hdfs/velocity/hdfs-browser.vm");
-    page.add("allowproxy", allowGroupProxy);
-    page.add("viewerPath", viewerPath);
-    page.add("viewerName", viewerName);
+    page.add("allowproxy", this.allowGroupProxy);
+    page.add("viewerPath", this.viewerPath);
+    page.add("viewerName", this.viewerName);
 
-    List<Path> paths = new ArrayList<Path>();
-    List<String> segments = new ArrayList<String>();
+    final List<Path> paths = new ArrayList<>();
+    final List<String> segments = new ArrayList<>();
     getPathSegments(path, paths, segments);
     page.add("paths", paths);
     page.add("segments", segments);
@@ -319,7 +319,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     page.add("homedir", getHomeDir(fs));
 
     try {
-      FileStatus[] subdirs = fs.listStatus(path);
+      final FileStatus[] subdirs = fs.listStatus(path);
       page.add("subdirs", subdirs);
       long size = 0;
       for (int i = 0; i < subdirs.length; ++i) {
@@ -329,30 +329,30 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
         size += subdirs[i].getLen();
       }
       page.add("dirsize", size);
-    } catch (AccessControlException e) {
-      String error_message = props.getString(HDFSVIEWER_ACCESS_DENIED_MESSAGE);
+    } catch (final AccessControlException e) {
+      final String error_message = this.props.getString(HDFSVIEWER_ACCESS_DENIED_MESSAGE);
       page.add("error_message", "Permission denied: " + error_message);
       page.add("no_fs", "true");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       page.add("error_message", "Error: " + e.getMessage());
     }
     page.render();
   }
 
-  private void displayFilePage(FileSystem fs, String user,
-      HttpServletRequest req, HttpServletResponse resp, Session session,
-      Path path) {
+  private void displayFilePage(final FileSystem fs, final String user,
+      final HttpServletRequest req, final HttpServletResponse resp, final Session session,
+      final Path path) {
 
-    Page page =
+    final Page page =
         newPage(req, resp, session, "azkaban/viewer/hdfs/velocity/hdfs-file.vm");
 
-    List<Path> paths = new ArrayList<Path>();
-    List<String> segments = new ArrayList<String>();
+    final List<Path> paths = new ArrayList<>();
+    final List<String> segments = new ArrayList<>();
     getPathSegments(path, paths, segments);
 
-    page.add("allowproxy", allowGroupProxy);
-    page.add("viewerPath", viewerPath);
-    page.add("viewerName", viewerName);
+    page.add("allowproxy", this.allowGroupProxy);
+    page.add("viewerPath", this.viewerPath);
+    page.add("viewerName", this.viewerName);
 
     page.add("paths", paths);
     page.add("segments", segments);
@@ -363,8 +363,8 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     try {
       boolean hasSchema = false;
       int viewerId = -1;
-      for (int i = 0; i < viewers.size(); ++i) {
-        HdfsFileViewer viewer = viewers.get(i);
+      for (int i = 0; i < this.viewers.size(); ++i) {
+        final HdfsFileViewer viewer = this.viewers.get(i);
         Set<Capability> capabilities = EnumSet.noneOf(Capability.class);
         capabilities = viewer.getCapabilities(fs, path);
         if (capabilities.contains(Capability.READ)) {
@@ -375,34 +375,34 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
           break;
         }
       }
-      page.add("contentType", viewers.get(viewerId).getContentType().name());
+      page.add("contentType", this.viewers.get(viewerId).getContentType().name());
       page.add("viewerId", viewerId);
       page.add("hasSchema", hasSchema);
 
-      FileStatus status = fs.getFileStatus(path);
+      final FileStatus status = fs.getFileStatus(path);
       page.add("status", status);
 
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       page.add("no_fs", "true");
       page.add("error_message", "Error: " + ex.getMessage());
     }
     page.render();
   }
 
-  private void handleAjaxAction(String username, HttpServletRequest request,
-      HttpServletResponse response, Session session) throws ServletException,
+  private void handleAjaxAction(final String username, final HttpServletRequest request,
+      final HttpServletResponse response, final Session session) throws ServletException,
       IOException {
-    Map<String, Object> ret = new HashMap<String, Object>();
+    Map<String, Object> ret = new HashMap<>();
     FileSystem fs = null;
     try {
       try {
         fs = getFileSystem(username);
-      } catch (HadoopSecurityManagerException e) {
+      } catch (final HadoopSecurityManagerException e) {
         errorAjax(response, ret, "Cannot get FileSystem.");
         return;
       }
 
-      String ajaxName = getParam(request, "ajax");
+      final String ajaxName = getParam(request, "ajax");
       Path path = null;
       if (!hasParam(request, "path")) {
         errorAjax(response, ret, "Missing parameter 'path'.");
@@ -435,24 +435,24 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAjaxFetchSchema(FileSystem fs, HttpServletRequest req,
-      Map<String, Object> ret, Session session, Path path) throws IOException,
+  private void handleAjaxFetchSchema(final FileSystem fs, final HttpServletRequest req,
+      final Map<String, Object> ret, final Session session, final Path path) throws IOException,
       ServletException {
     HdfsFileViewer fileViewer = null;
     try {
       if (hasParam(req, "viewerId")) {
-        fileViewer = viewers.get(getIntParam(req, "viewerId"));
+        fileViewer = this.viewers.get(getIntParam(req, "viewerId"));
         if (!fileViewer.getCapabilities(fs, path).contains(Capability.SCHEMA)) {
           fileViewer = null;
         }
       } else {
-        for (HdfsFileViewer viewer : viewers) {
+        for (final HdfsFileViewer viewer : this.viewers) {
           if (viewer.getCapabilities(fs, path).contains(Capability.SCHEMA)) {
             fileViewer = viewer;
           }
         }
       }
-    } catch (AccessControlException e) {
+    } catch (final AccessControlException e) {
       ret.put("error", "Permission denied.");
     }
 
@@ -463,19 +463,19 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     ret.put("schema", fileViewer.getSchema(fs, path));
   }
 
-  private void handleAjaxFetchFile(FileSystem fs, HttpServletRequest req,
-      HttpServletResponse resp, Session session, Path path) throws IOException,
+  private void handleAjaxFetchFile(final FileSystem fs, final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session, final Path path) throws IOException,
       ServletException {
-    int startLine = getIntParam(req, "startLine", defaultStartLine);
-    int endLine = getIntParam(req, "endLine", defaultEndLine);
-    OutputStream output = resp.getOutputStream();
+    final int startLine = getIntParam(req, "startLine", this.defaultStartLine);
+    final int endLine = getIntParam(req, "endLine", this.defaultEndLine);
+    final OutputStream output = resp.getOutputStream();
 
     if (endLine < startLine) {
       output.write(("Invalid range: endLine < startLine.").getBytes("UTF-8"));
       return;
     }
 
-    if (endLine - startLine > fileMaxLines) {
+    if (endLine - startLine > this.fileMaxLines) {
       output.write(("Invalid range: range exceeds max number of lines.")
           .getBytes("UTF-8"));
       return;
@@ -485,12 +485,12 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     HdfsFileViewer fileViewer = null;
     try {
       if (hasParam(req, "viewerId")) {
-        fileViewer = viewers.get(getIntParam(req, "viewerId"));
+        fileViewer = this.viewers.get(getIntParam(req, "viewerId"));
         if (!fileViewer.getCapabilities(fs, path).contains(Capability.READ)) {
           fileViewer = null;
         }
       } else {
-        for (HdfsFileViewer viewer : viewers) {
+        for (final HdfsFileViewer viewer : this.viewers) {
           if (viewer.getCapabilities(fs, path).contains(Capability.READ)) {
             fileViewer = viewer;
             break;
@@ -499,14 +499,14 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
       }
       // use default text viewer
       if (fileViewer == null) {
-        if (defaultViewer.getCapabilities(fs, path).contains(Capability.READ)) {
-          fileViewer = defaultViewer;
+        if (this.defaultViewer.getCapabilities(fs, path).contains(Capability.READ)) {
+          fileViewer = this.defaultViewer;
         } else {
           output.write(("No viewer available for file.").getBytes("UTF-8"));
           return;
         }
       }
-    } catch (AccessControlException e) {
+    } catch (final AccessControlException e) {
       output.write(("Permission denied.").getBytes("UTF-8"));
     }
 
