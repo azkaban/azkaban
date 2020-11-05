@@ -120,10 +120,11 @@ public class MetricsManager {
     if (metricsReporterClassName != null && metricsServerURL != null) {
       try {
         log.info("metricsReporterClassName: " + metricsReporterClassName);
-        final Class metricsClass = Class.forName(metricsReporterClassName);
+        final Class<?> metricsClass = Class.forName(metricsReporterClassName);
 
-        final Constructor[] constructors = metricsClass.getConstructors();
-        constructors[0].newInstance(reporterName, this.registry, metricsServerURL);
+        final Constructor<?> ctor = metricsClass.getConstructor(reporterName.getClass(),
+            this.registry.getClass(), metricsServerURL.getClass(), boolean.class);
+        ctor.newInstance(reporterName, this.registry, metricsServerURL, true);
 
       } catch (final Exception e) {
         log.error("Encountered error while loading and instantiating "

@@ -978,6 +978,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
+    exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options;
     try {

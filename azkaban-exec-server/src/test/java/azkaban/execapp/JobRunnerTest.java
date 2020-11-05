@@ -89,7 +89,7 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testBasicRun() throws IOException {
+  public void testBasicRun() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
@@ -97,6 +97,8 @@ public class JobRunnerTest {
     final ExecutableNode node = runner.getNode();
     // Job starts to queue
     runner.setTimeInQueue(System.currentTimeMillis());
+    // ensure that queue duration should be > 0
+    Thread.sleep(1L);
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED

@@ -46,7 +46,7 @@
           }
         }
       };
-      $.get(requestURL, requestData, successHandler, 'json');
+      ${esc.d}.get(requestURL, requestData, successHandler, 'json');
     }
 
     function refreshMetricChart() {
@@ -75,7 +75,7 @@
           });
         }
       };
-      $.get(requestURL, requestData, successHandler, 'json');
+      ${esc.d}.get(requestURL, requestData, successHandler, 'json');
     }
 
     $(document).ready(function () {

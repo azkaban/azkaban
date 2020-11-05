@@ -50,11 +50,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
+  public static final String EXECUTION_SOURCE = "executionSource";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
   private int projectId;
+  private String executionSource;
   private String projectName;
   private String lastModifiedUser;
   private int version;
@@ -176,6 +178,15 @@ public class ExecutableFlow extends ExecutableFlowBase {
   }
 
   @Override
+  public String getExecutionSource() {
+    return this.executionSource;
+  }
+
+  public void setExecutionSource(final String executionSource) {
+    this.executionSource = executionSource;
+  }
+
+  @Override
   public String getProjectName() {
     return this.projectName;
   }
@@ -260,6 +271,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SUBMITUSER_PARAM, this.submitUser);
+    flowObj.put(EXECUTION_SOURCE, this.executionSource);
     flowObj.put(VERSION_PARAM, this.version);
     flowObj.put(LASTMODIFIEDTIME_PARAM, this.lastModifiedTimestamp);
     flowObj.put(LASTMODIFIEDUSER_PARAM, this.lastModifiedUser);
@@ -298,6 +310,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     this.projectId = flowObj.getInt(PROJECTID_PARAM);
     this.projectName = flowObj.getString(PROJECTNAME_PARAM);
+    this.executionSource = flowObj.getString(EXECUTION_SOURCE);
     this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
     this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
     this.version = flowObj.getInt(VERSION_PARAM);

@@ -322,7 +322,7 @@ public class ProjectManager {
   }
 
   public void setJobOverrideProperty(final Project project, final Flow flow, final Props prop,
-      final String jobName, final String source, final User modifier)
+      final String jobName, final String source, final User modifier)  // todo: add IP?
       throws ProjectManagerException {
     File tempDir = null;
     Props oldProps = null;
@@ -405,7 +405,7 @@ public class ProjectManager {
   }
 
   public void updateProjectPermission(final Project project, final String name,
-      final Permission perm, final boolean group, final User modifier)
+      final Permission perm, final boolean group, final User modifier)  // todo: add IP?
       throws ProjectManagerException {
     logger.info("User {} updating permissions for project {} for {} {}", modifier.getUserId(),
         project.getName(), name, perm.toString());
@@ -447,7 +447,7 @@ public class ProjectManager {
   }
 
   public void removeProjectPermission(final Project project, final String name,
-      final boolean group, final User modifier) throws ProjectManagerException {
+      final boolean group, final User modifier) throws ProjectManagerException {  // todo: Add IP?
     logger.info("User {} removing permissions for project {} for {}", modifier.getUserId(),
         project.getName(), name);
 
@@ -550,7 +550,7 @@ public class ProjectManager {
 
     setProjectEventStatus(errorMessage, eventData);
     // Fire project schedule SLA event Listener
-    project.fireEventListeners(ProjectEvent.create(project, type, eventData));
+    project.fireEventListeners(ProjectEvent.create(project, type, eventData));  // todo: add IP?
   }
 
   private void addEventDataFromProject(final Project project, final Map<String, Object> eventData){

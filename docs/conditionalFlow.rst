@@ -22,7 +22,7 @@ Supported operators are:  ``==, !=,  >, >=, <, <=, &&, ||, !``
 
 Condition on job runtime parameter
 ########
-Variable substitution ``${jobName:param}`` can be used to define the condition on job runtime parameter.
+Variable substitution ``${jobName:param}`` can be used to define the condition on the job runtime parameter.
 ``:`` is used to separate the jobName and the parameter.
 The runtime parameter can be compared with a string or a number in the condition.
 Users need to write the value of the parameter into the ``$JOB_OUTPUT_PROP_FILE`` ( This output file is available to most Azkaban jobs ).
@@ -50,7 +50,7 @@ file.
   - all_failed / one_failed:
     ``FAILED, KILLED, CANCELLED``
 
-Users are not allowed to combine multiple condition on job status macros in one single condition because they might have conflict with each other.
+Users are not allowed to combine multiple conditions on job status macros in one single condition because they might have conflict with each other.
 
 Some valid examples
 ########
@@ -112,7 +112,7 @@ A job or embedded flow with condition will show up with a condition tag from the
 
 .. image:: figures/conditionFlowGraph.png
 
-You can view the job condition in the job page:
+You can view the job condition on the job page:
 
 .. image:: figures/jobcondition.png
 

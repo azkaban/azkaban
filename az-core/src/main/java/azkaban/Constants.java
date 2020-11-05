@@ -129,12 +129,17 @@ public class Constants {
   // Used (or should be used) wherever a string representation of UTF_8 charset is needed:
   public static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.toString();
 
+  // Specifies the source(adhoc, scheduled, event) from where flow execution is triggered
+  public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
+  public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
+  public static final String EXECUTION_SOURCE_EVENT = "event";
+
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
-
+    // Property to enable appropriate dispatch model
+    public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
     // Configures Azkaban to use new polling model for dispatching
-    public static final String AZKABAN_POLL_MODEL = "azkaban.poll.model";
     public static final String AZKABAN_POLLING_INTERVAL_MS = "azkaban.polling.interval.ms";
     public static final String AZKABAN_POLLING_LOCK_ENABLED = "azkaban.polling.lock.enabled";
     public static final String AZKABAN_POLLING_CRITERIA_FLOW_THREADS_AVAILABLE =

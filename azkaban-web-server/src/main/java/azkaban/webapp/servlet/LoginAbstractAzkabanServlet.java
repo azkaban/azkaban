@@ -24,6 +24,7 @@ import static azkaban.Constants.UTF_8;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
+import azkaban.spi.EventType;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
@@ -31,6 +32,7 @@ import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
+import azkaban.webapp.CSRFTokenUtility;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -68,6 +70,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private static final AzkabanAPI loginAPI = new AzkabanAPI("action", API_LOGIN);
   private static final HashMap<String, String> contextType = new HashMap<>();
   private static final String[] ERROR_FIELDS = {"error", "error_description", "error_uri"};
+  public static final String SESSION_ID_KEY = "session.id";
+  public static final String HEADER_CSRFTOKEN = "X-CSRF-TOKEN";
+  public static final String TEMPLATE_CSRFTOKEN = "csrfToken";
 
   static {
     contextType.put(".js", "application/javascript");
@@ -121,6 +126,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       resp.sendRedirect(req.getContextPath());
       if (session != null) {
         getApplication().getSessionCache().removeSession(session.getSessionId());
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, session.getUser().getUserId(),
+            WebUtils.getRealClientIpAddr(req));
+      } else {
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, null,
+            WebUtils.getRealClientIpAddr(req), false, "Not logged in");
       }
       return;
     }
@@ -222,18 +232,64 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return false;
   }
 
-  private Session getSessionFromRequest(final HttpServletRequest req) throws ServletException {
-    final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
-    String sessionId = null;
-
-    if (cookie != null) {
-      sessionId = cookie.getValue();
-    }
-
-    if (sessionId == null && hasParam(req, "session.id")) {
-      sessionId = getParam(req, "session.id");
+  private Session getSessionFromRequest(final HttpServletRequest req)
+      throws ServletException {
+    String sessionId = getSessionIdFromCookie(req);
+    if (StringUtils.isEmpty(sessionId) && hasParam(req, SESSION_ID_KEY)) {
+      sessionId = getParam(req, SESSION_ID_KEY);
     }
     return getSessionFromSessionId(sessionId);
+  }
+
+  private String getSessionIdFromCookie(HttpServletRequest req) {
+    final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
+    if (null == cookie) {
+      return null;
+    }
+    return cookie.getValue();
+  }
+
+  /**
+   *
+   * @param req HttpServletRequest
+   * @return True if the CSRF Token is valid, otherwise false
+   */
+  protected boolean validateCSRFToken(final HttpServletRequest req) {
+    String sessionIdFromCookie = getSessionIdFromCookie(req);
+    if (StringUtils.isEmpty(sessionIdFromCookie)) {
+      logger.info("CSRF token validation successful. SessionId is not from cookie.");
+      return true;
+    }
+    String csrfTokenFromRequest = req.getHeader(HEADER_CSRFTOKEN);
+    if (StringUtils.isEmpty(csrfTokenFromRequest)) {
+      logger.info("CSRF token validation failed. Unable to get CSRF token from http header.");
+      return false;
+    }
+    CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
+    if (null == csrfTokenUtility) {
+      logger.info("CSRF token validation failed. Unable to instantiate CSRFTokenUtility class.");
+      return false;
+    }
+    boolean isValidCSRFToken = csrfTokenUtility.validateCSRFToken(sessionIdFromCookie, csrfTokenFromRequest);
+    if (isValidCSRFToken) {
+      logger.info("CSRF token validation successful.");
+    } else {
+      logger.info("CSRF token validation failed. Invalid token value.");
+    }
+    return isValidCSRFToken;
+  }
+
+  protected boolean addCSRFTokenToPage(Page page, Session session) {
+    CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
+    if (null == csrfTokenUtility) {
+      return false;
+    }
+    String csrfToken = csrfTokenUtility.getCSRFTokenFromSession(session);
+    if (!StringUtils.isEmpty(csrfToken)) {
+      page.add(TEMPLATE_CSRFTOKEN, csrfToken);
+      return true;
+    }
+    return false;
   }
 
   private Session getSessionFromSessionId(final String sessionId) {
@@ -358,8 +414,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final Map<String, Object> params = this.multipartParser.parseMultipart(req);
       if (session == null) {
         // See if the session id is properly set.
-        if (params.containsKey("session.id")) {
-          final String sessionId = (String) params.get("session.id");
+        if (params.containsKey(SESSION_ID_KEY)) {
+          final String sessionId = (String) params.get(SESSION_ID_KEY);
 
           session = getSessionFromSessionId(sessionId);
           if (session != null) {
@@ -379,7 +435,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         final String ip = WebUtils.getRealClientIpAddr(req);
 
         try {
-          session = createSession(username, password, ip);
+          session = createSession(username, password, ip, true);
         } catch (final UserManagerException e) {
           writeResponse(resp, "Login error: " + e.getMessage());
           return;
@@ -445,18 +501,35 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     final String password = getParam(req, "password");
     final String ip = WebUtils.getRealClientIpAddr(req);
 
-    return createSession(username, password, ip);
+    return createSession(username, password, ip, true);
   }
 
-  private Session createSession(final String username, final String password, final String ip)
+  /**
+   * Brief note on extra parameter use.
+   *
+   * @param isSuccessFinal {@code createSession} is a good place to invoke event reporter for all
+   *     but one use case where the outcome of createSession itself is not final -- the login
+   *     success is not yet assured. This parameter is to handle that one case. If set to {@code
+   *     false}, then it is caller's responsibility to report the final outcome of the login
+   *     event if {@code createSession} was successful.
+   */
+  private Session createSession(final String username, final String password, final String ip,
+      final boolean isSuccessFinal)
       throws UserManagerException {
-    final UserManager manager = getApplication().getUserManager();
-    final User user = manager.getUser(username, password);
+    try {
+      final UserManager manager = getApplication().getUserManager();
+      final User user = manager.getUser(username, password);
 
-    final String randomUID = UUID.randomUUID().toString();
-    final Session session = new Session(randomUID, user, ip);
+      if (isSuccessFinal) {
+        WebUtils.reportLoginEvent(EventType.USER_LOGIN, user.getUserId(), ip);
+      }
 
-    return session;
+      final String randomUID = UUID.randomUUID().toString();
+      return new Session(randomUID, user, ip);
+    } catch (Exception e) {
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, e.getMessage());
+      throw e;
+    }
   }
 
   protected boolean hasPermission(final Project project, final User user,
@@ -535,7 +608,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final String ip, final HttpServletResponse resp, final Map<String, Object> ret) {
     Session session = null;
     try {
-      session = createSession(username, password, ip);
+      session = createSession(username, password, ip, false);
     } catch (final UserManagerException e) {
       ret.put("error", "Incorrect Login. " + e.getMessage());
       return;
@@ -555,11 +628,14 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     final boolean sessionAdded = getApplication().getSessionCache().addSession(session);
     if (sessionAdded) {
       ret.put("status", "success");
-      ret.put("session.id", session.getSessionId());
+      ret.put(SESSION_ID_KEY, session.getSessionId());
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, session.getUser().getUserId(), ip);
     } else {
-      ret.put("error", "Potential DDoS found, the number of sessions for this user and IP "
+      final String message = "Potential DDoS found, the number of sessions for this user and IP "
           + "reached allowed limit (" + getApplication().getSessionCache()
-          .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
+          .getMaxNumberOfSessionsPerIpPerUser().get() + ").";
+      ret.put("error", message);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, session.getUser().getUserId(), ip, false, message);
     }
   }
 

@@ -16,14 +16,13 @@
 
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import java.io.IOException;
 import java.lang.Thread.State;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +42,8 @@ public interface ExecutorManagerAdapter {
   public long getQueuedFlowSize();
 
   public long getAgedQueuedFlowSize();
+
+  public DispatchMethod getDispatchMethod();
 
   /**
    * <pre>

@@ -15,6 +15,7 @@
  */
 package azkaban.trigger.builtin;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -194,6 +195,7 @@ public class ExecuteFlowAction implements TriggerAction {
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
 
     exflow.setSubmitUser(this.submitUser);
+    exflow.setExecutionSource(Constants.EXECUTION_SOURCE_SCHEDULED);
 
     if (this.executionOptions == null) {
       this.executionOptions = new ExecutionOptions();

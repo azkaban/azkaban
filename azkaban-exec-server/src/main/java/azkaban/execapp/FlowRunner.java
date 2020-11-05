@@ -25,7 +25,7 @@ import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_ON_JOB_STATUS_PA
 import static azkaban.project.DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN;
 
 import azkaban.Constants;
-import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -324,12 +324,18 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
-        if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+        if (isPollDispatchMethodEnabled()) {
           ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
       }
     }
+  }
+
+  private boolean isPollDispatchMethodEnabled() {
+    return DispatchMethod.isPollMethodEnabled(azkabanProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   private void reportFlowFinishedMetrics() {
@@ -731,7 +737,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
       if (base.getParentFlow() != null) {
         propagateStatusAndAlert(base.getParentFlow(), status);
-      } else if (this.azkabanProps.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
+      } else if (isPollDispatchMethodEnabled()) {
         // Alert on the root flow if the first error is encountered.
         // Todo jamiesjc: Add a new FLOW_STATUS_CHANGED event type and alert on that event.
         if (shouldAlert && base.getStatus() == Status.FAILED_FINISHING) {
@@ -1585,7 +1591,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put("jobId", node.getId());
       // Flow specific properties
       final ExecutableFlow executableFlow = node.getExecutableFlow();
-      metaData.put("executionID", String.valueOf(executableFlow.getExecutionId()));
+      metaData.put("executionId", String.valueOf(executableFlow.getExecutionId()));
       metaData.put("flowName", executableFlow.getId());
       metaData.put("projectName", executableFlow.getProjectName());
 
@@ -1599,7 +1605,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
           props.getString("jetty.hostname", "localhost")));
       metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
       // attempt id
-      metaData.put("attemptID", String.valueOf(node.getAttempt()));
+      metaData.put("attemptId", String.valueOf(node.getAttempt()));
       // Job time in queue, kill time, killed by, and failure Message
       metaData.put("modifiedBy", node.getModifiedBy());
       metaData.put("jobKillDuration", String.valueOf(jobRunner.getKillDuration()));
@@ -1697,15 +1703,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   static void propagateMetadataFromProps(final Map<String, String> metaData, final Props inputProps,
       final String nodeType, final String nodeName, final Logger logger) {
 
+    if (null == metaData || null == inputProps || null == logger ||
+        Strings.isNullOrEmpty(nodeType) || Strings.isNullOrEmpty(nodeName)) {
+      throw new IllegalArgumentException("Input params should not be null or empty.");
+    }
+
     // Backward compatibility: Unless user specifies, this will be absent from flows and jobs
     // .. if so, do a no-op like before
     if (!inputProps.containsKey(AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE)) {
       return;
-    }
-
-    if (null == metaData || null == inputProps || null == logger ||
-        Strings.isNullOrEmpty(nodeType) || Strings.isNullOrEmpty(nodeName)) {
-      throw new IllegalArgumentException("Input params should not be null or empty.");
     }
 
     final String propsToPropagate = inputProps
