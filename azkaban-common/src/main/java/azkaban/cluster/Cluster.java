@@ -287,7 +287,7 @@ public class Cluster {
     private final static Logger LOG = LoggerFactory.getLogger(HadoopSecurityManagerClassLoader.class);
 
     private static final String LOG4J_CLASS_PREFIX =
-        Logger.class.getPackage().getName();
+        org.apache.log4j.Logger.class.getPackage().getName();
 
     private final ClassLoader parent;
 
