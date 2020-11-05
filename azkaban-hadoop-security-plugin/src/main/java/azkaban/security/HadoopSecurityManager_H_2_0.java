@@ -31,6 +31,7 @@ import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
+import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -467,9 +468,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
     final Credentials cred = new Credentials();
     fetchMetaStoreToken(props, logger, userToProxyFQN, cred);
-    fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
+      fetchJHSToken(props, logger, userToProxyFQN, cred);
+
       getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
@@ -524,10 +526,13 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final JobConf jobConf = new JobConf();
       final JobClient jobClient = new JobClient(jobConf);
       logger.info("Pre-fetching JT token from JobTracker");
+      Token<DelegationTokenIdentifier> mrdt;
+      try {
+        mrdt = jobClient.getDelegationToken(getMRTokenRenewerInternal(jobConf));
+      } finally {
+        jobClient.close();
+      }
 
-      final Token<DelegationTokenIdentifier> mrdt =
-          jobClient
-              .getDelegationToken(getMRTokenRenewerInternal(jobConf));
       if (mrdt == null) {
         logger.error("Failed to fetch JT token");
         throw new HadoopSecurityManagerException(
@@ -617,7 +622,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private void fetchJHSToken(
       final Props props, final Logger logger, final String userToProxy, final Credentials cred)
-      throws HadoopSecurityManagerException {
+      throws HadoopSecurityManagerException, IOException {
     if (props.getBoolean(OBTAIN_JOBHISTORYSERVER_TOKEN, false)) {
       logger.info("Pre-fetching JH token from job history server");
 
@@ -636,6 +641,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         logger.error("Failed to fetch JH token", e);
         throw new HadoopSecurityManagerException(
             "Failed to fetch JH token for " + userToProxy);
+      }
+
+      if (hsProxy instanceof Closeable) {
+        // HSClientProtocol is not closable, but its only implementation, HSClientProtocolPBClientImpl, is
+        ((Closeable) hsProxy).close();
       }
 
       if (jhsdt == null) {
