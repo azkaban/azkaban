@@ -17,7 +17,6 @@
 
 package azkaban.security;
 
-import java.security.KeyStore;
 
 /**
  * Fetch and inject user secret key into custom credential object.
@@ -30,18 +29,4 @@ public interface CredentialProvider {
    * @param user find out the user's credential and register it.
    */
   public void register(String user);
-
-    /**
-     * get KeyStore to be reused within an Azkaban Flow
-     *
-     * @return KeyStore
-     */
-    public KeyStore getKeyStore();
-
-    /**
-     * set KeyStore
-     *
-     * @param keyStore Object
-     */
-    public void setKeyStore(final KeyStore keyStore);
 }
