@@ -1,6 +1,6 @@
 CREATE TABLE ramp_dependency (
-    dependency VARCHAR(45) NOT NULL,
-    defaultValue VARCHAR (500),
+    dependency VARCHAR(200) NOT NULL,
+    defaultValue VARCHAR (1000),
     jobtypes VARCHAR (1000),
     PRIMARY KEY (dependency)
 );
