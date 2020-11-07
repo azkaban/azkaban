@@ -253,9 +253,13 @@ public class ExecutionOptions {
     this.memoryCheck = memoryCheck;
   }
 
-  public List<SlaOption> getSlaOptions() { return slaOptions; }
+  public List<SlaOption> getSlaOptions() {
+    return this.slaOptions;
+  }
 
-  public void setSlaOptions(final List<SlaOption> slaOptions) { this.slaOptions = slaOptions; }
+  public void setSlaOptions(final List<SlaOption> slaOptions) {
+    this.slaOptions = slaOptions;
+  }
 
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
