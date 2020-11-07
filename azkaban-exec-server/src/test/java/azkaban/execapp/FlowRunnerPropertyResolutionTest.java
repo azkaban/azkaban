@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -92,7 +93,9 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     flowProps.put("props7", "flow7");
     flowProps.put("props6", "flow6");
     flowProps.put("props5", "flow5");
-    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
+    // enable overriding also for existing job props
+    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, null, flowProps,
+        Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, "true"));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
     final ExecutableFlow flow = runner.getExecutableFlow();
