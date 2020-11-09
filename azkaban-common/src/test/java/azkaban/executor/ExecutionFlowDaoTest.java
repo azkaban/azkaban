@@ -577,6 +577,41 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
+  public void testLockSuccessSelectAndUpdateExecutionWithLockingWithoutLimit() throws Exception {
+    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(true);
+    when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false,2, Status.READY).size())
+        .isEqualTo(1);
+    Set<Integer> expectedSet = new HashSet<>();
+    expectedSet.add(flow1.getExecutionId());
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false,2, Status.READY))
+        .isEqualTo(expectedSet);
+  }
+
+  @Test
+  public void testLockSuccessSelectAndUpdateExecutionWithLockingWithLimit() throws Exception {
+    when(mysqlNamedLock.getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(true);
+    when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true,2, Status.READY).size())
+        .isEqualTo(2);
+    Set<Integer> expectedSet = new HashSet<>();
+    expectedSet.add(flow1.getExecutionId());
+    expectedSet.add(flow2.getExecutionId());
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true,2, Status.READY))
+        .isEqualTo(expectedSet);
+  }
+
+  @Test
   public void testSelectAndUpdateExecutionWithPriority() throws Exception {
     // Selecting executions when DB is empty
     assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))

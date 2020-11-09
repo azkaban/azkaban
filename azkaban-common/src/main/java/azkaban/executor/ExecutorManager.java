@@ -112,7 +112,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     this.loadQueuedFlows();
     this.cacheDir = new File(this.azkProps.getString("cache.directory", "cache"));
     // TODO extract QueueProcessor as a separate class, move all of this into it
-    setupExecutorComparatorWeightsMap();
+    setupExecutotrComparatorWeightsMap();
     setupExecutorFilterList();
     this.queueProcessor = setupQueueProcessor();
   }
@@ -136,7 +136,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
         this.sleepAfterDispatchFailure);
   }
 
-  private void setupExecutorComparatorWeightsMap() {
+  private void setupExecutotrComparatorWeightsMap() {
     // initialize comparator feature weights for executor selector from azkaban.properties
     final Map<String, String> compListStrings = this.azkProps
         .getMapByPrefix(ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
@@ -823,7 +823,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
           ExecutorManager.this.runningCandidate = null;
         }
 
-        // do not count failed flow processing (flows still in queue)
+        // do not count failed flow processsing (flows still in queue)
         if (ExecutorManager.this.queuedFlows.getFlow(exflow.getExecutionId()) == null) {
           currentContinuousFlowProcessed++;
         }
