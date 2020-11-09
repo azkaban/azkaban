@@ -20,10 +20,10 @@ package azkaban.webapp;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
-import azkaban.executor.ContainerizedExecutionManager;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerizedExecutionManager;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
@@ -95,7 +95,7 @@ public class AzkabanWebServerModule extends AbstractModule {
             DispatchMethod.PUSH.name()))) {
       case POLL:
         return ExecutionController.class;
-      case PUSH_CONTAINERIZED:
+      case CONTAINERIZED:
         return ContainerizedExecutionManager.class;
       case PUSH:
       default:

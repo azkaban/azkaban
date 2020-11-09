@@ -64,6 +64,8 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   private static final Logger logger = Logger.getLogger(ExecutorManager.class);
   private final RunningExecutions runningExecutions;
   private final RunningExecutionsUpdaterThread updaterThread;
+  private final int maxConcurrentRunsOneFlow;
+  private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private final ExecutorManagerUpdaterStage updaterStage;
   private final ExecutionFinalizer executionFinalizer;
   private final ActiveExecutors activeExecutors;
@@ -93,6 +95,8 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     this.updaterStage = updaterStage;
     this.executionFinalizer = executionFinalizer;
     this.updaterThread = updaterThread;
+    this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
+    this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
   }
 
@@ -108,7 +112,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     this.loadQueuedFlows();
     this.cacheDir = new File(this.azkProps.getString("cache.directory", "cache"));
     // TODO extract QueueProcessor as a separate class, move all of this into it
-    setupExecutorComparatorWeightsMap();
+    setupExecutotrComparatorWeightsMap();
     setupExecutorFilterList();
     this.queueProcessor = setupQueueProcessor();
   }
@@ -132,7 +136,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
         this.sleepAfterDispatchFailure);
   }
 
-  private void setupExecutorComparatorWeightsMap() {
+  private void setupExecutotrComparatorWeightsMap() {
     // initialize comparator feature weights for executor selector from azkaban.properties
     final Map<String, String> compListStrings = this.azkProps
         .getMapByPrefix(ConfigurationKeys.EXECUTOR_SELECTOR_COMPARATOR_PREFIX);
@@ -378,10 +382,9 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
    */
   @Override
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
-    final List<Integer> executionIds =
-        new ArrayList<>(ExecutorUtils.getRunningFlowsHelper(projectId,
-            flowId,
-            this.queuedFlows.getAllEntries()));
+    final List<Integer> executionIds = new ArrayList<>();
+    executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
+        this.queuedFlows.getAllEntries()));
     // it's possible an execution is runningCandidate, meaning it's in dispatching state neither in queuedFlows nor runningFlows,
     // so checks the runningCandidate as well.
     if (this.runningCandidate != null) {
@@ -410,16 +413,6 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     return flows;
   }
 
-  /* Helper method for getActiveFlowsWithExecutor */
-  private void getActiveFlowsWithExecutorHelper(
-      final List<Pair<ExecutableFlow, Optional<Executor>>> flows,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      flows.add(new Pair<>(ref.getSecond(), ref
-          .getFirst().getExecutor()));
-    }
-  }
-
   /**
    * Checks whether the given flow has an active (running, non-dispatched) executions {@inheritDoc}
    *
@@ -435,18 +428,6 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
         isRunning
             || isFlowRunningHelper(projectId, flowId, this.runningExecutions.get().values());
     return isRunning;
-  }
-
-  /* Search a running flow in a collection */
-  private boolean isFlowRunningHelper(final int projectId, final String flowId,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      if (ref.getSecond().getProjectId() == projectId
-          && ref.getSecond().getFlowId().equals(flowId)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /**
@@ -613,13 +594,14 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
   }
 
-  private void modifyExecutingJobs(final ExecutableFlow exFlow,
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> modifyExecutingJobs(final ExecutableFlow exFlow,
       final String command, final String userId, final String... jobIds)
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Pair<ExecutionReference, ExecutableFlow> pair =
           this.runningExecutions.get().get(exFlow.getExecutionId());
-      modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
+      return modifyExecutingJobs(exFlow, command, userId, pair, jobIds);
     }
   }
 
@@ -841,7 +823,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
           ExecutorManager.this.runningCandidate = null;
         }
 
-        // do not count failed flow processing (flows still in queue)
+        // do not count failed flow processsing (flows still in queue)
         if (ExecutorManager.this.queuedFlows.getFlow(exflow.getExecutionId()) == null) {
           currentContinuousFlowProcessed++;
         }
@@ -916,8 +898,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
           exflow.getExecutionId(), reference.getNumErrors()));
     }
 
-    /* Helper method to fetch  overriding Executor, if a valid user has specified otherwise
-    return null */
+    /* Helper method to fetch  overriding Executor, if a valid user has specifed otherwise return null */
     private Executor getUserSpecifiedExecutor(final ExecutionOptions options,
         final int executionId) {
       Executor executor = null;

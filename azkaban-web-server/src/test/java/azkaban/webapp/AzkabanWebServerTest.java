@@ -169,7 +169,7 @@ public class AzkabanWebServerTest {
   }
 
   @Test
-  public void testDispatchMethod()throws Exception {
+  public void testDispatchMethod() {
     // Test for PUSH method
     props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, DispatchMethod.PUSH.name());
     final Injector injector = Guice.createInjector(
@@ -199,7 +199,7 @@ public class AzkabanWebServerTest {
     assertEquals(pollExecutorManagerAdapter.getDispatchMethod(), DispatchMethod.POLL);
 
     // Test for PUSH_CONTAINERIZED method
-    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"PUSH_CONTAINERIZED");
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"CONTAINERIZED");
     final Injector containerizedInjector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(props)
@@ -210,7 +210,7 @@ public class AzkabanWebServerTest {
     final ExecutorManagerAdapter containerizedInjectorInstance =
         containerizedInjector.getInstance(ExecutorManagerAdapter.class);
     assertNotNull(containerizedInjectorInstance);
-    assertEquals(containerizedInjectorInstance.getDispatchMethod(), DispatchMethod.PUSH_CONTAINERIZED);
+    assertEquals(containerizedInjectorInstance.getDispatchMethod(), DispatchMethod.CONTAINERIZED);
 
     // Test default method
     props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"UNKNOWN");

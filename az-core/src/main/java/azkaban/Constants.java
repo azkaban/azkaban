@@ -326,6 +326,7 @@ public class Constants {
     public static final String EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
         "azkaban.executorselector.comparator.";
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
+    public static final String QUEUE_PROCESSOR_WAIT_IN_MS = "azkaban.queue.processor.wait.in.ms";
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
 
@@ -479,5 +480,16 @@ public class Constants {
     public static final String COMMONCONFFILE = "common.properties";
     // common private properties for multiple plugins
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
+  }
+
+  public static class ContainerizationProperties {
+    public static final String CONTAINERIZATION_IMPL_TYPE = "azkaban.containerization.impl"
+        + ".type";
+    public static final String CONTAINERIZATION_EXECUTION_BATCH_ENABLED = "azkaban"
+        + ".containerization.execution.batch.enabled";
+    public static final String CONTAINERIZATION_EXECUTION_BATCH_SIZE = "azkaban.containerization"
+        + ".execution.batch.size";
+    public static final String CONTAINERIZATION_EXECUTION_PROCESSING_THREAD_SIZE = "azkaban"
+        + ".containerization.execution.processing.thread.size";
   }
 }

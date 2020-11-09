@@ -109,6 +109,7 @@ public interface ExecutorManagerAdapter {
   public Map<String, String> doRampActions(List<Map<String, Object>> rampAction)
       throws ExecutorManagerException;
 
+  Status getStartStatus();
   /**
    * Manage servlet call for stats servlet in Azkaban execution server Action can take any of the
    * following values <ul> <li>{@link azkaban.executor.ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
