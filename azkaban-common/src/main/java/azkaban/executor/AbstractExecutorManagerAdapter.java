@@ -1,5 +1,19 @@
+/*
+ * Copyright 2020 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.executor;
-
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
@@ -15,11 +29,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -75,7 +91,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
           .size();
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get flows queued for a long time.", e);
+      this.logger.error("Failed to get flows queued for a long time.", e);
     }
     return size;
   }
@@ -179,12 +195,45 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return this.executorLoader.doRampActions(rampActions);
   }
 
-  protected String uploadExecutableFlow(
-      final ExecutableFlow exflow, final String userId, final String flowId,
+  @Override
+  public Status getStartStatus() {
+    return Status.PREPARING;
+  }
+  /**
+   * When a flow is submitted, insert a new execution into the database queue. {@inheritDoc}
+   */
+  @Override
+  public String submitExecutableFlow(final ExecutableFlow exflow, final String userId)
+      throws ExecutorManagerException {
+    if (exflow.isLocked()) {
+      // Skip execution for locked flows.
+      final String message = String.format("Flow %s for project %s is locked.", exflow.getId(),
+          exflow.getProjectName());
+      logger.info(message);
+      return message;
+    }
+
+    final String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
+    // Use project and flow name to prevent race condition when same flow is submitted by API and
+    // schedule at the same time
+    // causing two same flow submission entering this piece.
+    synchronized (exFlowKey.intern()) {
+      final String flowId = exflow.getFlowId();
+      logger.info("Submitting execution flow " + flowId + " by " + userId);
+
+      String message = uploadExecutableFlow(exflow, userId, flowId, "");
+
+      this.commonMetrics.markSubmitFlowSuccess();
+      message += "Execution queued successfully with exec id " + exflow.getExecutionId();
+      return message;
+    }
+  }
+
+  protected String uploadExecutableFlow(ExecutableFlow exflow, String userId, String flowId,
       String message) throws ExecutorManagerException {
     final int projectId = exflow.getProjectId();
     exflow.setSubmitUser(userId);
-    exflow.setStatus(Status.PREPARING);
+    exflow.setStatus(getStartStatus());
     exflow.setSubmitTime(System.currentTimeMillis());
 
     // Get collection of running flows given a project and a specific flow name
@@ -254,6 +303,39 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   public int getNumberOfJobExecutions(final Project project, final String jobId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchNumExecutableNodes(project.getId(), jobId);
+  }
+
+  /**
+   * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a given
+   * project and flow {@inheritDoc}.
+   *
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   */
+  @Override
+  public List<Integer> getRunningFlows(final int projectId, final String flowId) {
+    final List<Integer> executionIds = new ArrayList<>();
+    try {
+      executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
+          this.executorLoader.fetchUnfinishedFlows().values()));
+    } catch (final ExecutorManagerException e) {
+      logger.error("Failed to get running flows for project " + projectId + ", flow "
+          + flowId, e);
+    }
+    return executionIds;
+  }
+
+  /**
+   * Get all running (unfinished) flows from database. {@inheritDoc}
+   */
+  @Override
+  public List<ExecutableFlow> getRunningFlows() {
+    final ArrayList<ExecutableFlow> flows = new ArrayList<>();
+    try {
+      getFlowsHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+    } catch (final ExecutorManagerException e) {
+      logger.error("Failed to get running flows.", e);
+    }
+    return flows;
   }
 
   protected LogData getFlowLogData(final ExecutableFlow exFlow, final int offset, final int length,
@@ -361,7 +443,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     }
     return response;
   }
-  
+
   /**
    * If the Resource Manager and Job History server urls are configured, find all the Hadoop/Spark
    * application ids present in the Azkaban job's log and then construct the url to job logs in the
@@ -394,6 +476,17 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return jobLogUrlsByAppId;
   }
 
+  @Override
+  public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor() {
+    final List<Pair<ExecutableFlow, Optional<Executor>>> flows = new ArrayList<>();
+    try {
+      getActiveFlowsWithExecutorHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+    } catch (final ExecutorManagerException e) {
+      logger.error("Failed to get active flows with executor.", e);
+    }
+    return flows;
+  }
+
   /**
    * Find all the Hadoop/Spark application ids present in the Azkaban job log. When iterating over
    * the set returned by this method the application ids are in the same order they appear in the
@@ -411,7 +504,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       while (data != null && data.getLength() > 0) {
-        logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+        this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
         String logData = data.getData();
         final int indexOfLastSpace = logData.lastIndexOf(' ');
@@ -428,9 +521,47 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
     return applicationIds;
   }
+
+  /* Helper method to get all execution ids from collection in sorted order. */
+  protected void getExecutionIdsHelper(final List<Integer> allIds,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    collection.stream().forEach(ref -> allIds.add(ref.getSecond().getExecutionId()));
+    Collections.sort(allIds);
+  }
+
+  /* Search a running flow in a collection */
+  protected boolean isFlowRunningHelper(final int projectId, final String flowId,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
+      if (ref.getSecond().getProjectId() == projectId
+          && ref.getSecond().getFlowId().equals(flowId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Helper method to get all flows from collection.
+   */
+  protected void getFlowsHelper(final ArrayList<ExecutableFlow> flows,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    collection.stream().forEach(ref -> flows.add(ref.getSecond()));
+  }
+
+  /* Helper method for getActiveFlowsWithExecutor */
+  protected void getActiveFlowsWithExecutorHelper(
+      final List<Pair<ExecutableFlow, Optional<Executor>>> flows,
+      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
+    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
+      flows.add(new Pair<>(ref.getSecond(), ref
+          .getFirst().getExecutor()));
+    }
+  }
+
 }

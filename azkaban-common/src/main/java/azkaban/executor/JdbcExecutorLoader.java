@@ -23,6 +23,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -84,7 +85,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchQueuedFlows();
+    return fetchQueuedFlows(Status.PREPARING);
+  }
+
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchQueuedFlows(status);
   }
 
   @Override
@@ -364,6 +371,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive);
+  }
+
+  @Override
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, int limit,
+      Status updatedStatus) throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(batchEnabled, limit,
+        updatedStatus);
   }
 
   @Override
