@@ -482,14 +482,14 @@ public class Constants {
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
 
-  public static class ContainerizationProperties {
-    public static final String CONTAINERIZATION_IMPL_TYPE = "azkaban.containerization.impl"
+  public static class ContainerizedExecutionManagerProperties {
+    public static final String CONTAINERIZED_IMPL_TYPE = "azkaban.containerized.impl"
         + ".type";
-    public static final String CONTAINERIZATION_EXECUTION_BATCH_ENABLED = "azkaban"
-        + ".containerization.execution.batch.enabled";
-    public static final String CONTAINERIZATION_EXECUTION_BATCH_SIZE = "azkaban.containerization"
+    public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED = "azkaban"
+        + ".containerized.execution.batch.enabled";
+    public static final String CONTAINERIZED_EXECUTION_BATCH_SIZE = "azkaban.containerized"
         + ".execution.batch.size";
-    public static final String CONTAINERIZATION_EXECUTION_PROCESSING_THREAD_SIZE = "azkaban"
-        + ".containerization.execution.processing.thread.size";
+    public static final String CONTAINERIZED_EXECUTION_PROCESSING_THREAD_SIZE = "azkaban"
+        + ".containerized.execution.processing.thread.size";
   }
 }
