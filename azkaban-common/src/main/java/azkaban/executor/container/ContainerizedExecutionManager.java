@@ -16,6 +16,7 @@
 package azkaban.executor.container;
 
 import azkaban.Constants;
+import azkaban.Constants.ContainerizedExecutionManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.ExecutableFlow;
@@ -54,7 +55,7 @@ public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapte
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway) throws ExecutorManagerException{
     super(azkProps, executorLoader, commonMetrics, apiGateway);
     String containerizedImplProperty =
-        azkProps.getString(Constants.ContainerizationProperties.CONTAINERIZATION_IMPL_TYPE,
+        azkProps.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
     try {
@@ -183,15 +184,15 @@ public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapte
       this.queueProcessorWaitInMS =
           this.azkProps.getLong(Constants.ConfigurationKeys.QUEUE_PROCESSOR_WAIT_IN_MS, 1000);
       this.executionsBatchProcessingEnabled = azkProps
-          .getBoolean(Constants.ContainerizationProperties.CONTAINERIZATION_EXECUTION_BATCH_ENABLED,
+          .getBoolean(ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_BATCH_ENABLED,
               false);
       this.executionsBatchSize =
           azkProps
-              .getInt(Constants.ContainerizationProperties.CONTAINERIZATION_EXECUTION_BATCH_SIZE,
+              .getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_BATCH_SIZE,
                   10);
 
       this.executorService = Executors.newFixedThreadPool(azkProps.getInt(
-          Constants.ContainerizationProperties.CONTAINERIZATION_EXECUTION_PROCESSING_THREAD_SIZE,
+          ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_PROCESSING_THREAD_SIZE,
           10));
       this.setName("Containerized-QueueProcessor-Thread");
     }

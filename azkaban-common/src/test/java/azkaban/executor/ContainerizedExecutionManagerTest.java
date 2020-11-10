@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.ContainerizedExecutionManagerProperties;
 import azkaban.executor.container.ContainerizedExecutionManager;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.metrics.CommonMetrics;
@@ -71,7 +72,7 @@ public class ContainerizedExecutionManagerTest {
     this.loader = mock(ExecutorLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
-    this.props.put(Constants.ContainerizationProperties.CONTAINERIZATION_IMPL_TYPE,
+    this.props.put(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
         ContainerizedImplType.KUBERNETES.name());
 
     this.containerizedExecutionManager = new ContainerizedExecutionManager(this.props, this.loader,
