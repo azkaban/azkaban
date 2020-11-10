@@ -22,6 +22,8 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+
+import java.security.KeyStore;
 import java.util.List;
 import org.apache.log4j.Logger;
 
@@ -129,5 +131,14 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
   @Override
   public HadoopProxy getHadoopProxy() {
     return hadoopProxy;
+  }
+
+  /**
+   * Set keyStore to fetch credentials
+   *
+   * @param keyStore
+   */
+  public void setKeyStore(final KeyStore keyStore) {
+    hadoopProxy.setKeyStore(keyStore);
   }
 }

@@ -71,10 +71,7 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
-import java.security.ProtectionDomain;
+import java.security.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -185,6 +182,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   // Project upload data for events
   private final ProjectFileHandler projectFileHandler;
+
+  // Used in containerized execution
+  private KeyStore keyStore = null;
+
   /**
    * Constructor. This will create its own ExecutorService for thread pools
    */
@@ -1180,6 +1181,13 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     configureJobLevelMetrics(jobRunner);
 
+    if (DispatchMethod.isPushContainerizedMethodEnabled(azkabanProps.
+            getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+                    DispatchMethod.PUSH_CONTAINERIZED.name()))) {
+      // Containerized Execution
+      jobRunner.setKeyStore(keyStore);
+    }
+
     return jobRunner;
   }
 
@@ -1481,6 +1489,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   public FlowRunnerEventListener getFlowRunnerEventListener() {
     return this.flowListener;
+  }
+
+  public void setKeyStore(final KeyStore keyStore) {
+    this.keyStore = keyStore;
   }
 
   // Class helps report the flow start and stop events.

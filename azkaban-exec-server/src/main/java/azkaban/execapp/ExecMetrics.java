@@ -59,7 +59,7 @@ public class ExecMetrics {
   // preparation/start after clock skew issues in execution times are resolved.
 
   @Inject
-  ExecMetrics(final MetricsManager metricsManager) {
+  public ExecMetrics(final MetricsManager metricsManager) {
     this.metricsManager = metricsManager;
     // setup project cache ratio metrics
     this.projectCacheHitRatio = new ProjectCacheHitRatio();

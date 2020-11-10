@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
+import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
@@ -32,6 +33,8 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
+import azkaban.jobtype.AbstractHadoopJavaProcessJob;
+import azkaban.jobtype.HadoopShell;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.spi.EventType;
@@ -45,6 +48,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -104,6 +108,9 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private volatile long queueDuration = 0;
   private volatile long killDuration = 0;
+
+  // Used only in containerized execution
+  private KeyStore keyStore = null;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
       final JobTypeManager jobtypeManager, final Props azkabanProps) {
@@ -742,6 +749,19 @@ public class JobRunner extends EventHandler implements Runnable {
 
       try {
         this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
+        if (keyStore != null &&
+                DispatchMethod.isPushContainerizedMethodEnabled(azkabanProps.
+                getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+                        DispatchMethod.PUSH_CONTAINERIZED.name()))) {
+          // Check if this is a hadoop jobtype
+          if (job instanceof HadoopShell) {
+            HadoopShell hadoopShell = (HadoopShell)job;
+            hadoopShell.setKeyStore(keyStore);
+          } else if (job instanceof AbstractHadoopJavaProcessJob) {
+            AbstractHadoopJavaProcessJob abstractJob = (AbstractHadoopJavaProcessJob)job;
+            abstractJob.setKeyStore(keyStore);
+          }
+        }
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
         return null;
@@ -1000,4 +1020,8 @@ public class JobRunner extends EventHandler implements Runnable {
   public long getKillDuration() { return this.killDuration; }
 
   public void setKillDuration(long killDuration) { this.killDuration = killDuration; }
+
+  public void setKeyStore(final KeyStore keyStore) {
+    this.keyStore = keyStore;
+  }
 }

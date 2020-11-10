@@ -15,6 +15,7 @@
  */
 package azkaban.jobtype;
 
+import java.security.KeyStore;
 import java.util.List;
 import org.apache.log4j.Logger;
 import azkaban.jobExecutor.ProcessJob;
@@ -104,5 +105,14 @@ public class HadoopShell extends ProcessJob implements IHadoopJob {
     super.cancel();
     info("Cancel called.  Killing the launched Hadoop jobs on the cluster");
     hadoopProxy.killAllSpawnedHadoopJobs(getJobProps(), getLog());
+  }
+
+  /**
+   * Set keyStore to fetch credentials
+   *
+   * @param keyStore
+   */
+  public void setKeyStore(final KeyStore keyStore) {
+    hadoopProxy.setKeyStore(keyStore);
   }
 }

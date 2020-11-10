@@ -18,6 +18,8 @@ package azkaban.jobtype;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.File;
+import java.security.KeyStore;
+
 import org.apache.log4j.Logger;
 import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
@@ -65,6 +67,15 @@ public class HadoopProxy {
             + e.getCause());
       }
     }
+  }
+
+  /**
+   * Set KeyStore before fetching Credentials
+   *
+   * @param keyStore
+   */
+  public void setKeyStore(final KeyStore keyStore) {
+    hadoopSecurityManager.setKeyStore(keyStore);
   }
 
   /**

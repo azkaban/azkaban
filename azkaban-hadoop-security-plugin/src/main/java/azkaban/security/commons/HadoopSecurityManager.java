@@ -19,6 +19,7 @@ package azkaban.security.commons;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -81,4 +82,10 @@ public abstract class HadoopSecurityManager {
   public abstract void prefetchToken(File tokenFile, Props props, Logger logger)
       throws HadoopSecurityManagerException;
 
+  public void setKeyStore(final KeyStore keyStore) {
+  }
+
+  public KeyStore getKeyStore(final Props props) {
+    return null;
+  }
 }
