@@ -100,7 +100,7 @@ ext.deps = [
     jettyUtil            : 'org.mortbay.jetty:jetty-util:6.1.26',
     jexl                 : 'org.apache.commons:commons-jexl:2.1.1',
     jodaTime             : 'joda-time:joda-time:2.0',
-    jopt                 : 'net.sf.jopt-simple:jopt-simple:4.3',
+    jopt                 : 'net.sf.jopt-simple:jopt-simple:5.0.3',
     jsr305               : 'com.google.code.findbugs:jsr305:3.0.2',
     junit                : 'junit:junit:4.12',
     kafkaLog4jAppender   : 'org.apache.kafka:kafka-log4j-appender:0.10.0.0',

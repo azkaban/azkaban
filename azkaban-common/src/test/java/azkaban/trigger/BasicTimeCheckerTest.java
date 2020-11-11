@@ -173,7 +173,7 @@ public class BasicTimeCheckerTest {
     final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     // 9:00 UTC == 1:00 PST (difference is 8 hours)
-    final String cronExpression = "0 0 1 1,2 11 ? 2020";
+    final String cronExpression = "0 0 1 4,5 11 ? 2029";
 
     final BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
@@ -182,11 +182,11 @@ public class BasicTimeCheckerTest {
 
     final Condition cond = getCondition(timeChecker);
 
-    final DateTime winter2020 = new DateTime(2020, 11, 1, 9, 0, 0, DateTimeZone.UTC);
+    final DateTime winter2020 = new DateTime(2029, 11, 4, 9, 0, 0, DateTimeZone.UTC);
 
-    final DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 0, 0,
+    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 1, 0, 0,
         DateTimeZone.forID("America/Los_Angeles"));
-    final DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 0, 0,
+    final DateTime winter2020_3 = new DateTime(2029, 11, 4, 2, 0, 0,
         DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
 
@@ -216,7 +216,7 @@ public class BasicTimeCheckerTest {
     final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     // 7:59 UTC == 0:59 PDT (difference is 7 hours)
-    final String cronExpression = "0 59 0 1,2 11 ? 2020";
+    final String cronExpression = "0 59 0 4,5 11 ? 2029";
 
     final BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
@@ -226,8 +226,8 @@ public class BasicTimeCheckerTest {
     final Condition cond = getCondition(timeChecker);
 
     // 7:59 UTC == 0:59 PDT (difference is 7 hours)
-    final DateTime winter2020 = new DateTime(2020, 11, 1, 7, 59, 0, DateTimeZone.UTC);
-    final DateTime winter2020_2 = new DateTime(2020, 11, 1, 0, 59, 0,
+    final DateTime winter2020 = new DateTime(2029, 11, 4, 7, 59, 0, DateTimeZone.UTC);
+    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 0, 59, 0,
         DateTimeZone.forID("America/Los_Angeles"));
 
     // Local time remains the same.
@@ -253,7 +253,7 @@ public class BasicTimeCheckerTest {
     final DateTime pastTime = new DateTime(2020, 1, 1, 00, 00, 0, DateTimeZone.UTC);
 
     // 9:30 UTC == 1:30 PST (difference is 8 hours)
-    final String cronExpression = "0 30 1 1,2 11 ? 2020";
+    final String cronExpression = "0 30 1 4,5 11 ? 2029";
 
     final BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
@@ -263,11 +263,11 @@ public class BasicTimeCheckerTest {
     final Condition cond = getCondition(timeChecker);
 
     // 9:30 UTC == 1:30 PST (difference is 8 hours)
-    final DateTime winter2020 = new DateTime(2020, 11, 1, 9, 30, 0, DateTimeZone.UTC);
+    final DateTime winter2020 = new DateTime(2029, 11, 4, 9, 30, 0, DateTimeZone.UTC);
 
-    final DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 30, 0,
+    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 1, 30, 0,
         DateTimeZone.forID("America/Los_Angeles"));
-    final DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 30, 0,
+    final DateTime winter2020_3 = new DateTime(2029, 11, 4, 2, 30, 0,
         DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
 
