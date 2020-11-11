@@ -43,4 +43,6 @@ dependencies {
     compile deps.metricsCore
     compile deps.metricsJvm
     compile deps.quartz
+    compile deps.javaxValidation
+    compile deps.hibernateValidator
 }

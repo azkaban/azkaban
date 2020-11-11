@@ -36,6 +36,14 @@ import azkaban.utils.Props;
 import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.metrics.WebMetricsImpl;
+import azkaban.imagemgmt.daos.ImageTypeDao;
+import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
+import azkaban.imagemgmt.daos.ImageVersionDao;
+import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageTypeServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionService;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -87,6 +95,10 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
+    bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
+    bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
+    bind(ImageTypeService.class).to(ImageTypeServiceImpl.class);
+    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {

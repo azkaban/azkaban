@@ -426,4 +426,20 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     }
     return Optional.empty();
   }
+
+  protected void sendErrorResponse (HttpServletResponse httpServletResponse, int status,
+      String errorMessage) throws IOException {
+    final Map<String, Object> responseObj = new HashMap<>();
+    responseObj.put("error", status);
+    responseObj.put("message", errorMessage);
+    httpServletResponse.setStatus(status);
+    writeJSON(httpServletResponse, responseObj, true);
+  }
+
+  protected void sendResponse(HttpServletResponse httpServletResponse, int status,
+      Object responseObj) throws IOException {
+    httpServletResponse.setStatus(status);
+    writeJSON(httpServletResponse, responseObj, true);
+  }
+
 }

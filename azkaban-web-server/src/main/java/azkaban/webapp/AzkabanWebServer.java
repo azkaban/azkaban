@@ -78,6 +78,10 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.servlets.ImageTypeServlet;
+import azkaban.imagemgmt.servlets.ImageVersionServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
@@ -101,6 +105,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -154,6 +159,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
+  private ObjectMapper objectMapper;
+  private final ImageVersionService imageVersionService;
+  private final ImageTypeService imageTypeService;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -169,7 +177,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerScheduler flowTriggerScheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
-      final ExecutionLogsCleaner executionLogsCleaner) {
+      final ExecutionLogsCleaner executionLogsCleaner,
+      final ObjectMapper objectMapper,
+      final ImageVersionService imageVersionService,
+      final ImageTypeService imageTypeService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -185,6 +196,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
+    this.objectMapper = objectMapper;
+    this.imageVersionService = requireNonNull(imageVersionService, "imageVersionService is "
+        + "null");
+    this.imageTypeService = requireNonNull(imageTypeService, "imageTypeService is "
+        + "null");
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -437,6 +453,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
 
     routesMap.put("/status", new StatusServlet(this.statusService));
+
+    routesMap.put("/imageVersions", new ImageVersionServlet());
+    routesMap.put("/imageTypes", new ImageTypeServlet());
 
     // Configure core routes
     for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
@@ -706,5 +725,17 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       logger.error(e);
     }
     this.server.destroy();
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return this.objectMapper;
+  }
+
+  public ImageVersionService getImageVersionsService() {
+    return this.imageVersionService;
+  }
+
+  public ImageTypeService getImageTypeService() {
+    return imageTypeService;
   }
 }
