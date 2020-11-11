@@ -2,7 +2,7 @@
 **Authors:** @Arvind Pruthi, @Janki Akhani, @Shardool Shardool, @Deepak Jaiswal, @Aditya Sharma, @Abhishek Nath
 
 ## Background/Overview of Bare-Metal Architecture
-![](figures/azkaban-architecture.png)
+![](/docs/figures/azkaban-architecture.png)
 
 - Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db
 to track history and state.
@@ -90,7 +90,7 @@ jobtypes to evolve independently of each other.
 independent evolution.
 
 ## High Level Design
-![](figures/containerized-high-level-arch.png)
+![](docs/figures/containerized-high-level-arch.png)
 
 ### Design Summary 
 1. Azkaban will follow a **Disposable Container** model. This implies that whenever a flow is to be launched,
