@@ -19,12 +19,12 @@ apply plugin: 'distribution'
 dependencies {
     compile(project(':az-core'))
     compile(project(':azkaban-common'))
+    compile(project(':azkaban-hadoop-security-plugin'))
+    compile(project(':az-hadoop-jobtype-plugin')) {
 
     compile deps.guava
     compile deps.jsr305
     compile deps.kafkaLog4jAppender
-    runtime(project(':azkaban-hadoop-security-plugin'))
-    runtime(project(':az-hadoop-jobtype-plugin')) {
         transitive = false
     }
 

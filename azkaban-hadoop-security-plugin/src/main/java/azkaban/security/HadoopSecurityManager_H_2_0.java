@@ -26,6 +26,7 @@ import azkaban.Constants;
 import azkaban.Constants.FlowProperties;
 import azkaban.Constants.JobProperties;
 import azkaban.ServiceProvider;
+import azkaban.executor.KeyStoreManager;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
@@ -39,6 +40,7 @@ import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.KeyStore;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
@@ -356,27 +358,49 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     return this.shouldProxy;
   }
 
-  private void registerCustomCredential(final Props props, final Credentials hadoopCred, final
-  String userToProxy, final Logger jobLogger, final String customCredentialProviderName) {
+  private CredentialProviderWithKeyStore getCustomCredentialProvider(final Props props, final Credentials hadoopCred,
+      final Logger jobLogger, final String customCredentialProviderName) {
     String credentialClassName = "unknown class";
-      try {
-        credentialClassName = props.getString(customCredentialProviderName);
-        logger.info("custom credential class name: " + credentialClassName);
-        final Class credentialClass = Class.forName(credentialClassName);
+    try {
+      credentialClassName = props.getString(customCredentialProviderName);
+      logger.info("custom credential class name: " + credentialClassName);
+      final Class credentialClass = Class.forName(credentialClassName);
 
-        // The credential class must have a constructor accepting 3 parameters, Credentials,
-        // Props, and Logger in order.
-        final Constructor constructor = credentialClass.getConstructor(Credentials.class, Props.class, Logger.class);
-        final CredentialProvider customCredential = (CredentialProvider) constructor
+      // The credential class must have a constructor accepting 3 parameters, Credentials,
+      // Props, and Logger in order.
+      final Constructor constructor = credentialClass.getConstructor(Credentials.class, Props.class, Logger.class);
+      final CredentialProviderWithKeyStore customCredential = (CredentialProviderWithKeyStore) constructor
               .newInstance(hadoopCred, props, jobLogger);
-        customCredential.register(userToProxy);
+      return customCredential;
+    } catch (final Exception e) {
+      logger.error("Encountered error while loading and instantiating "
+              + credentialClassName, e);
+      throw new IllegalStateException("Encountered error while loading and instantiating "
+              + credentialClassName, e);
+    }
+  }
 
-      } catch (final Exception e) {
-        logger.error("Encountered error while loading and instantiating "
-            + credentialClassName, e);
-        throw new IllegalStateException("Encountered error while loading and instantiating "
-            + credentialClassName, e);
-      }
+  private void registerCustomCredential(final Props props, final Credentials hadoopCred,
+      final String userToProxy, final Logger jobLogger, final String customCredentialProviderName) {
+    final CredentialProviderWithKeyStore customCredential = getCustomCredentialProvider(
+            props, hadoopCred, jobLogger, customCredentialProviderName);
+    final KeyStore keyStore = KeyStoreManager.getInstance().getKeyStore();
+    if (keyStore != null) {
+      // Containerized Execution.
+      customCredential.setKeyStore(keyStore);
+    }
+    customCredential.register(userToProxy);
+  }
+
+  @Override
+  public KeyStore getKeyStore(final Props props) {
+    logger.info("Prefetching KeyStore for the flow");
+    final Credentials cred = new Credentials();
+    final CredentialProviderWithKeyStore customCredential = getCustomCredentialProvider(
+            props, cred, logger, Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+    final KeyStore keyStore = customCredential.getKeyStore();
+    KeyStoreManager.getInstance().setKeyStore(keyStore);
+    return keyStore;
   }
 
   @Override
@@ -428,7 +452,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       throw new HadoopSecurityManagerException("Failed to cancel tokens "
           + e.getMessage() + e.getCause(), e);
     }
-
   }
 
   /**

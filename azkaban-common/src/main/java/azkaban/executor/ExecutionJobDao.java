@@ -43,7 +43,7 @@ public class ExecutionJobDao {
   private final DatabaseOperator dbOperator;
 
   @Inject
-  ExecutionJobDao(final DatabaseOperator databaseOperator) {
+  public ExecutionJobDao(final DatabaseOperator databaseOperator) {
     this.dbOperator = databaseOperator;
   }
 

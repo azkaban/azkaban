@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -41,6 +42,9 @@ public class JobTypeManager {
   private final ClassLoader parentLoader;
   private final Props globalProperties;
   private JobTypePluginSet pluginSet;
+  // Only used to load keyStore.
+  private Props keyStoreLoadProps = null;
+  private KeyStore keyStore = null;
 
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
       final ClassLoader parentClassLoader) {
@@ -125,6 +129,7 @@ public class JobTypeManager {
           + " found. Attempt to load.");
       try {
         commonPluginLoadProps = new Props(null, commonLoadPropsFile);
+        keyStoreLoadProps = commonPluginLoadProps;
       } catch (final IOException e) {
         throw new JobTypeManagerException(
             "Failed to load common plugin loader properties" + e.getCause());
@@ -151,6 +156,9 @@ public class JobTypeManager {
     }
   }
 
+  private void getKeyStore(final Props props) {
+
+  }
   private void loadJobTypes(final File pluginDir, final JobTypePluginSet plugins)
       throws JobTypeManagerException {
     // Directory is the jobtypeName
@@ -382,5 +390,16 @@ public class JobTypeManager {
    */
   public synchronized JobTypePluginSet getJobTypePluginSet() {
     return this.pluginSet;
+  }
+
+  /**
+   * Get the keystore load props
+   */
+  public Props getKeyStoreLoadProps() {
+    return keyStoreLoadProps;
+  }
+
+  public void setKeyStore(final KeyStore keyStore) {
+    this.keyStore = keyStore;
   }
 }
