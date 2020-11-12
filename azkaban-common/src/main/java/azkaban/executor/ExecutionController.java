@@ -137,25 +137,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   }
 
   /**
-   * Checks whether the given flow has an active (running, non-dispatched) execution from database.
-   * {@inheritDoc}
-   */
-  @Override
-  public boolean isFlowRunning(final int projectId, final String flowId) {
-    boolean isRunning = false;
-    try {
-      isRunning = isFlowRunningHelper(projectId, flowId,
-          this.executorLoader.fetchUnfinishedFlows().values());
-
-    } catch (final ExecutorManagerException e) {
-      logger.error(
-          "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
-          e);
-    }
-    return isRunning;
-  }
-
-  /**
    * Get execution ids of all running (unfinished) flows from database.
    */
   public List<Integer> getRunningFlowIds() {

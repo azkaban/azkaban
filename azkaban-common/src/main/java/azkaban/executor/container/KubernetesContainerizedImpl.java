@@ -15,8 +15,10 @@
  */
 package azkaban.executor.container;
 
+import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.Props;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,9 +27,13 @@ import org.slf4j.LoggerFactory;
  */
 public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final Props azkProps;
+  private final ExecutorLoader executorLoader;
   private static final Logger logger = LoggerFactory.getLogger(KubernetesContainerizedImpl.class);
-  KubernetesContainerizedImpl(final Props azkProps) throws ExecutorManagerException {
+
+  @Inject
+  KubernetesContainerizedImpl(final Props azkProps, final ExecutorLoader executorLoader) throws ExecutorManagerException {
     this.azkProps = azkProps;
+    this.executorLoader = executorLoader;
   }
 
   @Override

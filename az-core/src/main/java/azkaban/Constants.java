@@ -483,13 +483,15 @@ public class Constants {
   }
 
   public static class ContainerizedExecutionManagerProperties {
-    public static final String CONTAINERIZED_IMPL_TYPE = "azkaban.containerized.impl"
-        + ".type";
-    public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED = "azkaban"
-        + ".containerized.execution.batch.enabled";
-    public static final String CONTAINERIZED_EXECUTION_BATCH_SIZE = "azkaban.containerized"
-        + ".execution.batch.size";
-    public static final String CONTAINERIZED_EXECUTION_PROCESSING_THREAD_SIZE = "azkaban"
-        + ".containerized.execution.processing.thread.size";
+    public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
+    public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
+    public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
+        AZKABAN_CONTAINERIZED_PREFIX + "execution.batch.enabled";
+    public static final String CONTAINERIZED_EXECUTION_BATCH_SIZE = AZKABAN_CONTAINERIZED_PREFIX +
+        "execution.batch.size";
+    public static final String CONTAINERIZED_EXECUTION_PROCESSING_THREAD_POOL_SIZE =
+        AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
+    public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
+        AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
   }
 }

@@ -41,6 +41,10 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is used as an abstract implementation for ExecutorManagerAdapter. It has common code
+ * for all the dispatch method implementations.
+ */
 public abstract class AbstractExecutorManagerAdapter extends EventHandler implements
     ExecutorManagerAdapter {
 
@@ -77,13 +81,18 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return this.executorLoader.fetchExecutableFlow(execId);
   }
 
+  /**
+   * This method is used to get size of aged queued flows from database.
+   *
+   * @return
+   */
   @Override
   public long getAgedQueuedFlowSize() {
     long size = 0L;
     final int minimum_age_minutes = this.azkProps.getInt(
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
-
+    long startTime = System.currentTimeMillis();
     // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
     // all we care about is the count. Write a new class that's more performant and can be used for
     // metrics. this.executorLoader.fetchAgedQueuedFlows internally calls FetchQueuedExecutableFlows.
@@ -91,11 +100,18 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
           .size();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get flows queued for a long time.", e);
+      logger.error("Failed to get flows queued for a long time.", e);
     }
+    logger.info("Time taken to fetch size of queued flows is {}",
+        (System.currentTimeMillis() - startTime) / 1000);
     return size;
   }
 
+  /**
+   * This method is used to get recently finished flows from database.
+   *
+   * @return
+   */
   @Override
   public List<ExecutableFlow> getRecentlyFinishedFlows() {
     List<ExecutableFlow> flows = new ArrayList<>();
@@ -108,6 +124,14 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return flows;
   }
 
+  /**
+   * This method is used to get history of executions for a flow.
+   *
+   * @param skip
+   * @param size
+   * @return
+   * @throws ExecutorManagerException
+   */
   @Override
   public List<ExecutableFlow> getExecutableFlows(final int skip, final int size)
       throws ExecutorManagerException {
@@ -147,6 +171,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         status);
   }
 
+  /**
+   * Manage servlet call for jmx servlet in Azkaban execution server {@inheritDoc}
+   *
+   * @param hostPort
+   * @param action
+   * @param mBean
+   * @return
+   * @throws IOException
+   */
   @Override
   public Map<String, Object> callExecutorJMX(final String hostPort, final String action,
       final String mBean) throws IOException {
@@ -195,10 +228,17 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     return this.executorLoader.doRampActions(rampActions);
   }
 
+  /**
+   * This method is used to get start status for executions in queue. By default it is PREPARING.
+   * Implementation of this abstract class can have it's own start status in queue.
+   *
+   * @return
+   */
   @Override
   public Status getStartStatus() {
     return Status.PREPARING;
   }
+
   /**
    * When a flow is submitted, insert a new execution into the database queue. {@inheritDoc}
    */
@@ -488,6 +528,25 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   /**
+   * Checks whether the given flow has an active (running, non-dispatched) execution from database.
+   * {@inheritDoc}
+   */
+  @Override
+  public boolean isFlowRunning(final int projectId, final String flowId) {
+    boolean isRunning = false;
+    try {
+      isRunning = isFlowRunningHelper(projectId, flowId,
+          this.executorLoader.fetchUnfinishedFlows().values());
+
+    } catch (final ExecutorManagerException e) {
+      logger.error(
+          "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
+          e);
+    }
+    return isRunning;
+  }
+
+  /**
    * Find all the Hadoop/Spark application ids present in the Azkaban job log. When iterating over
    * the set returned by this method the application ids are in the same order they appear in the
    * log.
@@ -504,7 +563,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       while (data != null && data.getLength() > 0) {
-        this.logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
+        logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
         String logData = data.getData();
         final int indexOfLastSpace = logData.lastIndexOf(' ');
@@ -521,7 +580,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
+      logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
           ", job " + jobId + ", attempt " + attempt + ", data offset " + offset, e);
     }
     return applicationIds;

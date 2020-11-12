@@ -46,7 +46,7 @@ public enum DispatchMethod {
     return DispatchMethod.getDispatchMethod(dispatchMethod) == DispatchMethod.PUSH;
   }
 
-  public static boolean isPushContainerizedMethodEnabled(String dispatchMethod) {
+  public static boolean isContainerizedMethodEnabled(String dispatchMethod) {
     return DispatchMethod.getDispatchMethod(dispatchMethod) == DispatchMethod.CONTAINERIZED;
   }
 }

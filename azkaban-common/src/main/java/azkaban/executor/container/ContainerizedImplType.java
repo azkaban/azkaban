@@ -15,9 +15,6 @@
  */
 package azkaban.executor.container;
 
-import azkaban.executor.ExecutorManagerException;
-import azkaban.utils.Props;
-
 /**
  * This enum represents implementation for Containerization. For now, we are adding
  * implementation for Kubernetes but in future, execution can be dispatched on any other
@@ -34,21 +31,5 @@ public enum ContainerizedImplType {
 
   public Class getImplClass() {
     return implClass;
-  }
-}
-
-/**
- * This class is used as factory pattern to get implementation class for containerization based
- * on the implementation type mentioned in property.
- */
-class ContainerizedImplFactory {
-
-  static ContainerizedImpl getContainerizedImpl(final Props azkProps,
-      final ContainerizedImplType containerizedImplType) throws ExecutorManagerException {
-    switch (containerizedImplType) {
-      case KUBERNETES:
-        return new KubernetesContainerizedImpl(azkProps);
-    }
-    throw new ExecutorManagerException("Unable to create instance of ContainerizedImpl.");
   }
 }
