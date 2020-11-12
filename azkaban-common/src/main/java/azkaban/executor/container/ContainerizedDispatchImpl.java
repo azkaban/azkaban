@@ -44,28 +44,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapter {
+public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
 
   private ContainerizedImpl containerizedImpl;
   private QueueProcessorThread queueProcessor;
-  private static final Logger logger = LoggerFactory.getLogger(ContainerizedExecutionManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchImpl.class);
 
   @Inject
-  public ContainerizedExecutionManager(final Props azkProps, final ExecutorLoader executorLoader,
-      final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway) throws ExecutorManagerException{
+  public ContainerizedDispatchImpl(final Props azkProps, final ExecutorLoader executorLoader,
+      final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
+      final ContainerizedImpl containerizedImpl) throws ExecutorManagerException{
     super(azkProps, executorLoader, commonMetrics, apiGateway);
-    String containerizedImplProperty =
-        azkProps.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
-            ContainerizedImplType.KUBERNETES.name())
-            .toUpperCase();
-    try {
-      this.containerizedImpl = ContainerizedImplFactory.getContainerizedImpl(azkProps,
-          ContainerizedImplType.valueOf(containerizedImplProperty));
-    } catch (ExecutorManagerException e) {
-      logger.error("Could not create containerized implementation class for {}",
-          containerizedImplProperty);
-      throw new ExecutorManagerException("Unable to create containerized implementation.");
-    }
+    this.containerizedImpl = containerizedImpl;
   }
 
   /**
@@ -192,7 +182,7 @@ public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapte
                   10);
 
       this.executorService = Executors.newFixedThreadPool(azkProps.getInt(
-          ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_PROCESSING_THREAD_SIZE,
+          ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_PROCESSING_THREAD_POOL_SIZE,
           10));
       this.setName("Containerized-QueueProcessor-Thread");
     }
@@ -209,7 +199,7 @@ public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapte
             }
             wait(queueProcessorWaitInMS);
           } catch (final Exception e) {
-            ContainerizedExecutionManager.logger.error(
+            ContainerizedDispatchImpl.logger.error(
                 "QueueProcessorThread Interrupted. Probably to shut down.", e);
           }
         }
@@ -234,7 +224,7 @@ public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapte
 
     public void setActive(final boolean isActive) {
       this.isActive = isActive;
-      ContainerizedExecutionManager.logger
+      ContainerizedDispatchImpl.logger
           .info("QueueProcessorThread active turned " + this.isActive);
     }
 
@@ -259,16 +249,16 @@ public class ContainerizedExecutionManager extends AbstractExecutorManagerAdapte
     @Override
     public void run() {
       try {
-        ContainerizedExecutionManager.this.containerizedImpl.createContainer(executionId);
+        ContainerizedDispatchImpl.this.containerizedImpl.createContainer(executionId);
       } catch (ExecutorManagerException e) {
         logger.info("Unable to dispatch container in Kubernetes for : {}", executionId);
         final ExecutableFlow dsFlow;
         try {
           dsFlow =
-              ContainerizedExecutionManager.this.executorLoader.fetchExecutableFlow(executionId);
+              ContainerizedDispatchImpl.this.executorLoader.fetchExecutableFlow(executionId);
           dsFlow.setStatus(Status.READY);
           dsFlow.setUpdateTime(System.currentTimeMillis());
-          ContainerizedExecutionManager.this.executorLoader.updateExecutableFlow(dsFlow);
+          ContainerizedDispatchImpl.this.executorLoader.updateExecutableFlow(dsFlow);
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
         }

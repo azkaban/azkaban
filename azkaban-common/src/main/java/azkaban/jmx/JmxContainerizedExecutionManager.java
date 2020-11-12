@@ -15,38 +15,41 @@
  */
 package azkaban.jmx;
 
-import azkaban.executor.container.ContainerizedExecutionManager;
+import azkaban.executor.container.ContainerizedDispatchImpl;
 
+/**
+ * JMX for Containerized execution manager to monitor executions which are dispatched on containers.
+ */
 public class JmxContainerizedExecutionManager implements JmxContainerizedExecutionManagerMBean {
 
-  private final ContainerizedExecutionManager containerizedExecutionManager;
+  private final ContainerizedDispatchImpl containerizedDispatchImpl;
 
-  public JmxContainerizedExecutionManager(final ContainerizedExecutionManager containerizedExecutionManager) {
-    this.containerizedExecutionManager = containerizedExecutionManager;
+  public JmxContainerizedExecutionManager(final ContainerizedDispatchImpl containerizedDispatchImpl) {
+    this.containerizedDispatchImpl = containerizedDispatchImpl;
   }
   @Override
   public int getNumRunningFlows() {
-    return this.containerizedExecutionManager.getRunningFlows().size();
+    return this.containerizedDispatchImpl.getRunningFlows().size();
   }
 
   @Override
   public String getRunningFlows() {
-    return this.containerizedExecutionManager.getRunningFlowIds().toString();
+    return this.containerizedDispatchImpl.getRunningFlowIds().toString();
   }
 
   @Override
   public boolean isQueueProcessorActive() {
-    return this.containerizedExecutionManager.isQueueProcessorThreadActive();
+    return this.containerizedDispatchImpl.isQueueProcessorThreadActive();
   }
 
   @Override
   public String getQueuedFlows() {
-    return this.containerizedExecutionManager.getQueuedFlowIds().toString();
+    return this.containerizedDispatchImpl.getQueuedFlowIds().toString();
   }
 
   @Override
   public String getQueueProcessorThreadState() {
-    return this.containerizedExecutionManager.getQueueProcessorThreadState().toString();
+    return this.containerizedDispatchImpl.getQueueProcessorThreadState().toString();
   }
 }
 
