@@ -29,6 +29,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
@@ -43,11 +44,17 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is used to dispatch execution on Containerized infrastructure. Each execution will
+ * be dispatched in single container. This way, it will bring isolation between all the
+ * executions.
+ */
 @Singleton
 public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
 
-  private ContainerizedImpl containerizedImpl;
+  private final ContainerizedImpl containerizedImpl;
   private QueueProcessorThread queueProcessor;
+  private final RateLimiter rateLimiter;
   private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchImpl.class);
 
   @Inject
@@ -55,26 +62,9 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl) throws ExecutorManagerException{
     super(azkProps, executorLoader, commonMetrics, apiGateway);
+    rateLimiter =
+        RateLimiter.create(azkProps.getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
     this.containerizedImpl = containerizedImpl;
-  }
-
-  /**
-   * Checks whether the given flow has an active (running, non-dispatched) execution from database.
-   * {@inheritDoc}
-   */
-  @Override
-  public boolean isFlowRunning(final int projectId, final String flowId) {
-    boolean isRunning = false;
-    try {
-      isRunning = isFlowRunningHelper(projectId, flowId,
-          this.executorLoader.fetchUnfinishedFlows().values());
-
-    } catch (final ExecutorManagerException e) {
-      logger.error(
-          "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
-          e);
-    }
-    return isRunning;
   }
 
   /**
@@ -90,6 +80,11 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     return allIds;
   }
 
+  /**
+   * Get queued flow ids from database. The status for queued flows is READY for
+   * containerization.
+   * @return
+   */
   public List<Integer> getQueuedFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     try {
@@ -100,16 +95,28 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     return allIds;
   }
 
+  /**
+   * Get size of queued flows. The status for queued flows is READY for containerization.
+   * @return
+   */
   @Override
   public long getQueuedFlowSize() {
     return getQueuedFlowIds().size();
   }
 
+  /**
+   * Get dispatch method enum for this class.
+   * @return
+   */
   @Override
   public DispatchMethod getDispatchMethod() {
     return DispatchMethod.CONTAINERIZED;
   }
 
+  /**
+   * This method is used to start queue processor thread. The queue processor thread will pick
+   * execution from queue maintained in database and create a container for it.
+   */
   @Override
   public void start() {
     this.queueProcessor = setupQueueProcessor();
@@ -121,23 +128,40 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
         this.azkProps, this.executorLoader);
   }
 
+  /**
+   * Get the status for executions maintained in queue. For other dispatch implementations, the
+   * status for executions in queue is PREPARING. But for containerized dispatch method, the status
+   * will be READY.
+   * @return
+   */
   @Override
   public Status getStartStatus() {
     return Status.READY;
   }
 
+  /**
+   * This method will shutdown the queue processor thread. It won't pick up executions from queue
+   * for dispatch after this. This method will be called when webserver will shutdown.
+   */
   @Override
   public void shutdown() {
+    logger.info("Shutting down queue processor thread for containerized dispatch implementation.");
     if (null != this.queueProcessor) {
       this.queueProcessor.shutdown();
     }
   }
 
+  /**
+   * This method is used to enable queue processor thread. It will resume dispatching executions.
+   */
   @Override
   public void enableQueueProcessorThread() {
     this.queueProcessor.setActive(true);
   }
 
+  /**
+   * This method is used to disable queue processor thread. It will stop dispatching executions.
+   */
   @Override
   public void disableQueueProcessorThread() {
     this.queueProcessor.setActive(false);
@@ -152,12 +176,11 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
   }
 
   /**
-   * This QueueProcessorThread will fetch executions from database in batch and dispatch it in
-   * container.
+   * This QueueProcessorThread will fetch executions from database in batch/single execution at a
+   * time and dispatch it in container.
    */
   private class QueueProcessorThread extends Thread {
 
-    private final long queueProcessorWaitInMS;
     private final Props azkProps;
     private volatile boolean shutdown = false;
     private volatile boolean isActive = true;
@@ -165,14 +188,13 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     private ExecutorLoader executorLoader;
     private boolean executionsBatchProcessingEnabled;
     private int executionsBatchSize;
+    private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
 
     public QueueProcessorThread(final Props azkProps, final ExecutorLoader executorLoader) {
       this.azkProps = azkProps;
       this.executorLoader = executorLoader;
       setActive(
           this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true));
-      this.queueProcessorWaitInMS =
-          this.azkProps.getLong(Constants.ConfigurationKeys.QUEUE_PROCESSOR_WAIT_IN_MS, 1000);
       this.executionsBatchProcessingEnabled = azkProps
           .getBoolean(ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_BATCH_ENABLED,
               false);
@@ -193,11 +215,11 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
       while (!this.shutdown) {
         synchronized (this) {
           try {
-            // start processing queue if active, otherwise wait for sometime
+            // Start processing queue if active, otherwise wait for sometime
             if (this.isActive) {
               processQueuedFlows();
             }
-            wait(queueProcessorWaitInMS);
+            wait(QUEUE_PROCESSOR_WAIT_IN_MS);
           } catch (final Exception e) {
             ContainerizedDispatchImpl.logger.error(
                 "QueueProcessorThread Interrupted. Probably to shut down.", e);
@@ -206,13 +228,20 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
       }
     }
 
-    /* Method responsible for processing the non-dispatched flows */
+    /**
+     * This method is responsible for dispatching the executions in queue in READY state.
+     * It will fetch single execution or in batch based on the property. The batch size can also
+     * be defined in property.
+     * @throws ExecutorManagerException
+     */
     private void processQueuedFlows() throws ExecutorManagerException {
       Set<Integer> executionIds =
           executorLoader.selectAndUpdateExecutionWithLocking(this.executionsBatchProcessingEnabled, this.executionsBatchSize,
               Status.DISPATCHING);
 
       for (int executionId : executionIds) {
+        rateLimiter.acquire();
+        logger.info("Starting dispatch for {} execution.", executionId);
         Runnable worker = new ExecutionDispatcher(executionId);
         executorService.execute(worker);
       }
@@ -225,9 +254,12 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     public void setActive(final boolean isActive) {
       this.isActive = isActive;
       ContainerizedDispatchImpl.logger
-          .info("QueueProcessorThread active turned " + this.isActive);
+          .info("QueueProcessorThread turned " + this.isActive);
     }
 
+    /**
+     * When queue process is shutting down, executor service for dispatch needs shutdown too.
+     */
     public void shutdown() {
       this.shutdown = true;
       this.executorService.shutdown();
@@ -249,9 +281,19 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     @Override
     public void run() {
       try {
+        logger.info("Creating a container for {}", executionId);
+        long startTime = System.currentTimeMillis();
+        // Create a container for execution id. The container creation will throw exception if it
+        //is not able read template files, unable to parse files, unable to replace dynamic
+        //variables etc.
         ContainerizedDispatchImpl.this.containerizedImpl.createContainer(executionId);
+        logger.info("Time taken to dispatch a container for {} is {}", executionId,
+            (System.currentTimeMillis() - startTime) / 1000);
       } catch (ExecutorManagerException e) {
         logger.info("Unable to dispatch container in Kubernetes for : {}", executionId);
+        logger.info("Reason for dispatch failure: {}", e.getMessage());
+        // Reset the status of an execution to READY if dispatched failed. It will be picked up
+        // again from queue.
         final ExecutableFlow dsFlow;
         try {
           dsFlow =
