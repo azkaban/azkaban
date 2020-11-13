@@ -192,7 +192,6 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     private ExecutorLoader executorLoader;
     private boolean executionsBatchProcessingEnabled;
     private int executionsBatchSize;
-    private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
 
     public QueueProcessorThread(final Props azkProps, final ExecutorLoader executorLoader) {
       this.azkProps = azkProps;
@@ -206,7 +205,6 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
           azkProps
               .getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_BATCH_SIZE,
                   10);
-
       this.executorService = Executors.newFixedThreadPool(azkProps.getInt(
           ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_PROCESSING_THREAD_POOL_SIZE,
           10));
@@ -217,21 +215,15 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     public void run() {
       // Loops till QueueProcessorThread is shutdown
       while (!this.shutdown) {
-        // TODO: Validate if synchronized block can be removed
-        synchronized (this) {
           try {
             // Start processing queue if active, otherwise wait for sometime
             if (this.isActive) {
               processQueuedFlows();
             }
-            // TODO: Removing this wait statement is failing some unit tests. Validate if it can
-            //   be removed later on.
-            wait(QUEUE_PROCESSOR_WAIT_IN_MS);
           } catch (final Exception e) {
             ContainerizedDispatchImpl.logger.error(
                 "QueueProcessorThread Interrupted. Probably to shut down.", e);
           }
-        }
       }
     }
 
