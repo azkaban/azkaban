@@ -215,12 +215,15 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     public void run() {
       // Loops till QueueProcessorThread is shutdown
       while (!this.shutdown) {
+        // TODO: Validate if synchronized block can be removed
         synchronized (this) {
           try {
             // Start processing queue if active, otherwise wait for sometime
             if (this.isActive) {
               processQueuedFlows();
             }
+            // TODO: Removing this wait statement is failing some unit tests. Validate if it can
+            //   be removed later on.
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);
           } catch (final Exception e) {
             ContainerizedDispatchImpl.logger.error(
