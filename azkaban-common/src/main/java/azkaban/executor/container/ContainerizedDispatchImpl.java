@@ -153,8 +153,8 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
 
   /**
    * This method is used to enable queue processor thread. It will resume dispatching executions.
-   * TODO: Once queue processor is active, there is no need to enable/disable it. This code can
-   *   be removed. Investigate why there were APIs for it in old dispatch and then remove it.
+   * Due to any maintenance of containerized infrastructure, if queue processor was disabled then
+   * it can enabled again using this method.
    */
   @Override
   public void enableQueueProcessorThread() {
@@ -163,6 +163,8 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
 
   /**
    * This method is used to disable queue processor thread. It will stop dispatching executions.
+   * In case of maintenance of containerized infrastructure, this method can be used to disable
+   * queue processor. It will disable dispatch of executions in containers.
    */
   @Override
   public void disableQueueProcessorThread() {
