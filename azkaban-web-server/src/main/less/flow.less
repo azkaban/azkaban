@@ -141,6 +141,7 @@ td {
 
     &.READY,
     &.UNKNOWN,
+    &.DISPATCHING,
     &.PREPARING {
       background-color: @flow-default-color;
     }
@@ -322,6 +323,10 @@ li.tree-list-item {
     }
 
     &.READY .icon {
+      background-position: 16px 0px;
+    }
+
+    &.DISPATCHING .icon {
       background-position: 16px 0px;
     }
 
