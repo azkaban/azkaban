@@ -303,6 +303,17 @@ public interface ExecutorLoader {
   int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
       throws ExecutorManagerException;
 
+  /**
+   * This method is used to select executions in batch. It will apply lock and fetch executions.
+   * It will also update the status of those executions as mentioned in updatedStatus field.
+   * @param batchEnabled If set to true, fetch the executions in batch
+   * @param limit Limit in case of batch fetch
+   * @param updatedStatus Update the status of executions as mentioned in this field. It can be
+   *                      READY of PREPARING based on whichever is the starting state for any
+   *                      dispatch method.
+   * @return Set of execution ids
+   * @throws ExecutorManagerException
+   */
   Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, final int limit,
       Status updatedStatus) throws ExecutorManagerException;
 
