@@ -127,7 +127,7 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(final Status status)
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
@@ -434,25 +434,29 @@ public class ExecutionFlowDao {
    * @return Set of execution ids
    * @throws ExecutorManagerException
    */
-  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, final int limit,
-      Status updatedStatus)
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
+      final int limit,
+      final Status updatedStatus)
       throws ExecutorManagerException {
     String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
-          + "where exec_id in (?)";
+        + "where exec_id in (?)";
     final SQLTransaction<Set<Integer>> selectAndUpdateExecution = transOperator -> {
       final String POLLING_LOCK_NAME = "execution_flows_polling";
       final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
       Set<Integer> executions = new HashSet<>();
-      final boolean hasLocked = this.mysqlNamedLock.getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
+      final boolean hasLocked = this.mysqlNamedLock
+          .getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
       logger.info("ExecutionFlow polling lock value: " + hasLocked);
       if (hasLocked) {
         try {
           List<Integer> execIds;
           if (batchEnabled) {
-            execIds = transOperator.query(String.format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT,""),
+            execIds = transOperator.query(String
+                    .format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT, ""),
                 new SelectFromExecutionFlows(), Status.READY.getNumVal(), limit);
           } else {
-            execIds = transOperator.query(String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
+            execIds = transOperator.query(
+                String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
                 new SelectFromExecutionFlows(), Status.READY.getNumVal());
           }
           if (CollectionUtils.isNotEmpty(execIds)) {

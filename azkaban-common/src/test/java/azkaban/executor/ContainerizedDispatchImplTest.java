@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,6 +57,7 @@ public class ContainerizedDispatchImplTest {
   private ExecutorLoader loader;
   private ExecutorApiGateway apiGateway;
   private ContainerizedImpl containerizedImpl;
+  private ContainerizedDispatchImpl containerizedDispatchImpl;
   private Props props;
   private User user;
   private ExecutableFlow flow1;
@@ -98,152 +100,139 @@ public class ContainerizedDispatchImplTest {
 
   @Test
   public void testFetchAllActiveFlows() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
+    initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();
-    final List<ExecutableFlow> flows = containerizedDispatchImpl.getRunningFlows();
+    final List<ExecutableFlow> flows = this.containerizedDispatchImpl.getRunningFlows();
     this.unfinishedFlows.values()
         .forEach(pair -> assertThat(flows.contains(pair.getSecond())).isTrue());
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testFetchAllActiveFlowIds() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
+    initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();
-    assertThat(containerizedDispatchImpl.getRunningFlowIds())
+    assertThat(this.containerizedDispatchImpl.getRunningFlowIds())
         .isEqualTo(new ArrayList<>(this.unfinishedFlows.keySet()));
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testFetchAllQueuedFlowIds() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    assertThat(containerizedDispatchImpl.getQueuedFlowIds())
+    initializeContainerizedDispatchImpl();
+    assertThat(this.containerizedDispatchImpl.getQueuedFlowIds())
         .isEqualTo(ImmutableList.of(this.flow1.getExecutionId()));
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testFetchQueuedFlowSize() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    assertThat(containerizedDispatchImpl.getQueuedFlowSize())
+    initializeContainerizedDispatchImpl();
+    assertThat(this.containerizedDispatchImpl.getQueuedFlowSize())
         .isEqualTo(this.queuedFlows.size());
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testFetchActiveFlowByProject() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
+    initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();
-    final List<Integer> executions = containerizedDispatchImpl
+    final List<Integer> executions = this.containerizedDispatchImpl
         .getRunningFlows(this.flow2.getProjectId(), this.flow2.getFlowId());
     assertThat(executions.contains(this.flow2.getExecutionId())).isTrue();
     assertThat(executions.contains(this.flow3.getExecutionId())).isTrue();
-    assertThat(containerizedDispatchImpl
+    assertThat(this.containerizedDispatchImpl
         .isFlowRunning(this.flow2.getProjectId(), this.flow2.getFlowId()))
         .isTrue();
-    assertThat(containerizedDispatchImpl
+    assertThat(this.containerizedDispatchImpl
         .isFlowRunning(this.flow3.getProjectId(), this.flow3.getFlowId()))
         .isTrue();
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testSubmitFlows() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    containerizedDispatchImpl.submitExecutableFlow(this.flow1, this.user.getUserId());
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchImpl.submitExecutableFlow(this.flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(this.flow1);
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testSubmitFlowsExceedingMaxConcurrentRuns() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    containerizedDispatchImpl.disableQueueProcessorThread();
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchImpl.disableQueueProcessorThread();
     this.props.put(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST, "exectest1,"
         + "exec2,3");
-    submitFlow(this.flow2, this.ref2, containerizedDispatchImpl);
-    submitFlow(this.flow3, this.ref3, containerizedDispatchImpl);
-    assertThatThrownBy(() -> containerizedDispatchImpl
+    submitFlow(this.flow2, this.ref2);
+    submitFlow(this.flow3, this.ref3);
+    assertThatThrownBy(() -> this.containerizedDispatchImpl
         .submitExecutableFlow(this.flow4, this.user.getUserId
             ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
         .flow4.getId() + " has more than 1 concurrent runs. Skipping");
-    containerizedDispatchImpl.shutdown();
   }
 
   @Test
   public void testSubmitFlowsConcurrentWhitelist() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    containerizedDispatchImpl.disableQueueProcessorThread();
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchImpl.disableQueueProcessorThread();
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
-    submitFlow(this.flow2, this.ref2, containerizedDispatchImpl);
-    submitFlow(this.flow3, this.ref3, containerizedDispatchImpl);
-    assertThatThrownBy(() -> containerizedDispatchImpl
+    submitFlow(this.flow2, this.ref2);
+    submitFlow(this.flow3, this.ref3);
+    assertThatThrownBy(() -> this.containerizedDispatchImpl
         .submitExecutableFlow(this.flow4, this.user.getUserId
             ())).isInstanceOf(ExecutorManagerException.class).hasMessageContaining("Flow " + this
         .flow4.getId() + " has more than 1 concurrent runs. Skipping");
-    containerizedDispatchImpl.shutdown();
   }
 
 
   @Test
   public void testSubmitFlowsWithSkipOption() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    submitFlow(this.flow2, this.ref2, containerizedDispatchImpl);
+    initializeContainerizedDispatchImpl();
+    submitFlow(this.flow2, this.ref2);
     this.flow3.getExecutionOptions().setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
     assertThatThrownBy(
-        () -> containerizedDispatchImpl
+        () -> this.containerizedDispatchImpl
             .submitExecutableFlow(this.flow3, this.user.getUserId()))
         .isInstanceOf(ExecutorManagerException.class).hasMessageContaining(
         "Flow " + this.flow3.getId() + " is already running. Skipping execution.");
-    containerizedDispatchImpl.shutdown();
   }
 
 
   @Test
   public void testSetFlowLock() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
+    initializeContainerizedDispatchImpl();
     // trying to execute a locked flow should raise an error
     this.flow1.setLocked(true);
-    final String msg = containerizedDispatchImpl
+    final String msg = this.containerizedDispatchImpl
         .submitExecutableFlow(this.flow1, this.user.getUserId());
     assertThat(msg).isEqualTo("Flow derived-member-data for project flow is locked.");
 
     // should succeed after unlocking the flow
     this.flow1.setLocked(false);
-    containerizedDispatchImpl.submitExecutableFlow(this.flow1, this.user.getUserId());
+    this.containerizedDispatchImpl.submitExecutableFlow(this.flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(this.flow1);
-    containerizedDispatchImpl.shutdown();
   }
 
   /* Test disabling queue process thread to pause dispatching */
   @Test
   public void testDisablingQueueProcessThread() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    Assert.assertEquals(containerizedDispatchImpl.isQueueProcessorThreadActive(), true);
-    containerizedDispatchImpl.disableQueueProcessorThread();
-    Assert.assertEquals(containerizedDispatchImpl.isQueueProcessorThreadActive(), false);
-    containerizedDispatchImpl.enableQueueProcessorThread();
-    containerizedDispatchImpl.shutdown();
+    initializeContainerizedDispatchImpl();
+    Assert.assertEquals(this.containerizedDispatchImpl.isQueueProcessorThreadActive(), true);
+    this.containerizedDispatchImpl.disableQueueProcessorThread();
+    Assert.assertEquals(this.containerizedDispatchImpl.isQueueProcessorThreadActive(), false);
+    this.containerizedDispatchImpl.enableQueueProcessorThread();
   }
 
   /* Test renabling queue process thread to pause restart dispatching */
   @Test
   public void testEnablingQueueProcessThread() throws Exception {
-    ContainerizedDispatchImpl containerizedDispatchImpl = initializeContainerizedDispatchImpl();
-    containerizedDispatchImpl.disableQueueProcessorThread();
-    Assert.assertEquals(containerizedDispatchImpl.isQueueProcessorThreadActive(), false);
-    containerizedDispatchImpl.enableQueueProcessorThread();
-    Assert.assertEquals(containerizedDispatchImpl.isQueueProcessorThreadActive(), true);
-    containerizedDispatchImpl.shutdown();
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchImpl.disableQueueProcessorThread();
+    Assert.assertEquals(this.containerizedDispatchImpl.isQueueProcessorThreadActive(), false);
+    this.containerizedDispatchImpl.enableQueueProcessorThread();
+    Assert.assertEquals(this.containerizedDispatchImpl.isQueueProcessorThreadActive(), true);
   }
 
-  private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref,
-      final ContainerizedDispatchImpl containerizedDispatchImpl) throws
+  private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
       Exception {
     when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
     when(this.loader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    containerizedDispatchImpl.submitExecutableFlow(flow, this.user.getUserId());
+    this.containerizedDispatchImpl.submitExecutableFlow(flow, this.user.getUserId());
     this.unfinishedFlows.put(flow.getExecutionId(), new Pair<>(ref, flow));
   }
 
@@ -255,12 +244,18 @@ public class ContainerizedDispatchImplTest {
     when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
   }
 
-  private ContainerizedDispatchImpl initializeContainerizedDispatchImpl() throws Exception{
-    ContainerizedDispatchImpl containerizedDispatchImpl =
+  private void initializeContainerizedDispatchImpl() throws Exception{
+    this.containerizedDispatchImpl =
         new ContainerizedDispatchImpl(this.props, this.loader,
         this.commonMetrics,
         this.apiGateway, this.containerizedImpl);
-    containerizedDispatchImpl.start();
-    return containerizedDispatchImpl;
+    this.containerizedDispatchImpl.start();
+  }
+
+  @After
+  public void shutdown() {
+    if(this.containerizedDispatchImpl != null) {
+      this.containerizedDispatchImpl.shutdown();
+    }
   }
 }

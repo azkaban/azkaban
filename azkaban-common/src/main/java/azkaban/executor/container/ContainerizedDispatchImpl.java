@@ -75,7 +75,7 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flow ids.", e);
+      logger.error("Failed to get running flow ids.", e);
     }
     return allIds;
   }
@@ -90,7 +90,7 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.READY));
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow ids.", e);
+      logger.error("Failed to get queued flow ids.", e);
     }
     return allIds;
   }
@@ -215,30 +215,32 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
     public void run() {
       // Loops till QueueProcessorThread is shutdown
       while (!this.shutdown) {
-          try {
-            // Start processing queue if active, otherwise wait for sometime
-            if (this.isActive) {
-              processQueuedFlows();
-            }
-          } catch (final Exception e) {
-            ContainerizedDispatchImpl.logger.error(
-                "QueueProcessorThread Interrupted. Probably to shut down.", e);
+        try {
+          // Start processing queue if active, otherwise wait for sometime
+          if (this.isActive) {
+            processQueuedFlows();
           }
+        } catch (final Exception e) {
+          ContainerizedDispatchImpl.logger.error(
+              "QueueProcessorThread Interrupted. Probably to shut down.", e);
+        }
       }
     }
 
     /**
-     * This method is responsible for dispatching the executions in queue in READY state.
-     * It will fetch single execution or in batch based on the property. The batch size can also
-     * be defined in property.
+     * This method is responsible for dispatching the executions in queue in READY state. It will
+     * fetch single execution or in batch based on the property. The batch size can also be defined
+     * in property.
+     *
      * @throws ExecutorManagerException
      */
     private void processQueuedFlows() throws ExecutorManagerException {
-      Set<Integer> executionIds =
-          executorLoader.selectAndUpdateExecutionWithLocking(this.executionsBatchProcessingEnabled, this.executionsBatchSize,
+      final Set<Integer> executionIds =
+          executorLoader.selectAndUpdateExecutionWithLocking(this.executionsBatchProcessingEnabled,
+              this.executionsBatchSize,
               Status.DISPATCHING);
 
-      for (int executionId : executionIds) {
+      for (final int executionId : executionIds) {
         rateLimiter.acquire();
         logger.info("Starting dispatch for {} execution.", executionId);
         Runnable worker = new ExecutionDispatcher(executionId);

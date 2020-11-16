@@ -99,11 +99,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
           .size();
+      logger.info("Time taken to fetch size of queued flows is {}",
+          (System.currentTimeMillis() - startTime) / 1000);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get flows queued for a long time.", e);
     }
-    logger.info("Time taken to fetch size of queued flows is {}",
-        (System.currentTimeMillis() - startTime) / 1000);
     return size;
   }
 
