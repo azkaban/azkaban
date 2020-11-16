@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 public enum Status {
   READY(10),
+  DISPATCHING (15),
   PREPARING(20),
   RUNNING(30),
   PAUSED(40),

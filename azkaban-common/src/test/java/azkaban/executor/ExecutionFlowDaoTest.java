@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -239,7 +240,7 @@ public class ExecutionFlowDaoTest {
         ExecutionOptions.DEFAULT_FLOW_PRIORITY);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows =
-        this.executionFlowDao.fetchQueuedFlows();
+        this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
     assertThat(fetchedQueuedFlows.size()).isEqualTo(2);
     final Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
     final Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
@@ -522,6 +523,59 @@ public class ExecutionFlowDaoTest {
     assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true)).isEqualTo(-1);
   }
 
+  /**
+   * This test method is written to verify that selectAndUpdateExecutionWithLocking is working as
+   * expected when batch select is disabled and execution status to select READY.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testLockSuccessSelectAndUpdateExecutionWithLockingWithoutBatch() throws Exception {
+    when(mysqlNamedLock
+        .getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(true);
+    when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class)))
+        .thenReturn(true);
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+    assertThat(
+        this.executionFlowDao.selectAndUpdateExecutionWithLocking(false, 2, Status.READY).size())
+        .isEqualTo(1);
+    Set<Integer> expectedSet = new HashSet<>();
+    expectedSet.add(flow1.getExecutionId());
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false, 2, Status.READY))
+        .isEqualTo(expectedSet);
+  }
+
+  /**
+   * This method is used to verify that selectAndUpdateExecutionWithLocking is working as expected
+   * when batch is enabled and execution status to select is READY.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testLockSuccessSelectAndUpdateExecutionWithLockingWithBatch() throws Exception {
+    when(mysqlNamedLock
+        .getLock(any(DatabaseTransOperator.class), any(String.class), any(Integer.class)))
+        .thenReturn(true);
+    when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class)))
+        .thenReturn(true);
+    final long currentTime = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", currentTime,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+    assertThat(
+        this.executionFlowDao.selectAndUpdateExecutionWithLocking(true, 2, Status.READY).size())
+        .isEqualTo(2);
+    Set<Integer> expectedSet = new HashSet<>();
+    expectedSet.add(flow1.getExecutionId());
+    expectedSet.add(flow2.getExecutionId());
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true, 2, Status.READY))
+        .isEqualTo(expectedSet);
+  }
+
   @Test
   public void testSelectAndUpdateExecutionWithPriority() throws Exception {
     // Selecting executions when DB is empty
@@ -732,13 +786,13 @@ public class ExecutionFlowDaoTest {
     this.executionFlowDao.updateExecutableFlow(flow1);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows1 =
-        this.executionFlowDao.fetchQueuedFlows();
+        this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
     assertThat(fetchedQueuedFlows1).isEmpty();
 
     makeFlowStatusInconsistent(flow1.getExecutionId(), Status.PREPARING);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows2 =
-        this.executionFlowDao.fetchQueuedFlows();
+        this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
     assertThat(fetchedQueuedFlows2).isNotEmpty();
     assertThat(fetchedQueuedFlows2.get(0).getSecond().getStatus()).isEqualTo(Status.PREPARING);
   }
@@ -806,8 +860,14 @@ public class ExecutionFlowDaoTest {
 
   private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
       final long submitTime, final int flowPriority) throws IOException, ExecutorManagerException {
+    return submitNewFlow(projectName, flowName, submitTime, flowPriority, Status.PREPARING);
+  }
+
+  private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
+      final long submitTime, final int flowPriority, final Status status) throws IOException,
+      ExecutorManagerException {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow(projectName, flowName);
-    flow.setStatus(Status.PREPARING);
+    flow.setStatus(status);
     flow.setSubmitTime(submitTime);
     flow.setSubmitUser("testUser");
     flow.getExecutionOptions().getFlowParameters().put(ExecutionOptions.FLOW_PRIORITY,
