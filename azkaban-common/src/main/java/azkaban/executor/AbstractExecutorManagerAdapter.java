@@ -104,8 +104,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get flows queued for a long time.", e);
     }
-    logger.info("Time taken to fetch size of queued flows is {}",
-        (System.currentTimeMillis() - startTime) / 1000);
     return size;
   }
 
