@@ -91,6 +91,8 @@ public class WebUtils {
         return "Skipped";
       case KILLING:
         return "Killing";
+      case DISPATCHING:
+        return "Dispatching";
       default:
     }
     return "Unknown";
