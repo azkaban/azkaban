@@ -492,9 +492,10 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, int limit,
-      Status updatedStatus) throws ExecutorManagerException {
-    Set<Integer> executions = new HashSet<>();
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
+      final int limit,
+      final Status updatedStatus) throws ExecutorManagerException {
+    final Set<Integer> executions = new HashSet<>();
     executions.add(1);
     return executions;
   }

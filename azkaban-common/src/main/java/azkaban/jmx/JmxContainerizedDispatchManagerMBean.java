@@ -18,7 +18,7 @@ package azkaban.jmx;
 /**
  * JMX API for containerized execution manager to monitor executions.
  */
-public interface JmxContainerizedExecutionManagerMBean {
+public interface JmxContainerizedDispatchManagerMBean {
 
   @DisplayName("OPERATION: getNumRunningFlows")
   public int getNumRunningFlows();

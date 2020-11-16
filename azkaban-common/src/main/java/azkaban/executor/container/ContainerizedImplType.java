@@ -25,11 +25,11 @@ public enum ContainerizedImplType {
 
   private final Class implClass;
 
-  ContainerizedImplType(Class implClass) {
+  ContainerizedImplType(final Class implClass) {
     this.implClass = implClass;
   }
 
   public Class getImplClass() {
-    return implClass;
+    return this.implClass;
   }
 }

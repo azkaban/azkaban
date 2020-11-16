@@ -439,7 +439,7 @@ public class ExecutionFlowDao {
       final Status updatedStatus)
       throws ExecutorManagerException {
     String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
-        + "where exec_id in (?)";
+        + "where exec_id = ?";
     final SQLTransaction<Set<Integer>> selectAndUpdateExecution = transOperator -> {
       final String POLLING_LOCK_NAME = "execution_flows_polling";
       final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
@@ -465,12 +465,12 @@ public class ExecutionFlowDao {
             //update statement can not have {exec_id in (?)} in where clause. Use below
             //mentioned code instead of for look for update statement when createArrayOf is
             //supported
-//            Array executionsToUpdate = transOperator.getConnection().createArrayOf("INTEGER",
-//                execIds.toArray());
-//            transOperator
-//                  .update(UPDATE_EXECUTION, updatedStatus.getNumVal(), System.currentTimeMillis(),
-//                      executionsToUpdate);
-            for (Integer execId : execIds) {
+            //Array executionsToUpdate = transOperator.getConnection().createArrayOf("INTEGER",
+            //    execIds.toArray());
+            //transOperator
+            //      .update(UPDATE_EXECUTION, updatedStatus.getNumVal(), System.currentTimeMillis(),
+            //          executionsToUpdate);
+            for (final Integer execId : execIds) {
               transOperator
                   .update(UPDATE_EXECUTION, updatedStatus.getNumVal(), System.currentTimeMillis(),
                       execId);

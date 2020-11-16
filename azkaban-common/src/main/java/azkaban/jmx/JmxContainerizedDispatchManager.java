@@ -15,41 +15,41 @@
  */
 package azkaban.jmx;
 
-import azkaban.executor.container.ContainerizedDispatchImpl;
+import azkaban.executor.container.ContainerizedDispatchManager;
 
 /**
  * JMX for Containerized execution manager to monitor executions which are dispatched on containers.
  */
-public class JmxContainerizedExecutionManager implements JmxContainerizedExecutionManagerMBean {
+public class JmxContainerizedDispatchManager implements JmxContainerizedDispatchManagerMBean {
 
-  private final ContainerizedDispatchImpl containerizedDispatchImpl;
+  private final ContainerizedDispatchManager containerizedDispatchManager;
 
-  public JmxContainerizedExecutionManager(final ContainerizedDispatchImpl containerizedDispatchImpl) {
-    this.containerizedDispatchImpl = containerizedDispatchImpl;
+  public JmxContainerizedDispatchManager(final ContainerizedDispatchManager containerizedDispatchManager) {
+    this.containerizedDispatchManager = containerizedDispatchManager;
   }
   @Override
   public int getNumRunningFlows() {
-    return this.containerizedDispatchImpl.getRunningFlows().size();
+    return this.containerizedDispatchManager.getRunningFlows().size();
   }
 
   @Override
   public String getRunningFlows() {
-    return this.containerizedDispatchImpl.getRunningFlowIds().toString();
+    return this.containerizedDispatchManager.getRunningFlowIds().toString();
   }
 
   @Override
   public boolean isQueueProcessorActive() {
-    return this.containerizedDispatchImpl.isQueueProcessorThreadActive();
+    return this.containerizedDispatchManager.isQueueProcessorThreadActive();
   }
 
   @Override
   public String getQueuedFlows() {
-    return this.containerizedDispatchImpl.getQueuedFlowIds().toString();
+    return this.containerizedDispatchManager.getQueuedFlowIds().toString();
   }
 
   @Override
   public String getQueueProcessorThreadState() {
-    return this.containerizedDispatchImpl.getQueueProcessorThreadState().toString();
+    return this.containerizedDispatchManager.getQueueProcessorThreadState().toString();
   }
 }
 

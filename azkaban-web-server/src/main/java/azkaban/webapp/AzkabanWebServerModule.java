@@ -24,7 +24,7 @@ import azkaban.DispatchMethod;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.container.ContainerizedDispatchImpl;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
@@ -93,7 +93,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
-    String containerizedImplProperty =
+    final String containerizedImplProperty =
         props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
@@ -108,7 +108,7 @@ public class AzkabanWebServerModule extends AbstractModule {
         return ExecutionController.class;
       case CONTAINERIZED:
         bind(ContainerizedImpl.class).to(resolveContainerizedImpl());
-        return ContainerizedDispatchImpl.class;
+        return ContainerizedDispatchManager.class;
       case PUSH:
       default:
         return ExecutorManager.class;

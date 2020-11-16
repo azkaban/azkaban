@@ -29,10 +29,10 @@ import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.container.ContainerizedDispatchImpl;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
-import azkaban.jmx.JmxContainerizedExecutionManager;
+import azkaban.jmx.JmxContainerizedDispatchManager;
 import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
@@ -681,9 +681,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       this.mbeanRegistrationManager.registerMBean("executionController",
           new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
     }
-    else if(this.executorManagerAdapter instanceof ContainerizedDispatchImpl) {
+    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
       this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
-          new JmxContainerizedExecutionManager((ContainerizedDispatchImpl) this.executorManagerAdapter));
+          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be

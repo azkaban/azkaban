@@ -50,15 +50,15 @@ import org.slf4j.LoggerFactory;
  * executions.
  */
 @Singleton
-public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
+public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter {
 
   private final ContainerizedImpl containerizedImpl;
   private QueueProcessorThread queueProcessor;
   private final RateLimiter rateLimiter;
-  private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchImpl.class);
+  private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchManager.class);
 
   @Inject
-  public ContainerizedDispatchImpl(final Props azkProps, final ExecutorLoader executorLoader,
+  public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl) throws ExecutorManagerException{
     super(azkProps, executorLoader, commonMetrics, apiGateway);
@@ -221,7 +221,7 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
             processQueuedFlows();
           }
         } catch (final Exception e) {
-          ContainerizedDispatchImpl.logger.error(
+          ContainerizedDispatchManager.logger.error(
               "QueueProcessorThread Interrupted. Probably to shut down.", e);
         }
       }
@@ -254,7 +254,7 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
 
     public void setActive(final boolean isActive) {
       this.isActive = isActive;
-      ContainerizedDispatchImpl.logger
+      ContainerizedDispatchManager.logger
           .info("QueueProcessorThread turned " + this.isActive);
     }
 
@@ -287,7 +287,7 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
         // Create a container for execution id. The container creation will throw exception if it
         //is not able read template files, unable to parse files, unable to replace dynamic
         //variables etc.
-        ContainerizedDispatchImpl.this.containerizedImpl.createContainer(executionId);
+        ContainerizedDispatchManager.this.containerizedImpl.createContainer(executionId);
         logger.info("Time taken to dispatch a container for {} is {}", executionId,
             (System.currentTimeMillis() - startTime) / 1000);
       } catch (ExecutorManagerException e) {
@@ -298,10 +298,10 @@ public class ContainerizedDispatchImpl extends AbstractExecutorManagerAdapter {
         final ExecutableFlow dsFlow;
         try {
           dsFlow =
-              ContainerizedDispatchImpl.this.executorLoader.fetchExecutableFlow(executionId);
+              ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
           dsFlow.setStatus(Status.READY);
           dsFlow.setUpdateTime(System.currentTimeMillis());
-          ContainerizedDispatchImpl.this.executorLoader.updateExecutableFlow(dsFlow);
+          ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
         }
