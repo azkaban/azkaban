@@ -333,6 +333,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     var tdEnd = document.createElement("td");
     var tdElapse = document.createElement("td");
     var tdStatus = document.createElement("td");
+    var tdCluster = document.createElement("td");
     var tdDetails = document.createElement("td");
     node.joblistrow = tr;
     tr.node = node;
@@ -346,6 +347,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     $(tr).append(tdElapse);
     $(tr).append(tdStatus);
     $(tr).append(tdDetails);
+    $(tr).append(tdCluster);
     $(tr).addClass("jobListRow");
 
     $(tdName).addClass("jobname");
@@ -358,6 +360,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
     $(tdEnd).addClass("endTime");
     $(tdElapse).addClass("elapsedTime");
     $(tdStatus).addClass("statustd");
+    $(tdCluster).addClass("cluster");
     $(tdDetails).addClass("details");
 
     $(tdType).text(node.type);
@@ -413,6 +416,13 @@ azkaban.ExecutionListView = Backbone.View.extend({
     }
 
     if (node.type != 'flow' && node.status != 'SKIPPED') {
+      if (node.cluster != null) {
+        var clusterLink = document.createElement("a");
+        $(clusterLink).attr("href", node.cluster);
+        $(clusterLink).text("cluster");
+        $(tdCluster).append(clusterLink);
+      }
+
       var a = document.createElement("a");
       $(a).attr("href", logURL);
       //$(a).attr("id", node.id + "-log-link");
