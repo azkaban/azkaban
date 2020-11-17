@@ -16,6 +16,7 @@
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
+import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -903,6 +904,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       nodeObj.put("flow", base.getFlowId());
       nodeObj.put("nodes", nodeList);
       nodeObj.put("flowId", base.getFlowId());
+    } else {
+      ClusterInfo cluster = node.getClusterInfo();
+      if (cluster != null && cluster.hadoopClusterURL != null) {
+        nodeObj.put("cluster", cluster.hadoopClusterURL);
+      }
     }
 
     return nodeObj;

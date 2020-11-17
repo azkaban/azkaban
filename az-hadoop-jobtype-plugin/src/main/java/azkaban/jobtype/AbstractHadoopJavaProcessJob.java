@@ -23,6 +23,7 @@ import azkaban.utils.Props;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 
@@ -32,6 +33,19 @@ import org.apache.log4j.Logger;
 public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implements IHadoopJob {
 
   private final HadoopProxy hadoopProxy;
+
+  // when jobtype runs in a classloader that is different than that of HadoopSecurityManager
+  // any call to new Configuration() in jobtype will not add the following files as default
+  // resources. This is not a problem when HadoopSecurityManager_H_2_0 and jobtype plugin code
+  // runs within the same classloader because HadoopSecurityManager_H_2_0 does it already.
+  static {
+    Configuration.addDefaultResource("mapred-default.xml");
+    Configuration.addDefaultResource("mapred-site.xml");
+    Configuration.addDefaultResource("yarn-default.xml");
+    Configuration.addDefaultResource("yarn-site.xml");
+    Configuration.addDefaultResource("hdfs-default.xml");
+    Configuration.addDefaultResource("hdfs-site.xml");
+  }
 
   public AbstractHadoopJavaProcessJob(String jobid, Props sysProps, Props jobProps, Logger logger) {
     super(jobid, sysProps, jobProps, logger);
