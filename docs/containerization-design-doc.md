@@ -1,5 +1,11 @@
 #Azkaban Containerized Executions - Design Doc
-**Authors/Key-Contributors:** @arvindpruthi, @jakhani, @sshardool, @djaiswal83, @aditya1105, @Abhishek Nath
+**Authors/Key-Contributors:**
+![Arvind Pruthi](https://github.com/orgs/azkaban/people/arvindpruthi),
+![Janki Akhani](https://github.com/orgs/azkaban/people/jakhani),
+![Shardool](https://github.com/orgs/azkaban/people/sshardool),
+![Deepak Jaiswal](https://github.com/orgs/azkaban/people/djaiswal83),
+![Aditya Sharma](https://github.com/orgs/azkaban/people/aditya1105),
+![Abhishek Nath](https://github.com/orgs/azkaban/people/abhisheknath2011)
 
 ## Background/Overview of Bare-Metal Architecture
 ![](figures/azkaban-architecture.png)
