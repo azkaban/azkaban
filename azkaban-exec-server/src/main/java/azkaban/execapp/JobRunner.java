@@ -746,10 +746,13 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       try {
+        long jobCreationStartMillis = System.currentTimeMillis();
         final JobTypeManager.JobParams jobParams = this.jobtypeManager
             .createJobParams(this.jobId, this.props, this.logger);
         Thread.currentThread().setContextClassLoader(jobParams.contextClassLoader);
         this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
+        this.logger.info(String.format("%s creation took %s milliseconds.",
+            this.jobId, System.currentTimeMillis() - jobCreationStartMillis));
 
         if (jobParams.jobProps.containsKey(CommonJobProperties.TARGET_CLUSTER_ID)) {
           // save the information of the cluster that the job may be routed to
