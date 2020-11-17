@@ -31,17 +31,15 @@ import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
+import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -116,6 +114,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public static final String TOKEN_FILE_PERMISSIONS = "460";
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
+  private static final String FS_LOCAL_IMPL_DISABLE_CACHE =
+      "fs.file.impl.disable.cache";
   // Some hadoop clusters have failover name nodes.
   private static final String FS_FAILOVER_IMPL_DISABLE_CACHE =
           "fs.failover.impl.disable.cache";
@@ -128,8 +128,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       "obtain.jobhistoryserver.token";
   private final static Logger logger = Logger
       .getLogger(HadoopSecurityManager_H_2_0.class);
-  private static volatile HadoopSecurityManager hsmInstance = null;
-  private static URLClassLoader ucl;
 
   private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
   private final ExecuteAsUser executeAsUser;
@@ -141,40 +139,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private boolean shouldProxy = false;
   private boolean securityEnabled = false;
 
-  private HadoopSecurityManager_H_2_0(final Props props)
+  public HadoopSecurityManager_H_2_0(final Props props)
       throws HadoopSecurityManagerException, IOException {
     this.executeAsUser = new ExecuteAsUser(props.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
-
-    // for now, assume the same/compatible native library, the same/compatible
-    // hadoop-core jar
-    String hadoopHome = props.getString("hadoop.home", null);
-    String hadoopConfDir = props.getString("hadoop.conf.dir", null);
-
-    if (hadoopHome == null) {
-      hadoopHome = System.getenv("HADOOP_HOME");
-    }
-    if (hadoopConfDir == null) {
-      hadoopConfDir = System.getenv("HADOOP_CONF_DIR");
-    }
-
-    final List<URL> resources = new ArrayList<>();
-    URL urlToHadoop = null;
-    if (hadoopConfDir != null) {
-      urlToHadoop = new File(hadoopConfDir).toURI().toURL();
-      logger.info("Using hadoop config found in " + urlToHadoop);
-      resources.add(urlToHadoop);
-    } else if (hadoopHome != null) {
-      urlToHadoop = new File(hadoopHome, "conf").toURI().toURL();
-      logger.info("Using hadoop config found in " + urlToHadoop);
-      resources.add(urlToHadoop);
-    } else {
-      logger.info("HADOOP_HOME not set, using default hadoop config.");
-    }
-
-    ucl = new URLClassLoader(resources.toArray(new URL[resources.size()]));
-
     this.conf = new Configuration();
-    this.conf.setClassLoader(ucl);
 
     // Disable yyFileSystem Cache for HadoopSecurityManager
     disableFSCache();
@@ -231,6 +199,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private void disableFSCache() {
     this.conf.setBoolean(FS_HDFS_IMPL_DISABLE_CACHE, true);
     this.conf.setBoolean(FS_FAILOVER_IMPL_DISABLE_CACHE, true);
+    this.conf.setBoolean(FS_LOCAL_IMPL_DISABLE_CACHE, true);
     // Get the default scheme
     final String defaultFS = conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY);
     if (defaultFS == null) {
@@ -246,23 +215,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     this.conf.setBoolean(FS_DEFAULT_IMPL_DISABLE_CACHE, true);
     logger.info("Disable cache for scheme " + FS_DEFAULT_IMPL_DISABLE_CACHE);
 
-  }
-
-  public static HadoopSecurityManager getInstance(final Props props)
-      throws HadoopSecurityManagerException, IOException {
-    if (hsmInstance == null) {
-      synchronized (HadoopSecurityManager_H_2_0.class) {
-        if (hsmInstance == null) {
-          logger.info("getting new instance of HadoopSecurityManager");
-          hsmInstance = new HadoopSecurityManager_H_2_0(props);
-        }
-      }
-    }
-
-    logger.debug("Relogging in from keytab if necessary.");
-    hsmInstance.reloginFromKeytab();
-
-    return hsmInstance;
   }
 
   /**
@@ -405,7 +357,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     try {
       cred =
           Credentials.readTokenStorageFile(new Path(tokenFile.toURI()),
-              new Configuration());
+              this.conf);
       for (final Token<? extends TokenIdentifier> t : cred.getAllTokens()) {
         logger.info("Got token.");
         logger.info("Token kind: " + t.getKind());
@@ -516,9 +468,10 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
     final Credentials cred = new Credentials();
     fetchMetaStoreToken(props, logger, userToProxyFQN, cred);
-    fetchJHSToken(props, logger, userToProxyFQN, cred);
 
     try {
+      fetchJHSToken(props, logger, userToProxyFQN, cred);
+
       getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
@@ -573,10 +526,13 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       final JobConf jobConf = new JobConf();
       final JobClient jobClient = new JobClient(jobConf);
       logger.info("Pre-fetching JT token from JobTracker");
+      Token<DelegationTokenIdentifier> mrdt;
+      try {
+        mrdt = jobClient.getDelegationToken(getMRTokenRenewerInternal(jobConf));
+      } finally {
+        jobClient.close();
+      }
 
-      final Token<DelegationTokenIdentifier> mrdt =
-          jobClient
-              .getDelegationToken(getMRTokenRenewerInternal(jobConf));
       if (mrdt == null) {
         logger.error("Failed to fetch JT token");
         throw new HadoopSecurityManagerException(
@@ -666,7 +622,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private void fetchJHSToken(
       final Props props, final Logger logger, final String userToProxy, final Credentials cred)
-      throws HadoopSecurityManagerException {
+      throws HadoopSecurityManagerException, IOException {
     if (props.getBoolean(OBTAIN_JOBHISTORYSERVER_TOKEN, false)) {
       logger.info("Pre-fetching JH token from job history server");
 
@@ -685,6 +641,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         logger.error("Failed to fetch JH token", e);
         throw new HadoopSecurityManagerException(
             "Failed to fetch JH token for " + userToProxy);
+      }
+
+      if (hsProxy instanceof Closeable) {
+        // HSClientProtocol is not closable, but its only implementation, HSClientProtocolPBClientImpl, is
+        ((Closeable) hsProxy).close();
       }
 
       if (jhsdt == null) {
