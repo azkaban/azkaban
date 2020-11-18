@@ -53,6 +53,7 @@ import azkaban.metrics.MetricsManager;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
@@ -83,7 +84,8 @@ public class FlowContainer {
 
   private static final String PROJECT_DIR = "project";
   private static final String JOBTYPE_DIR = "jobtypes";
-  private static final String AZ_DIR = "azkaban_libs";
+  private static final String CONF_ARG = "-conf";
+  private static final String CONF_DIR = "conf";
 
   private static final Logger logger = Logger.getLogger(FlowContainer.class);
 
@@ -241,7 +243,9 @@ public class FlowContainer {
         jobtypePluginPath.toString());
 
     // Setup the azkaban.properties here.
-    // AzkabanServer.loadProps();
+    final String[] args = {CONF_ARG, CONF_DIR};
+    AzkabanServer.loadProps(args);
+
     // Set db stuff.
     return new Props(null, propsMap);
   }

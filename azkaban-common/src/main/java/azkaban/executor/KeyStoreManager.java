@@ -13,7 +13,7 @@ import java.security.KeyStore;
  */
 public class KeyStoreManager {
   private static volatile KeyStoreManager ksmInstance = null;
-  private final static Logger logger = LoggerFactory.getLogger(KeyStoreManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(KeyStoreManager.class);
 
   private KeyStore keyStore = null;
 
