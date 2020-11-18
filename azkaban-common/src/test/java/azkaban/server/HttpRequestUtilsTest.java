@@ -135,12 +135,7 @@ public final class HttpRequestUtilsTest {
   @Test
   public void testGetJsonBodyForListOfMapObject() throws IOException, ServletException {
     final HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-    final String originalString =
-        "[\n" + "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
-            + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n"
-            + "    \"values\": {\n"
-            + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n"
-            + "  }\n" + "]";
+    final String originalString = TestUtils.readResource("list_map_object.json", this);
     final InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
     final InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
     final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
@@ -161,12 +156,7 @@ public final class HttpRequestUtilsTest {
   @Test
   public void testGetJsonBodyForSingleMapObject() throws IOException, ServletException {
     final HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-    final String originalString =
-        "  {\n" + "    \"action\": \"update\",\n" + "    \"table\": \"ramp\",\n"
-            + "    \"conditions\" : {\n" + "      \"rampId\" : \"dali\"\n" + "    },\n"
-            + "    \"values\": {\n"
-            + "      \"rampStage\": 2,\n" + "      \"lastUpdatedTime\": 1566259437000\n" + "    }\n"
-            + "  }\n";
+    final String originalString = TestUtils.readResource("single_map_object.json", this);
     final InputStream inputStream = new ByteArrayInputStream(originalString.getBytes(UTF_8));
     final InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
     final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
