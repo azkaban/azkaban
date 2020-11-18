@@ -1,4 +1,4 @@
-#Azkaban Containerized Executions - Design Doc
+# Azkaban Containerized Executions - Design Doc
 **Authors/Key-Contributors:**
 ![Arvind Pruthi](https://github.com/orgs/azkaban/people/arvindpruthi),
 ![Janki Akhani](https://github.com/orgs/azkaban/people/jakhani),
@@ -153,7 +153,15 @@ discovered as laid out in the [dispatch logic](#Dispatch-Logic).
   base image of choice. It is preferable to keep these images very small to optimize downloading times. Something like
   a busybox/alpine image should suffice.
 * Individual images for job-types will allow independent development and release for the job-type developers without
-  any dependency on Azkaban.
+  any dependency on Azkaban. Here is an example image definition for KPJ (Kafka Push Job):
+  ``` 
+  FROM container-image-registry.corp.linkedin.com/lps-image/linkedin/rhel7-base-image/rhel7-base-image:0.16.9
+
+  ARG KPJ_URL=https://artifactory.corp.linkedin.com:8083/artifactory/DDS/com/linkedin/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
+  
+  RUN curl $KPJ_URL --output ~/kafka-push-job-0.2.61.jar
+  ```
+
 * There will be one init container for each job-type using job-type docker images. This init container will move the
   binaries from the image to a mounted volume. The above specified volume will also be mounted for the application
   container which will use Azkaban docker image.
@@ -231,15 +239,6 @@ POST /image_rampup/{image_type}
      Response:
      Creates ramp up records
      Status: 201 created  
-```
-
-Here is an example image definition for KPJ (Kafka Push Job):
-``` 
-  FROM container-image-registry.corp.linkedin.com/lps-image/linkedin/rhel7-base-image/rhel7-base-image:0.16.9
-
-  ARG KPJ_URL=https://artifactory.corp.linkedin.com:8083/artifactory/DDS/com/linkedin/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
-  
-  RUN curl $KPJ_URL --output ~/kafka-push-job-0.2.61.jar
 ```
 
 At dispatch time, a graph walk will be performed to find out all the job types that
