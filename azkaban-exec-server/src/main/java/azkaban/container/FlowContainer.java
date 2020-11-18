@@ -244,10 +244,10 @@ public class FlowContainer {
 
     // Setup the azkaban.properties here.
     final String[] args = {CONF_ARG, CONF_DIR};
-    AzkabanServer.loadProps(args);
+    final Props props = AzkabanServer.loadProps(args);
 
     // Set db stuff.
-    return new Props(null, propsMap);
+    return new Props(props, propsMap);
   }
 
   // Submit flow
