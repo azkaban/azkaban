@@ -35,6 +35,7 @@ public class ExecMetrics {
   public static final String NUM_QUEUED_FLOWS_NAME = "EXEC-NumQueuedFlows";
   public static final String PROJECT_DIR_CACHE_HIT_RATIO_NAME = "project-dir-cache-hit-ratio";
   public static final String FLOW_SETUP_TIMER_NAME = "flow-setup-timer";
+  public static final String FLOW_STARTUP_DELAY_TIMER_NAME = "flow-startup-delay-timer";
   public static final String FLOW_KILLING_COUNTER_NAME = "flow-killing-counter";
   public static final String FLOW_TIME_TO_KILL_HISTOGRAM_NAME = "flow-time-to-kill-histogram";
   public static final String FLOW_KILLED_METER_NAME = "flow-killed-meter";
@@ -46,6 +47,7 @@ public class ExecMetrics {
 
   private final MetricsManager metricsManager;
   private final Timer flowSetupTimer;
+  private final Timer flowStartupDelayTimer;
   private final ProjectCacheHitRatio projectCacheHitRatio;
   private final Counter flowKillingCounter;
   private final Histogram flowTimeToKillHistogram;
@@ -66,6 +68,7 @@ public class ExecMetrics {
     this.metricsManager.addGauge(PROJECT_DIR_CACHE_HIT_RATIO_NAME,
         this.projectCacheHitRatio::getValue);
     this.flowSetupTimer = this.metricsManager.addTimer(FLOW_SETUP_TIMER_NAME);
+    this.flowStartupDelayTimer = this.metricsManager.addTimer(FLOW_STARTUP_DELAY_TIMER_NAME);
     this.flowKillingCounter = this.metricsManager.addCounter(FLOW_KILLING_COUNTER_NAME);
     this.flowTimeToKillHistogram =
         this.metricsManager.addHistogram(FLOW_TIME_TO_KILL_HISTOGRAM_NAME);
@@ -93,6 +96,13 @@ public class ExecMetrics {
    */
   public Timer.Context getFlowSetupTimerContext() {
     return this.flowSetupTimer.time();
+  }
+
+  /**
+   * @return the {@link Timer.Context} for the flow-startup-delay timer.
+   */
+  public Timer.Context getFlowStartupDelayTimerContext() {
+    return this.flowStartupDelayTimer.time();
   }
 
   /**
