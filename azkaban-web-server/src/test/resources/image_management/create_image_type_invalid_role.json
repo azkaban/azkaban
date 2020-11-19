@@ -1,6 +1,0 @@
-{
-  "imageType": "spark_job",
-  "description": "spark job",
-  "deployable": "IMAGE",
-  "ownerships":[{"owner":  "anath1", "role": "invalid"}]
-}

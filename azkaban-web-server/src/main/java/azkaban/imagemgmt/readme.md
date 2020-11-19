@@ -8,8 +8,8 @@ Payload:
   "imageType": "kafka_push_job",
   "description": "kafka push job",
   "deployable": "IMAGE",
-  "ownerships":[{"owner": "anath1", "role": "ADMIN"},
-                {"owner": "apruthi", "role": "ADMIN"}]
+  "ownerships":[{"owner": "anath1", "role": "admin"},
+                {"owner": "apruthi", "role": "admin"}]
 }
 
 Sample Response
@@ -50,6 +50,6 @@ Sample Response Body:
       "imagePath":"path_spark_job",
       "imageVersion":"1.6.0",
       "imageType":"spark_job",
-      "versionState":"NEW"
+      "versionState":"new"
    }
 ]

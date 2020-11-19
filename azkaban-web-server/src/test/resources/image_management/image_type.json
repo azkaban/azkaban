@@ -2,6 +2,6 @@
   "imageType": "kafka_push_job",
   "description": "kafka push job",
   "deployable": "IMAGE",
-  "ownerships":[{"owner":  "anath1", "role": "ADMIN"},
-                {"owner":  "apruthi", "role": "ADMIN"}]
+  "ownerships":[{"owner":  "anath1", "role": "admin"},
+                {"owner":  "apruthi", "role": "admin"}]
 }

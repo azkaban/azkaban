@@ -95,10 +95,10 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
-    bind(ImageTypeService.class).to(ImageTypeServiceImpl.class);
-    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
     bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
     bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
+    bind(ImageTypeService.class).to(ImageTypeServiceImpl.class);
+    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {

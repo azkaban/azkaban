@@ -480,9 +480,4 @@ public class Constants {
     // common private properties for multiple plugins
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
-
-  public static class ImageMgmtConstants {
-    public static final String IMAGE_TYPE = "imageType";
-    public static final String IMAGE_VERSION = "imageVersion";
-  }
 }
