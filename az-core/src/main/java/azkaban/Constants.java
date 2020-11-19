@@ -304,6 +304,8 @@ public class Constants {
 
     public static final String SECURITY_USER_GROUP = "azkaban.security.user.group";
 
+    public static final String CSR_KEYSTORE_LOCATION = "azkaban.csr.keystore.location";
+
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
 
