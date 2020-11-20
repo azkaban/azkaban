@@ -57,6 +57,7 @@ public class ImageVersionServiceImpl implements ImageVersionService {
         ImageVersion.class);
     // set the user who invoked the API
     imageVersion.setCreatedBy(requestContext.getUser());
+    imageVersion.setModifiedBy(requestContext.getUser());
     // Override the state to NEW during creation of new image version
     imageVersion.setState(State.NEW);
     // input validation for image version create request

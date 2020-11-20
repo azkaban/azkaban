@@ -66,7 +66,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       if( imageType.getOwnerships() != null && imageType.getOwnerships().size() > 0) {
         for(ImageOwnership imageOwnership : imageType.getOwnerships()) {
           transOperator.update(INSERT_IMAGE_OWNERSHIP, imageTypeId, imageOwnership.getOwner(),
-              imageOwnership.getRole().getName(), imageType.getCreatedBy(), imageType.getCreatedBy());
+              imageOwnership.getRole().getName(), imageType.getCreatedBy(), imageType.getModifiedBy());
         }
       }
       transOperator.getConnection().commit();

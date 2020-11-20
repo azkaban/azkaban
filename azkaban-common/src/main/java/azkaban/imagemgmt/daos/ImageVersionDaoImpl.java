@@ -71,7 +71,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
     final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
       transOperator.update(INSERT_IMAGE_VERSION_QUERY, imageVersion.getPath(), imageVersion.getDescription(),
           imageVersion.getVersion(), imageType.getId(), imageVersion.getState().getStateValue(),
-          imageVersion.getReleaseTag(), imageVersion.getCreatedBy(), imageVersion.getCreatedBy());
+          imageVersion.getReleaseTag(), imageVersion.getCreatedBy(), imageVersion.getModifiedBy());
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };

@@ -50,6 +50,7 @@ public class ImageTypeServiceImpl implements ImageTypeService {
     // convert input json payload to image type object
     ImageType imageType = converterUtils.convertToModel(requestContext.getJsonPayload(), ImageType.class);
     imageType.setCreatedBy(requestContext.getUser());
+    imageType.setModifiedBy(requestContext.getUser());
     // input validation for image type create request
     if(!ValidatorUtils.validateObject(imageType)) {
       throw new ImageMgmtValidationException("Provide valid input for creating image type "
