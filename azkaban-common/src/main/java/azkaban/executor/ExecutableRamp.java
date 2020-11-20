@@ -376,6 +376,13 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
     return (!this.state.isActive || this.state.isPaused || (this.state.rampStage <= 0));
   }
 
+  /**
+   * Return true if only if this ramp will not be required to put those failed workflow into the exclude-ramp list
+   */
+  public boolean ignoreTestFailure() {
+    return (this.metadata.maxFailureToPause < 0) && (this.metadata.maxFailureToRampDown < 0);
+  }
+
   public int getStage() {
     return this.state.rampStage;
   }
@@ -496,7 +503,7 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
           this.state.numOfTrail, this.state.cachedNumOfTrail, this.state.numOfSuccess, this.state.cachedNumOfSuccess,
           this.state.numOfFailure, this.state.cachedNumOfFailure, this.state.numOfIgnored, this.state.cachedNumOfIgnored);
 
-      if (this.metadata.maxFailureToRampDown != 0) {
+      if (this.metadata.maxFailureToRampDown > 0) {
         if (failure > this.metadata.maxFailureToRampDown) {
           if (this.state.rampStage > 0) {
             if (TimeUtils.timeEscapedOver(this.state.lastRampDownTime, ONE_DAY)) {
@@ -509,7 +516,7 @@ public final class ExecutableRamp implements IRefreshable<ExecutableRamp> {
         }
       }
 
-      if (this.metadata.maxFailureToPause != 0) {
+      if (this.metadata.maxFailureToPause > 0) {
         if (failure > this.metadata.maxFailureToPause) {
           this.state.isPaused = true;
           LOGGER.info("[RAMP STOP] (rampId = {}, failure = {}, threshold = {}, timestamp = {})", this.getId(), failure,
