@@ -68,7 +68,7 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   }
 
   @Override
-  public List<ImageVersion> getImageVersion(RequestContext requestContext) throws ImageMgmtException {
-    return imageVersionsDao.getImageVersion(requestContext);
+  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException {
+    return imageVersionsDao.findImageVersions(requestContext);
   }
 }

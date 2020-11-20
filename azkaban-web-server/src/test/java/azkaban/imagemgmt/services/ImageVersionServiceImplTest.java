@@ -52,7 +52,7 @@ public class ImageVersionServiceImplTest {
 
   @Test
   public void testCreateImageVersion() throws Exception{
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/image_version.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_version.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -78,7 +78,7 @@ public class ImageVersionServiceImplTest {
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageVersionInvalidType() throws IOException {
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/invalid_image_version.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/invalid_image_version.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -89,7 +89,7 @@ public class ImageVersionServiceImplTest {
 
   @Test(expected = ImageMgmtInvalidInputException.class)
   public void testCreateImageVersionInvalidState() throws IOException {
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/create_image_version_invalid_state.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_version_invalid_state.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")

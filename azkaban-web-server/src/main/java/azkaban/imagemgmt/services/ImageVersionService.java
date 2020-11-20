@@ -30,6 +30,6 @@ public interface ImageVersionService {
 
   public int createImageVersion(RequestContext requestContext) throws IOException,
       ImageMgmtException;
-  public List<ImageVersion> getImageVersion(RequestContext requestContext) throws ImageMgmtException;
+  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException;
 
 }

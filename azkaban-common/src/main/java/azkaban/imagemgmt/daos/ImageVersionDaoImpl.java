@@ -66,7 +66,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   @Override
   public int createImageVersion(ImageVersion imageVersion) {
     ImageType imageType = imageTypeDao.getImageTypeByName(imageVersion.getName())
-        .orElseThrow(() -> new RuntimeException("Unable to fetch image type metadata. Invalid "
+        .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
             + "image type : "+imageVersion.getName()));
     final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
       transOperator.update(INSERT_IMAGE_VERSION_QUERY, imageVersion.getPath(), imageVersion.getDescription(),
@@ -90,21 +90,29 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   }
 
   @Override
-  public List<ImageVersion> getImageVersion(RequestContext requestContext) throws ImageMgmtException {
+  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException {
     List<ImageVersion> imageVersions = new ArrayList<>();
     try {
       StringBuilder queryBuilder = new StringBuilder(SELECT_IMAGE_VERSION_BASE_QUERY);
       List<Object> params = new ArrayList<>();
+      // add imageType in the query
       if(requestContext.getParams().containsKey(ImageMgmtConstants.IMAGE_TYPE)) {
         queryBuilder.append(" AND ");
         queryBuilder.append(" it.name = ?");
         params.add(requestContext.getParams().get(ImageMgmtConstants.IMAGE_TYPE));
       }
-
+      // add imageVersion in the query if present
       if(requestContext.getParams().containsKey(ImageMgmtConstants.IMAGE_VERSION)) {
         queryBuilder.append(" AND ");
         queryBuilder.append(" iv.version = ?");
         params.add(requestContext.getParams().get(ImageMgmtConstants.IMAGE_VERSION));
+      }
+      // add versionState in the query if present
+      if(requestContext.getParams().containsKey(ImageMgmtConstants.VERSION_STATE)) {
+        queryBuilder.append(" AND ");
+        queryBuilder.append(" iv.state = ?");
+        State versionState = (State)requestContext.getParams().get(ImageMgmtConstants.VERSION_STATE);
+        params.add(versionState.getStateValue());
       }
       log.info("Image version get query : "+queryBuilder.toString());
       imageVersions = databaseOperator.query(queryBuilder.toString(),

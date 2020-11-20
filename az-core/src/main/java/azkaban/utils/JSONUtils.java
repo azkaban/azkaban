@@ -280,7 +280,7 @@ public class JSONUtils {
    * @param filePath
    * @return String json as string
    */
-  public static String readJsonAsString(String filePath) {
+  public static String readJsonFileAsString(String filePath) {
     try {
       InputStream is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
       return IOUtils.toString(is, StandardCharsets.UTF_8);

@@ -94,7 +94,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     try {
       imageTypes = this.databaseOperator
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
-      //
+      // Check of there is more than one image types for given name. If so throw exception
       if(imageTypes != null && imageTypes.size() > 1) {
         throw new ImageMgmtDaoException("Can't have more that one image type record for a given "
             + "type with name : "+name);

@@ -16,6 +16,7 @@
 package azkaban.imagemgmt.servlets;
 
 import azkaban.Constants.ImageMgmtConstants;
+import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
@@ -27,6 +28,7 @@ import com.linkedin.jersey.api.uri.UriTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,10 +41,10 @@ import org.slf4j.LoggerFactory;
 /**
  * This servlet exposes the REST APIs such as create, get etc. for image type. Below are the
  * supported APIs.
- * Create Image Type API: POST /imageVersions?session.id=? --data @payload.json
- * Get Image Type API:
- * GET /imageVersions?session.id=?&imageType=?&imageVersion=?
- * GET /imageTypes/{id}?session.id=?
+ * Create Image Version API: POST /imageVersions?session.id=? --data @payload.json
+ * Search/Get Image Versions API:
+ * GET /imageVersions?session.id=?&imageType=?&imageVersion=?&versionState=?
+ * GET /imageVersions/{id}?session.id=?
  */
 public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
   private static final String GET_IMAGE_VERSION_URI = "/imageVersions";
@@ -76,17 +78,25 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         // imageType must present. If not present throws ServletException
         String imageType = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_TYPE);
         // imageVersion is optional. Hence can be null
-        String imageVersion = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_VERSION,
+        Optional<String> imageVersion = Optional.ofNullable(HttpRequestUtils.getParam(req,
+            ImageMgmtConstants.IMAGE_VERSION,
+            null));
+        // imageVersion is optional. Hence can be null
+        String versionStateString = HttpRequestUtils.getParam(req, ImageMgmtConstants.VERSION_STATE,
             null);
+        Optional<State> versionState =
+            Optional.ofNullable(versionStateString != null ? State.valueOf(versionStateString) :
+                null);
         // create RequestContext DTO to transfer the input request
         RequestContext requestContext = RequestContext.newBuilder()
             .addParam(ImageMgmtConstants.IMAGE_TYPE, imageType) // mandatory parameter
             .addParamIfPresent(ImageMgmtConstants.IMAGE_VERSION, imageVersion) // optional parameter
+            .addParamIfPresent(ImageMgmtConstants.VERSION_STATE, versionState) // optional parameter
             .build();
         // invoke service method and get response in string format
         response =
             objectMapper.writeValueAsString(
-                imageVersionService.getImageVersion(requestContext));
+                imageVersionService.findImageVersions(requestContext));
       }
       this.writeResponse(resp, response);
     } catch(final Exception e) {

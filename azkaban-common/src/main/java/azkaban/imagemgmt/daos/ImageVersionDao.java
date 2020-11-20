@@ -26,5 +26,5 @@ import java.util.List;
  */
 public interface ImageVersionDao {
   public int createImageVersion(ImageVersion imageVersion);
-  public List<ImageVersion> getImageVersion(RequestContext requestContext) throws ImageMgmtException;
+  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException;
 }

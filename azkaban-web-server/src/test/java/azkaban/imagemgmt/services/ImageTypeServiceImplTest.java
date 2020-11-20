@@ -52,7 +52,7 @@ public class ImageTypeServiceImplTest {
 
   @Test
   public void testCreateImageType() throws Exception{
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/image_type.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -72,7 +72,7 @@ public class ImageTypeServiceImplTest {
 
   @Test
   public void testCreateImageTypeForConfigs() throws Exception{
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/image_type_configs.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type_configs.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -90,7 +90,7 @@ public class ImageTypeServiceImplTest {
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageTypeInvalidType() throws IOException {
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/invalid_image_type.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/invalid_image_type.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -102,7 +102,7 @@ public class ImageTypeServiceImplTest {
 
   @Test(expected = ImageMgmtInvalidInputException.class)
   public void testCreateImageTypeInvalidDeployable() throws IOException {
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/create_image_type_invalid_deployable.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_type_invalid_deployable.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -114,7 +114,7 @@ public class ImageTypeServiceImplTest {
 
   @Test(expected = ImageMgmtInvalidInputException.class)
   public void testCreateImageTypeInvalidRole() throws IOException {
-    String jsonPayload = JSONUtils.readJsonAsString("image_management/create_image_type_invalid_role.json");
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_type_invalid_role.json");
     RequestContext requestContext = RequestContext.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")

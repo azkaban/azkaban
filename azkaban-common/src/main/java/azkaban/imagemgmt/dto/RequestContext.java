@@ -18,6 +18,7 @@ package azkaban.imagemgmt.dto;
 import com.google.common.base.Preconditions;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This class represents a data transfer object (DTO) to propagate image management REST API json
@@ -123,12 +124,12 @@ public class RequestContext {
      * @return Builder - returns builder instance
      * @throws NullPointerException if preconditions failed
      */
-    public Builder addParamIfPresent(String paramKey, Object paramValue) {
+    public Builder addParamIfPresent(String paramKey, Optional<? extends Object> paramValue) {
       // Both param key and value must be present and should not be null
       Preconditions.checkNotNull(paramKey, "Param key is null");
       // Ignore the key value if not specified
-      if(paramValue!=null) {
-        this.params.put(paramKey, paramValue);
+      if(paramValue.isPresent()) {
+        this.params.put(paramKey, paramValue.get());
       }
       return this;
     }
