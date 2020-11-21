@@ -19,16 +19,16 @@ import javax.validation.constraints.NotBlank;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
- * This class represents ownership information of the image type
+ * This class represents ownership information of an image type.
  */
 public class ImageOwnership extends BaseModel {
   // Represents image type name
   @JsonProperty("imageType")
   @NotBlank(message = "imageType cannot be blank")
   private String name;
-  // image type owner
+  // Image type owner
   private String owner;
-  // role of the owner
+  // Role of the owner
   private Role role;
 
   public String getName() {

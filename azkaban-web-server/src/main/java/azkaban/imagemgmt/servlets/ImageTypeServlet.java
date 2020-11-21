@@ -21,7 +21,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.linkedin.jersey.api.uri.UriTemplate;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.services.ImageTypeService;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,12 +91,12 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
     try {
       String jsonPayload = HttpRequestUtils.getBody(req);
       // Build RequestContext DTO to transfer the input request
-      RequestContext requestContext = RequestContext.newBuilder()
+      ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
           .user(session.getUser().getUserId())
           .build();
       // Create image type and get image type id
-      Integer imageTypeId = imageTypeService.createImageType(requestContext);
+      Integer imageTypeId = imageTypeService.createImageType(imageMetadataRequest);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location", CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE.createURI(imageTypeId.toString()));

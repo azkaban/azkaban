@@ -22,7 +22,7 @@ import javax.validation.constraints.NotBlank;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
- * This class represents image type metadata
+ * This class represents image type metadata.
  */
 public class ImageType extends BaseModel {
   // Represents the name of the image type

@@ -21,7 +21,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import javax.validation.constraints.NotBlank;
 
 /**
- * This class represents image version metadata
+ * This class represents image version metadata.
  */
 public class ImageVersion extends BaseModel {
   // Path of the image version
@@ -36,9 +36,9 @@ public class ImageVersion extends BaseModel {
   @JsonProperty("imageType")
   @NotBlank(message = "imageType cannot be blank")
   private String name;
-  // description of the image version
+  // Description of the image version
   private String description;
-  // state of the image version
+  // State of the image version
   @JsonProperty("versionState")
   private State state;
   /**

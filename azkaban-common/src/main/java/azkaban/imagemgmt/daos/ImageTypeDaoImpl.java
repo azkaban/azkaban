@@ -60,7 +60,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     final SQLTransaction<Integer> insertAndGetSpaceId = transOperator -> {
       // insert image type record
       transOperator.update(INSERT_IMAGE_TYPE, imageType.getName(), imageType.getDescription(),
-          true, imageType.getDeployable().getName(), imageType.getCreatedBy(), imageType.getCreatedBy());
+          true, imageType.getDeployable().getName(), imageType.getCreatedBy(), imageType.getModifiedBy());
       int imageTypeId = Long.valueOf(transOperator.getLastInsertId()).intValue();
       // Insert ownerships record if present
       if( imageType.getOwnerships() != null && imageType.getOwnerships().size() > 0) {
@@ -94,7 +94,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     try {
       imageTypes = this.databaseOperator
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
-      // Check of there is more than one image types for given name. If so throw exception
+      // Check if there are more then one image types for a given name. If so throw exception
       if(imageTypes != null && imageTypes.size() > 1) {
         throw new ImageMgmtDaoException("Can't have more that one image type record for a given "
             + "type with name : "+name);

@@ -23,7 +23,7 @@ import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import com.google.common.collect.Iterables;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -49,13 +49,12 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
 
   private final ImageTypeDao imageTypeDao;
 
-  private static String INSERT_IMAGE_VERSION_QUERY =
-      "insert into image_versions ( path, description, version, type_id, state, "
-          + "release_tag, created_by, modified_by) "
-          + "values (?, ?, ?, ?, ?, ?, ?, ?)";
+  private static String INSERT_IMAGE_VERSION_QUERY = "insert into image_versions ( path, description, "
+      + "version, type_id, state, release_tag, created_by, modified_by) "
+      + "values (?, ?, ?, ?, ?, ?, ?, ?)";
   private static String SELECT_IMAGE_VERSION_BASE_QUERY = "select iv.id, iv.path, iv.description, "
-      + "iv.version, it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv"
-      + ".modified_on, iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
+      + "iv.version, it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
+      + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
 
   @Inject
   public ImageVersionDaoImpl(DatabaseOperator databaseOperator, ImageTypeDao imageTypeDao) {
@@ -90,28 +89,28 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   }
 
   @Override
-  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException {
+  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest) throws ImageMgmtException {
     List<ImageVersion> imageVersions = new ArrayList<>();
     try {
       StringBuilder queryBuilder = new StringBuilder(SELECT_IMAGE_VERSION_BASE_QUERY);
       List<Object> params = new ArrayList<>();
-      // add imageType in the query
-      if(requestContext.getParams().containsKey(ImageMgmtConstants.IMAGE_TYPE)) {
+      // Add imageType in the query
+      if(imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.IMAGE_TYPE)) {
         queryBuilder.append(" AND ");
         queryBuilder.append(" it.name = ?");
-        params.add(requestContext.getParams().get(ImageMgmtConstants.IMAGE_TYPE));
+        params.add(imageMetadataRequest.getParams().get(ImageMgmtConstants.IMAGE_TYPE));
       }
-      // add imageVersion in the query if present
-      if(requestContext.getParams().containsKey(ImageMgmtConstants.IMAGE_VERSION)) {
+      // Add imageVersion in the query if present
+      if(imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.IMAGE_VERSION)) {
         queryBuilder.append(" AND ");
         queryBuilder.append(" iv.version = ?");
-        params.add(requestContext.getParams().get(ImageMgmtConstants.IMAGE_VERSION));
+        params.add(imageMetadataRequest.getParams().get(ImageMgmtConstants.IMAGE_VERSION));
       }
-      // add versionState in the query if present
-      if(requestContext.getParams().containsKey(ImageMgmtConstants.VERSION_STATE)) {
+      // Add versionState in the query if present
+      if(imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.VERSION_STATE)) {
         queryBuilder.append(" AND ");
         queryBuilder.append(" iv.state = ?");
-        State versionState = (State)requestContext.getParams().get(ImageMgmtConstants.VERSION_STATE);
+        State versionState = (State) imageMetadataRequest.getParams().get(ImageMgmtConstants.VERSION_STATE);
         params.add(versionState.getStateValue());
       }
       log.info("Image version get query : "+queryBuilder.toString());

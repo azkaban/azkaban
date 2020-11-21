@@ -26,7 +26,7 @@ import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.exeception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.utils.JSONUtils;
 import java.io.IOException;
@@ -53,17 +53,17 @@ public class ImageVersionServiceImplTest {
   @Test
   public void testCreateImageVersion() throws Exception{
     String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_version.json");
-    RequestContext requestContext = RequestContext.newBuilder()
+    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
         .build();
-    ImageVersion imageVersion1 = objectMapper.readValue(requestContext.getJsonPayload(),
+    ImageVersion imageVersion1 = objectMapper.readValue(imageMetadataRequest.getJsonPayload(),
         ImageVersion.class);
     System.out.println(imageVersion1.getState().getStateValue());
     String json = objectMapper.writeValueAsString(imageVersion1);
     System.out.println(json);
     when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
-    int imageVersionId = imageVersionService.createImageVersion(requestContext);
+    int imageVersionId = imageVersionService.createImageVersion(imageMetadataRequest);
     ArgumentCaptor<ImageVersion> imageTypeArgumentCaptor = ArgumentCaptor.forClass(ImageVersion.class);
     verify(imageVersionDao, times(1)).createImageVersion(imageTypeArgumentCaptor.capture());
     ImageVersion imageVersion = imageTypeArgumentCaptor.getValue();
@@ -79,23 +79,23 @@ public class ImageVersionServiceImplTest {
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageVersionInvalidType() throws IOException {
     String jsonPayload = JSONUtils.readJsonFileAsString("image_management/invalid_image_version.json");
-    RequestContext requestContext = RequestContext.newBuilder()
+    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
         .build();
     when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
-    imageVersionService.createImageVersion(requestContext);
+    imageVersionService.createImageVersion(imageMetadataRequest);
   }
 
   @Test(expected = ImageMgmtInvalidInputException.class)
   public void testCreateImageVersionInvalidState() throws IOException {
     String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_version_invalid_state.json");
-    RequestContext requestContext = RequestContext.newBuilder()
+    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
         .build();
     when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
-    imageVersionService.createImageVersion(requestContext);
+    imageVersionService.createImageVersion(imageMetadataRequest);
 
   }
 

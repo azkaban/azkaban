@@ -20,7 +20,7 @@ import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
@@ -50,17 +50,17 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   }
 
   @Override
-  public int createImageVersion(RequestContext requestContext)
+  public int createImageVersion(ImageMetadataRequest imageMetadataRequest)
       throws IOException, ImageMgmtException {
     // Convert input json payload to image version object
-    ImageVersion imageVersion = converterUtils.convertToModel(requestContext.getJsonPayload(),
+    ImageVersion imageVersion = converterUtils.convertToModel(imageMetadataRequest.getJsonPayload(),
         ImageVersion.class);
-    // set the user who invoked the API
-    imageVersion.setCreatedBy(requestContext.getUser());
-    imageVersion.setModifiedBy(requestContext.getUser());
+    // Set the user who invoked the API
+    imageVersion.setCreatedBy(imageMetadataRequest.getUser());
+    imageVersion.setModifiedBy(imageMetadataRequest.getUser());
     // Override the state to NEW during creation of new image version
     imageVersion.setState(State.NEW);
-    // input validation for image version create request
+    // Input validation for image version create request
     if(!ValidatorUtils.validateObject(imageVersion)) {
       throw new ImageMgmtValidationException("Provide valid input for creating image version "
           + "metadata");
@@ -69,7 +69,7 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   }
 
   @Override
-  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException {
-    return imageVersionsDao.findImageVersions(requestContext);
+  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest) throws ImageMgmtException {
+    return imageVersionsDao.findImageVersions(imageMetadataRequest);
   }
 }

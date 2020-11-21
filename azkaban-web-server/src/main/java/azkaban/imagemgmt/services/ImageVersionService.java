@@ -17,7 +17,7 @@ package azkaban.imagemgmt.services;
 
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersion;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import java.io.IOException;
 import java.util.List;
 
@@ -28,8 +28,8 @@ import java.util.List;
  */
 public interface ImageVersionService {
 
-  public int createImageVersion(RequestContext requestContext) throws IOException,
+  public int createImageVersion(ImageMetadataRequest imageMetadataRequest) throws IOException,
       ImageMgmtException;
-  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException;
+  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest) throws ImageMgmtException;
 
 }

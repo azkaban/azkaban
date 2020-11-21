@@ -19,13 +19,12 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageType;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * This service layer implementation for processing and delegation of image type APIs. For
@@ -45,13 +44,13 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   }
 
   @Override
-  public int createImageType(RequestContext requestContext) throws IOException,
+  public int createImageType(ImageMetadataRequest imageMetadataRequest) throws IOException,
       ImageMgmtException {
-    // convert input json payload to image type object
-    ImageType imageType = converterUtils.convertToModel(requestContext.getJsonPayload(), ImageType.class);
-    imageType.setCreatedBy(requestContext.getUser());
-    imageType.setModifiedBy(requestContext.getUser());
-    // input validation for image type create request
+    // Convert input json payload to image type object
+    ImageType imageType = converterUtils.convertToModel(imageMetadataRequest.getJsonPayload(), ImageType.class);
+    imageType.setCreatedBy(imageMetadataRequest.getUser());
+    imageType.setModifiedBy(imageMetadataRequest.getUser());
+    // Input validation for image type create request
     if(!ValidatorUtils.validateObject(imageType)) {
       throw new ImageMgmtValidationException("Provide valid input for creating image type "
           + "metadata");

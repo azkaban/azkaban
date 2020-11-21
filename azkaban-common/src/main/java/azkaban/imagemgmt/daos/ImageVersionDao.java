@@ -17,7 +17,7 @@ package azkaban.imagemgmt.daos;
 
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersion;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import java.util.List;
 
 /**
@@ -26,5 +26,5 @@ import java.util.List;
  */
 public interface ImageVersionDao {
   public int createImageVersion(ImageVersion imageVersion);
-  public List<ImageVersion> findImageVersions(RequestContext requestContext) throws ImageMgmtException;
+  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest) throws ImageMgmtException;
 }

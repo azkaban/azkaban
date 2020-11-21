@@ -22,7 +22,7 @@ package azkaban.imagemgmt.models;
 public abstract class BaseModel {
   // Id of the record
   protected int id;
-  // created by user
+  // Created by user
   protected String createdBy;
   /**
    * The created timestamp in string. The corresponding field in database is of type timestamp.
@@ -31,7 +31,7 @@ public abstract class BaseModel {
    * accordingly in string format
    */
   protected String createdOn;
-  // modified by user
+  // Modified by user
   protected String modifiedBy;
   /**
    * The modified timestamp in string. The corresponding field in database is of type timestamp.

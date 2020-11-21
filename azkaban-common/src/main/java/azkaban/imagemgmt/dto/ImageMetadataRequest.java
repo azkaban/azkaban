@@ -25,7 +25,7 @@ import java.util.Optional;
  * payload, query params, pagination params etc. This class can be used to pass these information
  * to the different layers of the API implementation.
  */
-public class RequestContext {
+public class ImageMetadataRequest {
   // Represents json payload in string format. Json payload is provided as part of API invocation
   private String jsonPayload;
   // The user who invoked the REST API
@@ -36,7 +36,7 @@ public class RequestContext {
   private int start;
   private int limit;
 
-  private RequestContext(Builder builder) {
+  private ImageMetadataRequest(Builder builder) {
     this.jsonPayload = builder.jsonPayload;
     this.user = builder.user;
     this.params = builder.params;
@@ -162,8 +162,8 @@ public class RequestContext {
      * Invoke build method to build the final RequestContext
      * @return RequestContext
      */
-    public RequestContext build() {
-      return new RequestContext(this);
+    public ImageMetadataRequest build() {
+      return new ImageMetadataRequest(this);
     }
   }
 }

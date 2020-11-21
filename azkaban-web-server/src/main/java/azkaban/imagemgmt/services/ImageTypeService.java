@@ -16,7 +16,7 @@
 package azkaban.imagemgmt.services;
 
 import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import java.io.IOException;
 
 /**
@@ -28,11 +28,11 @@ public interface ImageTypeService {
 
   /**
    * Method for processing and delegation of image type creation/registration
-   * @param requestContext - DTO which encaptulates  and transfers the create request details
+   * @param imageMetadataRequest - DTO which encaptulates  and transfers the create request details
    * @return int - id of the image type metadata record created
    * @throws IOException
    * @throws ImageMgmtException
    */
-  public int createImageType(RequestContext requestContext) throws IOException,
+  public int createImageType(ImageMetadataRequest imageMetadataRequest) throws IOException,
       ImageMgmtException;
 }

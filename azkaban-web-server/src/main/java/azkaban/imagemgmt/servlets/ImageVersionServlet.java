@@ -22,7 +22,7 @@ import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
-import azkaban.imagemgmt.dto.RequestContext;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.services.ImageVersionService;
 import com.linkedin.jersey.api.uri.UriTemplate;
 import java.io.IOException;
@@ -88,7 +88,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
             Optional.ofNullable(versionStateString != null ? State.valueOf(versionStateString) :
                 null);
         // create RequestContext DTO to transfer the input request
-        RequestContext requestContext = RequestContext.newBuilder()
+        ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
             .addParam(ImageMgmtConstants.IMAGE_TYPE, imageType) // mandatory parameter
             .addParamIfPresent(ImageMgmtConstants.IMAGE_VERSION, imageVersion) // optional parameter
             .addParamIfPresent(ImageMgmtConstants.VERSION_STATE, versionState) // optional parameter
@@ -96,7 +96,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         // invoke service method and get response in string format
         response =
             objectMapper.writeValueAsString(
-                imageVersionService.findImageVersions(requestContext));
+                imageVersionService.findImageVersions(imageMetadataRequest));
       }
       this.writeResponse(resp, response);
     } catch(final Exception e) {
@@ -112,12 +112,12 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
     try {
       String jsonPayload = HttpRequestUtils.getBody(req);
       // Build RequestContext DTO to transfer the input request
-      RequestContext requestContext = RequestContext.newBuilder()
+      ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
           .user(session.getUser().getUserId())
           .build();
       // Create image version metadata and image version id
-      Integer imageVersionId = imageVersionService.createImageVersion(requestContext);
+      Integer imageVersionId = imageVersionService.createImageVersion(imageMetadataRequest);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location", CREATE_IMAGE_VERSION_URI_TEMPLATE.createURI(imageVersionId.toString()));
