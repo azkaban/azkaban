@@ -16,10 +16,10 @@
 package azkaban.imagemgmt.services;
 
 import azkaban.imagemgmt.daos.ImageTypeDao;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageType;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
@@ -27,9 +27,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This service layer implementation for processing and delegation of image type APIs. For
- * example API request processing and validation are handled in this layer. Eventually the
- * requests are routed to the DAO layer for data access.
+ * This service layer implementation for processing and delegation of image type APIs. For example
+ * API request processing and validation are handled in this layer. Eventually the requests are
+ * routed to the DAO layer for data access.
  */
 @Singleton
 public class ImageTypeServiceImpl implements ImageTypeService {
@@ -38,7 +38,8 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   private final ConverterUtils converterUtils;
 
   @Inject
-  public ImageTypeServiceImpl(final ImageTypeDao imageTypeDao, final ConverterUtils converterUtils) {
+  public ImageTypeServiceImpl(final ImageTypeDao imageTypeDao,
+      final ConverterUtils converterUtils) {
     this.imageTypeDao = imageTypeDao;
     this.converterUtils = converterUtils;
   }
@@ -47,11 +48,12 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   public int createImageType(ImageMetadataRequest imageMetadataRequest) throws IOException,
       ImageMgmtException {
     // Convert input json payload to image type object
-    ImageType imageType = converterUtils.convertToModel(imageMetadataRequest.getJsonPayload(), ImageType.class);
+    ImageType imageType = converterUtils
+        .convertToModel(imageMetadataRequest.getJsonPayload(), ImageType.class);
     imageType.setCreatedBy(imageMetadataRequest.getUser());
     imageType.setModifiedBy(imageMetadataRequest.getUser());
     // Input validation for image type create request
-    if(!ValidatorUtils.validateObject(imageType)) {
+    if (!ValidatorUtils.validateObject(imageType)) {
       throw new ImageMgmtValidationException("Provide valid input for creating image type "
           + "metadata");
     }

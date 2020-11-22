@@ -28,10 +28,13 @@ import org.slf4j.LoggerFactory;
  * This utility class performs the REST API user input validation on the models
  */
 public class ValidatorUtils {
+
   private static final Logger log = LoggerFactory.getLogger(ValidatorUtils.class);
   private static ValidatorFactory validatorFactory;
+
   private ValidatorUtils() {
   }
+
   static {
     validatorFactory = Validation.byDefaultProvider()
         .configure()
@@ -41,7 +44,8 @@ public class ValidatorUtils {
 
   /**
    * Performs validation the supplied object and creates set of violations. Returns if there is no
-   * violation. Returns false if there exist any violation
+   * violation. Returns false if there exist any violation.
+   *
    * @param obj
    * @param <T>
    * @return boolean
@@ -53,7 +57,8 @@ public class ValidatorUtils {
       return true;
     }
     log.error("Object validation failed for: " + obj.toString());
-    violations.forEach(violation -> log.error(violation.getPropertyPath().toString() + " " + violation.getMessage()));
+    violations.forEach(violation -> log
+        .error(violation.getPropertyPath().toString() + " " + violation.getMessage()));
     return false;
   }
 }

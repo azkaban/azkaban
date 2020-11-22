@@ -29,7 +29,6 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class ImageTypeDaoImpl implements ImageTypeDao {
+
   private static final Logger log = LoggerFactory.getLogger(ImageTypeDaoImpl.class);
 
   private final DatabaseOperator databaseOperator;
@@ -60,13 +60,15 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     final SQLTransaction<Integer> insertAndGetSpaceId = transOperator -> {
       // insert image type record
       transOperator.update(INSERT_IMAGE_TYPE, imageType.getName(), imageType.getDescription(),
-          true, imageType.getDeployable().getName(), imageType.getCreatedBy(), imageType.getModifiedBy());
+          true, imageType.getDeployable().getName(), imageType.getCreatedBy(),
+          imageType.getModifiedBy());
       int imageTypeId = Long.valueOf(transOperator.getLastInsertId()).intValue();
       // Insert ownerships record if present
-      if( imageType.getOwnerships() != null && imageType.getOwnerships().size() > 0) {
-        for(ImageOwnership imageOwnership : imageType.getOwnerships()) {
+      if (imageType.getOwnerships() != null && imageType.getOwnerships().size() > 0) {
+        for (ImageOwnership imageOwnership : imageType.getOwnerships()) {
           transOperator.update(INSERT_IMAGE_OWNERSHIP, imageTypeId, imageOwnership.getOwner(),
-              imageOwnership.getRole().getName(), imageType.getCreatedBy(), imageType.getModifiedBy());
+              imageOwnership.getRole().getName(), imageType.getCreatedBy(),
+              imageType.getModifiedBy());
         }
       }
       transOperator.getConnection().commit();
@@ -79,7 +81,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
          any of the below statements?
          Ideally all should happen in a transaction */
       imageTypeId = databaseOperator.transaction(insertAndGetSpaceId);
-      log.info("Created image type id :"+imageTypeId);
+      log.info("Created image type id :" + imageTypeId);
     } catch (SQLException e) {
       log.error("Unable to create the image type metadata", e);
       throw new ImageMgmtDaoException("Exception occurred while creating image type metadata");
@@ -95,13 +97,14 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       imageTypes = this.databaseOperator
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
       // Check if there are more then one image types for a given name. If so throw exception
-      if(imageTypes != null && imageTypes.size() > 1) {
+      if (imageTypes != null && imageTypes.size() > 1) {
         throw new ImageMgmtDaoException("Can't have more that one image type record for a given "
-            + "type with name : "+name);
+            + "type with name : " + name);
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException("Unable to fetch image type metadata from image type : "+name);
+      throw new ImageMgmtDaoException(
+          "Unable to fetch image type metadata from image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
   }
@@ -110,6 +113,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
    * ResultSetHandler implementation class for fetching image type
    */
   public static class FetchImageTypeHandler implements ResultSetHandler<List<ImageType>> {
+
     private static final String FETCH_IMAGE_TYPE_BY_ID =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
             + "modified_by FROM image_types WHERE id = ?";
@@ -119,6 +123,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     private static final String FETCH_ALL_IMAGE_TYPES =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
             + "modified_by FROM image_types where active = ?";
+
     @Override
     public List<ImageType> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {

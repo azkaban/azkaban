@@ -16,11 +16,11 @@
 package azkaban.imagemgmt.services;
 
 import azkaban.imagemgmt.daos.ImageVersionDao;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This service layer implementation for processing and delegation of image version APIs. For
- * example API request processing and validation are handled in this layer. Eventually the
- * requests are routed to the DAO layer for data access.
+ * example API request processing and validation are handled in this layer. Eventually the requests
+ * are routed to the DAO layer for data access.
  */
 @Singleton
 public class ImageVersionServiceImpl implements ImageVersionService {
@@ -44,7 +44,8 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   private final ConverterUtils converterUtils;
 
   @Inject
-  public ImageVersionServiceImpl(final ImageVersionDao imageVersionsDao, final ConverterUtils converterUtils) {
+  public ImageVersionServiceImpl(final ImageVersionDao imageVersionsDao,
+      final ConverterUtils converterUtils) {
     this.imageVersionsDao = imageVersionsDao;
     this.converterUtils = converterUtils;
   }
@@ -61,7 +62,7 @@ public class ImageVersionServiceImpl implements ImageVersionService {
     // Override the state to NEW during creation of new image version
     imageVersion.setState(State.NEW);
     // Input validation for image version create request
-    if(!ValidatorUtils.validateObject(imageVersion)) {
+    if (!ValidatorUtils.validateObject(imageVersion)) {
       throw new ImageMgmtValidationException("Provide valid input for creating image version "
           + "metadata");
     }
@@ -69,7 +70,8 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   }
 
   @Override
-  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest) throws ImageMgmtException {
+  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
+      throws ImageMgmtException {
     return imageVersionsDao.findImageVersions(imageMetadataRequest);
   }
 }

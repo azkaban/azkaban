@@ -22,10 +22,11 @@ import java.util.Optional;
 
 /**
  * This class represents a data transfer object (DTO) to propagate image management REST API json
- * payload, query params, pagination params etc. This class can be used to pass these information
- * to the different layers of the API implementation.
+ * payload, query params, pagination params etc. This class can be used to pass these information to
+ * the different layers of the API implementation.
  */
 public class ImageMetadataRequest {
+
   // Represents json payload in string format. Json payload is provided as part of API invocation
   private String jsonPayload;
   // The user who invoked the REST API
@@ -64,6 +65,7 @@ public class ImageMetadataRequest {
    * Builder for building RequestContext
    */
   public static class Builder {
+
     private String jsonPayload;
     private String user;
     private Map<String, Object> params;
@@ -76,6 +78,7 @@ public class ImageMetadataRequest {
 
     /**
      * Sets the json payload provided as part of image management REST API invocation
+     *
      * @param jsonPayload input json payload in string format
      * @return Builder - returns builder instance
      * @throws NullPointerException if json payload is missing
@@ -88,6 +91,7 @@ public class ImageMetadataRequest {
 
     /**
      * Sets the user who invokes the image management REST API.
+     *
      * @param user - user in string
      * @return Builder - returns builder instance
      * @throws NullPointerException if user is null
@@ -101,7 +105,8 @@ public class ImageMetadataRequest {
     /**
      * Adds param to the param map. It accepts non null key and non null value. This method must be
      * user for mandatory parameters
-     * @param paramKey - key of the parameter
+     *
+     * @param paramKey   - key of the parameter
      * @param paramValue - value of the parameter
      * @return Builder - returns builder instance
      * @throws NullPointerException if preconditions failed
@@ -110,16 +115,17 @@ public class ImageMetadataRequest {
       // Param key must not be null
       Preconditions.checkNotNull(paramKey, "Param key is null");
       // Param value must not be null
-      Preconditions.checkNotNull(paramValue, "The mandatory parameter "+paramKey+" is "
+      Preconditions.checkNotNull(paramValue, "The mandatory parameter " + paramKey + " is "
           + "either missing or contains null value.");
       this.params.put(paramKey, paramValue);
       return this;
     }
 
     /**
-     * Adds param to the param map. It accepts non null key. The value can be null. This method
-     * must be used for optional parameters
-     * @param paramKey - key of the parameter
+     * Adds param to the param map. It accepts non null key. The value can be null. This method must
+     * be used for optional parameters
+     *
+     * @param paramKey   - key of the parameter
      * @param paramValue - value of the parameter
      * @return Builder - returns builder instance
      * @throws NullPointerException if preconditions failed
@@ -128,7 +134,7 @@ public class ImageMetadataRequest {
       // Both param key and value must be present and should not be null
       Preconditions.checkNotNull(paramKey, "Param key is null");
       // Ignore the key value if not specified
-      if(paramValue.isPresent()) {
+      if (paramValue.isPresent()) {
         this.params.put(paramKey, paramValue.get());
       }
       return this;
@@ -136,6 +142,7 @@ public class ImageMetadataRequest {
 
     /**
      * Sets the start offset for pagination
+     *
      * @param start - start offset for pagination
      * @return Builder - returns builder instance
      * @throws IllegalArgumentException if precondition is not satisfied
@@ -148,6 +155,7 @@ public class ImageMetadataRequest {
 
     /**
      * Sets the limit for pagination i.e. items to fetch in one request
+     *
      * @param limit - limit for pagination.
      * @return Builder - returns builder instance
      * @throws IllegalArgumentException if precondition is not satisfied
@@ -160,6 +168,7 @@ public class ImageMetadataRequest {
 
     /**
      * Invoke build method to build the final RequestContext
+     *
      * @return RequestContext
      */
     public ImageMetadataRequest build() {

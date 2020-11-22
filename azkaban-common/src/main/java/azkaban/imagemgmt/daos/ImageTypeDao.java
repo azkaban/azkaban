@@ -19,12 +19,13 @@ import azkaban.imagemgmt.models.ImageType;
 import java.util.Optional;
 
 /**
- * Data access object (DAO) for accessing image types. This interface defines method such as
- * create, get image types etc.
+ * Data access object (DAO) for accessing image types. This interface defines method such as create,
+ * get image types etc.
  */
 public interface ImageTypeDao {
 
   /**
+   * Create/register a new image type metadata.
    *
    * @param imageType - ImageType to be created
    * @return int - Id representing image type metadata
@@ -32,6 +33,7 @@ public interface ImageTypeDao {
   public int createImageType(ImageType imageType);
 
   /**
+   * Gets an image type metadata based on image type name.
    *
    * @param name - Name of the image type
    * @return Optional<ImageType> - Optional representing ImageType

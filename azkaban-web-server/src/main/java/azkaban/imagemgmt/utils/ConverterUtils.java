@@ -42,7 +42,8 @@ public class ConverterUtils {
   }
 
   /**
-   * Converts Json input payload to API model
+   * Converts Json input payload to API model.
+   *
    * @param jsonPayloadString
    * @param modelClass
    * @param <T>
@@ -55,13 +56,16 @@ public class ConverterUtils {
       return objectMapper.readValue(jsonPayloadString, modelClass);
     } catch (JsonParseException e) {
       log.error("Exception while parsing input json ", e);
-      throw new ImageMgmtInvalidInputException("Exception while reading input payload. Invalid input.");
+      throw new ImageMgmtInvalidInputException(
+          "Exception while reading input payload. Invalid input.");
     } catch (JsonMappingException e) {
       log.error("Exception while converting input json ", e);
-      throw new ImageMgmtInvalidInputException("Exception while reading input payload. Invalid input.");
+      throw new ImageMgmtInvalidInputException(
+          "Exception while reading input payload. Invalid input.");
     } catch (IOException e) {
       log.error("IOException occurred while converting input json ", e);
-      throw new ImageMgmtInvalidInputException("Exception while reading input payload. Invalid input.");
+      throw new ImageMgmtInvalidInputException(
+          "Exception while reading input payload. Invalid input.");
     }
   }
 

@@ -15,14 +15,14 @@
  */
 package azkaban.imagemgmt.servlets;
 
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.linkedin.jersey.api.uri.UriTemplate;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.services.ImageTypeService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,11 +38,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This servlet exposes the REST APIs such as create, get etc. for image type. Below are the
- * supported APIs.
- * Create Image Type API: POST /imageTypes?session.id=? --data @payload.json
- * Get Image Type API:
- * GET /imageTypes?session.id=?&imageType=?
- * GET /imageTypes/{id}?session.id=?
+ * supported APIs. Create Image Type API: POST /imageTypes?session.id=? --data @payload.json Get
+ * Image Type API: GET /imageTypes?session.id=?&imageType=? GET /imageTypes/{id}?session.id=?
  */
 public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
@@ -74,9 +71,9 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       Map<String, String> templateVariableToValue = new HashMap<>();
-      if(GET_IMAGE_TYPE_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
+      if (GET_IMAGE_TYPE_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
         // TODO: Implementation will be provided in the future PR
-      } else if(GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
+      } else if (GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
         // TODO: Implementation will be provided in the future PR
       }
     } catch (Exception e) {
@@ -90,7 +87,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       String jsonPayload = HttpRequestUtils.getBody(req);
-      // Build RequestContext DTO to transfer the input request
+      // Build ImageMetadataRequest DTO to transfer the input request
       ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
           .user(session.getUser().getUserId())
@@ -99,16 +96,17 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       Integer imageTypeId = imageTypeService.createImageType(imageMetadataRequest);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
-      resp.setHeader("Location", CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE.createURI(imageTypeId.toString()));
+      resp.setHeader("Location",
+          CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE.createURI(imageTypeId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
     } catch (final ImageMgmtValidationException e) {
       log.error("Input for creating image type is invalid", e);
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          "Bad request for creating an image type. Reason: "+e.getMessage());
+          "Bad request for creating an image type. Reason: " + e.getMessage());
     } catch (final Exception e) {
       log.error("Exception while creating an image type", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-          "Exception while creating an image type. Reason: "+e.getMessage());
+          "Exception while creating an image type. Reason: " + e.getMessage());
     }
   }
 }
