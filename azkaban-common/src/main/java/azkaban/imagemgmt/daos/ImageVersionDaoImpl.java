@@ -1,13 +1,30 @@
+/*
+ * Copyright 2020 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.imagemgmt.daos;
 
+import azkaban.Constants.ImageMgmtConstants;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
-import azkaban.imagemgmt.models.RequestContext;
-import azkaban.imagemgmt.utils.ImageMgmtConstants;
+import com.google.common.collect.Iterables;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -16,10 +33,13 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * DAO Implementation for accessing image version metadata. This class contains implementation for
+ * methods such as create, get image version metadata etc.
+ */
 @Singleton
 public class ImageVersionDaoImpl implements ImageVersionDao {
 
@@ -30,11 +50,11 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   private final ImageTypeDao imageTypeDao;
 
   private static String INSERT_IMAGE_VERSION_QUERY =
-      "insert into image_versions ( path, description, version, type_id, state, "
-          + "release_tag, created_on, created_by) "
+      "insert into image_versions ( path, description, "
+          + "version, type_id, state, release_tag, created_by, modified_by) "
           + "values (?, ?, ?, ?, ?, ?, ?, ?)";
   private static String SELECT_IMAGE_VERSION_BASE_QUERY = "select iv.id, iv.path, iv.description, "
-      + "iv.version, it.type, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
+      + "iv.version, it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
       + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
 
   @Inject
@@ -45,14 +65,15 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
 
   @Override
   public int createImageVersion(ImageVersion imageVersion) {
-    ImageType imageType = imageTypeDao.getImageTypeByType(imageVersion.getType())
-        .orElseThrow(() -> new RuntimeException("Unable to fetch image type metadata. Invalid "
-            + "image type : "+imageVersion.getType()));
+    ImageType imageType = imageTypeDao.getImageTypeByName(imageVersion.getName())
+        .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
+            + "image type : " + imageVersion.getName()));
     final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
-      String currentTime = DateTime.now().toLocalDateTime().toString();
-      transOperator.update(INSERT_IMAGE_VERSION_QUERY, imageVersion.getPath(), imageVersion.getDescription(),
-          imageVersion.getVersion(), imageType.getId(), imageVersion.getState().getStateValue(),
-          imageVersion.getReleaseTag(), currentTime, imageVersion.getCreatedBy());
+      transOperator
+          .update(INSERT_IMAGE_VERSION_QUERY, imageVersion.getPath(), imageVersion.getDescription(),
+              imageVersion.getVersion(), imageType.getId(), imageVersion.getState().getStateValue(),
+              imageVersion.getReleaseTag(), imageVersion.getCreatedBy(),
+              imageVersion.getModifiedBy());
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -65,35 +86,53 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       imageVersionId = databaseOperator.transaction(insertAndGetSpaceId).intValue();
     } catch (SQLException e) {
       log.error("Unable to create the image version metadata", e);
+      throw new ImageMgmtDaoException("Exception while creating image version metadata");
     }
     return imageVersionId;
   }
 
   @Override
-  public List<ImageVersion> getImageVersion(RequestContext requestContext) throws ImageMgmtException {
+  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
+      throws ImageMgmtException {
     List<ImageVersion> imageVersions = new ArrayList<>();
     try {
       StringBuilder queryBuilder = new StringBuilder(SELECT_IMAGE_VERSION_BASE_QUERY);
-      if(requestContext.getParams().containsKey(ImageMgmtConstants.IMAGE_TYPE)) {
+      List<Object> params = new ArrayList<>();
+      // Add imageType in the query
+      if (imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.IMAGE_TYPE)) {
         queryBuilder.append(" AND ");
-        queryBuilder.append(" it.type = '"+requestContext.getParams().get(ImageMgmtConstants.IMAGE_TYPE)+"'");
+        queryBuilder.append(" it.name = ?");
+        params.add(imageMetadataRequest.getParams().get(ImageMgmtConstants.IMAGE_TYPE));
       }
-
-      if(requestContext.getParams().containsKey(ImageMgmtConstants.IMAGE_VERSION)) {
+      // Add imageVersion in the query if present
+      if (imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.IMAGE_VERSION)) {
         queryBuilder.append(" AND ");
-        queryBuilder.append(" iv.version = '"+requestContext.getParams().get(ImageMgmtConstants.IMAGE_VERSION)+"'");
+        queryBuilder.append(" iv.version = ?");
+        params.add(imageMetadataRequest.getParams().get(ImageMgmtConstants.IMAGE_VERSION));
       }
-      log.info("Query : "+queryBuilder.toString());
+      // Add versionState in the query if present
+      if (imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.VERSION_STATE)) {
+        queryBuilder.append(" AND ");
+        queryBuilder.append(" iv.state = ?");
+        State versionState = (State) imageMetadataRequest.getParams()
+            .get(ImageMgmtConstants.VERSION_STATE);
+        params.add(versionState.getStateValue());
+      }
+      log.info("Image version get query : " + queryBuilder.toString());
       imageVersions = databaseOperator.query(queryBuilder.toString(),
-          new FetchImageVersionHandler());
+          new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
     } catch (SQLException ex) {
       log.error("Exception while fetching image version ", ex);
-      throw  new ImageMgmtException("Exception while fetching image version");
+      throw new ImageMgmtDaoException("Exception while fetching image version");
     }
     return imageVersions;
   }
 
+  /**
+   * ResultSetHandler implementation class for fetching image version
+   */
   public static class FetchImageVersionHandler implements ResultSetHandler<List<ImageVersion>> {
+
     @Override
     public List<ImageVersion> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
@@ -105,7 +144,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
         final String path = rs.getString("path");
         final String description = rs.getString("description");
         final String version = rs.getString("version");
-        final String type = rs.getString("type");
+        final String name = rs.getString("name");
         final String state = rs.getString("state");
         final String releaseTag = rs.getString("release_tag");
         final String createdOn = rs.getString("created_on");
@@ -119,7 +158,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
         imageVersion.setVersion(version);
         imageVersion.setState(State.fromStateValue(state));
         imageVersion.setReleaseTag(releaseTag);
-        imageVersion.setType(type);
+        imageVersion.setName(name);
         imageVersion.setCreatedOn(createdOn);
         imageVersion.setCreatedBy(createdBy);
         imageVersion.setModifiedBy(modifiedBy);

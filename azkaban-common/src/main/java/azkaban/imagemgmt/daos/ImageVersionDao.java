@@ -13,31 +13,26 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.imagemgmt.services;
+package azkaban.imagemgmt.daos;
 
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersion;
-import java.io.IOException;
 import java.util.List;
 
 /**
- * This service layer interface exposes methods for delegation and processing business logic for
- * image version APIs. For example API request processing and validation are handled in this layer.
- * Eventually the requests are routed to the DAO layer for data access.
+ * Data access object (DAO) for accessing image version metadata. This interface defines method such
+ * as create, get image version metadata etc.
  */
-public interface ImageVersionService {
+public interface ImageVersionDao {
 
   /**
-   * Create a new version of an image type using given image metadata.
+   * Creates image version metadata for an image type.
    *
-   * @param imageMetadataRequest
-   * @return int
-   * @throws IOException
-   * @throws ImageMgmtException
+   * @param imageVersion
+   * @return int - id of the image version
    */
-  public int createImageVersion(ImageMetadataRequest imageMetadataRequest) throws IOException,
-      ImageMgmtException;
+  public int createImageVersion(ImageVersion imageVersion);
 
   /**
    * Method to find image versions based on image metadata such as image type, image version,
@@ -49,5 +44,4 @@ public interface ImageVersionService {
    */
   public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
       throws ImageMgmtException;
-
 }

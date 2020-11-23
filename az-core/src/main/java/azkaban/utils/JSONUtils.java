@@ -20,13 +20,16 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
@@ -270,5 +273,21 @@ public class JSONUtils {
     }
 
     return false;
+  }
+
+  /**
+   * Reads json file from the classpath placed in the resources folder and returns as string
+   * @param filePath
+   * @return String json as string
+   */
+  public static String readJsonFileAsString(String filePath) {
+    try {
+      InputStream is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
+      return IOUtils.toString(is, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new RuntimeException("Exception while reading input file : "+filePath);
+    } catch (Exception ex) {
+      throw new RuntimeException("Exception while reading input file : "+filePath);
+    }
   }
 }
