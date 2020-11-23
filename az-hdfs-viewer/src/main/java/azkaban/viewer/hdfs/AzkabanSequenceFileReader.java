@@ -16,7 +16,6 @@
 
 package azkaban.viewer.hdfs;
 
-import azkaban.security.commons.HadoopSecurityManager;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -57,7 +56,7 @@ import org.apache.log4j.Logger;
 @SuppressWarnings("deprecation")
 public class AzkabanSequenceFileReader {
   private final static Logger LOG = Logger
-      .getLogger(HadoopSecurityManager.class);
+      .getLogger(AzkabanSequenceFileReader.class);
   private static final byte BLOCK_COMPRESS_VERSION = (byte) 4;
   private static final byte CUSTOM_COMPRESS_VERSION = (byte) 5;
   private static final byte VERSION_WITH_METADATA = (byte) 6;

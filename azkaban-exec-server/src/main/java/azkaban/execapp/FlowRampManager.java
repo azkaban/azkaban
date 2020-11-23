@@ -616,10 +616,12 @@ public class FlowRampManager implements EventListener<Event>, ThreadPoolExecutin
                 action.name(),
                 flowRunner.isRamping()
             );
-            executableRampExceptionalFlowItemsMap.add(rampId, flowName, ExecutableRampStatus.EXCLUDED,
-                System.currentTimeMillis(), true);
-          }
 
+            if (!executableRamp.ignoreTestFailure()) {
+              executableRampExceptionalFlowItemsMap.add(rampId, flowName, ExecutableRampStatus.EXCLUDED,
+                  System.currentTimeMillis(), true);
+            }
+          }
         });
   }
 

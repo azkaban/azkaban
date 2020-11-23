@@ -46,7 +46,10 @@ public class ExecutionControllerUtils {
   private static final Logger logger = LoggerFactory.getLogger(
       ExecutionControllerUtils.class);
   private static final String SPARK_JOB_TYPE = "spark";
-  private static final String APPLICATION_ID = "${application.id}";
+  static final String OLD_APPLICATION_ID = "${application.id}";
+  // URLs coming from routing cluster info cannot use `${}` as a placeholder because it is already
+  // used for property substitution in Props class, which URLs are propagated through.
+  static final String NEW_APPLICATION_ID = "<application.id>";
   // The regex to look for while fetching application ID from the Hadoop/Spark job log
   private static final Pattern APPLICATION_ID_PATTERN = Pattern.compile("application_(\\d+_\\d+)");
   // The regex to look for while validating the content from RM job link
@@ -283,13 +286,46 @@ public class ExecutionControllerUtils {
       return null;
     }
 
+    final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
+    final boolean executableNodeFound = (node != null) ? true : false;
+
+    String resourceManagerJobUrl = null;
+    String sparkHistoryServerUrl = null;
+    String jobHistoryServerUrl = null;
+    final String applicationPlaceholder;
+
+    if (executableNodeFound && node.getClusterInfo() != null) {
+      // use the information of the cluster where the job is previously routed to
+      final ClusterInfo cluster = node.getClusterInfo();
+      applicationPlaceholder = NEW_APPLICATION_ID;
+      resourceManagerJobUrl = cluster.resourceManagerURL;
+      sparkHistoryServerUrl = cluster.sparkHistoryServerURL;
+      jobHistoryServerUrl = cluster.historyServerURL;
+    } else {
+      // fall back to web server's own configuration if cluster is missing for this job
+      applicationPlaceholder = OLD_APPLICATION_ID;
+      if (azkProps.containsKey(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL)) {
+        resourceManagerJobUrl = azkProps.getString(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL);
+      }
+      if (azkProps.containsKey(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)) {
+        sparkHistoryServerUrl = azkProps.getString(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL);
+      }
+      if (azkProps.containsKey(ConfigurationKeys.HISTORY_SERVER_JOB_URL)) {
+        jobHistoryServerUrl = azkProps.getString(ConfigurationKeys.HISTORY_SERVER_JOB_URL);
+      }
+    }
+
+    if (resourceManagerJobUrl == null || sparkHistoryServerUrl == null || jobHistoryServerUrl == null) {
+      logger.info("Missing Resource Manager, Spark History Server or History Server URL");
+      return null;
+    }
+
     final URL url;
     final String jobLinkUrl;
     boolean isRMJobLinkValid = true;
 
     try {
-      url = new URL(azkProps.getString(ConfigurationKeys.RESOURCE_MANAGER_JOB_URL)
-          .replace(APPLICATION_ID, applicationId));
+      url = new URL(resourceManagerJobUrl.replace(applicationPlaceholder, applicationId));
       final String keytabPrincipal = requireNonNull(
           azkProps.getString(ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL));
       final String keytabPath = requireNonNull(azkProps.getString(ConfigurationKeys
@@ -321,20 +357,16 @@ public class ExecutionControllerUtils {
       jobLinkUrl = url.toString();
     } else {
       // If RM job url has expired, build the url to the JHS or SHS instead.
-      final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
-      if (node == null) {
+      if (!executableNodeFound) {
         logger.error(
             "Failed to create job url. Job " + jobId + " doesn't exist in " + exFlow
                 .getExecutionId());
         return null;
       }
-
       if (node.getType().equals(SPARK_JOB_TYPE)) {
-        jobLinkUrl = azkProps.get(ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL)
-            .replace(APPLICATION_ID, applicationId);
+        jobLinkUrl = sparkHistoryServerUrl.replace(applicationPlaceholder, applicationId);
       } else {
-        jobLinkUrl = azkProps.get(ConfigurationKeys.HISTORY_SERVER_JOB_URL)
-            .replace(APPLICATION_ID, applicationId);
+        jobLinkUrl = jobHistoryServerUrl.replace(applicationPlaceholder, applicationId);
       }
     }
 

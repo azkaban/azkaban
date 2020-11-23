@@ -33,6 +33,9 @@ dependencies {
     compile deps.jetty
     compile deps.jettyUtil
     compile deps.jopt
+    compile (deps.k8sClient) {
+        exclude module: 'builder-annotations'
+    }
     compile deps.mail
     compile deps.math3
     compile deps.metricsCore

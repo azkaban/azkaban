@@ -39,6 +39,7 @@ public class ExecutableRampTest {
   @Test
   public void testGet() {
     Assert.assertTrue(executableRamp.isActive());
+    Assert.assertFalse(executableRamp.ignoreTestFailure());
     Assert.assertEquals(RAMP_POLICY, executableRamp.getPolicy());
     Assert.assertEquals(4, executableRamp.getMaxFailureToPause());
     Assert.assertEquals(3, executableRamp.getMaxFailureToRampDown());
@@ -108,5 +109,92 @@ public class ExecutableRampTest {
     executableRamp.cacheResult(ExecutableRamp.Action.FAILED);
     Assert.assertFalse(executableRamp.isActive());
     Assert.assertEquals(1, executableRamp.getStage());
+  }
+
+  @Test
+  public void testClone() {
+    ExecutableRamp cloned = executableRamp.clone();
+    Assert.assertTrue(cloned.isActive());
+    Assert.assertFalse(cloned.ignoreTestFailure());
+    Assert.assertEquals(RAMP_POLICY, cloned.getPolicy());
+    Assert.assertEquals(4, cloned.getMaxFailureToPause());
+    Assert.assertEquals(3, cloned.getMaxFailureToRampDown());
+    Assert.assertFalse(cloned.isPercentageScaleForMaxFailure());
+    Assert.assertEquals(2, cloned.getStage());
+    Assert.assertTrue(cloned.isActive());
+    Assert.assertFalse(cloned.isPaused());
+    Assert.assertEquals(4, cloned.getCount(ExecutableRamp.CountType.IGNORED));
+    Assert.assertEquals(0, cloned.getCount(ExecutableRamp.CountType.FAILURE));
+    Assert.assertEquals(2, cloned.getCount(ExecutableRamp.CountType.SUCCESS));
+    Assert.assertEquals(6, cloned.getCount(ExecutableRamp.CountType.TRAIL));
+    Assert.assertEquals(timeStamp, cloned.getLastUpdatedTime());
+    Assert.assertEquals(timeStamp + 10, executableRamp.getEndTime());
+    Assert.assertEquals(timeStamp, cloned.getStartTime());
+  }
+
+  @Test
+  public void testMagneticTestFlag() {
+    ExecutableRamp ramp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(-1)
+            .setMaxFailureToRampDown(3)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(timeStamp + 10)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(2)
+            .setActive(true)
+            .build())
+        .build();
+    Assert.assertFalse(ramp.ignoreTestFailure());
+
+    ramp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(3)
+            .setMaxFailureToRampDown(-1)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(timeStamp + 10)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(2)
+            .setActive(true)
+            .build())
+        .build();
+    Assert.assertFalse(ramp.ignoreTestFailure());
+
+    ramp = ExecutableRamp.builder(RAMP_ID, RAMP_POLICY)
+        .setMetadata(ExecutableRamp.Metadata.builder()
+            .setMaxFailureToPause(-1)
+            .setMaxFailureToRampDown(-1)
+            .setPercentageScaleForMaxFailure(false)
+            .build())
+        .setState(ExecutableRamp.State.builder()
+            .setStartTime(timeStamp)
+            .setEndTime(timeStamp + 10)
+            .setLastUpdatedTime(timeStamp)
+            .setNumOfTrail(6)
+            .setNumOfSuccess(2)
+            .setNumOfFailure(0)
+            .setNumOfIgnored(4)
+            .setPaused(false)
+            .setRampStage(2)
+            .setActive(true)
+            .build())
+        .build();
+    Assert.assertTrue(ramp.ignoreTestFailure());
   }
 }
