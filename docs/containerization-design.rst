@@ -142,13 +142,12 @@ Image Management
   a busybox/alpine image should suffice.
 * Individual images for job-types will allow independent development and release for the job-type developers without
   any dependency on Azkaban. Here is an example image definition for KPJ (Kafka Push Job):
-  ```
+  .. code-block:: DOCKER
   FROM container-image-registry.corp.linkedin.com/lps-image/linkedin/rhel7-base-image/rhel7-base-image:0.16.9
 
   ARG KPJ_URL=https://artifactory.corp.linkedin.com:8083/artifactory/DDS/com/linkedin/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
 
   RUN curl $KPJ_URL --output ~/kafka-push-job-0.2.61.jar
-  ```
 
 * There will be one init container for each job-type using job-type docker images. This init container will move the
   binaries from the image to a mounted volume. The above specified volume will also be mounted for the application
@@ -160,15 +159,17 @@ Image Management
   during the flow execution. This will also be useful during debugging the recreate exact environment for a flow should
   there be any failures.
 
-### Image Management API
+Image Management API
+--------------------
 The following API will be added to help with the Image Management:
 
-#### CRUD API for managing Image Types
+CRUD API for managing Image Types
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The image_types resource is to be used to register a new image_types. Other than creation, the PATCH API should
 be used to edit ownership
 
-```rest
-POST /image_types
+.. code-block:: REST
+  POST /image_types
 
      Parameters:
      (request body)
@@ -186,12 +187,12 @@ POST /image_types
      Response:
      Status: 201 Created
      Header -> Location: /image_types/{id}
-```
 
-#### CRUD API for Image Versions
+CRUD API for Image Versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This API should be used whenever a new version of any image type is created to register it with Azkaban
-```rest
-POST /image_versions
+.. code-block:: JSON
+  POST /image_versions
 
      Parameters:
      (request body)
@@ -207,15 +208,15 @@ POST /image_versions
      Response:
      Status: 201 Created
      Header -> Location: /image_versions/{id}
-```
 
-#### API for Image Ramp Ups
+API for Image Ramp Ups
+^^^^^^^^^^^^^^^^^^^^^^
 The ramp up resource is to register the ramp-up plan for a given image between various (already registered) image
 versions of the same image_type. The total percentapge of all image_version combined in the ramp-up resource should
 add to 100. A new post invalidates previously existing ramp-up plans for the same image_type. Only the most recent
 one is considered active.
-```rest
-POST /image_rampup/{image_type}
+.. code-block:: JSON
+  POST /image_rampup/{image_type}
      Parameters:
      (request body)
      Format: Json Array
@@ -227,21 +228,21 @@ POST /image_rampup/{image_type}
      Response:
      Creates ramp up records
      Status: 201 created
-```
 
 At dispatch time, a graph walk will be performed to find out all the job types that
 the flow intends to execute. Their "default" version will be picked from the database
 table. Users can override the default version through runtime properties. The version
 maps to the specific Image. Details are described in the [Dispatch Logic Section](#dispatch-logic).
 
-### Dispatch Logic
+Dispatch Logic
+--------------
 
 1. Whenever a flow is ready to run (By schedule, by data triggers or manually through UI/API call),
-the AZ Web Server will mark the flow with the state: ```READY``` and insert the flow in the queue
+the AZ Web Server will mark the flow with the state: ``READY`` and insert the flow in the queue
 (**execution_flows** table).
 
 2. The **QueueProcessor** class will pick up executions based on priority and submit_time and set the state as
-```DISPATCHING``` for the picked flows. A rate-limiter is introduced here so the Kubernetes namespace does not
+``DISPATCHING`` for the picked flows. A rate-limiter is introduced here so the Kubernetes namespace does not
 get overwhelmed with the rate of creating containers. Finally, each of the picked flows are then submitted for
 **dispatch**. The dispatch logic:
 
@@ -269,22 +270,21 @@ get overwhelmed with the rate of creating containers. Finally, each of the picke
     * Finally, a YAML file is constructed on the fly for all parameters necessary to create the execution
     environment for the pod. This YAML is then used to launch the Pod in the kubernetes namespace.
 
-## Kubernetes Secrets
+Kubernetes Secrets
+------------------
 Kubernetes secret will be used to package:
 
    * Credentials to access mysql database for flow/job status updates.
-
    * Azkaban Executor Server Certificate that will be used to fetch Hadoop Tokens before launching jobs on Yarn.
-
    * Azkaban Executor Kafka Event Certificate (Different cert) with ACLs to send events to the Kafka topic.
-
    * Azkaban Executor Kafka Logging Certificate with ACLs to dispatch logs from the running container to Kafka.
 
-### Init Containers
+Init Containers
+---------------
 [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) is a Kubernetes concept.
 The role of init containers is to put together everything necessary to launch a fully functional flow container.
 
-![](figures/init-container-images.png)
+.. image:: figures/init-container-images.png
 
 1. Kubernetes will run the init containers in a sequence before the control is given to the application container
 as shown in the picture.
@@ -293,7 +293,8 @@ as shown in the picture.
 initiated. This init conatainer will take the layer for the jobtype binary and add it to the volume
 for the application container.
 
-### Flow Container
+Flow Container
+--------------
 
 1. A new class: "FlowContainer" will be created by refactoring code from the FlowRunnerManager. The purpose of this
 class is to provide the anchor that initiates the flow orchestration as well as respond to control/health check
@@ -329,7 +330,8 @@ Event Reporter pluginas well as job/flow status updates may need to be made in M
 For sending events to Kafka, azkaban-exec-server’s cert issued by a valid certificate authority will be used
 to authenticate flow containers. This and MySQL credentials will be pulled from Kubernetes secret.
 
-### Ingress Controller
+Ingress Controller
+------------------
 
 1. As mentioned in the [Flow Container Section](#flow-container), we will be utilizing the
 [Ambassador Ingress Controller](https://www.getambassador.io/docs/latest/topics/running/ingress-controller/) as
@@ -341,13 +343,15 @@ need to be updated dynamically at flow dispatch time and right after a flow fini
 Controller enables this by providing APIs that are key to dynamically updating these routes. This is realized
 through [annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/).
 
-### Logging in Executor
+Logging in Executor
+-------------------
 The AJAX API endpoint (FetchLog) will continue to be the means for the Azkaban UI to pull logs for the
 flows/jobs in progress. When a flow finishes, the logs will be copied to a well-defined directory structure
 in HDFS. This is different & better from today. Currently, the logs are split in chunks and copied to the
 Mysql db, which is a serious anti-pattern.
 
-## How does the proposal solve Issues with Bare Metal Model?
+How does the proposal solve Issues with Bare Metal Model?
+*********************************************************
 1. Full Resource Isolation - 1 DAG per container.
 2. Allows linear scaling both up and down based on demand.
 3. Deployments need not impact running containers. Ramp-up for new binaries can be developed in a fine-grained way;
@@ -363,7 +367,8 @@ to register the new image and a subsequent ramp-up.
 take most of the time in deployment.
 4. Flow executions can be made resumable-on-crash.
 
-# Open Items
+Open Items
+**********
 1. Over-ride param for flows to specify a particular image version
 2. Over-ride param for version set
 3. Over-ride param for requesting CPU/Mem resources for flow containers
