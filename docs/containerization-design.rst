@@ -91,11 +91,8 @@ Key Requirements for Containerization
 1. Azkaban Web Server should be able to Launch flows in independent containers, thereby giving a fully isolated environment for each flow.
 2. Be able to respond quickly in response to Spikes in demand (Flexible Infrastructure).
 3. Allow the components that make up Azkaban: Platform/Client binaries for Hadoop, Hive etc., Azkaban itself and jobtypes to evolve independently of each other.
-
    - Give the evolution control for Platform, Azkaban and Jobtypes to their corresponding owners.
-
    - Provide users a way to override default binary versions of Azkaban/jobtypes etc. to the version of their choice (Helpful during development process of infrastructure -- Azkaban/jobtypes/platform).
-
 4. Provide plumbing for a fine-grained Canary system that can allow Azkaban/jobtypes and platform full
 control of ramping up their binaries, independent of each other.
 
@@ -109,56 +106,35 @@ High Level Design Summary
 
 .. image:: figures/containerized-high-level-arch.png
 
-1. Azkaban will follow a **Disposable Container** model. This implies that whenever a flow is to be launched,
-the **dispatch logic** will launch a fresh Pod and the pod is destroyed at the conclusion of the flow.
-
-2. Isolation is achieved per flow (Not at job level). Jobs/subflows that are a part of a flow, will run within the
-confines of the pod launched for orchestrating the flow. Job level isolation was explored and rejected:
-
-   - It is very disruptive given the existing Azkaban architecture. Major portions of executor code will have to
-   be re-written to accomodate job level isolation.
-
-   - It appears too resource hungry to launch a separate pod per job. Separate container within the same pod is
-   possible. But again, this would have required rewriting major parts of flow - job wiring. This is something that
-   can be reconsidered in future.
-
-3. The pod will be launched with default compute/memory resources, but override parameters will be available
-to request more resources for the flow orchestration.
-
-4. For this design iteration, the web server will stay outside of k8s. This does not preclude the need for
-the web server to talk to flow pods to fetch logs or send control commands (Such as Cancel). To enable this
-communication, an Envoy Proxy based Ingress Controller is introduced, which will allow the web
-server to communicate with Flow Pods. There is no need to set node ports for flow pods.
-
-5. In order to satisfy [key Requirement #3](#Key-Requirements-for-Containerization), the execution
-environment for flow pods will be constructed dynamically at run-time.
-
-   * Azkaban will provide a mechanism to dynamically select versions of components that constitute
-     a functional Azkaban Executor environment at dispatch time.
-
-   * Following this, a series of init containers will pull various components to compose the complete
-     execution environment.
-
-   * The dynamic selection process will ultimately make way to provide canary capability for various
-     Azkaban components.
-
+1. Azkaban will follow a **Disposable Container** model. This implies that whenever a flow is to be launched, the **dispatch logic** will launch a fresh Pod and the pod is destroyed at the conclusion of the flow.
+2. Isolation is achieved per flow (Not at job level). Jobs/subflows that are a part of a flow, will run within the confines of the pod launched for orchestrating the flow. Job level isolation was explored and rejected:
+   - It is very disruptive given the existing Azkaban architecture. Major portions of executor code will have to be re-written to accomodate job level isolation.
+   - It appears too resource hungry to launch a separate pod per job. Separate container within the same pod is possible. But again, this would have required rewriting major parts of flow - job wiring. This is something that can be reconsidered in future.
+3. The pod will be launched with default compute/memory resources, but override parameters will be available to request more resources for the flow orchestration.
+4. For this design iteration, the web server will stay outside of k8s. This does not preclude the need for the web server to talk to flow pods to fetch logs or send control commands (Such as Cancel). To enable this communication, an Envoy Proxy based Ingress Controller is introduced, which will allow the web server to communicate with Flow Pods. There is no need to set node ports for flow pods.
+5. In order to satisfy [key Requirement #3](#Key-Requirements-for-Containerization), the execution environment for flow pods will be constructed dynamically at run-time.
+   * Azkaban will provide a mechanism to dynamically select versions of components that constitute a functional Azkaban Executor environment at dispatch time.
+   * Following this, a series of init containers will pull various components to compose the complete execution environment.
+   * The dynamic selection process will ultimately make way to provide canary capability for various Azkaban components.
    * The design also introduces a few Admin APIs to make the task of image management easier.
 
-## Design Details
+Design Details
+**************
 
-### Image Management
-* Azkaban will rely on docker images to create execution environment for flows. In order to satisfy
-[key Requirement #3](#Key-Requirements-for-Containerization), the final container image that actually runs a given
-flow will be constructed dynamically using init-containers when the flow pod is launched. The required layers will be
-discovered as laid out in the [dispatch logic](#Dispatch-Logic).
-
-* Azkaban execution environment is composed of the following types of dependencies:
-
-  Dependency Type | Description
-  -------- | -------
-  Platform Dependencies | Binaries/Configs/Secrets for Hadoop, Hive, Spark, Pig, Dali, Ksudo, etc.
-  Azkaban Core | Core Azkaban binaries/configs/secrets owned and managed by Azkaban
-  Azkaban JobTypes | Binaries/Configs owned by JobType developers but are managed by Azkaban like KafkaPushJob, SparkJob, etc.
+Image Management
+----------------
+- Azkaban will rely on docker images to create execution environment for flows. In order to satisfy [key Requirement #3](#Key-Requirements-for-Containerization), the final container image that actually runs a given flow will be constructed dynamically using init-containers when the flow pod is launched. The required layers will be discovered as laid out in the [dispatch logic](#Dispatch-Logic).
+- Azkaban execution environment is composed of the following types of dependencies:
+ +-----------------------+--------------------------------------------------------------------------+
+ |    Dependency Type    |                          Description                                     |
+ +=======================+==========================================================================+
+ | Platform Dependencies | Binaries/Configs/Secrets for Hadoop, Hive, Spark, Pig, Dali, Ksudo, etc. |
+ +-----------------------+--------------------------------------------------------------------------+
+ | Azkaban Core          | Core Azkaban binaries/configs/secrets owned and managed by Azkaban       |
+ +-----------------------+--------------------------------------------------------------------------+
+ | Azkaban JobTypes      | Binaries/Configs owned by JobType developers but are managed by Azkaban  |
+ |                       | like KafkaPushJob, SparkJob, etc.                                        |
+ +-----------------------+--------------------------------------------------------------------------+
 
 * Azkaban Core forms the base docker image layered on top of a base image of choice: such as RHEL7.
 * Each of the above (Platform or jobtypes) will be packaged as a separate docker image layers on top of any simple
