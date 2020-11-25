@@ -14,8 +14,10 @@ Background/Overview of Bare-Metal Architecture
 
 .. image:: figures/azkaban-architecture.png
 
-* Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db to track history and state.
-* Each bare metal server is capable of orchestrating a few 10s of flows simultaneously depending on the resource requirements of each flow.
+* Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db to \
+  track history and state.
+* Each bare metal server is capable of orchestrating a few 10s of flows simultaneously depending on the resource \
+  requirements of each flow.
 * The executor server polls flows that are ready to run on a frequent basis from MySQL based queue (“dispatch \
   logic”) (Current config: 1/s).
 
@@ -24,30 +26,36 @@ Azkaban Executor Server Responsibilities
 
 Dispatch
 ^^^^^^^^
-- Executor Server polls the MySQL based queue for flows once/s contingent on resource availability.
-- Sets up the flow (Parses all properties, de-serializes the workflow to build an in-memory graph, downloads binaries in Project Cache if missing, allocates resources: thread pool, execution directory etc.) and finally:
-- Kicks off the orchestration of the flow.
+* Executor Server polls the MySQL based queue for flows once/s contingent on resource availability.
+* Sets up the flow (Parses all properties, de-serializes the workflow to build an in-memory graph, downloads binaries \
+  in Project Cache if missing, allocates resources: thread pool, execution directory etc.) and finally:
+* Kicks off the orchestration of the flow.
 
 Orchestration
 ^^^^^^^^^^^^^
-- Executor Server manages a thread pool per flow, which allows multiple jobs to run in parallel.
-- Hadoop tokens are fetched from the Hadoop name node to allow launching of a YARN application.
-- Each job is launched in it’s own separate process with the flow admin account.
-- During the orchestration process, the Executor server manages the state machine of the flow, keeps the database up to date with flow/job state and finally flushes flow logs to the database.
+* Executor Server manages a thread pool per flow, which allows multiple jobs to run in parallel.
+* Hadoop tokens are fetched from the Hadoop name node to allow launching of a YARN application.
+* Each job is launched in it’s own separate process with the flow admin account.
+* During the orchestration process, the Executor server manages the state machine of the flow, keeps the database up \
+  to date with flow/job state and finally flushes flow logs to the database.
 
 Flow Management
 ^^^^^^^^^^^^^^^
-- Executor server is an end-point for AJAX APIs to respond to requests such as Pause, Kill, Resume etc. Flows are killed when they reach the SLA limit of 10 days.
+* Executor server is an end-point for AJAX APIs to respond to requests such as Pause, Kill, Resume etc. Flows are \
+  killed when they reach the SLA limit of 10 days.
 
 Log Management
 ^^^^^^^^^^^^^^
-- Executor server’s AJAX API endpoint supports streaming logs for live flows/jobs. When a flow/job finishes, the completed logs are pushed to the Azkaban db in 15MB chunks (Configurable).
+* Executor server’s AJAX API endpoint supports streaming logs for live flows/jobs. When a flow/job finishes, the \
+  completed logs are pushed to the Azkaban db in 15MB chunks (Configurable).
 
 Deployment
 ^^^^^^^^^^
-- During deployment, new binaries are updated on the bare-metal server and some tests are performed to verify the sanity of the machine.
-- If tests pass, the Executor Server is put in inactive mode, upon which it stops polling for flows except for those pinned to that particular executor.
-- A new Executor Server is launched with new binaries and is marked as active; thereby, resuming normal function.
+* During deployment, new binaries are updated on the bare-metal server and some tests are performed to verify the \
+  sanity of the machine.
+* If tests pass, the Executor Server is put in inactive mode, upon which it stops polling for flows except for \
+  those pinned to that particular executor.
+* A new Executor Server is launched with new binaries and is marked as active; thereby, resuming normal function.
 
 Issues with Bare Metal Executor Server Model
 --------------------------------------------
@@ -86,33 +94,53 @@ They also pollute metrics.
 
 Key Requirements for Containerization
 *************************************
-1. Azkaban Web Server should be able to Launch flows in independent containers, thereby giving a fully isolated environment for each flow.
+1. Azkaban Web Server should be able to Launch flows in independent containers, thereby giving a fully isolated \
+   environment for each flow.
 2. Be able to respond quickly in response to Spikes in demand (Flexible Infrastructure).
-3. Allow the components that make up Azkaban: Platform/Client binaries for Hadoop, Hive etc., Azkaban itself and jobtypes to evolve independently of each other.
-   - Give the evolution control for Platform, Azkaban and Jobtypes to their corresponding owners.
-   - Provide users a way to override default binary versions of Azkaban/jobtypes etc. to the version of their choice (Helpful during development process of infrastructure -- Azkaban/jobtypes/platform).
+3. Allow the components that make up Azkaban: Platform/Client binaries for Hadoop, Hive etc., Azkaban itself and \
+   jobtypes to evolve independently of each other.
+
+   * Give the evolution control for Platform, Azkaban and Jobtypes to their corresponding owners.
+   * Provide users a way to override default binary versions of Azkaban/jobtypes etc. to the version of their choice \
+     (Helpful during development process of infrastructure -- Azkaban/jobtypes/platform).
+
 4. Provide plumbing for a fine-grained Canary system that can allow Azkaban/jobtypes and platform full
 control of ramping up their binaries, independent of each other.
 
 Future Extensions
 -----------------
-1. Provide the fine-grained Canary system for Multiple components that make up Azkaban to help in their
-independent evolution.
+1. Provide the fine-grained Canary system for Multiple components that make up Azkaban to help in their \
+   independent evolution.
 
 High Level Design Summary
 *************************
 
 .. image:: figures/containerized-high-level-arch.png
 
-1. Azkaban will follow a **Disposable Container** model. This implies that whenever a flow is to be launched, the **dispatch logic** will launch a fresh Pod and the pod is destroyed at the conclusion of the flow.
-2. Isolation is achieved per flow (Not at job level). Jobs/subflows that are a part of a flow, will run within the confines of the pod launched for orchestrating the flow. Job level isolation was explored and rejected:
-   - It is very disruptive given the existing Azkaban architecture. Major portions of executor code will have to be re-written to accomodate job level isolation.
-   - It appears too resource hungry to launch a separate pod per job. Separate container within the same pod is possible. But again, this would have required rewriting major parts of flow - job wiring. This is something that can be reconsidered in future.
-3. The pod will be launched with default compute/memory resources, but override parameters will be available to request more resources for the flow orchestration.
-4. For this design iteration, the web server will stay outside of k8s. This does not preclude the need for the web server to talk to flow pods to fetch logs or send control commands (Such as Cancel). To enable this communication, an Envoy Proxy based Ingress Controller is introduced, which will allow the web server to communicate with Flow Pods. There is no need to set node ports for flow pods.
-5. In order to satisfy [key Requirement #3](#Key-Requirements-for-Containerization), the execution environment for flow pods will be constructed dynamically at run-time.
-   * Azkaban will provide a mechanism to dynamically select versions of components that constitute a functional Azkaban Executor environment at dispatch time.
-   * Following this, a series of init containers will pull various components to compose the complete execution environment.
+1. Azkaban will follow a **Disposable Container** model. This implies that whenever a flow is to be launched, the \
+   **dispatch logic** will launch a fresh Pod and the pod is destroyed at the conclusion of the flow.
+2. Isolation is achieved per flow (Not at job level). Jobs/subflows that are a part of a flow, will run within the \
+   confines of the pod launched for orchestrating the flow. Job level isolation was explored and rejected:
+
+   * It is very disruptive given the existing Azkaban architecture. Major portions of executor code will have to be \
+     re-written to accomodate job level isolation.
+   * It appears too resource hungry to launch a separate pod per job. Separate container within the same pod is \
+     possible. But again, this would have required rewriting major parts of flow - job wiring. This is something \
+     that can be reconsidered in future.
+
+3. The pod will be launched with default compute/memory resources, but override parameters will be available to \
+   request more resources for the flow orchestration.
+4. For this design iteration, the web server will stay outside of k8s. This does not preclude the need for the \
+   web server to talk to flow pods to fetch logs or send control commands (Such as Cancel). To enable this \
+   communication, an Envoy Proxy based Ingress Controller is introduced, which will allow the web server to \
+   communicate with Flow Pods. There is no need to set node ports for flow pods.
+5. In order to satisfy [key Requirement #3](#Key-Requirements-for-Containerization), the execution environment \
+   for flow pods will be constructed dynamically at run-time.
+
+   * Azkaban will provide a mechanism to dynamically select versions of components that constitute a functional \
+     Azkaban Executor environment at dispatch time.
+   * Following this, a series of init containers will pull various components to compose the complete execution \
+     environment.
    * The dynamic selection process will ultimately make way to provide canary capability for various Azkaban components.
    * The design also introduces a few Admin APIs to make the task of image management easier.
 
