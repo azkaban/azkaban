@@ -2,23 +2,21 @@ Azkaban Containerized Executions - Design Doc
 =============================================
 
 **Authors/Key-Contributors:**
-`Arvind Pruthi<https://github.com/orgs/azkaban/people/arvindpruthi>`_,
-`Janki Akhani<https://github.com/orgs/azkaban/people/jakhani>`_,
-`Shardool<https://github.com/orgs/azkaban/people/sshardool>`_,
-`Deepak Jaiswal<https://github.com/orgs/azkaban/people/djaiswal83>`_,
-`Aditya Sharma<https://github.com/orgs/azkaban/people/aditya1105>`_,
-`Abhishek Nath<https://github.com/orgs/azkaban/people/abhisheknath2011>`_
+`Arvind Pruthi <https://github.com/orgs/azkaban/people/arvindpruthi>`_
+`Janki Akhani <https://github.com/orgs/azkaban/people/jakhani>`_
+`Shardool <https://github.com/orgs/azkaban/people/sshardool>`_
+`Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_
+`Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
+`Abhishek Nath <https://github.com/orgs/azkaban/people/abhisheknath2011>`_
 
 Background/Overview of Bare-Metal Architecture
 **********************************************
 
 .. image:: figures/azkaban-architecture.png
 
-- Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db
-to track history and state.
-- Each bare metal server is capable of orchestrating a few 10s of flows simultaneously depending on the resource
-requirements of each flow.
-- The executor server polls flows that are ready to run on a frequent basis from MySQL based queue (“dispatch
+* Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db to track history and state.
+* Each bare metal server is capable of orchestrating a few 10s of flows simultaneously depending on the resource requirements of each flow.
+* The executor server polls flows that are ready to run on a frequent basis from MySQL based queue (“dispatch
 logic”) (Current config: 1/s).
 
 Azkaban Executor Server Responsibilities
@@ -168,11 +166,10 @@ CRUD API for managing Image Types
 The image_types resource is to be used to register a new image_types. Other than creation, the PATCH API should
 be used to edit ownership
 
-.. code-block:: REST
-  POST /image_types
-
-     Parameters:
-     (request body)
+- **Method:** POST/PATCH/DELETE
+- **Request URL:** /image_types
+- **Request Parameters:**
+.. code-block:: json
      {
         type: string
         description: string
@@ -183,8 +180,8 @@ be used to edit ownership
             }
         ]
      }
-
-     Response:
+- **Response:**
+.. code-block:: guess
      Status: 201 Created
      Header -> Location: /image_types/{id}
 
