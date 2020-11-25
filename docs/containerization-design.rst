@@ -2,11 +2,11 @@ Azkaban Containerized Executions - Design Doc
 =============================================
 
 **Authors/Key-Contributors:**
-`Arvind Pruthi <https://github.com/orgs/azkaban/people/arvindpruthi>`_
-`Janki Akhani <https://github.com/orgs/azkaban/people/jakhani>`_
-`Shardool <https://github.com/orgs/azkaban/people/sshardool>`_
-`Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_
-`Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
+`Arvind Pruthi <https://github.com/orgs/azkaban/people/arvindpruthi>`_ ,
+`Janki Akhani <https://github.com/orgs/azkaban/people/jakhani>`_ ,
+`Shardool <https://github.com/orgs/azkaban/people/sshardool>`_ ,
+`Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_ ,
+`Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_  ,
 `Abhishek Nath <https://github.com/orgs/azkaban/people/abhisheknath2011>`_
 
 Background/Overview of Bare-Metal Architecture
@@ -16,8 +16,8 @@ Background/Overview of Bare-Metal Architecture
 
 * Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db to track history and state.
 * Each bare metal server is capable of orchestrating a few 10s of flows simultaneously depending on the resource requirements of each flow.
-* The executor server polls flows that are ready to run on a frequent basis from MySQL based queue (“dispatch
-logic”) (Current config: 1/s).
+* The executor server polls flows that are ready to run on a frequent basis from MySQL based queue (“dispatch \
+  logic”) (Current config: 1/s).
 
 Azkaban Executor Server Responsibilities
 ----------------------------------------
