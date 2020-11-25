@@ -94,6 +94,8 @@ They also pollute metrics.
 
 Key Requirements for Containerization
 *************************************
+.. _key_requirements:
+
 1. Azkaban Web Server should be able to Launch flows in independent containers, thereby giving a fully isolated \
    environment for each flow.
 2. Be able to respond quickly in response to Spikes in demand (Flexible Infrastructure).
@@ -104,8 +106,8 @@ Key Requirements for Containerization
    * Provide users a way to override default binary versions of Azkaban/jobtypes etc. to the version of their choice \
      (Helpful during development process of infrastructure -- Azkaban/jobtypes/platform).
 
-4. Provide plumbing for a fine-grained Canary system that can allow Azkaban/jobtypes and platform full
-control of ramping up their binaries, independent of each other.
+#. Provide plumbing for a fine-grained Canary system that can allow Azkaban/jobtypes and platform full
+   control of ramping up their binaries, independent of each other.
 
 Future Extensions
 -----------------
@@ -149,8 +151,11 @@ Design Details
 
 Image Management
 ----------------
-- Azkaban will rely on docker images to create execution environment for flows. In order to satisfy [key Requirement #3](#Key-Requirements-for-Containerization), the final container image that actually runs a given flow will be constructed dynamically using init-containers when the flow pod is launched. The required layers will be discovered as laid out in the [dispatch logic](#Dispatch-Logic).
-- Azkaban execution environment is composed of the following types of dependencies:
+* Azkaban will rely on docker images to create execution environment for flows. In order to satisfy \
+  :key Requirement #3:`key_requirements`, the final container image that actually runs a given flow will be \
+  constructed dynamically using init-containers when the flow pod is launched. The required layers will be \
+  discovered as laid out in the :dispatch logic:`dispatch_logic`.
+* Azkaban execution environment is composed of the following types of dependencies:
  +-----------------------+--------------------------------------------------------------------------+
  |    Dependency Type    |                          Description                                     |
  +=======================+==========================================================================+
@@ -163,27 +168,28 @@ Image Management
  +-----------------------+--------------------------------------------------------------------------+
 
 * Azkaban Core forms the base docker image layered on top of a base image of choice: such as RHEL7.
-* Each of the above (Platform or jobtypes) will be packaged as a separate docker image layers on top of any simple
-  base image of choice. It is preferable to keep these images very small to optimize downloading times. Something like
-  a busybox/alpine image should suffice.
-* Individual images for job-types will allow independent development and release for the job-type developers without
+* Each of the above (Platform or jobtypes) will be packaged as a separate docker image layers on top of any simple \
+  base image of choice. It is preferable to keep these images very small to optimize downloading times. Something \
+  like a busybox/alpine image should suffice.
+* Individual images for job-types will allow independent development and release for the job-type developers without \
   any dependency on Azkaban. Here is an example image definition for KPJ (Kafka Push Job):
-  .. code-block:: DOCKER
+
+  .. code-block:: guess
   FROM container-image-registry.corp.linkedin.com/lps-image/linkedin/rhel7-base-image/rhel7-base-image:0.16.9
 
   ARG KPJ_URL=https://artifactory.corp.linkedin.com:8083/artifactory/DDS/com/linkedin/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
 
   RUN curl $KPJ_URL --output ~/kafka-push-job-0.2.61.jar
 
-* There will be one init container for each job-type using job-type docker images. This init container will move the
-  binaries from the image to a mounted volume. The above specified volume will also be mounted for the application
+* There will be one init container for each job-type using job-type docker images. This init container will move the \
+  binaries from the image to a mounted volume. The above specified volume will also be mounted for the application \
   container which will use Azkaban docker image.
-* Job-Type developers will use Image Management APIs for rolling out a job-type image. The rolled out images, can
-  then be used as a default version for that job-type. Flow writerswill have the ability to specify the version
+* Job-Type developers will use Image Management APIs for rolling out a job-type image. The rolled out images, can \
+  then be used as a default version for that job-type. Flow writerswill have the ability to specify the version \
   for the job-type image they want to use for their Azkaban flows via DSL.
-* A concept of version-set and version-number is introduced to uniquely identify the state of the dependencies
-  during the flow execution. This will also be useful during debugging the recreate exact environment for a flow should
-  there be any failures.
+* A concept of version-set and version-number is introduced to uniquely identify the state of the dependencies \
+  during the flow execution. This will also be useful during debugging the recreate exact environment for a flow \
+  should there be any failures.
 
 Image Management API
 --------------------
@@ -197,6 +203,7 @@ be used to edit ownership
 - **Method:** POST/PATCH/DELETE
 - **Request URL:** /image_types
 - **Request Parameters:**
+
 .. code-block:: json
      {
         type: string
@@ -208,7 +215,9 @@ be used to edit ownership
             }
         ]
      }
+
 - **Response:**
+
 .. code-block:: guess
      Status: 201 Created
      Header -> Location: /image_types/{id}
@@ -261,6 +270,7 @@ maps to the specific Image. Details are described in the [Dispatch Logic Section
 
 Dispatch Logic
 --------------
+.. _dispatch_logic:
 
 1. Whenever a flow is ready to run (By schedule, by data triggers or manually through UI/API call),
 the AZ Web Server will mark the flow with the state: ``READY`` and insert the flow in the queue
