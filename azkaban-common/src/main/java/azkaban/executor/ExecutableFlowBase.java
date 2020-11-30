@@ -389,8 +389,7 @@ public class ExecutableFlowBase extends ExecutableNode {
     if (this.getParentFlow() == null) {
       return this.getFlowId();
     } else {
-      return this.getParentFlow().getFlowPath() + "," + this.getId() + ":"
-          + this.getFlowId();
+      return this.getId() + ":" + this.getFlowId();
     }
   }
 }
