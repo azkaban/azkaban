@@ -28,6 +28,20 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
+import azkaban.imagemgmt.daos.ImageRampupDao;
+import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
+import azkaban.imagemgmt.daos.ImageTypeDao;
+import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
+import azkaban.imagemgmt.daos.ImageVersionDao;
+import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.imagemgmt.rampup.ImageRampupManger;
+import azkaban.imagemgmt.services.ImageRampupService;
+import azkaban.imagemgmt.services.ImageRampupServiceImpl;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageTypeServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.services.ImageVersionServiceImpl;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -36,14 +50,6 @@ import azkaban.utils.Props;
 import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.metrics.WebMetricsImpl;
-import azkaban.imagemgmt.daos.ImageTypeDao;
-import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
-import azkaban.imagemgmt.daos.ImageVersionDao;
-import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
-import azkaban.imagemgmt.services.ImageTypeService;
-import azkaban.imagemgmt.services.ImageTypeServiceImpl;
-import azkaban.imagemgmt.services.ImageVersionServiceImpl;
-import azkaban.imagemgmt.services.ImageVersionService;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -99,6 +105,9 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
     bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
     bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
+    bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
+    bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
+    bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {

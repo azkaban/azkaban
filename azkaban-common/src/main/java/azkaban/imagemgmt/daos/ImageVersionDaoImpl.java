@@ -15,6 +15,10 @@
  */
 package azkaban.imagemgmt.daos;
 
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
+import static azkaban.Constants.ImageMgmtConstants.VERSION_STATE;
+
 import azkaban.Constants.ImageMgmtConstants;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
@@ -24,12 +28,17 @@ import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
+import azkaban.imagemgmt.models.ImageVersionRequest;
 import com.google.common.collect.Iterables;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -50,12 +59,16 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   private final ImageTypeDao imageTypeDao;
 
   private static String INSERT_IMAGE_VERSION_QUERY =
-      "insert into image_versions ( path, description, "
-          + "version, type_id, state, release_tag, created_by, modified_by) "
-          + "values (?, ?, ?, ?, ?, ?, ?, ?)";
+      "insert into image_versions ( path, description, version, type_id, state, release_tag, "
+          + "created_by, created_on, modified_by, modified_on) "
+          + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
   private static String SELECT_IMAGE_VERSION_BASE_QUERY = "select iv.id, iv.path, iv.description, "
-      + "iv.version, it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
+      + "iv.version, cast(replace(iv.version, '.', '') as unsigned integer) as int_version, "
+      + "it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
       + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
+  private static String OUTER_SELECT_CLAUSE_LATEST_ACTIVE_IMAGE_VERSION = "select tbl.id, "
+      + "tbl.path, tbl.description, tbl.version, max(tbl.int_version), tbl.name, tbl.state, "
+      + "tbl.release_tag, tbl.created_on, tbl.created_by, tbl.modified_on, tbl.modified_by";
 
   @Inject
   public ImageVersionDaoImpl(DatabaseOperator databaseOperator, ImageTypeDao imageTypeDao) {
@@ -69,11 +82,13 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
         .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
             + "image type : " + imageVersion.getName()));
     final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
+      // Passing timestamp from the code base and can be formatted accordingly based on timezone
+      Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
       transOperator
           .update(INSERT_IMAGE_VERSION_QUERY, imageVersion.getPath(), imageVersion.getDescription(),
               imageVersion.getVersion(), imageType.getId(), imageVersion.getState().getStateValue(),
-              imageVersion.getReleaseTag(), imageVersion.getCreatedBy(),
-              imageVersion.getModifiedBy());
+              imageVersion.getReleaseTag(), imageVersion.getCreatedBy(), currentTimestamp,
+              imageVersion.getModifiedBy(), currentTimestamp);
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -126,6 +141,79 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       throw new ImageMgmtDaoException("Exception while fetching image version");
     }
     return imageVersions;
+  }
+
+  @Override
+  public Optional<ImageVersion> getImageVersion(String imageTypeName, String imageVersion,
+      State versionState) throws ImageMgmtException {
+    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
+        .addParam(IMAGE_TYPE, imageTypeName)
+        .addParam(IMAGE_VERSION, imageVersion)
+        .addParam(VERSION_STATE, versionState)
+        .build();
+    List<ImageVersion> imageVersions = this.findImageVersions(imageMetadataRequest);
+    return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
+        : Optional.empty();
+  }
+
+  @Override
+  public List<ImageVersion> getActiveVersionByImageTypes(Set<String> imageTypes)
+      throws ImageMgmtException {
+    List<ImageVersion> imageVersions = new ArrayList<>();
+    try {
+      // Add outer select clause
+      StringBuilder queryBuilder = new StringBuilder(
+          OUTER_SELECT_CLAUSE_LATEST_ACTIVE_IMAGE_VERSION);
+      queryBuilder.append(" from ");
+      // Build the inner query
+      queryBuilder.append("(" + SELECT_IMAGE_VERSION_BASE_QUERY);
+      queryBuilder.append(" and iv.state = ? ");
+      queryBuilder.append(" and it.name in ( ");
+      for (int i = 0; i < imageTypes.size() - 1; i++) {
+        queryBuilder.append("? ,");
+      }
+      queryBuilder.append("? )) tbl group by tbl.name");
+      log.info("Image version getActiveVersionByImageTypes query : " + queryBuilder.toString());
+      List<Object> params = new ArrayList<>();
+      params.add(State.ACTIVE.getStateValue());
+      params.addAll(imageTypes);
+      imageVersions = databaseOperator.query(queryBuilder.toString(),
+          new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
+    } catch (SQLException ex) {
+      log.error("Exception while fetching image version ", ex);
+      throw new ImageMgmtDaoException("Exception while fetching image version");
+    }
+    return imageVersions;
+  }
+
+  @Override
+  public void updateImageVersion(ImageVersionRequest imageVersionRequest)
+      throws ImageMgmtException {
+    try {
+      List<Object> params = new ArrayList<>();
+      StringBuilder queryBuilder = new StringBuilder("update image_versions set ");
+      if (imageVersionRequest.getPath() != null) {
+        queryBuilder.append(" path = ?, ");
+        params.add(imageVersionRequest.getPath());
+      }
+      if (imageVersionRequest.getDescription() != null) {
+        queryBuilder.append(" description = ?, ");
+        params.add(imageVersionRequest.getDescription());
+      }
+      if (imageVersionRequest.getState() != null) {
+        queryBuilder.append(" state = ?, ");
+        params.add(imageVersionRequest.getState().getStateValue());
+      }
+      queryBuilder.append(" modified_by = ?, modified_on = ?");
+      params.add(imageVersionRequest.getModifiedBy());
+      params.add(Timestamp.valueOf(LocalDateTime.now()));
+      queryBuilder.append(" where id = ? ");
+      params.add(imageVersionRequest.getId());
+      databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+    } catch (SQLException ex) {
+      log.error("Exception while updating image version ", ex);
+      throw new ImageMgmtDaoException("Exception while updating image version");
+    }
   }
 
   /**

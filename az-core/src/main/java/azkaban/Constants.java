@@ -482,8 +482,10 @@ public class Constants {
   }
 
   public static class ImageMgmtConstants {
+
     public static final String IMAGE_TYPE = "imageType";
     public static final String IMAGE_VERSION = "imageVersion";
     public static final String VERSION_STATE = "versionState";
+    public static final String ID_KEY = "id";
   }
 }

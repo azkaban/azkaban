@@ -18,10 +18,13 @@ package azkaban.imagemgmt.daos;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
+import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,11 +47,12 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   private final DatabaseOperator databaseOperator;
 
   static String INSERT_IMAGE_TYPE =
-      "insert into image_types ( name, description, active, deployable, created_by, modified_by )"
-          + " values (?, ?, ?, ?, ?, ?)";
+      "insert into image_types ( name, description, active, deployable, created_by, "
+          + "created_on, modified_by, modified_on )"
+          + " values (?, ?, ?, ?, ?, ?, ?, ?)";
   static String INSERT_IMAGE_OWNERSHIP =
-      "insert into image_ownerships ( type_id, owner, role, created_by, modified_by ) "
-          + "values (?, ?, ?, ?, ?)";
+      "insert into image_ownerships ( type_id, owner, role, created_by, created_on, modified_by, "
+          + "modified_on ) values (?, ?, ?, ?, ?, ?, ?)";
 
   @Inject
   public ImageTypeDaoImpl(DatabaseOperator databaseOperator) {
@@ -59,16 +63,18 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   public int createImageType(ImageType imageType) {
     final SQLTransaction<Integer> insertAndGetSpaceId = transOperator -> {
       // insert image type record
-      transOperator.update(INSERT_IMAGE_TYPE, imageType.getName(), imageType.getDescription(),
-          true, imageType.getDeployable().getName(), imageType.getCreatedBy(),
-          imageType.getModifiedBy());
+      // Passing timestamp from the code base and can be formatted accordingly based on timezone
+      Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+      transOperator.update(INSERT_IMAGE_TYPE, imageType.getName().toLowerCase(),
+          imageType.getDescription(), true, imageType.getDeployable().getName(),
+          imageType.getCreatedBy(), currentTimestamp, imageType.getModifiedBy(), currentTimestamp);
       int imageTypeId = Long.valueOf(transOperator.getLastInsertId()).intValue();
       // Insert ownerships record if present
       if (imageType.getOwnerships() != null && imageType.getOwnerships().size() > 0) {
         for (ImageOwnership imageOwnership : imageType.getOwnerships()) {
           transOperator.update(INSERT_IMAGE_OWNERSHIP, imageTypeId, imageOwnership.getOwner(),
-              imageOwnership.getRole().getName(), imageType.getCreatedBy(),
-              imageType.getModifiedBy());
+              imageOwnership.getRole().getName(), imageType.getCreatedBy(), currentTimestamp,
+              imageType.getModifiedBy(), currentTimestamp);
         }
       }
       transOperator.getConnection().commit();
@@ -107,6 +113,19 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
           "Unable to fetch image type metadata from image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
+  }
+
+  @Override
+  public List<ImageType> getAllImageTypes() throws ImageMgmtException {
+    final FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    try {
+      return this.databaseOperator
+          .query(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES, fetchImageTypeHandler, true);
+    } catch (final SQLException ex) {
+      log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
+      throw new ImageMgmtDaoException(
+          "Unable to fetch all image type metadata ");
+    }
   }
 
   /**

@@ -31,6 +31,12 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.imagemgmt.services.ImageRampupService;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.servlets.ImageRampupServlet;
+import azkaban.imagemgmt.servlets.ImageTypeServlet;
+import azkaban.imagemgmt.servlets.ImageVersionServlet;
 import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
@@ -78,10 +84,6 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import azkaban.imagemgmt.services.ImageTypeService;
-import azkaban.imagemgmt.services.ImageVersionService;
-import azkaban.imagemgmt.servlets.ImageTypeServlet;
-import azkaban.imagemgmt.servlets.ImageVersionServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
@@ -160,8 +162,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
   private ObjectMapper objectMapper;
-  private final ImageVersionService imageVersionService;
   private final ImageTypeService imageTypeService;
+  private final ImageVersionService imageVersionService;
+  private final ImageRampupService imageRampupService;
+
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -179,8 +183,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
       final ObjectMapper objectMapper,
+      final ImageTypeService imageTypeService,
       final ImageVersionService imageVersionService,
-      final ImageTypeService imageTypeService) {
+      final ImageRampupService imageRampupService) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -197,10 +202,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     this.objectMapper = objectMapper;
-    this.imageVersionService = requireNonNull(imageVersionService, "imageVersionService is "
-        + "null");
     this.imageTypeService = requireNonNull(imageTypeService, "imageTypeService is "
         + "null");
+    this.imageVersionService = requireNonNull(imageVersionService, "imageVersionService is "
+        + "null");
+    this.imageRampupService = requireNonNull(imageRampupService, "imageRampupService is "
+        + "null");
+
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -457,8 +465,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     routesMap.put("/status", new StatusServlet(this.statusService));
 
-    routesMap.put("/imageVersions", new ImageVersionServlet());
-    routesMap.put("/imageTypes", new ImageTypeServlet());
+    routesMap.put("/imageTypes/*", new ImageTypeServlet());
+    routesMap.put("/imageVersions/*", new ImageVersionServlet());
+    routesMap.put("/imageRampup/*", new ImageRampupServlet());
 
     // Configure core routes
     for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
@@ -734,11 +743,15 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return this.objectMapper;
   }
 
+  public ImageTypeService getImageTypeService() {
+    return imageTypeService;
+  }
+
   public ImageVersionService getImageVersionsService() {
     return this.imageVersionService;
   }
 
-  public ImageTypeService getImageTypeService() {
-    return imageTypeService;
+  public ImageRampupService getImageRampupService() {
+    return imageRampupService;
   }
 }

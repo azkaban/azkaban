@@ -15,7 +15,9 @@
  */
 package azkaban.imagemgmt.daos;
 
+import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -30,7 +32,7 @@ public interface ImageTypeDao {
    * @param imageType - ImageType to be created
    * @return int - Id representing image type metadata
    */
-  public int createImageType(ImageType imageType);
+  public int createImageType(ImageType imageType) throws ImageMgmtException;
 
   /**
    * Gets an image type metadata based on image type name.
@@ -38,5 +40,7 @@ public interface ImageTypeDao {
    * @param name - Name of the image type
    * @return Optional<ImageType> - Optional representing ImageType
    */
-  public Optional<ImageType> getImageTypeByName(String name);
+  public Optional<ImageType> getImageTypeByName(String name) throws ImageMgmtException;
+
+  public List<ImageType> getAllImageTypes() throws ImageMgmtException;
 }
