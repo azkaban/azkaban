@@ -541,15 +541,15 @@ public class JobTypeManager {
     // use ordered set to maintain the classpath order as much as possible
     final Set<String> components = new LinkedHashSet<>();
 
-    if (pluginProps != null) {
-      final List<String> jobtypeComponents = pluginProps.getStringList(
-          CommonJobProperties.JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES, Collections.emptyList(), ",");
-      components.addAll(jobtypeComponents);
-    }
     if (jobProps != null) {
       final List<String> jobTypeComponents = jobProps.getStringList(
           CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, Collections.emptyList(), ",");
       components.addAll(jobTypeComponents);
+    }
+    if (pluginProps != null) {
+      final List<String> jobtypeComponents = pluginProps.getStringList(
+          CommonJobProperties.JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES, Collections.emptyList(), ",");
+      components.addAll(jobtypeComponents);
     }
 
     if (exclusionEnabled && pluginProps != null) {
