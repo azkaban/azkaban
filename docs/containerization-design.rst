@@ -174,7 +174,7 @@ Image Management
 * Individual images for job-types will allow independent development and release for the job-type developers without \
   any dependency on Azkaban. Here is an example image definition for KPJ (Kafka Push Job):
 
-  .. code-block:: guess
+.. code-block:: guess
   FROM container-image-registry.corp.linkedin.com/lps-image/linkedin/rhel7-base-image/rhel7-base-image:0.16.9
 
   ARG KPJ_URL=https://artifactory.corp.linkedin.com:8083/artifactory/DDS/com/linkedin/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
@@ -332,51 +332,53 @@ Flow Container
 --------------
 
 1. A new class: "FlowContainer" will be created by refactoring code from the FlowRunnerManager. The purpose of this
-class is to provide the anchor that initiates the flow orchestration as well as respond to control/health check
-commands.
+   class is to provide the anchor that initiates the flow orchestration as well as respond to control/health check
+   commands.
 
 2. The FlowContainer class is a simplified version of FlowRunnerManager with certain assumptions:
+
    * This class will handle a single flow. Hence, the threading model can be simplified.
    * There is no need to host polling logic as k8s based dispatch is done on the web server.
    * Polling logic to fetch flows or logic around status tracking of multiple flows is not needed.
    * There is no need to clean up execution directory or cache as the pod will be destroyed after the flow finishes.
    * The above mentioned simplifications will have the effect of reducing the tech debt in flow orchestration.
 
-2. The web server needs to talk to the Kubernetes pods as the executor server hosts an AJAX API
-endpoint for various control operations such as Cancel, Pause, Resume, FetchLogs etc. For the web server
-to continue using this API endpoint, we need to enable communication between the Webserver (Which is outside
-the k8s cluster) and the flow container pods. For this reason, we plan to use the
-[Ambassador Ingress Controller](https://www.getambassador.io/docs/latest/topics/running/ingress-controller/)
-between the Web Server and the Flow Container Pods. More regarding the ingress controller [here](#ingress-controller).
+3. The web server needs to talk to the Kubernetes pods as the executor server hosts an AJAX API
+   endpoint for various control operations such as Cancel, Pause, Resume, FetchLogs etc. For the web server
+   to continue using this API endpoint, we need to enable communication between the Webserver (Which is outside
+   the k8s cluster) and the flow container pods. For this reason, we plan to use the
+   `Ambassador Ingress Controller <https://www.getambassador.io/docs/latest/topics/running/ingress-controller/>`_
+   between the Web Server and the Flow Container Pods. More regarding the ingress controller
+   `here <#ingress-controller>`_
 
-3. In the long-run, we do plan to bring in web server into Kubernetes as well, thereby eliminating the
-Ingress Controller. For the short-term, we will continue to live with the added complexity.
+4. In the long-run, we do plan to bring in web server into Kubernetes as well, thereby eliminating the
+   Ingress Controller. For the short-term, we will continue to live with the added complexity.
 
-4. At Linkedin our internal analysis shows that APIs beyond Cancel, FetchLogs and Ping are rarely used. For
-the sake of simplicity, we are also contemplating how to eliminate the API endpoint on flow container completely,
-in future.
+5. At Linkedin our internal analysis shows that APIs beyond Cancel, FetchLogs and Ping are rarely used. For
+   the sake of simplicity, we are also contemplating how to eliminate the API endpoint on flow container completely,
+   in future.
 
-5. For now, the Flow/Log Mgmt AJAX endpoints will continue to be supported. But we plan to disable
-all APIs other than: Cancel, FetchLog, FlowStatus & Ping (Full list of APIs). This will help us
-keep the possibility of eliminating rest of the APIs alive in the medium/long term.
+6. For now, the Flow/Log Mgmt AJAX endpoints will continue to be supported. But we plan to disable
+   all APIs other than: Cancel, FetchLog, FlowStatus & Ping (Full list of APIs). This will help us
+   keep the possibility of eliminating rest of the APIs alive in the medium/long term.
 
-6. During flow execution, flow and job life cycle events may need to be sent to Kafka through the
-Event Reporter pluginas well as job/flow status updates may need to be made in Mysql db.
-For sending events to Kafka, azkaban-exec-server’s cert issued by a valid certificate authority will be used
-to authenticate flow containers. This and MySQL credentials will be pulled from Kubernetes secret.
+7. During flow execution, flow and job life cycle events may need to be sent to Kafka through the
+   Event Reporter pluginas well as job/flow status updates may need to be made in Mysql db.
+   For sending events to Kafka, azkaban-exec-server’s cert issued by a valid certificate authority will be used
+   to authenticate flow containers. This and MySQL credentials will be pulled from Kubernetes secret.
 
 Ingress Controller
 ------------------
 
 1. As mentioned in the [Flow Container Section](#flow-container), we will be utilizing the
-[Ambassador Ingress Controller](https://www.getambassador.io/docs/latest/topics/running/ingress-controller/) as
-a reverse proxy.
+   `Ambassador Ingress Controller <https://www.getambassador.io/docs/latest/topics/running/ingress-controller/>`_
+   as a reverse proxy.
 
 2. The ingress controller will provide necessary routing between web server and the flow pods running on
-kubernetes infrastructure. A key aspect of this architecture is that the routes between web server and flow pods
-need to be updated dynamically at flow dispatch time and right after a flow finishes. The Ambassador Ingress
-Controller enables this by providing APIs that are key to dynamically updating these routes. This is realized
-through [annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/).
+   kubernetes infrastructure. A key aspect of this architecture is that the routes between web server and flow pods
+   need to be updated dynamically at flow dispatch time and right after a flow finishes. The Ambassador Ingress
+   Controller enables this by providing APIs that are key to dynamically updating these routes. This is realized
+   through `annotations <https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/>`_.
 
 Logging in Executor
 -------------------
@@ -390,16 +392,16 @@ How does the proposal solve Issues with Bare Metal Model?
 1. Full Resource Isolation - 1 DAG per container.
 2. Allows linear scaling both up and down based on demand.
 3. Deployments need not impact running containers. Ramp-up for new binaries can be developed in a fine-grained way;
-no step function involved.
+   no step function involved.
 4. Once Azkaban/job binaries make it to HDFS, they don’t need to make a second round.
 
 **Bonus benefits...**
 1. A lot of Executor Server related tech-debt disappears: in-memory state in executor servers, onsite overhead in
-managing server health, executor deployment issues etc.
+   managing server health, executor deployment issues etc.
 2. Deployment of ExecutorServer becomes straightforward: Push new docker image to the image-registry and call the API
-to register the new image and a subsequent ramp-up.
+   to register the new image and a subsequent ramp-up.
 3. Deployment takes more than a week on bare metal, it could be much less with containerization as executor servers
-take most of the time in deployment.
+   take most of the time in deployment.
 4. Flow executions can be made resumable-on-crash.
 
 Open Items
