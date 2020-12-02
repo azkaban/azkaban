@@ -23,6 +23,7 @@ import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
+import azkaban.executor.ClusterInfo;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -98,6 +99,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private long delayStartMs = 0;
   private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
+  private final ClassLoader threadClassLoader;
 
   private volatile long timeInQueue = -1;
   private volatile long jobKillTime = -1;
@@ -121,6 +123,7 @@ public class JobRunner extends EventHandler implements Runnable {
         JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
+    this.threadClassLoader = Thread.currentThread().getContextClassLoader();
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {
@@ -577,6 +580,8 @@ public class JobRunner extends EventHandler implements Runnable {
     } catch (final Exception e) {
       serverLogger.error("Unexpected exception", e);
       throw e;
+    } finally {
+      Thread.currentThread().setContextClassLoader(this.threadClassLoader);
     }
   }
 
@@ -741,7 +746,31 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       try {
-        this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
+        long jobCreationStartMillis = System.currentTimeMillis();
+        final JobTypeManager.JobParams jobParams = this.jobtypeManager
+            .createJobParams(this.jobId, this.props, this.logger);
+        Thread.currentThread().setContextClassLoader(jobParams.contextClassLoader);
+        this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
+        this.logger.info(String.format("%s creation took %s milliseconds.",
+            this.jobId, System.currentTimeMillis() - jobCreationStartMillis));
+
+        if (jobParams.jobProps.containsKey(CommonJobProperties.TARGET_CLUSTER_ID)) {
+          // save the information of the cluster that the job may be routed to
+          final String clusterId = jobParams.jobProps.getString(
+              CommonJobProperties.TARGET_CLUSTER_ID);
+          final String hadoopClusterURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.HADOOP_CLUSTER_URL);
+          final String rmURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.RESOURCE_MANAGER_JOB_URL);
+          final String hsURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.HISTORY_SERVER_JOB_URL);
+          final String shsURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL);
+          final ClusterInfo clusterInfo =
+              new ClusterInfo(clusterId, hadoopClusterURL, rmURL, hsURL, shsURL);
+          this.node.setClusterInfo(clusterInfo);
+        }
+
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
         return null;

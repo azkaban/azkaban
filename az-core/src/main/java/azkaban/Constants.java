@@ -183,6 +183,7 @@ public class Constants {
      * b) azkaban.server.external.history_server_job_url=http://***jh***:19888/jobhistory/job/job_${application.id}
      * c) azkaban.server.external.spark_history_server_job_url=http://***sh***:18080/history/application_${application.id}/1/jobs
      * */
+    public static final String HADOOP_CLUSTER_URL = "azkaban.server.external.hadoop_cluster_url";
     public static final String RESOURCE_MANAGER_JOB_URL = "azkaban.server.external.resource_manager_job_url";
     public static final String HISTORY_SERVER_JOB_URL = "azkaban.server.external.history_server_job_url";
     public static final String SPARK_HISTORY_SERVER_JOB_URL = "azkaban.server.external.spark_history_server_job_url";
@@ -303,6 +304,8 @@ public class Constants {
 
     public static final String SECURITY_USER_GROUP = "azkaban.security.user.group";
 
+    public static final String CSR_KEYSTORE_LOCATION = "azkaban.csr.keystore.location";
+
     // dir to keep dependency plugins
     public static final String DEPENDENCY_PLUGIN_DIR = "azkaban.dependency.plugin.dir";
 
@@ -326,6 +329,7 @@ public class Constants {
     public static final String EXECUTOR_SELECTOR_COMPARATOR_PREFIX =
         "azkaban.executorselector.comparator.";
     public static final String QUEUEPROCESSING_ENABLED = "azkaban.queueprocessing.enabled";
+    public static final String QUEUE_PROCESSOR_WAIT_IN_MS = "azkaban.queue.processor.wait.in.ms";
 
     public static final String SESSION_TIME_TO_LIVE = "session.time.to.live";
 
@@ -479,6 +483,19 @@ public class Constants {
     public static final String COMMONCONFFILE = "common.properties";
     // common private properties for multiple plugins
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
+  }
+
+  public static class ContainerizedExecutionManagerProperties {
+    public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
+    public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
+    public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
+        AZKABAN_CONTAINERIZED_PREFIX + "execution.batch.enabled";
+    public static final String CONTAINERIZED_EXECUTION_BATCH_SIZE = AZKABAN_CONTAINERIZED_PREFIX +
+        "execution.batch.size";
+    public static final String CONTAINERIZED_EXECUTION_PROCESSING_THREAD_POOL_SIZE =
+        AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
+    public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
+        AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
   }
 
   public static class ImageMgmtConstants {

@@ -29,6 +29,7 @@ import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.imagemgmt.services.ImageRampupService;
@@ -37,6 +38,7 @@ import azkaban.imagemgmt.services.ImageVersionService;
 import azkaban.imagemgmt.servlets.ImageRampupServlet;
 import azkaban.imagemgmt.servlets.ImageTypeServlet;
 import azkaban.imagemgmt.servlets.ImageVersionServlet;
+import azkaban.jmx.JmxContainerizedDispatchManager;
 import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
@@ -706,6 +708,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     } else if (this.executorManagerAdapter instanceof ExecutionController) {
       this.mbeanRegistrationManager.registerMBean("executionController",
           new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
+    }
+    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+      this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
+          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be

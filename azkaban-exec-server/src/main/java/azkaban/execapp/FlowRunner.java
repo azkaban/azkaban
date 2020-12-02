@@ -62,6 +62,7 @@ import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
+import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -180,6 +181,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   private final CommonMetrics commonMetrics;
   private final ExecMetrics execMetrics;
 
+  // Timer to capture flow delay, defined as the time elapsed between the moment
+  // when this flow starts to run and when the 1st job of the flow starts.
+  private Timer.Context flowStartupDelayTimer;
+  private volatile boolean firstJobStarted = false;
+  private final Object flowStartupDelayUpdateLock = new Object();
+
   // The following is state that will trigger a retry of all failed jobs
   private volatile boolean retryFailedJobs = false;
 
@@ -273,6 +280,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   @Override
   public void run() {
+    this.flowStartupDelayTimer = this.execMetrics.getFlowStartupDelayTimerContext();
     try {
       if (this.executorService == null) {
         this.executorService = Executors.newFixedThreadPool(this.numJobThreads,
@@ -1658,6 +1666,17 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       } else if (event.getType() == EventType.JOB_STARTED) {
         final EventData eventData = event.getData();
         FlowRunner.this.logger.info("Job Started: " + eventData.getNestedId());
+
+        // update flow delay timer only upon the 1st job started event
+        if (!FlowRunner.this.firstJobStarted) {
+          synchronized (FlowRunner.this.flowStartupDelayUpdateLock) {
+            if (!FlowRunner.this.firstJobStarted) {
+              FlowRunner.this.flowStartupDelayTimer.stop();
+              FlowRunner.this.firstJobStarted = true;
+            }
+          }
+        }
+
         if (FlowRunner.this.azkabanEventReporter != null) {
           final JobRunner jobRunner = (JobRunner) event.getRunner();
           FlowRunner.this.azkabanEventReporter.report(event.getType(), getJobMetadata(jobRunner));

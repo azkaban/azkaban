@@ -19,11 +19,14 @@ package azkaban.webapp;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.ContainerizedExecutionManagerProperties;
 import azkaban.DispatchMethod;
-import azkaban.executor.ContainerizedExecutionManager;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.executor.container.ContainerizedImpl;
+import azkaban.executor.container.ContainerizedImplType;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
@@ -110,14 +113,23 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
   }
 
+  private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
+    final String containerizedImplProperty =
+        props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
+            ContainerizedImplType.KUBERNETES.name())
+            .toUpperCase();
+    return ContainerizedImplType.valueOf(containerizedImplProperty).getImplClass();
+  }
+
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
     switch (DispatchMethod.getDispatchMethod(this.props
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()))) {
       case POLL:
         return ExecutionController.class;
-      case PUSH_CONTAINERIZED:
-        return ContainerizedExecutionManager.class;
+      case CONTAINERIZED:
+        bind(ContainerizedImpl.class).to(resolveContainerizedImpl());
+        return ContainerizedDispatchManager.class;
       case PUSH:
       default:
         return ExecutorManager.class;

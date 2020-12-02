@@ -23,6 +23,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public interface ExecutorLoader {
@@ -217,7 +218,7 @@ public interface ExecutorLoader {
 
   /**
    * <pre>
-   * Fetch queued flows which have not yet dispatched
+   * Fetch queued flows which have not yet dispatched. It will return flows which are in preparing state.
    * Note:
    * 1. throws an Exception in case of a SQL issue
    * 2. return empty list when no queued execution is found
@@ -228,7 +229,17 @@ public interface ExecutorLoader {
   List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException;
 
-  public List<ExecutableFlow> fetchAgedQueuedFlows(
+  /**
+   * This method is used to get flows fetched in Queue. Flows can be in queue in ready,
+   * dispatching or preparing state while in queue. That is why it is expecting status in parameter.
+   * @param status
+   * @return
+   * @throws ExecutorManagerException
+   */
+  List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException;
+
+  List<ExecutableFlow> fetchAgedQueuedFlows(
       final Duration minAge) throws ExecutorManagerException;
 
   boolean updateExecutableReference(int execId, long updateTime)
@@ -291,6 +302,20 @@ public interface ExecutorLoader {
 
   int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
       throws ExecutorManagerException;
+
+  /**
+   * This method is used to select executions in batch. It will apply lock and fetch executions.
+   * It will also update the status of those executions as mentioned in updatedStatus field.
+   * @param batchEnabled If set to true, fetch the executions in batch
+   * @param limit Limit in case of batch fetch
+   * @param updatedStatus Update the status of executions as mentioned in this field. It can be
+   *                      READY of PREPARING based on whichever is the starting state for any
+   *                      dispatch method.
+   * @return Set of execution ids
+   * @throws ExecutorManagerException
+   */
+  Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, final int limit,
+      Status updatedStatus) throws ExecutorManagerException;
 
   ExecutableRampMap fetchExecutableRampMap()
       throws ExecutorManagerException;
