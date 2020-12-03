@@ -65,11 +65,11 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  public void init(final ServletConfig config) throws ServletException {
+  public void init(ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.objectMapper = server.getObjectMapper();
-    this.imageVersionService = server.getImageVersionsService();
+    AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    objectMapper = server.getObjectMapper();
+    imageVersionService = server.getImageVersionsService();
   }
 
   @Override
@@ -102,8 +102,8 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
             objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(
                 imageVersionService.findImageVersions(imageMetadataRequest));
       }
-      this.writeResponse(resp, response);
-    } catch (final Exception e) {
+      writeResponse(resp, response);
+    } catch (Exception e) {
       log.error("Requested image metadata not found " + e);
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND,
           "Requested image metadata not found. Reason : " + e.getMessage());
@@ -113,16 +113,12 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws ServletException, IOException {
-    final Map<String, String> templateVariableToValue = new HashMap<>();
-    log.info("URI Template: " + SINGLE_IMAGE_VERSION_URI_TEMPLATE.toString());
-    log.info("req uri: " + req.getRequestURI());
+    Map<String, String> templateVariableToValue = new HashMap<>();
     if (BASE_IMAGE_VERSION_URI.equals(req.getRequestURI())) {
-      log.info("Inside update image version");
-      this.handleCreateImageVersion(req, resp, session);
+      handleCreateImageVersion(req, resp, session);
     } else if (SINGLE_IMAGE_VERSION_URI_TEMPLATE.match(req.getRequestURI(),
         templateVariableToValue)) {
-      log.info("Inside update image version");
-      this.handleUpdateImageVersion(req, resp, session, templateVariableToValue);
+      handleUpdateImageVersion(req, resp, session, templateVariableToValue);
     } else {
       // Unsupported route, return an error.
       log.error("Invalid route for imageVersions endpoint: " + req.getRequestURI());
@@ -131,8 +127,8 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleCreateImageVersion(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
+  private void handleCreateImageVersion(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException, IOException {
     try {
       String jsonPayload = HttpRequestUtils.getBody(req);
       // Build ImageMetadataRequest DTO to transfer the input request
@@ -147,25 +143,24 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       resp.setHeader("Location",
           SINGLE_IMAGE_VERSION_URI_TEMPLATE.createURI(imageVersionId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
-    } catch (final ImageMgmtValidationException e) {
+    } catch (ImageMgmtValidationException e) {
       log.error("Input for creating image version metadata is invalid", e);
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
           "Bad request for creating image version metadata");
-    } catch (final Exception e) {
+    } catch (Exception e) {
       log.error("Exception while creating image version metadata", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
           "Exception while creating image version metadata. " + e.getMessage());
     }
   }
 
-  private void handleUpdateImageVersion(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session,
-      final Map<String, String> templateVariableToValue) throws ServletException,
+  private void handleUpdateImageVersion(HttpServletRequest req,
+      HttpServletResponse resp, Session session,
+      Map<String, String> templateVariableToValue) throws ServletException,
       IOException {
     try {
       String idString = templateVariableToValue.get(IMAGE_VERSION_ID_KEY);
-      log.info("idString: " + idString);
-      final Integer id = Ints.tryParse(idString);
+      Integer id = Ints.tryParse(idString);
       if (id == null) {
         log.error("Invalid image version id: ", idString);
         throw new ImageMgmtValidationException("Image version id is invalid");
@@ -180,11 +175,11 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       // Create image version metadata and image version id
       imageVersionService.updateImageVersion(imageMetadataRequest);
       sendResponse(resp, HttpServletResponse.SC_OK, new HashMap<>());
-    } catch (final ImageMgmtValidationException e) {
+    } catch (ImageMgmtValidationException e) {
       log.error("Input for updating image version metadata is invalid", e);
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
           "Bad request for updating image version metadata");
-    } catch (final Exception e) {
+    } catch (Exception e) {
       log.error("Exception while updating image version metadata", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
           "Exception while updating image version metadata. " + e.getMessage());

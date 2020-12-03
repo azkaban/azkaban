@@ -47,10 +47,10 @@ public class ImageRampupServiceImplTest {
 
   @Before
   public void setup() {
-    this.objectMapper = new ObjectMapper();
-    this.imageRampupDao = mock(ImageRampupDaoImpl.class);
-    this.converterUtils = new ConverterUtils(objectMapper);
-    this.imageRampupService = new ImageRampupServiceImpl(imageRampupDao, converterUtils);
+    objectMapper = new ObjectMapper();
+    imageRampupDao = mock(ImageRampupDaoImpl.class);
+    converterUtils = new ConverterUtils(objectMapper);
+    imageRampupService = new ImageRampupServiceImpl(imageRampupDao, converterUtils);
   }
 
   @Test
@@ -61,9 +61,6 @@ public class ImageRampupServiceImplTest {
         .jsonPayload(jsonPayload)
         .user("azkaban")
         .build();
-    /*ImageRampupPlanRequest imageRampupPlanRequest =
-        objectMapper.readValue(imageMetadataRequest.getJsonPayload(),
-        ImageRampupPlanRequest.class);*/
     when(imageRampupDao.createImageRampupPlan(any(ImageRampupPlanRequest.class))).thenReturn(100);
     int imageRampupPlanId = imageRampupService.createImageRampupPlan(imageMetadataRequest);
     ArgumentCaptor<ImageRampupPlanRequest> imageTypeArgumentCaptor = ArgumentCaptor

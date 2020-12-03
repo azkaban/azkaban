@@ -21,10 +21,10 @@ import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.models.ImageRampup.StabilityTag;
 import azkaban.imagemgmt.models.ImageRampupPlan;
 import azkaban.imagemgmt.models.ImageRampupPlanRequest;
 import azkaban.imagemgmt.models.ImageRampupRequest;
-import azkaban.imagemgmt.models.ImageRampupRequest.StabilityTag;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
@@ -51,8 +51,8 @@ public class ImageRampupServiceImpl implements ImageRampupService {
   private final ConverterUtils converterUtils;
 
   @Inject
-  public ImageRampupServiceImpl(final ImageRampupDao imageRampupDao,
-      final ConverterUtils converterUtils) {
+  public ImageRampupServiceImpl(ImageRampupDao imageRampupDao,
+      ConverterUtils converterUtils) {
     this.imageRampupDao = imageRampupDao;
     this.converterUtils = converterUtils;
   }
@@ -84,7 +84,7 @@ public class ImageRampupServiceImpl implements ImageRampupService {
   @Override
   public Optional<ImageRampupPlan> getActiveRampupPlan(String imageTypeName)
       throws ImageMgmtException {
-    return this.imageRampupDao.getActiveImageRampupPlan(imageTypeName, true);
+    return imageRampupDao.getActiveImageRampupPlan(imageTypeName, true);
   }
 
   @Override
@@ -106,7 +106,7 @@ public class ImageRampupServiceImpl implements ImageRampupService {
           + "metadata");
     }
     vaidateRampup(imageRampupPlanRequest);
-    this.imageRampupDao.updateImageRampupPlan(imageRampupPlanRequest);
+    imageRampupDao.updateImageRampupPlan(imageRampupPlanRequest);
   }
 
   /**

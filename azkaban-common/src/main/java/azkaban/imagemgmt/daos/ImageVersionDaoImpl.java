@@ -36,12 +36,15 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,17 +61,28 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
 
   private final ImageTypeDao imageTypeDao;
 
-  private static String INSERT_IMAGE_VERSION_QUERY =
+  private static final String INSERT_IMAGE_VERSION_QUERY =
       "insert into image_versions ( path, description, version, type_id, state, release_tag, "
           + "created_by, created_on, modified_by, modified_on) "
           + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-  private static String SELECT_IMAGE_VERSION_BASE_QUERY = "select iv.id, iv.path, iv.description, "
-      + "iv.version, cast(replace(iv.version, '.', '') as unsigned integer) as int_version, "
-      + "it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
-      + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
-  private static String OUTER_SELECT_CLAUSE_LATEST_ACTIVE_IMAGE_VERSION = "select tbl.id, "
-      + "tbl.path, tbl.description, tbl.version, max(tbl.int_version), tbl.name, tbl.state, "
-      + "tbl.release_tag, tbl.created_on, tbl.created_by, tbl.modified_on, tbl.modified_by";
+  private static final String SELECT_IMAGE_VERSION_BASE_QUERY =
+      "select iv.id, iv.path, iv.description, "
+          + "iv.version, cast(replace(iv.version, '.', '') as unsigned integer) as int_version, "
+          + "it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
+          + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
+  private static final String SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY = "select outer_tbl.id, "
+      + "outer_tbl.path, outer_tbl.description, outer_tbl.version, outer_tbl.name, outer_tbl.state, "
+      + "outer_tbl.release_tag, outer_tbl.created_on, outer_tbl.created_by, outer_tbl.modified_on, "
+      + "outer_tbl.modified_by from (select iv.id, iv.path, iv.description, iv.version, "
+      + "cast(replace(iv.version, '.', '') as unsigned integer) as int_version, it.name, iv.state, "
+      + "iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, iv.modified_by "
+      + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
+      + "and it.name in ( ${image_types} )) "
+      + "outer_tbl where outer_tbl.int_version in (select max(inner_tbl.int_version) max_version "
+      + "from (select it.name, cast(replace(iv.version, '.', '') as unsigned integer) as int_version "
+      + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
+      + "and it.name in ( ${image_types} )) "
+      + "inner_tbl group by inner_tbl.name);";
 
   @Inject
   public ImageVersionDaoImpl(DatabaseOperator databaseOperator, ImageTypeDao imageTypeDao) {
@@ -81,7 +95,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
     ImageType imageType = imageTypeDao.getImageTypeByName(imageVersion.getName())
         .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
             + "image type : " + imageVersion.getName()));
-    final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
+    SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
       Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
       transOperator
@@ -151,7 +165,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
         .addParam(IMAGE_VERSION, imageVersion)
         .addParam(VERSION_STATE, versionState)
         .build();
-    List<ImageVersion> imageVersions = this.findImageVersions(imageMetadataRequest);
+    List<ImageVersion> imageVersions = findImageVersions(imageMetadataRequest);
     return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
         : Optional.empty();
   }
@@ -162,22 +176,22 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
     List<ImageVersion> imageVersions = new ArrayList<>();
     try {
       // Add outer select clause
-      StringBuilder queryBuilder = new StringBuilder(
-          OUTER_SELECT_CLAUSE_LATEST_ACTIVE_IMAGE_VERSION);
-      queryBuilder.append(" from ");
-      // Build the inner query
-      queryBuilder.append("(" + SELECT_IMAGE_VERSION_BASE_QUERY);
-      queryBuilder.append(" and iv.state = ? ");
-      queryBuilder.append(" and it.name in ( ");
-      for (int i = 0; i < imageTypes.size() - 1; i++) {
-        queryBuilder.append("? ,");
+      StringBuilder inClauseBuilder = new StringBuilder();
+      for (int i = 0; i < imageTypes.size(); i++) {
+        inClauseBuilder.append("?,");
       }
-      queryBuilder.append("? )) tbl group by tbl.name");
-      log.info("Image version getActiveVersionByImageTypes query : " + queryBuilder.toString());
+      inClauseBuilder.setLength(inClauseBuilder.length() - 1);
+      Map<String, String> valueMap = new HashMap<>();
+      valueMap.put("image_types", inClauseBuilder.toString());
+      StrSubstitutor strSubstitutor = new StrSubstitutor(valueMap);
+      String query = strSubstitutor.replace(SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY);
+      log.info("Image version getActiveVersionByImageTypes query : " + query);
       List<Object> params = new ArrayList<>();
       params.add(State.ACTIVE.getStateValue());
       params.addAll(imageTypes);
-      imageVersions = databaseOperator.query(queryBuilder.toString(),
+      params.add(State.ACTIVE.getStateValue());
+      params.addAll(imageTypes);
+      imageVersions = databaseOperator.query(query,
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
     } catch (SQLException ex) {
       log.error("Exception while fetching image version ", ex);
@@ -222,24 +236,24 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   public static class FetchImageVersionHandler implements ResultSetHandler<List<ImageVersion>> {
 
     @Override
-    public List<ImageVersion> handle(final ResultSet rs) throws SQLException {
+    public List<ImageVersion> handle(ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
-      final List<ImageVersion> imageVersions = new ArrayList<>();
+      List<ImageVersion> imageVersions = new ArrayList<>();
       do {
-        final int id = rs.getInt("id");
-        final String path = rs.getString("path");
-        final String description = rs.getString("description");
-        final String version = rs.getString("version");
-        final String name = rs.getString("name");
-        final String state = rs.getString("state");
-        final String releaseTag = rs.getString("release_tag");
-        final String createdOn = rs.getString("created_on");
-        final String createdBy = rs.getString("created_by");
-        final String modifiedOn = rs.getString("modified_on");
-        final String modifiedBy = rs.getString("modified_by");
-        final ImageVersion imageVersion = new ImageVersion();
+        int id = rs.getInt("id");
+        String path = rs.getString("path");
+        String description = rs.getString("description");
+        String version = rs.getString("version");
+        String name = rs.getString("name");
+        String state = rs.getString("state");
+        String releaseTag = rs.getString("release_tag");
+        String createdOn = rs.getString("created_on");
+        String createdBy = rs.getString("created_by");
+        String modifiedOn = rs.getString("modified_on");
+        String modifiedBy = rs.getString("modified_by");
+        ImageVersion imageVersion = new ImageVersion();
         imageVersion.setId(id);
         imageVersion.setPath(path);
         imageVersion.setDescription(description);

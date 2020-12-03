@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The interface exposes method for getting version for each image types based on rampup. Flow
- * container will invoke the exposed methods to get version for the image types
+ * The interface exposes method for getting version for each image types based on rampup. Dispatch
+ * flow container will invoke the exposed methods to get version for the image types.
  */
 public interface ImageRampupManger {
 

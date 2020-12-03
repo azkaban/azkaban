@@ -61,7 +61,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
 
   @Override
   public int createImageType(ImageType imageType) {
-    final SQLTransaction<Integer> insertAndGetSpaceId = transOperator -> {
+    SQLTransaction<Integer> insertAndGetSpaceId = transOperator -> {
       // insert image type record
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
       Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
@@ -97,17 +97,17 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
 
   @Override
   public Optional<ImageType> getImageTypeByName(String name) {
-    final FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
     List<ImageType> imageTypes = new ArrayList<>();
     try {
-      imageTypes = this.databaseOperator
+      imageTypes = databaseOperator
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
         throw new ImageMgmtDaoException("Can't have more that one image type record for a given "
             + "type with name : " + name);
       }
-    } catch (final SQLException ex) {
+    } catch (SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
       throw new ImageMgmtDaoException(
           "Unable to fetch image type metadata from image type : " + name);
@@ -117,12 +117,12 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
 
   @Override
   public List<ImageType> getAllImageTypes() throws ImageMgmtException {
-    final FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
     try {
-      return this.databaseOperator
+      return databaseOperator
           .query(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES, fetchImageTypeHandler, true);
-    } catch (final SQLException ex) {
-      log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
+    } catch (SQLException ex) {
+      log.error(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES + " failed.", ex);
       throw new ImageMgmtDaoException(
           "Unable to fetch all image type metadata ");
     }
@@ -144,21 +144,21 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
             + "modified_by FROM image_types where active = ?";
 
     @Override
-    public List<ImageType> handle(final ResultSet rs) throws SQLException {
+    public List<ImageType> handle(ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
-      final List<ImageType> imageTypes = new ArrayList<>();
+      List<ImageType> imageTypes = new ArrayList<>();
       do {
-        final int id = rs.getInt("id");
-        final String name = rs.getString("name");
-        final String description = rs.getString("description");
-        final boolean active = rs.getBoolean("active");
-        final String createdOn = rs.getString("created_on");
-        final String createdBy = rs.getString("created_by");
-        final String modifiedOn = rs.getString("modified_on");
-        final String modifiedBy = rs.getString("modified_by");
-        final ImageType imageType = new ImageType();
+        int id = rs.getInt("id");
+        String name = rs.getString("name");
+        String description = rs.getString("description");
+        boolean active = rs.getBoolean("active");
+        String createdOn = rs.getString("created_on");
+        String createdBy = rs.getString("created_by");
+        String modifiedOn = rs.getString("modified_on");
+        String modifiedBy = rs.getString("modified_by");
+        ImageType imageType = new ImageType();
         imageType.setId(id);
         imageType.setName(name);
         imageType.setDescription(description);

@@ -15,8 +15,7 @@
  */
 package azkaban.imagemgmt.models;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Arrays;
+import azkaban.imagemgmt.models.ImageRampup.StabilityTag;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -68,37 +67,6 @@ public class ImageRampupRequest extends BaseModel {
 
   public void setStabilityTag(StabilityTag stabilityTag) {
     this.stabilityTag = stabilityTag;
-  }
-
-  /**
-   * Enum representing the stability of the version being rampup. By default when an image version
-   * is picked up for rampup the version will be marked as "experimental" in the image_rampup table.
-   * During rampup if there is no issue with the version the version can be updated as "stable" in
-   * the image_rampup table. And if there are issue the verion will be updated as "unstable" in the
-   * image_rampup table.
-   */
-  public enum StabilityTag {
-    EXPERIMENTAL("experimental"),
-    STABLE("stable"),
-    UNSTABLE("unstable");
-
-    private final String tagName;
-
-    private static final ImmutableMap<String, StabilityTag> tagMap =
-        Arrays.stream(StabilityTag.values())
-            .collect(ImmutableMap.toImmutableMap(tag -> tag.getTagName(), tag -> tag));
-
-    private StabilityTag(final String tagName) {
-      this.tagName = tagName;
-    }
-
-    public String getTagName() {
-      return tagName;
-    }
-
-    public static StabilityTag fromTagName(final String tagName) {
-      return tagMap.getOrDefault(tagName, EXPERIMENTAL);
-    }
   }
 
   @Override

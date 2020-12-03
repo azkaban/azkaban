@@ -67,9 +67,10 @@ public class ImageRampup extends BaseModel {
   /**
    * Enum representing the stability of the version being rampup. By default when an image version
    * is picked up for rampup the version will be marked as "experimental" in the image_rampup table.
-   * During rampup if there is no issue with the version the version can be updated as "stable" in
-   * the image_rampup table. And if there are issue the verion will be updated as "unstable" in the
-   * image_rampup table.
+   * During rampup if there is no issue with the version, the version can be updated as "stable" in
+   * the image_rampup table. And if there are issues, the version will be updated as "unstable" in
+   * the image_rampup table. Azkaban developer or image type owner can mark the version in the plan
+   * as "stable" or "unstable" using update rampup API.
    */
   public enum StabilityTag {
     EXPERIMENTAL("experimental"),
@@ -82,7 +83,7 @@ public class ImageRampup extends BaseModel {
         Arrays.stream(StabilityTag.values())
             .collect(ImmutableMap.toImmutableMap(tag -> tag.getTagName(), tag -> tag));
 
-    private StabilityTag(final String tagName) {
+    private StabilityTag(String tagName) {
       this.tagName = tagName;
     }
 
@@ -90,7 +91,7 @@ public class ImageRampup extends BaseModel {
       return tagName;
     }
 
-    public static StabilityTag fromTagName(final String tagName) {
+    public static StabilityTag fromTagName(String tagName) {
       return tagMap.getOrDefault(tagName, EXPERIMENTAL);
     }
   }

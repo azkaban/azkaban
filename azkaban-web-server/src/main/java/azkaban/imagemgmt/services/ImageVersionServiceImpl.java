@@ -27,7 +27,9 @@ import azkaban.imagemgmt.models.ImageVersionRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -47,8 +49,8 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   private final ConverterUtils converterUtils;
 
   @Inject
-  public ImageVersionServiceImpl(final ImageVersionDao imageVersionsDao,
-      final ConverterUtils converterUtils) {
+  public ImageVersionServiceImpl(ImageVersionDao imageVersionsDao,
+      ConverterUtils converterUtils) {
     this.imageVersionsDao = imageVersionsDao;
     this.converterUtils = converterUtils;
   }
@@ -75,7 +77,14 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   @Override
   public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
       throws ImageMgmtException {
-    return imageVersionsDao.findImageVersions(imageMetadataRequest);
+    Set<String> imageTypes = new LinkedHashSet<>();
+    imageTypes.add("azkaban_core");
+    imageTypes.add("azkaban_exec");
+    imageTypes.add("hadoop_java_job");
+    imageTypes.add("kabootar_job");
+    imageTypes.add("wormhole_job");
+    return imageVersionsDao.getActiveVersionByImageTypes(imageTypes);
+    //return imageVersionsDao.findImageVersions(imageMetadataRequest);
   }
 
   @Override
