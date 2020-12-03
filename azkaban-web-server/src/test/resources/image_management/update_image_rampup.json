@@ -1,15 +1,17 @@
 {
   "planName": "Rampup plan 1",
-  "description": "Ramp up for spark job",
   "activatePlan": true,
   "imageRampups": [
     {
       "imageVersion": "1.6.2",
-      "rampupPercentage": "80"
+      "rampupPercentage": "80",
+      "stabilityTag": "STABLE"
     },
     {
       "imageVersion": "1.6.1",
-      "rampupPercentage": "20"
+      "rampupPercentage": "20",
+      "stabilityTag": "STABLE"
     }
   ]
 }
+

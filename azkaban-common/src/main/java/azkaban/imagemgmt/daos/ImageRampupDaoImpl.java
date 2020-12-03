@@ -293,6 +293,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * the necessary update can be done using all the IDs. For example, imageRampupPlanRequest
        * looks like this -
        * {
+       *   "planName": "plan name"
        *   "imageTYpe": "spark_job",
        *   "activatePlan": true,
        *   "imageRampups": [
