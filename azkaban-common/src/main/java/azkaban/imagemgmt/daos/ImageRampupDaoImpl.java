@@ -68,22 +68,32 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   private static final String INSERT_IMAGE_RAMPUP_QUERY = "insert into image_rampup "
       + "( plan_id, version_id, rampup_percentage, stability_tag, created_by, created_on, "
       + "modified_by, modified_on) values (?, ?, ?, ?, ?, ?, ?, ?)";
+  /**
+   * This query selects the active image rampup plan by joining image types. There shold be only one
+   * active image rampup plan. Order by clause and limit will definitely ensure that one active plan
+   * is selected in case there are more active entries due to bug. But ideally this should not be
+   * the case.
+   */
   private static final String SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY = "select irp.id, irp.name, "
       + "irp.description, irp.active, it.name image_type_name, irp.created_on, irp.created_by, "
       + "irp.modified_on, irp.modified_by from image_rampup_plan irp, image_types it where "
-      + "irp.type_id = it.id and it.name = ? and irp.active = ? ";
+      + "irp.type_id = it.id and it.name = ? and irp.active = ? order by irp.id desc limit 1";
   private static final String DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY = "update image_rampup_plan "
       + "set active = ? where id = ?";
+  // This query selects rampup records for a given impage rampup plan
   private static final String SELECT_IMAGE_RAMPUP_QUERY = "select ir.id, ir.plan_id, iv.version, "
       + "ir.rampup_percentage, ir.stability_tag, ir.created_on, ir.created_by, ir.modified_on, "
       + "ir.modified_by from image_versions iv, image_rampup_plan irp, image_rampup ir where "
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.id = ?";
+  /**
+   * This query selects rampup records for all the active image types.
+   */
   private static final String SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY = "select ir.id, ir.plan_id, "
       + "iv.version image_version, ir.rampup_percentage, ir.stability_tag, it.name "
       + "image_type_name, ir.created_on, ir.created_by, ir.modified_on, ir.modified_by from "
       + "image_types it, image_versions iv, image_rampup_plan irp, image_rampup ir where "
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.type_id = it.id and irp.active = ? "
-      + "and iv.type_id = it.id and it.active = ? oder by ir.id desc";
+      + "and iv.type_id = it.id and it.active = ?";
 
 
   @Inject

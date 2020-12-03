@@ -70,6 +70,14 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           + "iv.version, cast(replace(iv.version, '.', '') as unsigned integer) as int_version, "
           + "it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
           + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
+  /**
+   * The below query uses calculated column to get the image version in integer format. The query
+   * consists for two inner queries. One inner query selects the max image version using the
+   * calculated int_version field for the image types. The second inner query matches the max
+   * version computed above and selects the corresponding image version records. NOTE: The computed
+   * column can't be used directly in the where clause hence, two inner tables are created on top of
+   * the inner queries.
+   */
   private static final String SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY = "select outer_tbl.id, "
       + "outer_tbl.path, outer_tbl.description, outer_tbl.version, outer_tbl.name, outer_tbl.state, "
       + "outer_tbl.release_tag, outer_tbl.created_on, outer_tbl.created_by, outer_tbl.modified_on, "
