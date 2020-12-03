@@ -1,0 +1,53 @@
+{
+  "spark_job": [
+    {
+      "imageVersion": "1.1.2",
+      "rampupPercentage": "70"
+    },
+    {
+      "imageVersion": "1.1.1",
+      "rampupPercentage": "30"
+    }
+  ],
+  "hive_job": [
+    {
+      "imageVersion": "2.1.2",
+      "rampupPercentage": "70"
+    },
+    {
+      "imageVersion": "2.1.1",
+      "rampupPercentage": "30"
+    }
+  ],
+  "azkaban_core": [
+    {
+      "imageVersion": "3.6.2",
+      "rampupPercentage": "80"
+    },
+    {
+      "imageVersion": "3.6.1",
+      "rampupPercentage": "20"
+    }
+  ],
+  "azkaban_exec": [
+    {
+      "imageVersion": "1.8.2",
+      "rampupPercentage": "60"
+    },
+    {
+      "imageVersion": "1.8.1",
+      "rampupPercentage": "40"
+    }
+  ],
+  "azkaban_config": [
+    {
+      "imageVersion": "3.6.5",
+      "rampupPercentage": "90"
+    },
+    {
+      "imageVersion": "3.6.6",
+      "rampupPercentage": "10"
+    }
+  ]
+}
+

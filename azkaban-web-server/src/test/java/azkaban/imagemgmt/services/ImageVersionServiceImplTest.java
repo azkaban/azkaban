@@ -15,7 +15,9 @@
  */
 package azkaban.imagemgmt.services;
 
+import static azkaban.Constants.ImageMgmtConstants.ID_KEY;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,10 +25,12 @@ import static org.mockito.Mockito.when;
 
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.models.ImageVersionRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.utils.JSONUtils;
 import java.io.IOException;
@@ -37,6 +41,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 public class ImageVersionServiceImplTest {
+
   private ImageVersionDao imageVersionDao;
   private ObjectMapper objectMapper;
   private ImageVersionService imageVersionService;
@@ -51,7 +56,7 @@ public class ImageVersionServiceImplTest {
   }
 
   @Test
-  public void testCreateImageVersion() throws Exception{
+  public void testCreateImageVersion() throws Exception {
     String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_version.json");
     ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .jsonPayload(jsonPayload)
@@ -64,7 +69,8 @@ public class ImageVersionServiceImplTest {
     System.out.println(json);
     when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
     int imageVersionId = imageVersionService.createImageVersion(imageMetadataRequest);
-    ArgumentCaptor<ImageVersion> imageTypeArgumentCaptor = ArgumentCaptor.forClass(ImageVersion.class);
+    ArgumentCaptor<ImageVersion> imageTypeArgumentCaptor = ArgumentCaptor
+        .forClass(ImageVersion.class);
     verify(imageVersionDao, times(1)).createImageVersion(imageTypeArgumentCaptor.capture());
     ImageVersion imageVersion = imageTypeArgumentCaptor.getValue();
     Assert.assertEquals("path_spark_job", imageVersion.getPath());
@@ -78,7 +84,8 @@ public class ImageVersionServiceImplTest {
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageVersionInvalidType() throws IOException {
-    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/invalid_image_version.json");
+    String jsonPayload = JSONUtils
+        .readJsonFileAsString("image_management/invalid_image_version.json");
     ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
@@ -89,14 +96,35 @@ public class ImageVersionServiceImplTest {
 
   @Test(expected = ImageMgmtInvalidInputException.class)
   public void testCreateImageVersionInvalidState() throws IOException {
-    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_version_invalid_state.json");
+    String jsonPayload = JSONUtils
+        .readJsonFileAsString("image_management/create_image_version_invalid_state.json");
     ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .jsonPayload(jsonPayload)
         .user("azkaban")
         .build();
     when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
     imageVersionService.createImageVersion(imageMetadataRequest);
-
   }
 
+  @Test
+  public void testUpdateImageVersion() throws Exception {
+    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/update_image_version"
+        + ".json");
+    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
+        .jsonPayload(jsonPayload)
+        .addParam(ID_KEY, 11)
+        .user("azkaban")
+        .build();
+    doNothing().doThrow(new ImageMgmtException("")).when(imageVersionDao)
+        .updateImageVersion(any(ImageVersionRequest.class));
+    imageVersionService.updateImageVersion(imageMetadataRequest);
+    ArgumentCaptor<ImageVersionRequest> imageVersionArgumentCaptor = ArgumentCaptor
+        .forClass(ImageVersionRequest.class);
+    verify(imageVersionDao, times(1)).updateImageVersion(imageVersionArgumentCaptor.capture());
+    ImageVersionRequest imageVersionRequest = imageVersionArgumentCaptor.getValue();
+    Assert.assertEquals(11, imageVersionRequest.getId());
+    Assert.assertEquals("Good active version", imageVersionRequest.getDescription());
+    Assert.assertEquals("active", imageVersionRequest.getState().getStateValue());
+    Assert.assertEquals("azkaban", imageVersionRequest.getModifiedBy());
+  }
 }
