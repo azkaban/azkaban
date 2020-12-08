@@ -61,7 +61,6 @@ public abstract class AbstractBaseService<MODEL extends BaseModel, ID extends Ob
         break;
       default:
     }
-
   }
 
   /**
