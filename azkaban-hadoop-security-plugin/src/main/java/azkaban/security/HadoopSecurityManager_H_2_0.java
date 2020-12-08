@@ -321,7 +321,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       // The credential class must have a constructor accepting 3 parameters, Credentials,
       // Props, and Logger in order.
       final Constructor constructor = credentialClass.getConstructor(Credentials.class, Props.class, Logger.class);
-      final CredentialProvider customCredential = (CredentialProviderWithKeyStore) constructor
+      final CredentialProvider customCredential = (CredentialProvider) constructor
               .newInstance(hadoopCred, props, jobLogger);
       return customCredential;
     } catch (final Exception e) {
