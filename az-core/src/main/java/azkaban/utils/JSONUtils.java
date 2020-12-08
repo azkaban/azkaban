@@ -44,50 +44,50 @@ public class JSONUtils {
   private JSONUtils() {
   }
 
-  public static String toJSON(final Object obj) {
+  public static String toJSON(Object obj) {
     return toJSON(obj, false);
   }
 
-  public static String toJSON(final Object obj, final boolean prettyPrint) {
-    final ObjectMapper mapper = new ObjectMapper();
+  public static String toJSON(Object obj, boolean prettyPrint) {
+    ObjectMapper mapper = new ObjectMapper();
 
     try {
       if (prettyPrint) {
-        final ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
         return writer.writeValueAsString(obj);
       }
       return mapper.writeValueAsString(obj);
-    } catch (final Exception e) {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static void toJSON(final Object obj, final OutputStream stream) {
+  public static void toJSON(Object obj, OutputStream stream) {
     toJSON(obj, stream, false);
   }
 
-  public static void toJSON(final Object obj, final OutputStream stream,
-      final boolean prettyPrint) {
-    final ObjectMapper mapper = new ObjectMapper();
+  public static void toJSON(Object obj, OutputStream stream,
+      boolean prettyPrint) {
+    ObjectMapper mapper = new ObjectMapper();
     try {
       if (prettyPrint) {
-        final ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
         writer.writeValue(stream, obj);
         return;
       }
       mapper.writeValue(stream, obj);
-    } catch (final Exception e) {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static void toJSON(final Object obj, final File file) throws IOException {
+  public static void toJSON(Object obj, File file) throws IOException {
     toJSON(obj, file, false);
   }
 
-  public static void toJSON(final Object obj, final File file, final boolean prettyPrint)
+  public static void toJSON(Object obj, File file, boolean prettyPrint)
       throws IOException {
-    final BufferedOutputStream stream =
+    BufferedOutputStream stream =
         new BufferedOutputStream(new FileOutputStream(file));
     try {
       toJSON(obj, stream, prettyPrint);
@@ -96,60 +96,60 @@ public class JSONUtils {
     }
   }
 
-  public static Object parseJSONFromStringQuiet(final String json) {
+  public static Object parseJSONFromStringQuiet(String json) {
     try {
       return parseJSONFromString(json);
-    } catch (final IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       return null;
     }
   }
 
-  public static Object parseJSONFromString(final String json) throws IOException {
-    final ObjectMapper mapper = new ObjectMapper();
-    final JsonFactory factory = new JsonFactory();
-    final JsonParser parser = factory.createJsonParser(json);
-    final JsonNode node = mapper.readTree(parser);
+  public static Object parseJSONFromString(String json) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonFactory factory = new JsonFactory();
+    JsonParser parser = factory.createJsonParser(json);
+    JsonNode node = mapper.readTree(parser);
 
     return toObjectFromJSONNode(node);
   }
 
-  public static Object parseJSONFromFile(final File file) throws IOException {
-    final ObjectMapper mapper = new ObjectMapper();
-    final JsonFactory factory = new JsonFactory();
-    final JsonParser parser = factory.createJsonParser(file);
-    final JsonNode node = mapper.readTree(parser);
+  public static Object parseJSONFromFile(File file) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonFactory factory = new JsonFactory();
+    JsonParser parser = factory.createJsonParser(file);
+    JsonNode node = mapper.readTree(parser);
 
     return toObjectFromJSONNode(node);
   }
 
-  public static Object parseJSONFromReader(final Reader reader) throws IOException {
-    final ObjectMapper mapper = new ObjectMapper();
-    final JsonFactory factory = new JsonFactory();
-    final JsonParser parser = factory.createJsonParser(reader);
-    final JsonNode node = mapper.readTree(parser);
+  public static Object parseJSONFromReader(Reader reader) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonFactory factory = new JsonFactory();
+    JsonParser parser = factory.createJsonParser(reader);
+    JsonNode node = mapper.readTree(parser);
 
     return toObjectFromJSONNode(node);
   }
 
-  private static Object toObjectFromJSONNode(final JsonNode node) {
+  private static Object toObjectFromJSONNode(JsonNode node) {
     if (node.isObject()) {
-      final HashMap<String, Object> obj = new HashMap<>();
-      final Iterator<String> iter = node.getFieldNames();
+      HashMap<String, Object> obj = new HashMap<>();
+      Iterator<String> iter = node.getFieldNames();
       while (iter.hasNext()) {
-        final String fieldName = iter.next();
-        final JsonNode subNode = node.get(fieldName);
-        final Object subObj = toObjectFromJSONNode(subNode);
+        String fieldName = iter.next();
+        JsonNode subNode = node.get(fieldName);
+        Object subObj = toObjectFromJSONNode(subNode);
         obj.put(fieldName, subObj);
       }
 
       return obj;
     } else if (node.isArray()) {
-      final ArrayList<Object> array = new ArrayList<>();
-      final Iterator<JsonNode> iter = node.getElements();
+      ArrayList<Object> array = new ArrayList<>();
+      Iterator<JsonNode> iter = node.getElements();
       while (iter.hasNext()) {
-        final JsonNode element = iter.next();
-        final Object subObject = toObjectFromJSONNode(element);
+        JsonNode element = iter.next();
+        Object subObject = toObjectFromJSONNode(element);
         array.add(subObject);
       }
       return array;
@@ -173,7 +173,7 @@ public class JSONUtils {
     }
   }
 
-  public static long getLongFromObject(final Object obj) {
+  public static long getLongFromObject(Object obj) {
     if (obj instanceof Integer) {
       return Long.valueOf((Integer) obj);
     }
@@ -190,12 +190,12 @@ public class JSONUtils {
    *
    * The other json writing methods are more robust and will handle more cases.
    */
-  public static void writePropsNoJarDependency(final Map<String, String> properties,
-      final Writer writer) throws IOException {
+  public static void writePropsNoJarDependency(Map<String, String> properties,
+      Writer writer) throws IOException {
     writer.write("{\n");
     int size = properties.size();
 
-    for (final Map.Entry<String, String> entry : properties.entrySet()) {
+    for (Map.Entry<String, String> entry : properties.entrySet()) {
       // tab the space
       writer.write('\t');
       // Write key
@@ -213,15 +213,15 @@ public class JSONUtils {
     writer.write("}");
   }
 
-  private static String quoteAndClean(final String str) {
+  private static String quoteAndClean(String str) {
     if (str == null || str.isEmpty()) {
       return "\"\"";
     }
 
-    final StringBuffer buffer = new StringBuffer(str.length());
+    StringBuffer buffer = new StringBuffer(str.length());
     buffer.append('"');
     for (int i = 0; i < str.length(); ++i) {
-      final char ch = str.charAt(i);
+      char ch = str.charAt(i);
 
       switch (ch) {
         case '\b':
@@ -248,8 +248,8 @@ public class JSONUtils {
         default:
           if (isCharSpecialUnicode(ch)) {
             buffer.append("\\u");
-            final String hexCode = Integer.toHexString(ch);
-            final int lengthHexCode = hexCode.length();
+            String hexCode = Integer.toHexString(ch);
+            int lengthHexCode = hexCode.length();
             if (lengthHexCode < 4) {
               buffer.append("0000".substring(0, 4 - lengthHexCode));
             }
@@ -263,7 +263,7 @@ public class JSONUtils {
     return buffer.toString();
   }
 
-  private static boolean isCharSpecialUnicode(final char ch) {
+  private static boolean isCharSpecialUnicode(char ch) {
     if (ch < ' ') {
       return true;
     } else if (ch >= '\u0080' && ch < '\u00a0') {
@@ -277,6 +277,7 @@ public class JSONUtils {
 
   /**
    * Reads json file from the classpath placed in the resources folder and returns as string
+   *
    * @param filePath
    * @return String json as string
    */
@@ -285,9 +286,47 @@ public class JSONUtils {
       InputStream is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
       return IOUtils.toString(is, StandardCharsets.UTF_8);
     } catch (IOException e) {
-      throw new RuntimeException("Exception while reading input file : "+filePath);
+      throw new RuntimeException("Exception while reading input file : " + filePath);
     } catch (Exception ex) {
-      throw new RuntimeException("Exception while reading input file : "+filePath);
+      throw new RuntimeException("Exception while reading input file : " + filePath);
     }
+  }
+
+  /**
+   * Reads json string and returns JsonNode.
+   * @param json
+   * @return JsonNode
+   * @throws IOException
+   */
+  public static JsonNode readJsonString(String json) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonFactory factory = new JsonFactory();
+    JsonParser parser = factory.createJsonParser(json);
+    JsonNode node = mapper.readTree(parser);
+    return node;
+  }
+
+  /**
+   * Extract text field value from JsonNode.
+   * @param jsonNode
+   * @param key
+   * @return String
+   * @throws IOException
+   */
+  public static String extractTextFieldValueFromJsonNode(JsonNode jsonNode, String key)
+      throws IOException {
+    return jsonNode.get(key).asText();
+  }
+
+  /**
+   * Extract text field value from given json string.
+   * @param json
+   * @param key
+   * @return String
+   * @throws IOException
+   */
+  public static String extractTextFieldValueFromJsonString(String json, String key)
+      throws IOException {
+    return extractTextFieldValueFromJsonNode(readJsonString(json), key);
   }
 }

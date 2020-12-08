@@ -24,7 +24,7 @@ import java.util.Optional;
  * Data access object (DAO) for accessing image types. This interface defines method such as create,
  * get image types etc.
  */
-public interface ImageTypeDao {
+public interface ImageTypeDao extends BaseDao<ImageType, Integer> {
 
   /**
    * Create/register a new image type metadata.
@@ -42,5 +42,27 @@ public interface ImageTypeDao {
    */
   public Optional<ImageType> getImageTypeByName(String name) throws ImageMgmtException;
 
+  /**
+   * Get all image types
+   * @return List<ImageType>
+   * @throws ImageMgmtException
+   */
   public List<ImageType> getAllImageTypes() throws ImageMgmtException;
+
+  /**
+   * Get image type with ownership metadata based on specified image type name.
+   * @param name
+   * @return Optional<ImageType>
+   * @throws ImageMgmtException
+   */
+  public Optional<ImageType> getImageTypeWithOwnershipsByName(String name)
+      throws ImageMgmtException;
+
+  /**
+   * Get all image types with ownership metadata.
+   * @return List<ImageType>
+   * @throws ImageMgmtException
+   */
+  public List<ImageType> getAllImageTypesWithOwnerships() throws ImageMgmtException;
+
 }

@@ -5,12 +5,16 @@
   "activatePlan": true,
   "imageRampups": [
     {
+      "imageVersion": "1.6.3",
+      "rampupPercentage": "60"
+    },
+    {
       "imageVersion": "1.6.2",
-      "rampupPercentage": "70"
+      "rampupPercentage": "30"
     },
     {
       "imageVersion": "1.6.1",
-      "rampupPercentage": "30"
+      "rampupPercentage": "10"
     }
   ]
 }

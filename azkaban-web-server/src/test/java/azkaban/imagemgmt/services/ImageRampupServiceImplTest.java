@@ -71,7 +71,7 @@ public class ImageRampupServiceImplTest {
     Assert.assertEquals("spark_job", imageRampupPlanRequest.getImageTypeName());
     Assert.assertEquals(true, imageRampupPlanRequest.isActivatePlan());
     Assert.assertEquals("azkaban", imageRampupPlanRequest.getCreatedBy());
-    Assert.assertEquals(2, imageRampupPlanRequest.getImageRampups().size());
+    Assert.assertEquals(3, imageRampupPlanRequest.getImageRampups().size());
     Assert.assertEquals(100, imageRampupPlanId);
   }
 

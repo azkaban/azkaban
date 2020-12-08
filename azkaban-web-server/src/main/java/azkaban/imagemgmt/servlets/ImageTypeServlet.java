@@ -15,11 +15,16 @@
  */
 package azkaban.imagemgmt.servlets;
 
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
+import azkaban.user.Permission.Type;
+import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.linkedin.jersey.api.uri.UriTemplate;
@@ -59,11 +64,11 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  public void init(final ServletConfig config) throws ServletException {
+  public void init(ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.objectMapper = server.getObjectMapper();
-    this.imageTypeService = server.getImageTypeService();
+    AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    objectMapper = server.getObjectMapper();
+    imageTypeService = server.getImageTypeService();
   }
 
   @Override
@@ -87,6 +92,12 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       String jsonPayload = HttpRequestUtils.getBody(req);
+      // Check for required permission to invoke the API
+      String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+        throw new ImageMgmtInvalidPermissionException("Invalid permission to create image type");
+      }
+
       // Build ImageMetadataRequest DTO to transfer the input request
       ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
@@ -99,11 +110,15 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       resp.setHeader("Location",
           CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE.createURI(imageTypeId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
-    } catch (final ImageMgmtValidationException e) {
+    } catch (ImageMgmtValidationException e) {
       log.error("Input for creating image type is invalid", e);
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
           "Bad request for creating an image type. Reason: " + e.getMessage());
-    } catch (final Exception e) {
+    } catch (ImageMgmtInvalidPermissionException e) {
+      log.error("Unable to create image type. Invalid permission.", e);
+      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
+          "Unable to create image type. Reason: " + e.getMessage());
+    } catch (Exception e) {
       log.error("Exception while creating an image type", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
           "Exception while creating an image type. Reason: " + e.getMessage());

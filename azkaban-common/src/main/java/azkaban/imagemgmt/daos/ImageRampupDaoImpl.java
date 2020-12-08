@@ -310,12 +310,12 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        *     {
        *       "imageVersion": "1.6.2",
        *       "rampupPercentage": "80",
-       *       "stability_tag": STABLE
+       *       "stabilityTag": STABLE
        *     },
        *     {
        *       "imageVersion": "1.6.1",
        *       "rampupPercentage": "20",
-       *       "stability_tag": STABLE
+       *       "stabilityTag": STABLE
        *     }
        *   ]
        * }

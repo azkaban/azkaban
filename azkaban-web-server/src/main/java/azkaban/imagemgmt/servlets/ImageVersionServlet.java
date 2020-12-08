@@ -16,14 +16,18 @@
 package azkaban.imagemgmt.servlets;
 
 import static azkaban.Constants.ImageMgmtConstants.ID_KEY;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 
 import azkaban.Constants.ImageMgmtConstants;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.services.ImageVersionService;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
+import azkaban.user.Permission.Type;
+import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.google.common.primitives.Ints;
@@ -81,6 +85,10 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       if (BASE_IMAGE_VERSION_URI.equals(req.getRequestURI())) {
         // imageType must present. If not present throws ServletException
         String imageType = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_TYPE);
+        // Check for required permission to invoke the API
+        if (!hasImageManagementPermission(imageType, session.getUser(), Type.GET)) {
+          throw new ImageMgmtInvalidPermissionException("Invalid permission to get image version");
+        }
         // imageVersion is optional. Hence can be null
         Optional<String> imageVersion = Optional.ofNullable(HttpRequestUtils.getParam(req,
             ImageMgmtConstants.IMAGE_VERSION,
@@ -103,6 +111,10 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
                 imageVersionService.findImageVersions(imageMetadataRequest));
       }
       writeResponse(resp, response);
+    } catch (ImageMgmtInvalidPermissionException e) {
+      log.error("Unable to get image version. Invalid permission.", e);
+      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
+          "Unable to get image version. Reason: " + e.getMessage());
     } catch (Exception e) {
       log.error("Requested image metadata not found " + e);
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND,
@@ -131,6 +143,11 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       HttpServletResponse resp, Session session) throws ServletException, IOException {
     try {
       String jsonPayload = HttpRequestUtils.getBody(req);
+      // Check for required permission to invoke the API
+      String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+        throw new ImageMgmtInvalidPermissionException("Invalid permission to create image version");
+      }
       // Build ImageMetadataRequest DTO to transfer the input request
       ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
@@ -147,6 +164,10 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       log.error("Input for creating image version metadata is invalid", e);
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
           "Bad request for creating image version metadata");
+    } catch (ImageMgmtInvalidPermissionException e) {
+      log.error("Unable to create image version. Invalid permission.", e);
+      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
+          "Unable to create image version. Reason: " + e.getMessage());
     } catch (Exception e) {
       log.error("Exception while creating image version metadata", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -166,6 +187,11 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         throw new ImageMgmtValidationException("Image version id is invalid");
       }
       String jsonPayload = HttpRequestUtils.getBody(req);
+      // Check for required permission to invoke the API
+      String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
+        throw new ImageMgmtInvalidPermissionException("Invalid permission to update image version");
+      }
       // Build ImageMetadataRequest DTO to transfer the input request
       ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
@@ -179,6 +205,10 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       log.error("Input for updating image version metadata is invalid", e);
       sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
           "Bad request for updating image version metadata");
+    } catch (ImageMgmtInvalidPermissionException e) {
+      log.error("Unable to update image version. Invalid permission.", e);
+      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
+          "Unable to update image version. Reason: " + e.getMessage());
     } catch (Exception e) {
       log.error("Exception while updating image version metadata", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,

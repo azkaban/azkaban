@@ -393,6 +393,8 @@ public class Constants {
     public static final String OAUTH_REDIRECT_URI_KEY = "oauth.redirect_uri";  // how OAuth calls us back, e.g.:
     //    oauth.redirect_uri=http://localhost:8081/?action=oauth_callback
 
+    public static final String AZKABAN_IMAGE_TYPE_CACHE_MAX_SIZE = "azkaban.image.type.cache.max.size";
+
   }
 
   public static class FlowProperties {
@@ -486,6 +488,7 @@ public class Constants {
   }
 
   public static class ContainerizedExecutionManagerProperties {
+
     public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
     public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
     public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
