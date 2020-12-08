@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v2
+      kind:  Mapping
+      name: fc-mapping-12345
+      prefix: /12345
+      service: fc-svc-12345}:54343
+      rewrite: /
+      timeout_ms: 60000
+  name: fc-svc-12345
+  namespace: az-team
+spec:
+  ports:
+  - name: flowport
+    port: 54343
+    targetPort: flowport
+  selector:
+    service: flow-12345
