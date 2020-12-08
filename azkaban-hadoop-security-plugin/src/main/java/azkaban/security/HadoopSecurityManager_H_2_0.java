@@ -338,22 +338,29 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             props, hadoopCred, jobLogger, customCredentialProviderName);
     final KeyStore keyStore = KeyStoreManager.getInstance().getKeyStore();
     if (keyStore != null) {
-      // Containerized Execution.
+      // KeyStore is prepopulated to be used by Credential Provider.
+      // This KeyStore is expected especially in case of containerized execution when it is preferred
+      // to keep it in-memory of Azkaban user rather than on the file-system of container. This ensures
+      // that the user can't access it.
       try {
         ((CredentialProviderWithKeyStore)customCredential).setKeyStore(keyStore);
       } catch (ClassCastException e) {
-        logger.error("Encountered error while casting to "
-                + customCredentialProviderName, e);
-        throw new IllegalStateException("Encountered error while casting to "
-                + customCredentialProviderName, e);
+        logger.error("Encountered error while casting to CredentialProviderWithKeyStore", e);
+        throw new IllegalStateException("Encountered error while casting to CredentialProviderWithKeyStore", e);
       } catch (final Exception e) {
-        logger.error("Unknown error occurred while setting keyStore");
-        throw new IllegalStateException("Unknown error occurred while setting keyStore");
+        logger.error("Unknown error occurred while setting keyStore", e);
+        throw new IllegalStateException("Unknown error occurred while setting keyStore", e);
       }
     }
     customCredential.register(userToProxy);
   }
 
+  /**
+   * Fetches the Azkaban KeyStore to be placed in-memory for reuse by all the jobs within a flow in
+   * containerized execution. The KeyStore object acquired is placed in KeyStoreManager for future use.
+   * @param props Azkaban Props containing CredentialProvider info.
+   * @return KeyStore object.
+   */
   @Override
   public KeyStore getKeyStore(final Props props) {
     logger.info("Prefetching KeyStore for the flow");
