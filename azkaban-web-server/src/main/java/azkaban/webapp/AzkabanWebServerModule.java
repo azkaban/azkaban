@@ -31,12 +31,16 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
+import azkaban.imagemgmt.cache.ImageTypeCache;
+import azkaban.imagemgmt.cache.ImageTypeCacheImpl;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManger;
 import azkaban.imagemgmt.services.ImageRampupService;
@@ -78,20 +82,20 @@ public class AzkabanWebServerModule extends AbstractModule {
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
   private final Props props;
 
-  public AzkabanWebServerModule(final Props props) {
+  public AzkabanWebServerModule(Props props) {
     this.props = props;
   }
 
   @Provides
   @Singleton
-  public FlowTriggerDependencyPluginManager getDependencyPluginManager(final Props props)
+  public FlowTriggerDependencyPluginManager getDependencyPluginManager(Props props)
       throws FlowTriggerDependencyPluginException {
     //todo chengren311: disable requireNonNull for now in beta since dependency plugin dir is not
     // required. Add it back when flow trigger feature is enabled in production
     String dependencyPluginDir;
     try {
       dependencyPluginDir = props.getString(ConfigurationKeys.DEPENDENCY_PLUGIN_DIR);
-    } catch (final Exception ex) {
+    } catch (Exception ex) {
       dependencyPluginDir = null;
     }
     return new FlowTriggerDependencyPluginManager(dependencyPluginDir);
@@ -111,10 +115,12 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
     bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
     bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
+    bind(ImageTypeCache.class).to(ImageTypeCacheImpl.class);
+    bind(PermissionManager.class).to(PermissionManagerImpl.class);
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
-    final String containerizedImplProperty =
+    String containerizedImplProperty =
         props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
@@ -122,7 +128,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
-    switch (DispatchMethod.getDispatchMethod(this.props
+    switch (DispatchMethod.getDispatchMethod(props
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()))) {
       case POLL:
@@ -137,22 +143,22 @@ public class AzkabanWebServerModule extends AbstractModule {
   }
 
   private Class<? extends WebMetrics> resolveWebMetricsClass() {
-    return this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false) ? WebMetricsImpl.class
+    return props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false) ? WebMetricsImpl.class
         : DummyWebMetricsImpl.class;
   }
 
   @Inject
   @Singleton
   @Provides
-  public UserManager createUserManager(final Props props) {
-    final Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
-    final UserManager manager;
+  public UserManager createUserManager(Props props) {
+    Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
+    UserManager manager;
     if (userManagerClass != null && userManagerClass.getConstructors().length > 0) {
       log.info("Loading user manager class " + userManagerClass.getName());
       try {
-        final Constructor<?> userManagerConstructor = userManagerClass.getConstructor(Props.class);
+        Constructor<?> userManagerConstructor = userManagerClass.getConstructor(Props.class);
         manager = (UserManager) userManagerConstructor.newInstance(props);
-      } catch (final Exception e) {
+      } catch (Exception e) {
         log.error("Could not instantiate UserManager " + userManagerClass.getName());
         throw new RuntimeException(e);
       }
@@ -165,10 +171,10 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Inject
   @Singleton
   @Provides
-  public VelocityEngine createVelocityEngine(final Props props) {
-    final boolean devMode = props.getBoolean(VELOCITY_DEV_MODE_PARAM, false);
+  public VelocityEngine createVelocityEngine(Props props) {
+    boolean devMode = props.getBoolean(VELOCITY_DEV_MODE_PARAM, false);
 
-    final VelocityEngine engine = new VelocityEngine();
+    VelocityEngine engine = new VelocityEngine();
     engine.setProperty("resource.loader", "classpath, jar");
     engine.setProperty("classpath.resource.loader.class",
         ClasspathResourceLoader.class.getName());

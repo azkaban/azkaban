@@ -32,6 +32,8 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageVersionService;
@@ -163,31 +165,33 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
   private final ImageTypeService imageTypeService;
   private final ImageVersionService imageVersionService;
   private final ImageRampupService imageRampupService;
+  private final PermissionManager permissionManager;
 
 
   @Inject
-  public AzkabanWebServer(final Props props,
-      final Server server,
-      final ExecutorManagerAdapter executorManagerAdapter,
-      final ProjectManager projectManager,
-      final TriggerManager triggerManager,
-      final WebMetrics webMetrics,
-      final SessionCache sessionCache,
-      final UserManager userManager,
-      final ScheduleManager scheduleManager,
-      final VelocityEngine velocityEngine,
-      final FlowTriggerScheduler flowTriggerScheduler,
-      final FlowTriggerService flowTriggerService,
-      final StatusService statusService,
-      final ExecutionLogsCleaner executionLogsCleaner,
-      final ObjectMapper objectMapper,
-      final ImageTypeService imageTypeService,
-      final ImageVersionService imageVersionService,
-      final ImageRampupService imageRampupService) {
+  public AzkabanWebServer(Props props,
+      Server server,
+      ExecutorManagerAdapter executorManagerAdapter,
+      ProjectManager projectManager,
+      TriggerManager triggerManager,
+      WebMetrics webMetrics,
+      SessionCache sessionCache,
+      UserManager userManager,
+      ScheduleManager scheduleManager,
+      VelocityEngine velocityEngine,
+      FlowTriggerScheduler flowTriggerScheduler,
+      FlowTriggerService flowTriggerService,
+      StatusService statusService,
+      ExecutionLogsCleaner executionLogsCleaner,
+      ObjectMapper objectMapper,
+      ImageTypeService imageTypeService,
+      ImageVersionService imageVersionService,
+      ImageRampupService imageRampupService,
+      PermissionManager permissionManager) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -210,21 +214,23 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         + "null");
     this.imageRampupService = requireNonNull(imageRampupService, "imageRampupService is "
         + "null");
+    this.permissionManager = requireNonNull(permissionManager, "permissionManager is "
+        + "null");
 
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
 
-    final String triggerPluginDir =
+    String triggerPluginDir =
         props.getString("trigger.plugin.dir", "plugins/triggers");
 
     new PluginCheckerAndActionsLoader().load(triggerPluginDir);
 
     // Setup time zone
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
-      final String timezoneId = props.getString(DEFAULT_TIMEZONE_ID);
+      String timezoneId = props.getString(DEFAULT_TIMEZONE_ID);
       System.setProperty("user.timezone", timezoneId);
-      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
       TimeZone.setDefault(timeZone);
       DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
       logger.info("Setting timezone to " + timezoneId);
@@ -238,19 +244,19 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return app;
   }
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Web Server...");
-    final Props props = AzkabanServer.loadProps(args);
+    Props props = AzkabanServer.loadProps(args);
 
     if (props == null) {
       logger.error("Azkaban Properties not loaded. Exiting..");
       System.exit(1);
     }
     /* Initialize Guice Injector */
-    final Injector injector = Guice.createInjector(
+    Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(props)
     );
@@ -258,7 +264,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     launch(injector.getInstance(AzkabanWebServer.class));
   }
 
-  public static void launch(final AzkabanWebServer webServer) throws Exception {
+  public static void launch(AzkabanWebServer webServer) throws Exception {
     /* This creates the Web Server instance */
     app = webServer;
 
@@ -275,7 +281,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
             AzkabanWebServer.logger.info("Shutting down flow trigger scheduler...");
             webServer.flowTriggerScheduler.shutdown();
           }
-        } catch (final Exception e) {
+        } catch (Exception e) {
           AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
         }
 
@@ -284,7 +290,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
             AzkabanWebServer.logger.info("Shutting down flow trigger service...");
             webServer.flowTriggerService.shutdown();
           }
-        } catch (final Exception e) {
+        } catch (Exception e) {
           AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
         }
 
@@ -295,7 +301,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
           AzkabanWebServer.logger.info("Shutting down http server...");
           webServer.close();
 
-        } catch (final Exception e) {
+        } catch (Exception e) {
           AzkabanWebServer.logger.error("Exception while shutting down web server.", e);
         }
 
@@ -307,14 +313,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
             && new File("/usr/bin/head").exists()) {
           AzkabanWebServer.logger.info("logging top memory consumer");
 
-          final java.lang.ProcessBuilder processBuilder =
+          java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
                   "/bin/ps aux --sort -rss | /usr/bin/head");
-          final Process p = processBuilder.start();
+          Process p = processBuilder.start();
           p.waitFor();
 
-          final InputStream is = p.getInputStream();
-          final java.io.BufferedReader reader =
+          InputStream is = p.getInputStream();
+          java.io.BufferedReader reader =
               new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
@@ -326,34 +332,34 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     });
   }
 
-  private static void loadViewerPlugins(final Context root, final String pluginPath,
-      final VelocityEngine ve) {
-    final File viewerPluginPath = new File(pluginPath);
+  private static void loadViewerPlugins(Context root, String pluginPath,
+      VelocityEngine ve) {
+    File viewerPluginPath = new File(pluginPath);
     if (!viewerPluginPath.exists()) {
       return;
     }
 
-    final ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
-    final File[] pluginDirs = viewerPluginPath.listFiles();
-    final ArrayList<String> jarPaths = new ArrayList<>();
+    ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
+    File[] pluginDirs = viewerPluginPath.listFiles();
+    ArrayList<String> jarPaths = new ArrayList<>();
 
-    for (final File pluginDir : pluginDirs) {
+    for (File pluginDir : pluginDirs) {
       // load plugin properties
-      final Props pluginProps = PropsUtils.loadPluginProps(pluginDir);
+      Props pluginProps = PropsUtils.loadPluginProps(pluginDir);
       if (pluginProps == null) {
         continue;
       }
 
-      final String pluginName = pluginProps.getString("viewer.name");
-      final String pluginWebPath = pluginProps.getString("viewer.path");
-      final String pluginJobTypes = pluginProps.getString("viewer.jobtypes", null);
-      final int pluginOrder = pluginProps.getInt("viewer.order", 0);
-      final boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
-      final List<String> extLibClassPaths =
+      String pluginName = pluginProps.getString("viewer.name");
+      String pluginWebPath = pluginProps.getString("viewer.path");
+      String pluginJobTypes = pluginProps.getString("viewer.jobtypes", null);
+      int pluginOrder = pluginProps.getInt("viewer.order", 0);
+      boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
+      List<String> extLibClassPaths =
           pluginProps.getStringList("viewer.external.classpaths",
               (List<String>) null);
 
-      final String pluginClass = pluginProps.getString("viewer.servlet.class");
+      String pluginClass = pluginProps.getString("viewer.servlet.class");
       if (pluginClass == null) {
         logger.error("Viewer class is not set.");
         continue;
@@ -361,20 +367,20 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         logger.info("Plugin class " + pluginClass);
       }
 
-      final Class<?> viewerClass =
+      Class<?> viewerClass =
           PluginUtils.getPluginClass(pluginClass, pluginDir, extLibClassPaths, parentLoader);
       if (viewerClass == null) {
         continue;
       }
 
-      final String source = FileIOUtils.getSourcePathFromClass(viewerClass);
+      String source = FileIOUtils.getSourcePathFromClass(viewerClass);
       logger.info("Source jar " + source);
       jarPaths.add("jar:file:" + source);
 
       Constructor<?> constructor = null;
       try {
         constructor = viewerClass.getConstructor(Props.class);
-      } catch (final NoSuchMethodException e) {
+      } catch (NoSuchMethodException e) {
         logger.error("Constructor not found in " + pluginClass);
         continue;
       }
@@ -382,7 +388,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       Object obj = null;
       try {
         obj = constructor.newInstance(pluginProps);
-      } catch (final Exception e) {
+      } catch (Exception e) {
         logger.error(e);
         logger.error(e.getCause());
       }
@@ -392,7 +398,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         continue;
       }
 
-      final AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet) obj;
+      AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet) obj;
       root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
       PluginRegistry.getRegistry().register(
           new ViewerPlugin(pluginName, pluginWebPath, pluginOrder,
@@ -402,25 +408,25 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // Velocity needs the jar resource paths to be set.
     // ...but only when path is not empty! https://github.com/azkaban/azkaban/issues/917
     if (!jarPaths.isEmpty()) {
-      final String jarResourcePath = StringUtils.join(jarPaths, ", ");
+      String jarResourcePath = StringUtils.join(jarPaths, ", ");
       logger.info("Setting jar resource path " + jarResourcePath);
       ve.addProperty("jar.resource.loader.path", jarResourcePath);
     }
   }
 
   public FlowTriggerService getFlowTriggerService() {
-    return this.flowTriggerService;
+    return flowTriggerService;
   }
 
   public FlowTriggerScheduler getFlowTriggerScheduler() {
-    return this.flowTriggerScheduler;
+    return flowTriggerScheduler;
   }
 
   private void validateDatabaseVersion() throws IOException, SQLException {
-    final boolean checkDB = this.props
+    boolean checkDB = props
         .getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
     if (checkDB) {
-      final AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(this.props);
+      AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(props);
       setup.loadTableInfo();
       if (setup.needsUpdating()) {
         logger.error("Database is out of date.");
@@ -433,25 +439,25 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   private void configureRoutes() throws TriggerManagerException {
-    final Context root = new Context(this.server, "/", Context.SESSIONS);
+    Context root = new Context(server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
     root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
 
-    final String staticDir = this.props.getString("web.resource.dir", "");
+    String staticDir = props.getString("web.resource.dir", "");
     logger.info("Setting up web resource dir " + staticDir);
     root.setResourceBase(staticDir);
 
-    final ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
+    ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
     root.addServlet(staticServlet, "/css/*");
     root.addServlet(staticServlet, "/js/*");
     root.addServlet(staticServlet, "/images/*");
     root.addServlet(staticServlet, "/fonts/*");
     root.addServlet(staticServlet, "/favicon.ico");
 
-    final String defaultServletPath =
-        this.props.getString("azkaban.default.servlet.path", "/index");
+    String defaultServletPath =
+        props.getString("azkaban.default.servlet.path", "/index");
 
-    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
+    Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
     routesMap.put("/index", new ProjectServlet());
     routesMap.put("/manager", new ProjectManagerServlet());
     routesMap.put("/executor", new ExecutorServlet());
@@ -465,29 +471,29 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     routesMap.put("/notes", new NoteServlet());
     routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
 
-    routesMap.put("/status", new StatusServlet(this.statusService));
+    routesMap.put("/status", new StatusServlet(statusService));
 
     routesMap.put("/imageTypes/*", new ImageTypeServlet());
     routesMap.put("/imageVersions/*", new ImageVersionServlet());
     routesMap.put("/imageRampup/*", new ImageRampupServlet());
 
     // Configure core routes
-    for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
+    for (Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
       root.addServlet(new ServletHolder(entry.getValue()), entry.getKey());
     }
 
-    final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
+    ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
     root.addServlet(restliHolder, "/restli/*");
 
-    final String viewerPluginDir =
-        this.props.getString("viewer.plugin.dir", "plugins/viewer");
+    String viewerPluginDir =
+        props.getString("viewer.plugin.dir", "plugins/viewer");
     loadViewerPlugins(root, viewerPluginDir, getVelocityEngine());
 
     // Trigger Plugin Loader
-    final TriggerPluginLoader triggerPluginLoader = new TriggerPluginLoader(this.props);
+    TriggerPluginLoader triggerPluginLoader = new TriggerPluginLoader(props);
 
-    final Map<String, TriggerPlugin> triggerPlugins = triggerPluginLoader.loadTriggerPlugins(root);
+    Map<String, TriggerPlugin> triggerPlugins = triggerPluginLoader.loadTriggerPlugins(root);
     setTriggerPlugins(triggerPlugins);
     // always have basic time trigger
     // TODO: find something else to do the job
@@ -497,59 +503,59 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // At the moment login action doesn't have a dedicated route, any route can be used to
     // authenticate when passing the right parameters. The same metrics object is used for login
     // requests on every route.
-    final AzkabanAPIMetrics loginAPIMetrics = this.webMetrics.setUpAzkabanAPIMetrics(
+    AzkabanAPIMetrics loginAPIMetrics = webMetrics.setUpAzkabanAPIMetrics(
         "_action-" + LoginAbstractAzkabanServlet.getLoginAPI().getParameterValue());
     LoginAbstractAzkabanServlet.getLoginAPI().setMetrics(loginAPIMetrics);
-    for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
-      final List<AzkabanAPI> servletApiEndpoints = entry.getValue().getApiEndpoints();
-      for (final AzkabanAPI api : servletApiEndpoints) {
-        final String uri = entry.getKey().replace("/", "") + "_" + api.getRequestParameter() +
+    for (Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
+      List<AzkabanAPI> servletApiEndpoints = entry.getValue().getApiEndpoints();
+      for (AzkabanAPI api : servletApiEndpoints) {
+        String uri = entry.getKey().replace("/", "") + "_" + api.getRequestParameter() +
             (api.getParameterValue().isEmpty() ? "" : "-" + api.getParameterValue());
-        api.setMetrics(this.webMetrics.setUpAzkabanAPIMetrics(uri));
+        api.setMetrics(webMetrics.setUpAzkabanAPIMetrics(uri));
       }
     }
 
     // Configure api metrics filter
-    final FilterHolder metricsFilter = new FilterHolder(new APIMetricsFilter(routesMap));
-    final FilterMapping metricsFilterMapping = new FilterMapping();
+    FilterHolder metricsFilter = new FilterHolder(new APIMetricsFilter(routesMap));
+    FilterMapping metricsFilterMapping = new FilterMapping();
     metricsFilterMapping.setFilterName(metricsFilter.getName());
-    final String[] servletPaths = routesMap.keySet().stream().toArray(String[]::new);
+    String[] servletPaths = routesMap.keySet().stream().toArray(String[]::new);
     metricsFilterMapping.setPathSpecs(servletPaths);
     metricsFilterMapping.setDispatches(Handler.REQUEST);
     root.getServletHandler().addFilter(metricsFilter, metricsFilterMapping);
   }
 
   private void prepareAndStartServer() throws Exception {
-    this.executorManagerAdapter.start();
-    this.executionLogsCleaner.start();
+    executorManagerAdapter.start();
+    executionLogsCleaner.start();
 
     configureRoutes();
     startWebMetrics();
 
-    if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
+    if (props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
       // existing flow triggers
       logger.info("Starting flow trigger service");
-      this.flowTriggerService.start();
+      flowTriggerService.start();
       logger.info("Starting flow trigger scheduler");
-      this.flowTriggerScheduler.start();
+      flowTriggerScheduler.start();
     }
 
     try {
-      this.server.start();
+      server.start();
       logger.info("Server started");
-    } catch (final Exception e) {
+    } catch (Exception e) {
       logger.warn(e);
       Utils.croak(e.getMessage(), 1);
     }
   }
 
   private void startWebMetrics() {
-    final QueuedThreadPool queuedThreadPool = (QueuedThreadPool) this.server.getThreadPool();
-    final ExecutorManagerAdapter executorManagerAdapter = this.executorManagerAdapter;
-    final SessionCache sessionCache = this.sessionCache;
+    QueuedThreadPool queuedThreadPool = (QueuedThreadPool) server.getThreadPool();
+    ExecutorManagerAdapter executorManagerAdapter = this.executorManagerAdapter;
+    SessionCache sessionCache = this.sessionCache;
 
-    final int minAgeForClassifyingAFlowAged = this.props.getInt(
+    int minAgeForClassifyingAFlowAged = props.getInt(
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     if (minAgeForClassifyingAFlowAged < 0) {
@@ -559,7 +565,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
           ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES));
     }
 
-    this.webMetrics.setUp(new WebMetrics.DataProvider() {
+    webMetrics.setUp(new WebMetrics.DataProvider() {
 
       @Override
       public int getNumberOfIdleServerThreads() {
@@ -611,25 +617,25 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       }
     });
 
-    this.webMetrics.startReporting(this.props);
+    webMetrics.startReporting(props);
   }
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    ExecuteFlowAction.setExecutorManager(this.executorManagerAdapter);
-    ExecuteFlowAction.setProjectManager(this.projectManager);
-    ExecuteFlowAction.setTriggerManager(this.triggerManager);
-    KillExecutionAction.setExecutorManager(this.executorManagerAdapter);
-    CreateTriggerAction.setTriggerManager(this.triggerManager);
-    ExecutionChecker.setExecutorManager(this.executorManagerAdapter);
+    ExecuteFlowAction.setExecutorManager(executorManagerAdapter);
+    ExecuteFlowAction.setProjectManager(projectManager);
+    ExecuteFlowAction.setTriggerManager(triggerManager);
+    KillExecutionAction.setExecutorManager(executorManagerAdapter);
+    CreateTriggerAction.setTriggerManager(triggerManager);
+    ExecutionChecker.setExecutorManager(executorManagerAdapter);
 
-    this.triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
-    this.triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
-    this.triggerManager.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
-    this.triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
-    this.triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
-    this.triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
-    this.triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
+    triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
+    triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
+    triggerManager.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
+    triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+    triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+    triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+    triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
   }
 
   /**
@@ -637,7 +643,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
    */
   @Override
   public SessionCache getSessionCache() {
-    return this.sessionCache;
+    return sessionCache;
   }
 
   /**
@@ -645,32 +651,32 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
    */
   @Override
   public VelocityEngine getVelocityEngine() {
-    return this.velocityEngine;
+    return velocityEngine;
   }
 
   @Override
   public UserManager getUserManager() {
-    return this.userManager;
+    return userManager;
   }
 
   public ProjectManager getProjectManager() {
-    return this.projectManager;
+    return projectManager;
   }
 
   public ExecutorManagerAdapter getExecutorManager() {
-    return this.executorManagerAdapter;
+    return executorManagerAdapter;
   }
 
   public ScheduleManager getScheduleManager() {
-    return this.scheduleManager;
+    return scheduleManager;
   }
 
   public TriggerManager getTriggerManager() {
-    return this.triggerManager;
+    return triggerManager;
   }
 
   public WebMetrics getWebMetrics() {
-    return this.webMetrics;
+    return webMetrics;
   }
 
   /**
@@ -678,48 +684,48 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
    */
   @Override
   public Props getServerProps() {
-    return this.props;
+    return props;
   }
 
   public Map<String, TriggerPlugin> getTriggerPlugins() {
-    return this.triggerPlugins;
+    return triggerPlugins;
   }
 
-  private void setTriggerPlugins(final Map<String, TriggerPlugin> triggerPlugins) {
+  private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
   }
 
   @Override
   public MBeanRegistrationManager getMBeanRegistrationManager() {
-    return this.mbeanRegistrationManager;
+    return mbeanRegistrationManager;
   }
 
   @Override
   public void configureMBeanServer() {
     logger.info("Registering MBeans...");
 
-    this.mbeanRegistrationManager.registerMBean("jetty", new JmxJettyServer(this.server));
-    this.mbeanRegistrationManager
-        .registerMBean("triggerManager", new JmxTriggerManager(this.triggerManager));
+    mbeanRegistrationManager.registerMBean("jetty", new JmxJettyServer(server));
+    mbeanRegistrationManager
+        .registerMBean("triggerManager", new JmxTriggerManager(triggerManager));
 
-    if (this.executorManagerAdapter instanceof ExecutorManager) {
-      this.mbeanRegistrationManager.registerMBean("executorManager",
-          new JmxExecutorManager((ExecutorManager) this.executorManagerAdapter));
-    } else if (this.executorManagerAdapter instanceof ExecutionController) {
-      this.mbeanRegistrationManager.registerMBean("executionController",
-          new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
-    }
-    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
-      this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
-          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
+    if (executorManagerAdapter instanceof ExecutorManager) {
+      mbeanRegistrationManager.registerMBean("executorManager",
+          new JmxExecutorManager((ExecutorManager) executorManagerAdapter));
+    } else if (executorManagerAdapter instanceof ExecutionController) {
+      mbeanRegistrationManager.registerMBean("executionController",
+          new JmxExecutionController((ExecutionController) executorManagerAdapter));
+    } else if (executorManagerAdapter instanceof ContainerizedDispatchManager) {
+      mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
+          new JmxContainerizedDispatchManager(
+              (ContainerizedDispatchManager) executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
     // updated via JConsole or Java VisualVM
-    final HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
-    this.mbeanRegistrationManager.registerMBean("log4jmxbean", log4jMBean);
+    HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
+    mbeanRegistrationManager.registerMBean("log4jmxbean", log4jMBean);
 
-    final ObjectName accessLogLoggerObjName =
+    ObjectName accessLogLoggerObjName =
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
@@ -733,20 +739,20 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   public void close() {
-    this.mbeanRegistrationManager.closeMBeans();
-    this.scheduleManager.shutdown();
-    this.executorManagerAdapter.shutdown();
+    mbeanRegistrationManager.closeMBeans();
+    scheduleManager.shutdown();
+    executorManagerAdapter.shutdown();
     try {
-      this.server.stop();
-    } catch (final Exception e) {
+      server.stop();
+    } catch (Exception e) {
       // Catch all while closing server
       logger.error(e);
     }
-    this.server.destroy();
+    server.destroy();
   }
 
   public ObjectMapper getObjectMapper() {
-    return this.objectMapper;
+    return objectMapper;
   }
 
   public ImageTypeService getImageTypeService() {
@@ -754,10 +760,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   public ImageVersionService getImageVersionsService() {
-    return this.imageVersionService;
+    return imageVersionService;
   }
 
   public ImageRampupService getImageRampupService() {
     return imageRampupService;
+  }
+
+  public PermissionManager getPermissionManager() {
+    return permissionManager;
   }
 }

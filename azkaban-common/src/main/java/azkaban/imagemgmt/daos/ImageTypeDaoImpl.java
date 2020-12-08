@@ -20,6 +20,7 @@ import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
+import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -116,6 +117,31 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   }
 
   @Override
+  public Optional<ImageType> getImageTypeWithOwnershipsByName(String name)
+      throws ImageMgmtException {
+    FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    List<ImageType> imageTypes = new ArrayList<>();
+    try {
+      imageTypes = databaseOperator
+          .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
+      // Check if there are more then one image types for a given name. If so throw exception
+      if (imageTypes != null && imageTypes.size() > 1) {
+        throw new ImageMgmtDaoException("Can't have more that one image type record for a given "
+            + "type with name : " + name);
+      }
+      if (!imageTypes.isEmpty()) {
+        ImageType imageType = imageTypes.get(0);
+        imageType.setOwnerships(getImageOwnerships(imageType.getName()));
+      }
+    } catch (SQLException ex) {
+      log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
+      throw new ImageMgmtDaoException(
+          "Unable to fetch image type metadata from image type : " + name);
+    }
+    return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
+  }
+
+  @Override
   public List<ImageType> getAllImageTypes() throws ImageMgmtException {
     FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
     try {
@@ -126,6 +152,67 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       throw new ImageMgmtDaoException(
           "Unable to fetch all image type metadata ");
     }
+  }
+
+  @Override
+  public List<ImageType> getAllImageTypesWithOwnerships() throws ImageMgmtException {
+    FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    List<ImageType> imageTypes = new ArrayList<>();
+    try {
+      imageTypes = databaseOperator
+          .query(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES, fetchImageTypeHandler, true);
+      for (ImageType imageType : imageTypes) {
+        imageType.setOwnerships(getImageOwnerships(imageType.getName()));
+      }
+    } catch (SQLException ex) {
+      log.error(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES + " failed.", ex);
+      throw new ImageMgmtDaoException(
+          "Unable to fetch all image type metadata ");
+    }
+    return imageTypes;
+  }
+
+  /**
+   * Gets ownership metadata based on image type name.
+   * @param imageTypeName
+   * @return List<ImageOwnership>
+   */
+  private List<ImageOwnership> getImageOwnerships(String imageTypeName) {
+    FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
+    try {
+      return databaseOperator
+          .query(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME,
+              fetchImageOwnershipHandler, imageTypeName);
+    } catch (SQLException ex) {
+      log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME + " failed.",
+          ex);
+      throw new ImageMgmtDaoException(
+          "Unable to fetch image ownership for image type : " + imageTypeName);
+    }
+  }
+
+  @Override
+  public Optional<ImageType> findById(Integer id) throws ImageMgmtException {
+    FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    List<ImageType> imageTypes = new ArrayList<>();
+    try {
+      imageTypes = databaseOperator
+          .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID, fetchImageTypeHandler, id);
+      // Check if there are more then one image types for a given name. If so throw exception
+      if (imageTypes != null && imageTypes.size() > 1) {
+        throw new ImageMgmtDaoException("Can't have more that one image type record for a given "
+            + "type with id : " + id);
+      }
+      if (!imageTypes.isEmpty()) {
+        ImageType imageType = imageTypes.get(0);
+        imageType.setOwnerships(getImageOwnerships(imageType.getName()));
+      }
+    } catch (SQLException ex) {
+      log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID + " failed.", ex);
+      throw new ImageMgmtDaoException(
+          "Unable to fetch image type metadata from image type by id : " + id);
+    }
+    return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
   }
 
   /**
@@ -169,6 +256,49 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         imageTypes.add(imageType);
       } while (rs.next());
       return imageTypes;
+    }
+  }
+
+  /**
+   * ResultSetHandler implementation class for fetching image type
+   */
+  public static class FetchImageOwnershipHandler implements ResultSetHandler<List<ImageOwnership>> {
+
+    private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME =
+        "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
+            + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
+            + "and it.name = ?";
+    private static final String FETCH_IMAGE_OWNERSHIP_BY_ID =
+        "SELECT id, owner, role, created_by, created_on, modified_by, modified_on "
+            + "FROM image_ownerships WHERE id = ?";
+
+    @Override
+    public List<ImageOwnership> handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+      List<ImageOwnership> imageOwnerships = new ArrayList<>();
+      do {
+        String name = rs.getString("name");
+        int id = rs.getInt("id");
+        String owner = rs.getString("owner");
+        String role = rs.getString("role");
+        String createdOn = rs.getString("created_on");
+        String createdBy = rs.getString("created_by");
+        String modifiedOn = rs.getString("modified_on");
+        String modifiedBy = rs.getString("modified_by");
+        ImageOwnership imageOwnership = new ImageOwnership();
+        imageOwnership.setId(id);
+        imageOwnership.setName(name);
+        imageOwnership.setOwner(owner);
+        imageOwnership.setRole(Role.fromRoleName(role));
+        imageOwnership.setCreatedOn(createdOn);
+        imageOwnership.setCreatedBy(createdBy);
+        imageOwnership.setModifiedOn(modifiedOn);
+        imageOwnership.setModifiedBy(modifiedBy);
+        imageOwnerships.add(imageOwnership);
+      } while (rs.next());
+      return imageOwnerships;
     }
   }
 }

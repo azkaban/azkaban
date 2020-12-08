@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.services;
 
+import azkaban.imagemgmt.cache.ImageTypeCache;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
@@ -32,14 +33,17 @@ import javax.inject.Singleton;
  * routed to the DAO layer for data access.
  */
 @Singleton
-public class ImageTypeServiceImpl implements ImageTypeService {
+public class ImageTypeServiceImpl extends AbstractBaseService<ImageType, Integer, String> implements
+    ImageTypeService {
 
   private final ImageTypeDao imageTypeDao;
   private final ConverterUtils converterUtils;
 
   @Inject
-  public ImageTypeServiceImpl(final ImageTypeDao imageTypeDao,
-      final ConverterUtils converterUtils) {
+  public ImageTypeServiceImpl(ImageTypeDao imageTypeDao,
+      ConverterUtils converterUtils,
+      ImageTypeCache imageTypeCache) {
+    super(imageTypeDao, imageTypeCache);
     this.imageTypeDao = imageTypeDao;
     this.converterUtils = converterUtils;
   }
@@ -57,6 +61,9 @@ public class ImageTypeServiceImpl implements ImageTypeService {
       throw new ImageMgmtValidationException("Provide valid input for creating image type "
           + "metadata");
     }
-    return imageTypeDao.createImageType(imageType);
+    Integer id = imageTypeDao.createImageType(imageType);
+    // Trigger update to the cache
+    notifyUpdate(id, imageType.getName(), NotifyAction.ADD);
+    return id;
   }
 }
