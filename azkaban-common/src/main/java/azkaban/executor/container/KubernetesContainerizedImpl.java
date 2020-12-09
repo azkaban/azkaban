@@ -62,8 +62,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
-  public static final String DEFAULT_CPU_LIMIT = "4";
-  public static final String DEFAULT_CPU_REQUEST = "2";
+  public static final String DEFAULT_CPU_LIMIT = "1";
+  public static final String DEFAULT_CPU_REQUEST = "1";
   public static final String DEFAULT_MEMORY_LIMIT = "4Gi";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
 
@@ -76,6 +76,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String servicePrefix;
   private final String clusterName;
   private final String flowContainerName;
+  private final String cpuLimit;
+  private final String cpuRequest;
+  private final String memoryLimit;
+  private final String memoryRequest;
 
 
   private static final Logger logger = LoggerFactory
@@ -99,6 +103,18 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
             DEFAULT_SERVICE_NAME_PREFIX);
     this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
+    this.cpuLimit = azkProps
+        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
+            DEFAULT_CPU_LIMIT);
+    this.cpuRequest = azkProps
+        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
+            DEFAULT_CPU_REQUEST);
+    this.memoryLimit = azkProps
+        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
+            DEFAULT_MEMORY_LIMIT);
+    this.memoryRequest = azkProps
+        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
+            DEFAULT_MEMORY_REQUEST);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
@@ -112,7 +128,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
               .build();
       this.coreV1Api = new CoreV1Api(client);
     } catch (IOException exception) {
-      logger.info("Unable to read kube config file: {}", exception.getMessage());
+      logger.error("Unable to read kube config file: {}", exception.getMessage());
       throw new ExecutorManagerException(exception);
     }
   }
@@ -193,15 +209,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // TODO: Populating version set -> What is there in database on top of that what is passed in
     //   flow parameters (Read it from cache. Write to both for db and cache in case of change)
     // TODO: Below mentioned flow container image and conf version should come from database.
-    // TODO: Take container size from config
     String azkabanBaseImage = getAzkabanBaseImageVersion();
     String azkabanConfigVersion = getAzkabanConfigVersion();
+
     AzKubernetesV1SpecBuilder v1SpecBuilder = new AzKubernetesV1SpecBuilder(clusterName,
         Optional.empty())
         .addFlowContainer(flowContainerName, azkabanBaseImage, ImagePullPolicy.IF_NOT_PRESENT,
             azkabanConfigVersion)
-        .withResources(DEFAULT_CPU_LIMIT, DEFAULT_CPU_REQUEST, DEFAULT_MEMORY_LIMIT,
-            DEFAULT_MEMORY_REQUEST);
+        .withResources(cpuLimit, cpuRequest, memoryLimit,
+            memoryRequest);
 
     // Create init container yaml file for each jobType
     addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder);
@@ -226,7 +242,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     try {
       coreV1Api.createNamespacedPod(namespace, pod, null, null, null);
     } catch (ApiException e) {
-      logger.info("Unable to create StatefulSet: {}", e.getMessage());
+      logger.error("Unable to create StatefulSet: {}", e.getMessage());
       throw new ExecutorManagerException(e);
     }
 
@@ -346,7 +362,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           null, null, null, new V1DeleteOptions());
       logger.info("Action: Pod Deletion, Pod Name: {}", podName);
     } catch (ApiException e) {
-      logger.info("Unable to delete Pod in Kubernetes: {}", e.getMessage());
+      logger.error("Unable to delete Pod in Kubernetes: {}", e.getMessage());
       throw new ExecutorManagerException(e);
     }
   }
@@ -374,7 +390,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           deleteResult.getCode(),
           deleteResult.getMessage());
     } catch (ApiException e) {
-      logger.info("Unable to delete service in Kubernetes: {}", e.getMessage());
+      logger.error("Unable to delete service in Kubernetes: {}", e.getMessage());
       throw new ExecutorManagerException(e);
     }
   }

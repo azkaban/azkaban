@@ -509,6 +509,15 @@ public class Constants {
         "service.name.prefix";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME = AZKABAN_KUBERNETES_PREFIX + "flow"
         + ".container.name";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT = AZKABAN_KUBERNETES_PREFIX +
+        "flow.container.cpu.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST = AZKABAN_KUBERNETES_PREFIX +
+        "flow.container.cpu.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT = AZKABAN_KUBERNETES_PREFIX +
+        "flow.container.memory.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
+        AZKABAN_KUBERNETES_PREFIX +
+        "flow.container.memory.request";
 
   }
 }

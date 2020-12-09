@@ -39,6 +39,7 @@ import azkaban.utils.Props;
 import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.metrics.WebMetricsImpl;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -92,7 +93,8 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
   }
 
-  public Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
+  @VisibleForTesting
+  private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
         props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
