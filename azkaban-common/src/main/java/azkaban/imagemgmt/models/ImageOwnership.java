@@ -15,6 +15,8 @@
  */
 package azkaban.imagemgmt.models;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import javax.validation.constraints.NotBlank;
 import org.codehaus.jackson.annotate.JsonProperty;
 
@@ -22,6 +24,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
  * This class represents ownership information of an image type.
  */
 public class ImageOwnership extends BaseModel {
+
   // Represents image type name
   @JsonProperty("imageType")
   @NotBlank(message = "imageType cannot be blank")
@@ -32,60 +35,74 @@ public class ImageOwnership extends BaseModel {
   private Role role;
 
   public String getName() {
-    return name;
+    return this.name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
   public String getOwner() {
-    return owner;
+    return this.owner;
   }
 
-  public void setOwner(String owner) {
+  public void setOwner(final String owner) {
     this.owner = owner;
   }
 
   public Role getRole() {
-    return role;
+    return this.role;
   }
 
-  public void setRole(Role role) {
+  public void setRole(final Role role) {
     this.role = role;
   }
 
   /**
-   * Enum representing owner Role
-   * ADMIN role is having all the permissions such as invoking image management APIs, Adding new
-   * job type owner etc.
-   * MEMBER - Must have permissions to invoke image management APIs, but can't add/delete job
-   * type owners etc. However the MEMBER role needs to be clearly defined.
+   * Enum representing owner Role ADMIN role is having all the permissions such as invoking image
+   * management APIs, Adding new job type owner etc. MEMBER - Must have permissions to invoke image
+   * management APIs, but can't add/delete job type owners etc. However the MEMBER role needs to be
+   * clearly defined.
    */
   public enum Role {
     ADMIN("admin"),
     MEMBER("member");
 
     private final String name;
+
     private Role(final String name) {
       this.name = name;
     }
 
+    // State value and state enum map
+    private static final ImmutableMap<String, Role> roleMap = Arrays.stream(Role.values())
+        .collect(ImmutableMap.toImmutableMap(role -> role.getName(), role -> role));
+
     public String getName() {
-      return name;
+      return this.name;
+    }
+
+    /**
+     * Create state enum from state value
+     *
+     * @param roleName
+     * @return
+     */
+    public static Role fromRoleName(final String roleName) {
+      return roleMap.getOrDefault(roleName, ADMIN);
     }
   }
 
   @Override
   public String toString() {
     return "ImageOwnership{" +
-        "owner='" + owner + '\'' +
-        ", role=" + role +
-        ", id=" + id +
-        ", createdBy='" + createdBy + '\'' +
-        ", createdOn='" + createdOn + '\'' +
-        ", modifiedBy='" + modifiedBy + '\'' +
-        ", modifiedOn='" + modifiedOn + '\'' +
+        "owner='" + this.owner + '\'' +
+        ", role=" + this.role +
+        ", id=" + this.id +
+        ", createdBy='" + this.createdBy + '\'' +
+        ", createdOn='" + this.createdOn + '\'' +
+        ", modifiedBy='" + this.modifiedBy + '\'' +
+        ", modifiedOn='" + this.modifiedOn + '\'' +
         '}';
   }
 }

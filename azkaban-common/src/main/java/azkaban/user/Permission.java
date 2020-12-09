@@ -38,7 +38,7 @@ public class Permission {
   }
 
   public void addPermissions(final Permission perm) {
-    this.permissions.addAll(perm.getTypes());
+    permissions.addAll(perm.getTypes());
   }
 
   public void setPermission(final Type type, final boolean set) {
@@ -50,7 +50,7 @@ public class Permission {
   }
 
   public void setPermissions(final int flags) {
-    this.permissions.clear();
+    permissions.clear();
     if ((flags & Type.ADMIN.getFlag()) != 0) {
       addPermission(Type.ADMIN);
     } else {
@@ -64,15 +64,15 @@ public class Permission {
 
   public void addPermission(final Type... list) {
     // Admin is all encompassing permission. No need to add other types
-    if (!this.permissions.contains(Type.ADMIN)) {
+    if (!permissions.contains(Type.ADMIN)) {
       for (final Type perm : list) {
-        this.permissions.add(perm);
+        permissions.add(perm);
       }
       // We add everything, and if there's Admin left, we make sure that only
       // Admin is remaining.
-      if (this.permissions.contains(Type.ADMIN)) {
-        this.permissions.clear();
-        this.permissions.add(Type.ADMIN);
+      if (permissions.contains(Type.ADMIN)) {
+        permissions.clear();
+        permissions.add(Type.ADMIN);
       }
     }
   }
@@ -102,12 +102,12 @@ public class Permission {
   }
 
   public Set<Type> getTypes() {
-    return this.permissions;
+    return permissions;
   }
 
   public void removePermissions(final Type... list) {
     for (final Type perm : list) {
-      this.permissions.remove(perm);
+      permissions.remove(perm);
     }
   }
 
@@ -115,23 +115,23 @@ public class Permission {
     for (final String perm : list) {
       final Type type = Type.valueOf(perm);
       if (type != null) {
-        this.permissions.remove(type);
+        permissions.remove(type);
       }
     }
   }
 
   public boolean isPermissionSet(final Type permission) {
-    return this.permissions.contains(permission);
+    return permissions.contains(permission);
   }
 
   public boolean isPermissionNameSet(final String permission) {
-    return this.permissions.contains(Type.valueOf(permission));
+    return permissions.contains(Type.valueOf(permission));
   }
 
   public String[] toStringArray() {
     final ArrayList<String> list = new ArrayList<>();
     int count = 0;
-    for (final Type type : this.permissions) {
+    for (final Type type : permissions) {
       list.add(type.toString());
       count++;
     }
@@ -141,7 +141,7 @@ public class Permission {
 
   @Override
   public String toString() {
-    return Utils.flattenToString(this.permissions, ",");
+    return Utils.flattenToString(permissions, ",");
   }
 
   @Override
@@ -149,7 +149,7 @@ public class Permission {
     final int prime = 31;
     int result = 1;
     result =
-        prime * result + ((this.permissions == null) ? 0 : this.permissions.hashCode());
+        prime * result + ((permissions == null) ? 0 : permissions.hashCode());
     return result;
   }
 
@@ -165,11 +165,11 @@ public class Permission {
       return false;
     }
     final Permission other = (Permission) obj;
-    if (this.permissions == null) {
+    if (permissions == null) {
       if (other.permissions != null) {
         return false;
       }
-    } else if (!this.permissions.equals(other.permissions)) {
+    } else if (!permissions.equals(other.permissions)) {
       return false;
     }
     return true;
@@ -177,7 +177,7 @@ public class Permission {
 
   public int toFlags() {
     int flag = 0;
-    for (final Type type : this.permissions) {
+    for (final Type type : permissions) {
       flag |= type.getFlag();
     }
 
@@ -194,7 +194,14 @@ public class Permission {
     // Users with this permission can upload projects when the property "lockdown.upload.projects"
     // is turned on
     UPLOADPROJECTS(0x0008000),
-    ADMIN(0x8000000);
+    ADMIN(0x8000000),
+    // Permissions for image management APIs.
+    CREATE(0x0000100),
+    GET(0x0000200),
+    UPDATE(0x0000300),
+    DELETE(0x0000400),
+    IMAGE_TYPE_ADD_MEMBER(0x0000500),
+    IMAGE_TYPE_DELETE_MEMBER(0x0000600);
 
     private final int numVal;
 
@@ -203,7 +210,7 @@ public class Permission {
     }
 
     public int getFlag() {
-      return this.numVal;
+      return numVal;
     }
   }
 }

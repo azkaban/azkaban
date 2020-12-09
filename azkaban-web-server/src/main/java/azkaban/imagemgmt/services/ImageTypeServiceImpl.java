@@ -45,10 +45,10 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   }
 
   @Override
-  public int createImageType(ImageMetadataRequest imageMetadataRequest) throws IOException,
+  public int createImageType(final ImageMetadataRequest imageMetadataRequest) throws IOException,
       ImageMgmtException {
     // Convert input json payload to image type object
-    ImageType imageType = converterUtils
+    final ImageType imageType = this.converterUtils
         .convertToModel(imageMetadataRequest.getJsonPayload(), ImageType.class);
     imageType.setCreatedBy(imageMetadataRequest.getUser());
     imageType.setModifiedBy(imageMetadataRequest.getUser());
@@ -57,6 +57,6 @@ public class ImageTypeServiceImpl implements ImageTypeService {
       throw new ImageMgmtValidationException("Provide valid input for creating image type "
           + "metadata");
     }
-    return imageTypeDao.createImageType(imageType);
+    return this.imageTypeDao.createImageType(imageType);
   }
 }

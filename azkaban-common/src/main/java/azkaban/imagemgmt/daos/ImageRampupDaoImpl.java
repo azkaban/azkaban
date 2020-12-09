@@ -97,15 +97,15 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
 
 
   @Inject
-  public ImageRampupDaoImpl(DatabaseOperator databaseOperator, ImageTypeDao imageTypeDao,
-      ImageVersionDao imageVersionDao) {
+  public ImageRampupDaoImpl(final DatabaseOperator databaseOperator, final ImageTypeDao imageTypeDao,
+      final ImageVersionDao imageVersionDao) {
     this.databaseOperator = databaseOperator;
     this.imageTypeDao = imageTypeDao;
     this.imageVersionDao = imageVersionDao;
   }
 
   @Override
-  public int createImageRampupPlan(ImageRampupPlanRequest imageRampupPlanRequest) {
+  public int createImageRampupPlan(final ImageRampupPlanRequest imageRampupPlanRequest) {
     /**
      * Here is the example input for ImageRampupPlanRequest
      * {
@@ -125,13 +125,13 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
      *   ]
      * }
      */
-    ImageType imageType = imageTypeDao
+    final ImageType imageType = this.imageTypeDao
         .getImageTypeByName(imageRampupPlanRequest.getImageTypeName())
         .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
             + "image type : " + imageRampupPlanRequest.getImageTypeName()));
-    SQLTransaction<Long> insertAndGetRampupPlanId = transOperator -> {
+    final SQLTransaction<Long> insertAndGetRampupPlanId = transOperator -> {
       // Fetch the active rampup plan for the image type
-      Optional<ImageRampupPlan> optionalImageRampupPlan =
+      final Optional<ImageRampupPlan> optionalImageRampupPlan =
           getActiveImageRampupPlan(imageType.getName());
       /**
        * If active rampup plan is already present and the activatePlan is set to true for the new
@@ -150,20 +150,20 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         }
       }
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
-      Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+      final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
       // insert the new rampup plan
       transOperator.update(INSERT_IMAGE_RAMPUP_PLAN_QUERY, imageRampupPlanRequest.getPlanName(),
           imageRampupPlanRequest.getDescription(), imageType.getId(), true,
           imageRampupPlanRequest.getCreatedBy(), currentTimestamp,
           imageRampupPlanRequest.getModifiedBy(), currentTimestamp);
-      int rampupPlanId = Long.valueOf(transOperator.getLastInsertId()).intValue();
+      final int rampupPlanId = Long.valueOf(transOperator.getLastInsertId()).intValue();
       // insert the rampups for the new plan
       if (imageRampupPlanRequest.getImageRampups() != null
           && imageRampupPlanRequest.getImageRampups().size() > 0) {
-        for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+        for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
             .getImageRampups()) {
           // The image version which is marked as NEW can be picked for rampup up
-          Optional<ImageVersion> imageVersion = imageVersionDao.getImageVersion(imageType.getName(),
+          final Optional<ImageVersion> imageVersion = this.imageVersionDao.getImageVersion(imageType.getName(),
               imageRampupRequest.getImageVersion(), State.NEW);
           if (imageVersion.isPresent()) {
             // During rampup plan creation all the verions will be marked as EXPERIMENTAL by
@@ -190,8 +190,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       /* what will happen if there is a partial failure in
          any of the below statements?
          Ideally all should happen in a transaction */
-      imageRampupPlanId = databaseOperator.transaction(insertAndGetRampupPlanId).intValue();
-    } catch (SQLException e) {
+      imageRampupPlanId = this.databaseOperator.transaction(insertAndGetRampupPlanId).intValue();
+    } catch (final SQLException e) {
       log.error("Unable to create the image version metadata", e);
       throw new ImageMgmtDaoException("Exception while creating image version metadata");
     }
@@ -199,19 +199,19 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   }
 
   @Override
-  public Optional<ImageRampupPlan> getActiveImageRampupPlan(String imageTypeName,
-      boolean fetchRampup)
+  public Optional<ImageRampupPlan> getActiveImageRampupPlan(final String imageTypeName,
+      final boolean fetchRampup)
       throws ImageMgmtException {
     return fetchRampup ? getActiveImageRampupPlanAndRampup(imageTypeName) :
         getActiveImageRampupPlan(imageTypeName);
   }
 
-  private Optional<ImageRampupPlan> getActiveImageRampupPlan(String imageTypeName)
+  private Optional<ImageRampupPlan> getActiveImageRampupPlan(final String imageTypeName)
       throws ImageMgmtException {
     try {
-      return databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
+      return this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
           new FetchImageRampupPlanHandler(), imageTypeName, true);
-    } catch (SQLException ex) {
+    } catch (final SQLException ex) {
       log.error("Exception while fetching image version ", ex);
       throw new ImageMgmtDaoException("Exception while fetching image version");
     }
@@ -224,18 +224,18 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * @return Optional<ImageRampupPlan>
    * @throws ImageMgmtException
    */
-  private Optional<ImageRampupPlan> getActiveImageRampupPlanAndRampup(String imageTypeName)
+  private Optional<ImageRampupPlan> getActiveImageRampupPlanAndRampup(final String imageTypeName)
       throws ImageMgmtException {
     try {
-      Optional<ImageRampupPlan> imageRampupPlan = getActiveImageRampupPlan(imageTypeName);
+      final Optional<ImageRampupPlan> imageRampupPlan = getActiveImageRampupPlan(imageTypeName);
 
       if (imageRampupPlan.isPresent()) {
-        List<ImageRampup> imageRampups = databaseOperator.query(SELECT_IMAGE_RAMPUP_QUERY,
+        final List<ImageRampup> imageRampups = this.databaseOperator.query(SELECT_IMAGE_RAMPUP_QUERY,
             new FetchImageRampupHandler(), imageRampupPlan.get().getId());
         imageRampupPlan.get().setImageRampups(imageRampups);
       }
       return imageRampupPlan;
-    } catch (SQLException ex) {
+    } catch (final SQLException ex) {
       log.error("Exception while fetching image version ", ex);
       throw new ImageMgmtDaoException("Exception while fetching image version");
     }
@@ -245,22 +245,22 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   public Map<String, List<ImageRampup>> fetchAllImageTypesRampup()
       throws ImageMgmtException {
     try {
-      return databaseOperator.query(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY,
+      return this.databaseOperator.query(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY,
           new FetchImageTypeRampupHandler(), true, true);
-    } catch (SQLException ex) {
+    } catch (final SQLException ex) {
       log.error("Exception while fetching image version ", ex);
       throw new ImageMgmtDaoException("Exception while fetching image version");
     }
   }
 
   @Override
-  public Map<String, List<ImageRampup>> fetchRampupByImageTypes(Set<String> imageTypes)
+  public Map<String, List<ImageRampup>> fetchRampupByImageTypes(final Set<String> imageTypes)
       throws ImageMgmtException {
     try {
       if (imageTypes == null || imageTypes.isEmpty()) {
         return fetchAllImageTypesRampup();
       }
-      StringBuilder queryBuilder = new StringBuilder(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY);
+      final StringBuilder queryBuilder = new StringBuilder(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY);
       queryBuilder.append(" and ir.stability_tag in ( ?, ? ) ");
       queryBuilder.append(" and it.name in ( ");
       for (int i = 0; i < imageTypes.size() - 1; i++) {
@@ -268,7 +268,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       }
       queryBuilder.append("? )");
       log.info("fetchRampupByImageTypes query: " + queryBuilder.toString());
-      List<Object> params = new ArrayList<>();
+      final List<Object> params = new ArrayList<>();
       // Select only EXPERIMENTAL and STABLE versions that are being ramped up. Ignore the
       // UNSTABLE version.
       params.add(StabilityTag.EXPERIMENTAL.getTagName());
@@ -278,22 +278,22 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       // Select active image type
       params.add(Boolean.TRUE);
       params.addAll(imageTypes);
-      return databaseOperator.query(queryBuilder.toString(),
+      return this.databaseOperator.query(queryBuilder.toString(),
           new FetchImageTypeRampupHandler(), Iterables.toArray(params, Object.class));
-    } catch (SQLException ex) {
+    } catch (final SQLException ex) {
       log.error("Exception while fetching image version ", ex);
       throw new ImageMgmtDaoException("Exception while fetching image version");
     }
   }
 
   @Override
-  public void updateImageRampupPlan(ImageRampupPlanRequest imageRampupPlanRequest)
+  public void updateImageRampupPlan(final ImageRampupPlanRequest imageRampupPlanRequest)
       throws ImageMgmtException {
     // Select the active rampup plan and the rampups for the given image type
-    Optional<ImageRampupPlan> optionalImageRampupPlan =
+    final Optional<ImageRampupPlan> optionalImageRampupPlan =
         getActiveImageRampupPlanAndRampup(imageRampupPlanRequest.getImageTypeName());
     if (optionalImageRampupPlan.isPresent()) {
-      ImageRampupPlan imageRampupPlan = optionalImageRampupPlan.get();
+      final ImageRampupPlan imageRampupPlan = optionalImageRampupPlan.get();
       /**
        * The below internal ID mapping is required because the update API image type for which
        * rampup plan and rampup needs to be updated. It is easy for the API user to pass just
@@ -310,12 +310,12 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        *     {
        *       "imageVersion": "1.6.2",
        *       "rampupPercentage": "80",
-       *       "stability_tag": STABLE
+       *       "stabilityTag": STABLE
        *     },
        *     {
        *       "imageVersion": "1.6.1",
        *       "rampupPercentage": "20",
-       *       "stability_tag": STABLE
+       *       "stabilityTag": STABLE
        *     }
        *   ]
        * }
@@ -327,13 +327,13 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * request so that update can be done using the ID. The below code will prepare version to
        * ID map based on the version and id available in the image_rampup table.
        */
-      Map<String, Integer> versionIdKeyMap = new HashMap<>();
-      for (ImageRampup imageRampup : imageRampupPlan.getImageRampups()) {
+      final Map<String, Integer> versionIdKeyMap = new HashMap<>();
+      for (final ImageRampup imageRampup : imageRampupPlan.getImageRampups()) {
         versionIdKeyMap.put(imageRampup.getImageVersion(), imageRampup.getId());
       }
 
       // Use the version to id map created above to update the ID of each ramp up record.
-      for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+      for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
           .getImageRampups()) {
         if (versionIdKeyMap.containsKey(imageRampupRequest.getImageVersion())) {
           imageRampupRequest.setId(versionIdKeyMap.get(imageRampupRequest.getImageVersion()));
@@ -345,11 +345,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       }
       // Update image_rampup_plan and image_rampup table using the corresponding ID (key) and the
       // information to be updated.
-      SQLTransaction<Integer> updateImageRamupTransaction = transOperator -> {
+      final SQLTransaction<Integer> updateImageRamupTransaction = transOperator -> {
         // update image rampup plan
         updateImageRampupPlanInternal(imageRampupPlanRequest);
         // update each rampup
-        for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+        for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
             .getImageRampups()) {
           updateImageRampup(imageRampupRequest);
         }
@@ -360,8 +360,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       /* what will happen if there is a partial failure in
          any of the below statements?
          Ideally all should happen in a transaction */
-        databaseOperator.transaction(updateImageRamupTransaction);
-      } catch (SQLException e) {
+        this.databaseOperator.transaction(updateImageRamupTransaction);
+      } catch (final SQLException e) {
         log.error("Unable to create the image version metadata", e);
         throw new ImageMgmtDaoException("Exception while creating image version metadata");
       }
@@ -379,11 +379,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * @param imageRampupPlanRequest
    * @throws ImageMgmtException
    */
-  private void updateImageRampupPlanInternal(ImageRampupPlanRequest imageRampupPlanRequest)
+  private void updateImageRampupPlanInternal(final ImageRampupPlanRequest imageRampupPlanRequest)
       throws ImageMgmtException {
     try {
-      List<Object> params = new ArrayList<>();
-      StringBuilder queryBuilder = new StringBuilder("update image_rampup_plan set ");
+      final List<Object> params = new ArrayList<>();
+      final StringBuilder queryBuilder = new StringBuilder("update image_rampup_plan set ");
       // As update is allowed only for active plan, if activatePlan is false then deactivate the
       // current plan.
       if (!imageRampupPlanRequest.isActivatePlan()) {
@@ -395,8 +395,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
       params.add(imageRampupPlanRequest.getId());
-      databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
-    } catch (SQLException ex) {
+      this.databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+    } catch (final SQLException ex) {
       log.error("Exception while updating image version ", ex);
       throw new ImageMgmtDaoException("Exception while updating image version");
     }
@@ -409,11 +409,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * @param imageRampupRequest
    * @throws ImageMgmtException
    */
-  private void updateImageRampup(ImageRampupRequest imageRampupRequest)
+  private void updateImageRampup(final ImageRampupRequest imageRampupRequest)
       throws ImageMgmtException {
     try {
-      List<Object> params = new ArrayList<>();
-      StringBuilder queryBuilder = new StringBuilder("update image_rampup set ");
+      final List<Object> params = new ArrayList<>();
+      final StringBuilder queryBuilder = new StringBuilder("update image_rampup set ");
       if (imageRampupRequest.getRampupPercentage() != null) {
         queryBuilder.append(" rampup_percentage = ?, ");
         params.add(imageRampupRequest.getRampupPercentage());
@@ -427,8 +427,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
       params.add(imageRampupRequest.getId());
-      databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
-    } catch (SQLException ex) {
+      this.databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+    } catch (final SQLException ex) {
       log.error("Exception while updating image version ", ex);
       throw new ImageMgmtDaoException("Exception while updating image version");
     }
@@ -441,21 +441,21 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       ResultSetHandler<Optional<ImageRampupPlan>> {
 
     @Override
-    public Optional<ImageRampupPlan> handle(ResultSet rs) throws SQLException {
+    public Optional<ImageRampupPlan> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Optional.empty();
       }
-      ImageRampupPlan imageRampupPlan = new ImageRampupPlan();
+      final ImageRampupPlan imageRampupPlan = new ImageRampupPlan();
       do {
-        int id = rs.getInt("id");
-        String name = rs.getString("name");
-        String description = rs.getString("description");
-        String imageTypeName = rs.getString("image_type_name");
-        boolean active = rs.getBoolean("active");
-        String createdOn = rs.getString("created_on");
-        String createdBy = rs.getString("created_by");
-        String modifiedOn = rs.getString("modified_on");
-        String modifiedBy = rs.getString("modified_by");
+        final int id = rs.getInt("id");
+        final String name = rs.getString("name");
+        final String description = rs.getString("description");
+        final String imageTypeName = rs.getString("image_type_name");
+        final boolean active = rs.getBoolean("active");
+        final String createdOn = rs.getString("created_on");
+        final String createdBy = rs.getString("created_by");
+        final String modifiedOn = rs.getString("modified_on");
+        final String modifiedBy = rs.getString("modified_by");
         imageRampupPlan.setId(id);
         imageRampupPlan.setPlanName(name);
         imageRampupPlan.setDescription(description);
@@ -477,22 +477,22 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       ResultSetHandler<List<ImageRampup>> {
 
     @Override
-    public List<ImageRampup> handle(ResultSet rs) throws SQLException {
+    public List<ImageRampup> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
-      List<ImageRampup> imageRampups = new ArrayList<>();
+      final List<ImageRampup> imageRampups = new ArrayList<>();
       do {
-        int id = rs.getInt("id");
-        int planId = rs.getInt("plan_id");
-        String imageVersion = rs.getString("version");
-        int rampupPercentage = rs.getInt("rampup_percentage");
-        String stabilityTag = rs.getString("stability_tag");
-        String createdOn = rs.getString("created_on");
-        String createdBy = rs.getString("created_by");
-        String modifiedOn = rs.getString("modified_on");
-        String modifiedBy = rs.getString("modified_by");
-        ImageRampup imageRampup = new ImageRampup();
+        final int id = rs.getInt("id");
+        final int planId = rs.getInt("plan_id");
+        final String imageVersion = rs.getString("version");
+        final int rampupPercentage = rs.getInt("rampup_percentage");
+        final String stabilityTag = rs.getString("stability_tag");
+        final String createdOn = rs.getString("created_on");
+        final String createdBy = rs.getString("created_by");
+        final String modifiedOn = rs.getString("modified_on");
+        final String modifiedBy = rs.getString("modified_by");
+        final ImageRampup imageRampup = new ImageRampup();
         imageRampup.setId(id);
         imageRampup.setPlanId(planId);
         imageRampup.setImageVersion(imageVersion);
@@ -516,23 +516,23 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       ResultSetHandler<Map<String, List<ImageRampup>>> {
 
     @Override
-    public Map<String, List<ImageRampup>> handle(ResultSet rs) throws SQLException {
+    public Map<String, List<ImageRampup>> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyMap();
       }
-      Map<String, List<ImageRampup>> imageRampupMap = new LinkedHashMap<>();
+      final Map<String, List<ImageRampup>> imageRampupMap = new LinkedHashMap<>();
       do {
-        int id = rs.getInt("id");
-        int planId = rs.getInt("plan_id");
-        String imageTypeName = rs.getString("image_type_name");
-        String imageVersion = rs.getString("image_version");
-        int rampupPercentage = rs.getInt("rampup_percentage");
-        String stabilityTag = rs.getString("stability_tag");
-        String createdOn = rs.getString("created_on");
-        String createdBy = rs.getString("created_by");
-        String modifiedOn = rs.getString("modified_on");
-        String modifiedBy = rs.getString("modified_by");
-        ImageRampup imageRampup = new ImageRampup();
+        final int id = rs.getInt("id");
+        final int planId = rs.getInt("plan_id");
+        final String imageTypeName = rs.getString("image_type_name");
+        final String imageVersion = rs.getString("image_version");
+        final int rampupPercentage = rs.getInt("rampup_percentage");
+        final String stabilityTag = rs.getString("stability_tag");
+        final String createdOn = rs.getString("created_on");
+        final String createdBy = rs.getString("created_by");
+        final String modifiedOn = rs.getString("modified_on");
+        final String modifiedBy = rs.getString("modified_by");
+        final ImageRampup imageRampup = new ImageRampup();
         imageRampup.setId(id);
         imageRampup.setImageVersion(imageVersion);
         imageRampup.setRampupPercentage(rampupPercentage);
@@ -544,7 +544,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         if (imageRampupMap.containsKey(imageTypeName)) {
           imageRampupMap.get(imageTypeName).add(imageRampup);
         } else {
-          List<ImageRampup> imageRampupList = new ArrayList<>();
+          final List<ImageRampup> imageRampupList = new ArrayList<>();
           imageRampupList.add(imageRampup);
           imageRampupMap.put(imageTypeName, imageRampupList);
         }

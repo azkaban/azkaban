@@ -277,17 +277,59 @@ public class JSONUtils {
 
   /**
    * Reads json file from the classpath placed in the resources folder and returns as string
+   *
    * @param filePath
    * @return String json as string
    */
-  public static String readJsonFileAsString(String filePath) {
+  public static String readJsonFileAsString(final String filePath) {
     try {
-      InputStream is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
+      final InputStream is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
       return IOUtils.toString(is, StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      throw new RuntimeException("Exception while reading input file : "+filePath);
-    } catch (Exception ex) {
-      throw new RuntimeException("Exception while reading input file : "+filePath);
+    } catch (final IOException e) {
+      throw new RuntimeException("Exception while reading input file : " + filePath);
+    } catch (final Exception ex) {
+      throw new RuntimeException("Exception while reading input file : " + filePath);
     }
+  }
+
+  /**
+   * Reads json string and returns JsonNode.
+   *
+   * @param json
+   * @return JsonNode
+   * @throws IOException
+   */
+  public static JsonNode readJsonString(final String json) throws IOException {
+    final ObjectMapper mapper = new ObjectMapper();
+    final JsonFactory factory = new JsonFactory();
+    final JsonParser parser = factory.createJsonParser(json);
+    final JsonNode node = mapper.readTree(parser);
+    return node;
+  }
+
+  /**
+   * Extract text field value from JsonNode.
+   *
+   * @param jsonNode
+   * @param key
+   * @return String
+   * @throws IOException
+   */
+  public static String extractTextFieldValueFromJsonNode(final JsonNode jsonNode, final String key)
+      throws IOException {
+    return jsonNode.get(key).asText();
+  }
+
+  /**
+   * Extract text field value from given json string.
+   *
+   * @param json
+   * @param key
+   * @return String
+   * @throws IOException
+   */
+  public static String extractTextFieldValueFromJsonString(final String json, final String key)
+      throws IOException {
+    return extractTextFieldValueFromJsonNode(readJsonString(json), key);
   }
 }

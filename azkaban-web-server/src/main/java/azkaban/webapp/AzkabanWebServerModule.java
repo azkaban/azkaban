@@ -37,6 +37,8 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManger;
 import azkaban.imagemgmt.services.ImageRampupService;
@@ -111,11 +113,12 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
     bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
     bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
+    bind(PermissionManager.class).to(PermissionManagerImpl.class);
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
-        props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
+        this.props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
     return ContainerizedImplType.valueOf(containerizedImplProperty).getImplClass();
