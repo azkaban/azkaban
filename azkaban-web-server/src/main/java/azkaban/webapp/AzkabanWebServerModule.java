@@ -92,7 +92,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
   }
 
-  private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
+  public Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
         props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())

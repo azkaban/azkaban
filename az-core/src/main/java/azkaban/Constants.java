@@ -136,6 +136,7 @@ public class Constants {
 
   public static class ConfigurationKeys {
 
+    public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
     // Property to enable appropriate dispatch model
     public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
@@ -496,5 +497,26 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
     public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
+    public static final String AZKABAN_KUBERNETES_PREFIX="azkaban.kubernetes.";
+    public static final String KUBERNETES_SERVICE_REQUIRED = AZKABAN_KUBERNETES_PREFIX +
+        "service.required";
+    public static final String KUBERNETES_NAMESPACE = AZKABAN_KUBERNETES_PREFIX + "namespace";
+    public static final String KUBERNETES_POD_TEMPLATE = AZKABAN_KUBERNETES_PREFIX +
+        "pod.template";
+    public static final String KUBERNETES_SERVICE_TEMPLATE =
+        AZKABAN_KUBERNETES_PREFIX + "service.template";
+    public static final String KUBERNETES_INIT_CONTAINER_TEMPLATE = AZKABAN_KUBERNETES_PREFIX +
+        "init.container.template";
+    public static final String KUBERNETES_KUBE_CONFIG_PATH = AZKABAN_KUBERNETES_PREFIX +
+        "kube.config.path";
+    public static final String KUBERNETES_TEMP_FILES_DIR = AZKABAN_KUBERNETES_PREFIX
+        + "temp.files.dir";
+    public static final String KUBERNETES_POD_NAME_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.name"
+        + ".prefix";
+    public static final String KUBERNETES_SERVICE_NAME_PREFIX = AZKABAN_KUBERNETES_PREFIX +
+        "service.name.prefix";
+    public static final String KUBERNETES_FLOW_CONTAINER_NAME = AZKABAN_KUBERNETES_PREFIX + "flow"
+        + ".container.name";
+
   }
 }
