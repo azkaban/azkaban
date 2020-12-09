@@ -32,6 +32,7 @@ import org.junit.Test;
  * This class covers unit tests for KubernetesContainerizedImpl class.
  */
 public class KubernetesContainerizedImplTest {
+
   private static final Props props = new Props();
   private KubernetesContainerizedImpl kubernetesContainerizedImpl;
   private ExecutorLoader executorLoader;
@@ -42,7 +43,8 @@ public class KubernetesContainerizedImplTest {
     this.props.put(ContainerizedExecutionManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
         + "/resources/container/kubeconfig");
     this.executorLoader = mock(ExecutorLoader.class);
-    this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props, this.executorLoader);
+    this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
+        this.executorLoader);
   }
 
   @Test

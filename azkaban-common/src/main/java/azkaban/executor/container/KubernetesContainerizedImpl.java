@@ -118,9 +118,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
-   * This method is used to create container during dispatch of execution. It will create pod
-   * for a flow execution. It will also create a service for a pod if azkaban.kubernetes.service
-   * .required property is set.
+   * This method is used to create container during dispatch of execution. It will create pod for a
+   * flow execution. It will also create a service for a pod if azkaban.kubernetes.service .required
+   * property is set.
+   *
    * @param executionId
    * @throws ExecutorManagerException
    */
@@ -134,9 +135,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   /**
    * This method is used to delete container. It will delete pod for a flow execution. If the
-   * service was created then it will also delete the service.
-   * This method can be called as a part of cleanup process for containers in case containers didn't
-   * shutdown gracefully.
+   * service was created then it will also delete the service. This method can be called as a part
+   * of cleanup process for containers in case containers didn't shutdown gracefully.
    *
    * @param executionId
    * @throws ExecutorManagerException
@@ -150,19 +150,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
-   * This method is used to create pod.
-   * 1. Fetch jobTypes for the flow
-   * 2. Fetch flow parameters for version set and each image type if it is set.
-   * 3. If valid version set is provided then use versions from it.
-   * 4. If valid version set is not provided then call Ramp up manager API and get image version
-   * for each image type.
-   * 5. Add all the validation around a) whether version set is valid or not. b) If it is valid
-   * then is there any change in flow and new jobType is introduced after version set was
-   * created? If so, create new version set using versions mentioned in version set and ramp up
-   * for new jobType.
-   * 6. Create pod spec using all the version information
-   * 7. Insert version set into execution_flows tables for a reference
-   * 8. Emit version set as a part of flow life cycle event.
+   * This method is used to create pod. 1. Fetch jobTypes for the flow 2. Fetch flow parameters for
+   * version set and each image type if it is set. 3. If valid version set is provided then use
+   * versions from it. 4. If valid version set is not provided then call Ramp up manager API and get
+   * image version for each image type. 5. Add all the validation around a) whether version set is
+   * valid or not. b) If it is valid then is there any change in flow and new jobType is introduced
+   * after version set was created? If so, create new version set using versions mentioned in
+   * version set and ramp up for new jobType. 6. Create pod spec using all the version information
+   * 7. Insert version set into execution_flows tables for a reference 8. Emit version set as a part
+   * of flow life cycle event.
    *
    * @param executionId
    * @throws ExecutorManagerException
@@ -239,6 +235,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   /**
    * TODO: Get azkaban base image version from version set.
+   *
    * @return
    */
   private String getAzkabanBaseImageVersion() {
@@ -268,9 +265,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
-   * TODO: Add implementation for this method as mentioned over here.
-   *    1. Call Ramp up manager to get version number for each jobtype. Accept lower case for
-   *    image type name. For version set json, use lower case.
+   * TODO: Add implementation for this method as mentioned over here. 1. Call Ramp up manager to get
+   * version number for each jobtype. Accept lower case for image type name. For version set json,
+   * use lower case.
+   *
    * @param executionId
    * @param jobTypes
    * @param v1SpecBuilder
@@ -315,6 +313,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   /**
    * This method is used to create service for flow container for execution id.
+   *
    * @param executionId
    * @throws ExecutorManagerException
    */
