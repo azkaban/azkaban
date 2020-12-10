@@ -38,7 +38,7 @@ public class Permission {
   }
 
   public void addPermissions(final Permission perm) {
-    permissions.addAll(perm.getTypes());
+    this.permissions.addAll(perm.getTypes());
   }
 
   public void setPermission(final Type type, final boolean set) {
@@ -50,7 +50,7 @@ public class Permission {
   }
 
   public void setPermissions(final int flags) {
-    permissions.clear();
+    this.permissions.clear();
     if ((flags & Type.ADMIN.getFlag()) != 0) {
       addPermission(Type.ADMIN);
     } else {
@@ -64,15 +64,15 @@ public class Permission {
 
   public void addPermission(final Type... list) {
     // Admin is all encompassing permission. No need to add other types
-    if (!permissions.contains(Type.ADMIN)) {
+    if (!this.permissions.contains(Type.ADMIN)) {
       for (final Type perm : list) {
-        permissions.add(perm);
+        this.permissions.add(perm);
       }
       // We add everything, and if there's Admin left, we make sure that only
       // Admin is remaining.
-      if (permissions.contains(Type.ADMIN)) {
-        permissions.clear();
-        permissions.add(Type.ADMIN);
+      if (this.permissions.contains(Type.ADMIN)) {
+        this.permissions.clear();
+        this.permissions.add(Type.ADMIN);
       }
     }
   }
@@ -102,12 +102,12 @@ public class Permission {
   }
 
   public Set<Type> getTypes() {
-    return permissions;
+    return this.permissions;
   }
 
   public void removePermissions(final Type... list) {
     for (final Type perm : list) {
-      permissions.remove(perm);
+      this.permissions.remove(perm);
     }
   }
 
@@ -115,23 +115,23 @@ public class Permission {
     for (final String perm : list) {
       final Type type = Type.valueOf(perm);
       if (type != null) {
-        permissions.remove(type);
+        this.permissions.remove(type);
       }
     }
   }
 
   public boolean isPermissionSet(final Type permission) {
-    return permissions.contains(permission);
+    return this.permissions.contains(permission);
   }
 
   public boolean isPermissionNameSet(final String permission) {
-    return permissions.contains(Type.valueOf(permission));
+    return this.permissions.contains(Type.valueOf(permission));
   }
 
   public String[] toStringArray() {
     final ArrayList<String> list = new ArrayList<>();
     int count = 0;
-    for (final Type type : permissions) {
+    for (final Type type : this.permissions) {
       list.add(type.toString());
       count++;
     }
@@ -141,7 +141,7 @@ public class Permission {
 
   @Override
   public String toString() {
-    return Utils.flattenToString(permissions, ",");
+    return Utils.flattenToString(this.permissions, ",");
   }
 
   @Override
@@ -149,7 +149,7 @@ public class Permission {
     final int prime = 31;
     int result = 1;
     result =
-        prime * result + ((permissions == null) ? 0 : permissions.hashCode());
+        prime * result + ((this.permissions == null) ? 0 : this.permissions.hashCode());
     return result;
   }
 
@@ -165,11 +165,11 @@ public class Permission {
       return false;
     }
     final Permission other = (Permission) obj;
-    if (permissions == null) {
+    if (this.permissions == null) {
       if (other.permissions != null) {
         return false;
       }
-    } else if (!permissions.equals(other.permissions)) {
+    } else if (!this.permissions.equals(other.permissions)) {
       return false;
     }
     return true;
@@ -177,7 +177,7 @@ public class Permission {
 
   public int toFlags() {
     int flag = 0;
-    for (final Type type : permissions) {
+    for (final Type type : this.permissions) {
       flag |= type.getFlag();
     }
 
@@ -210,7 +210,7 @@ public class Permission {
     }
 
     public int getFlag() {
-      return numVal;
+      return this.numVal;
     }
   }
 }
