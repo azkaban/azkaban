@@ -90,44 +90,44 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
-    this.namespace = azkProps
+    this.namespace = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_NAMESPACE);
     this.flowContainerName =
-        azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_NAME
+        this.azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_NAME
             , DEFAULT_FLOW_CONTAINER_NAME_PREFIX);
     this.podPrefix =
-        azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_POD_NAME_PREFIX,
+        this.azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_POD_NAME_PREFIX,
             DEFAULT_POD_NAME_PREFIX);
-    this.servicePrefix = azkProps
+    this.servicePrefix = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_NAME_PREFIX,
             DEFAULT_SERVICE_NAME_PREFIX);
-    this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
+    this.clusterName = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
-    this.cpuLimit = azkProps
+    this.cpuLimit = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
             CPU_LIMIT);
-    this.cpuRequest = azkProps
+    this.cpuRequest = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
-    this.memoryLimit = azkProps
+    this.memoryLimit = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
             MEMORY_LIMIT);
-    this.memoryRequest = azkProps
+    this.memoryRequest = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
             DEFAULT_MEMORY_REQUEST);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
-      String kubeConfigPath = azkProps
+      final String kubeConfigPath = this.azkProps
           .getString(ContainerizedExecutionManagerProperties.KUBERNETES_KUBE_CONFIG_PATH);
       logger.info("Kube config path is : {}", kubeConfigPath);
       this.client =
           ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(
               Files.newBufferedReader(Paths.get(kubeConfigPath), Charset.defaultCharset())))
               .build();
-      this.coreV1Api = new CoreV1Api(client);
-    } catch (IOException exception) {
+      this.coreV1Api = new CoreV1Api(this.client);
+    } catch (final IOException exception) {
       logger.error("Unable to read kube config file: {}", exception.getMessage());
       throw new ExecutorManagerException(exception);
     }
@@ -181,9 +181,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   private void createPod(final int executionId) throws ExecutorManagerException {
     // Fetch execution flow from execution Id.
-    final ExecutableFlow flow = executorLoader.fetchExecutableFlow(executionId);
+    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
     // Step 1: Fetch set of jobTypes for a flow from executionId
-    TreeSet<String> jobTypes = getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = getJobTypesForFlow(flow);
     logger.info("Jobtypes for flow {} are: {}", flow.getFlowId(), jobTypes);
 
     // TODO: From Flow Param, check if versionSet Num is mentioned, then pick version Set
@@ -209,38 +209,38 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // TODO: Populating version set -> What is there in database on top of that what is passed in
     //   flow parameters (Read it from cache. Write to both for db and cache in case of change)
     // TODO: Below mentioned flow container image and conf version should come from database.
-    String azkabanBaseImage = getAzkabanBaseImageVersion();
-    String azkabanConfigVersion = getAzkabanConfigVersion();
+    final String azkabanBaseImageVersion = getAzkabanBaseImageVersion();
+    final String azkabanConfigVersion = getAzkabanConfigVersion();
 
-    AzKubernetesV1SpecBuilder v1SpecBuilder = new AzKubernetesV1SpecBuilder(clusterName,
+    final AzKubernetesV1SpecBuilder v1SpecBuilder = new AzKubernetesV1SpecBuilder(this.clusterName,
         Optional.empty())
-        .addFlowContainer(flowContainerName, azkabanBaseImage, ImagePullPolicy.IF_NOT_PRESENT,
+        .addFlowContainer(this.flowContainerName, azkabanBaseImageVersion,
+            ImagePullPolicy.IF_NOT_PRESENT,
             azkabanConfigVersion)
-        .withResources(cpuLimit, cpuRequest, memoryLimit,
-            memoryRequest);
+        .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
 
     // Create init container yaml file for each jobType
     addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder);
 
-    V1PodSpec podSpec = v1SpecBuilder.build();
+    final V1PodSpec podSpec = v1SpecBuilder.build();
 
-    ImmutableMap<String, String> labels = getLabelsForPod();
-    ImmutableMap<String, String> annotations = getAnnotationsForPod();
+    final ImmutableMap<String, String> labels = getLabelsForPod();
+    final ImmutableMap<String, String> annotations = getAnnotationsForPod();
 
-    V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), namespace, podSpec)
+    final V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), this.namespace, podSpec)
         .withPodLabels(labels)
         .withPodAnnotations(annotations)
         .build();
 
-    String createdPodSpec = Yaml.dump(pod).trim();
+    final String createdPodSpec = Yaml.dump(pod).trim();
     logger.debug("Pod spec for execution id {} is {}", executionId, createdPodSpec);
     // TODO: Call the API to create version set for this execution if it does not exist. Make
-    //  sure you are passing tree map to maintain order so that md5 won't change.
+    //  sure to pass tree map to maintain order so that md5 won't change.
 
     // TODO: Add version set number and json in flow life cycle event so users can use this
     //   information
     try {
-      coreV1Api.createNamespacedPod(namespace, pod, null, null, null);
+      this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
     } catch (ApiException e) {
       logger.error("Unable to create StatefulSet: {}", e.getMessage());
       throw new ExecutorManagerException(e);
@@ -268,7 +268,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @return
    */
   private ImmutableMap getLabelsForPod() {
-    return ImmutableMap.of("cluster", clusterName);
+    return ImmutableMap.of("cluster", this.clusterName);
   }
 
   /**
@@ -344,7 +344,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @return
    */
   private boolean isServiceRequired() {
-    return azkProps
+    return this.azkProps
         .getBoolean(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_REQUIRED, false);
   }
 
@@ -358,7 +358,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private void deletePod(final int executionId) throws ExecutorManagerException {
     try {
       final String podName = getPodName(executionId);
-      coreV1Api.deleteNamespacedPod(podName, namespace, null, null,
+      this.coreV1Api.deleteNamespacedPod(podName, this.namespace, null, null,
           null, null, null, new V1DeleteOptions());
       logger.info("Action: Pod Deletion, Pod Name: {}", podName);
     } catch (ApiException e) {
@@ -376,9 +376,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public void deleteService(final int executionId) throws ExecutorManagerException {
     final String serviceName = getServiceName(executionId);
     try {
-      V1Status deleteResult = coreV1Api.deleteNamespacedService(
+      final V1Status deleteResult = this.coreV1Api.deleteNamespacedService(
           serviceName,
-          namespace,
+          this.namespace,
           null,
           null,
           null,
@@ -403,7 +403,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @return
    */
   private String getServiceName(final int executionId) {
-    return String.join("-", servicePrefix, clusterName, String.valueOf(executionId));
+    return String.join("-", this.servicePrefix, this.clusterName, String.valueOf(executionId));
   }
 
   /**
@@ -414,6 +414,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @return
    */
   private String getPodName(final int executionId) {
-    return String.join("-", podPrefix, clusterName, String.valueOf(executionId));
+    return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
   }
 }

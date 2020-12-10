@@ -93,7 +93,6 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
   }
 
-  @VisibleForTesting
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
         props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
