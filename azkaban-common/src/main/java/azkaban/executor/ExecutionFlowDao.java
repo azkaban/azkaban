@@ -22,8 +22,8 @@ import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
@@ -135,6 +136,30 @@ public class ExecutionFlowDao {
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
     }
+  }
+
+  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMs)
+      throws ExecutorManagerException {
+    final List<Status> finalStates = ImmutableList
+        .of(Status.KILLED, Status.FAILED, Status.SUCCEEDED);
+    final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
+    query.append(" AND status NOT IN (");
+    query.append(
+        finalStates.stream()
+            .map(s -> String.valueOf(s.getNumVal()))
+            .collect(Collectors.joining(", ")));
+    query.append(")");
+
+    try {
+      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMs);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching stale flows", e);
+    }
+  }
+
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+      throws ExecutorManagerException {
+    return fetchStaleFlows(System.currentTimeMillis() - executionDuration.toMillis());
   }
 
   /**
@@ -438,18 +463,18 @@ public class ExecutionFlowDao {
       final int limit,
       final Status updatedStatus)
       throws ExecutorManagerException {
-    String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
         + "where exec_id = ?";
     final SQLTransaction<Set<Integer>> selectAndUpdateExecution = transOperator -> {
       final String POLLING_LOCK_NAME = "execution_flows_polling";
       final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
-      Set<Integer> executions = new HashSet<>();
+      final Set<Integer> executions = new HashSet<>();
       final boolean hasLocked = this.mysqlNamedLock
           .getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
       logger.info("ExecutionFlow polling lock value: " + hasLocked);
       if (hasLocked) {
         try {
-          List<Integer> execIds;
+          final List<Integer> execIds;
           if (batchEnabled) {
             execIds = transOperator.query(String
                     .format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT, ""),
@@ -540,6 +565,8 @@ public class ExecutionFlowDao {
             + "project_id=? AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
     static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
         "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef";
+    private static final String FETCH_FLOWS_STARTED_BEFORE = FETCH_BASE_EXECUTABLE_FLOW_QUERY +
+        " WHERE start_time < ?";
     static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE exec_id=?";
