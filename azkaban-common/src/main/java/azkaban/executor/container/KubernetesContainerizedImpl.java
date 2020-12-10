@@ -62,9 +62,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
-  public static final String DEFAULT_CPU_LIMIT = "1";
+  public static final String CPU_LIMIT = "4";
   public static final String DEFAULT_CPU_REQUEST = "1";
-  public static final String DEFAULT_MEMORY_LIMIT = "4Gi";
+  public static final String MEMORY_LIMIT = "64Gi";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
 
   private final String namespace;
@@ -105,13 +105,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         DEFAULT_CLUSTER_NAME);
     this.cpuLimit = azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
-            DEFAULT_CPU_LIMIT);
+            CPU_LIMIT);
     this.cpuRequest = azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
     this.memoryLimit = azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
-            DEFAULT_MEMORY_LIMIT);
+            MEMORY_LIMIT);
     this.memoryRequest = azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
             DEFAULT_MEMORY_REQUEST);
