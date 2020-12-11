@@ -348,12 +348,11 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @throws ExecutorManagerException
    */
   private void createService(final int executionId) throws ExecutorManagerException {
-    final V1Service serviceObject;
     try {
       final AzKubernetesV1ServiceBuilder azKubernetesV1ServiceBuilder =
           new AzKubernetesV1ServiceBuilder(
               "v1Service.yaml");
-      serviceObject = azKubernetesV1ServiceBuilder
+      final V1Service serviceObject = azKubernetesV1ServiceBuilder
           .withExecId(String.valueOf(executionId))
           .withServiceName(getServiceName(executionId))
           .withNamespace(this.namespace)
@@ -362,13 +361,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           .withPort(String.valueOf(this.servicePort))
           .withTimeoutMs(String.valueOf(this.serviceTimeout))
           .build();
-    } catch (final IOException e) {
-      logger.error("Unable to create service object as service spec is missing: " + e.getMessage());
-      throw new ExecutorManagerException(e);
-    }
-    try {
       this.coreV1Api.createNamespacedService(this.namespace, serviceObject, null, null, null);
-    } catch (final ApiException e) {
+    } catch (final IOException | ApiException e) {
       logger.error("Unable to create service in Kubernetes: " + e.getMessage());
       throw new ExecutorManagerException(e);
     }
