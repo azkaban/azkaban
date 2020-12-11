@@ -18,7 +18,11 @@ package azkaban.imagemgmt.daos;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersion;
+import azkaban.imagemgmt.models.ImageVersion.State;
+import azkaban.imagemgmt.models.ImageVersionRequest;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Data access object (DAO) for accessing image version metadata. This interface defines method such
@@ -43,5 +47,29 @@ public interface ImageVersionDao {
    * @throws ImageMgmtException
    */
   public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
+      throws ImageMgmtException;
+
+  /**
+   * Method to get image version based on image type, image version and version state
+   *
+   * @param imageTypeName
+   * @param imageVersion
+   * @param versionState
+   * @return Optional<ImageVersion>
+   * @throws ImageMgmtException
+   */
+  public Optional<ImageVersion> getImageVersion(String imageTypeName, String imageVersion,
+      State versionState) throws ImageMgmtException;
+
+  public List<ImageVersion> getActiveVersionByImageTypes(Set<String> imageTypes)
+      throws ImageMgmtException;
+
+  /**
+   * Updates image version metadata.
+   *
+   * @param imageVersionRequest
+   * @throws ImageMgmtException
+   */
+  public void updateImageVersion(ImageVersionRequest imageVersionRequest)
       throws ImageMgmtException;
 }
