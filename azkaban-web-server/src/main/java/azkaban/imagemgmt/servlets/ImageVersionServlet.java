@@ -87,7 +87,9 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         // imageType must present. If not present throws ServletException
         final String imageType = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_TYPE);
         // Check for required permission to invoke the API
-        if (!hasPermission(imageType, session.getUser(), Type.GET)) {
+        if (!hasImageManagementPermission(imageType, session.getUser(), Type.GET)) {
+          log.debug(String.format("Invalid permission to get image version "
+              + "for user: %s image type: %s.", session.getUser().getUserId(), imageType));
           throw new ImageMgmtInvalidPermissionException("Invalid permission to get image version");
         }
         // imageVersion is optional. Hence can be null
@@ -147,7 +149,9 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       final String jsonPayload = HttpRequestUtils.getBody(req);
       // Check for required permission to invoke the API
       final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
-      if (!hasPermission(imageType, session.getUser(), Type.CREATE)) {
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+        log.debug(String.format("Invalid permission to create image version "
+            + "for user: %s image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException("Invalid permission to create image version");
       }
       // Build ImageMetadataRequest DTO to transfer the input request
@@ -191,7 +195,9 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       final String jsonPayload = HttpRequestUtils.getBody(req);
       // Check for required permission to invoke the API
       final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
-      if (!hasPermission(imageType, session.getUser(), Type.UPDATE)) {
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
+        log.debug(String.format("Invalid permission to update image version "
+            + "for user: %s image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException("Invalid permission to update image version");
       }
       // Build ImageMetadataRequest DTO to transfer the input request

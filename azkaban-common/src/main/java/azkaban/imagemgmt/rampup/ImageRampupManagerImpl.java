@@ -72,7 +72,7 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
 
   @Override
   public Map<String, String> fetchAllImageTypesVersion() throws ImageMgmtException {
-    Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao.fetchAllImageTypesRampup();
+    Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao.fetchRampupForAllImageTypes();
     List<ImageType> imageTypeList = imageTypeDao.getAllImageTypes();
     Set<String> imageTypes = new TreeSet<>();
     for (ImageType imageType : imageTypeList) {
@@ -130,7 +130,7 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
               imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
           break;
         }
-        prevRampupPercentage = rampupPercentage;
+        prevRampupPercentage += rampupPercentage;
       }
     }
 

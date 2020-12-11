@@ -197,7 +197,7 @@ public class ImageRampupManagerImplTest {
         + "/all_image_types_active_version.json");
     List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
         jsonImageTypeActiveVersion);
-    when(imageRampupDao.fetchAllImageTypesRampup()).thenReturn(imageTypeRampups);
+    when(imageRampupDao.fetchRampupForAllImageTypes()).thenReturn(imageTypeRampups);
     when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
@@ -244,7 +244,7 @@ public class ImageRampupManagerImplTest {
         + "/image_type_active_version.json");
     List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
         jsonImageTypeActiveVersion);
-    when(imageRampupDao.fetchAllImageTypesRampup()).thenReturn(imageTypeRampups);
+    when(imageRampupDao.fetchRampupForAllImageTypes()).thenReturn(imageTypeRampups);
     when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);

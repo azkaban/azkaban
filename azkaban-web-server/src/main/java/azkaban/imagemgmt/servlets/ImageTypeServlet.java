@@ -50,9 +50,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
   private static final String GET_IMAGE_TYPE_URI = "/imageTypes";
   private static final String IMAGE_TYPE_ID_KEY = "id";
-  private static final UriTemplate CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE = new UriTemplate(
-      String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
-  private static final UriTemplate GET_IMAGE_TYPE_URI_TEMPLATE = new UriTemplate(
+  private static final UriTemplate IMAGE_TYPE_WITH_ID_URI_TEMPLATE = new UriTemplate(
       String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
   private ImageTypeService imageTypeService;
   private ObjectMapper objectMapper;
@@ -77,7 +75,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       final Map<String, String> templateVariableToValue = new HashMap<>();
-      if (GET_IMAGE_TYPE_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
+      if (IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
         // TODO: Implementation will be provided in the future PR
       } else if (GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
         // TODO: Implementation will be provided in the future PR
@@ -96,7 +94,9 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       final String jsonPayload = HttpRequestUtils.getBody(req);
       // Check for required permission to invoke the API
       final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
-      if (!hasPermission(imageType, session.getUser(), Type.CREATE)) {
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+        log.debug(String.format("Invalid permission to create image type for "
+            + "user: %s image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException("Invalid permission to create image type");
       }
 
@@ -110,7 +110,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",
-          CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE.createURI(imageTypeId.toString()));
+          IMAGE_TYPE_WITH_ID_URI_TEMPLATE.createURI(imageTypeId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
     } catch (final ImageMgmtValidationException e) {
       log.error("Input for creating image type is invalid", e);

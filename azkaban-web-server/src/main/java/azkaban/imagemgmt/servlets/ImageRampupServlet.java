@@ -93,7 +93,9 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
               "Image type can't be null. Must provide valid image type to get rampup plan.");
         }
         // Check for required permission to invoke the API
-        if (!hasPermission(imageType, session.getUser(), Type.GET)) {
+        if (!hasImageManagementPermission(imageType, session.getUser(), Type.GET)) {
+          log.debug(String.format("Invalid permission to get image rampup "
+              + "plan for user: %s image type: %s.", session.getUser().getUserId(), imageType));
           throw new ImageMgmtInvalidPermissionException("Invalid permission to get image rampup "
               + "plan");
         }
@@ -151,7 +153,9 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       // Check for required permission to invoke the API
       final String imageType = JSONUtils
           .extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
-      if (!hasPermission(imageType, session.getUser(), Type.CREATE)) {
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+        log.debug(String.format("Invalid permission to create image rampup "
+            + "plan for user: %s image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException("Invalid permission to create image rampup "
             + "plan");
       }
@@ -195,7 +199,9 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
             "Image type can't be null. Must provide valid image type to update rampup.");
       }
       // Check for required permission to invoke the API
-      if (!hasPermission(imageType, session.getUser(), Type.UPDATE)) {
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
+        log.debug(String.format("Invalid permission to update image rampup "
+            + "plan for user: %s image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException("Invalid permission to update image rampup "
             + "plan");
       }

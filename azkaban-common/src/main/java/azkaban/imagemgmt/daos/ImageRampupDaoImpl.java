@@ -68,7 +68,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   private static final String INSERT_IMAGE_RAMPUP_QUERY = "insert into image_rampup "
       + "( plan_id, version_id, rampup_percentage, stability_tag, created_by, created_on, "
       + "modified_by, modified_on) values (?, ?, ?, ?, ?, ?, ?, ?)";
-  /**
+  /*
    * This query selects the active image rampup plan by joining image types. There shold be only one
    * active image rampup plan. Order by clause and limit will definitely ensure that one active plan
    * is selected in case there are more active entries due to bug. But ideally this should not be
@@ -78,14 +78,16 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       + "irp.description, irp.active, it.name image_type_name, irp.created_on, irp.created_by, "
       + "irp.modified_on, irp.modified_by from image_rampup_plan irp, image_types it where "
       + "irp.type_id = it.id and it.name = ? and irp.active = ? order by irp.id desc limit 1";
+
   private static final String DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY = "update image_rampup_plan "
       + "set active = ? where id = ?";
+
   // This query selects rampup records for a given impage rampup plan
   private static final String SELECT_IMAGE_RAMPUP_QUERY = "select ir.id, ir.plan_id, iv.version, "
       + "ir.rampup_percentage, ir.stability_tag, ir.created_on, ir.created_by, ir.modified_on, "
       + "ir.modified_by from image_versions iv, image_rampup_plan irp, image_rampup ir where "
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.id = ?";
-  /**
+  /*
    * This query selects rampup records for all the active image types.
    */
   private static final String SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY = "select ir.id, ir.plan_id, "
@@ -104,27 +106,27 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
     this.imageVersionDao = imageVersionDao;
   }
 
+  /**
+   * Here is the example input for ImageRampupPlanRequest
+   * {
+   *   "planName": "Rampup plan 1",
+   *   "imageType": "spark_job",
+   *   "description": "Ramp up for spark job",
+   *   "activatePlan": true,
+   *   "imageRampups": [
+   *     {
+   *       "imageVersion": "1.6.2",
+   *       "rampupPercentage": "70"
+   *     },
+   *     {
+   *       "imageVersion": "1.6.1",
+   *       "rampupPercentage": "30"
+   *     }
+   *   ]
+   * }
+   */
   @Override
   public int createImageRampupPlan(final ImageRampupPlanRequest imageRampupPlanRequest) {
-    /**
-     * Here is the example input for ImageRampupPlanRequest
-     * {
-     *   "planName": "Rampup plan 1",
-     *   "imageType": "spark_job",
-     *   "description": "Ramp up for spark job",
-     *   "activatePlan": true,
-     *   "imageRampups": [
-     *     {
-     *       "imageVersion": "1.6.2",
-     *       "rampupPercentage": "70"
-     *     },
-     *     {
-     *       "imageVersion": "1.6.1",
-     *       "rampupPercentage": "30"
-     *     }
-     *   ]
-     * }
-     */
     final ImageType imageType = this.imageTypeDao
         .getImageTypeByName(imageRampupPlanRequest.getImageTypeName())
         .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
@@ -242,7 +244,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   }
 
   @Override
-  public Map<String, List<ImageRampup>> fetchAllImageTypesRampup()
+  public Map<String, List<ImageRampup>> fetchRampupForAllImageTypes()
       throws ImageMgmtException {
     try {
       return this.databaseOperator.query(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY,
@@ -258,7 +260,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       throws ImageMgmtException {
     try {
       if (imageTypes == null || imageTypes.isEmpty()) {
-        return fetchAllImageTypesRampup();
+        return fetchRampupForAllImageTypes();
       }
       final StringBuilder queryBuilder = new StringBuilder(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY);
       queryBuilder.append(" and ir.stability_tag in ( ?, ? ) ");

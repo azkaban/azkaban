@@ -20,6 +20,7 @@ import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageType;
+import azkaban.imagemgmt.models.ImageType.Deployable;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
@@ -52,6 +53,10 @@ public class ImageTypeServiceImpl implements ImageTypeService {
         .convertToModel(imageMetadataRequest.getJsonPayload(), ImageType.class);
     imageType.setCreatedBy(imageMetadataRequest.getUser());
     imageType.setModifiedBy(imageMetadataRequest.getUser());
+    // By default always image.
+    if(imageType.getDeployable() == null) {
+      imageType.setDeployable(Deployable.IMAGE);
+    }
     // Input validation for image type create request
     if (!ValidatorUtils.validateObject(imageType)) {
       throw new ImageMgmtValidationException("Provide valid input for creating image type "

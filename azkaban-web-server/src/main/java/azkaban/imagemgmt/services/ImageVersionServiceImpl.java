@@ -77,14 +77,7 @@ public class ImageVersionServiceImpl implements ImageVersionService {
   @Override
   public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
       throws ImageMgmtException {
-    Set<String> imageTypes = new LinkedHashSet<>();
-    imageTypes.add("azkaban_core");
-    imageTypes.add("azkaban_exec");
-    imageTypes.add("hadoop_java_job");
-    imageTypes.add("kabootar_job");
-    imageTypes.add("wormhole_job");
-    return imageVersionsDao.getActiveVersionByImageTypes(imageTypes);
-    //return imageVersionsDao.findImageVersions(imageMetadataRequest);
+    return imageVersionsDao.findImageVersions(imageMetadataRequest);
   }
 
   @Override

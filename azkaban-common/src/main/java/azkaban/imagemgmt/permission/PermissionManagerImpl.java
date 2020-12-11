@@ -56,7 +56,7 @@ public class PermissionManagerImpl implements PermissionManager {
   /**
    * The default permission is only GET access to the image management APIs.
    */
-  private static final Permission DEFAULT_PERMISSION = new Permission(Type.GET);
+  private static final Permission READ_ONLY_PERMISSION = new Permission(Type.GET);
 
   @Inject
   public PermissionManagerImpl(final ImageTypeDao imageTypeDao) {
@@ -90,14 +90,14 @@ public class PermissionManagerImpl implements PermissionManager {
           hasPermission = true;
         }
       } else {
-        log.info(String.format("API access permission check failed. There is no ownership record "
+        log.error(String.format("API access permission check failed. There is no ownership record "
             + "for image type: %s.", imageTypeName));
         throw new ImageMgmtException(String.format("API access permission check failed. There is "
             + "no ownership record for image type: "
             + "%s.", imageTypeName));
       }
     } else {
-      log.info(
+      log.error(
           String.format("API access permission check failed. The image type metadata not found "
               + "for image type: %s.", imageTypeName));
       throw new ImageMgmtException(String.format("API access permission check failed. The image "
@@ -141,7 +141,7 @@ public class PermissionManagerImpl implements PermissionManager {
         permission = MEMBER_PERMISSION;
         break;
       default:
-        permission = DEFAULT_PERMISSION;
+        permission = READ_ONLY_PERMISSION;
     }
     return Optional.ofNullable(permission);
   }
