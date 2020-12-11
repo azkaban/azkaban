@@ -42,14 +42,24 @@ public class KeyStoreManager {
         }
       }
     }
-    logger.info("Getting existing instance of KeyStoreManager");
+    else {
+      logger.info("Getting existing instance of KeyStoreManager");
+    }
     return ksmInstance;
   }
 
+  /**
+   * Gets the cached KeyStore object
+   * @return Cached KeyStore object.
+   */
   public KeyStore getKeyStore() {
     return this.keyStore;
   }
 
+  /**
+   *
+   * @param keyStore Must be non-null.
+   */
   public void setKeyStore(final @Nonnull KeyStore keyStore) {
     this.keyStore = keyStore;
   }

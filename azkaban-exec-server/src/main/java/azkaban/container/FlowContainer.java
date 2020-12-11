@@ -54,6 +54,7 @@ import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
+import azkaban.spi.AzkabanEventReporter;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
@@ -75,10 +76,17 @@ import java.util.concurrent.Future;
 import java.util.zip.ZipFile;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.log4j.Logger;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *  This class is responsible for launching a flow in a container.
+ *  For each such flow, a FlowContainer is created which runs in a container during the lifetime
+ *  of the said flow. This class is responsible for achieving most of the things done by
+ *  FlowRunnerManager, however, since it only needs to handle one flow so the logic is much more
+ *  lightweight.
+ *  It assumes that their is a certain directory structure consisting of all the dependencies.
  */
 public class FlowContainer {
 
@@ -87,20 +95,15 @@ public class FlowContainer {
   private static final String CONF_ARG = "-conf";
   private static final String CONF_DIR = "conf";
 
-  private static final Logger logger = Logger.getLogger(FlowContainer.class);
+  private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
 
   // FlowRunnerManager specific code
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
-  //private final AzkabanEventReporter azkabanEventReporter;
   private final Props azKabanProps;
   private Props globalProps;
-
-  private final File projectDir;
-
-  private Future flowFuture;
 
   // We want to limit the log sizes to about 20 megs
   private final String jobLogChunkSize;
@@ -109,9 +112,14 @@ public class FlowContainer {
   private final boolean validateProxyUser;
 
 
-  private FlowContainer(final Path projectDirPath, final Props props)
+  /**
+   * Constructor of FlowContainer.
+   * It sets up all the DAO, all the loaders and Azkaban KeyStore.
+   * @param props Azkaban properties.
+   * @throws IOException
+   */
+  private FlowContainer(final Props props)
           throws IOException {
-    this.projectDir = projectDirPath.toFile();
 
     // Create Azkaban Props Map
     this.azKabanProps = props;
@@ -133,7 +141,7 @@ public class FlowContainer {
     // project Loader
     this.projectLoader = new JdbcProjectImpl(this.azKabanProps, dbOperator);
 
-    // setup executor service, TODO : revisit
+    // setup executor service
     this.executorService = Executors.newSingleThreadExecutor();
 
     this.jobLogChunkSize = this.azKabanProps.getString("job.log.chunk.size", "5MB");
@@ -144,7 +152,7 @@ public class FlowContainer {
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
             this.globalProps, getClass().getClassLoader());
-    // Fetch keyStore props and use it get the KeyStore, put it in JobTypeManager
+    // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
     Props keyStoreLoadProps = this.jobTypeManager.getKeyStoreLoadProps();
     if (keyStoreLoadProps != null) {
       // Load HadoopSecurityManager
@@ -165,7 +173,11 @@ public class FlowContainer {
       }
 
       final KeyStore keyStore = hadoopSecurityManager.getKeyStore(keyStoreLoadProps);
-      // Delete the cert file from disk
+      if (keyStore == null) {
+        logger.error("Failed to Prefetch KeyStore");
+        throw new IOException("Failed to Prefetch KeyStore");
+      }
+      // Delete the cert file from disk as the KeyStore is already cached above.
       final File certFile = new File(Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION);
       if (certFile.delete()) {
         logger.info("Successfully deleted the cert file");
@@ -173,13 +185,16 @@ public class FlowContainer {
         logger.error("Failed to delete the cert file");
         throw new IOException("Failed to delete the cert file");
       }
-      if (keyStore == null) {
-        logger.error("Failed to Prefetch KeyStore");
-        throw new IOException("Failed to Prefetch KeyStore");
-      }
     }
   }
 
+  /**
+   * The entry point of FlowContainer. Validates the input arguments and submits the flow for
+   * execution.
+   * @param args Takes the execution id and Project zip file path as inputs.
+   * @throws IOException
+   * @throws ExecutorManagerException
+   */
   public static void main(final String[] args) throws IOException, ExecutorManagerException {
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
@@ -187,13 +202,15 @@ public class FlowContainer {
     final String execIdStr = args[0];
     final String projectZipName = args[1];
     // Process Execution ID.
-    int execId = 0;
+    int execId = -1;
     try {
       execId = Integer.parseInt(execIdStr);
     } catch (NumberFormatException ne) {
-      System.out.printf("Execution ID %s is invalid %n", args[0]);
+      logger.error("Execution ID argument is invalid {}", execIdStr);
+      throw new ExecutorManagerException(ne);
     }
-    System.out.printf("Execution ID = %d%n", execId);
+
+    logger.info("Execution ID = " + execId);
 
     // Setup work directories
     final Path currentWorkingDir = Paths.get("").toAbsolutePath();
@@ -203,21 +220,16 @@ public class FlowContainer {
     // Move files to respective dirs
     // Create project dir
     // TODO: Need to revisit
-    System.out.println("Creating project dir");
+    logger.info("Creating project dir");
     Files.createDirectory(projectDirPath);
     Path projectZipPath = Paths.get(projectDirPath.toString(), projectZipName);
-    System.out.println("moving projectDir:" + projectZipName + ": to " +
+    logger.info("moving projectDir:" + projectZipName + ": to " +
         projectZipPath);
+
     Files.move(Paths.get(projectZipName), projectZipPath);
-    // TODO : revisit this logic,
+    // TODO : revisit this logic, depending on what jar management provides.
     // Unzip the project zip
     FlowContainer.unzipFile(projectZipPath.toString(), projectDirPath);
-
-    // TODO : Deepak - throw away after directory setup is final.
-    Path pwd = Paths.get("").toAbsolutePath();
-    System.out.println("Deepak : Dumping dir structure for = " + pwd.toString());
-    java.nio.file.Files.walk(pwd).filter(java.nio.file.Files::isRegularFile)
-        .forEach(System.out::println);
 
     // Set Azkaban props
     Props props = setAzkabanProps(jobtypePluginPath);
@@ -230,13 +242,17 @@ public class FlowContainer {
 
     // Constructor
     final FlowContainer flowContainer =
-        new FlowContainer(projectDirPath, props);
+        new FlowContainer(props);
 
     // Use some execId to execute the flow
     flowContainer.submitFlow(execId);
   }
 
-  // Set Azkaban Props
+  /**
+   * Set Azkaban Props
+   * @param jobtypePluginPath Path where all the jobtype plugins are mounted.
+   * @return Populated Azkaban properties.
+   */
   private static Props setAzkabanProps(final Path jobtypePluginPath) {
     final Map<String, String> propsMap = new HashMap<>();
     propsMap.put(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
@@ -250,23 +266,35 @@ public class FlowContainer {
     return new Props(props, propsMap);
   }
 
-  // Submit flow
-  public void submitFlow(final int execId) throws ExecutorManagerException {
+  /**
+   * Submit flow
+   * Creates and submits the FlowRunner.
+   * @param execId Execution Id of the flow.
+   * @throws ExecutorManagerException
+   */
+  private void submitFlow(final int execId) throws ExecutorManagerException {
     final FlowRunner flowRunner = createFlowRunner(execId);
     submitFlowRunner(flowRunner);
   }
 
-  // create Flow Runner
+  /**
+   * create Flow Runner
+   * @param execId Execution Id of the flow.
+   * @return FlowRunner object.
+   * @throws ExecutorManagerException
+   */
   private FlowRunner createFlowRunner(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
-      throw new ExecutorManagerException("Error loading flow with exec " + execId);
+      logger.error("Error loading flow with execution Id " + execId);
+      throw new ExecutorManagerException("Error loading flow with execution Id " + execId);
     }
 
     // Update the status of the flow from DISPATCHING to PREPARING
     flow.setStatus(Status.PREPARING);
+    this.executorLoader.updateExecutableFlow(flow);
 
-    // Setup flow runner
+    // Setup flow watcher
     FlowWatcher watcher = null;
     final ExecutionOptions options = flow.getExecutionOptions();
     if (options.getPipelineExecutionId() != null) {
@@ -275,11 +303,14 @@ public class FlowContainer {
     }
 
     // TODO : figure out the metrics
+    // Create the FlowRunner
     final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
+    final AzkabanEventReporter eventReporter =
+            SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     final FlowRunner flowRunner = new FlowRunner(flow, this.executorLoader,
-        this.projectLoader, this.jobTypeManager, this.azKabanProps, null,
+        this.projectLoader, this.jobTypeManager, this.azKabanProps, eventReporter,
             null, commonMetrics, execMetrics);
     flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
@@ -289,28 +320,43 @@ public class FlowContainer {
     return flowRunner;
   }
 
-  private void submitFlowRunner(final FlowRunner flowRunner) {
+  /**
+   * Submits the flow to executorService for execution.
+   * @param flowRunner The FlowRunner object.
+   */
+  private void submitFlowRunner(final FlowRunner flowRunner) throws ExecutorManagerException {
     // set running flow, put it in DB
-    this.flowFuture = this.executorService.submit(flowRunner);
+    logger.info("Submitting flow with execution Id " + flowRunner.getExecutionId());
+    final Future<?> flowFuture = this.executorService.submit(flowRunner);
     try {
-      this.flowFuture.get();
-    } catch (final InterruptedException ie) {
-      ie.printStackTrace();
-    } catch (final ExecutionException ee) {
-      ee.printStackTrace();
+      flowFuture.get();
+    } catch (final InterruptedException | ExecutionException e) {
+      logger.error(ExceptionUtils.getStackTrace(e));
+      throw new ExecutorManagerException(e);
     }
   }
 
+  /**
+   * Unzip a file.
+   * @param zipPath The source zip file.
+   * @param dirPath The destination of the zip file content.
+   * @throws IOException
+   */
   private static void unzipFile(final String zipPath,
       final Path dirPath) throws IOException {
     final ZipFile zipFile = new ZipFile(zipPath);
-    System.out.println("source path = " + zipPath);
+    logger.info("source path = " + zipPath);
     final File unzipped = new File(dirPath.toString());
-    System.out.println("unzipped file dir = " + unzipped.toString());
+    logger.info("unzipped file dir = " + unzipped.toString());
     Utils.unzip(zipFile, unzipped);
     zipFile.close();
   }
 
+  /**
+   * Setup all the DAO needed for a flow execution.
+   * @param dbOperator DatabaseOperator
+   * @return ExecutorLoader object which interacts with the database.
+   */
   private ExecutorLoader setupDao(final DatabaseOperator dbOperator) {
     final ExecutionFlowDao executionFlowDao = new ExecutionFlowDao(dbOperator, null);
     final ExecutorDao executorDao = new ExecutorDao(dbOperator);
