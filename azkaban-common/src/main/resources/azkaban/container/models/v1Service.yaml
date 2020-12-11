@@ -1,21 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fc-svc-${execid}
+  name: ${service_name}
   namespace: ${namespace}
   annotations:
     getambassador.io/config: |
       ---
-      apiVersion: ${apiVersion}
+      apiVersion: ${api_version}
       kind:  ${kind}
-      name: fc-mapping-${execid}
-      prefix: /${execid}
-      service: fc-svc-${execid}}:${port}
+      name: fc-mapping-${exec_id}
+      prefix: /${exec_id}
+      service: ${service_name}:${port}
       rewrite: /
       timeout_ms: ${timeout_ms}
 spec:
   selector:
-    service: flow-${execid}
+    service: flow-${exec_id}
   ports:
     - name: flowport
       port: ${port}
