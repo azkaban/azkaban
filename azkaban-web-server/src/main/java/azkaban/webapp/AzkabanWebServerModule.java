@@ -39,6 +39,7 @@ import azkaban.utils.Props;
 import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.metrics.WebMetricsImpl;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
