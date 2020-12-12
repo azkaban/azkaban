@@ -255,8 +255,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     //   information
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
+      logger.info("Dispatched pod for execution : ", executionId);
     } catch (ApiException e) {
-      logger.error("Unable to create StatefulSet: {}", e.getMessage());
+      logger.error("Unable to create Pod: {}", e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
 
@@ -362,8 +363,12 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           .withTimeoutMs(String.valueOf(this.serviceTimeout))
           .build();
       this.coreV1Api.createNamespacedService(this.namespace, serviceObject, null, null, null);
-    } catch (final IOException | ApiException e) {
+      logger.info("Service is created for " + executionId);
+    } catch (final IOException e) {
       logger.error("Unable to create service in Kubernetes: " + e.getMessage());
+      throw new ExecutorManagerException(e);
+    } catch (final ApiException e) {
+      logger.error("Unable to create service in Kubernetes: " + e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
@@ -393,7 +398,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           null, null, null, new V1DeleteOptions());
       logger.info("Action: Pod Deletion, Pod Name: {}", podName);
     } catch (ApiException e) {
-      logger.error("Unable to delete Pod in Kubernetes: {}", e.getMessage());
+      logger.error("Unable to delete Pod in Kubernetes: {}", e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
@@ -421,7 +426,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           deleteResult.getCode(),
           deleteResult.getMessage());
     } catch (ApiException e) {
-      logger.error("Unable to delete service in Kubernetes: {}", e.getMessage());
+      logger.error("Unable to delete service in Kubernetes: {}", e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
