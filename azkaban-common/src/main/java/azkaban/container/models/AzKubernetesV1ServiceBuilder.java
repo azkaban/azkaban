@@ -33,9 +33,10 @@ import org.apache.commons.lang.text.StrSubstitutor;
  */
 public class AzKubernetesV1ServiceBuilder {
 
-  public static final String EXECID = "execid";
+  public static final String EXEC_ID = "exec_id";
+  public static final String SERVICE_NAME = "service_name";
   public static final String NAMESPACE = "namespace";
-  public static final String API_VERSION = "apiVersion";
+  public static final String API_VERSION = "api_version";
   public static final String KIND = "kind";
   public static final String PORT = "port";
   public static final String TIMEOUT_MS = "timeout_ms";
@@ -48,38 +49,43 @@ public class AzKubernetesV1ServiceBuilder {
    * @param templateName name of the resource within the package
    * @throws IOException if the resource file is not readable
    */
-  public AzKubernetesV1ServiceBuilder(String templateName) throws IOException {
+  public AzKubernetesV1ServiceBuilder(final String templateName) throws IOException {
     try (final InputStream is = this.getClass().getResourceAsStream(templateName)) {
       this.template = IOUtils.toString(is, Charsets.UTF_8).trim();
     }
   }
 
-  public AzKubernetesV1ServiceBuilder withExecId(String execId) {
-    this.templateValuesMapBuilder.put(EXECID, execId);
+  public AzKubernetesV1ServiceBuilder withExecId(final String execId) {
+    this.templateValuesMapBuilder.put(EXEC_ID, execId);
     return this;
   }
 
-  public AzKubernetesV1ServiceBuilder withNamespace(String namespace) {
+  public AzKubernetesV1ServiceBuilder withServiceName(final String serviceName) {
+    this.templateValuesMapBuilder.put(SERVICE_NAME, serviceName);
+    return this;
+  }
+
+  public AzKubernetesV1ServiceBuilder withNamespace(final String namespace) {
     this.templateValuesMapBuilder.put(NAMESPACE, namespace);
     return this;
   }
 
-  public AzKubernetesV1ServiceBuilder withApiVersion(String apiVersion) {
+  public AzKubernetesV1ServiceBuilder withApiVersion(final String apiVersion) {
     this.templateValuesMapBuilder.put(API_VERSION, apiVersion);
     return this;
   }
 
-  public AzKubernetesV1ServiceBuilder withKind(String kind) {
+  public AzKubernetesV1ServiceBuilder withKind(final String kind) {
     this.templateValuesMapBuilder.put(KIND, kind);
     return this;
   }
 
-  public AzKubernetesV1ServiceBuilder withPort(String port) {
+  public AzKubernetesV1ServiceBuilder withPort(final String port) {
     this.templateValuesMapBuilder.put(PORT, port);
     return this;
   }
 
-  public AzKubernetesV1ServiceBuilder withTimeoutMs(String timeoutMs) {
+  public AzKubernetesV1ServiceBuilder withTimeoutMs(final String timeoutMs) {
     this.templateValuesMapBuilder.put(TIMEOUT_MS, timeoutMs);
     return this;
   }
@@ -90,9 +96,9 @@ public class AzKubernetesV1ServiceBuilder {
    * @throws IOException if the object can't be constructed from the substituted YAML String
    */
   public V1Service build() throws IOException {
-    ImmutableMap<Object, Object> templateValuesMap = this.templateValuesMapBuilder.build();
-    StrSubstitutor strSubstitutor = new StrSubstitutor(templateValuesMap);
-    String serviceYaml = strSubstitutor.replace(this.template);
+    final ImmutableMap<Object, Object> templateValuesMap = this.templateValuesMapBuilder.build();
+    final StrSubstitutor strSubstitutor = new StrSubstitutor(templateValuesMap);
+    final String serviceYaml = strSubstitutor.replace(this.template);
     return (V1Service) Yaml.load(serviceYaml);
   }
 }
