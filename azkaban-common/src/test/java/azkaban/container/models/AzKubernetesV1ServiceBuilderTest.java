@@ -31,6 +31,7 @@ public class AzKubernetesV1ServiceBuilderTest {
         "v1Service.yaml");
     V1Service serviceObject = azKubernetesV1ServiceBuilder
         .withExecId("12345")
+        .withServiceName("fc-svc-12345")
         .withNamespace("az-team")
         .withApiVersion("ambassador/v2")
         .withKind("Mapping")

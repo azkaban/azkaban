@@ -528,5 +528,8 @@ public class Constants {
         "required";
     public static final String KUBERNETES_SERVICE_NAME_PREFIX = KUBERNETES_SERVICE_PREFIX +
         "name.prefix";
+    public static final String KUBERNETES_SERVICE_PORT = KUBERNETES_SERVICE_PREFIX + "port";
+    public static final String KUBERNETES_SERVICE_CREATION_TIMEOUT_MS = KUBERNETES_SERVICE_PREFIX +
+        "creation.timeout.ms";
   }
 }
