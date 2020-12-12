@@ -18,6 +18,7 @@ package azkaban.executor.container;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedExecutionManagerProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
+import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
 import azkaban.executor.ExecutableFlow;
@@ -33,6 +34,7 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
+import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
@@ -66,6 +68,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_CPU_REQUEST = "1";
   public static final String MEMORY_LIMIT = "64Gi";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
+  public static final String MAPPING = "Mapping";
+  public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
 
   private final String namespace;
   private final ApiClient client;
@@ -80,6 +84,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String cpuRequest;
   private final String memoryLimit;
   private final String memoryRequest;
+  private final int servicePort;
+  private final long serviceTimeout;
 
 
   private static final Logger logger = LoggerFactory
@@ -93,8 +99,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.namespace = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_NAMESPACE);
     this.flowContainerName =
-        this.azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_NAME
-            , DEFAULT_FLOW_CONTAINER_NAME_PREFIX);
+        this.azkProps
+            .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_NAME
+                , DEFAULT_FLOW_CONTAINER_NAME_PREFIX);
     this.podPrefix =
         this.azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_POD_NAME_PREFIX,
             DEFAULT_POD_NAME_PREFIX);
@@ -115,6 +122,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.memoryRequest = this.azkProps
         .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
             DEFAULT_MEMORY_REQUEST);
+    this.servicePort =
+        this.azkProps.getInt(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_PORT,
+            54343);
+    this.serviceTimeout =
+        this.azkProps
+            .getLong(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_CREATION_TIMEOUT_MS,
+                60000);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
@@ -241,8 +255,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     //   information
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
+      logger.info("Dispatched pod for execution : ", executionId);
     } catch (ApiException e) {
-      logger.error("Unable to create StatefulSet: {}", e.getMessage());
+      logger.error("Unable to create Pod: {}", e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
 
@@ -334,7 +349,28 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @throws ExecutorManagerException
    */
   private void createService(final int executionId) throws ExecutorManagerException {
-    // TODO: Add integration with Service spec builder once that code is available in master branch
+    try {
+      final AzKubernetesV1ServiceBuilder azKubernetesV1ServiceBuilder =
+          new AzKubernetesV1ServiceBuilder(
+              "v1Service.yaml");
+      final V1Service serviceObject = azKubernetesV1ServiceBuilder
+          .withExecId(String.valueOf(executionId))
+          .withServiceName(getServiceName(executionId))
+          .withNamespace(this.namespace)
+          .withApiVersion(SERVICE_API_VERSION_2)
+          .withKind(MAPPING)
+          .withPort(String.valueOf(this.servicePort))
+          .withTimeoutMs(String.valueOf(this.serviceTimeout))
+          .build();
+      this.coreV1Api.createNamespacedService(this.namespace, serviceObject, null, null, null);
+      logger.info("Service is created for " + executionId);
+    } catch (final IOException e) {
+      logger.error("Unable to create service in Kubernetes: " + e.getMessage());
+      throw new ExecutorManagerException(e);
+    } catch (final ApiException e) {
+      logger.error("Unable to create service in Kubernetes: " + e.getResponseBody());
+      throw new ExecutorManagerException(e);
+    }
   }
 
   /**
@@ -362,7 +398,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           null, null, null, new V1DeleteOptions());
       logger.info("Action: Pod Deletion, Pod Name: {}", podName);
     } catch (ApiException e) {
-      logger.error("Unable to delete Pod in Kubernetes: {}", e.getMessage());
+      logger.error("Unable to delete Pod in Kubernetes: {}", e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
@@ -390,7 +426,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           deleteResult.getCode(),
           deleteResult.getMessage());
     } catch (ApiException e) {
-      logger.error("Unable to delete service in Kubernetes: {}", e.getMessage());
+      logger.error("Unable to delete service in Kubernetes: {}", e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
