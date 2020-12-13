@@ -136,6 +136,7 @@ public class Constants {
 
   public static class ConfigurationKeys {
 
+    public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
     // Property to enable appropriate dispatch model
     public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
@@ -496,6 +497,40 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
     public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
+
+    // Kubernetes related properties
+    public static final String AZKABAN_KUBERNETES_PREFIX="azkaban.kubernetes.";
+    public static final String KUBERNETES_NAMESPACE = AZKABAN_KUBERNETES_PREFIX + "namespace";
+    public static final String KUBERNETES_KUBE_CONFIG_PATH = AZKABAN_KUBERNETES_PREFIX +
+        "kube.config.path";
+
+    // Kubernetes pod related properties
+    public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
+    public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
+
+    // Kubernetes flow container related properties
+    public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
+        "flow.container.";
+    public static final String KUBERNETES_FLOW_CONTAINER_NAME =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT = KUBERNETES_FLOW_CONTAINER_PREFIX +
+        "cpu.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST = KUBERNETES_FLOW_CONTAINER_PREFIX +
+        "cpu.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT = KUBERNETES_FLOW_CONTAINER_PREFIX +
+        "memory.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
+
+    // Kubernetes service related properties
+    public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
+    public static final String KUBERNETES_SERVICE_REQUIRED = KUBERNETES_SERVICE_PREFIX +
+        "required";
+    public static final String KUBERNETES_SERVICE_NAME_PREFIX = KUBERNETES_SERVICE_PREFIX +
+        "name.prefix";
+    public static final String KUBERNETES_SERVICE_PORT = KUBERNETES_SERVICE_PREFIX + "port";
+    public static final String KUBERNETES_SERVICE_CREATION_TIMEOUT_MS = KUBERNETES_SERVICE_PREFIX +
+        "creation.timeout.ms";
   }
 
   public static class ImageMgmtConstants {

@@ -310,7 +310,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
     return this.shouldProxy;
   }
 
-  private CredentialProviderWithKeyStore getCustomCredentialProvider(final Props props, final Credentials hadoopCred,
+  private CredentialProvider getCustomCredentialProvider(final Props props, final Credentials hadoopCred,
       final Logger jobLogger, final String customCredentialProviderName) {
     String credentialClassName = "unknown class";
     try {
@@ -321,7 +321,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
       // The credential class must have a constructor accepting 3 parameters, Credentials,
       // Props, and Logger in order.
       final Constructor constructor = credentialClass.getConstructor(Credentials.class, Props.class, Logger.class);
-      final CredentialProviderWithKeyStore customCredential = (CredentialProviderWithKeyStore) constructor
+      final CredentialProvider customCredential = (CredentialProvider) constructor
               .newInstance(hadoopCred, props, jobLogger);
       return customCredential;
     } catch (final Exception e) {
@@ -334,22 +334,40 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private void registerCustomCredential(final Props props, final Credentials hadoopCred,
       final String userToProxy, final Logger jobLogger, final String customCredentialProviderName) {
-    final CredentialProviderWithKeyStore customCredential = getCustomCredentialProvider(
+    final CredentialProvider customCredential = getCustomCredentialProvider(
             props, hadoopCred, jobLogger, customCredentialProviderName);
     final KeyStore keyStore = KeyStoreManager.getInstance().getKeyStore();
     if (keyStore != null) {
-      // Containerized Execution.
-      customCredential.setKeyStore(keyStore);
+      // KeyStore is prepopulated to be used by Credential Provider.
+      // This KeyStore is expected especially in case of containerized execution when it is preferred
+      // to keep it in-memory of Azkaban user rather than on the file-system of container. This ensures
+      // that the user can't access it.
+      try {
+        ((CredentialProviderWithKeyStore)customCredential).setKeyStore(keyStore);
+      } catch (ClassCastException e) {
+        logger.error("Encountered error while casting to CredentialProviderWithKeyStore", e);
+        throw new IllegalStateException("Encountered error while casting to CredentialProviderWithKeyStore", e);
+      } catch (final Exception e) {
+        logger.error("Unknown error occurred while setting keyStore", e);
+        throw new IllegalStateException("Unknown error occurred while setting keyStore", e);
+      }
     }
     customCredential.register(userToProxy);
   }
 
+  /**
+   * Fetches the Azkaban KeyStore to be placed in-memory for reuse by all the jobs within a flow in
+   * containerized execution. The KeyStore object acquired is placed in KeyStoreManager for future use.
+   * @param props Azkaban Props containing CredentialProvider info.
+   * @return KeyStore object.
+   */
   @Override
   public KeyStore getKeyStore(final Props props) {
     logger.info("Prefetching KeyStore for the flow");
     final Credentials cred = new Credentials();
-    final CredentialProviderWithKeyStore customCredential = getCustomCredentialProvider(
-            props, cred, logger, Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+    final CredentialProviderWithKeyStore customCredential = (CredentialProviderWithKeyStore)
+            getCustomCredentialProvider(props, cred, logger,
+                    Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
     final KeyStore keyStore = customCredential.getKeyStore();
     KeyStoreManager.getInstance().setKeyStore(keyStore);
     return keyStore;

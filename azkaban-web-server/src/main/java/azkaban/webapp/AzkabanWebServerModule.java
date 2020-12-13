@@ -118,7 +118,7 @@ public class AzkabanWebServerModule extends AbstractModule {
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
-        this.props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
+        props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
     return ContainerizedImplType.valueOf(containerizedImplProperty).getImplClass();

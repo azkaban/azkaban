@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.ContainerizedExecutionManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
@@ -45,6 +46,7 @@ import azkaban.executor.ExecutorDao;
 import azkaban.executor.ExecutorEventsDao;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.FetchActiveFlowDao;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.ProjectLoader;
@@ -169,7 +171,7 @@ public class AzkabanWebServerTest {
   }
 
   @Test
-  public void testDispatchMethod() {
+  public void testDispatchMethod() throws ExecutorManagerException {
     // Test for PUSH method
     props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, DispatchMethod.PUSH.name());
     final Injector injector = Guice.createInjector(
@@ -198,8 +200,11 @@ public class AzkabanWebServerTest {
     assertNotNull(pollExecutorManagerAdapter);
     assertEquals(pollExecutorManagerAdapter.getDispatchMethod(), DispatchMethod.POLL);
 
-    // Test for PUSH_CONTAINERIZED method
-    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"CONTAINERIZED");
+    // Test for CONTAINERIZED method
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "CONTAINERIZED");
+    props.put(ContainerizedExecutionManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
+        + "/resources/container/kubeconfig");
+    props.put(ContainerizedExecutionManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
     final Injector containerizedInjector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(props)
