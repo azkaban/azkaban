@@ -109,12 +109,13 @@ public abstract class RestfulApiClient<T> {
   /**
    * function to perform a Post http request.
    *
-   * @param uri the URI of the request.
+   * @param uri    the URI of the request.
    * @param params the form params to be posted, optional.
    * @return the response object type of which is specified by user.
    * @throws UnsupportedEncodingException, IOException
    */
-  public T httpPost(final URI uri, final List<Pair<String, String>> params) throws IOException {
+  public T httpPost(final URI uri, final List<Pair<String, String>> params)
+      throws IOException {
     // shortcut if the passed url is invalid.
     if (null == uri) {
       logger.error(" unable to perform httpPost as the passed uri is null.");
@@ -126,10 +127,22 @@ public abstract class RestfulApiClient<T> {
   }
 
   /**
+   * For returning a HttpClient that will be used for any http requests within this class. This can
+   * be overridden by child classes to customize client, for example, for providing a TLS (https)
+   * enabled client.
+   *
+   * @return an http client instance from default settings.
+   */
+  protected CloseableHttpClient createHttpClient() {
+    return HttpClients.createDefault();
+  }
+
+  /**
    * function to dispatch the request and pass back the response.
    */
-  protected T sendAndReturn(final HttpUriRequest request) throws IOException {
-    try (CloseableHttpClient client = HttpClients.createDefault()) {
+  protected T sendAndReturn(final HttpUriRequest request)
+      throws IOException {
+    try (final CloseableHttpClient client = this.createHttpClient()) {
       return this.parseResponse(client.execute(request));
     }
   }
