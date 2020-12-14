@@ -33,11 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This provides the ability to cleanup up execution containers which exceed the maximum allowed
+ * This provides the ability to cleanup execution containers which exceed the maximum allowed
  * duration for a flow. Following extensions will be considered in future. (1) Convert this to a
  * general background process for any other containerization related periodic tasks. (2) Add ability
- * to track containers which may not be have been deleted despite prior attempts. (3) It's assumed
- * final status updates to the db are handled by other parts, such as flow-executor. That can also
+ * to track containers which may not have been deleted despite prior attempts. (3) It's assumed
+ * final status updates to the db are handled by other parts, such as flow-container. That can also
  * be added here as a failsafe if needed.
  */
 @Singleton

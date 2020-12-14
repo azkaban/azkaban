@@ -497,7 +497,7 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
     public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
-    // Periodicity of lookup and cleanup of  stale executions.
+    // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
     // Age of an execution for it to be considered 'stale'.

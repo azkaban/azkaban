@@ -138,20 +138,26 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMs)
+  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMillis)
       throws ExecutorManagerException {
-    final List<Status> finalStates = ImmutableList
-        .of(Status.KILLED, Status.FAILED, Status.SUCCEEDED);
+    // This list of 'running' states is based on the method Status.isStatusRunning()
+    // We should consider defining this and similar lists in the enum Status and using those
+    // as the source of truth for Status.isStatus* methods.
+    final List<Status> runningStates = ImmutableList
+        .of(Status.RUNNING, Status.FAILED_FINISHING, Status.QUEUED);
+
+    // Sample query created by the string builder:
+    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE start_time < ? AND status IN (30, 80, 110)
     final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
-    query.append(" AND status NOT IN (");
+    query.append(" AND status IN (");
     query.append(
-        finalStates.stream()
+        runningStates.stream()
             .map(s -> String.valueOf(s.getNumVal()))
             .collect(Collectors.joining(", ")));
     query.append(")");
 
     try {
-      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMs);
+      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMillis);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching stale flows", e);
     }
