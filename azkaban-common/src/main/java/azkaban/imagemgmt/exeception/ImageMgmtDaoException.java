@@ -19,11 +19,16 @@ package azkaban.imagemgmt.exeception;
  * This class represents the exception to be thrown from the Data Access Layer
  */
 public class ImageMgmtDaoException extends ImageMgmtException {
-  public ImageMgmtDaoException(String errorMessage) {
+
+  public ImageMgmtDaoException(final String errorMessage) {
     super(errorMessage);
   }
 
-  public ImageMgmtDaoException(String errorMessage, Throwable throwable) {
+  public ImageMgmtDaoException(final ErrorCode errorCode, final String errorMessage) {
+    super(errorCode, errorMessage);
+  }
+
+  public ImageMgmtDaoException(final String errorMessage, final Throwable throwable) {
     super(errorMessage, throwable);
   }
 }

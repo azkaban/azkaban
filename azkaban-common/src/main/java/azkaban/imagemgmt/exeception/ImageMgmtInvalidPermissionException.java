@@ -20,7 +20,11 @@ package azkaban.imagemgmt.exeception;
  */
 public class ImageMgmtInvalidPermissionException extends ImageMgmtException {
 
-  public ImageMgmtInvalidPermissionException(String errorMessage) {
+  public ImageMgmtInvalidPermissionException(final String errorMessage) {
     super(errorMessage);
+  }
+
+  public ImageMgmtInvalidPermissionException(final ErrorCode errorCode, final String errorMessage) {
+    super(errorCode, errorMessage);
   }
 }

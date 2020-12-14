@@ -17,6 +17,7 @@ package azkaban.imagemgmt.services;
 
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageType;
@@ -24,6 +25,10 @@ import azkaban.imagemgmt.models.ImageType.Deployable;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -58,9 +63,11 @@ public class ImageTypeServiceImpl implements ImageTypeService {
       imageType.setDeployable(Deployable.IMAGE);
     }
     // Input validation for image type create request
-    if (!ValidatorUtils.validateObject(imageType)) {
-      throw new ImageMgmtValidationException("Provide valid input for creating image type "
-          + "metadata");
+    final List<String> validationErrors = new ArrayList<>();
+    if (!ValidatorUtils.validateObject(imageType, validationErrors)) {
+      String errors = validationErrors.stream().collect(Collectors.joining(","));
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
+          + "input for creating image type metadata. Error(s): [%s].", errors));
     }
     return this.imageTypeDao.createImageType(imageType);
   }

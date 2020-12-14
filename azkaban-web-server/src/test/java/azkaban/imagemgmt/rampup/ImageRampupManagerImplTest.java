@@ -78,9 +78,9 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("azkaban_core");
     imageTypes.add("azkaban_config");
     imageTypes.add("azkaban_exec");
-    when(imageRampupDao.fetchRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     Map<String, String> imageTypeVersionMap = imageRampupManger
-        .fetchVersionByImageTypes(imageTypes);
+        .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_core"));
@@ -113,11 +113,11 @@ public class ImageRampupManagerImplTest {
         + "/image_type_active_version.json");
     List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
         jsonImageTypeActiveVersion);
-    when(imageRampupDao.fetchRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
     Map<String, String> imageTypeVersionMap = imageRampupManger
-        .fetchVersionByImageTypes(imageTypes);
+        .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
@@ -159,11 +159,11 @@ public class ImageRampupManagerImplTest {
         + "/image_type_active_version.json");
     List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
         jsonImageTypeActiveVersion);
-    when(imageRampupDao.fetchRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
     Map<String, String> imageTypeVersionMap = imageRampupManger
-        .fetchVersionByImageTypes(imageTypes);
+        .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
@@ -197,12 +197,12 @@ public class ImageRampupManagerImplTest {
         + "/all_image_types_active_version.json");
     List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
         jsonImageTypeActiveVersion);
-    when(imageRampupDao.fetchRampupForAllImageTypes()).thenReturn(imageTypeRampups);
+    when(imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
     when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
     Map<String, String> imageTypeVersionMap = imageRampupManger
-        .fetchAllImageTypesVersion();
+        .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
@@ -244,12 +244,12 @@ public class ImageRampupManagerImplTest {
         + "/image_type_active_version.json");
     List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
         jsonImageTypeActiveVersion);
-    when(imageRampupDao.fetchRampupForAllImageTypes()).thenReturn(imageTypeRampups);
+    when(imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
     when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
     Map<String, String> imageTypeVersionMap = imageRampupManger
-        .fetchAllImageTypesVersion();
+        .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.

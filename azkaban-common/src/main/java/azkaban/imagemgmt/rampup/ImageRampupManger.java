@@ -26,12 +26,12 @@ import java.util.Set;
 public interface ImageRampupManger {
 
   /**
-   * Fetches the version of all the available active image types based on rampup
+   * Gets the version of all the available active image types based on rampup
    *
    * @return Map<String, String>
    * @throws ImageMgmtException
    */
-  public Map<String, String> fetchAllImageTypesVersion() throws ImageMgmtException;
+  public Map<String, String> getVersionForAllImageTypes() throws ImageMgmtException;
 
   /**
    * Fetches the version of all the given image types based on rampup
@@ -39,6 +39,6 @@ public interface ImageRampupManger {
    * @return Map<String, String>
    * @throws ImageMgmtException
    */
-  public Map<String, String> fetchVersionByImageTypes(Set<String> imageTypes)
+  public Map<String, String> getVersionByImageTypes(Set<String> imageTypes)
       throws ImageMgmtException;
 }

@@ -52,22 +52,22 @@ public interface ImageRampupDao {
       boolean fetchRampup) throws ImageMgmtException;
 
   /**
-   * Fetches active rampup details for all the available active image types.
+   * Gets active rampup details for all the available active image types.
    *
    * @return Map<String, List < ImageRampup>>
    * @throws ImageMgmtException
    */
-  public Map<String, List<ImageRampup>> fetchRampupForAllImageTypes()
+  public Map<String, List<ImageRampup>> getRampupForAllImageTypes()
       throws ImageMgmtException;
 
   /**
-   * Fetches rampup details for all the given image types.
+   * Gets rampup details for all the given image types.
    *
    * @param imageTypes
    * @return Map<String, List < ImageRampup>>
    * @throws ImageMgmtException
    */
-  public Map<String, List<ImageRampup>> fetchRampupByImageTypes(Set<String> imageTypes)
+  public Map<String, List<ImageRampup>> getRampupByImageTypes(Set<String> imageTypes)
       throws ImageMgmtException;
 
   /**

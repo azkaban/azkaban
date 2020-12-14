@@ -18,6 +18,7 @@ package azkaban.imagemgmt.servlets;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
@@ -89,15 +90,15 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
         if (imageType == null) {
           log.error("Image type can't be null. Must provide valid image type to get active rampup"
               + " plan");
-          throw new ImageMgmtValidationException(
+          throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST,
               "Image type can't be null. Must provide valid image type to get rampup plan.");
         }
         // Check for required permission to invoke the API
         if (!hasImageManagementPermission(imageType, session.getUser(), Type.GET)) {
           log.debug(String.format("Invalid permission to get image rampup "
-              + "plan for user: %s image type: %s.", session.getUser().getUserId(), imageType));
-          throw new ImageMgmtInvalidPermissionException("Invalid permission to get image rampup "
-              + "plan");
+              + "plan for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+          throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission "
+              + "to get image rampup plan");
         }
 
         // invoke service method and get response in string format
@@ -107,20 +108,15 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
           response = this.objectMapper.writerWithDefaultPrettyPrinter()
               .writeValueAsString(imageRampupPlan.get());
         } else {
-          throw new ImageMgmtException(
+          throw new ImageMgmtException(ErrorCode.NOT_FOUND,
               String.format("There is no active rampup plan found for image "
                   + "type: %s.", imageType));
         }
       }
       writeResponse(resp, response);
-    } catch (final ImageMgmtValidationException e) {
-      log.error("Input for getting active rampup plan is invalid", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          "Bad request for getting active rampup plan");
-    } catch (final ImageMgmtInvalidPermissionException e) {
-      log.error("Unable to get image rampup plan. Invalid permission.", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
-          "Unable to get image rampup plan. Reason: " + e.getMessage());
+    } catch (final ImageMgmtException e) {
+      log.error("Exception while getting rampup plan", e);
+      sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
     } catch (final Exception e) {
       log.error("Requested image rampup not found " + e);
       sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND,
@@ -155,9 +151,9 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
           .extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image rampup "
-            + "plan for user: %s image type: %s.", session.getUser().getUserId(), imageType));
-        throw new ImageMgmtInvalidPermissionException("Invalid permission to create image rampup "
-            + "plan");
+            + "plan for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+        throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+            + "create image rampup plan");
       }
       // Build ImageMetadataRequest DTO to transfer the input request
       final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
@@ -172,14 +168,9 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       resp.setHeader("Location",
           CREATE_IMAGE_RAMPUP_URI_TEMPLATE.createURI(imageRampupPlanId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
-    } catch (final ImageMgmtValidationException e) {
-      log.error("Input for creating image rampup plan is invalid", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          "Bad request for creating image rampup plan. " + e.getMessage());
-    } catch (final ImageMgmtInvalidPermissionException e) {
-      log.error("Unable to create image rampup plan. Invalid permission.", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
-          "Unable to create image rampup plan. Reason: " + e.getMessage());
+    } catch (final ImageMgmtException e) {
+      log.error("Exception while creating image rampup plan", e);
+      sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
     } catch (final Exception e) {
       log.error("Exception while creating image rampup plan", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -201,9 +192,9 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       // Check for required permission to invoke the API
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
         log.debug(String.format("Invalid permission to update image rampup "
-            + "plan for user: %s image type: %s.", session.getUser().getUserId(), imageType));
-        throw new ImageMgmtInvalidPermissionException("Invalid permission to update image rampup "
-            + "plan");
+            + "plan for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+        throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+            + "update image rampup plan");
       }
       final String jsonPayload = HttpRequestUtils.getBody(req);
       // Build ImageMetadataRequest DTO to transfer the input request
@@ -216,13 +207,8 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       this.imageRampupService.updateImageRampupPlan(imageMetadataRequest);
       sendResponse(resp, HttpServletResponse.SC_OK, new HashMap<>());
     } catch (final ImageMgmtValidationException e) {
-      log.error("Input for updating image rampup metadata is invalid", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          "Bad request for updating image rampup metadata");
-    } catch (final ImageMgmtInvalidPermissionException e) {
-      log.error("Unable to update image rampup plan. Invalid permission.", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
-          "Unable to update image rampup plan. Reason: " + e.getMessage());
+      log.error("Exception while updating image rampup metadata", e);
+      sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
     } catch (final Exception e) {
       log.error("Exception while updating image rampup metadata", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,

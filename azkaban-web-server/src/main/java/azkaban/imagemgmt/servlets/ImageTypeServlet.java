@@ -18,8 +18,9 @@ package azkaban.imagemgmt.servlets;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ErrorCode;
+import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
@@ -96,8 +97,9 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image type for "
-            + "user: %s image type: %s.", session.getUser().getUserId(), imageType));
-        throw new ImageMgmtInvalidPermissionException("Invalid permission to create image type");
+            + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+        throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+            + "create image type");
       }
 
       // Build ImageMetadataRequest DTO to transfer the input request
@@ -112,14 +114,9 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       resp.setHeader("Location",
           IMAGE_TYPE_WITH_ID_URI_TEMPLATE.createURI(imageTypeId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
-    } catch (final ImageMgmtValidationException e) {
-      log.error("Input for creating image type is invalid", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          "Bad request for creating an image type. Reason: " + e.getMessage());
-    } catch (final ImageMgmtInvalidPermissionException e) {
-      log.error("Unable to create image type. Invalid permission.", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
-          "Unable to create image type. Reason: " + e.getMessage());
+    } catch (final ImageMgmtException e) {
+      log.error("Exception while creating an image type", e);
+      sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
     } catch (final Exception e) {
       log.error("Exception while creating an image type", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,

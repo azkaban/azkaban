@@ -35,8 +35,12 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JSONUtils {
+
+  private static final Logger log = LoggerFactory.getLogger(JSONUtils.class);
 
   /**
    * The constructor. Cannot construct this class.
@@ -282,13 +286,20 @@ public class JSONUtils {
    * @return String json as string
    */
   public static String readJsonFileAsString(final String filePath) {
+    InputStream is = null;
     try {
-      final InputStream is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
+      is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
       return IOUtils.toString(is, StandardCharsets.UTF_8);
     } catch (final IOException e) {
+      log.error("Exception while reading input file.", e);
       throw new RuntimeException("Exception while reading input file : " + filePath);
     } catch (final Exception ex) {
+      log.error("Exception while reading input file.", ex);
       throw new RuntimeException("Exception while reading input file : " + filePath);
+    } finally {
+      if(is!=null) {
+        IOUtils.closeQuietly(is);
+      }
     }
   }
 

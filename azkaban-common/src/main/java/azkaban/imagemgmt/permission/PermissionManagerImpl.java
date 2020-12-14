@@ -16,6 +16,7 @@
 package azkaban.imagemgmt.permission;
 
 import azkaban.imagemgmt.daos.ImageTypeDao;
+import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageOwnership.Role;
@@ -92,16 +93,15 @@ public class PermissionManagerImpl implements PermissionManager {
       } else {
         log.error(String.format("API access permission check failed. There is no ownership record "
             + "for image type: %s.", imageTypeName));
-        throw new ImageMgmtException(String.format("API access permission check failed. There is "
-            + "no ownership record for image type: "
-            + "%s.", imageTypeName));
+        throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission "
+            + "check failed. There is no ownership record for image type: %s.", imageTypeName));
       }
     } else {
       log.error(
           String.format("API access permission check failed. The image type metadata not found "
               + "for image type: %s.", imageTypeName));
-      throw new ImageMgmtException(String.format("API access permission check failed. The image "
-              + "type metadata not found for image type: %s.",
+      throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission check"
+              + " failed. The image type metadata not found for image type: %s.",
           imageTypeName));
     }
     return hasPermission;

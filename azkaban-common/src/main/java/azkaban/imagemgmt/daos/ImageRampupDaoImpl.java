@@ -17,6 +17,7 @@ package azkaban.imagemgmt.daos;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
+import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
@@ -99,7 +100,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
 
 
   @Inject
-  public ImageRampupDaoImpl(final DatabaseOperator databaseOperator, final ImageTypeDao imageTypeDao,
+  public ImageRampupDaoImpl(final DatabaseOperator databaseOperator,
+      final ImageTypeDao imageTypeDao,
       final ImageVersionDao imageVersionDao) {
     this.databaseOperator = databaseOperator;
     this.imageTypeDao = imageTypeDao;
@@ -107,30 +109,31 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   }
 
   /**
-   * Here is the example input for ImageRampupPlanRequest
-   * {
-   *   "planName": "Rampup plan 1",
-   *   "imageType": "spark_job",
-   *   "description": "Ramp up for spark job",
-   *   "activatePlan": true,
-   *   "imageRampups": [
-   *     {
-   *       "imageVersion": "1.6.2",
-   *       "rampupPercentage": "70"
-   *     },
-   *     {
-   *       "imageVersion": "1.6.1",
-   *       "rampupPercentage": "30"
-   *     }
-   *   ]
-   * }
+   * This method creates ramp up plan along with rampup details. Basically this method does bunch
+   * of things.
+   * 1. Get the image type metadata. If not found throws exception.
+   * 2. Get the active rampup plan for the specified image type.
+   * 3. If active ramup plan already exists -
+   * a. The user has set activate plan to "true" for the new plan, the existing plan will be
+   * deactivated. This deactivation of existing plan will happen automatically.
+   * b. The user has set activate plan to "false" for the new plan, the user will be thrown with an
+   * error stating that there is an active plan and to create and active a new plan, activate plan
+   * must be set to "true" in the input.
+   * 4. Insert the new rampup plan for the image type in the image_rampup_plan table.
+   * 5. Insert the associated image version, rampup percentage etc. in the image_rampup table. Also
+   * check if the specified version is valid and exists. Otherwise, fail the whole transaction.
+   * Here is the example input for ImageRampupPlanRequest { "planName": "Rampup plan 1",
+   * "imageType": "spark_job", "description": "Ramp up for spark job", "activatePlan": true,
+   * "imageRampups": [ { "imageVersion": "1.6.2", "rampupPercentage": "70" }, { "imageVersion":
+   * "1.6.1", "rampupPercentage": "30" } ] }
    */
   @Override
   public int createImageRampupPlan(final ImageRampupPlanRequest imageRampupPlanRequest) {
     final ImageType imageType = this.imageTypeDao
         .getImageTypeByName(imageRampupPlanRequest.getImageTypeName())
-        .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
-            + "image type : " + imageRampupPlanRequest.getImageTypeName()));
+        .orElseThrow(() -> new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format("Unable to"
+                + " fetch image type metadata. Invalid image type: %s.",
+            imageRampupPlanRequest.getImageTypeName())));
     final SQLTransaction<Long> insertAndGetRampupPlanId = transOperator -> {
       // Fetch the active rampup plan for the image type
       final Optional<ImageRampupPlan> optionalImageRampupPlan =
@@ -145,8 +148,9 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
           transOperator.update(DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY,
               false, optionalImageRampupPlan.get().getId());
         } else {
-          throw new ImageMgmtDaoException(String.format("Existing plan: %s is active for image "
-                  + "type: %s. To create and activate a new plan set activatePlan option to true.",
+          throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Existing plan: %s "
+                  + "is active for image type: %s. To create and activate a new plan set "
+                  + "activatePlan option to true.",
               optionalImageRampupPlan.get().getPlanName(),
               imageRampupPlanRequest.getImageTypeName()));
         }
@@ -165,8 +169,9 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
             .getImageRampups()) {
           // The image version which is marked as NEW can be picked for rampup up
-          final Optional<ImageVersion> imageVersion = this.imageVersionDao.getImageVersion(imageType.getName(),
-              imageRampupRequest.getImageVersion(), State.NEW);
+          final Optional<ImageVersion> imageVersion = this.imageVersionDao
+              .getImageVersion(imageType.getName(),
+                  imageRampupRequest.getImageVersion(), State.NEW);
           if (imageVersion.isPresent()) {
             // During rampup plan creation all the verions will be marked as EXPERIMENTAL by
             // default in the image_rampup table. During the course of rampup, the version can be
@@ -176,8 +181,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
                 StabilityTag.EXPERIMENTAL.getTagName(), imageType.getCreatedBy(), currentTimestamp,
                 imageType.getModifiedBy(), currentTimestamp);
           } else {
-            throw new ImageMgmtDaoException(String.format("Unable to get the image version: %s "
-                    + "with version state: %s for image type: %s.  ",
+            throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format("Unable to get the "
+                    + "image version: %s with version state: %s for image type: %s.  ",
                 imageRampupRequest.getImageVersion(), State.NEW.getStateValue(),
                 imageType.getName()));
           }
@@ -195,7 +200,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       imageRampupPlanId = this.databaseOperator.transaction(insertAndGetRampupPlanId).intValue();
     } catch (final SQLException e) {
       log.error("Unable to create the image version metadata", e);
-      throw new ImageMgmtDaoException("Exception while creating image version metadata");
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
+          + "version metadata");
     }
     return imageRampupPlanId;
   }
@@ -214,8 +220,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       return this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
           new FetchImageRampupPlanHandler(), imageTypeName, true);
     } catch (final SQLException ex) {
-      log.error("Exception while fetching image version ", ex);
-      throw new ImageMgmtDaoException("Exception while fetching image version");
+      log.error(String.format("Exception while fetching active rampup plan for image type: %s. ",
+          imageTypeName), ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          String.format("Exception while fetching active rampup plan for image type: %s. ",
+              imageTypeName));
     }
   }
 
@@ -232,35 +241,40 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       final Optional<ImageRampupPlan> imageRampupPlan = getActiveImageRampupPlan(imageTypeName);
 
       if (imageRampupPlan.isPresent()) {
-        final List<ImageRampup> imageRampups = this.databaseOperator.query(SELECT_IMAGE_RAMPUP_QUERY,
-            new FetchImageRampupHandler(), imageRampupPlan.get().getId());
+        final List<ImageRampup> imageRampups = this.databaseOperator
+            .query(SELECT_IMAGE_RAMPUP_QUERY,
+                new FetchImageRampupHandler(), imageRampupPlan.get().getId());
         imageRampupPlan.get().setImageRampups(imageRampups);
       }
       return imageRampupPlan;
     } catch (final SQLException ex) {
-      log.error("Exception while fetching image version ", ex);
-      throw new ImageMgmtDaoException("Exception while fetching image version");
+      log.error(String.format("Exception while fetching active rampup plan for image type: %s. ",
+          imageTypeName), ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          String.format("Exception while fetching active rampup plan for image type: %s. ",
+              imageTypeName));
     }
   }
 
   @Override
-  public Map<String, List<ImageRampup>> fetchRampupForAllImageTypes()
+  public Map<String, List<ImageRampup>> getRampupForAllImageTypes()
       throws ImageMgmtException {
     try {
       return this.databaseOperator.query(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY,
           new FetchImageTypeRampupHandler(), true, true);
     } catch (final SQLException ex) {
-      log.error("Exception while fetching image version ", ex);
-      throw new ImageMgmtDaoException("Exception while fetching image version");
+      log.error("Exception while fetching rampup for image types.", ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          "Exception while fetching rampup for image types.");
     }
   }
 
   @Override
-  public Map<String, List<ImageRampup>> fetchRampupByImageTypes(final Set<String> imageTypes)
+  public Map<String, List<ImageRampup>> getRampupByImageTypes(final Set<String> imageTypes)
       throws ImageMgmtException {
     try {
       if (imageTypes == null || imageTypes.isEmpty()) {
-        return fetchRampupForAllImageTypes();
+        return getRampupForAllImageTypes();
       }
       final StringBuilder queryBuilder = new StringBuilder(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY);
       queryBuilder.append(" and ir.stability_tag in ( ?, ? ) ");
@@ -283,8 +297,10 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       return this.databaseOperator.query(queryBuilder.toString(),
           new FetchImageTypeRampupHandler(), Iterables.toArray(params, Object.class));
     } catch (final SQLException ex) {
-      log.error("Exception while fetching image version ", ex);
-      throw new ImageMgmtDaoException("Exception while fetching image version");
+      log.error(String.format("Exception while fetching rampup for image types: %s.", imageTypes),
+          ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          String.format("Exception while fetching rampup for image types: %s.", imageTypes));
     }
   }
 
@@ -341,8 +357,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
           imageRampupRequest.setId(versionIdKeyMap.get(imageRampupRequest.getImageVersion()));
         } else {
           // Throw exception if invalid version is specified in the input request
-          throw new ImageMgmtDaoException(String.format("Invalid version: %s specified in the "
-              + "image rampup input.", imageRampupRequest.getImageVersion()));
+          throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Invalid version: "
+              + "%s specified in the image rampup input.", imageRampupRequest.getImageVersion()));
         }
       }
       // Update image_rampup_plan and image_rampup table using the corresponding ID (key) and the
@@ -364,11 +380,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
          Ideally all should happen in a transaction */
         this.databaseOperator.transaction(updateImageRamupTransaction);
       } catch (final SQLException e) {
-        log.error("Unable to create the image version metadata", e);
-        throw new ImageMgmtDaoException("Exception while creating image version metadata");
+        log.error(String.format("Unable to update the image rampup details for image type: %s",
+            imageRampupPlanRequest.getImageTypeName()), e);
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            String.format("Unable to update the image rampup details for image type: %s",
+                imageRampupPlanRequest.getImageTypeName()));
       }
     } else {
-      throw new ImageMgmtDaoException(
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
           String.format("There is no active rampup plan found for image "
               + "type: %s.", imageRampupPlanRequest.getImageTypeName()));
     }
@@ -397,10 +416,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
       params.add(imageRampupPlanRequest.getId());
-      this.databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+      this.databaseOperator
+          .update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
     } catch (final SQLException ex) {
-      log.error("Exception while updating image version ", ex);
-      throw new ImageMgmtDaoException("Exception while updating image version");
+      log.error(String.format("Exception while updating image rampup plan for image type: %s. ",
+          imageRampupPlanRequest.getImageTypeName()), ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Exception while "
+              + "updating image rampup plan for image type: %s. ",
+          imageRampupPlanRequest.getImageTypeName()));
     }
   }
 
@@ -429,10 +452,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
       params.add(imageRampupRequest.getId());
-      this.databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+      this.databaseOperator
+          .update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
     } catch (final SQLException ex) {
-      log.error("Exception while updating image version ", ex);
-      throw new ImageMgmtDaoException("Exception while updating image version");
+      log.error(String.format("Exception while updating image rampup details for plan id: %s. ",
+          imageRampupRequest.getPlanId()), ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          String.format("Exception while updating image rampup details for plan id: %s. ",
+              imageRampupRequest.getPlanId()));
     }
   }
 
@@ -506,7 +533,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         imageRampup.setModifiedOn(modifiedOn);
         imageRampups.add(imageRampup);
       } while (rs.next());
-      log.info("imageRampups:" + imageRampups);
+      log.debug("Fetched imageRampups:" + imageRampups);
       return imageRampups;
     }
   }
@@ -538,7 +565,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         imageRampup.setId(id);
         imageRampup.setImageVersion(imageVersion);
         imageRampup.setRampupPercentage(rampupPercentage);
-        //imageRampupVersion.setStabilityTag(StabilityTag.fromTagName(stabilityTag));
+        imageRampup.setStabilityTag(StabilityTag.fromTagName(stabilityTag));
         imageRampup.setCreatedOn(createdOn);
         imageRampup.setCreatedBy(createdBy);
         imageRampup.setModifiedBy(modifiedBy);

@@ -71,8 +71,8 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
   }
 
   @Override
-  public Map<String, String> fetchAllImageTypesVersion() throws ImageMgmtException {
-    Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao.fetchRampupForAllImageTypes();
+  public Map<String, String> getVersionForAllImageTypes() throws ImageMgmtException {
+    Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao.getRampupForAllImageTypes();
     List<ImageType> imageTypeList = imageTypeDao.getAllImageTypes();
     Set<String> imageTypes = new TreeSet<>();
     for (ImageType imageType : imageTypeList) {
@@ -82,10 +82,10 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
   }
 
   @Override
-  public Map<String, String> fetchVersionByImageTypes(Set<String> imageTypes)
+  public Map<String, String> getVersionByImageTypes(Set<String> imageTypes)
       throws ImageMgmtException {
     Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao
-        .fetchRampupByImageTypes(imageTypes);
+        .getRampupByImageTypes(imageTypes);
     return this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups);
   }
 

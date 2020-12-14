@@ -19,6 +19,7 @@ import static azkaban.Constants.ImageMgmtConstants.ID_KEY;
 
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion;
@@ -27,9 +28,11 @@ import azkaban.imagemgmt.models.ImageVersionRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -67,9 +70,11 @@ public class ImageVersionServiceImpl implements ImageVersionService {
     // Override the state to NEW during creation of new image version
     imageVersion.setState(State.NEW);
     // Input validation for image version create request
-    if (!ValidatorUtils.validateObject(imageVersion)) {
-      throw new ImageMgmtValidationException("Provide valid input for creating image version "
-          + "metadata");
+    final List<String> validationErrors = new ArrayList<>();
+    if (!ValidatorUtils.validateObject(imageVersion, validationErrors)) {
+      String errors = validationErrors.stream().collect(Collectors.joining(","));
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
+          + "input for creating image version metadata. Error(s): [%s].", errors));
     }
     return imageVersionsDao.createImageVersion(imageVersion);
   }
@@ -92,9 +97,11 @@ public class ImageVersionServiceImpl implements ImageVersionService {
     imageVersionRequest.setId((Integer) imageMetadataRequest.getParams().get(ID_KEY));
     log.info("imageVersionUpdateRequest: " + imageVersionRequest);
     // Input validation for image version create request
-    if (!ValidatorUtils.validateObject(imageVersionRequest)) {
-      throw new ImageMgmtValidationException("Provide valid input for updating image version "
-          + "metadata");
+    final List<String> validationErrors = new ArrayList<>();
+    if (!ValidatorUtils.validateObject(imageVersionRequest, validationErrors)) {
+      String errors = validationErrors.stream().collect(Collectors.joining(","));
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
+          + "input for creating image version metadata. Error(s): [%s].", errors));
     }
     imageVersionsDao.updateImageVersion(imageVersionRequest);
   }
