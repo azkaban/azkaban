@@ -714,7 +714,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     if (node.getRetries() > node.getAttempt()) {
       this.logger.info("Job '" + node.getId() + "' will be retried. Attempt "
           + node.getAttempt() + " of " + node.getRetries());
-      node.setDelayedExecution(node.getRetryBackoff());
+      if (node.getRetryBackoffExponential())
+        node.setDelayedExecution((long) (Math.pow(2, node.getAttempt())*node.getRetryBackoff()));
+      else
+        node.setDelayedExecution(node.getRetryBackoff());
       node.resetForRetry();
       return true;
     } else {

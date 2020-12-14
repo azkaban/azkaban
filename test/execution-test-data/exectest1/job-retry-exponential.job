@@ -1,0 +1,8 @@
+type=test
+seconds=0
+fail=true
+passRetry=2
+retries=3
+retry.backoff=10
+retry.backoff.exponential=true
+

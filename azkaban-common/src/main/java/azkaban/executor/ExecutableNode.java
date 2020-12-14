@@ -501,6 +501,10 @@ public class ExecutableNode {
     return this.inputProps.getLong("retry.backoff", 0);
   }
 
+  public boolean getRetryBackoffExponential() {
+    return this.inputProps.getBoolean("retry.backoff.exponential", false);
+  }
+
   public String getCondition() {
     return this.condition;
   }

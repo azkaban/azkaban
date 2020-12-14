@@ -47,6 +47,11 @@ public class CommonJobProperties {
   public static final String RETRY_BACKOFF = "retry.backoff";
 
   /**
+   * Flag to backoff exponential. Default to false
+   */
+  public static final String RETRY_BACKOFF_EXPONENTIAL = "retry.backoff.exponential";
+
+  /**
    * Comma delimited list of email addresses for both failure and success messages
    */
   public static final String NOTIFY_EMAILS = "notify.emails";
