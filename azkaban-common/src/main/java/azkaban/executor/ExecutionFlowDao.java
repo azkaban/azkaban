@@ -477,7 +477,7 @@ public class ExecutionFlowDao {
       final Set<Integer> executions = new HashSet<>();
       final boolean hasLocked = this.mysqlNamedLock
           .getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
-      logger.info("ExecutionFlow polling lock value: " + hasLocked);
+      logger.debug("ExecutionFlow polling lock value: " + hasLocked);
       if (hasLocked) {
         try {
           final List<Integer> execIds;
@@ -509,7 +509,7 @@ public class ExecutionFlowDao {
           }
         } finally {
           this.mysqlNamedLock.releaseLock(transOperator, POLLING_LOCK_NAME);
-          logger.info("Released polling lock");
+          logger.debug("Released polling lock");
         }
       } else {
         logger.info("Could not acquire polling lock");

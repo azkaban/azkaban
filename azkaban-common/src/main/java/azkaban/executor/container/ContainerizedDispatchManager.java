@@ -45,9 +45,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is used to dispatch execution on Containerized infrastructure. Each execution will
- * be dispatched in single container. This way, it will bring isolation between all the
- * executions.
+ * This class is used to dispatch execution on Containerized infrastructure. Each execution will be
+ * dispatched in single container. This way, it will bring isolation between all the executions.
+ * When the flow will be executed or triggered by schedule, it will be added in a queue maintained
+ * in database. The state of execution will be READY in case of Containerized dispatch. When the
+ * flow will be picked up by @{@link QueueProcessorThread} to dispatch it to containerized
+ * infrastructure, it will be marked as DISPATCHING. Once flow preparation will start on container,
+ * it will be marked as PREPARING. When a flow will be ready to run on container, it will be marked
+ * as RUNNING. In case of failure in dispatch, it will move back to READY state in queue.
  */
 @Singleton
 public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter {
@@ -60,10 +65,11 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   @Inject
   public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
-      final ContainerizedImpl containerizedImpl) throws ExecutorManagerException{
+      final ContainerizedImpl containerizedImpl) throws ExecutorManagerException {
     super(azkProps, executorLoader, commonMetrics, apiGateway);
     rateLimiter =
-        RateLimiter.create(azkProps.getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
+        RateLimiter.create(azkProps
+            .getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
     this.containerizedImpl = containerizedImpl;
   }
 
@@ -81,8 +87,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * Get queued flow ids from database. The status for queued flows is READY for
-   * containerization.
+   * Get queued flow ids from database. The status for queued flows is READY for containerization.
+   *
    * @return
    */
   public List<Integer> getQueuedFlowIds() {
@@ -97,6 +103,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   /**
    * Get size of queued flows. The status for queued flows is READY for containerization.
+   *
    * @return
    */
   @Override
@@ -106,6 +113,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   /**
    * Get dispatch method enum for this class.
+   *
    * @return
    */
   @Override
@@ -132,6 +140,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
    * Get the status for executions maintained in queue. For other dispatch implementations, the
    * status for executions in queue is PREPARING. But for containerized dispatch method, the status
    * will be READY.
+   *
    * @return
    */
   @Override
@@ -153,8 +162,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   /**
    * This method is used to enable queue processor thread. It will resume dispatching executions.
-   * Due to any maintenance of containerized infrastructure, if queue processor was disabled then
-   * it can enabled again using this method.
+   * Due to any maintenance of containerized infrastructure, if queue processor was disabled then it
+   * can enabled again using this method.
    */
   @Override
   public void enableQueueProcessorThread() {
@@ -162,9 +171,9 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * This method is used to disable queue processor thread. It will stop dispatching executions.
-   * In case of maintenance of containerized infrastructure, this method can be used to disable
-   * queue processor. It will disable dispatch of executions in containers.
+   * This method is used to disable queue processor thread. It will stop dispatching executions. In
+   * case of maintenance of containerized infrastructure, this method can be used to disable queue
+   * processor. It will disable dispatch of executions in containers.
    */
   @Override
   public void disableQueueProcessorThread() {
