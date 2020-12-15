@@ -29,11 +29,16 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +80,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       if (imageType.getOwnerships() != null && imageType.getOwnerships().size() > 0) {
         for (final ImageOwnership imageOwnership : imageType.getOwnerships()) {
           transOperator.update(INSERT_IMAGE_OWNERSHIP, imageTypeId, imageOwnership.getOwner(),
-              imageOwnership.getRole().getName(), imageType.getCreatedBy(), currentTimestamp,
+              imageOwnership.getRole().name(), imageType.getCreatedBy(), currentTimestamp,
               imageType.getModifiedBy(), currentTimestamp);
         }
       }
@@ -93,14 +98,14 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException e) {
       log.error("Unable to create the image type metadata", e);
       String errorMessage = "";
-      if(e.getErrorCode() == 1062) {
+      if (e.getErrorCode() == 1062) {
         errorMessage = "Reason: Duplicate key provided.";
       }
-      if(e.getErrorCode() == 1406) {
+      if (e.getErrorCode() == 1406) {
         errorMessage = "Reason: Data too long for column(s).";
       }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
-          + "image type metadata. "+ errorMessage);
+          + "image type metadata. " + errorMessage);
     }
     return imageTypeId;
   }
@@ -142,7 +147,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
       if (!imageTypes.isEmpty()) {
         final ImageType imageType = imageTypes.get(0);
-        imageType.setOwnerships(getImageOwnerships(imageType.getName()));
+        imageType.setOwnerships(getImageTypeOwnership(imageType.getName()));
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
@@ -172,8 +177,31 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     try {
       imageTypes = this.databaseOperator
           .query(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES, fetchImageTypeHandler, true);
+      // Get the image type names
+      final Set<String> imageTypeNames = new HashSet<>();
       for (final ImageType imageType : imageTypes) {
-        imageType.setOwnerships(getImageOwnerships(imageType.getName()));
+        imageTypeNames.add(imageType.getName());
+      }
+      // Build in clause for fetching the ownership information for all the image types
+      final StringBuilder inClauseBuilder = new StringBuilder();
+      for (int i = 0; i < imageTypeNames.size(); i++) {
+        inClauseBuilder.append("?,");
+      }
+      inClauseBuilder.setLength(inClauseBuilder.length() - 1);
+      final Map<String, String> valueMap = new HashMap<>();
+      valueMap.put("image_types", inClauseBuilder.toString());
+      final StrSubstitutor strSubstitutor = new StrSubstitutor(valueMap);
+      final String query = strSubstitutor
+          .replace(FetchAllImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAMES);
+      log.info("Fetch all image types ownership query : " + query);
+      // Execute the query to get owners for all the image types.
+      final Map<String, List<ImageOwnership>> imageTypeOwnershipMap = this.databaseOperator
+          .query(query,
+              new FetchAllImageOwnershipHandler(),
+              imageTypeNames.toArray());
+      // Set the ownership information to the image type metadata
+      for (final ImageType imageType : imageTypes) {
+        imageType.setOwnerships(imageTypeOwnershipMap.get(imageType.getName()));
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES + " failed.", ex);
@@ -189,7 +217,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
    * @param imageTypeName
    * @return List<ImageOwnership>
    */
-  private List<ImageOwnership> getImageOwnerships(final String imageTypeName) {
+  private List<ImageOwnership> getImageTypeOwnership(final String imageTypeName) {
     final FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
     try {
       return this.databaseOperator
@@ -204,13 +232,34 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   }
 
   /**
+   * Gets ownership metadata based on image type name and user id.
+   *
+   * @param imageTypeName
+   * @return Optional<ImageOwnership>
+   */
+  @Override
+  public Optional<ImageOwnership> getImageTypeOwnership(final String imageTypeName,
+      final String userId) {
+    final FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
+    List<ImageOwnership> imageOwnerships = new ArrayList<>();
+    try {
+      imageOwnerships = this.databaseOperator
+          .query(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID,
+              fetchImageOwnershipHandler, imageTypeName, userId);
+    } catch (final SQLException ex) {
+      log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID
+          + " failed.", ex);
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format(
+          "Unable to fetch ownership for image type: %s, user id: %s. ", imageTypeName, userId));
+    }
+    return imageOwnerships.isEmpty() ? Optional.empty() : Optional.of(imageOwnerships.get(0));
+  }
+
+  /**
    * ResultSetHandler implementation class for fetching image type
    */
   public static class FetchImageTypeHandler implements ResultSetHandler<List<ImageType>> {
 
-    private static final String FETCH_IMAGE_TYPE_BY_ID =
-        "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
-            + "modified_by FROM image_types WHERE id = ?";
     private static final String FETCH_IMAGE_TYPE_BY_NAME =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
             + "modified_by FROM image_types WHERE name = ?";
@@ -256,10 +305,11 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
             + "and it.name = ?";
-    private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAMES =
+
+    private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID =
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
-            + "and it.name = ?";
+            + "and it.name = ? and io.owner = ?";
 
     @Override
     public List<ImageOwnership> handle(final ResultSet rs) throws SQLException {
@@ -280,7 +330,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         imageOwnership.setId(id);
         imageOwnership.setName(name);
         imageOwnership.setOwner(owner);
-        imageOwnership.setRole(Role.fromRoleName(role));
+        imageOwnership.setRole(Role.valueOf(role));
         imageOwnership.setCreatedOn(createdOn);
         imageOwnership.setCreatedBy(createdBy);
         imageOwnership.setModifiedOn(modifiedOn);
@@ -288,6 +338,53 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         imageOwnerships.add(imageOwnership);
       } while (rs.next());
       return imageOwnerships;
+    }
+  }
+
+  /**
+   * ResultSetHandler implementation class for fetching image type
+   */
+  public static class FetchAllImageOwnershipHandler implements ResultSetHandler<Map<String,
+      List<ImageOwnership>>> {
+
+    private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAMES =
+        "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
+            + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
+            + "and it.name in ( ${image_types} )";
+
+    @Override
+    public Map<String, List<ImageOwnership>> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyMap();
+      }
+      final Map<String, List<ImageOwnership>> imageTypeOwnershipMap = new HashMap<>();
+      do {
+        final String imageTypeName = rs.getString("name");
+        final int id = rs.getInt("id");
+        final String owner = rs.getString("owner");
+        final String role = rs.getString("role");
+        final String createdOn = rs.getString("created_on");
+        final String createdBy = rs.getString("created_by");
+        final String modifiedOn = rs.getString("modified_on");
+        final String modifiedBy = rs.getString("modified_by");
+        final ImageOwnership imageOwnership = new ImageOwnership();
+        imageOwnership.setId(id);
+        imageOwnership.setName(imageTypeName);
+        imageOwnership.setOwner(owner);
+        imageOwnership.setRole(Role.valueOf(role));
+        imageOwnership.setCreatedOn(createdOn);
+        imageOwnership.setCreatedBy(createdBy);
+        imageOwnership.setModifiedOn(modifiedOn);
+        imageOwnership.setModifiedBy(modifiedBy);
+        if (imageTypeOwnershipMap.containsKey(imageTypeName)) {
+          imageTypeOwnershipMap.get(imageTypeName).add(imageOwnership);
+        } else {
+          final List<ImageOwnership> imageOwnerships = new ArrayList<>();
+          imageOwnerships.add(imageOwnership);
+          imageTypeOwnershipMap.put(imageTypeName, imageOwnerships);
+        }
+      } while (rs.next());
+      return imageTypeOwnershipMap;
     }
   }
 }

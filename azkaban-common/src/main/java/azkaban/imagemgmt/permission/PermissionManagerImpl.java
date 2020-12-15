@@ -19,15 +19,11 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
-import azkaban.imagemgmt.models.ImageOwnership.Role;
-import azkaban.imagemgmt.models.ImageType;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
-import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,22 +38,6 @@ public class PermissionManagerImpl implements PermissionManager {
   private static final Logger log = LoggerFactory.getLogger(PermissionManagerImpl.class);
 
   private final ImageTypeDao imageTypeDao;
-
-  /**
-   * Permission for image type owner of role ADMIN. ADMIN owner has complete access to image
-   * management APIs including add/delete of new member as image type owner.
-   */
-  private static final Permission ADMIN_PERMISSION = new Permission(Type.ADMIN);
-  /**
-   * Permission for image type owner of role MEMBER. MEMBER owner has complete access to image
-   * management APIs except add/delete of new member as image type owner.
-   */
-  private static final Permission MEMBER_PERMISSION = new Permission(Type.CREATE, Type.GET,
-      Type.UPDATE, Type.DELETE);
-  /**
-   * The default permission is only GET access to the image management APIs.
-   */
-  private static final Permission READ_ONLY_PERMISSION = new Permission(Type.GET);
 
   @Inject
   public PermissionManagerImpl(final ImageTypeDao imageTypeDao) {
@@ -75,74 +55,25 @@ public class PermissionManagerImpl implements PermissionManager {
   @Override
   public boolean hasPermission(final String imageTypeName, final String userId, final Type type) {
     // Gets the image type metadata including ownerships.
-    final Optional<ImageType> optionalImageType =
-        this.imageTypeDao.getImageTypeWithOwnershipsByName(imageTypeName);
+    final Optional<ImageOwnership> optionalImageOwnership =
+        this.imageTypeDao.getImageTypeOwnership(imageTypeName, userId);
     boolean hasPermission = false;
-    if (optionalImageType.isPresent()) {
-      final ImageType imageType = optionalImageType.get();
-      if (!CollectionUtils.isEmpty(imageType.getOwnerships())) {
-        // Gets the permission of the user based on image type ownership metadata.
-        final Optional<Permission> optionalPermission = getPermission(userId,
-            imageType.getOwnerships());
-        // Check if the given Permission.Type contains in the permission of the user.
-        // Check if the the user permission contains Permission.Type ADMIN.
-        if (optionalPermission.isPresent() && (optionalPermission.get().isPermissionSet(type)
-            || optionalPermission.get().isPermissionSet(Permission.Type.ADMIN))) {
-          hasPermission = true;
-        }
-      } else {
-        log.error(String.format("API access permission check failed. There is no ownership record "
-            + "for image type: %s.", imageTypeName));
-        throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission "
-            + "check failed. There is no ownership record for image type: %s.", imageTypeName));
+    // Check if ownership is present. If so check the permission of the user role.
+    if (optionalImageOwnership.isPresent()) {
+      // Gets the permission of the user based on image type ownership metadata.
+      final Permission permission = optionalImageOwnership.get().getRole().getPermission();
+      // Check if the given Permission.Type contains in the permission of the user.
+      if (permission.isPermissionSet(type)) {
+        hasPermission = true;
       }
     } else {
-      log.error(
-          String.format("API access permission check failed. The image type metadata not found "
-              + "for image type: %s.", imageTypeName));
-      throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission check"
-              + " failed. The image type metadata not found for image type: %s.",
-          imageTypeName));
+      log.error(String.format("API access permission check failed. There is no ownership record "
+          + "for image type: %s, user id: %s.", imageTypeName, userId));
+      throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission "
+              + "check failed. There is no ownership record for image type: %s, user id: %s.",
+          imageTypeName, userId));
     }
+
     return hasPermission;
-  }
-
-  /**
-   * Gets the permission for the given user. Checks the permission of the given user based on image
-   * ownership metadata.
-   *
-   * @param userId
-   * @param imageOwnershipList
-   * @return Optional<Permission>
-   */
-  private Optional<Permission> getPermission(final String userId,
-      final List<ImageOwnership> imageOwnershipList) {
-    for (final ImageOwnership imageOwnership : imageOwnershipList) {
-      if (userId.equals(imageOwnership.getName())) {
-        return getPermissionByRole(imageOwnership.getRole());
-      }
-    }
-    return Optional.empty();
-  }
-
-  /**
-   * Gets the permission based on user role.
-   *
-   * @param role
-   * @return Optional<Permission>
-   */
-  private Optional<Permission> getPermissionByRole(final Role role) {
-    Permission permission = null;
-    switch (role) {
-      case ADMIN:
-        permission = ADMIN_PERMISSION;
-        break;
-      case MEMBER:
-        permission = MEMBER_PERMISSION;
-        break;
-      default:
-        permission = READ_ONLY_PERMISSION;
-    }
-    return Optional.ofNullable(permission);
   }
 }

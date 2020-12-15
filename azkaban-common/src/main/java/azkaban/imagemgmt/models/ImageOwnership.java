@@ -15,6 +15,8 @@
  */
 package azkaban.imagemgmt.models;
 
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import javax.validation.constraints.NotBlank;
@@ -59,39 +61,44 @@ public class ImageOwnership extends BaseModel {
   }
 
   /**
-   * Enum representing owner Role ADMIN role is having all the permissions such as invoking image
-   * management APIs, Adding new job type owner etc. MEMBER - Must have permissions to invoke image
-   * management APIs, but can't add/delete job type owners etc. However the MEMBER role needs to be
-   * clearly defined.
+   * Enum representing owner Role as ADMIN is having all the permissions such as invoking image
+   * management APIs, including adding/removing image type owners etc. MEMBER role is having
+   * permissions to invoke image management APIs, but can't add/delete image type owners etc.
+   * GUEST role is having readonly or get access to the image management APIs.
    */
   public enum Role {
-    ADMIN("admin"),
-    MEMBER("member");
+    ADMIN(ADMIN_PERMISSION),
+    MEMBER(MEMBER_PERMISSION),
+    GUEST(GUEST_PERMISSION);
 
-    private final String name;
+    @SuppressWarnings("ImmutableEnumChecker")
+    private final Permission permission;
 
-    private Role(final String name) {
-      this.name = name;
+    private Role(final Permission permission) {
+      this.permission = permission;
     }
 
-    // State value and state enum map
-    private static final ImmutableMap<String, Role> roleMap = Arrays.stream(Role.values())
-        .collect(ImmutableMap.toImmutableMap(role -> role.getName(), role -> role));
-
-    public String getName() {
-      return this.name;
-    }
-
-    /**
-     * Create state enum from state value
-     *
-     * @param roleName
-     * @return
-     */
-    public static Role fromRoleName(final String roleName) {
-      return roleMap.getOrDefault(roleName, ADMIN);
+    public Permission getPermission() {
+      return this.permission;
     }
   }
+
+  /**
+   * Permission for image type owner of role ADMIN. ADMIN owner has complete access to image
+   * management APIs including add/delete of new member as image type owner.
+   */
+  private static final Permission ADMIN_PERMISSION = new Permission(Type.CREATE, Type.GET,
+      Type.UPDATE, Type.DELETE, Type.IMAGE_TYPE_ADD_MEMBER, Type.IMAGE_TYPE_DELETE_MEMBER);
+  /**
+   * Permission for image type owner of role MEMBER. MEMBER owner has complete access to image
+   * management APIs except add/delete of new member as image type owner.
+   */
+  private static final Permission MEMBER_PERMISSION = new Permission(Type.CREATE, Type.GET,
+      Type.UPDATE, Type.DELETE);
+  /**
+   * The default permission is only GET access to the image management APIs.
+   */
+  private static final Permission GUEST_PERMISSION = new Permission(Type.GET);
 
   @Override
   public String toString() {

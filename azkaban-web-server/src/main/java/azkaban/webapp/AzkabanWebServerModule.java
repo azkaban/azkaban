@@ -107,13 +107,8 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
     bind(ImageTypeService.class).to(ImageTypeServiceImpl.class);
-    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
     bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
-    bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
     bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
-    bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
-    bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
-    bind(PermissionManager.class).to(PermissionManagerImpl.class);
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
