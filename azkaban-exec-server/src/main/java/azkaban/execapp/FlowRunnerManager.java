@@ -21,7 +21,6 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
-import azkaban.cluster.ClusterRegistry;
 import azkaban.cluster.ClusterRouter;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
@@ -70,9 +69,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -999,9 +996,8 @@ public class FlowRunnerManager implements EventListener<Event>,
 
     private boolean isFlowRunningLongerThan(final ExecutableFlow flow,
         final long flowMaxRunningTimeInMins) {
-      final Set<Status> nonFinishingStatusAfterFlowStarts = new HashSet<>(
-          Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
-      return nonFinishingStatusAfterFlowStarts.contains(flow.getStatus()) && flow.getStartTime() > 0
+      return Status.nonFinishingStatusAfterFlowStartsSet.contains(flow.getStatus())
+          && flow.getStartTime() > 0
           && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - flow.getStartTime())
           >= flowMaxRunningTimeInMins;
     }
