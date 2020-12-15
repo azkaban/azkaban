@@ -539,10 +539,5 @@ public class Constants {
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
-    // Age of an execution for it to be considered 'stale'.
-    // Note: worth considering providing the age as {@code Duration} instead of days.
-    //   The method {@code java.time.Duration.parse} specifies a format for it.
-    public static final String CONTAINERIZED_STALE_EXECUTION_AGE_DAYS =
-        AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.age.days";
   }
 }

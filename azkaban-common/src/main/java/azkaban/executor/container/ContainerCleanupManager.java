@@ -17,6 +17,7 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ContainerizedExecutionManagerProperties;
 
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -45,9 +46,10 @@ public class ContainerCleanupManager {
 
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
   private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(10);
-  private static final Duration DEFAULT_STALE_CONTAINER_AGE = Duration.ofDays(10);
+  private static final Duration DEFAULT_STALE_CONTAINER_AGE_MINS =
+      Duration.ofMinutes(10 * 24 * 60); // 10 days
   private final long cleanupIntervalMin;
-  private final long staleContainerAgeDays;
+  private final long staleContainerAgeMins;
   private final ScheduledExecutorService cleanupService;
   private final ExecutorLoader executorLoader;
   private final ContainerizedImpl containerizedImpl;
@@ -59,10 +61,8 @@ public class ContainerCleanupManager {
         .getLong(
             ContainerizedExecutionManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
             DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
-    this.staleContainerAgeDays = azkProps
-        .getLong(
-            ContainerizedExecutionManagerProperties.CONTAINERIZED_STALE_EXECUTION_AGE_DAYS,
-            DEFAULT_STALE_CONTAINER_AGE.toDays());
+    this.staleContainerAgeMins = azkProps.getLong(ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS,
+        DEFAULT_STALE_CONTAINER_AGE_MINS.toMinutes());
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;
@@ -71,16 +71,16 @@ public class ContainerCleanupManager {
 
   /**
    * Execute container-provider specific APIs for all 'stale' containers. A container is considered
-   * 'stale' if it was launched CONTAINERIZED_STALE_EXECUTION_AGE_DAYS ago and the corresponding
-   * execution is not yet in a final state.
+   * 'stale' if it was launched {@code staleContainerAgeMins} ago and the corresponding execution is
+   * not yet in a final state.
    * <p>
    * It's important that this method does not throw exceptions as that will interrupt the scheduling
    * of {@code cleanupService}.
    */
   public void terminateStaleContainers() {
     try {
-      final List<ExecutableFlow> staleFlows = this.executorLoader.fetchStaleFlows(Duration.ofDays(
-          this.staleContainerAgeDays));
+      final List<ExecutableFlow> staleFlows = this.executorLoader
+          .fetchStaleFlows(Duration.ofMinutes(this.staleContainerAgeMins));
       for (final ExecutableFlow flow : staleFlows) {
         deleteContainerQuietly(flow.getExecutionId());
       }

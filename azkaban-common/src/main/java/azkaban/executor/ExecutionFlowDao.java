@@ -22,7 +22,6 @@ import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -140,18 +139,13 @@ public class ExecutionFlowDao {
 
   public List<ExecutableFlow> fetchStaleFlows(final long beforeInMillis)
       throws ExecutorManagerException {
-    // This list of 'running' states is based on the method Status.isStatusRunning()
-    // We should consider defining this and similar lists in the enum Status and using those
-    // as the source of truth for Status.isStatus* methods.
-    final List<Status> runningStates = ImmutableList
-        .of(Status.RUNNING, Status.FAILED_FINISHING, Status.QUEUED);
-
     // Sample query created by the string builder:
-    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE start_time < ? AND status IN (30, 80, 110)
+    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE
+    //   start_time < ? AND status IN (30, 40, 80, 110)
     final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
     query.append(" AND status IN (");
     query.append(
-        runningStates.stream()
+        Status.nonFinishingStatusAfterFlowStartsSet.stream()
             .map(s -> String.valueOf(s.getNumVal()))
             .collect(Collectors.joining(", ")));
     query.append(")");

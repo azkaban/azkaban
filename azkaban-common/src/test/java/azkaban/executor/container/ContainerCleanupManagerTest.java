@@ -26,7 +26,6 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
-import java.time.Duration;
 import java.util.ArrayList;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +37,6 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
   private ContainerCleanupManager cleaner;
-  private final Duration staleDuration = Duration.ofDays(1);
 
   @Before
   public void setup() throws Exception {
