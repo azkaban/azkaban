@@ -98,11 +98,14 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException e) {
       log.error("Unable to create the image type metadata", e);
       String errorMessage = "";
+      // TODO: Find a better way to get the error message. Currently apache common dbutils
+      // throws sql exception for all the below error scenarios and error message contains
+      // complete query as well, hence generic error message is thrown.
       if (e.getErrorCode() == 1062) {
-        errorMessage = "Reason: Duplicate key provided.";
+        errorMessage = "Reason: Duplicate key provided for one or more column(s)";
       }
       if (e.getErrorCode() == 1406) {
-        errorMessage = "Reason: Data too long for column(s).";
+        errorMessage = "Reason: Data too long for one or more column(s).";
       }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
           + "image type metadata. " + errorMessage);

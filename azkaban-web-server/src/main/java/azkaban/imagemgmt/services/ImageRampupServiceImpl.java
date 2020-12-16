@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,13 +68,6 @@ public class ImageRampupServiceImpl implements ImageRampupService {
     ImageRampupPlanRequest imageRampupPlanRequest = converterUtils
         .convertToModel(imageMetadataRequest.getJsonPayload(),
             ImageRampupPlanRequest.class);
-    // set the user who invoked the API
-    imageRampupPlanRequest.setCreatedBy(imageMetadataRequest.getUser());
-    imageRampupPlanRequest.setModifiedBy(imageMetadataRequest.getUser());
-    for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
-      imageRampupRequest.setCreatedBy(imageMetadataRequest.getUser());
-      imageRampupRequest.setModifiedBy(imageMetadataRequest.getUser());
-    }
     // input validation for ImageRampupPlanRequest
     final List<String> validationErrors = new ArrayList<>();
     if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors)) {
@@ -82,6 +76,13 @@ public class ImageRampupServiceImpl implements ImageRampupService {
           + "input for creating image rampup plan. Error(s): [%s]", errors));
     }
     vaidateRampup(imageRampupPlanRequest);
+    // set the user who invoked the API
+    imageRampupPlanRequest.setCreatedBy(imageMetadataRequest.getUser());
+    imageRampupPlanRequest.setModifiedBy(imageMetadataRequest.getUser());
+    for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
+      imageRampupRequest.setCreatedBy(imageMetadataRequest.getUser());
+      imageRampupRequest.setModifiedBy(imageMetadataRequest.getUser());
+    }
     // Invoke DAO method to create rampup plan and rampup details
     return imageRampupDao.createImageRampupPlan(imageRampupPlanRequest);
   }
@@ -100,11 +101,6 @@ public class ImageRampupServiceImpl implements ImageRampupService {
             ImageRampupPlanRequest.class);
     imageRampupPlanRequest
         .setImageTypeName(String.valueOf(imageMetadataRequest.getParams().get(IMAGE_TYPE)));
-    // set the user who invoked the API
-    imageRampupPlanRequest.setModifiedBy(imageMetadataRequest.getUser());
-    for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
-      imageRampupRequest.setModifiedBy(imageMetadataRequest.getUser());
-    }
     // input validation for image version create request
     final List<String> validationErrors = new ArrayList<>();
     if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors)) {
@@ -112,7 +108,16 @@ public class ImageRampupServiceImpl implements ImageRampupService {
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
           + "input for updating image rampup plan. Error(s): [%s]", errors));
     }
-    vaidateRampup(imageRampupPlanRequest);
+    // set the user who invoked the API
+    imageRampupPlanRequest.setModifiedBy(imageMetadataRequest.getUser());
+    // Validate rampup details and set the modified by user
+    if(!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+      vaidateRampup(imageRampupPlanRequest);
+      // Set the modified by user
+      for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
+        imageRampupRequest.setModifiedBy(imageMetadataRequest.getUser());
+      }
+    }
     imageRampupDao.updateImageRampupPlan(imageRampupPlanRequest);
   }
 
@@ -124,10 +129,13 @@ public class ImageRampupServiceImpl implements ImageRampupService {
    *
    * @param imageRampupPlanRequest
    * @return boolean
+   * @throws ImageMgmtValidationException
    */
-  private boolean vaidateRampup(ImageRampupPlanRequest imageRampupPlanRequest) {
+  private boolean vaidateRampup(ImageRampupPlanRequest imageRampupPlanRequest)
+      throws ImageMgmtValidationException {
     List<ImageRampupRequest> imageRampupRequests = imageRampupPlanRequest.getImageRampups();
-    if (imageRampupRequests == null || imageRampupRequests.isEmpty()) {
+    log.info("vaidateRampup imageRampupRequests: {} ", imageRampupRequests);
+    if (CollectionUtils.isEmpty(imageRampupRequests)) {
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Missing rampup details");
     }
     // Check for total rampup percentage

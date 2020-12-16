@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,13 +145,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * Otherwise, appropriate error message will be thrown.
        */
       if (optionalImageRampupPlan.isPresent()) {
-        if (imageRampupPlanRequest.isActivatePlan()) {
+        if (imageRampupPlanRequest.isForceActivatePlan()) {
           transOperator.update(DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY,
               false, optionalImageRampupPlan.get().getId());
         } else {
           throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Existing plan: %s "
-                  + "is active for image type: %s. To create and activate a new plan set "
-                  + "activatePlan option to true.",
+                  + "is active for image type: %s. To create and activate a new plan, deactivate "
+                  + "the existing plan. Alternatively, set forceActivatePlan to true to forcefully"
+                  + "deactivate the existing plan and proceed with the new plan creation.",
               optionalImageRampupPlan.get().getPlanName(),
               imageRampupPlanRequest.getImageTypeName()));
         }
@@ -200,6 +202,13 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       imageRampupPlanId = this.databaseOperator.transaction(insertAndGetRampupPlanId).intValue();
     } catch (final SQLException e) {
       log.error("Unable to create the image version metadata", e);
+      String errorMessage = "";
+      // TODO: Find a better way to get the error message. Currently apache common dbutils throws
+      // sql exception for all the below error scenarios and error message contains complete
+      // query as well, hence generic error message is thrown.
+      if (e.getErrorCode() == 1406) {
+        errorMessage = "Reason: Data too long for one or more column(s).";
+      }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
           + "version metadata");
     }
@@ -345,20 +354,22 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * request so that update can be done using the ID. The below code will prepare version to
        * ID map based on the version and id available in the image_rampup table.
        */
-      final Map<String, Integer> versionIdKeyMap = new HashMap<>();
-      for (final ImageRampup imageRampup : imageRampupPlan.getImageRampups()) {
-        versionIdKeyMap.put(imageRampup.getImageVersion(), imageRampup.getId());
-      }
+      if(!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+        final Map<String, Integer> versionIdKeyMap = new HashMap<>();
+        for (final ImageRampup imageRampup : imageRampupPlan.getImageRampups()) {
+          versionIdKeyMap.put(imageRampup.getImageVersion(), imageRampup.getId());
+        }
 
-      // Use the version to id map created above to update the ID of each ramp up record.
-      for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
-          .getImageRampups()) {
-        if (versionIdKeyMap.containsKey(imageRampupRequest.getImageVersion())) {
-          imageRampupRequest.setId(versionIdKeyMap.get(imageRampupRequest.getImageVersion()));
-        } else {
-          // Throw exception if invalid version is specified in the input request
-          throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Invalid version: "
-              + "%s specified in the image rampup input.", imageRampupRequest.getImageVersion()));
+        // Use the version to id map created above to update the ID of each ramp up record.
+        for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+            .getImageRampups()) {
+          if (versionIdKeyMap.containsKey(imageRampupRequest.getImageVersion())) {
+            imageRampupRequest.setId(versionIdKeyMap.get(imageRampupRequest.getImageVersion()));
+          } else {
+            // Throw exception if invalid version is specified in the input request
+            throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Invalid version: "
+                + "%s specified in the image rampup input.", imageRampupRequest.getImageVersion()));
+          }
         }
       }
       // Update image_rampup_plan and image_rampup table using the corresponding ID (key) and the
@@ -367,9 +378,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         // update image rampup plan
         updateImageRampupPlanInternal(imageRampupPlanRequest);
         // update each rampup
-        for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
-            .getImageRampups()) {
-          updateImageRampup(imageRampupRequest);
+        if(!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+          for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+              .getImageRampups()) {
+            updateImageRampup(imageRampupRequest);
+          }
         }
         transOperator.getConnection().commit();
         return 1;
@@ -407,7 +420,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       final StringBuilder queryBuilder = new StringBuilder("update image_rampup_plan set ");
       // As update is allowed only for active plan, if activatePlan is false then deactivate the
       // current plan.
-      if (!imageRampupPlanRequest.isActivatePlan()) {
+      if (!imageRampupPlanRequest.isActivatePlan() ||
+          !imageRampupPlanRequest.isForceActivatePlan()) {
         queryBuilder.append(" active = ?, ");
         params.add(Boolean.valueOf(imageRampupPlanRequest.isActivatePlan()));
       }
