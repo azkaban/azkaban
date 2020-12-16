@@ -94,10 +94,11 @@ public class FlowContainer {
   private static final String JOBTYPE_DIR = "jobtypes";
   private static final String CONF_ARG = "-conf";
   private static final String CONF_DIR = "conf";
+  private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
+  private static final int DEFAULT_LOG_NUM_FILES = 4;
 
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
 
-  // FlowRunnerManager specific code
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
@@ -105,7 +106,7 @@ public class FlowContainer {
   private final Props azKabanProps;
   private Props globalProps;
 
-  // We want to limit the log sizes to about 20 megs
+  // Max chunk size is 20MB.
   private final String jobLogChunkSize;
   private final int jobLogNumFiles;
   // If true, jobs will validate proxy user against a list of valid proxy users.
@@ -129,7 +130,7 @@ public class FlowContainer {
       this.globalProps = new Props(null, globalPropsPath);
     }
 
-    // Setup DAO, a lot of it is redundant
+    // Setup DAO
     final DataSource dataSource= new MySQLDataSource(this.azKabanProps,
         new DBMetrics(new MetricsManager(new MetricRegistry())));
 
@@ -144,48 +145,18 @@ public class FlowContainer {
     // setup executor service
     this.executorService = Executors.newSingleThreadExecutor();
 
-    this.jobLogChunkSize = this.azKabanProps.getString("job.log.chunk.size", "5MB");
-    this.jobLogNumFiles = this.azKabanProps.getInt("job.log.backup.index", 4);
+    this.jobLogChunkSize = this.azKabanProps.getString("job.log.chunk.size",
+            DEFAULT_LOG_CHUNK_SIZE);
+    this.jobLogNumFiles = this.azKabanProps.getInt("job.log.backup.index", DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean("proxy.user.lock.down", false);
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
             this.globalProps, getClass().getClassLoader());
-    // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
-    Props keyStoreLoadProps = this.jobTypeManager.getKeyStoreLoadProps();
-    if (keyStoreLoadProps != null) {
-      // Load HadoopSecurityManager
-      HadoopSecurityManager hadoopSecurityManager = null;
-      try {
-        final String hadoopSecurityClassName =
-                keyStoreLoadProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
-        final Class<?> hadoopSecurityManagerClass =
-                HadoopProxy.class.getClassLoader().loadClass(hadoopSecurityClassName);
 
-        logger.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
-        hadoopSecurityManager = (HadoopSecurityManager)
-                Utils.callConstructor(hadoopSecurityManagerClass, keyStoreLoadProps);
-      } catch (final Exception e) {
-        logger.error("Could not instantiate Hadoop Security Manager ", e);
-        throw new RuntimeException("Failed to get hadoop security manager!"
-                + e.getCause(), e);
-      }
-
-      final KeyStore keyStore = hadoopSecurityManager.getKeyStore(keyStoreLoadProps);
-      if (keyStore == null) {
-        logger.error("Failed to Prefetch KeyStore");
-        throw new IOException("Failed to Prefetch KeyStore");
-      }
-      // Delete the cert file from disk as the KeyStore is already cached above.
-      final File certFile = new File(Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION);
-      if (certFile.delete()) {
-        logger.info("Successfully deleted the cert file");
-      } else {
-        logger.error("Failed to delete the cert file");
-        throw new IOException("Failed to delete the cert file");
-      }
-    }
+    // Setting up the in-memory KeyStore for all the job executions in the flow.
+    setupKeyStore();
   }
 
   /**
@@ -377,6 +348,48 @@ public class FlowContainer {
         executionJobDao, executionLogsDao, executorEventsDao,
         activeExecutingFlowsDao, fetchActiveFlowDao, assignExecutorDao,
         numExecutionsDao, executionRampDao);
+
+  }
+
+  /**
+   * Setup in-memory keystore to be reused for all the job executions in the flow.
+   * @throws IOException
+   */
+  private void setupKeyStore() throws IOException {
+    // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
+    Props commonPluginLoadProps = this.jobTypeManager.getCommonPluginLoadProps();
+    if (commonPluginLoadProps != null) {
+      // Load HadoopSecurityManager
+      HadoopSecurityManager hadoopSecurityManager = null;
+      try {
+        final String hadoopSecurityClassName =
+                commonPluginLoadProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
+        final Class<?> hadoopSecurityManagerClass =
+                HadoopProxy.class.getClassLoader().loadClass(hadoopSecurityClassName);
+
+        logger.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
+        hadoopSecurityManager = (HadoopSecurityManager)
+                Utils.callConstructor(hadoopSecurityManagerClass, commonPluginLoadProps);
+      } catch (final Exception e) {
+        logger.error("Could not instantiate Hadoop Security Manager ", e);
+        throw new RuntimeException("Failed to get hadoop security manager!"
+                + e.getCause(), e);
+      }
+
+      final KeyStore keyStore = hadoopSecurityManager.getKeyStore(commonPluginLoadProps);
+      if (keyStore == null) {
+        logger.error("Failed to Prefetch KeyStore");
+        throw new IOException("Failed to Prefetch KeyStore");
+      }
+      // Delete the cert file from disk as the KeyStore is already cached above.
+      final File certFile = new File(Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION);
+      if (certFile.delete()) {
+        logger.info("Successfully deleted the cert file");
+      } else {
+        logger.error("Failed to delete the cert file");
+        throw new IOException("Failed to delete the cert file");
+      }
+    }
 
   }
 }
