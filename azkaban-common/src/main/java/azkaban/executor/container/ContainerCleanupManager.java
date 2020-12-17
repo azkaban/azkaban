@@ -15,7 +15,7 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.ContainerizedExecutionManagerProperties;
+import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
@@ -59,7 +59,7 @@ public class ContainerCleanupManager {
       final ContainerizedImpl containerizedImpl) {
     this.cleanupIntervalMin = azkProps
         .getLong(
-            ContainerizedExecutionManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
+            ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
             DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
     this.staleContainerAgeMins = azkProps.getLong(ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS,
         DEFAULT_STALE_CONTAINER_AGE_MINS.toMinutes());
