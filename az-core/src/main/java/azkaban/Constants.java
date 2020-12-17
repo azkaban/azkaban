@@ -486,7 +486,7 @@ public class Constants {
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
 
-  public static class ContainerizedExecutionManagerProperties {
+  public static class ContainerizedDispatchManagerProperties {
     public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
     public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
     public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =

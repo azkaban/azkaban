@@ -19,7 +19,7 @@ package azkaban.webapp;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.ContainerizedExecutionManagerProperties;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
@@ -39,7 +39,6 @@ import azkaban.utils.Props;
 import azkaban.webapp.metrics.DummyWebMetricsImpl;
 import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.metrics.WebMetricsImpl;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -95,7 +94,7 @@ public class AzkabanWebServerModule extends AbstractModule {
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
-        props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
+        props.getString(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
     return ContainerizedImplType.valueOf(containerizedImplProperty).getImplClass();
