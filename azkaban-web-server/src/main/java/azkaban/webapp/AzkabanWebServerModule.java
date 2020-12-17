@@ -37,6 +37,8 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManger;
 import azkaban.imagemgmt.services.ImageRampupService;
@@ -105,12 +107,8 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
     bind(ImageTypeService.class).to(ImageTypeServiceImpl.class);
-    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
     bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
-    bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
     bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
-    bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
-    bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {

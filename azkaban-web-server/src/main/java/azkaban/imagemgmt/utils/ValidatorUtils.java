@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.utils;
 
+import java.util.List;
 import java.util.Set;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class ValidatorUtils {
 
   private static final Logger log = LoggerFactory.getLogger(ValidatorUtils.class);
-  private static ValidatorFactory validatorFactory;
+  private static final ValidatorFactory validatorFactory;
 
   private ValidatorUtils() {
   }
@@ -50,15 +51,17 @@ public class ValidatorUtils {
    * @param <T>
    * @return boolean
    */
-  public static <T> boolean validateObject(T obj) {
-    Validator validator = validatorFactory.getValidator();
-    Set<ConstraintViolation<T>> violations = validator.validate(obj);
+  public static <T> boolean validateObject(final T obj, final List<String> validationErrors) {
+    final Validator validator = validatorFactory.getValidator();
+    final Set<ConstraintViolation<T>> violations = validator.validate(obj);
     if (violations.isEmpty()) {
       return true;
     }
     log.error("Object validation failed for: " + obj.toString());
-    violations.forEach(violation -> log
-        .error(violation.getPropertyPath().toString() + " " + violation.getMessage()));
+    violations.forEach(violation -> {
+      validationErrors.add(violation.getMessage());
+      log.error(violation.getPropertyPath().toString() + " " + violation.getMessage());
+    });
     return false;
   }
 }

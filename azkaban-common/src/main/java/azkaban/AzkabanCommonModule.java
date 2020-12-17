@@ -22,6 +22,16 @@ import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.imagemgmt.daos.ImageRampupDao;
+import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
+import azkaban.imagemgmt.daos.ImageTypeDao;
+import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
+import azkaban.imagemgmt.daos.ImageVersionDao;
+import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
+import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.imagemgmt.rampup.ImageRampupManger;
 import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectCache;
@@ -84,6 +94,11 @@ public class AzkabanCommonModule extends AbstractModule {
               Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
       return new OsCpuUtil(Math.max(1, (cpuLoadPeriodSec * 1000) / pollingIntervalMs));
     });
+    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
+    bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
+    bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
+    bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
+    bind(PermissionManager.class).to(PermissionManagerImpl.class);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {

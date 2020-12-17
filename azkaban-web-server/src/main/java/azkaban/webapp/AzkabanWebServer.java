@@ -32,6 +32,7 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageVersionService;
@@ -163,10 +164,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
   private final ImageTypeService imageTypeService;
   private final ImageVersionService imageVersionService;
   private final ImageRampupService imageRampupService;
+  private final PermissionManager permissionManager;
 
 
   @Inject
@@ -187,7 +189,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final ObjectMapper objectMapper,
       final ImageTypeService imageTypeService,
       final ImageVersionService imageVersionService,
-      final ImageRampupService imageRampupService) {
+      final ImageRampupService imageRampupService,
+      final PermissionManager permissionManager) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -209,6 +212,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.imageVersionService = requireNonNull(imageVersionService, "imageVersionService is "
         + "null");
     this.imageRampupService = requireNonNull(imageRampupService, "imageRampupService is "
+        + "null");
+    this.permissionManager = requireNonNull(permissionManager, "permissionManager is "
         + "null");
 
     loadBuiltinCheckersAndActions();
@@ -708,10 +713,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     } else if (this.executorManagerAdapter instanceof ExecutionController) {
       this.mbeanRegistrationManager.registerMBean("executionController",
           new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
-    }
-    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+    } else if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
       this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
-          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
+          new JmxContainerizedDispatchManager(
+              (ContainerizedDispatchManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
@@ -750,7 +755,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   public ImageTypeService getImageTypeService() {
-    return imageTypeService;
+    return this.imageTypeService;
   }
 
   public ImageVersionService getImageVersionsService() {
@@ -758,6 +763,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   public ImageRampupService getImageRampupService() {
-    return imageRampupService;
+    return this.imageRampupService;
+  }
+
+  public PermissionManager getPermissionManager() {
+    return this.permissionManager;
   }
 }

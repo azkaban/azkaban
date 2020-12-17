@@ -15,6 +15,10 @@
  */
 package azkaban.imagemgmt.models;
 
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import javax.validation.constraints.NotBlank;
 import org.codehaus.jackson.annotate.JsonProperty;
 
@@ -22,6 +26,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
  * This class represents ownership information of an image type.
  */
 public class ImageOwnership extends BaseModel {
+
   // Represents image type name
   @JsonProperty("imageType")
   @NotBlank(message = "imageType cannot be blank")
@@ -32,60 +37,79 @@ public class ImageOwnership extends BaseModel {
   private Role role;
 
   public String getName() {
-    return name;
+    return this.name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
   public String getOwner() {
-    return owner;
+    return this.owner;
   }
 
-  public void setOwner(String owner) {
+  public void setOwner(final String owner) {
     this.owner = owner;
   }
 
   public Role getRole() {
-    return role;
+    return this.role;
   }
 
-  public void setRole(Role role) {
+  public void setRole(final Role role) {
     this.role = role;
   }
 
   /**
-   * Enum representing owner Role
-   * ADMIN role is having all the permissions such as invoking image management APIs, Adding new
-   * job type owner etc.
-   * MEMBER - Must have permissions to invoke image management APIs, but can't add/delete job
-   * type owners etc. However the MEMBER role needs to be clearly defined.
+   * Enum representing owner Role as ADMIN is having all the permissions such as invoking image
+   * management APIs, including adding/removing image type owners etc. MEMBER role is having
+   * permissions to invoke image management APIs, but can't add/delete image type owners etc.
+   * GUEST role is having readonly or get access to the image management APIs.
    */
   public enum Role {
-    ADMIN("admin"),
-    MEMBER("member");
+    ADMIN(ADMIN_PERMISSION),
+    MEMBER(MEMBER_PERMISSION),
+    GUEST(GUEST_PERMISSION);
 
-    private final String name;
-    private Role(final String name) {
-      this.name = name;
+    @SuppressWarnings("ImmutableEnumChecker")
+    private final Permission permission;
+
+    private Role(final Permission permission) {
+      this.permission = permission;
     }
 
-    public String getName() {
-      return name;
+    public Permission getPermission() {
+      return this.permission;
     }
   }
+
+  /**
+   * Permission for image type owner of role ADMIN. ADMIN owner has complete access to image
+   * management APIs including add/delete of new member as image type owner.
+   */
+  private static final Permission ADMIN_PERMISSION = new Permission(Type.CREATE, Type.GET,
+      Type.UPDATE, Type.DELETE, Type.IMAGE_TYPE_ADD_MEMBER, Type.IMAGE_TYPE_DELETE_MEMBER);
+  /**
+   * Permission for image type owner of role MEMBER. MEMBER owner has complete access to image
+   * management APIs except add/delete of new member as image type owner.
+   */
+  private static final Permission MEMBER_PERMISSION = new Permission(Type.CREATE, Type.GET,
+      Type.UPDATE, Type.DELETE);
+  /**
+   * The default permission is only GET access to the image management APIs.
+   */
+  private static final Permission GUEST_PERMISSION = new Permission(Type.GET);
 
   @Override
   public String toString() {
     return "ImageOwnership{" +
-        "owner='" + owner + '\'' +
-        ", role=" + role +
-        ", id=" + id +
-        ", createdBy='" + createdBy + '\'' +
-        ", createdOn='" + createdOn + '\'' +
-        ", modifiedBy='" + modifiedBy + '\'' +
-        ", modifiedOn='" + modifiedOn + '\'' +
+        "owner='" + this.owner + '\'' +
+        ", role=" + this.role +
+        ", id=" + this.id +
+        ", createdBy='" + this.createdBy + '\'' +
+        ", createdOn='" + this.createdOn + '\'' +
+        ", modifiedBy='" + this.modifiedBy + '\'' +
+        ", modifiedOn='" + this.modifiedOn + '\'' +
         '}';
   }
 }

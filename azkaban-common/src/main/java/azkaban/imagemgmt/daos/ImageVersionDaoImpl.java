@@ -23,6 +23,7 @@ import azkaban.Constants.ImageMgmtConstants;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exeception.ErrorCode;
 import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exeception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
@@ -123,7 +124,18 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       imageVersionId = databaseOperator.transaction(insertAndGetSpaceId).intValue();
     } catch (SQLException e) {
       log.error("Unable to create the image version metadata", e);
-      throw new ImageMgmtDaoException("Exception while creating image version metadata");
+      String errorMessage = "";
+      // TODO: Find a better way to get the error message. Currently apache common dbutils throws
+      // sql exception for all the below error scenarios and error message contains complete
+      // query as well, hence generic error message is thrown.
+      if (e.getErrorCode() == 1062) {
+        errorMessage = "Reason: Duplicate key provided for one or more column(s)";
+      }
+      if (e.getErrorCode() == 1406) {
+        errorMessage = "Reason: Data too long for one or more column(s).";
+      }
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
+          + "version metadata" + errorMessage);
     }
     return imageVersionId;
   }
@@ -160,7 +172,8 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
     } catch (SQLException ex) {
       log.error("Exception while fetching image version ", ex);
-      throw new ImageMgmtDaoException("Exception while fetching image version");
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Exception while fetching image "
+          + "version");
     }
     return imageVersions;
   }
@@ -203,7 +216,8 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
     } catch (SQLException ex) {
       log.error("Exception while fetching image version ", ex);
-      throw new ImageMgmtDaoException("Exception while fetching image version");
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while fetching image "
+          + "version");
     }
     return imageVersions;
   }
@@ -234,7 +248,15 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
     } catch (SQLException ex) {
       log.error("Exception while updating image version ", ex);
-      throw new ImageMgmtDaoException("Exception while updating image version");
+      String errorMessage = "";
+      // TODO: Find a better way to get the error message. Currently apache common dbutils throws
+      // sql exception for all the below error scenarios and error message contains complete
+      // query as well, hence generic error message is thrown.
+      if (ex.getErrorCode() == 1406) {
+        errorMessage = "Reason: Data too long for one or more column(s).";
+      }
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image "
+          + "version");
     }
   }
 

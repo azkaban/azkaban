@@ -39,6 +39,11 @@ public class ImageRampupPlanRequest extends BaseModel {
   @JsonProperty("activatePlan")
   private boolean activatePlan;
 
+  // This flag if set will forcefully activate the new plan by deactivating the existing active
+  // rampup plan
+  @JsonProperty("forceActivatePlan")
+  private boolean forceActivatePlan;
+
   // Rampup details for the image type
   private List<ImageRampupRequest> imageRampups;
 
@@ -72,6 +77,14 @@ public class ImageRampupPlanRequest extends BaseModel {
 
   public void setActivatePlan(boolean activatePlan) {
     this.activatePlan = activatePlan;
+  }
+
+  public boolean isForceActivatePlan() {
+    return forceActivatePlan;
+  }
+
+  public void setForceActivatePlan(boolean forceActivatePlan) {
+    this.forceActivatePlan = forceActivatePlan;
   }
 
   public List<ImageRampupRequest> getImageRampups() {

@@ -15,11 +15,17 @@
  */
 package azkaban.imagemgmt.servlets;
 
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.exeception.ErrorCode;
+import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
+import azkaban.user.Permission.Type;
+import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.linkedin.jersey.api.uri.UriTemplate;
@@ -45,9 +51,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
   private static final String GET_IMAGE_TYPE_URI = "/imageTypes";
   private static final String IMAGE_TYPE_ID_KEY = "id";
-  private static final UriTemplate CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE = new UriTemplate(
-      String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
-  private static final UriTemplate GET_IMAGE_TYPE_URI_TEMPLATE = new UriTemplate(
+  private static final UriTemplate IMAGE_TYPE_WITH_ID_URI_TEMPLATE = new UriTemplate(
       String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
   private ImageTypeService imageTypeService;
   private ObjectMapper objectMapper;
@@ -67,42 +71,52 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session)
+  protected void handleGet(
+      final HttpServletRequest req, final HttpServletResponse resp, final Session session)
       throws ServletException, IOException {
     try {
-      Map<String, String> templateVariableToValue = new HashMap<>();
-      if (GET_IMAGE_TYPE_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
+      final Map<String, String> templateVariableToValue = new HashMap<>();
+      if (IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
         // TODO: Implementation will be provided in the future PR
       } else if (GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
         // TODO: Implementation will be provided in the future PR
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Content is likely not present " + e);
       resp.setStatus(HttpStatus.SC_NOT_FOUND);
     }
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
+  protected void handlePost(
+      final HttpServletRequest req, final HttpServletResponse resp, final Session session)
       throws ServletException, IOException {
     try {
-      String jsonPayload = HttpRequestUtils.getBody(req);
+      final String jsonPayload = HttpRequestUtils.getBody(req);
+      // Check for required permission to invoke the API
+      final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+        log.debug(String.format("Invalid permission to create image type for "
+            + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+        throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+            + "create image type");
+      }
+
       // Build ImageMetadataRequest DTO to transfer the input request
-      ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
+      final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
           .jsonPayload(jsonPayload)
           .user(session.getUser().getUserId())
           .build();
       // Create image type and get image type id
-      Integer imageTypeId = imageTypeService.createImageType(imageMetadataRequest);
+      final Integer imageTypeId = this.imageTypeService.createImageType(imageMetadataRequest);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",
-          CREATE_IMAGE_TYPE_RESPONSE_URI_TEMPLATE.createURI(imageTypeId.toString()));
+          IMAGE_TYPE_WITH_ID_URI_TEMPLATE.createURI(imageTypeId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
-    } catch (final ImageMgmtValidationException e) {
-      log.error("Input for creating image type is invalid", e);
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-          "Bad request for creating an image type. Reason: " + e.getMessage());
+    } catch (final ImageMgmtException e) {
+      log.error("Exception while creating an image type", e);
+      sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
     } catch (final Exception e) {
       log.error("Exception while creating an image type", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,

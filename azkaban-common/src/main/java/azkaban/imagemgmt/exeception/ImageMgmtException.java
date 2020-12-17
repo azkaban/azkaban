@@ -19,11 +19,30 @@ package azkaban.imagemgmt.exeception;
  * Top level exception class for image management
  */
 public class ImageMgmtException extends RuntimeException {
-  public ImageMgmtException(String errorMessage) {
+
+  // Initialize default to INTERNAL_SERVER_ERROR
+  private ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+
+  public ImageMgmtException(final String errorMessage) {
     super(errorMessage);
   }
 
-  public ImageMgmtException(String errorMessage, Throwable throwable) {
+  public ImageMgmtException(final ErrorCode errorCode, final String errorMessage) {
+    super(errorMessage);
+    this.errorCode = errorCode;
+  }
+
+  public ImageMgmtException(final String errorMessage, final Throwable throwable) {
     super(errorMessage, throwable);
+  }
+
+  public ImageMgmtException(final ErrorCode errorCode, final String errorMessage,
+      final Throwable throwable) {
+    super(errorMessage, throwable);
+    this.errorCode = errorCode;
+  }
+
+  public ErrorCode getErrorCode() {
+    return this.errorCode;
   }
 }

@@ -19,7 +19,12 @@ package azkaban.imagemgmt.exeception;
  * The represents the exception class to be thrown on failure of API input validation
  */
 public class ImageMgmtInvalidInputException extends ImageMgmtException {
-  public ImageMgmtInvalidInputException(String errorMessage) {
+
+  public ImageMgmtInvalidInputException(final String errorMessage) {
     super(errorMessage);
+  }
+
+  public ImageMgmtInvalidInputException(final ErrorCode errorCode, final String errorMessage) {
+    super(errorCode, errorMessage);
   }
 }

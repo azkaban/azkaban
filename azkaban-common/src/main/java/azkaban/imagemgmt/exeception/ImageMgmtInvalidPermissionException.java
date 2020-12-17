@@ -16,15 +16,15 @@
 package azkaban.imagemgmt.exeception;
 
 /**
- * The represents the exception class to be thrown on failure of API input validation
+ * The represents the exception class to be thrown on the failure of API permission denied issue.
  */
-public class ImageMgmtValidationException extends ImageMgmtException {
+public class ImageMgmtInvalidPermissionException extends ImageMgmtException {
 
-  public ImageMgmtValidationException(final String errorMessage) {
+  public ImageMgmtInvalidPermissionException(final String errorMessage) {
     super(errorMessage);
   }
 
-  public ImageMgmtValidationException(final ErrorCode errorCode, final String errorMessage) {
+  public ImageMgmtInvalidPermissionException(final ErrorCode errorCode, final String errorMessage) {
     super(errorCode, errorMessage);
   }
 }
