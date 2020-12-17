@@ -16,7 +16,7 @@
 package azkaban.executor.container;
 
 import azkaban.Constants;
-import azkaban.Constants.ContainerizedExecutionManagerProperties;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.ExecutableFlow;
@@ -69,7 +69,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     super(azkProps, executorLoader, commonMetrics, apiGateway);
     rateLimiter =
         RateLimiter.create(azkProps
-            .getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
+            .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
     this.containerizedImpl = containerizedImpl;
   }
 
@@ -208,14 +208,14 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       setActive(
           this.azkProps.getBoolean(Constants.ConfigurationKeys.QUEUEPROCESSING_ENABLED, true));
       this.executionsBatchProcessingEnabled = azkProps
-          .getBoolean(ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_BATCH_ENABLED,
+          .getBoolean(ContainerizedDispatchManagerProperties.CONTAINERIZED_EXECUTION_BATCH_ENABLED,
               false);
       this.executionsBatchSize =
           azkProps
-              .getInt(ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_BATCH_SIZE,
+              .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_EXECUTION_BATCH_SIZE,
                   10);
       this.executorService = Executors.newFixedThreadPool(azkProps.getInt(
-          ContainerizedExecutionManagerProperties.CONTAINERIZED_EXECUTION_PROCESSING_THREAD_POOL_SIZE,
+          ContainerizedDispatchManagerProperties.CONTAINERIZED_EXECUTION_PROCESSING_THREAD_POOL_SIZE,
           10));
       this.setName("Containerized-QueueProcessor-Thread");
     }
