@@ -487,6 +487,7 @@ public class Constants {
   }
 
   public static class ContainerizedExecutionManagerProperties {
+
     public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
     public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
     public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
@@ -499,7 +500,7 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
 
     // Kubernetes related properties
-    public static final String AZKABAN_KUBERNETES_PREFIX="azkaban.kubernetes.";
+    public static final String AZKABAN_KUBERNETES_PREFIX = "azkaban.kubernetes.";
     public static final String KUBERNETES_NAMESPACE = AZKABAN_KUBERNETES_PREFIX + "namespace";
     public static final String KUBERNETES_KUBE_CONFIG_PATH = AZKABAN_KUBERNETES_PREFIX +
         "kube.config.path";
@@ -513,12 +514,15 @@ public class Constants {
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT = KUBERNETES_FLOW_CONTAINER_PREFIX +
-        "cpu.limit";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST = KUBERNETES_FLOW_CONTAINER_PREFIX +
-        "cpu.request";
-    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT = KUBERNETES_FLOW_CONTAINER_PREFIX +
-        "memory.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "cpu.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "cpu.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "memory.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
 
@@ -531,6 +535,10 @@ public class Constants {
     public static final String KUBERNETES_SERVICE_PORT = KUBERNETES_SERVICE_PREFIX + "port";
     public static final String KUBERNETES_SERVICE_CREATION_TIMEOUT_MS = KUBERNETES_SERVICE_PREFIX +
         "creation.timeout.ms";
+
+    // Periodicity of lookup and cleanup of stale executions.
+    public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
+        AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
   }
 
   public static class ImageMgmtConstants {
