@@ -230,13 +230,25 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to get flows fetched in Queue. Flows can be in queue in ready,
-   * dispatching or preparing state while in queue. That is why it is expecting status in parameter.
+   * This method is used to get flows fetched in Queue. Flows can be in queue in ready, dispatching
+   * or preparing state while in queue. That is why it is expecting status in parameter.
+   *
    * @param status
    * @return
    * @throws ExecutorManagerException
    */
   List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException;
+
+  /**
+   * Fetch stale flows. A flow is considered stale if it was started more than {@code
+   * executionDuration} ago and is not yet in a final state.
+   *
+   * @param executionDuration
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
       throws ExecutorManagerException;
 
   List<ExecutableFlow> fetchAgedQueuedFlows(
@@ -304,10 +316,11 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to select executions in batch. It will apply lock and fetch executions.
-   * It will also update the status of those executions as mentioned in updatedStatus field.
-   * @param batchEnabled If set to true, fetch the executions in batch
-   * @param limit Limit in case of batch fetch
+   * This method is used to select executions in batch. It will apply lock and fetch executions. It
+   * will also update the status of those executions as mentioned in updatedStatus field.
+   *
+   * @param batchEnabled  If set to true, fetch the executions in batch
+   * @param limit         Limit in case of batch fetch
    * @param updatedStatus Update the status of executions as mentioned in this field. It can be
    *                      READY of PREPARING based on whichever is the starting state for any
    *                      dispatch method.
@@ -327,9 +340,10 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   ExecutableRampExceptionalFlowItemsMap fetchExecutableRampExceptionalFlowItemsMap()
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
-  void updateExecutedRampFlows(final String ramp, ExecutableRampExceptionalItems executableRampExceptionalItems)
+  void updateExecutedRampFlows(final String ramp,
+      ExecutableRampExceptionalItems executableRampExceptionalItems)
       throws ExecutorManagerException;
 
   ExecutableRampExceptionalJobItemsMap fetchExecutableRampExceptionalJobItemsMap()
