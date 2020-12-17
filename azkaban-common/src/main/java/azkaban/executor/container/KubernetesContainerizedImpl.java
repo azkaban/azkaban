@@ -16,7 +16,7 @@
 package azkaban.executor.container;
 
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.ContainerizedExecutionManagerProperties;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
@@ -97,44 +97,44 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.namespace = this.azkProps
-        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_NAMESPACE);
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
     this.flowContainerName =
         this.azkProps
-            .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_NAME
+            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_NAME
                 , DEFAULT_FLOW_CONTAINER_NAME_PREFIX);
     this.podPrefix =
-        this.azkProps.getString(ContainerizedExecutionManagerProperties.KUBERNETES_POD_NAME_PREFIX,
+        this.azkProps.getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_NAME_PREFIX,
             DEFAULT_POD_NAME_PREFIX);
     this.servicePrefix = this.azkProps
-        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_NAME_PREFIX,
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_NAME_PREFIX,
             DEFAULT_SERVICE_NAME_PREFIX);
     this.clusterName = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
     this.cpuLimit = this.azkProps
-        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
             CPU_LIMIT);
     this.cpuRequest = this.azkProps
-        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
     this.memoryLimit = this.azkProps
-        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
             MEMORY_LIMIT);
     this.memoryRequest = this.azkProps
-        .getString(ContainerizedExecutionManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
             DEFAULT_MEMORY_REQUEST);
     this.servicePort =
-        this.azkProps.getInt(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_PORT,
+        this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
             54343);
     this.serviceTimeout =
         this.azkProps
-            .getLong(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_CREATION_TIMEOUT_MS,
+            .getLong(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_CREATION_TIMEOUT_MS,
                 60000);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
       final String kubeConfigPath = this.azkProps
-          .getString(ContainerizedExecutionManagerProperties.KUBERNETES_KUBE_CONFIG_PATH);
+          .getString(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH);
       logger.info("Kube config path is : {}", kubeConfigPath);
       this.client =
           ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(
@@ -381,7 +381,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   private boolean isServiceRequired() {
     return this.azkProps
-        .getBoolean(ContainerizedExecutionManagerProperties.KUBERNETES_SERVICE_REQUIRED, false);
+        .getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_REQUIRED, false);
   }
 
   /**

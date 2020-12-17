@@ -19,7 +19,7 @@ package azkaban.webapp;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.ContainerizedExecutionManagerProperties;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
@@ -113,7 +113,7 @@ public class AzkabanWebServerModule extends AbstractModule {
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
     final String containerizedImplProperty =
-        props.getString(ContainerizedExecutionManagerProperties.CONTAINERIZED_IMPL_TYPE,
+        props.getString(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
             ContainerizedImplType.KUBERNETES.name())
             .toUpperCase();
     return ContainerizedImplType.valueOf(containerizedImplProperty).getImplClass();

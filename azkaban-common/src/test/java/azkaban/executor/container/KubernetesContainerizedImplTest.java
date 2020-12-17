@@ -18,7 +18,7 @@ package azkaban.executor.container;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import azkaban.Constants.ContainerizedExecutionManagerProperties;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
@@ -39,8 +39,8 @@ public class KubernetesContainerizedImplTest {
 
   @Before
   public void setup() throws Exception {
-    this.props.put(ContainerizedExecutionManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
-    this.props.put(ContainerizedExecutionManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
+    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
+    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
         + "/resources/container/kubeconfig");
     this.executorLoader = mock(ExecutorLoader.class);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,

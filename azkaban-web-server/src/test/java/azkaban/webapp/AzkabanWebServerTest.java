@@ -30,7 +30,7 @@ import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.ContainerizedExecutionManagerProperties;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
@@ -202,9 +202,9 @@ public class AzkabanWebServerTest {
 
     // Test for CONTAINERIZED method
     props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "CONTAINERIZED");
-    props.put(ContainerizedExecutionManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
+    props.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
         + "/resources/container/kubeconfig");
-    props.put(ContainerizedExecutionManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
+    props.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
     final Injector containerizedInjector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(props)
