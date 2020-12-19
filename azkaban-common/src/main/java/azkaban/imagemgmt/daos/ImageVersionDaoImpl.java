@@ -68,7 +68,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
   private static final String SELECT_IMAGE_VERSION_BASE_QUERY =
       "select iv.id, iv.path, iv.description, "
-          + "iv.version, cast(replace(iv.version, '.', '') as unsigned integer) as int_version, "
+          + "iv.version, cast(replace(iv.version, '.', '') as integer) as int_version, "
           + "it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
           + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
   /**
@@ -83,12 +83,12 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       + "outer_tbl.path, outer_tbl.description, outer_tbl.version, outer_tbl.name, outer_tbl.state, "
       + "outer_tbl.release_tag, outer_tbl.created_on, outer_tbl.created_by, outer_tbl.modified_on, "
       + "outer_tbl.modified_by from (select iv.id, iv.path, iv.description, iv.version, "
-      + "cast(replace(iv.version, '.', '') as unsigned integer) as int_version, it.name, iv.state, "
+      + "cast(replace(iv.version, '.', '') as integer) as int_version, it.name, iv.state, "
       + "iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, iv.modified_by "
       + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
       + "and it.name in ( ${image_types} )) "
       + "outer_tbl where outer_tbl.int_version in (select max(inner_tbl.int_version) max_version "
-      + "from (select it.name, cast(replace(iv.version, '.', '') as unsigned integer) as int_version "
+      + "from (select it.name, cast(replace(iv.version, '.', '') as integer) as int_version "
       + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
       + "and it.name in ( ${image_types} )) "
       + "inner_tbl group by inner_tbl.name);";

@@ -27,8 +27,9 @@ public class VersionSetBuilderTest {
   public void testVersionSet() throws IOException {
     // Test if the elements are ordered by keys, not by order of addition
     VersionSetLoader versionSetLoader = Mockito.mock(VersionSetLoader.class);
-    Mockito.when(versionSetLoader.getVersionSetId(Mockito.anyString(), Mockito.anyString()))
-        .thenReturn(1);
+    // TODO: THis is a bogus test now. Suggested removal
+//    Mockito.when(versionSetLoader.getVersionSet(Mockito.anyString(), Mockito.anyString()))
+//        .thenReturn(1);
     VersionSet versionSet = new VersionSetBuilder(versionSetLoader)
         .addElement("key1", "value1")
         .addElement("key3", "value3")

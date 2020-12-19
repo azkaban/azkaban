@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * procedure to elect a new version from the image_versions table for the failed image type.
  */
 @Singleton
-public class ImageRampupManagerImpl implements ImageRampupManger {
+public class ImageRampupManagerImpl implements ImageRampupManager {
 
   private static final Logger log = LoggerFactory.getLogger(ImageRampupManagerImpl.class);
   private final ImageTypeDao imageTypeDao;
@@ -142,7 +142,7 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
     Set<String> rampedImageTypes = imageTypeRampups.keySet();
     Set<String> remainingImageTypes = new TreeSet<>(imageTypes);
     remainingImageTypes.removeAll(rampedImageTypes);
-    if (!rampedImageTypes.isEmpty()) {
+    if (!remainingImageTypes.isEmpty()) {
       List<ImageVersion> imageVersions =
           imageVersionDao.getActiveVersionByImageTypes(remainingImageTypes);
       if (imageVersions != null && !imageVersions.isEmpty()) {

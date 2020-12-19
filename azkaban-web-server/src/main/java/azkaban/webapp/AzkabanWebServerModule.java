@@ -40,13 +40,15 @@ import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
-import azkaban.imagemgmt.rampup.ImageRampupManger;
+import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageRampupServiceImpl;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageTypeServiceImpl;
 import azkaban.imagemgmt.services.ImageVersionService;
 import azkaban.imagemgmt.services.ImageVersionServiceImpl;
+import azkaban.imagemgmt.version.JdbcVersionSetLoader;
+import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -109,6 +111,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ImageTypeService.class).to(ImageTypeServiceImpl.class);
     bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
     bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
+    bind(VersionSetLoader.class).to(JdbcVersionSetLoader.class);
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
