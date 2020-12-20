@@ -88,7 +88,7 @@ public class VersionSet {
    * @return
    */
   public Optional<String> getVersion(String imageType) {
-    return Optional.of(imageToVersionMap.get(imageType));
+    return Optional.ofNullable(imageToVersionMap.get(imageType));
   }
 
   /**
