@@ -15,16 +15,16 @@
  */
 package azkaban.imagemgmt.daos;
 
+import static azkaban.imagemgmt.utils.ErroCodeConstants.SQL_ERROR_CODE_DATA_TOO_LONG;
+
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtDaoException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageRampup.StabilityTag;
 import azkaban.imagemgmt.models.ImageRampupPlan;
-import azkaban.imagemgmt.models.ImageRampupPlanRequest;
-import azkaban.imagemgmt.models.ImageRampupRequest;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections4.CollectionUtils;
@@ -67,9 +68,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       "insert into image_rampup_plan ( name, "
           + "description, type_id, active, created_by, created_on, modified_by, modified_on) "
           + "values (?, ?, ?, ?, ?, ?, ?, ?)";
+
   private static final String INSERT_IMAGE_RAMPUP_QUERY = "insert into image_rampup "
       + "( plan_id, version_id, rampup_percentage, stability_tag, created_by, created_on, "
       + "modified_by, modified_on) values (?, ?, ?, ?, ?, ?, ?, ?)";
+
   /*
    * This query selects the active image rampup plan by joining image types. There shold be only one
    * active image rampup plan. Order by clause and limit will definitely ensure that one active plan
@@ -79,7 +82,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   private static final String SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY = "select irp.id, irp.name, "
       + "irp.description, irp.active, it.name image_type_name, irp.created_on, irp.created_by, "
       + "irp.modified_on, irp.modified_by from image_rampup_plan irp, image_types it where "
-      + "irp.type_id = it.id and it.name = ? and irp.active = ? order by irp.id desc limit 1";
+      + "irp.type_id = it.id and lower(it.name) = ? and irp.active = ? order by irp.id desc "
+      + "limit 1";
 
   private static final String DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY = "update image_rampup_plan "
       + "set active = ? where id = ?";
@@ -89,6 +93,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       + "ir.rampup_percentage, ir.stability_tag, ir.created_on, ir.created_by, ir.modified_on, "
       + "ir.modified_by from image_versions iv, image_rampup_plan irp, image_rampup ir where "
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.id = ?";
+
   /*
    * This query selects rampup records for all the active image types.
    */
@@ -110,26 +115,23 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   }
 
   /**
-   * This method creates ramp up plan along with rampup details. Basically this method does bunch
-   * of things.
-   * 1. Get the image type metadata. If not found throws exception.
-   * 2. Get the active rampup plan for the specified image type.
-   * 3. If active ramup plan already exists -
-   * a. The user has set activate plan to "true" for the new plan, the existing plan will be
-   * deactivated. This deactivation of existing plan will happen automatically.
-   * b. The user has set activate plan to "false" for the new plan, the user will be thrown with an
-   * error stating that there is an active plan and to create and active a new plan, activate plan
-   * must be set to "true" in the input.
-   * 4. Insert the new rampup plan for the image type in the image_rampup_plan table.
-   * 5. Insert the associated image version, rampup percentage etc. in the image_rampup table. Also
-   * check if the specified version is valid and exists. Otherwise, fail the whole transaction.
-   * Here is the example input for ImageRampupPlanRequest { "planName": "Rampup plan 1",
-   * "imageType": "spark_job", "description": "Ramp up for spark job", "activatePlan": true,
-   * "imageRampups": [ { "imageVersion": "1.6.2", "rampupPercentage": "70" }, { "imageVersion":
-   * "1.6.1", "rampupPercentage": "30" } ] }
+   * This method creates ramp up plan along with rampup details. Basically this method does bunch of
+   * things. 1. Get the image type metadata. If not found throws exception. 2. Get the active rampup
+   * plan for the specified image type. 3. If active ramup plan already exists - a. The user has set
+   * activate plan to "true" for the new plan, the existing plan will be deactivated. This
+   * deactivation of existing plan will happen automatically. b. The user has set activate plan to
+   * "false" for the new plan, the user will be thrown with an error stating that there is an active
+   * plan and to create and active a new plan, activate plan must be set to "true" in the input. 4.
+   * Insert the new rampup plan for the image type in the image_rampup_plan table. 5. Insert the
+   * associated image version, rampup percentage etc. in the image_rampup table. Also check if the
+   * specified version is valid and exists. Otherwise, fail the whole transaction. Here is the
+   * example input for ImageRampupPlanRequest { "planName": "Rampup plan 1", "imageType":
+   * "spark_job", "description": "Ramp up for spark job", "activatePlan": true, "imageRampups": [ {
+   * "imageVersion": "1.6.2", "rampupPercentage": "70" }, { "imageVersion": "1.6.1",
+   * "rampupPercentage": "30" } ] }
    */
   @Override
-  public int createImageRampupPlan(final ImageRampupPlanRequest imageRampupPlanRequest) {
+  public int createImageRampupPlan(final ImageRampupPlan imageRampupPlanRequest) {
     final ImageType imageType = this.imageTypeDao
         .getImageTypeByName(imageRampupPlanRequest.getImageTypeName())
         .orElseThrow(() -> new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format("Unable to"
@@ -139,7 +141,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       // Fetch the active rampup plan for the image type
       final Optional<ImageRampupPlan> optionalImageRampupPlan =
           getActiveImageRampupPlan(imageType.getName());
-      /**
+      /*
        * If active rampup plan is already present and the activatePlan is set to true for the new
        * plan, deactivate the current plan as only one rampup plan will be active at a time.
        * Otherwise, appropriate error message will be thrown.
@@ -168,7 +170,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       // insert the rampups for the new plan
       if (imageRampupPlanRequest.getImageRampups() != null
           && imageRampupPlanRequest.getImageRampups().size() > 0) {
-        for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+        for (final ImageRampup imageRampupRequest : imageRampupPlanRequest
             .getImageRampups()) {
           // The image version which is marked as NEW can be picked for rampup up
           final Optional<ImageVersion> imageVersion = this.imageVersionDao
@@ -200,13 +202,22 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
          any of the below statements?
          Ideally all should happen in a transaction */
       imageRampupPlanId = this.databaseOperator.transaction(insertAndGetRampupPlanId).intValue();
+      if (imageRampupPlanId < 1) {
+        log.error(String.format("Exception while creating image rampup plan for image type: %s, "
+                + "imageRampupPlanId: %d.", imageRampupPlanRequest.getImageTypeName(),
+            imageRampupPlanId));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            String.format("Exception while creating image rampup plan for image type: %s, "
+                    + "imageRampupPlanId: %d.", imageRampupPlanRequest.getImageTypeName(),
+                imageRampupPlanId));
+      }
     } catch (final SQLException e) {
       log.error("Unable to create the image version metadata", e);
       String errorMessage = "";
       // TODO: Find a better way to get the error message. Currently apache common dbutils throws
       // sql exception for all the below error scenarios and error message contains complete
       // query as well, hence generic error message is thrown.
-      if (e.getErrorCode() == 1406) {
+      if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
         errorMessage = "Reason: Data too long for one or more column(s).";
       }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
@@ -227,7 +238,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       throws ImageMgmtException {
     try {
       return this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
-          new FetchImageRampupPlanHandler(), imageTypeName, true);
+          new FetchImageRampupPlanHandler(), imageTypeName.toLowerCase(), true);
     } catch (final SQLException ex) {
       log.error(String.format("Exception while fetching active rampup plan for image type: %s. ",
           imageTypeName), ex);
@@ -287,22 +298,22 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       }
       final StringBuilder queryBuilder = new StringBuilder(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY);
       queryBuilder.append(" and ir.stability_tag in ( ?, ? ) ");
-      queryBuilder.append(" and it.name in ( ");
+      queryBuilder.append(" and lower(it.name) in ( ");
       for (int i = 0; i < imageTypes.size() - 1; i++) {
         queryBuilder.append("? ,");
       }
       queryBuilder.append("? )");
       log.info("fetchRampupByImageTypes query: " + queryBuilder.toString());
       final List<Object> params = new ArrayList<>();
-      // Select only EXPERIMENTAL and STABLE versions that are being ramped up. Ignore the
-      // UNSTABLE version.
-      params.add(StabilityTag.EXPERIMENTAL.getTagName());
-      params.add(StabilityTag.STABLE.getTagName());
       // Select active image rampup plan
       params.add(Boolean.TRUE);
       // Select active image type
       params.add(Boolean.TRUE);
-      params.addAll(imageTypes);
+      // Select only EXPERIMENTAL and STABLE versions that are being ramped up. Ignore the
+      // UNSTABLE version.
+      params.add(StabilityTag.EXPERIMENTAL.getTagName());
+      params.add(StabilityTag.STABLE.getTagName());
+      params.addAll(imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet()));
       return this.databaseOperator.query(queryBuilder.toString(),
           new FetchImageTypeRampupHandler(), Iterables.toArray(params, Object.class));
     } catch (final SQLException ex) {
@@ -314,14 +325,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   }
 
   @Override
-  public void updateImageRampupPlan(final ImageRampupPlanRequest imageRampupPlanRequest)
+  public void updateImageRampupPlan(final ImageRampupPlan imageRampupPlanRequest)
       throws ImageMgmtException {
     // Select the active rampup plan and the rampups for the given image type
     final Optional<ImageRampupPlan> optionalImageRampupPlan =
         getActiveImageRampupPlanAndRampup(imageRampupPlanRequest.getImageTypeName());
     if (optionalImageRampupPlan.isPresent()) {
       final ImageRampupPlan imageRampupPlan = optionalImageRampupPlan.get();
-      /**
+      /*
        * The below internal ID mapping is required because the update API image type for which
        * rampup plan and rampup needs to be updated. It is easy for the API user to pass just
        * image type. Other the API user needs ID of the rampup plan and all the IDs of the
@@ -349,19 +360,19 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        */
       // Set the ID of the plan to be updated.
       imageRampupPlanRequest.setId(imageRampupPlan.getId());
-      /**
+      /*
        * Update the internal ID (Key of image_rampup table) for each version present in the rampup
        * request so that update can be done using the ID. The below code will prepare version to
        * ID map based on the version and id available in the image_rampup table.
        */
-      if(!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+      if (!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
         final Map<String, Integer> versionIdKeyMap = new HashMap<>();
         for (final ImageRampup imageRampup : imageRampupPlan.getImageRampups()) {
           versionIdKeyMap.put(imageRampup.getImageVersion(), imageRampup.getId());
         }
 
         // Use the version to id map created above to update the ID of each ramp up record.
-        for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+        for (final ImageRampup imageRampupRequest : imageRampupPlanRequest
             .getImageRampups()) {
           if (versionIdKeyMap.containsKey(imageRampupRequest.getImageVersion())) {
             imageRampupRequest.setId(versionIdKeyMap.get(imageRampupRequest.getImageVersion()));
@@ -378,8 +389,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         // update image rampup plan
         updateImageRampupPlanInternal(imageRampupPlanRequest);
         // update each rampup
-        if(!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
-          for (final ImageRampupRequest imageRampupRequest : imageRampupPlanRequest
+        if (!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+          for (final ImageRampup imageRampupRequest : imageRampupPlanRequest
               .getImageRampups()) {
             updateImageRampup(imageRampupRequest);
           }
@@ -413,7 +424,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * @param imageRampupPlanRequest
    * @throws ImageMgmtException
    */
-  private void updateImageRampupPlanInternal(final ImageRampupPlanRequest imageRampupPlanRequest)
+  private void updateImageRampupPlanInternal(final ImageRampupPlan imageRampupPlanRequest)
       throws ImageMgmtException {
     try {
       final List<Object> params = new ArrayList<>();
@@ -430,8 +441,16 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
       params.add(imageRampupPlanRequest.getId());
-      this.databaseOperator
+      final int updateCount = this.databaseOperator
           .update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+      if (updateCount < 1) {
+        log.error(String.format("Exception while updating image rampup plan for image type: %s, "
+                + "updateCount: %d. ",
+            imageRampupPlanRequest.getImageTypeName(), updateCount));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Exception while "
+                + "updating image rampup plan for image type: %s. ",
+            imageRampupPlanRequest.getImageTypeName()));
+      }
     } catch (final SQLException ex) {
       log.error(String.format("Exception while updating image rampup plan for image type: %s. ",
           imageRampupPlanRequest.getImageTypeName()), ex);
@@ -448,7 +467,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * @param imageRampupRequest
    * @throws ImageMgmtException
    */
-  private void updateImageRampup(final ImageRampupRequest imageRampupRequest)
+  private void updateImageRampup(final ImageRampup imageRampupRequest)
       throws ImageMgmtException {
     try {
       final List<Object> params = new ArrayList<>();
@@ -466,8 +485,16 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
       params.add(imageRampupRequest.getId());
-      this.databaseOperator
+      final int updateCount = this.databaseOperator
           .update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
+      if (updateCount < 1) {
+        log.error(String.format("Exception while updating image rampup details for plan id: %s, "
+                + "updateCount: %d. ",
+            imageRampupRequest.getPlanId(), updateCount));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            String.format("Exception while updating image rampup details for plan id: %s. ",
+                imageRampupRequest.getPlanId()));
+      }
     } catch (final SQLException ex) {
       log.error(String.format("Exception while updating image rampup details for plan id: %s. ",
           imageRampupRequest.getPlanId()), ex);

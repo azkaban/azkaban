@@ -13,22 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.imagemgmt.exeception;
+package azkaban.imagemgmt.exception;
 
 /**
- * This class represents the exception to be thrown from the Data Access Layer
+ * The represents the exception class to be thrown on failure of API input validation
  */
-public class ImageMgmtDaoException extends ImageMgmtException {
+public class ImageMgmtInvalidInputException extends ImageMgmtException {
 
-  public ImageMgmtDaoException(final String errorMessage) {
+  public ImageMgmtInvalidInputException(final String errorMessage) {
     super(errorMessage);
   }
 
-  public ImageMgmtDaoException(final ErrorCode errorCode, final String errorMessage) {
+  public ImageMgmtInvalidInputException(final ErrorCode errorCode, final String errorMessage) {
     super(errorCode, errorMessage);
-  }
-
-  public ImageMgmtDaoException(final String errorMessage, final Throwable throwable) {
-    super(errorMessage, throwable);
   }
 }

@@ -28,7 +28,7 @@ public class ImageRampup extends BaseModel {
   // Image version
   private String imageVersion;
   // Image version rampup percentage
-  private int rampupPercentage;
+  private Integer rampupPercentage;
   // Stability tag of the version being ramped up
   private StabilityTag stabilityTag;
 
@@ -48,11 +48,11 @@ public class ImageRampup extends BaseModel {
     this.imageVersion = imageVersion;
   }
 
-  public int getRampupPercentage() {
+  public Integer getRampupPercentage() {
     return rampupPercentage;
   }
 
-  public void setRampupPercentage(int rampupPercentage) {
+  public void setRampupPercentage(Integer rampupPercentage) {
     this.rampupPercentage = rampupPercentage;
   }
 

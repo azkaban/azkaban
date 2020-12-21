@@ -15,9 +15,9 @@
  */
 package azkaban.imagemgmt.services;
 
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.models.ImageRampupPlan;
+import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -32,12 +32,12 @@ public interface ImageRampupService {
    * Service method to create image rampup plan and rampup. It performs the necessary validation and
    * deletes the rampup creation to the DAO layer.
    *
-   * @param imageMetadataRequest
+   * @param imageRampupPlanRequest
    * @return int - id of the rampup plan
    * @throws IOException
    * @throws ImageMgmtException
    */
-  public int createImageRampupPlan(ImageMetadataRequest imageMetadataRequest) throws IOException,
+  public int createImageRampupPlan(ImageRampupPlanRequestDTO imageRampupPlanRequest) throws
       ImageMgmtException;
 
   /**
@@ -48,18 +48,18 @@ public interface ImageRampupService {
    * @return Optional<ImageRampupPlan>
    * @throws ImageMgmtException
    */
-  public Optional<ImageRampupPlan> getActiveRampupPlan(String imageTypeName)
+  public Optional<ImageRampupPlanResponseDTO> getActiveRampupPlan(String imageTypeName)
       throws ImageMgmtException;
 
   /**
    * Service method to update an active rampup plan for an image type. It fetches the active rampup
    * plan along with rampup with the help of DAO layer method.
    *
-   * @param imageMetadataRequest
+   * @param ImageRampupPlanRequest
    * @throws IOException
    * @throws ImageMgmtException
    */
-  public void updateImageRampupPlan(ImageMetadataRequest imageMetadataRequest) throws IOException,
+  public void updateImageRampupPlan(ImageRampupPlanRequestDTO ImageRampupPlanRequest) throws
       ImageMgmtException;
 
 }

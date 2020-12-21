@@ -15,10 +15,9 @@
  */
 package azkaban.imagemgmt.daos;
 
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageRampupPlan;
-import azkaban.imagemgmt.models.ImageRampupPlanRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +35,7 @@ public interface ImageRampupDao {
    * @param imageRampupPlanRequest
    * @return int - id of the image version
    */
-  public int createImageRampupPlan(ImageRampupPlanRequest imageRampupPlanRequest)
+  public int createImageRampupPlan(ImageRampupPlan imageRampupPlanRequest)
       throws ImageMgmtException;
 
   /**
@@ -76,6 +75,6 @@ public interface ImageRampupDao {
    * @param imageRampupPlanRequest
    * @return int - id of the image version
    */
-  public void updateImageRampupPlan(ImageRampupPlanRequest imageRampupPlanRequest)
+  public void updateImageRampupPlan(ImageRampupPlan imageRampupPlanRequest)
       throws ImageMgmtException;
 }

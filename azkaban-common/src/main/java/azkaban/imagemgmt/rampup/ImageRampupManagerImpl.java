@@ -18,7 +18,7 @@ package azkaban.imagemgmt.rampup;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
@@ -31,6 +31,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * procedure to elect a new version from the image_versions table for the failed image type.
  */
 @Singleton
-public class ImageRampupManagerImpl implements ImageRampupManger {
+public class ImageRampupManagerImpl implements ImageRampupManager {
 
   private static final Logger log = LoggerFactory.getLogger(ImageRampupManagerImpl.class);
   private final ImageTypeDao imageTypeDao;
@@ -72,19 +73,20 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
 
   @Override
   public Map<String, String> getVersionForAllImageTypes() throws ImageMgmtException {
-    Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao.getRampupForAllImageTypes();
-    List<ImageType> imageTypeList = imageTypeDao.getAllImageTypes();
-    Set<String> imageTypes = new TreeSet<>();
-    for (ImageType imageType : imageTypeList) {
+    final Map<String, List<ImageRampup>> imageTypeRampups = this.imageRampupDao
+        .getRampupForAllImageTypes();
+    final List<ImageType> imageTypeList = this.imageTypeDao.getAllImageTypes();
+    final Set<String> imageTypes = new TreeSet<>();
+    for (final ImageType imageType : imageTypeList) {
       imageTypes.add(imageType.getName());
     }
     return this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups);
   }
 
   @Override
-  public Map<String, String> getVersionByImageTypes(Set<String> imageTypes)
+  public Map<String, String> getVersionByImageTypes(final Set<String> imageTypes)
       throws ImageMgmtException {
-    Map<String, List<ImageRampup>> imageTypeRampups = imageRampupDao
+    final Map<String, List<ImageRampup>> imageTypeRampups = this.imageRampupDao
         .getRampupByImageTypes(imageTypes);
     return this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups);
   }
@@ -109,58 +111,73 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
    * @param imageTypeRampups - contains rampup list for an image type
    * @return Map<String, String>
    */
-  private Map<String, String> processAndGetVersionForImageTypes(Set<String> imageTypes,
-      Map<String, List<ImageRampup>> imageTypeRampups) {
-    Set<String> imageTypeSet = imageTypeRampups.keySet();
+  private Map<String, String> processAndGetVersionForImageTypes(final Set<String> imageTypes,
+      final Map<String, List<ImageRampup>> imageTypeRampups) {
+    final Set<String> imageTypeSet = imageTypeRampups.keySet();
     log.info("Found active rampup for the image types {} ", imageTypeSet);
-    Iterator<String> iterator = imageTypeSet.iterator();
-    Map<String, String> imageTypeVersionMap = new TreeMap<>();
+    final Iterator<String> iterator = imageTypeSet.iterator();
+    final Map<String, String> imageTypeVersionMap = new TreeMap<>();
     while (iterator.hasNext()) {
-      String imageTypeName = iterator.next();
-      List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
+      final String imageTypeName = iterator.next();
+      final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
       Collections.sort(imageRampupList, this.getRampupPercentageComparator());
       int prevRampupPercentage = 0;
-      int nextRandom = this.getRandomNumberInRange(1, 100);
-      for (ImageRampup imageRampup : imageRampupList) {
-        int rampupPercentage = imageRampup.getRampupPercentage();
+      final int nextRandom = this.getRandomNumberInRange(1, 100);
+      for (final ImageRampup imageRampup : imageRampupList) {
+        final int rampupPercentage = imageRampup.getRampupPercentage();
         if (nextRandom >= prevRampupPercentage + 1
             && nextRandom <= prevRampupPercentage + rampupPercentage) {
           imageTypeVersionMap.put(imageTypeName, imageRampup.getImageVersion());
-          log.info("The image version {} is selected for image type {} with rampup percentage {}",
+          log.debug("The image version {} is selected for image type {} with rampup percentage {}",
               imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
           break;
         }
         prevRampupPercentage += rampupPercentage;
       }
     }
+    log.info("After processing rampup records -> imageTypeVersionMap: {}", imageTypeVersionMap);
 
-    /**
+    /*
      * Fetching the latest active image version from image_versions table for the remaining image
-     * types for which there is no active rampup plan or the versions are marrked as
+     * types for which there is no active rampup plan or the versions are marked as
      * unstable/deprecated in the active plan.
      */
-    Set<String> rampedImageTypes = imageTypeRampups.keySet();
-    Set<String> remainingImageTypes = new TreeSet<>(imageTypes);
-    remainingImageTypes.removeAll(rampedImageTypes);
-    if (!rampedImageTypes.isEmpty()) {
-      List<ImageVersion> imageVersions =
-          imageVersionDao.getActiveVersionByImageTypes(remainingImageTypes);
+    Set<String> remainingImageTypes = new TreeSet<>();
+    // Converts the input image types to lowercase for case insensitive comparison.
+    final Set<String> imageTypesInLowerCase =
+        imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet());
+    remainingImageTypes.addAll(imageTypesInLowerCase);
+    remainingImageTypes
+        .removeAll(imageTypeVersionMap.keySet().stream().map(String::toLowerCase).collect(
+            Collectors.toSet()));
+    log.info("After finding version through rampup image types remaining: {}  ",
+        remainingImageTypes);
+    if (!remainingImageTypes.isEmpty()) {
+      final List<ImageVersion> imageVersions =
+          this.imageVersionDao.getActiveVersionByImageTypes(remainingImageTypes);
+      log.debug("Active image versions fetched: {} ", imageVersions);
       if (imageVersions != null && !imageVersions.isEmpty()) {
-        for (ImageVersion imageVersion : imageVersions) {
+        for (final ImageVersion imageVersion : imageVersions) {
           imageTypeVersionMap.put(imageVersion.getName(), imageVersion.getVersion());
         }
       }
     }
+    log.info("After fetching active image version -> imageTypeVersionMap {}", imageTypeVersionMap);
 
     // For the leftover image types throw exception with appropriate error message.
-    remainingImageTypes = new TreeSet<>(imageTypes);
-    remainingImageTypes.removeAll(imageTypeVersionMap.keySet());
+    remainingImageTypes = new TreeSet<>();
+    remainingImageTypes.addAll(imageTypesInLowerCase);
+    remainingImageTypes
+        .removeAll(imageTypeVersionMap.keySet().stream().map(String::toLowerCase).collect(
+            Collectors.toSet()));
+    log.info("After fetching version using ramp up and based on active image version the "
+        + "image types remaining: {}  ", remainingImageTypes);
+    // Throw exception if there are left over image types
     if (!remainingImageTypes.isEmpty()) {
       throw new ImageMgmtException("Could not fetch version for below image types. Reasons: "
           + " 1. There is not active rampup plan in the image_rampup_plan table. 2. There is no "
           + " acitve version in the image_versions table. Image Types: " + remainingImageTypes);
     }
-
     return imageTypeVersionMap;
   }
 
@@ -171,11 +188,11 @@ public class ImageRampupManagerImpl implements ImageRampupManger {
    * @param max
    * @return int
    */
-  private int getRandomNumberInRange(int min, int max) {
+  private int getRandomNumberInRange(final int min, final int max) {
     if (min >= max) {
       throw new IllegalArgumentException("Max must be greater than min");
     }
-    Random r = new Random();
+    final Random r = new Random();
     return r.nextInt((max - min) + 1) + min;
   }
 

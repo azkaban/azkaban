@@ -15,21 +15,19 @@
  */
 package azkaban.imagemgmt.servlets;
 
-import static azkaban.Constants.ImageMgmtConstants.ID_KEY;
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
-
 import azkaban.Constants.ImageMgmtConstants;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.dto.ImageVersionDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
-import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.google.common.primitives.Ints;
@@ -37,6 +35,7 @@ import com.linkedin.jersey.api.uri.UriTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.ServletConfig;
@@ -44,7 +43,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpStatus;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +60,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
   private static final UriTemplate SINGLE_IMAGE_VERSION_URI_TEMPLATE = new UriTemplate(
       String.format("/imageVersions/{%s}", IMAGE_VERSION_ID_KEY));
   private ImageVersionService imageVersionService;
-  private ObjectMapper objectMapper;
+  private ConverterUtils converterUtils;
 
   private static final Logger log = LoggerFactory.getLogger(ImageVersionServlet.class);
 
@@ -74,8 +72,8 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.objectMapper = server.getObjectMapper();
     this.imageVersionService = server.getImageVersionsService();
+    this.converterUtils = server.getConverterUtils();
   }
 
   @Override
@@ -84,7 +82,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     /* Get specific record */
     try {
-      String response = null;
+      List<ImageVersionDTO> imageVersions = null;
       if (BASE_IMAGE_VERSION_URI.equals(req.getRequestURI())) {
         // imageType must present. If not present throws ServletException
         final String imageType = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_TYPE);
@@ -100,8 +98,9 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
             ImageMgmtConstants.IMAGE_VERSION,
             null));
         // imageVersion is optional. Hence can be null
-        final String versionStateString = HttpRequestUtils.getParam(req, ImageMgmtConstants.VERSION_STATE,
-            null);
+        final String versionStateString = HttpRequestUtils
+            .getParam(req, ImageMgmtConstants.VERSION_STATE,
+                null);
         final Optional<State> versionState =
             Optional.ofNullable(versionStateString != null ? State.valueOf(versionStateString) :
                 null);
@@ -112,11 +111,9 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
             .addParamIfPresent(ImageMgmtConstants.VERSION_STATE, versionState) // optional parameter
             .build();
         // invoke service method and get response in string format
-        response =
-            this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(
-                this.imageVersionService.findImageVersions(imageMetadataRequest));
+        imageVersions = this.imageVersionService.findImageVersions(imageMetadataRequest);
       }
-      writeResponse(resp, response);
+      sendResponse(resp, HttpServletResponse.SC_OK, imageVersions);
     } catch (final ImageMgmtException e) {
       log.error("Unable to get image version.", e);
       sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
@@ -149,21 +146,21 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     try {
       final String jsonPayload = HttpRequestUtils.getBody(req);
+      final ImageVersionDTO imageVersion = this.converterUtils.convertToDTO(jsonPayload,
+          ImageVersionDTO.class);
       // Check for required permission to invoke the API
-      final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      final String imageType = imageVersion.getName();
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image version "
             + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
             + "create image version");
       }
-      // Build ImageMetadataRequest DTO to transfer the input request
-      final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-          .jsonPayload(jsonPayload)
-          .user(session.getUser().getUserId())
-          .build();
+      // Set the user who invoked the API
+      imageVersion.setCreatedBy(session.getUser().getUserId());
+      imageVersion.setModifiedBy(session.getUser().getUserId());
       // Create image version metadata and image version id
-      final Integer imageVersionId = this.imageVersionService.createImageVersion(imageMetadataRequest);
+      final Integer imageVersionId = this.imageVersionService.createImageVersion(imageVersion);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",
@@ -191,22 +188,23 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         throw new ImageMgmtValidationException("Image version id is invalid");
       }
       final String jsonPayload = HttpRequestUtils.getBody(req);
+      final ImageVersionDTO imageVersion = this.converterUtils.convertToDTO(jsonPayload,
+          ImageVersionDTO.class);
       // Check for required permission to invoke the API
-      final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      final String imageType = imageVersion.getName();
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
         log.debug(String.format("Invalid permission to update image version "
             + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
         throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
             + "update image version");
       }
-      // Build ImageMetadataRequest DTO to transfer the input request
-      final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-          .jsonPayload(jsonPayload)
-          .user(session.getUser().getUserId())
-          .addParam(ID_KEY, id)
-          .build();
+      // Populate ImageVersionDTO to transfer the input request
+      imageVersion.setId(id);
+      imageVersion.setCreatedBy(session.getUser().getUserId());
+      imageVersion.setModifiedBy(session.getUser().getUserId());
+
       // Create image version metadata and image version id
-      this.imageVersionService.updateImageVersion(imageMetadataRequest);
+      this.imageVersionService.updateImageVersion(imageVersion);
       sendResponse(resp, HttpServletResponse.SC_OK, new HashMap<>());
     } catch (final ImageMgmtException e) {
       log.error("Exception while updating image version metadata", e);

@@ -15,7 +15,7 @@
  */
 package azkaban.imagemgmt.rampup;
 
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +23,7 @@ import java.util.Set;
  * The interface exposes method for getting version for each image types based on rampup. Dispatch
  * flow container will invoke the exposed methods to get version for the image types.
  */
-public interface ImageRampupManger {
+public interface ImageRampupManager {
 
   /**
    * Gets the version of all the available active image types based on rampup
