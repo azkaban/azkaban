@@ -102,7 +102,6 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       logger.info("The Hadoop cluster has enabled security");
       this.shouldProxy = true;
       try {
-
         this.keytabLocation = props.getString(AZKABAN_KEYTAB_LOCATION);
         this.keytabPrincipal = props.getString(AZKABAN_PRINCIPAL);
       } catch (final UndefinedPropertyException e) {

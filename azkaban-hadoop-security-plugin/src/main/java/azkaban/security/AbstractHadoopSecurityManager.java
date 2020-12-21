@@ -146,7 +146,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     final UserGroupInformation user = getProxiedUser(userToProxy);
     if (user == null) {
       throw new HadoopSecurityManagerException(
-          "Proxy as any user in unsecured grid is not supported!");
+          "Unable to proxy as " + userToProxy);
     }
     return user;
   }
