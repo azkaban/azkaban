@@ -50,9 +50,7 @@ public class VersionSetBuilder {
     ObjectMapper objectMapper = new ObjectMapper();
     String versionSetJsonString = objectMapper.writeValueAsString(versionSetElements);
     String versionSetMd5Hex = DigestUtils.md5Hex(versionSetJsonString);
-    final VersionSet versionSet;
-    versionSet = this.loader.getVersionSet(versionSetMd5Hex, versionSetJsonString)
+    return this.loader.getVersionSet(versionSetMd5Hex, versionSetJsonString)
         .orElse(null);  // null implies Exception was thrown by the Dao Layer
-    return versionSet;
   }
 }
