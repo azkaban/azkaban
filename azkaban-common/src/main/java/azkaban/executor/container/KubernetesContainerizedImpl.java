@@ -223,10 +223,11 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @param flowParams
    * @param imageTypesUsedInFlow
    * @return VersionSet
+   * @throws ExecutorManagerException
    */
   @VisibleForTesting
   VersionSet fetchVersionSet(final int executionId, Map<String, String> flowParams,
-       Set<String> imageTypesUsedInFlow) {
+       Set<String> imageTypesUsedInFlow) throws ExecutorManagerException {
      VersionSet versionSet = null;
 
      try {
@@ -295,6 +296,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
      } catch (IOException e) {
        logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
            executionId, e.getMessage());
+       throw new ExecutorManagerException(e);
      }
      return versionSet;
   }
