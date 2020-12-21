@@ -134,6 +134,9 @@ public class Constants {
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
 
+  // Should validate proxy user
+  public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
+
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
