@@ -52,13 +52,13 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ExecutorApiClient extends RestfulApiClient<String> {
 
-  final private static Logger logger = LoggerFactory.getLogger(ExecutorApiClient.class);
-  final private static String DEFAULT_TRUSTSTORE_PATH = "keystore";
-  final private static String DEFAULT_TRUSTSTORE_PASSWORD = "changeit";
+  private final static Logger logger = LoggerFactory.getLogger(ExecutorApiClient.class);
+  private final static String DEFAULT_TRUSTSTORE_PATH = "keystore";
+  private final static String DEFAULT_TRUSTSTORE_PASSWORD = "changeit";
 
-  final private boolean isTlsEnabled;
-  final private String truststorePath;
-  final private String truststorePassword;
+  private final boolean isTlsEnabled;
+  private final String truststorePath;
+  private final String truststorePassword;
   private SSLConnectionSocketFactory tlsSocketFactory;
 
   @Inject
