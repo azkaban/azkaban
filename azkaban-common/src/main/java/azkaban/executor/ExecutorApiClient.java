@@ -42,7 +42,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client class that will be used to handle all Restful API calls between Executor and the host
@@ -51,10 +52,10 @@ import org.apache.log4j.Logger;
 @Singleton
 public class ExecutorApiClient extends RestfulApiClient<String> {
 
-  final private static Logger logger = Logger.getLogger(ExecutorApiClient.class);
+  final private static Logger logger = LoggerFactory.getLogger(ExecutorApiClient.class);
+  final private static String DEFAULT_TRUSTSTORE_PATH = "keystore";
+  final private static String DEFAULT_TRUSTSTORE_PASSWORD = "changeit";
 
-  final private String DEFAULT_TRUSTSTORE_PATH = "keystore";
-  final private String DEFAULT_TRUSTSTORE_PASSWORD = "changeit";
   final private boolean isTlsEnabled;
   final private String truststorePath;
   final private String truststorePassword;
@@ -62,6 +63,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
 
   @Inject
   public ExecutorApiClient(final Props azkProps) {
+    super();
     this.isTlsEnabled = azkProps.getBoolean(EXECUTOR_CONNECTION_TLS_ENABLED, false);
     this.truststorePath = azkProps
         .getString(Constants.JETTY_TRUSTSTORE_PATH, this.DEFAULT_TRUSTSTORE_PATH);
@@ -82,6 +84,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     } catch (final NoSuchAlgorithmException | KeyStoreException |
         CertificateException | IOException | KeyManagementException ex) {
       logger.error("ExecutorApiClient could not be created due to exception: ", ex);
+      throw new IllegalStateException("TLS context creation failed.", ex);
     }
     logger.debug("Creating SSLSocketFactory with hostname verification disabled");
     this.tlsSocketFactory = new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());
@@ -124,7 +127,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     if (statusLine.getStatusCode() >= 300) {
 
       RestfulApiClient.logger
-          .error(String.format("unable to parse response as the response status is %s",
+          .error(String.format("Unable to parse response as the response status is %s",
               statusLine.getStatusCode()));
 
       throw new HttpResponseException(statusLine.getStatusCode(), responseBody);
