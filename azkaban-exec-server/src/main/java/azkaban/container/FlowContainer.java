@@ -72,13 +72,21 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+
 /**
  *  This class is the entrypoint for launching a flow execution in a container.
  *  It sets up the Azkaban Properties, the DAO, injects all the required classes, sets up the
  *  execution directory along with the project files, creates the FlowRunner and submits it to
  *  the executor service for execution.
  *  It assumes that their is a certain directory structure consisting of all the dependencies.
- *  The dependencies such as Hadoop, Hive, Pig, and other libraries.
+ *  1.The dependencies such as Hadoop, Hive, Pig, and other libraries.
+ *  2.The jobtype plugins are expected in "$AZ_HOME/plugins/jobtypes">
+ *  3.The FlowContainer creates the project directory named "project" which contains all the
+ *    project dependencies. It also serves as execution directory.
+ *
+ *  The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to
+ *  PREPARING before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
  */
 public class FlowContainer {
 
@@ -86,13 +94,16 @@ public class FlowContainer {
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
   private static final String CONF_DIR = "conf";
-  private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
+  private static final String JOB_THREAD_COUNT = "flow.num.job.threads";
   private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
   private static final int DEFAULT_LOG_NUM_FILES = 4;
-  private static final int ARG_EXEC_ID = 0;
-  private static final int ARG_PROJECT_LOCATION = 1;
-  private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
+  private static final int EXEC_ID_INDEX = 0;
+  private static final int PROJECT_LOCATION_INDEX = 1;
+  private static final int DEFAULT_JOB_TREAD_COUNT = 10;
   private static final String AZ_HOME = "AZ_HOME";
+  private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
+  // Should validate proxy user
+  public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
 
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
 
@@ -117,7 +128,7 @@ public class FlowContainer {
    * @param props Azkaban properties.
    * @throws IOException
    */
-  private FlowContainer(final Props props, final String execDirPath)
+  private FlowContainer(final Props props, final @Nonnull String execDirPath)
           throws IOException {
 
     // Create Azkaban Props Map
@@ -145,16 +156,19 @@ public class FlowContainer {
             DEFAULT_LOG_CHUNK_SIZE);
     this.jobLogNumFiles = this.azKabanProps.getInt("job.log.backup.index", DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean("proxy.user.lock.down",
-            Constants.DEFAULT_VALIDATE_PROXY_USER);
+            DEFAULT_VALIDATE_PROXY_USER);
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
             this.globalProps, getClass().getClassLoader());
 
-    this.numJobThreadPerFlow = props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
-    // Setting up the in-memory KeyStore for all the job executions in the flow.
-    setupKeyStore();
+    this.numJobThreadPerFlow = props.getInt(JOB_THREAD_COUNT, DEFAULT_JOB_TREAD_COUNT);
+    if (this.azKabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
+            DEFAULT_USE_IN_MEMORY_KEYSTORE)) {
+      // Setting up the in-memory KeyStore for all the job executions in the flow.
+      setupKeyStore();
+    }
   }
 
   /**
@@ -165,12 +179,12 @@ public class FlowContainer {
    * @throws IOException
    * @throws ExecutorManagerException
    */
-  public static void main(final String[] args) throws IOException, ExecutorManagerException {
+  public static void main(final String[] args) throws ExecutorManagerException {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
     // Get all the arguments
-    final String execIdStr = args[ARG_EXEC_ID];
-    final String projectZipName = args[ARG_PROJECT_LOCATION];
+    final String execIdStr = args[EXEC_ID_INDEX];
+    final String projectZipName = args[PROJECT_LOCATION_INDEX];
     // Process Execution ID.
     int execId = -1;
     try {
@@ -189,17 +203,22 @@ public class FlowContainer {
 
     // Set Azkaban props
     final Path jobtypePluginPath = Paths.get(currentDir.toString(), JOBTYPE_DIR);
-    Props azkabanProps = FlowContainer.setAzkabanProps(jobtypePluginPath);
+    Props azkabanProps = setAzkabanProps(jobtypePluginPath);
 
     // Setup Injector
-    FlowContainer.setInjector(azkabanProps);
+    setInjector(azkabanProps);
 
-    // Setup work directories
-    final String execDirPath = FlowContainer.setupWorkDir(currentDir, projectZipName);
+    FlowContainer flowContainer;
+    try {
+      // Setup work directories
+      final String execDirPath = setupWorkDir(currentDir, projectZipName);
 
-    // Constructor
-    final FlowContainer flowContainer =
-            new FlowContainer(azkabanProps, execDirPath);
+      // Constructor
+      flowContainer = new FlowContainer(azkabanProps, execDirPath);
+    } catch (final IOException e) {
+      logger.error(e.getMessage());
+      throw new ExecutorManagerException(e);
+    }
 
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
@@ -215,7 +234,7 @@ public class FlowContainer {
     logger.info("Creating project dir");
     Files.createDirectory(projectDirPath);
     Path projectZipPath = Paths.get(projectDirPath.toString(), projectZipName);
-    logger.info("moving projectDir:" + projectZipName + ": to " +
+    logger.info("Moving projectDir:" + projectZipName + ": to " +
             projectZipPath);
 
     Files.move(Paths.get(projectZipName), projectZipPath);
@@ -256,16 +275,6 @@ public class FlowContainer {
    * @throws ExecutorManagerException
    */
   private void submitFlow(final int execId) throws ExecutorManagerException {
-    submitFlowRunner(createFlowRunner(execId));
-  }
-
-  /**
-   * create Flow Runner
-   * @param execId Execution Id of the flow.
-   * @return FlowRunner object.
-   * @throws ExecutorManagerException
-   */
-  private FlowRunner createFlowRunner(final int execId) throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
       logger.error("Error loading flow with execution Id " + execId);
@@ -277,7 +286,17 @@ public class FlowContainer {
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
-    // set the execution dir :
+    submitFlowRunner(createFlowRunner(flow));
+  }
+
+  /**
+   * create Flow Runner
+   * @param flow Executable flow object.
+   * @return FlowRunner object.
+   * @throws ExecutorManagerException
+   */
+  private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
+    // set the execution dir
     //TODO : May leverage FlowPreparer for this when project management logic is added.
     flow.setExecutionPath(this.execDirPath);
 
@@ -331,12 +350,12 @@ public class FlowContainer {
    */
   private static void unzipFile(final String zipPath,
       final Path dirPath) throws IOException {
-    final ZipFile zipFile = new ZipFile(zipPath);
-    logger.info("source path = " + zipPath);
-    final File unzipped = new File(dirPath.toString());
-    logger.info("unzipped file dir = " + unzipped.toString());
-    Utils.unzip(zipFile, unzipped);
-    zipFile.close();
+    try (ZipFile zipFile = new ZipFile(zipPath)) {
+      logger.info("Source path : " + zipPath);
+      final File unzipped = new File(dirPath.toString());
+      logger.info("Unzipped file dir : " + unzipped.toString());
+      Utils.unzip(zipFile, unzipped);
+    }
   }
 
   /**

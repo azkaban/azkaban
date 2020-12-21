@@ -134,8 +134,8 @@ public class Constants {
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
 
-  // Should validate proxy user
-  public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
+  // Use in-memory keystore
+  public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
 
   public static class ConfigurationKeys {
 
