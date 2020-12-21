@@ -18,6 +18,7 @@ package azkaban.executor.container;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
@@ -159,7 +160,7 @@ public class KubernetesContainerizedImplTest {
         .build();
 
     final Map<String, String> flowParam = new HashMap<>();
-    flowParam.put(KubernetesContainerizedImpl.FLOW_PARAM_VERSION_SET_ID,
+    flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
         String.valueOf(presetVersionSet.getVersionSetId()));
     VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, jobTypes);
@@ -179,7 +180,7 @@ public class KubernetesContainerizedImplTest {
         .addElement("pig", "1.2")
         .build();
 
-    flowParam.put(KubernetesContainerizedImpl.FLOW_PARAM_VERSION_SET_ID,
+    flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
        String.valueOf(incompleteVersionSet.getVersionSetId()));
     flowParam.put(String.join(".",
         KubernetesContainerizedImpl.IMAGE, "hadoopJava", KubernetesContainerizedImpl.VERSION),

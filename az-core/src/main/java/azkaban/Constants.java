@@ -551,4 +551,10 @@ public class Constants {
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
   }
+
+  public static class FlowParameters {
+
+    // Constants for Flow parameters
+    public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
+  }
 }

@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
@@ -77,7 +78,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
-  public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
   public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES = "/data/jobtypes";
   public static final String DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_JOBTYPES =
       "/export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes";
@@ -230,8 +230,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
      VersionSet versionSet = null;
 
      try {
-       if (flowParams != null && flowParams.containsKey(FLOW_PARAM_VERSION_SET_ID)) {
-         int versionSetId = Integer.parseInt(flowParams.get(FLOW_PARAM_VERSION_SET_ID));
+       if (flowParams != null &&
+           flowParams.containsKey(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID)) {
+         int versionSetId = Integer.parseInt(flowParams
+             .get(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID));
          try {
             versionSet = this.versionSetLoader.getVersionSetById(versionSetId).get();
 
