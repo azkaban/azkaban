@@ -51,7 +51,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -60,19 +61,15 @@ import org.apache.log4j.Logger;
 public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet {
 
   private static final String API_LOGIN = "login";
-  private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
-
+  private static final String BROWSER_SESSION_ID_KEY = "azkaban.browser.session.id";
+  public static final String SESSION_ID_KEY = "session.id";
+  private static final String[] ERROR_FIELDS = {"error", "error_description", "error_uri"};
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger =
-      Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(LoginAbstractAzkabanServlet.class);
 
   private static final AzkabanAPI loginAPI = new AzkabanAPI("action", API_LOGIN);
-  private static final HashMap<String, String> contextType = new HashMap<>();
-  private static final String[] ERROR_FIELDS = {"error", "error_description", "error_uri"};
-  public static final String SESSION_ID_KEY = "session.id";
-  public static final String HEADER_CSRFTOKEN = "X-CSRF-TOKEN";
-  public static final String TEMPLATE_CSRFTOKEN = "csrfToken";
+  private static final Map<String, String> contextType = new HashMap<>();
 
   static {
     contextType.put(".js", "application/javascript");
@@ -146,7 +143,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       handleGet(req, resp, session);
     } else {
       if (hasParam(req, "ajax")) {
-        final HashMap<String, String> retVal = new HashMap<>();
+        final Map<String, String> retVal = new HashMap<>();
         retVal.put("error", "session");
         this.writeJSON(resp, retVal);
       } else {
@@ -241,8 +238,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return getSessionFromSessionId(sessionId);
   }
 
-  private String getSessionIdFromCookie(HttpServletRequest req) {
-    final Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
+  private String getSessionIdFromCookie(final HttpServletRequest req) {
+    final Cookie cookie = getCookieByName(req, BROWSER_SESSION_ID_KEY);
     if (null == cookie) {
       return null;
     }
@@ -250,27 +247,28 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   }
 
   /**
-   *
    * @param req HttpServletRequest
    * @return True if the CSRF Token is valid, otherwise false
    */
   protected boolean validateCSRFToken(final HttpServletRequest req) {
-    String sessionIdFromCookie = getSessionIdFromCookie(req);
+    final String sessionIdFromCookie = getSessionIdFromCookie(req);
     if (StringUtils.isEmpty(sessionIdFromCookie)) {
       logger.info("CSRF token validation successful. SessionId is not from cookie.");
       return true;
     }
-    String csrfTokenFromRequest = req.getHeader(HEADER_CSRFTOKEN);
+    final String csrfTokenFromRequest = req
+        .getHeader(AbstractAzkabanServlet.HTTP_HEADER_CSRF_TOKEN);
     if (StringUtils.isEmpty(csrfTokenFromRequest)) {
       logger.info("CSRF token validation failed. Unable to get CSRF token from http header.");
       return false;
     }
-    CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
+    final CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
     if (null == csrfTokenUtility) {
       logger.info("CSRF token validation failed. Unable to instantiate CSRFTokenUtility class.");
       return false;
     }
-    boolean isValidCSRFToken = csrfTokenUtility.validateCSRFToken(sessionIdFromCookie, csrfTokenFromRequest);
+    final boolean isValidCSRFToken = csrfTokenUtility
+        .validateCSRFToken(sessionIdFromCookie, csrfTokenFromRequest);
     if (isValidCSRFToken) {
       logger.info("CSRF token validation successful.");
     } else {
@@ -279,14 +277,14 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return isValidCSRFToken;
   }
 
-  protected boolean addCSRFTokenToPage(Page page, Session session) {
-    CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
+  protected boolean addCSRFTokenToPage(final Page page, final Session session) {
+    final CSRFTokenUtility csrfTokenUtility = CSRFTokenUtility.getCSRFTokenUtility();
     if (null == csrfTokenUtility) {
       return false;
     }
-    String csrfToken = csrfTokenUtility.getCSRFTokenFromSession(session);
+    final String csrfToken = csrfTokenUtility.getCSRFTokenFromSession(session);
     if (!StringUtils.isEmpty(csrfToken)) {
-      page.add(TEMPLATE_CSRFTOKEN, csrfToken);
+      page.add(AbstractAzkabanServlet.TEMPLATE_VAR_CSRF_TOKEN, csrfToken);
       return true;
     }
     return false;
@@ -326,7 +324,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   /**
    * Return true if login can, should and is being handled via OAuth provider, as configured.
    */
-  private boolean handleOauth(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+  private boolean handleOauth(final HttpServletRequest req, final HttpServletResponse resp)
+      throws IOException {
     if (hasParam(req, "nooauth")) {  // cheat code to allow XML-based authN while OAuth is in use
       return false;  // Let the old login happen
     }
@@ -354,36 +353,38 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
   /**
    * Handle OAuth callback to .../?action=oauth_callback.
+   * <p>
    * If OAuth flow was successful, request parameters are expected to include authorization code in
    * <CODE>code</CODE> and, optionally, app-specific info in <CODE>state</CODE>. (That info is
-   * interpreted today as the final navigation target URL where the user intended to arrive. In
-   * the future it may include nonce to protect from XSRF attack.) Authorization code will be
-   * passed to UserManager instance for validation, and, if valid, a session will be created for
-   * the user and session id returned in a cookie. User then will be redirected to their intended
-   * destination URL.
+   * interpreted today as the final navigation target URL where the user intended to arrive. In the
+   * future it may include nonce to protect from XSRF attack.) Authorization code will be passed to
+   * UserManager instance for validation, and, if valid, a session will be created for the user and
+   * session id returned in a cookie. User then will be redirected to their intended destination
+   * URL.
+   * <p>
    * If OAuth flow was unsuccessful, parameters may include fields listed in
    * <CODE>ERROR_FIELDS</CODE>, and in any case will not include <CODE>code</CODE>. 401
    * UNAUTHORIZED error will be returned with as much descriptive info as we can gather.
    */
-  private void handleOauthCallback(HttpServletRequest req, HttpServletResponse resp)
+  private void handleOauthCallback(final HttpServletRequest req, final HttpServletResponse resp)
       throws IOException {
     // did we get back code, or error & error_description?
-    final StringBuilder errmsg = new StringBuilder();
+    final StringBuilder errMsg = new StringBuilder();
     for (final String p : ERROR_FIELDS) {
       final String v = req.getParameter(p);
       if (v != null && !v.isEmpty()) {
-        errmsg.append(p).append(": ").append(v).append('\n');
+        errMsg.append(p).append(": ").append(v).append('\n');
       }
     }
     // no error in callback... but does it have code?
-    if (errmsg.length() == 0 && !hasParam(req, "code")) {
-      errmsg.append("No code returned\n");
+    if (errMsg.length() == 0 && !hasParam(req, "code")) {
+      errMsg.append("No code returned\n");
     }
-    if (errmsg.length() != 0) {
-      resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, errmsg.toString());
+    if (errMsg.length() != 0) {
+      resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, errMsg.toString());
       return;
     }
-    final HashMap<String, Object> retval = new HashMap<>();
+    final Map<String, Object> retval = new HashMap<>();
     final String ip = WebUtils.getRealClientIpAddr(req);
     // rest of the magic: this calls UserManager to validate authZ code and sets session cookie:
     handleAjaxLoginAction(OAUTH_USERNAME_PLACEHOLDER, req.getParameter("code"), ip, resp, retval);
@@ -444,7 +445,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
       handleMultiformPost(req, resp, params, session);
     } else if (API_LOGIN.equals(req.getParameter("action"))) {
-      final HashMap<String, Object> obj = new HashMap<>();
+      final Map<String, Object> obj = new HashMap<>();
       handleAjaxLoginAction(req, resp, obj);
       this.writeJSON(resp, obj);
     } else if ("oauth_callback".equals(req.getParameter("action"))) {
@@ -508,10 +509,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
    * Brief note on extra parameter use.
    *
    * @param isSuccessFinal {@code createSession} is a good place to invoke event reporter for all
-   *     but one use case where the outcome of createSession itself is not final -- the login
-   *     success is not yet assured. This parameter is to handle that one case. If set to {@code
-   *     false}, then it is caller's responsibility to report the final outcome of the login
-   *     event if {@code createSession} was successful.
+   *                       but one use case where the outcome of createSession itself is not final
+   *                       -- the login success is not yet assured. This parameter is to handle that
+   *                       one case. If set to {@code false}, then it is caller's responsibility to
+   *                       report the final outcome of the login event if {@code createSession} was
+   *                       successful.
    */
   private Session createSession(final String username, final String password, final String ip,
       final boolean isSuccessFinal)
@@ -526,7 +528,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
       final String randomUID = UUID.randomUUID().toString();
       return new Session(randomUID, user, ip);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, e.getMessage());
       throw e;
     }
@@ -614,7 +616,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       return;
     }
 
-    final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
+    final Cookie cookie = new Cookie(BROWSER_SESSION_ID_KEY, session.getSessionId());
     cookie.setPath("/");
     resp.addCookie(cookie);
 
@@ -635,7 +637,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
           + "reached allowed limit (" + getApplication().getSessionCache()
           .getMaxNumberOfSessionsPerIpPerUser().get() + ").";
       ret.put("error", message);
-      WebUtils.reportLoginEvent(EventType.USER_LOGIN, session.getUser().getUserId(), ip, false, message);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, session.getUser().getUserId(), ip, false,
+          message);
     }
   }
 

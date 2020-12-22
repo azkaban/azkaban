@@ -56,6 +56,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private static final String AZKABAN_FAILURE_MESSAGE = "azkaban.failure.message";
   public static final String HTTP_HEADER_AZKABAN_TRACE_ORIGIN = "Azkaban-Trace-Origin";
   public static final String HTTP_HEADER_VALUE_AZKABAN_TRACE_ORIGIN = "webapp";
+  public static final String HTTP_HEADER_CSRF_TOKEN = "X-CSRF-TOKEN";
+  public static final String TEMPLATE_VAR_CSRF_TOKEN = "csrfToken";
+
 
   public static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
   public static final String jarVersion = AbstractAzkabanServlet.class.getPackage()

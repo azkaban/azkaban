@@ -28,23 +28,40 @@ import java.util.Set;
 
 public class Flow {
 
-  private final String id;
+  private static final String FLOW_NAME_PROPERTY = "id";
+  private static final String PROJECT_ID_PROPERTY = "project.id";
+  private static final String PROJECT_VERSION_PROPERTY = "version";
+  private static final String AZKABAN_FLOW_VERSION_PROPERTY = "azkabanFlowVersion";
+  private static final String EMBEDDED_FLOW_PROPERTY = "embeddedFlow";
+  private static final String TYPE_PROPERTY = "type";
+  private static final String LAYEDOUT_PROPERTY = "layedout";
+  private static final String CONDITION_PROPERTY = "condition";
+  private static final String PROPS_PROPERTY = "props";
+  private static final String NODES_PROPERTY = "nodes";
+  private static final String EDGES_PROPERTY = "edges";
+  private static final String METADATA_PROPERTY = "metadata";
+  private static final String FAILURE_EMAIL_PROPERTY = "failure.email";
+  private static final String SUCCESS_EMAIL_PROPERTY = "success.email";
+  private static final String MAIL_CREATOR_PROPERTY = "mailCreator";
+  private static final String ERRORS_PROPERTY = "errors";
+  private static final String IS_LOCKED_PROPERTY = "isLocked";
+  private static final String FLOW_LOCK_ERROR_MESSAGE_PROPERTY = "flowLockErrorMessage";
+
+  private final String id;  // This is actually the flow name
+  private int projectId;
+  private int version = -1; // This is actually the project version
   private final HashMap<String, Node> nodes = new HashMap<>();
   private final HashMap<String, Edge> edges = new HashMap<>();
-  private final HashMap<String, Set<Edge>> outEdges =
-      new HashMap<>();
+  private final HashMap<String, Set<Edge>> outEdges = new HashMap<>();
   private final HashMap<String, Set<Edge>> inEdges = new HashMap<>();
-  private final HashMap<String, FlowProps> flowProps =
-      new HashMap<>();
-  private int projectId;
+  private final HashMap<String, FlowProps> flowProps = new HashMap<>();
   private ArrayList<Node> startNodes = null;
   private ArrayList<Node> endNodes = null;
   private int numLevels = -1;
-  private List<String> failureEmail = new ArrayList<>();
-  private List<String> successEmail = new ArrayList<>();
+  private final List<String> failureEmail = new ArrayList<>();
+  private final List<String> successEmail = new ArrayList<>();
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private ArrayList<String> errors;
-  private int version = -1;
   private Map<String, Object> metadata = new HashMap<>();
 
   private boolean isLayedOut = false;
@@ -61,73 +78,64 @@ public class Flow {
   public static Flow flowFromObject(final Object object) {
     final Map<String, Object> flowObject = (Map<String, Object>) object;
 
-    final String id = (String) flowObject.get("id");
-    final Boolean layedout = (Boolean) flowObject.get("layedout");
-    final Boolean isEmbeddedFlow = (Boolean) flowObject.get("embeddedFlow");
-    final Double azkabanFlowVersion = (Double) flowObject.get("azkabanFlowVersion");
-    final String condition = (String) flowObject.get("condition");
-    final Boolean isLocked = (Boolean) flowObject.get("isLocked");
-    final String flowLockErrorMessage = (String) flowObject.get("flowLockErrorMessage");
-
+    final String id = (String) flowObject.get(FLOW_NAME_PROPERTY);
     final Flow flow = new Flow(id);
-    if (layedout != null) {
-      flow.setLayedOut(layedout);
-    }
 
-    if (isEmbeddedFlow != null) {
-      flow.setEmbeddedFlow(isEmbeddedFlow);
-    }
+    final Boolean layedout = (Boolean) flowObject
+        .getOrDefault(LAYEDOUT_PROPERTY, flow.isLayedOut());
+    final Boolean isEmbeddedFlow = (Boolean) flowObject
+        .getOrDefault(EMBEDDED_FLOW_PROPERTY, flow.isEmbeddedFlow());
+    final Double azkabanFlowVersion = (Double) flowObject
+        .getOrDefault(AZKABAN_FLOW_VERSION_PROPERTY, flow.getAzkabanFlowVersion());
+    final String condition = (String) flowObject
+        .getOrDefault(CONDITION_PROPERTY, flow.getCondition());
+    final Boolean isLocked = (Boolean) flowObject.getOrDefault(IS_LOCKED_PROPERTY, flow.isLocked());
+    final String flowLockErrorMessage = (String) flowObject
+        .getOrDefault(FLOW_LOCK_ERROR_MESSAGE_PROPERTY, flow.getFlowLockErrorMessage());
+    final int projectId = (Integer) flowObject
+        .getOrDefault(PROJECT_ID_PROPERTY, flow.getProjectId());
+    final int projectVersion = (Integer) flowObject
+        .getOrDefault(PROJECT_VERSION_PROPERTY, flow.getVersion());
+    final List<Object> propertiesList = (List<Object>) flowObject
+        .getOrDefault(PROPS_PROPERTY, new HashMap<>());
+    final List<Object> nodeList = (List<Object>) flowObject
+        .getOrDefault(NODES_PROPERTY, new HashMap<>());
+    final List<Object> edgeList = (List<Object>) flowObject
+        .getOrDefault(EDGES_PROPERTY, new HashMap<>());
+    final Map<String, Object> metadata = (Map<String, Object>) flowObject
+        .getOrDefault(METADATA_PROPERTY, flow.getMetadata());
+    final List<String> failureEmails = (List<String>) flowObject
+        .getOrDefault(FAILURE_EMAIL_PROPERTY, flow.getFailureEmails());
+    final List<String> successEmails = (List<String>) flowObject
+        .getOrDefault(SUCCESS_EMAIL_PROPERTY, flow.getSuccessEmails());
+    final String mailCreator = (String) flowObject
+        .getOrDefault(MAIL_CREATOR_PROPERTY, flow.getMailCreator());
 
-    if (azkabanFlowVersion != null) {
-      flow.setAzkabanFlowVersion(azkabanFlowVersion);
-    }
-
-    if (condition != null) {
-      flow.setCondition(condition);
-    }
-
-    if (isLocked != null) {
-      flow.setLocked(isLocked);
-    }
-
-    if (flowLockErrorMessage != null) {
-      flow.setFlowLockErrorMessage(flowLockErrorMessage);
-    }
-
-    final int projId = (Integer) flowObject.get("project.id");
-    flow.setProjectId(projId);
-
-    final int version = (Integer) flowObject.get("version");
-    flow.setVersion(version);
+    flow.setLayedOut(layedout);
+    flow.setEmbeddedFlow(isEmbeddedFlow);
+    flow.setAzkabanFlowVersion(azkabanFlowVersion);
+    flow.setCondition(condition);
+    flow.setLocked(isLocked);
+    flow.setFlowLockErrorMessage(flowLockErrorMessage);
+    flow.setProjectId(projectId);
+    flow.setVersion(projectVersion);
+    flow.setMetadata(metadata);
+    flow.addFailureEmails(failureEmails);
+    flow.addSuccessEmails(successEmails);
+    flow.setMailCreator(mailCreator);
 
     // Loading projects
-    final List<Object> propertiesList = (List<Object>) flowObject.get("props");
-    final Map<String, FlowProps> properties =
-        loadPropertiesFromObject(propertiesList);
+    final Map<String, FlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
 
     // Loading nodes
-    final List<Object> nodeList = (List<Object>) flowObject.get("nodes");
     final Map<String, Node> nodes = loadNodesFromObjects(nodeList);
     flow.addAllNodes(nodes.values());
 
     // Loading edges
-    final List<Object> edgeList = (List<Object>) flowObject.get("edges");
-    final List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
+    final List<Edge> edges = loadEdgeFromObjects(edgeList);
     flow.addAllEdges(edges);
 
-    final Map<String, Object> metadata =
-        (Map<String, Object>) flowObject.get("metadata");
-
-    if (metadata != null) {
-      flow.setMetadata(metadata);
-    }
-
-    flow.failureEmail = (List<String>) flowObject.get("failure.email");
-    flow.successEmail = (List<String>) flowObject.get("success.email");
-    if (flowObject.containsKey("mailCreator")) {
-      flow.mailCreator = flowObject.get("mailCreator").toString();
-    }
     return flow;
   }
 
@@ -142,8 +150,7 @@ public class Flow {
     return nodeMap;
   }
 
-  private static List<Edge> loadEdgeFromObjects(final List<Object> edgeList,
-      final Map<String, Node> nodes) {
+  private static List<Edge> loadEdgeFromObjects(final List<Object> edgeList) {
     final List<Edge> edgeResult = new ArrayList<>();
 
     for (final Object obj : edgeList) {
@@ -345,29 +352,29 @@ public class Flow {
 
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
-    flowObj.put("type", "flow");
-    flowObj.put("id", getId());
-    flowObj.put("project.id", this.projectId);
-    flowObj.put("version", this.version);
-    flowObj.put("props", objectizeProperties());
-    flowObj.put("nodes", objectizeNodes());
-    flowObj.put("edges", objectizeEdges());
-    flowObj.put("failure.email", this.failureEmail);
-    flowObj.put("success.email", this.successEmail);
-    flowObj.put("mailCreator", this.mailCreator);
-    flowObj.put("layedout", this.isLayedOut);
-    flowObj.put("embeddedFlow", this.isEmbeddedFlow);
-    flowObj.put("azkabanFlowVersion", this.azkabanFlowVersion);
-    flowObj.put("condition", this.condition);
-    flowObj.put("isLocked", this.isLocked);
-    flowObj.put("flowLockErrorMessage", this.flowLockErrorMessage);
+    flowObj.put(TYPE_PROPERTY, "flow");
+    flowObj.put(FLOW_NAME_PROPERTY, getId());
+    flowObj.put(PROJECT_ID_PROPERTY, this.projectId);
+    flowObj.put(PROJECT_VERSION_PROPERTY, this.version);
+    flowObj.put(PROPS_PROPERTY, objectizeProperties());
+    flowObj.put(NODES_PROPERTY, objectizeNodes());
+    flowObj.put(EDGES_PROPERTY, objectizeEdges());
+    flowObj.put(FAILURE_EMAIL_PROPERTY, this.failureEmail);
+    flowObj.put(SUCCESS_EMAIL_PROPERTY, this.successEmail);
+    flowObj.put(MAIL_CREATOR_PROPERTY, this.mailCreator);
+    flowObj.put(LAYEDOUT_PROPERTY, this.isLayedOut);
+    flowObj.put(EMBEDDED_FLOW_PROPERTY, this.isEmbeddedFlow);
+    flowObj.put(AZKABAN_FLOW_VERSION_PROPERTY, this.azkabanFlowVersion);
+    flowObj.put(CONDITION_PROPERTY, this.condition);
+    flowObj.put(IS_LOCKED_PROPERTY, this.isLocked);
+    flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PROPERTY, this.flowLockErrorMessage);
 
     if (this.errors != null) {
-      flowObj.put("errors", this.errors);
+      flowObj.put(ERRORS_PROPERTY, this.errors);
     }
 
     if (this.metadata != null) {
-      flowObj.put("metadata", this.metadata);
+      flowObj.put(METADATA_PROPERTY, this.metadata);
     }
 
     return flowObj;
@@ -474,9 +481,13 @@ public class Flow {
     this.projectId = projectId;
   }
 
-  public boolean isLocked() { return this.isLocked; }
+  public boolean isLocked() {
+    return this.isLocked;
+  }
 
-  public void setLocked(boolean locked) { this.isLocked = locked; }
+  public void setLocked(boolean locked) {
+    this.isLocked = locked;
+  }
 
   public String getFlowLockErrorMessage() {
     return this.flowLockErrorMessage;

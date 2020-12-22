@@ -89,7 +89,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   @Override
   public long getAgedQueuedFlowSize() {
     long size = 0L;
-    final int minimum_age_minutes = this.azkProps.getInt(
+    final int minimumAgeInMinutes = this.azkProps.getInt(
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     long startTime = System.currentTimeMillis();
@@ -97,7 +97,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     // all we care about is the count. Write a new class that's more performant and can be used for
     // metrics. this.executorLoader.fetchAgedQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
-      size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimum_age_minutes))
+      size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
           .size();
       logger.info("Time taken to fetch size of queued flows is {}",
           (System.currentTimeMillis() - startTime) / 1000);
