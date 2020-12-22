@@ -15,7 +15,6 @@
  */
 package azkaban.imagemgmt.services;
 
-import static azkaban.Constants.ImageMgmtConstants.ID_KEY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -23,14 +22,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.imagemgmt.converters.Converter;
+import azkaban.imagemgmt.converters.ImageVersionConverter;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtInvalidInputException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.dto.ImageVersionDTO;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion;
-import azkaban.imagemgmt.models.ImageVersionRequest;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.utils.JSONUtils;
 import java.io.IOException;
@@ -46,82 +46,79 @@ public class ImageVersionServiceImplTest {
   private ObjectMapper objectMapper;
   private ImageVersionService imageVersionService;
   private ConverterUtils converterUtils;
+  private Converter<ImageVersionDTO, ImageVersionDTO, ImageVersion> converter;
 
   @Before
   public void setup() {
     this.objectMapper = new ObjectMapper();
     this.imageVersionDao = mock(ImageVersionDaoImpl.class);
-    this.converterUtils = new ConverterUtils(objectMapper);
-    this.imageVersionService = new ImageVersionServiceImpl(imageVersionDao, converterUtils);
+    this.converterUtils = new ConverterUtils(this.objectMapper);
+    this.converter = new ImageVersionConverter();
+    this.imageVersionService = new ImageVersionServiceImpl(this.imageVersionDao, this.converter);
   }
 
   @Test
   public void testCreateImageVersion() throws Exception {
-    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_version.json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    ImageVersion imageVersion1 = objectMapper.readValue(imageMetadataRequest.getJsonPayload(),
-        ImageVersion.class);
-    System.out.println(imageVersion1.getState().getStateValue());
-    String json = objectMapper.writeValueAsString(imageVersion1);
-    System.out.println(json);
-    when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
-    int imageVersionId = imageVersionService.createImageVersion(imageMetadataRequest);
-    ArgumentCaptor<ImageVersion> imageTypeArgumentCaptor = ArgumentCaptor
+    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_version.json");
+    final ImageVersionDTO imageVersionDTO = this.converterUtils.convertToDTO(jsonPayload,
+        ImageVersionDTO.class);
+    imageVersionDTO.setCreatedBy("azkaban");
+    imageVersionDTO.setModifiedBy("azkaban");
+    when(this.imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
+    final int imageVersionId = this.imageVersionService.createImageVersion(imageVersionDTO);
+    final ArgumentCaptor<ImageVersion> imageTypeArgumentCaptor = ArgumentCaptor
         .forClass(ImageVersion.class);
-    verify(imageVersionDao, times(1)).createImageVersion(imageTypeArgumentCaptor.capture());
-    ImageVersion imageVersion = imageTypeArgumentCaptor.getValue();
-    Assert.assertEquals("path_spark_job", imageVersion.getPath());
-    Assert.assertEquals("1.1.1", imageVersion.getVersion());
-    Assert.assertEquals("spark_job", imageVersion.getName());
-    Assert.assertEquals("azkaban", imageVersion.getCreatedBy());
-    Assert.assertEquals("new", imageVersion.getState().getStateValue());
-    Assert.assertEquals("1.2.0", imageVersion.getReleaseTag());
+    verify(this.imageVersionDao, times(1)).createImageVersion(imageTypeArgumentCaptor.capture());
+    final ImageVersion capturedImageVersion = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("path_spark_job", capturedImageVersion.getPath());
+    Assert.assertEquals("1.1.1", capturedImageVersion.getVersion());
+    Assert.assertEquals("spark_job", capturedImageVersion.getName());
+    Assert.assertEquals("azkaban", capturedImageVersion.getCreatedBy());
+    Assert.assertEquals("new", capturedImageVersion.getState().getStateValue());
+    Assert.assertEquals("1.2.0", capturedImageVersion.getReleaseTag());
     Assert.assertEquals(100, imageVersionId);
   }
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageVersionInvalidType() throws IOException {
-    String jsonPayload = JSONUtils
+    final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/invalid_image_version.json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
-    imageVersionService.createImageVersion(imageMetadataRequest);
+    final ImageVersionDTO imageVersionDTO = this.converterUtils.convertToDTO(jsonPayload,
+        ImageVersionDTO.class);
+    imageVersionDTO.setCreatedBy("azkaban");
+    imageVersionDTO.setModifiedBy("azkaban");
+    when(this.imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
+    this.imageVersionService.createImageVersion(imageVersionDTO);
   }
 
   @Test(expected = ImageMgmtInvalidInputException.class)
   public void testCreateImageVersionInvalidState() throws IOException {
-    String jsonPayload = JSONUtils
+    final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/create_image_version_invalid_state.json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    when(imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
-    imageVersionService.createImageVersion(imageMetadataRequest);
+    final ImageVersionDTO imageVersionDTO = this.converterUtils.convertToDTO(jsonPayload,
+        ImageVersionDTO.class);
+    imageVersionDTO.setCreatedBy("azkaban");
+    imageVersionDTO.setModifiedBy("azkaban");
+    when(this.imageVersionDao.createImageVersion(any(ImageVersion.class))).thenReturn(100);
+    this.imageVersionService.createImageVersion(imageVersionDTO);
   }
 
   @Test
   public void testUpdateImageVersion() throws Exception {
-    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/update_image_version"
+    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/update_image_version"
         + ".json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .addParam(ID_KEY, 11)
-        .user("azkaban")
-        .build();
-    doNothing().doThrow(new ImageMgmtException("")).when(imageVersionDao)
-        .updateImageVersion(any(ImageVersionRequest.class));
-    imageVersionService.updateImageVersion(imageMetadataRequest);
-    ArgumentCaptor<ImageVersionRequest> imageVersionArgumentCaptor = ArgumentCaptor
-        .forClass(ImageVersionRequest.class);
-    verify(imageVersionDao, times(1)).updateImageVersion(imageVersionArgumentCaptor.capture());
-    ImageVersionRequest imageVersionRequest = imageVersionArgumentCaptor.getValue();
+    final ImageVersionDTO imageVersionDTO = this.converterUtils.convertToDTO(jsonPayload,
+        ImageVersionDTO.class);
+    imageVersionDTO.setId(11);
+    imageVersionDTO.setCreatedBy("azkaban");
+    imageVersionDTO.setModifiedBy("azkaban");
+    doNothing().doThrow(new ImageMgmtException("")).when(this.imageVersionDao)
+        .updateImageVersion(any(ImageVersion.class));
+    this.imageVersionService.updateImageVersion(imageVersionDTO);
+    final ArgumentCaptor<ImageVersion> imageVersionArgumentCaptor = ArgumentCaptor
+        .forClass(ImageVersion.class);
+    verify(this.imageVersionDao, times(1)).updateImageVersion(imageVersionArgumentCaptor.capture());
+    final ImageVersion imageVersionRequest = imageVersionArgumentCaptor.getValue();
     Assert.assertEquals(11, imageVersionRequest.getId());
     Assert.assertEquals("Good active version", imageVersionRequest.getDescription());
     Assert.assertEquals("active", imageVersionRequest.getState().getStateValue());

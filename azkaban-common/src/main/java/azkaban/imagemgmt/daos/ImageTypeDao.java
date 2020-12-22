@@ -15,7 +15,7 @@
  */
 package azkaban.imagemgmt.daos;
 
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageType;
 import java.util.List;

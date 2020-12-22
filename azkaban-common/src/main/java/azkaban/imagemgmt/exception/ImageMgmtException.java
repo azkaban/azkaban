@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.imagemgmt.exeception;
+package azkaban.imagemgmt.exception;
 
 /**
  * Top level exception class for image management

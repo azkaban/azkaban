@@ -2,7 +2,7 @@ package azkaban.executor;
 
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
-
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,8 +18,8 @@ public class ExecutorApiGatewaySystemTest {
 
   @Before
   public void setUp() throws Exception {
-    ExecutorApiClient client = new ExecutorApiClient();
-    apiGateway = new ExecutorApiGateway(client);
+    final ExecutorApiClient client = new ExecutorApiClient(new Props());
+    this.apiGateway = new ExecutorApiGateway(client);
   }
 
   @Test
@@ -41,7 +41,7 @@ public class ExecutorApiGatewaySystemTest {
     updateExecutions(100_000);
   }
 
-  private void updateExecutions(int count) throws ExecutorManagerException {
+  private void updateExecutions(final int count) throws ExecutorManagerException {
     final List<Integer> executionIdsList = new ArrayList<>();
     final List<Long> updateTimesList = new ArrayList<>();
 
@@ -59,7 +59,7 @@ public class ExecutorApiGatewaySystemTest {
             ConnectorParams.UPDATE_TIME_LIST_PARAM,
             JSONUtils.toJSON(updateTimesList));
 
-    Map<String, Object> results = apiGateway.callWithExecutionId("localhost", 12321,
+    final Map<String, Object> results = this.apiGateway.callWithExecutionId("localhost", 12321,
         ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
 
     Assert.assertTrue(results != null);

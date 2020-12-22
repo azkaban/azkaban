@@ -15,7 +15,6 @@
  */
 package azkaban.imagemgmt.services;
 
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -23,12 +22,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.imagemgmt.converters.Converter;
+import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
-import azkaban.imagemgmt.models.ImageRampupPlanRequest;
+import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
+import azkaban.imagemgmt.models.ImageRampupPlan;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.utils.JSONUtils;
 import java.io.IOException;
@@ -44,95 +46,107 @@ public class ImageRampupServiceImplTest {
   private ObjectMapper objectMapper;
   private ImageRampupService imageRampupService;
   private ConverterUtils converterUtils;
+  private Converter<ImageRampupPlanRequestDTO, ImageRampupPlanResponseDTO, ImageRampupPlan> converter;
 
   @Before
   public void setup() {
-    objectMapper = new ObjectMapper();
-    imageRampupDao = mock(ImageRampupDaoImpl.class);
-    converterUtils = new ConverterUtils(objectMapper);
-    imageRampupService = new ImageRampupServiceImpl(imageRampupDao, converterUtils);
+    this.objectMapper = new ObjectMapper();
+    this.imageRampupDao = mock(ImageRampupDaoImpl.class);
+    this.converterUtils = new ConverterUtils(this.objectMapper);
+    this.converter = new ImageRampupPlanConverter();
+    this.imageRampupService = new ImageRampupServiceImpl(this.imageRampupDao, this.converter);
   }
 
   @Test
   public void testCreateImageRampup() throws Exception {
-    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_rampup"
+    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/create_image_rampup"
         + ".json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    when(imageRampupDao.createImageRampupPlan(any(ImageRampupPlanRequest.class))).thenReturn(100);
-    int imageRampupPlanId = imageRampupService.createImageRampupPlan(imageMetadataRequest);
-    ArgumentCaptor<ImageRampupPlanRequest> imageTypeArgumentCaptor = ArgumentCaptor
-        .forClass(ImageRampupPlanRequest.class);
-    verify(imageRampupDao, times(1)).createImageRampupPlan(imageTypeArgumentCaptor.capture());
-    ImageRampupPlanRequest imageRampupPlanRequest = imageTypeArgumentCaptor.getValue();
-    Assert.assertEquals("Rampup plan 1", imageRampupPlanRequest.getPlanName());
-    Assert.assertEquals("spark_job", imageRampupPlanRequest.getImageTypeName());
-    Assert.assertEquals(true, imageRampupPlanRequest.isActivatePlan());
-    Assert.assertEquals("azkaban", imageRampupPlanRequest.getCreatedBy());
-    Assert.assertEquals(2, imageRampupPlanRequest.getImageRampups().size());
+    final ImageRampupPlanRequestDTO imageRampupPlanRequestDTO = this.converterUtils
+        .convertToDTO(jsonPayload,
+            ImageRampupPlanRequestDTO.class);
+    imageRampupPlanRequestDTO.setCreatedBy("azkaban");
+    imageRampupPlanRequestDTO.setModifiedBy("azkaban");
+    when(this.imageRampupDao.createImageRampupPlan(any(ImageRampupPlan.class)))
+        .thenReturn(100);
+    final int imageRampupPlanId = this.imageRampupService
+        .createImageRampupPlan(imageRampupPlanRequestDTO);
+    final ArgumentCaptor<ImageRampupPlan> imageTypeArgumentCaptor = ArgumentCaptor
+        .forClass(ImageRampupPlan.class);
+    verify(this.imageRampupDao, times(1)).createImageRampupPlan(imageTypeArgumentCaptor.capture());
+    final ImageRampupPlan capturedImageRampupPlanRequest = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("Rampup plan 1", capturedImageRampupPlanRequest.getPlanName());
+    Assert.assertEquals("spark_job", capturedImageRampupPlanRequest.getImageTypeName());
+    Assert.assertEquals(true, capturedImageRampupPlanRequest.isActivatePlan());
+    Assert.assertEquals("azkaban", capturedImageRampupPlanRequest.getCreatedBy());
+    Assert.assertEquals(2, capturedImageRampupPlanRequest.getImageRampups().size());
     Assert.assertEquals(100, imageRampupPlanId);
   }
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageRampupInvalidType() throws IOException {
-    String jsonPayload = JSONUtils
+    final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/invalid_image_rampup_type_name.json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    when(imageRampupDao.createImageRampupPlan(any(ImageRampupPlanRequest.class))).thenReturn(100);
-    imageRampupService.createImageRampupPlan(imageMetadataRequest);
+    final ImageRampupPlanRequestDTO imageRampupPlanRequestDTO = this.converterUtils
+        .convertToDTO(jsonPayload,
+            ImageRampupPlanRequestDTO.class);
+    imageRampupPlanRequestDTO.setCreatedBy("azkaban");
+    imageRampupPlanRequestDTO.setModifiedBy("azkaban");
+    when(this.imageRampupDao.createImageRampupPlan(any(ImageRampupPlan.class)))
+        .thenReturn(100);
+    this.imageRampupService.createImageRampupPlan(imageRampupPlanRequestDTO);
   }
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageRampupInvalidTotalPercentage() throws IOException {
-    String jsonPayload = JSONUtils
+    final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/invalid_image_rampup_total_percentage.json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    when(imageRampupDao.createImageRampupPlan(any(ImageRampupPlanRequest.class))).thenReturn(100);
-    imageRampupService.createImageRampupPlan(imageMetadataRequest);
+    final ImageRampupPlanRequestDTO imageRampupPlanRequestDTO = this.converterUtils
+        .convertToDTO(jsonPayload,
+            ImageRampupPlanRequestDTO.class);
+    imageRampupPlanRequestDTO.setCreatedBy("azkaban");
+    imageRampupPlanRequestDTO.setModifiedBy("azkaban");
+    when(this.imageRampupDao.createImageRampupPlan(any(ImageRampupPlan.class)))
+        .thenReturn(100);
+    this.imageRampupService.createImageRampupPlan(imageRampupPlanRequestDTO);
   }
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageRampupDuplicateVersion() throws IOException {
-    String jsonPayload = JSONUtils
+    final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/invalid_image_rampup_duplicate_version.json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
-    when(imageRampupDao.createImageRampupPlan(any(ImageRampupPlanRequest.class))).thenReturn(100);
-    imageRampupService.createImageRampupPlan(imageMetadataRequest);
+    final ImageRampupPlanRequestDTO imageRampupPlanRequestDTO = this.converterUtils
+        .convertToDTO(jsonPayload,
+            ImageRampupPlanRequestDTO.class);
+    imageRampupPlanRequestDTO.setCreatedBy("azkaban");
+    imageRampupPlanRequestDTO.setModifiedBy("azkaban");
+    when(this.imageRampupDao.createImageRampupPlan(any(ImageRampupPlan.class)))
+        .thenReturn(100);
+    this.imageRampupService.createImageRampupPlan(imageRampupPlanRequestDTO);
 
   }
 
   @Test
   public void testUpdateImageRampup() throws Exception {
-    String jsonPayload = JSONUtils.readJsonFileAsString("image_management/update_image_rampup"
+    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/update_image_rampup"
         + ".json");
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .addParam(IMAGE_TYPE, "spark_job")
-        .user("azkaban")
-        .build();
-    doNothing().doThrow(new ImageMgmtException("")).when(imageRampupDao)
-        .updateImageRampupPlan(any(ImageRampupPlanRequest.class));
-    imageRampupService.updateImageRampupPlan(imageMetadataRequest);
-    ArgumentCaptor<ImageRampupPlanRequest> imageTypeArgumentCaptor = ArgumentCaptor
-        .forClass(ImageRampupPlanRequest.class);
-    verify(imageRampupDao, times(1)).updateImageRampupPlan(imageTypeArgumentCaptor.capture());
-    ImageRampupPlanRequest imageRampupPlanRequest = imageTypeArgumentCaptor.getValue();
-    Assert.assertEquals("Rampup plan 1", imageRampupPlanRequest.getPlanName());
-    Assert.assertEquals("spark_job", imageRampupPlanRequest.getImageTypeName());
-    Assert.assertEquals(true, imageRampupPlanRequest.isActivatePlan());
-    Assert.assertEquals("azkaban", imageRampupPlanRequest.getModifiedBy());
-    Assert.assertEquals(2, imageRampupPlanRequest.getImageRampups().size());
+    final ImageRampupPlanRequestDTO imageRampupPlanRequestDTO = this.converterUtils
+        .convertToDTO(jsonPayload,
+            ImageRampupPlanRequestDTO.class);
+    imageRampupPlanRequestDTO.setImageTypeName("spark_job");
+    imageRampupPlanRequestDTO.setCreatedBy("azkaban");
+    imageRampupPlanRequestDTO.setModifiedBy("azkaban");
+    doNothing().doThrow(new ImageMgmtException("")).when(this.imageRampupDao)
+        .updateImageRampupPlan(any(ImageRampupPlan.class));
+    this.imageRampupService.updateImageRampupPlan(imageRampupPlanRequestDTO);
+    final ArgumentCaptor<ImageRampupPlan> imageTypeArgumentCaptor = ArgumentCaptor
+        .forClass(ImageRampupPlan.class);
+    verify(this.imageRampupDao, times(1)).updateImageRampupPlan(imageTypeArgumentCaptor.capture());
+    final ImageRampupPlan capturedImageRampupPlanRequest = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("Rampup plan 1", capturedImageRampupPlanRequest.getPlanName());
+    Assert.assertEquals("spark_job", capturedImageRampupPlanRequest.getImageTypeName());
+    Assert.assertEquals(true, capturedImageRampupPlanRequest.isActivatePlan());
+    Assert.assertEquals("azkaban", capturedImageRampupPlanRequest.getModifiedBy());
+    Assert.assertEquals(2, capturedImageRampupPlanRequest.getImageRampups().size());
   }
 
 }

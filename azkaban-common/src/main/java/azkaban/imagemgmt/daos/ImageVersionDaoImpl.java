@@ -18,18 +18,19 @@ package azkaban.imagemgmt.daos;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
 import static azkaban.Constants.ImageMgmtConstants.VERSION_STATE;
+import static azkaban.imagemgmt.utils.ErroCodeConstants.SQL_ERROR_CODE_DATA_TOO_LONG;
+import static azkaban.imagemgmt.utils.ErroCodeConstants.SQL_ERROR_CODE_DUPLICATE_ENTRY;
 
 import azkaban.Constants.ImageMgmtConstants;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtDaoException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
-import azkaban.imagemgmt.models.ImageVersionRequest;
 import com.google.common.collect.Iterables;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -66,12 +68,14 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       "insert into image_versions ( path, description, version, type_id, state, release_tag, "
           + "created_by, created_on, modified_by, modified_on) "
           + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
   private static final String SELECT_IMAGE_VERSION_BASE_QUERY =
       "select iv.id, iv.path, iv.description, "
-          + "iv.version, cast(replace(iv.version, '.', '') as integer) as int_version, "
+          + "iv.version, cast(replace(iv.version, '.', '') as unsigned integer) as int_version, "
           + "it.name, iv.state, iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, "
           + "iv.modified_by from image_versions iv, image_types it where it.id = iv.type_id";
-  /**
+
+  /*
    * The below query uses calculated column to get the image version in integer format. The query
    * consists for two inner queries. One inner query selects the max image version using the
    * calculated int_version field for the image types. The second inner query matches the max
@@ -83,30 +87,31 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       + "outer_tbl.path, outer_tbl.description, outer_tbl.version, outer_tbl.name, outer_tbl.state, "
       + "outer_tbl.release_tag, outer_tbl.created_on, outer_tbl.created_by, outer_tbl.modified_on, "
       + "outer_tbl.modified_by from (select iv.id, iv.path, iv.description, iv.version, "
-      + "cast(replace(iv.version, '.', '') as integer) as int_version, it.name, iv.state, "
+      + "cast(replace(iv.version, '.', '') as unsigned integer) as int_version, it.name, iv.state, "
       + "iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, iv.modified_by "
       + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
-      + "and it.name in ( ${image_types} )) "
+      + "and lower(it.name) in ( ${image_types} )) "
       + "outer_tbl where outer_tbl.int_version in (select max(inner_tbl.int_version) max_version "
-      + "from (select it.name, cast(replace(iv.version, '.', '') as integer) as int_version "
+      + "from (select it.name, cast(replace(iv.version, '.', '') as unsigned integer) as int_version "
       + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
-      + "and it.name in ( ${image_types} )) "
+      + "and lower(it.name) in ( ${image_types} )) "
       + "inner_tbl group by inner_tbl.name);";
 
   @Inject
-  public ImageVersionDaoImpl(DatabaseOperator databaseOperator, ImageTypeDao imageTypeDao) {
+  public ImageVersionDaoImpl(final DatabaseOperator databaseOperator,
+      final ImageTypeDao imageTypeDao) {
     this.databaseOperator = databaseOperator;
     this.imageTypeDao = imageTypeDao;
   }
 
   @Override
-  public int createImageVersion(ImageVersion imageVersion) {
-    ImageType imageType = imageTypeDao.getImageTypeByName(imageVersion.getName())
+  public int createImageVersion(final ImageVersion imageVersion) {
+    final ImageType imageType = this.imageTypeDao.getImageTypeByName(imageVersion.getName())
         .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
             + "image type : " + imageVersion.getName()));
-    SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
+    final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
-      Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+      final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
       transOperator
           .update(INSERT_IMAGE_VERSION_QUERY, imageVersion.getPath(), imageVersion.getDescription(),
               imageVersion.getVersion(), imageType.getId(), imageVersion.getState().getStateValue(),
@@ -121,37 +126,44 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       /* what will happen if there is a partial failure in
          any of the below statements?
          Ideally all should happen in a transaction */
-      imageVersionId = databaseOperator.transaction(insertAndGetSpaceId).intValue();
-    } catch (SQLException e) {
+      imageVersionId = this.databaseOperator.transaction(insertAndGetSpaceId).intValue();
+      if (imageVersionId < 1) {
+        log.error(String.format("Exception while creating image version due to invalid input, "
+            + "imageVersionId: %d.", imageVersionId));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
+            + "version due to invalid input.");
+      }
+    } catch (final SQLException e) {
       log.error("Unable to create the image version metadata", e);
       String errorMessage = "";
       // TODO: Find a better way to get the error message. Currently apache common dbutils throws
       // sql exception for all the below error scenarios and error message contains complete
       // query as well, hence generic error message is thrown.
-      if (e.getErrorCode() == 1062) {
-        errorMessage = "Reason: Duplicate key provided for one or more column(s)";
+      if (e.getErrorCode() == SQL_ERROR_CODE_DUPLICATE_ENTRY) {
+        errorMessage = "Reason: Duplicate key provided for one or more column(s).";
       }
-      if (e.getErrorCode() == 1406) {
+      if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
         errorMessage = "Reason: Data too long for one or more column(s).";
       }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
-          + "version metadata" + errorMessage);
+          + "version metadata. " + errorMessage);
     }
     return imageVersionId;
   }
 
   @Override
-  public List<ImageVersion> findImageVersions(ImageMetadataRequest imageMetadataRequest)
+  public List<ImageVersion> findImageVersions(final ImageMetadataRequest imageMetadataRequest)
       throws ImageMgmtException {
     List<ImageVersion> imageVersions = new ArrayList<>();
     try {
-      StringBuilder queryBuilder = new StringBuilder(SELECT_IMAGE_VERSION_BASE_QUERY);
-      List<Object> params = new ArrayList<>();
+      final StringBuilder queryBuilder = new StringBuilder(SELECT_IMAGE_VERSION_BASE_QUERY);
+      final List<Object> params = new ArrayList<>();
       // Add imageType in the query
       if (imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.IMAGE_TYPE)) {
         queryBuilder.append(" AND ");
-        queryBuilder.append(" it.name = ?");
-        params.add(imageMetadataRequest.getParams().get(ImageMgmtConstants.IMAGE_TYPE));
+        queryBuilder.append(" lower(it.name) = ?");
+        params.add(imageMetadataRequest.getParams().get(ImageMgmtConstants.IMAGE_TYPE).toString()
+            .toLowerCase());
       }
       // Add imageVersion in the query if present
       if (imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.IMAGE_VERSION)) {
@@ -163,14 +175,14 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       if (imageMetadataRequest.getParams().containsKey(ImageMgmtConstants.VERSION_STATE)) {
         queryBuilder.append(" AND ");
         queryBuilder.append(" iv.state = ?");
-        State versionState = (State) imageMetadataRequest.getParams()
+        final State versionState = (State) imageMetadataRequest.getParams()
             .get(ImageMgmtConstants.VERSION_STATE);
         params.add(versionState.getStateValue());
       }
       log.info("Image version get query : " + queryBuilder.toString());
-      imageVersions = databaseOperator.query(queryBuilder.toString(),
+      imageVersions = this.databaseOperator.query(queryBuilder.toString(),
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
-    } catch (SQLException ex) {
+    } catch (final SQLException ex) {
       log.error("Exception while fetching image version ", ex);
       throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Exception while fetching image "
           + "version");
@@ -179,42 +191,47 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   }
 
   @Override
-  public Optional<ImageVersion> getImageVersion(String imageTypeName, String imageVersion,
-      State versionState) throws ImageMgmtException {
-    ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
+  public Optional<ImageVersion> getImageVersion(final String imageTypeName,
+      final String imageVersion,
+      final State versionState) throws ImageMgmtException {
+    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
         .addParam(IMAGE_TYPE, imageTypeName)
         .addParam(IMAGE_VERSION, imageVersion)
         .addParam(VERSION_STATE, versionState)
         .build();
-    List<ImageVersion> imageVersions = findImageVersions(imageMetadataRequest);
+    final List<ImageVersion> imageVersions = findImageVersions(imageMetadataRequest);
     return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
         : Optional.empty();
   }
 
   @Override
-  public List<ImageVersion> getActiveVersionByImageTypes(Set<String> imageTypes)
+  public List<ImageVersion> getActiveVersionByImageTypes(final Set<String> imageTypes)
       throws ImageMgmtException {
     List<ImageVersion> imageVersions = new ArrayList<>();
     try {
       // Add outer select clause
-      StringBuilder inClauseBuilder = new StringBuilder();
+      final StringBuilder inClauseBuilder = new StringBuilder();
       for (int i = 0; i < imageTypes.size(); i++) {
         inClauseBuilder.append("?,");
       }
       inClauseBuilder.setLength(inClauseBuilder.length() - 1);
-      Map<String, String> valueMap = new HashMap<>();
+      final Map<String, String> valueMap = new HashMap<>();
       valueMap.put("image_types", inClauseBuilder.toString());
-      StrSubstitutor strSubstitutor = new StrSubstitutor(valueMap);
-      String query = strSubstitutor.replace(SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY);
+      final StrSubstitutor strSubstitutor = new StrSubstitutor(valueMap);
+      final String query = strSubstitutor.replace(SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY);
       log.info("Image version getActiveVersionByImageTypes query : " + query);
-      List<Object> params = new ArrayList<>();
+      final List<Object> params = new ArrayList<>();
+      final Set<String> imageTypesInLowerCase =
+          imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet());
+      log.info("imageTypesInLowerCase: " + imageTypesInLowerCase);
       params.add(State.ACTIVE.getStateValue());
-      params.addAll(imageTypes);
+      params.addAll(imageTypesInLowerCase);
       params.add(State.ACTIVE.getStateValue());
-      params.addAll(imageTypes);
-      imageVersions = databaseOperator.query(query,
+      params.addAll(imageTypesInLowerCase);
+      imageVersions = this.databaseOperator.query(query,
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
-    } catch (SQLException ex) {
+      log.info("imageVersions {}", imageVersions);
+    } catch (final SQLException ex) {
       log.error("Exception while fetching image version ", ex);
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while fetching image "
           + "version");
@@ -223,36 +240,45 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   }
 
   @Override
-  public void updateImageVersion(ImageVersionRequest imageVersionRequest)
+  public void updateImageVersion(final ImageVersion imageVersionRequest)
       throws ImageMgmtException {
     try {
-      List<Object> params = new ArrayList<>();
-      StringBuilder queryBuilder = new StringBuilder("update image_versions set ");
+      final List<Object> params = new ArrayList<>();
+      final StringBuilder queryBuilder = new StringBuilder("update image_versions iv, image_types"
+          + " it set ");
       if (imageVersionRequest.getPath() != null) {
-        queryBuilder.append(" path = ?, ");
+        queryBuilder.append(" iv.path = ?, ");
         params.add(imageVersionRequest.getPath());
       }
       if (imageVersionRequest.getDescription() != null) {
-        queryBuilder.append(" description = ?, ");
+        queryBuilder.append(" iv.description = ?, ");
         params.add(imageVersionRequest.getDescription());
       }
       if (imageVersionRequest.getState() != null) {
-        queryBuilder.append(" state = ?, ");
+        queryBuilder.append(" iv.state = ?, ");
         params.add(imageVersionRequest.getState().getStateValue());
       }
-      queryBuilder.append(" modified_by = ?, modified_on = ?");
+      queryBuilder.append(" iv.modified_by = ?, iv.modified_on = ?");
       params.add(imageVersionRequest.getModifiedBy());
       params.add(Timestamp.valueOf(LocalDateTime.now()));
-      queryBuilder.append(" where id = ? ");
+      queryBuilder.append(" where iv.id = ? and iv.type_id = it.id and it.name = ?");
       params.add(imageVersionRequest.getId());
-      databaseOperator.update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
-    } catch (SQLException ex) {
+      params.add(imageVersionRequest.getName());
+      final int updateCount = this.databaseOperator.update(queryBuilder.toString(),
+          Iterables.toArray(params, Object.class));
+      if (updateCount < 1) {
+        log.error(String.format("Exception while updating image version due to invalid input, "
+            + "updateCount: %d.", updateCount));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image "
+            + "version due to invalid input.");
+      }
+    } catch (final SQLException ex) {
       log.error("Exception while updating image version ", ex);
       String errorMessage = "";
       // TODO: Find a better way to get the error message. Currently apache common dbutils throws
       // sql exception for all the below error scenarios and error message contains complete
       // query as well, hence generic error message is thrown.
-      if (ex.getErrorCode() == 1406) {
+      if (ex.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
         errorMessage = "Reason: Data too long for one or more column(s).";
       }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image "
@@ -266,24 +292,24 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   public static class FetchImageVersionHandler implements ResultSetHandler<List<ImageVersion>> {
 
     @Override
-    public List<ImageVersion> handle(ResultSet rs) throws SQLException {
+    public List<ImageVersion> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
-      List<ImageVersion> imageVersions = new ArrayList<>();
+      final List<ImageVersion> imageVersions = new ArrayList<>();
       do {
-        int id = rs.getInt("id");
-        String path = rs.getString("path");
-        String description = rs.getString("description");
-        String version = rs.getString("version");
-        String name = rs.getString("name");
-        String state = rs.getString("state");
-        String releaseTag = rs.getString("release_tag");
-        String createdOn = rs.getString("created_on");
-        String createdBy = rs.getString("created_by");
-        String modifiedOn = rs.getString("modified_on");
-        String modifiedBy = rs.getString("modified_by");
-        ImageVersion imageVersion = new ImageVersion();
+        final int id = rs.getInt("id");
+        final String path = rs.getString("path");
+        final String description = rs.getString("description");
+        final String version = rs.getString("version");
+        final String name = rs.getString("name");
+        final String state = rs.getString("state");
+        final String releaseTag = rs.getString("release_tag");
+        final String createdOn = rs.getString("created_on");
+        final String createdBy = rs.getString("created_by");
+        final String modifiedOn = rs.getString("modified_on");
+        final String modifiedBy = rs.getString("modified_by");
+        final ImageVersion imageVersion = new ImageVersion();
         imageVersion.setId(id);
         imageVersion.setPath(path);
         imageVersion.setDescription(description);

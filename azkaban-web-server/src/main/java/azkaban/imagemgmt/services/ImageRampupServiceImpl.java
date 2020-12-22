@@ -15,20 +15,19 @@
  */
 package azkaban.imagemgmt.services;
 
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
 
+import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.daos.ImageRampupDao;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.dto.ImageRampupDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageRampup.StabilityTag;
 import azkaban.imagemgmt.models.ImageRampupPlan;
-import azkaban.imagemgmt.models.ImageRampupPlanRequest;
-import azkaban.imagemgmt.models.ImageRampupRequest;
-import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -52,73 +52,60 @@ public class ImageRampupServiceImpl implements ImageRampupService {
   private static final Logger log = LoggerFactory.getLogger(ImageRampupServiceImpl.class);
 
   private final ImageRampupDao imageRampupDao;
-  private final ConverterUtils converterUtils;
+  private final Converter<ImageRampupPlanRequestDTO, ImageRampupPlanResponseDTO, ImageRampupPlan> converter;
 
   @Inject
-  public ImageRampupServiceImpl(ImageRampupDao imageRampupDao,
-      ConverterUtils converterUtils) {
+  public ImageRampupServiceImpl(final ImageRampupDao imageRampupDao,
+      @Named(IMAGE_RAMPUP_PLAN) final Converter converter) {
     this.imageRampupDao = imageRampupDao;
-    this.converterUtils = converterUtils;
+    this.converter = converter;
   }
 
   @Override
-  public int createImageRampupPlan(ImageMetadataRequest imageMetadataRequest)
-      throws IOException, ImageMgmtException {
-    // Convert input json payload to ImageRampupPlanRequest object
-    ImageRampupPlanRequest imageRampupPlanRequest = converterUtils
-        .convertToModel(imageMetadataRequest.getJsonPayload(),
-            ImageRampupPlanRequest.class);
+  public int createImageRampupPlan(final ImageRampupPlanRequestDTO imageRampupPlanRequest)
+      throws ImageMgmtException {
     // input validation for ImageRampupPlanRequest
     final List<String> validationErrors = new ArrayList<>();
     if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors)) {
-      String errors = validationErrors.stream().collect(Collectors.joining(","));
+      final String errors = validationErrors.stream().collect(Collectors.joining(","));
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
           + "input for creating image rampup plan. Error(s): [%s]", errors));
     }
+    // Validate image rampup plan request
     vaidateRampup(imageRampupPlanRequest);
-    // set the user who invoked the API
-    imageRampupPlanRequest.setCreatedBy(imageMetadataRequest.getUser());
-    imageRampupPlanRequest.setModifiedBy(imageMetadataRequest.getUser());
-    for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
-      imageRampupRequest.setCreatedBy(imageMetadataRequest.getUser());
-      imageRampupRequest.setModifiedBy(imageMetadataRequest.getUser());
-    }
+
     // Invoke DAO method to create rampup plan and rampup details
-    return imageRampupDao.createImageRampupPlan(imageRampupPlanRequest);
+    return this.imageRampupDao
+        .createImageRampupPlan(this.converter.convertToDataModel(imageRampupPlanRequest));
   }
 
   @Override
-  public Optional<ImageRampupPlan> getActiveRampupPlan(String imageTypeName)
+  public Optional<ImageRampupPlanResponseDTO> getActiveRampupPlan(final String imageTypeName)
       throws ImageMgmtException {
-    return imageRampupDao.getActiveImageRampupPlan(imageTypeName, true);
+    final Optional<ImageRampupPlan> optionalImageRampupPlan =
+        this.imageRampupDao.getActiveImageRampupPlan(imageTypeName, true);
+    if (optionalImageRampupPlan.isPresent()) {
+      return Optional.of(this.converter.convertToApiResponseDTO(optionalImageRampupPlan.get()));
+    }
+    return Optional.empty();
   }
 
   @Override
-  public void updateImageRampupPlan(ImageMetadataRequest imageMetadataRequest) throws IOException,
+  public void updateImageRampupPlan(final ImageRampupPlanRequestDTO imageRampupPlanRequest) throws
       ImageMgmtException {
-    ImageRampupPlanRequest imageRampupPlanRequest = converterUtils
-        .convertToModel(imageMetadataRequest.getJsonPayload(),
-            ImageRampupPlanRequest.class);
-    imageRampupPlanRequest
-        .setImageTypeName(String.valueOf(imageMetadataRequest.getParams().get(IMAGE_TYPE)));
+
     // input validation for image version create request
     final List<String> validationErrors = new ArrayList<>();
     if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors)) {
-      String errors = validationErrors.stream().collect(Collectors.joining(","));
+      final String errors = validationErrors.stream().collect(Collectors.joining(","));
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
           + "input for updating image rampup plan. Error(s): [%s]", errors));
     }
-    // set the user who invoked the API
-    imageRampupPlanRequest.setModifiedBy(imageMetadataRequest.getUser());
     // Validate rampup details and set the modified by user
-    if(!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+    if (!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
       vaidateRampup(imageRampupPlanRequest);
-      // Set the modified by user
-      for (ImageRampupRequest imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
-        imageRampupRequest.setModifiedBy(imageMetadataRequest.getUser());
-      }
     }
-    imageRampupDao.updateImageRampupPlan(imageRampupPlanRequest);
+    this.imageRampupDao.updateImageRampupPlan(this.converter.convertToDataModel(imageRampupPlanRequest));
   }
 
   /**
@@ -131,16 +118,16 @@ public class ImageRampupServiceImpl implements ImageRampupService {
    * @return boolean
    * @throws ImageMgmtValidationException
    */
-  private boolean vaidateRampup(ImageRampupPlanRequest imageRampupPlanRequest)
+  private boolean vaidateRampup(final ImageRampupPlanRequestDTO imageRampupPlanRequest)
       throws ImageMgmtValidationException {
-    List<ImageRampupRequest> imageRampupRequests = imageRampupPlanRequest.getImageRampups();
+    final List<ImageRampupDTO> imageRampupRequests = imageRampupPlanRequest.getImageRampups();
     log.info("vaidateRampup imageRampupRequests: {} ", imageRampupRequests);
     if (CollectionUtils.isEmpty(imageRampupRequests)) {
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Missing rampup details");
     }
     // Check for total rampup percentage
     int totalRampupPercentage = 0;
-    for (ImageRampupRequest imageRampupRequest : imageRampupRequests) {
+    for (final ImageRampupDTO imageRampupRequest : imageRampupRequests) {
       totalRampupPercentage += imageRampupRequest.getRampupPercentage();
     }
     if (totalRampupPercentage != 100) {
@@ -149,8 +136,8 @@ public class ImageRampupServiceImpl implements ImageRampupService {
     }
 
     // Check for duplicate image version
-    Set<String> versions = new HashSet<>();
-    for (ImageRampupRequest imageRampupRequest : imageRampupRequests) {
+    final Set<String> versions = new HashSet<>();
+    for (final ImageRampupDTO imageRampupRequest : imageRampupRequests) {
       if (!versions.contains(imageRampupRequest.getImageVersion())) {
         versions.add(imageRampupRequest.getImageVersion());
       } else {
@@ -161,7 +148,7 @@ public class ImageRampupServiceImpl implements ImageRampupService {
     }
 
     // check for stability tag and ramp up percentage
-    for (ImageRampupRequest imageRampupRequest : imageRampupRequests) {
+    for (final ImageRampupDTO imageRampupRequest : imageRampupRequests) {
       if (StabilityTag.UNSTABLE.equals(imageRampupRequest.getStabilityTag())
           && imageRampupRequest.getRampupPercentage() != 0) {
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("The image "

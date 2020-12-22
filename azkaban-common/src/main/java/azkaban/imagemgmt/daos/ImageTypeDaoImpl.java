@@ -15,11 +15,14 @@
  */
 package azkaban.imagemgmt.daos;
 
+import static azkaban.imagemgmt.utils.ErroCodeConstants.SQL_ERROR_CODE_DATA_TOO_LONG;
+import static azkaban.imagemgmt.utils.ErroCodeConstants.SQL_ERROR_CODE_DUPLICATE_ENTRY;
+
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtDaoException;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtDaoException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
@@ -94,6 +97,12 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
          any of the below statements?
          Ideally all should happen in a transaction */
       imageTypeId = this.databaseOperator.transaction(insertAndGetSpaceId);
+      if (imageTypeId < 1) {
+        log.error(String.format("Exception while creating image type due to invalid input, "
+            + "imageTypeId: %d.", imageTypeId));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while creating image "
+            + "type due to invalid input.");
+      }
       log.info("Created image type id :" + imageTypeId);
     } catch (final SQLException e) {
       log.error("Unable to create the image type metadata", e);
@@ -101,10 +110,10 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       // TODO: Find a better way to get the error message. Currently apache common dbutils
       // throws sql exception for all the below error scenarios and error message contains
       // complete query as well, hence generic error message is thrown.
-      if (e.getErrorCode() == 1062) {
-        errorMessage = "Reason: Duplicate key provided for one or more column(s)";
+      if (e.getErrorCode() == SQL_ERROR_CODE_DUPLICATE_ENTRY) {
+        errorMessage = "Reason: Duplicate key provided for one or more column(s).";
       }
-      if (e.getErrorCode() == 1406) {
+      if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
         errorMessage = "Reason: Data too long for one or more column(s).";
       }
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
@@ -119,7 +128,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     List<ImageType> imageTypes = new ArrayList<>();
     try {
       imageTypes = this.databaseOperator
-          .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
+          .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
+              name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
         throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type by "
@@ -141,7 +151,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     List<ImageType> imageTypes = new ArrayList<>();
     try {
       imageTypes = this.databaseOperator
-          .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler, name);
+          .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
+              name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
         throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type with "
@@ -183,7 +194,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       // Get the image type names
       final Set<String> imageTypeNames = new HashSet<>();
       for (final ImageType imageType : imageTypes) {
-        imageTypeNames.add(imageType.getName());
+        imageTypeNames.add(imageType.getName().toLowerCase());
       }
       // Build in clause for fetching the ownership information for all the image types
       final StringBuilder inClauseBuilder = new StringBuilder();
@@ -225,7 +236,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     try {
       return this.databaseOperator
           .query(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME,
-              fetchImageOwnershipHandler, imageTypeName);
+              fetchImageOwnershipHandler, imageTypeName.toLowerCase());
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME + " failed.",
           ex);
@@ -248,7 +259,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     try {
       imageOwnerships = this.databaseOperator
           .query(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID,
-              fetchImageOwnershipHandler, imageTypeName, userId);
+              fetchImageOwnershipHandler, imageTypeName.toLowerCase(), userId);
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID
           + " failed.", ex);
@@ -265,7 +276,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
 
     private static final String FETCH_IMAGE_TYPE_BY_NAME =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
-            + "modified_by FROM image_types WHERE name = ?";
+            + "modified_by FROM image_types WHERE lower(name) = ?";
     private static final String FETCH_ALL_IMAGE_TYPES =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
             + "modified_by FROM image_types where active = ?";
@@ -307,12 +318,12 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME =
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
-            + "and it.name = ?";
+            + "and lower(it.name) = ?";
 
     private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID =
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
-            + "and it.name = ? and io.owner = ?";
+            + "and lower(it.name) = ? and io.owner = ?";
 
     @Override
     public List<ImageOwnership> handle(final ResultSet rs) throws SQLException {
@@ -353,7 +364,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAMES =
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
-            + "and it.name in ( ${image_types} )";
+            + "and lower(it.name) in ( ${image_types} )";
 
     @Override
     public Map<String, List<ImageOwnership>> handle(final ResultSet rs) throws SQLException {

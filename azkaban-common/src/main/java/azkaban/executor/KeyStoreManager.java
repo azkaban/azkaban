@@ -25,13 +25,13 @@ import java.security.KeyStore;
 
 /**
  * KeyStoreManger is responsible to manage the KeyStore used during containerized execution of a
- * flow. The HadoopSecurityManager must provide the KeyStore to CredentialProvider
+ * flow. The HadoopSecurityManager must provide the KeyStore to CredentialProvider.
  */
 public class KeyStoreManager {
-  private static volatile KeyStoreManager ksmInstance = null;
+  private static volatile KeyStoreManager ksmInstance;
   private static final Logger logger = LoggerFactory.getLogger(KeyStoreManager.class);
 
-  private KeyStore keyStore = null;
+  private KeyStore keyStore;
 
   public static KeyStoreManager getInstance() {
     if (ksmInstance == null) {
@@ -42,14 +42,24 @@ public class KeyStoreManager {
         }
       }
     }
-    logger.info("Getting existing instance of KeyStoreManager");
+    else {
+      logger.info("Getting existing instance of KeyStoreManager");
+    }
     return ksmInstance;
   }
 
+  /**
+   * Gets the cached KeyStore object
+   * @return Cached KeyStore object.
+   */
   public KeyStore getKeyStore() {
     return this.keyStore;
   }
 
+  /**
+   *
+   * @param keyStore Must be non-null.
+   */
   public void setKeyStore(final @Nonnull KeyStore keyStore) {
     this.keyStore = keyStore;
   }

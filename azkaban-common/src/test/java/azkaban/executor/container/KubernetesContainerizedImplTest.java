@@ -24,6 +24,15 @@ import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
+import azkaban.imagemgmt.converters.Converter;
+import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
+import azkaban.imagemgmt.converters.ImageTypeConverter;
+import azkaban.imagemgmt.converters.ImageVersionConverter;
+import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
+import azkaban.imagemgmt.dto.ImageTypeDTO;
+import azkaban.imagemgmt.dto.ImageVersionDTO;
+import azkaban.imagemgmt.models.ImageRampupPlan;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
@@ -31,7 +40,6 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
-import azkaban.imagemgmt.models.ImageRampupPlanRequest;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
@@ -49,6 +57,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import azkaban.utils.Props;
@@ -61,8 +71,6 @@ import org.junit.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -80,6 +88,13 @@ public class KubernetesContainerizedImplTest {
   private static ImageVersionDao imageVersionDao;
   private static ImageRampupDao imageRampupDao;
   private static final String TEST_JSON_DIR = "image_management/k8s_dispatch_test";
+  private static Converter<ImageTypeDTO, ImageTypeDTO,
+      ImageType> imageTypeConverter;
+  private static Converter<ImageVersionDTO, ImageVersionDTO,
+      ImageVersion> imageVersionConverter;
+  private static Converter<ImageRampupPlanRequestDTO, ImageRampupPlanResponseDTO,
+      ImageRampupPlan> imageRampupPlanConverter;
+
   private static final Logger log = LoggerFactory.getLogger(KubernetesContainerizedImplTest.class);
 
   @BeforeClass
@@ -125,6 +140,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(1);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
     assert(jobTypes.contains("command"));
     assert(jobTypes.contains("hadoopJava"));
@@ -151,6 +167,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
     VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
     VersionSet presetVersionSet = versionSetBuilder
@@ -207,23 +224,34 @@ public class KubernetesContainerizedImplTest {
     imageTypeDao = new ImageTypeDaoImpl(dbOperator);
     imageVersionDao = new ImageVersionDaoImpl(dbOperator, imageTypeDao);
     imageRampupDao = new ImageRampupDaoImpl(dbOperator, imageTypeDao, imageVersionDao);
-    imageRampupManager = new ImageRampupManagerImpl(imageRampupDao, imageVersionDao,
-        imageTypeDao);
+    // Create a mock of ImageRampupManager to get the image type and version map. This mock is
+    // required as the completed flow of getting image type and version can't be tested by
+    // populating image management table due non supported "UNSIGNED" integer in HSQL.
+    /*imageRampupManager = new ImageRampupManagerImpl(imageRampupDao, imageVersionDao,
+        imageTypeDao);*/
+    imageRampupManager = mock(ImageRampupManagerImpl.class);
+    imageTypeConverter = new ImageTypeConverter();
+    imageVersionConverter = new ImageVersionConverter();
+    imageRampupPlanConverter = new ImageRampupPlanConverter();
     final ObjectMapper objectMapper = new ObjectMapper();
-    addImageTypeTableEntry("image_type_hadoopJava.json", objectMapper);
+    // Insert into all the below image tables is commented as in memory HSQL database does not
+    // support "UNSIGNED" data type. Some of the queries in ImageVersionDaoImpl.java uses
+    //"UNSIGNED" integer, all the insert entries are commented out and ImageRampupManager mock is
+    //create above to get the image type and version map.
+    /*addImageTypeTableEntry("image_type_hadoopJava.json", objectMapper);
     addImageTypeTableEntry("image_type_command.json", objectMapper);
     addImageTypeTableEntry("image_type_spark.json", objectMapper);
     addImageVersions("image_types_active_versions.json", objectMapper);
-    addImageRampupEntries("create_image_rampup.json", objectMapper);
+    addImageRampupEntries("create_image_rampup.json", objectMapper);*/
   }
 
   private static void addImageTypeTableEntry(String jsonFile, ObjectMapper objectMapper) {
     String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
     try {
-      ImageType imageType = objectMapper.readValue(jsonPayload, ImageType.class);
+      ImageTypeDTO imageType = objectMapper.readValue(jsonPayload, ImageTypeDTO.class);
       imageType.setCreatedBy("azkaban");
       imageType.setModifiedBy("azkaban");
-      imageTypeDao.createImageType(imageType);
+      imageTypeDao.createImageType(imageTypeConverter.convertToDataModel(imageType));
     } catch (Exception e) {
       log.error("Failed to read from json file: " + jsonPayload);
       assert (false);
@@ -232,15 +260,15 @@ public class KubernetesContainerizedImplTest {
 
   private static void addImageVersions(String jsonFile, ObjectMapper objectMapper) {
     String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
-    List<ImageVersion> imageVersions = null;
+    List<ImageVersionDTO> imageVersions = null;
     try {
       imageVersions = objectMapper.readValue(jsonPayload,
-          new TypeReference<List<ImageVersion>>() { });
+          new TypeReference<List<ImageVersionDTO>>() { });
       log.info(String.valueOf(imageVersions));
-      for (ImageVersion imageVersion : imageVersions) {
+      for (ImageVersionDTO imageVersion : imageVersions) {
         imageVersion.setCreatedBy("azkaban");
         imageVersion.setModifiedBy("azkaban");
-        imageVersionDao.createImageVersion(imageVersion);
+        imageVersionDao.createImageVersion(imageVersionConverter.convertToDataModel(imageVersion));
       }
     } catch (IOException e) {
       log.error("Exception while converting input json: ", e);
@@ -250,18 +278,26 @@ public class KubernetesContainerizedImplTest {
 
   private static void addImageRampupEntries(String jsonFile, ObjectMapper objectMapper) {
     String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
-    List<ImageRampupPlanRequest> imageRampupPlanRequests = null;
+    List<ImageRampupPlanRequestDTO> imageRampupPlanRequests = null;
     try {
       imageRampupPlanRequests = objectMapper.readValue(jsonPayload,
-          new TypeReference<List<ImageRampupPlanRequest>>() { });
-      for (ImageRampupPlanRequest imageRampupPlanRequest : imageRampupPlanRequests) {
+          new TypeReference<List<ImageRampupPlanRequestDTO>>() { });
+      for (ImageRampupPlanRequestDTO imageRampupPlanRequest : imageRampupPlanRequests) {
         imageRampupPlanRequest.setCreatedBy("azkaban");
         imageRampupPlanRequest.setModifiedBy("azkaban");
-        imageRampupDao.createImageRampupPlan(imageRampupPlanRequest);
+        imageRampupDao.createImageRampupPlan(imageRampupPlanConverter.convertToDataModel(imageRampupPlanRequest));
       }
     } catch (IOException e) {
       log.error("Exception while converting input json: ", e);
       assert (false);
     }
+  }
+
+  private Map<String, String> getVersionMap() {
+    Map<String, String> versionMap = new TreeMap<>();
+    versionMap.put("spark", "5.1.5");
+    versionMap.put("command", "3.1.2");
+    versionMap.put("hadoopJava", "4.1.2");
+    return versionMap;
   }
 }
