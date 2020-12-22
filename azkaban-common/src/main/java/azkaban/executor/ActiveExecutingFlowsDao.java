@@ -30,7 +30,7 @@ public class ActiveExecutingFlowsDao {
   private final DatabaseOperator dbOperator;
 
   @Inject
-  public ActiveExecutingFlowsDao(final DatabaseOperator dbOperator) {
+  ActiveExecutingFlowsDao(final DatabaseOperator dbOperator) {
     this.dbOperator = dbOperator;
   }
 

@@ -82,7 +82,5 @@ public abstract class HadoopSecurityManager {
   public abstract void prefetchToken(File tokenFile, Props props, Logger logger)
       throws HadoopSecurityManagerException;
 
-  public KeyStore getKeyStore(final Props props) {
-    return null;
-  }
+  public abstract KeyStore getKeyStore(final Props props);
 }
