@@ -73,7 +73,7 @@ public class ImageRampupDTO extends BaseDTO {
 
   @Override
   public String toString() {
-    return "ImageRampup{" +
+    return "ImageRampupDTO{" +
         "planId=" + this.planId +
         ", imageVersion='" + this.imageVersion + '\'' +
         ", stabilityTag=" + this.stabilityTag +

@@ -101,7 +101,7 @@ public class ImageVersionDTO extends BaseDTO {
 
   @Override
   public String toString() {
-    return "ImageVersionUpdateRequest{" +
+    return "ImageVersionDTO{" +
         "path='" + this.path + '\'' +
         ", description='" + this.description + '\'' +
         ", state=" + this.state +

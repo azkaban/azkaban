@@ -89,15 +89,17 @@ CREATE TABLE IF NOT EXISTS image_rampup (
   modified_by       VARCHAR(64)    NOT NULL
 );
 
--- Definition for image_version_set table. Version set contains set of image versions and will be
+-- Definition for version_set table. Version set contains set of image versions and will be
 -- used during flow container launch
-CREATE TABLE IF NOT EXISTS image_version_set (
-  id               INT             NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  version_set      blob            NOT NULL,
-  version_set_hash binary(16)      NOT NULL UNIQUE,
-  created_on       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by       VARCHAR(64)     NOT NULL
+CREATE TABLE IF NOT EXISTS version_set (
+     id  INT NOT NULL AUTO_INCREMENT,
+     md5  CHAR(32) NOT NULL,
+     json VARCHAR(4096) NOT NULL,
+     created_on datetime DEFAULT CURRENT_TIMESTAMP,
+     PRIMARY KEY (id)
 );
+
+CREATE UNIQUE INDEX idx_md5 ON version_set (md5);
 
 -- TODO: Add the alter table script in the specific release
 -- Adding image_version_set_id column in execution_flows

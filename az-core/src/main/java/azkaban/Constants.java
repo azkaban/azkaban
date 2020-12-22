@@ -486,8 +486,7 @@ public class Constants {
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
   }
 
-  public static class ContainerizedExecutionManagerProperties {
-
+  public static class ContainerizedDispatchManagerProperties {
     public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
     public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
     public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
@@ -525,6 +524,10 @@ public class Constants {
             "memory.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
+    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
+    public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
 
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
@@ -548,5 +551,11 @@ public class Constants {
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
     public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
+  }
+
+  public static class FlowParameters {
+
+    // Constants for Flow parameters
+    public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
   }
 }
