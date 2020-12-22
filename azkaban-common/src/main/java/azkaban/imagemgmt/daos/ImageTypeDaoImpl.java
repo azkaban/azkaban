@@ -72,7 +72,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       // insert image type record
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
       final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
-      transOperator.update(INSERT_IMAGE_TYPE, imageType.getName().toLowerCase(),
+      transOperator.update(INSERT_IMAGE_TYPE, imageType.getName(),
           imageType.getDescription(), true, imageType.getDeployable().getName(),
           imageType.getCreatedBy(), currentTimestamp, imageType.getModifiedBy(), currentTimestamp);
       final int imageTypeId = Long.valueOf(transOperator.getLastInsertId()).intValue();

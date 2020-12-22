@@ -51,7 +51,7 @@ public class ImageRampupManagerImplTest {
   private ImageVersionDao imageVersionDao;
   private ImageRampupDao imageRampupDao;
   private ObjectMapper objectMapper;
-  private ImageRampupManger imageRampupManger;
+  private ImageRampupManager imageRampupManager;
 
   @Before
   public void setup() {
@@ -59,7 +59,7 @@ public class ImageRampupManagerImplTest {
     imageTypeDao = mock(ImageTypeDaoImpl.class);
     imageVersionDao = mock(ImageVersionDaoImpl.class);
     imageRampupDao = mock(ImageRampupDaoImpl.class);
-    imageRampupManger = new ImageRampupManagerImpl(imageRampupDao, imageVersionDao, imageTypeDao);
+    imageRampupManager = new ImageRampupManagerImpl(imageRampupDao, imageVersionDao, imageTypeDao);
   }
 
   /**
@@ -79,7 +79,7 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("azkaban_config");
     imageTypes.add("azkaban_exec");
     when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
-    Map<String, String> imageTypeVersionMap = imageRampupManger
+    Map<String, String> imageTypeVersionMap = imageRampupManager
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
@@ -116,7 +116,7 @@ public class ImageRampupManagerImplTest {
     when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManger
+    Map<String, String> imageTypeVersionMap = imageRampupManager
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -162,7 +162,7 @@ public class ImageRampupManagerImplTest {
     when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManger
+    Map<String, String> imageTypeVersionMap = imageRampupManager
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -201,7 +201,7 @@ public class ImageRampupManagerImplTest {
     when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManger
+    Map<String, String> imageTypeVersionMap = imageRampupManager
         .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -248,7 +248,7 @@ public class ImageRampupManagerImplTest {
     when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
     when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManger
+    Map<String, String> imageTypeVersionMap = imageRampupManager
         .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly

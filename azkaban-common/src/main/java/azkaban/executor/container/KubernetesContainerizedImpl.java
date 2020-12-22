@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
@@ -26,8 +27,13 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.imagemgmt.rampup.ImageRampupManager;
+import azkaban.imagemgmt.version.VersionSet;
+import azkaban.imagemgmt.version.VersionSetBuilder;
+import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.annotations.VisibleForTesting;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
@@ -43,9 +49,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -70,6 +78,11 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
+  public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES = "/data/jobtypes";
+  public static final String DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_JOBTYPES =
+      "/export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes";
+  public static final String IMAGE = "image";
+  public static final String VERSION = "version";
 
   private final String namespace;
   private final ApiClient client;
@@ -86,16 +99,24 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String memoryRequest;
   private final int servicePort;
   private final long serviceTimeout;
-
+  private final VersionSetLoader versionSetLoader;
+  private final ImageRampupManager imageRampupManager;
+  private final String initMountPathPrefixForJobtypes;
+  private final String appMountPathPrefixForJobtypes;
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
 
   @Inject
-  public KubernetesContainerizedImpl(final Props azkProps, final ExecutorLoader executorLoader)
+  public KubernetesContainerizedImpl(final Props azkProps,
+      final ExecutorLoader executorLoader,
+      final VersionSetLoader versionSetLoader,
+      final ImageRampupManager imageRampupManager)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
+    this.versionSetLoader = versionSetLoader;
+    this.imageRampupManager = imageRampupManager;
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
     this.flowContainerName =
@@ -129,7 +150,14 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         this.azkProps
             .getLong(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_CREATION_TIMEOUT_MS,
                 60000);
-
+    this.initMountPathPrefixForJobtypes =
+        this.azkProps
+            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES,
+                DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES);
+    this.appMountPathPrefixForJobtypes =
+        this.azkProps
+            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_MOUNT_PATH_FOR_JOBTYPES,
+                DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_JOBTYPES);
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
@@ -180,6 +208,143 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
+   * Construct the flow override parameter (key) for image version.
+   * @param imageType
+   * @return flow override param
+   */
+   private String imageTypeOverrideParam(String imageType) {
+     return String.join(".", IMAGE, imageType, VERSION);
+   }
+
+  /**
+   * This method fetches the complete version set information (Map of jobs and their versions)
+   * required to run the flow.
+   *
+   * @param flowParams
+   * @param imageTypesUsedInFlow
+   * @return VersionSet
+   * @throws ExecutorManagerException
+   */
+  @VisibleForTesting
+  VersionSet fetchVersionSet(final int executionId, Map<String, String> flowParams,
+       Set<String> imageTypesUsedInFlow) throws ExecutorManagerException {
+     VersionSet versionSet = null;
+
+     try {
+       if (flowParams != null &&
+           flowParams.containsKey(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID)) {
+         int versionSetId = Integer.parseInt(flowParams
+             .get(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID));
+         try {
+            versionSet = this.versionSetLoader.getVersionSetById(versionSetId).get();
+
+            /*
+             * Validate that all images part of the flow are included in the retrieved
+             * VersionSet. If there are images that were not part of the retrieved version
+             * set, then create a new VersionSet with a superset of all images.
+             */
+           Set<String> imageVersionsNotFound = new TreeSet<>();
+           Map<String, String> overlayMap = new HashMap<>();
+           for (String imageType : imageTypesUsedInFlow) {
+             if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
+               overlayMap.put(imageType, flowParams.get(imageTypeOverrideParam(imageType)));
+             } else if (!(imageType.equals("noop") || versionSet.getVersion(imageType).isPresent())) {
+               logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
+                   executionId, imageType, versionSetId);
+               imageVersionsNotFound.add(imageType);
+             }
+           }
+
+           if (!(imageVersionsNotFound.isEmpty() && overlayMap.isEmpty())) {
+             // Populate a new Version Set
+             logger.info("ExecId: {}, Flow had more imageTypes than specified in versionSet {}. "
+                 + "Constructing a new one", executionId, versionSetId);
+             VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
+             versionSetBuilder.addElements(versionSet.getImageToVersionMap());
+             // The following is a safety check. Just in case: getVersionByImageTypes fails below due to an
+             // exception, we will have an incomplete/incorrect versionSet. Setting it null ensures, it will
+             // be processed from scratch in the following code block
+             versionSet = null;
+             if (!imageVersionsNotFound.isEmpty())
+               versionSetBuilder.addElements(this.imageRampupManager.getVersionByImageTypes(imageVersionsNotFound));
+             if (!overlayMap.isEmpty())
+               versionSetBuilder.addElements(overlayMap);
+             versionSet = versionSetBuilder.build();
+           }
+         } catch (Exception e) {
+           logger.error("ExecId: {}, Could not find version set id: {} as specified by flow params. "
+               + "Will continue by creating a new one.", executionId, versionSetId);
+         }
+       }
+
+       if (versionSet == null) {
+         // Need to build a version set
+         imageTypesUsedInFlow.remove("noop");  // Remove noop type if exists in the input map
+         Map<String, String> versionMap = imageRampupManager.getVersionByImageTypes(imageTypesUsedInFlow);
+         // Now we will check the flow params for any override versions provided and apply them
+         for (String imageType : imageTypesUsedInFlow) {
+           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
+           if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
+             // We will trust that the user-provided version exists for now. May need to add some validation here!
+             versionMap.put(imageType, flowParams.get(imageTypeVersionOverrideParam));
+           }
+         }
+
+         VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
+         versionSet = versionSetBuilder.addElements(versionMap).build();
+       }
+     } catch (IOException e) {
+       logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
+           executionId, e.getMessage());
+       throw new ExecutorManagerException(e);
+     }
+     return versionSet;
+  }
+
+  /**
+   *
+   * @param executionId
+   * @param versionSet
+   * @param jobTypes
+   * @return
+   * @throws ExecutorManagerException
+   */
+  @VisibleForTesting
+  V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet, SortedSet<String> jobTypes)
+      throws ExecutorManagerException {
+    final String azkabanBaseImageVersion = getAzkabanBaseImageVersion();
+    final String azkabanConfigVersion = getAzkabanConfigVersion();
+
+    final AzKubernetesV1SpecBuilder v1SpecBuilder =
+        new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty()).addFlowContainer(this.flowContainerName,
+            azkabanBaseImageVersion, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
+            .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
+
+    // Create init container yaml file for each jobType
+    addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder, versionSet);
+
+    return v1SpecBuilder.build();
+  }
+
+  /**
+   *
+   * @param executionId
+   * @param podSpec
+   * @return
+   */
+  @VisibleForTesting
+  V1Pod createPodFromSpec(int executionId, V1PodSpec podSpec) {
+    final ImmutableMap<String, String> labels = getLabelsForPod();
+    final ImmutableMap<String, String> annotations = getAnnotationsForPod();
+
+    final V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), this.namespace, podSpec)
+       .withPodLabels(labels)
+       .withPodAnnotations(annotations)
+       .build();
+    return pod;
+  }
+
+  /**
    * This method is used to create pod. 1. Fetch jobTypes for the flow 2. Fetch flow parameters for
    * version set and each image type if it is set. 3. If valid version set is provided then use
    * versions from it. 4. If valid version set is not provided then call Ramp up manager API and get
@@ -198,69 +363,31 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
     // Step 1: Fetch set of jobTypes for a flow from executionId
     final TreeSet<String> jobTypes = getJobTypesForFlow(flow);
-    logger.info("Jobtypes for flow {} are: {}", flow.getFlowId(), jobTypes);
+    logger.info("ExecId: {}, Jobtypes for flow {} are: {}", executionId, flow.getFlowId(), jobTypes);
 
-    // TODO: From Flow Param, check if versionSet Num is mentioned, then pick version Set
-    //  JSON from version set table using DAO if not then call below mentioned ramp up
-    //  API to get version information for each jobtype
     final Map<String, String> flowParam =
         flow.getExecutionOptions().getFlowParameters();
 
-    // TODO: Validation for valid version number ->
-    //  1. Version is in image version's table no matter what it's status is
-    //  2.  Version set number: 155 , Create a new version set using version set mentioned in
-    //   number and for new jobtype, whatever active version is there. Add descriptive message
-    //   for which jobtype is missing in version set number and create new one and mention which
-    //   version you are picking for new jobtypes. Version set number and json can be set in
-    //   environment variable and Flow container can read it and add it in log
-    //  3. Add placeholder for verification whether version is available in Artifactory (Is
-    //   there a way to capture events from version release or deprecation in artifactory that we
-    //   can consume and use here)
     if (flowParam != null && !flowParam.isEmpty()) {
-      logger.info("Flow Parameters are: " + flowParam);
+      logger.info("ExecId: {}, Flow Parameters are: {}", executionId, flowParam);
     }
 
-    // TODO: Populating version set -> What is there in database on top of that what is passed in
-    //   flow parameters (Read it from cache. Write to both for db and cache in case of change)
-    // TODO: Below mentioned flow container image and conf version should come from database.
-    final String azkabanBaseImageVersion = getAzkabanBaseImageVersion();
-    final String azkabanConfigVersion = getAzkabanConfigVersion();
+    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, jobTypes);
+    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes);
 
-    final AzKubernetesV1SpecBuilder v1SpecBuilder = new AzKubernetesV1SpecBuilder(this.clusterName,
-        Optional.empty())
-        .addFlowContainer(this.flowContainerName, azkabanBaseImageVersion,
-            ImagePullPolicy.IF_NOT_PRESENT,
-            azkabanConfigVersion)
-        .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
-
-    // Create init container yaml file for each jobType
-    addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder);
-
-    final V1PodSpec podSpec = v1SpecBuilder.build();
-
-    final ImmutableMap<String, String> labels = getLabelsForPod();
-    final ImmutableMap<String, String> annotations = getAnnotationsForPod();
-
-    final V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), this.namespace, podSpec)
-        .withPodLabels(labels)
-        .withPodAnnotations(annotations)
-        .build();
-
-    final String createdPodSpec = Yaml.dump(pod).trim();
-    logger.debug("Pod spec for execution id {} is {}", executionId, createdPodSpec);
-    // TODO: Call the API to create version set for this execution if it does not exist. Make
-    //  sure to pass tree map to maintain order so that md5 won't change.
+    final V1Pod pod = createPodFromSpec(executionId, podSpec);
+    String podSpecYaml = Yaml.dump(pod).trim();
+    logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
 
     // TODO: Add version set number and json in flow life cycle event so users can use this
     //   information
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
-      logger.info("Dispatched pod for execution : ", executionId);
+      logger.info("ExecId: {}, Dispatched pod for execution.", executionId);
     } catch (ApiException e) {
-      logger.error("Unable to create Pod: {}", e.getResponseBody());
+      logger.error("ExecId: {}, Unable to create Pod: {}", executionId, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
-
     // TODO: Store version set id in execution_flows for execution_id
   }
 
@@ -296,19 +423,29 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
-   * TODO: Add implementation for this method as mentioned over here. 1. Call Ramp up manager to get
-   * version number for each jobtype. Accept lower case for image type name. For version set json,
-   * use lower case.
+   * TODO: Check if we need to turn everything into lower case?
    *
    * @param executionId
    * @param jobTypes
    * @param v1SpecBuilder
+   * @param versionSet
    * @throws ExecutorManagerException
    */
   private void addInitContainerForAllJobTypes(final int executionId,
-      final Set<String> jobTypes, final AzKubernetesV1SpecBuilder v1SpecBuilder)
+      final Set<String> jobTypes, final AzKubernetesV1SpecBuilder v1SpecBuilder,
+      final VersionSet versionSet)
       throws ExecutorManagerException {
-
+    for (String jobType: jobTypes) {
+      try {
+        String imageVersion = versionSet.getVersion(jobType).get();
+        v1SpecBuilder.addJobType(jobType, imageVersion, ImagePullPolicy.IF_NOT_PRESENT,
+            String.join("/", this.initMountPathPrefixForJobtypes, jobType),
+            String.join("/", this.appMountPathPrefixForJobtypes,  jobType));
+      } catch (Exception e) {
+        throw new ExecutorManagerException("Did not find the version string for image type: " +
+            jobType + " in versionSet");
+      }
+    }
   }
 
   /**
@@ -363,12 +500,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           .withTimeoutMs(String.valueOf(this.serviceTimeout))
           .build();
       this.coreV1Api.createNamespacedService(this.namespace, serviceObject, null, null, null);
-      logger.info("Service is created for " + executionId);
+      logger.info("ExecId: {}, Service is created.", executionId);
     } catch (final IOException e) {
-      logger.error("Unable to create service in Kubernetes: " + e.getMessage());
+      logger.error("ExecId: {}, Unable to create service in Kubernetes. Msg: {}", executionId, e.getMessage());
       throw new ExecutorManagerException(e);
     } catch (final ApiException e) {
-      logger.error("Unable to create service in Kubernetes: " + e.getResponseBody());
+      logger.error("ExecId: {}, Unable to create service in Kubernetes. Msg: {} ",
+          executionId, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
@@ -396,9 +534,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       final String podName = getPodName(executionId);
       this.coreV1Api.deleteNamespacedPod(podName, this.namespace, null, null,
           null, null, null, new V1DeleteOptions());
-      logger.info("Action: Pod Deletion, Pod Name: {}", podName);
+      logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}", executionId, podName);
     } catch (ApiException e) {
-      logger.error("Unable to delete Pod in Kubernetes: {}", e.getResponseBody());
+      logger.error("ExecId: {}, Unable to delete Pod in Kubernetes: {}", executionId, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
@@ -421,12 +559,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           null,
           null,
           new V1DeleteOptions());
-      logger.info("Action: Service Deletion, Service Name: {}, code: {}, message: {}",
+      logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, code: {}, message: {}",
+          executionId,
           serviceName,
           deleteResult.getCode(),
           deleteResult.getMessage());
     } catch (ApiException e) {
-      logger.error("Unable to delete service in Kubernetes: {}", e.getResponseBody());
+      logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }

@@ -294,14 +294,15 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       queryBuilder.append("? )");
       log.info("fetchRampupByImageTypes query: " + queryBuilder.toString());
       final List<Object> params = new ArrayList<>();
-      // Select only EXPERIMENTAL and STABLE versions that are being ramped up. Ignore the
-      // UNSTABLE version.
-      params.add(StabilityTag.EXPERIMENTAL.getTagName());
-      params.add(StabilityTag.STABLE.getTagName());
+
       // Select active image rampup plan
       params.add(Boolean.TRUE);
       // Select active image type
       params.add(Boolean.TRUE);
+      // Select only EXPERIMENTAL and STABLE versions that are being ramped up. Ignore the
+      // UNSTABLE version.
+      params.add(StabilityTag.EXPERIMENTAL.getTagName());
+      params.add(StabilityTag.STABLE.getTagName());
       params.addAll(imageTypes);
       return this.databaseOperator.query(queryBuilder.toString(),
           new FetchImageTypeRampupHandler(), Iterables.toArray(params, Object.class));

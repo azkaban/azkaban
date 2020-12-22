@@ -31,7 +31,7 @@ import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
-import azkaban.imagemgmt.rampup.ImageRampupManger;
+import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectCache;
@@ -97,7 +97,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
     bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
     bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
-    bind(ImageRampupManger.class).to(ImageRampupManagerImpl.class);
+    bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class);
     bind(PermissionManager.class).to(PermissionManagerImpl.class);
   }
 

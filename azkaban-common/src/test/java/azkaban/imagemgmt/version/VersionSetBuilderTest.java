@@ -25,10 +25,13 @@ public class VersionSetBuilderTest {
 
   @Test
   public void testVersionSet() throws IOException {
+    final String EXPECTED_JSON = "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}";
+    final String EXPECTED_MD5 = "43966138aebfdc4438520cc5cd2aefa8";
+
     // Test if the elements are ordered by keys, not by order of addition
     VersionSetLoader versionSetLoader = Mockito.mock(VersionSetLoader.class);
-    Mockito.when(versionSetLoader.getVersionSetId(Mockito.anyString(), Mockito.anyString()))
-        .thenReturn(1);
+    Mockito.when(versionSetLoader.getVersionSet(Mockito.anyString(), Mockito.anyString()))
+        .thenReturn(java.util.Optional.of(new VersionSet(EXPECTED_JSON, EXPECTED_MD5, 1)));
     VersionSet versionSet = new VersionSetBuilder(versionSetLoader)
         .addElement("key1", "value1")
         .addElement("key3", "value3")
@@ -38,5 +41,9 @@ public class VersionSetBuilderTest {
         versionSet.getVersionSetJsonString());
     Assert.assertEquals("43966138aebfdc4438520cc5cd2aefa8", versionSet.getVersionSetMd5Hex());
     Assert.assertEquals(1, versionSet.getVersionSetId());
+    Assert.assertEquals(versionSet.getVersion("key3").get(), "value3");
+    Assert.assertEquals(versionSet.getVersion("key1").get(), "value1");
+    Assert.assertEquals(versionSet.getVersion("key2").get(), "value2");
+    Assert.assertEquals(versionSet.getVersion("key4").isPresent(), false);
   }
 }
