@@ -8,6 +8,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import java.io.File;
+import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 
 public class ClusterModule extends AbstractModule {
@@ -40,6 +41,9 @@ public class ClusterModule extends AbstractModule {
   public Configuration getRouterConf(final Props props) {
     // TODO: put necessary core-site properties into robin-site.xml and do not load default xmls
     final Configuration configuration = new Configuration();
+    for (Map.Entry<String, String> entry : props.getFlattened().entrySet()) {
+      configuration.set(entry.getKey(), entry.getValue());
+    }
     final String routerConfPath = props.getString(AzkabanExecutorServer.CLUSTER_ROUTER_CONF,
         "router-conf.xml");
     configuration.addResource(routerConfPath);

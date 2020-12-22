@@ -133,6 +133,11 @@ public class Constants {
   public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
+  public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
+  public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
+
+  // Use in-memory keystore
+  public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
 
   public static class ConfigurationKeys {
 
@@ -394,6 +399,7 @@ public class Constants {
     public static final String OAUTH_REDIRECT_URI_KEY = "oauth.redirect_uri";  // how OAuth calls us back, e.g.:
     //    oauth.redirect_uri=http://localhost:8081/?action=oauth_callback
 
+    public static final String EXECUTOR_CONNECTION_TLS_ENABLED = "executor.connection.tls.enabled";
   }
 
   public static class FlowProperties {

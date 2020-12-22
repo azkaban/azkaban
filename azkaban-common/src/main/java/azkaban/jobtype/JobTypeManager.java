@@ -55,7 +55,7 @@ public class JobTypeManager {
   private final ClusterRouter clusterRouter;
   private JobTypePluginSet pluginSet;
   // Only used to load keyStore.
-  private Props keyStoreLoadProps = null;
+  private Props cachedCommonPluginLoadProps;
 
   @VisibleForTesting
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
@@ -146,7 +146,7 @@ public class JobTypeManager {
           + " found. Attempt to load.");
       try {
         commonPluginLoadProps = new Props(null, commonLoadPropsFile);
-        this.keyStoreLoadProps = commonPluginLoadProps;
+        this.cachedCommonPluginLoadProps = commonPluginLoadProps;
       } catch (final IOException e) {
         throw new JobTypeManagerException(
             "Failed to load common plugin loader properties" + e.getCause());
@@ -563,8 +563,8 @@ public class JobTypeManager {
   /**
    +   * Get the keystore load props
    +   */
-  public Props getKeyStoreLoadProps() {
-    return this.keyStoreLoadProps;
+  public Props getCommonPluginLoadProps() {
+    return this.cachedCommonPluginLoadProps;
   }
 
 }

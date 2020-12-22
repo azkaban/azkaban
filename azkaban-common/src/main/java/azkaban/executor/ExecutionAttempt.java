@@ -75,11 +75,11 @@ public class ExecutionAttempt {
   }
 
   public Map<String, Object> toObject() {
-    final HashMap<String, Object> attempts = new HashMap<>();
-    attempts.put(ATTEMPT_PARAM, this.attempt);
-    attempts.put(STARTTIME_PARAM, this.startTime);
-    attempts.put(ENDTIME_PARAM, this.endTime);
-    attempts.put(STATUS_PARAM, this.status.toString());
-    return attempts;
+    final Map<String, Object> attempt = new HashMap<>();
+    attempt.put(ATTEMPT_PARAM, this.attempt);
+    attempt.put(STARTTIME_PARAM, this.startTime);
+    attempt.put(ENDTIME_PARAM, this.endTime);
+    attempt.put(STATUS_PARAM, this.status.toString());
+    return attempt;
   }
 }

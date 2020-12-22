@@ -15,12 +15,16 @@
  */
 package azkaban.utils;
 
+import static java.util.Objects.requireNonNull;
+
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -39,17 +43,22 @@ public class TimeUtils {
 
   private static final String DATE_TIME_ZONE_PATTERN = "yyyy/MM/dd HH:mm:ss z";
   private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
-  private static int ONE_DAY = 86400;
+  private static final int ONE_DAY = 86400; // in seconds (24 × 60 × 60 = 86400)
 
   /**
-   * Formats the given millisecond instant into a string using the pattern "yyyy/MM/dd HH:mm:ss z"
+   * Produce a formatted string using the pattern "yyyy/MM/dd HH:mm:ss z" and the system's time
+   * zone.
+   *
+   * @param timestampMs the number of milliseconds since Epoch
    */
   public static String formatDateTimeZone(final long timestampMs) {
     return format(timestampMs, DATE_TIME_ZONE_PATTERN);
   }
 
   /**
-   * Formats the given millisecond instant into a string using the pattern "yyyy-MM-dd HH:mm:ss"
+   * Produce a formatted string using the pattern "yyyy-MM-dd HH:mm:ss" and the system's time zone.
+   *
+   * @param timestampMs the number of milliseconds since Epoch
    */
   public static String formatDateTime(final long timestampMs) {
     return format(timestampMs, DATE_TIME_PATTERN);
@@ -66,8 +75,8 @@ public class TimeUtils {
   }
 
   /**
-   * Takes a date string formatted as "yyyy-MM-dd HH:mm:ss" and converts it into milliseconds
-   * since the Epoch in UTC
+   * Takes a date string formatted as "yyyy-MM-dd HH:mm:ss" and converts it into milliseconds since
+   * the Epoch in UTC.
    */
   public static long convertDateTimeToUTCMillis(final String dateTime) {
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
@@ -76,10 +85,27 @@ public class TimeUtils {
   }
 
   /**
+   * Produce a formatted string using the {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} formatter.
+   *
+   * @param millisSinceEpoch the timestamp
+   * @param zoneOffset       the time zone offset. Example: "Z", "+08:00", "-08:00"
+   * @return the formatted date-time value
+   * @throws DateTimeException if the zoneOffset is invalid
+   */
+  public static String formatInISOOffsetDateTime(final long millisSinceEpoch,
+      final String zoneOffset) {
+    requireNonNull(zoneOffset, "zone offset is null.");
+    final ZonedDateTime zonedDateTime = ZonedDateTime
+        .ofInstant(Instant.ofEpochMilli(millisSinceEpoch), ZoneOffset.of(zoneOffset));
+    return DateTimeFormatter.ISO_OFFSET_DATE_TIME
+        .format(zonedDateTime.truncatedTo(ChronoUnit.SECONDS));
+  }
+
+  /**
    * Format time period pair to Duration String
    *
    * @param startTime start time
-   * @param endTime end time
+   * @param endTime   end time
    * @return Duration String
    */
   public static String formatDuration(final long startTime, final long endTime) {
@@ -243,19 +269,21 @@ public class TimeUtils {
    * Check the time escaped over n seconds
    *
    * @param referenceTime reference time
-   * @param second number of seconds
+   * @param second        number of seconds
    * @return true when the time escaped more than n seconds
    */
-  public static boolean timeEscapedOver(long referenceTime, int second) {
+  public static boolean timeEscapedOver(final long referenceTime, final int second) {
     return ((System.currentTimeMillis() - referenceTime) / 1000F) > (second * 1.0);
   }
 
   /**
    * Check how many days escaped over
+   *
    * @param referenceTime reference time
    * @return number of days
    */
-  public static int daysEscapedOver(long referenceTime) {
-    return Math.round(((System.currentTimeMillis() - referenceTime) / 1000f) / (ONE_DAY * 1.0f) - 0.5f);
+  public static int daysEscapedOver(final long referenceTime) {
+    return Math
+        .round(((System.currentTimeMillis() - referenceTime) / 1000f) / (ONE_DAY * 1.0f) - 0.5f);
   }
 }
