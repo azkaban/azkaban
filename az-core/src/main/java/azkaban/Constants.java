@@ -136,6 +136,9 @@ public class Constants {
   public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
   public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
+  // Use in-memory keystore
+  public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
+
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
