@@ -15,7 +15,7 @@
  */
 package azkaban.imagemgmt.rampup;
 
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import java.util.Map;
 import java.util.Set;
 

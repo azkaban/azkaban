@@ -25,21 +25,14 @@ import javax.validation.constraints.NotBlank;
  */
 public class ImageVersion extends BaseModel {
   // Path of the image version
-  @JsonProperty("imagePath")
-  @NotBlank(message = "imagePath cannot be blank")
   private String path;
   // Represents image version. Version is in major.minor.patch format
-  @JsonProperty("imageVersion")
-  @NotBlank(message = "imageVersion cannot be blank")
   private String version;
   // Name of the image type
-  @JsonProperty("imageType")
-  @NotBlank(message = "imageType cannot be blank")
   private String name;
   // Description of the image version
   private String description;
   // State of the image version
-  @JsonProperty("versionState")
   private State state;
   /**
    * Associated release of the image version. For example, in case of azkaban images the

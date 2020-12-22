@@ -49,11 +49,36 @@ public class ValidatorUtils {
    *
    * @param obj
    * @param <T>
+   * @param validationErrors
    * @return boolean
    */
   public static <T> boolean validateObject(final T obj, final List<String> validationErrors) {
     final Validator validator = validatorFactory.getValidator();
     final Set<ConstraintViolation<T>> violations = validator.validate(obj);
+    if (violations.isEmpty()) {
+      return true;
+    }
+    log.error("Object validation failed for: " + obj.toString());
+    violations.forEach(violation -> {
+      validationErrors.add(violation.getMessage());
+      log.error(violation.getPropertyPath().toString() + " " + violation.getMessage());
+    });
+    return false;
+  }
+
+  /**
+   * Performs validation the supplied object and creates set of violations. Returns if there is no
+   * violation. Returns false if there exist any violation. This method performs validation for the
+   * annotations with validation group class.
+   *
+   * @param obj
+   * @param <T>
+   * @return boolean
+   */
+  public static <T> boolean validateObject(final T obj, final List<String> validationErrors,
+      final Class<?> validationGroup) {
+    final Validator validator = validatorFactory.getValidator();
+    final Set<ConstraintViolation<T>> violations = validator.validate(obj, validationGroup);
     if (violations.isEmpty()) {
       return true;
     }

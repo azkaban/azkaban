@@ -13,18 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.imagemgmt.exeception;
+package azkaban.imagemgmt.exception;
 
 /**
- * The represents the exception class to be thrown on failure of API input validation
+ * The represents the exception class to be thrown on the failure of API permission denied issue.
  */
-public class ImageMgmtInvalidInputException extends ImageMgmtException {
+public class ImageMgmtInvalidPermissionException extends ImageMgmtException {
 
-  public ImageMgmtInvalidInputException(final String errorMessage) {
+  public ImageMgmtInvalidPermissionException(final String errorMessage) {
     super(errorMessage);
   }
 
-  public ImageMgmtInvalidInputException(final ErrorCode errorCode, final String errorMessage) {
+  public ImageMgmtInvalidPermissionException(final ErrorCode errorCode, final String errorMessage) {
     super(errorCode, errorMessage);
   }
 }

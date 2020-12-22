@@ -28,8 +28,6 @@ import org.codehaus.jackson.annotate.JsonProperty;
 public class ImageOwnership extends BaseModel {
 
   // Represents image type name
-  @JsonProperty("imageType")
-  @NotBlank(message = "imageType cannot be blank")
   private String name;
   // Image type owner
   private String owner;

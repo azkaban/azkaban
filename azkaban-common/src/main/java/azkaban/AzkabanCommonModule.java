@@ -22,6 +22,10 @@ import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.imagemgmt.converters.Converter;
+import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
+import azkaban.imagemgmt.converters.ImageTypeConverter;
+import azkaban.imagemgmt.converters.ImageVersionConverter;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDao;
@@ -46,6 +50,7 @@ import azkaban.utils.OsCpuUtil;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.name.Names;
 import org.apache.commons.dbutils.QueryRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +62,9 @@ import java.lang.reflect.InvocationTargetException;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
 
 
 /**
@@ -99,6 +107,12 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
     bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class);
     bind(PermissionManager.class).to(PermissionManagerImpl.class);
+    bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
+        .to(ImageTypeConverter.class);
+    bind(Converter.class).annotatedWith(Names.named(IMAGE_VERSION))
+        .to(ImageVersionConverter.class);
+    bind(Converter.class).annotatedWith(Names.named(IMAGE_RAMPUP_PLAN))
+        .to(ImageRampupPlanConverter.class);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {

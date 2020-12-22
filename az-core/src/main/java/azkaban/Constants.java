@@ -556,6 +556,7 @@ public class Constants {
     public static final String IMAGE_VERSION = "imageVersion";
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
+    public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
   }
 
   public static class FlowParameters {

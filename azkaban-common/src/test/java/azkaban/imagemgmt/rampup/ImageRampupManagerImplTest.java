@@ -19,22 +19,29 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.imagemgmt.converters.Converter;
+import azkaban.imagemgmt.converters.ImageTypeConverter;
+import azkaban.imagemgmt.converters.ImageVersionConverter;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.dto.ImageTypeDTO;
+import azkaban.imagemgmt.dto.ImageVersionDTO;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
+import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.utils.JSONUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.junit.Assert;
@@ -51,15 +58,22 @@ public class ImageRampupManagerImplTest {
   private ImageVersionDao imageVersionDao;
   private ImageRampupDao imageRampupDao;
   private ObjectMapper objectMapper;
-  private ImageRampupManager imageRampupManager;
+  private ImageRampupManager imageRampupManger;
+  private Converter<ImageTypeDTO, ImageTypeDTO, ImageType> imageTypeConverter;
+  private Converter<ImageVersionDTO, ImageVersionDTO, ImageVersion> imageVersionConverter;
+  private ConverterUtils converterUtils;
 
   @Before
   public void setup() {
-    objectMapper = new ObjectMapper();
-    imageTypeDao = mock(ImageTypeDaoImpl.class);
-    imageVersionDao = mock(ImageVersionDaoImpl.class);
-    imageRampupDao = mock(ImageRampupDaoImpl.class);
-    imageRampupManager = new ImageRampupManagerImpl(imageRampupDao, imageVersionDao, imageTypeDao);
+    this.objectMapper = new ObjectMapper();
+    this.imageTypeDao = mock(ImageTypeDaoImpl.class);
+    this.imageVersionDao = mock(ImageVersionDaoImpl.class);
+    this.imageRampupDao = mock(ImageRampupDaoImpl.class);
+    this.imageTypeConverter = new ImageTypeConverter();
+    this.imageVersionConverter = new ImageVersionConverter();
+    this.converterUtils = new ConverterUtils(this.objectMapper);
+    this.imageRampupManger = new ImageRampupManagerImpl(this.imageRampupDao, this.imageVersionDao,
+        this.imageTypeDao);
   }
 
   /**
@@ -69,17 +83,17 @@ public class ImageRampupManagerImplTest {
    */
   @Test
   public void testFetchVersionByImageTypesCase1() throws Exception {
-    String jsonInput = JSONUtils.readJsonFileAsString("image_management/image_type_rampups"
+    final String jsonInput = JSONUtils.readJsonFileAsString("image_management/image_type_rampups"
         + ".json");
-    Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonInput);
-    Set<String> imageTypes = new TreeSet<>();
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonInput);
+    final Set<String> imageTypes = new TreeSet<>();
     imageTypes.add("spark_job");
     imageTypes.add("hive_job");
     imageTypes.add("azkaban_core");
     imageTypes.add("azkaban_config");
     imageTypes.add("azkaban_exec");
-    when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
-    Map<String, String> imageTypeVersionMap = imageRampupManager
+    when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
@@ -98,10 +112,10 @@ public class ImageRampupManagerImplTest {
    */
   @Test
   public void testFetchVersionByImageTypesCase2() throws Exception {
-    String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
+    final String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
         + "image_type_rampups.json");
-    Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
-    Set<String> imageTypes = new TreeSet<>();
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
+    final Set<String> imageTypes = new TreeSet<>();
     imageTypes.add("spark_job");
     imageTypes.add("hive_job");
     imageTypes.add("azkaban_core");
@@ -109,14 +123,16 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("azkaban_exec");
     imageTypes.add("pig_job");
     imageTypes.add("hadoop_job");
-    String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
+    final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
         + "/image_type_active_version.json");
-    List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
-        jsonImageTypeActiveVersion);
-    when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
-    when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
+    final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeActiveVersion, ImageVersionDTO.class);
+    final List<ImageVersion> activeImageVersions =
+        this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManager
+    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -142,10 +158,10 @@ public class ImageRampupManagerImplTest {
    */
   @Test(expected = ImageMgmtException.class)
   public void testFetchVersionByImageTypesFailureCase() throws Exception {
-    String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
+    final String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
         + "image_type_rampups.json");
-    Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
-    Set<String> imageTypes = new TreeSet<>();
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
+    final Set<String> imageTypes = new TreeSet<>();
     imageTypes.add("spark_job");
     imageTypes.add("hive_job");
     imageTypes.add("azkaban_core");
@@ -155,14 +171,16 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("hadoop_job");
     imageTypes.add("kabootar_job");
     imageTypes.add("wormhole_job");
-    String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
+    final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
         + "/image_type_active_version.json");
-    List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
-        jsonImageTypeActiveVersion);
-    when(imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
-    when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
+    final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeActiveVersion, ImageVersionDTO.class);
+    final List<ImageVersion> activeImageVersions =
+        this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManager
+    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -187,21 +205,26 @@ public class ImageRampupManagerImplTest {
    */
   @Test
   public void testFetchAllImageTypesVersion() throws Exception {
-    String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
+    final String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
         + "image_type_rampups.json");
-    Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
-    String jsonAllImageTypes = JSONUtils.readJsonFileAsString("image_management/"
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
+    final String jsonAllImageTypes = JSONUtils.readJsonFileAsString("image_management/"
         + "all_image_types.json");
-    List<ImageType> allImageTypes = convertToImageTypeList(jsonAllImageTypes);
-    String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
+    final List<ImageTypeDTO> allImageTypeDTOs = converterUtils.convertToDTOs(jsonAllImageTypes,
+        ImageTypeDTO.class);
+    final List<ImageType> allImageTypes =
+        this.imageTypeConverter.convertToDataModels(allImageTypeDTOs);
+    final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
         + "/all_image_types_active_version.json");
-    List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
-        jsonImageTypeActiveVersion);
-    when(imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
-    when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
-    when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
+    final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeActiveVersion, ImageVersionDTO.class);
+    final List<ImageVersion> activeImageVersions =
+        this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    when(this.imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
+    when(this.imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
+    when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManager
+    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
         .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -234,21 +257,26 @@ public class ImageRampupManagerImplTest {
    */
   @Test(expected = ImageMgmtException.class)
   public void testFetchAllImageTypesVersionFailureCase() throws Exception {
-    String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
+    final String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
         + "image_type_rampups.json");
-    Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
-    String jsonAllImageTypes = JSONUtils.readJsonFileAsString("image_management/"
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
+    final String jsonAllImageTypes = JSONUtils.readJsonFileAsString("image_management/"
         + "all_image_types.json");
-    List<ImageType> allImageTypes = convertToImageTypeList(jsonAllImageTypes);
-    String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
+    final List<ImageTypeDTO> allImageTypeDTOs = converterUtils.convertToDTOs(jsonAllImageTypes,
+        ImageTypeDTO.class);
+    final List<ImageType> allImageTypes =
+        this.imageTypeConverter.convertToDataModels(allImageTypeDTOs);
+    final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
         + "/image_type_active_version.json");
-    List<ImageVersion> activeImageVersions = convertToImageTypeVersionList(
-        jsonImageTypeActiveVersion);
-    when(imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
-    when(imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
-    when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
+    final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeActiveVersion, ImageVersionDTO.class);
+    final List<ImageVersion> activeImageVersions =
+        this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    when(this.imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
+    when(this.imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
+    when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    Map<String, String> imageTypeVersionMap = imageRampupManager
+    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
         .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -265,40 +293,16 @@ public class ImageRampupManagerImplTest {
     Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job"));
   }
 
-  private Map<String, List<ImageRampup>> convertToRampupMap(String input) {
+  private Map<String, List<ImageRampup>> convertToRampupMap(final String input) {
     Map<String, List<ImageRampup>> imageTypeRampups = null;
     try {
-      imageTypeRampups = objectMapper.readValue(input,
+      imageTypeRampups = this.objectMapper.readValue(input,
           new TypeReference<Map<String,
               List<ImageRampup>>>() {
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Exception while converting input json ", e);
     }
     return imageTypeRampups;
-  }
-
-  private List<ImageVersion> convertToImageTypeVersionList(String input) {
-    List<ImageVersion> imageVersions = null;
-    try {
-      imageVersions = objectMapper.readValue(input,
-          new TypeReference<List<ImageVersion>>() {
-          });
-    } catch (IOException e) {
-      log.error("Exception while converting input json ", e);
-    }
-    return imageVersions;
-  }
-
-  private List<ImageType> convertToImageTypeList(String input) {
-    List<ImageType> imageTypes = null;
-    try {
-      imageTypes = objectMapper.readValue(input,
-          new TypeReference<List<ImageType>>() {
-          });
-    } catch (IOException e) {
-      log.error("Exception while converting input json ", e);
-    }
-    return imageTypes;
   }
 }

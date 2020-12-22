@@ -15,17 +15,15 @@
  */
 package azkaban.imagemgmt.servlets;
 
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
-
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
+import azkaban.imagemgmt.dto.ImageTypeDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
-import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import com.linkedin.jersey.api.uri.UriTemplate;
@@ -38,7 +36,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpStatus;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +51,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
   private static final UriTemplate IMAGE_TYPE_WITH_ID_URI_TEMPLATE = new UriTemplate(
       String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
   private ImageTypeService imageTypeService;
-  private ObjectMapper objectMapper;
+  private ConverterUtils converterUtils;
 
   private static final Logger log = LoggerFactory.getLogger(ImageTypeServlet.class);
 
@@ -66,8 +63,8 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.objectMapper = server.getObjectMapper();
     this.imageTypeService = server.getImageTypeService();
+    this.converterUtils = server.getConverterUtils();
   }
 
   @Override
@@ -93,8 +90,11 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       final String jsonPayload = HttpRequestUtils.getBody(req);
+      // Convert to GenericImageType DTO to transfer the input request
+      final ImageTypeDTO genericImageType = this.converterUtils.convertToDTO(jsonPayload,
+          ImageTypeDTO.class);
       // Check for required permission to invoke the API
-      final String imageType = JSONUtils.extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      final String imageType = genericImageType.getName();
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image type for "
             + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
@@ -102,13 +102,10 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
             + "create image type");
       }
 
-      // Build ImageMetadataRequest DTO to transfer the input request
-      final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-          .jsonPayload(jsonPayload)
-          .user(session.getUser().getUserId())
-          .build();
+      genericImageType.setCreatedBy(session.getUser().getUserId());
+      genericImageType.setModifiedBy(session.getUser().getUserId());
       // Create image type and get image type id
-      final Integer imageTypeId = this.imageTypeService.createImageType(imageMetadataRequest);
+      final Integer imageTypeId = this.imageTypeService.createImageType(genericImageType);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",

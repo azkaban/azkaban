@@ -15,7 +15,8 @@
  */
 package azkaban.imagemgmt.permission;
 
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.user.Permission.Type;
 
 /**

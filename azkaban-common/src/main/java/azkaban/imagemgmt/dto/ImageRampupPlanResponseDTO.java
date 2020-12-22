@@ -13,85 +13,68 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.imagemgmt.models;
+package azkaban.imagemgmt.dto;
 
 import java.util.List;
-import javax.validation.constraints.NotBlank;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * This represents image rampup plan request and used while creating or updating image rampup plan
  * for an image type.
  */
-public class ImageRampupPlanRequest extends BaseModel {
+public class ImageRampupPlanResponseDTO extends BaseDTO {
 
   // Represents the name of the ramp up plan
-  @JsonProperty("planName")
-  @NotBlank(message = "PlanName cannot be blank")
   private String planName;
   // Represents the name of the image type
-  @JsonProperty("imageType")
-  @NotBlank(message = "ImageType cannot be blank")
   private String imageTypeName;
   // Rampup plan description
   private String description;
-  // This flag indicates if the plan needs to be activated or not
-  @JsonProperty("activatePlan")
-  private boolean activatePlan;
+  // This flag indicates if the plan is active or not
+  private boolean active;
 
   // This flag if set will forcefully activate the new plan by deactivating the existing active
   // rampup plan
-  @JsonProperty("forceActivatePlan")
-  private boolean forceActivatePlan;
 
   // Rampup details for the image type
-  private List<ImageRampupRequest> imageRampups;
+  private List<ImageRampupDTO> imageRampups;
 
   public String getPlanName() {
-    return planName;
+    return this.planName;
   }
 
-  public void setPlanName(String planName) {
+  public void setPlanName(final String planName) {
     this.planName = planName;
   }
 
   public String getImageTypeName() {
-    return imageTypeName;
+    return this.imageTypeName;
   }
 
-  public void setImageTypeName(String imageTypeName) {
+  public void setImageTypeName(final String imageTypeName) {
     this.imageTypeName = imageTypeName;
   }
 
   public String getDescription() {
-    return description;
+    return this.description;
   }
 
-  public void setDescription(String description) {
+  public void setDescription(final String description) {
     this.description = description;
   }
 
-  public boolean isActivatePlan() {
-    return activatePlan;
+  public boolean isActive() {
+    return this.active;
   }
 
-  public void setActivatePlan(boolean activatePlan) {
-    this.activatePlan = activatePlan;
+  public void setActive(final boolean active) {
+    this.active = active;
   }
 
-  public boolean isForceActivatePlan() {
-    return forceActivatePlan;
+  public List<ImageRampupDTO> getImageRampups() {
+    return this.imageRampups;
   }
 
-  public void setForceActivatePlan(boolean forceActivatePlan) {
-    this.forceActivatePlan = forceActivatePlan;
-  }
-
-  public List<ImageRampupRequest> getImageRampups() {
-    return imageRampups;
-  }
-
-  public void setImageRampups(List<ImageRampupRequest> imageRampups) {
+  public void setImageRampups(final List<ImageRampupDTO> imageRampups) {
     this.imageRampups = imageRampups;
   }
 }

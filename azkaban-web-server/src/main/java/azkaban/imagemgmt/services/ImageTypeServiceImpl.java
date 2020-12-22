@@ -15,24 +15,26 @@
  */
 package azkaban.imagemgmt.services;
 
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+
+import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.daos.ImageTypeDao;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
-import azkaban.imagemgmt.models.ImageOwnership;
+import azkaban.imagemgmt.dto.ImageOwnershipDTO;
+import azkaban.imagemgmt.dto.ImageTypeDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageType.Deployable;
-import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.imagemgmt.utils.ValidatorUtils;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,23 +50,17 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   private static final Logger log = LoggerFactory.getLogger(ImageTypeServiceImpl.class);
 
   private final ImageTypeDao imageTypeDao;
-  private final ConverterUtils converterUtils;
+  private final Converter<ImageTypeDTO, ImageTypeDTO, ImageType> converter;
 
   @Inject
   public ImageTypeServiceImpl(final ImageTypeDao imageTypeDao,
-      final ConverterUtils converterUtils) {
+      @Named(IMAGE_TYPE) final Converter converter) {
     this.imageTypeDao = imageTypeDao;
-    this.converterUtils = converterUtils;
+    this.converter = converter;
   }
 
   @Override
-  public int createImageType(final ImageMetadataRequest imageMetadataRequest) throws IOException,
-      ImageMgmtException {
-    // Convert input json payload to image type object
-    final ImageType imageType = this.converterUtils
-        .convertToModel(imageMetadataRequest.getJsonPayload(), ImageType.class);
-    imageType.setCreatedBy(imageMetadataRequest.getUser());
-    imageType.setModifiedBy(imageMetadataRequest.getUser());
+  public int createImageType(final ImageTypeDTO imageType) throws ImageMgmtException {
     // By default always image.
     if (imageType.getDeployable() == null) {
       imageType.setDeployable(Deployable.IMAGE);
@@ -78,7 +74,7 @@ public class ImageTypeServiceImpl implements ImageTypeService {
     }
     // Validate ownership metadata
     validateOwnership(imageType);
-    return this.imageTypeDao.createImageType(imageType);
+    return this.imageTypeDao.createImageType(this.converter.convertToDataModel(imageType));
   }
 
   /**
@@ -88,7 +84,8 @@ public class ImageTypeServiceImpl implements ImageTypeService {
    * @return boolean
    * @throws ImageMgmtValidationException
    */
-  private boolean validateOwnership(final ImageType imageType) throws ImageMgmtValidationException {
+  private boolean validateOwnership(final ImageTypeDTO imageType)
+      throws ImageMgmtValidationException {
     // Check if ownership record exists
     if (imageType.getOwnerships() == null) {
       log.error("Please specify at least two owners for the image type: {} ", imageType.getName());
@@ -116,9 +113,9 @@ public class ImageTypeServiceImpl implements ImageTypeService {
    * @param imageType
    * @return boolean
    */
-  private boolean hasAdminRole(final ImageType imageType) {
+  private boolean hasAdminRole(final ImageTypeDTO imageType) {
     boolean hasAdminRole = false;
-    for (final ImageOwnership imageOwnership : imageType.getOwnerships()) {
+    for (final ImageOwnershipDTO imageOwnership : imageType.getOwnerships()) {
       if (Role.ADMIN.equals(imageOwnership.getRole())) {
         hasAdminRole = true;
       }
@@ -132,9 +129,9 @@ public class ImageTypeServiceImpl implements ImageTypeService {
    * @param imageType
    * @return boolean
    */
-  private boolean hasDuplicateOwner(final ImageType imageType) {
+  private boolean hasDuplicateOwner(final ImageTypeDTO imageType) {
     final Set<String> owners = new HashSet<>();
-    for (final ImageOwnership imageOwnership : imageType.getOwnerships()) {
+    for (final ImageOwnershipDTO imageOwnership : imageType.getOwnerships()) {
       if (owners.contains(imageOwnership.getOwner())) {
         return true;
       } else {

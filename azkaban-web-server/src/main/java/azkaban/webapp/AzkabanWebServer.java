@@ -39,6 +39,7 @@ import azkaban.imagemgmt.services.ImageVersionService;
 import azkaban.imagemgmt.servlets.ImageRampupServlet;
 import azkaban.imagemgmt.servlets.ImageTypeServlet;
 import azkaban.imagemgmt.servlets.ImageVersionServlet;
+import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.jmx.JmxContainerizedDispatchManager;
 import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
@@ -169,6 +170,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final ImageVersionService imageVersionService;
   private final ImageRampupService imageRampupService;
   private final PermissionManager permissionManager;
+  private final ConverterUtils converterUtils;
 
 
   @Inject
@@ -190,7 +192,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final ImageTypeService imageTypeService,
       final ImageVersionService imageVersionService,
       final ImageRampupService imageRampupService,
-      final PermissionManager permissionManager) {
+      final PermissionManager permissionManager,
+      final ConverterUtils converterUtils) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -214,6 +217,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.imageRampupService = requireNonNull(imageRampupService, "imageRampupService is "
         + "null");
     this.permissionManager = requireNonNull(permissionManager, "permissionManager is "
+        + "null");
+    this.converterUtils = requireNonNull(converterUtils, "converterUtils is "
         + "null");
 
     loadBuiltinCheckersAndActions();
@@ -768,5 +773,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   public PermissionManager getPermissionManager() {
     return this.permissionManager;
+  }
+
+  public ConverterUtils getConverterUtils() {
+    return this.converterUtils;
   }
 }

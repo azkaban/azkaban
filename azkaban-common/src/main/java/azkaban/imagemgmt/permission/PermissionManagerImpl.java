@@ -16,8 +16,8 @@
 package azkaban.imagemgmt.permission;
 
 import azkaban.imagemgmt.daos.ImageTypeDao;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;

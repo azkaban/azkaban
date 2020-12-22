@@ -17,13 +17,15 @@ package azkaban.imagemgmt.servlets;
 
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ErrorCode;
-import azkaban.imagemgmt.exeception.ImageMgmtException;
-import azkaban.imagemgmt.exeception.ImageMgmtInvalidPermissionException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
-import azkaban.imagemgmt.models.ImageRampupPlan;
+import azkaban.imagemgmt.dto.ImageRampupDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.services.ImageRampupService;
+import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
@@ -40,8 +42,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpStatus;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,7 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
   private static final UriTemplate UPDATE_IMAGE_RAMPUP_URI_TEMPLATE = new UriTemplate(
       String.format("/imageRampup/{%s}", IMAGE_TYPE));
   private ImageRampupService imageRampupService;
-  private ObjectMapper objectMapper;
+  private ConverterUtils converterUtils;
 
   private static final Logger log = LoggerFactory.getLogger(ImageRampupServlet.class);
 
@@ -73,8 +75,8 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.objectMapper = server.getObjectMapper();
     this.imageRampupService = server.getImageRampupService();
+    this.converterUtils = server.getConverterUtils();
   }
 
   @Override
@@ -83,7 +85,7 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     /* Get specific record */
     try {
-      String response = null;
+      ImageRampupPlanResponseDTO imageRampupPlanResponse = null;
       if (BASE_IMAGE_RAMPUP_URI.equals(req.getRequestURI())) {
         // imageType must present. If not present throws ImageMgmtValidationException
         final String imageType = HttpRequestUtils.getParam(req, IMAGE_TYPE);
@@ -102,18 +104,17 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
         }
 
         // invoke service method and get response in string format
-        final Optional<ImageRampupPlan> imageRampupPlan =
+        final Optional<ImageRampupPlanResponseDTO> optionalImageRampupPlan =
             this.imageRampupService.getActiveRampupPlan(imageType);
-        if (imageRampupPlan.isPresent()) {
-          response = this.objectMapper.writerWithDefaultPrettyPrinter()
-              .writeValueAsString(imageRampupPlan.get());
+        if (optionalImageRampupPlan.isPresent()) {
+          imageRampupPlanResponse = optionalImageRampupPlan.get();
         } else {
           throw new ImageMgmtException(ErrorCode.NOT_FOUND,
               String.format("There is no active rampup plan found for image "
                   + "type: %s.", imageType));
         }
       }
-      writeResponse(resp, response);
+      sendResponse(resp, HttpServletResponse.SC_OK, imageRampupPlanResponse);
     } catch (final ImageMgmtException e) {
       log.error("Exception while getting rampup plan", e);
       sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
@@ -146,6 +147,8 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     try {
       final String jsonPayload = HttpRequestUtils.getBody(req);
+      final ImageRampupPlanRequestDTO imageRampupPlanRequest =
+          this.converterUtils.convertToDTO(jsonPayload, ImageRampupPlanRequestDTO.class);
       // Check for required permission to invoke the API
       final String imageType = JSONUtils
           .extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
@@ -155,14 +158,18 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
         throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
             + "create image rampup plan");
       }
-      // Build ImageMetadataRequest DTO to transfer the input request
-      final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-          .jsonPayload(jsonPayload)
-          .user(session.getUser().getUserId())
-          .build();
+      // Polupate ImageRampupPlanRequestDTO to transfer the input request
+      imageRampupPlanRequest.setCreatedBy(session.getUser().getUserId());
+      imageRampupPlanRequest.setModifiedBy(session.getUser().getUserId());
+      if (!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+        for (final ImageRampupDTO imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
+          imageRampupRequest.setCreatedBy(session.getUser().getUserId());
+          imageRampupRequest.setModifiedBy(session.getUser().getUserId());
+        }
+      }
       // Create image version metadata and image version id
       final Integer imageRampupPlanId = this.imageRampupService
-          .createImageRampupPlan(imageMetadataRequest);
+          .createImageRampupPlan(imageRampupPlanRequest);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",
@@ -197,14 +204,18 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
             + "update image rampup plan");
       }
       final String jsonPayload = HttpRequestUtils.getBody(req);
+      final ImageRampupPlanRequestDTO imageRampupPlanRequest =
+          this.converterUtils.convertToDTO(jsonPayload, ImageRampupPlanRequestDTO.class);
       // Build ImageMetadataRequest DTO to transfer the input request
-      final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-          .jsonPayload(jsonPayload)
-          .user(session.getUser().getUserId())
-          .addParam(IMAGE_TYPE, imageType)
-          .build();
+      imageRampupPlanRequest.setModifiedBy(session.getUser().getUserId());
+      if (!CollectionUtils.isEmpty(imageRampupPlanRequest.getImageRampups())) {
+        for (final ImageRampupDTO imageRampupRequest : imageRampupPlanRequest.getImageRampups()) {
+          imageRampupRequest.setModifiedBy(session.getUser().getUserId());
+        }
+      }
+      imageRampupPlanRequest.setImageTypeName(imageType);
       // update image rampup details
-      this.imageRampupService.updateImageRampupPlan(imageMetadataRequest);
+      this.imageRampupService.updateImageRampupPlan(imageRampupPlanRequest);
       sendResponse(resp, HttpServletResponse.SC_OK, new HashMap<>());
     } catch (final ImageMgmtValidationException e) {
       log.error("Exception while updating image rampup metadata", e);

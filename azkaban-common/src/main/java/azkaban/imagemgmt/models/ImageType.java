@@ -18,16 +18,12 @@ package azkaban.imagemgmt.models;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.List;
-import javax.validation.constraints.NotBlank;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * This class represents image type metadata.
  */
 public class ImageType extends BaseModel {
   // Represents the name of the image type
-  @JsonProperty("imageType")
-  @NotBlank(message = "ImageType cannot be blank")
   private String name;
   // Type description
   private String description;

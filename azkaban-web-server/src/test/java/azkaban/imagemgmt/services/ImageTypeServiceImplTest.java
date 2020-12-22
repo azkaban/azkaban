@@ -21,11 +21,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.imagemgmt.converters.Converter;
+import azkaban.imagemgmt.converters.ImageTypeConverter;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
-import azkaban.imagemgmt.dto.ImageMetadataRequest;
-import azkaban.imagemgmt.exeception.ImageMgmtInvalidInputException;
-import azkaban.imagemgmt.exeception.ImageMgmtValidationException;
+import azkaban.imagemgmt.dto.ImageTypeDTO;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.utils.JSONUtils;
@@ -42,62 +44,63 @@ public class ImageTypeServiceImplTest {
   private ObjectMapper objectMapper;
   private ImageTypeService imageTypeService;
   private ConverterUtils converterUtils;
+  private Converter<ImageTypeDTO, ImageTypeDTO, ImageType> converter;
 
   @Before
   public void setup() {
     this.objectMapper = new ObjectMapper();
     this.imageTypeDao = mock(ImageTypeDaoImpl.class);
     this.converterUtils = new ConverterUtils(this.objectMapper);
-    this.imageTypeService = new ImageTypeServiceImpl(this.imageTypeDao, this.converterUtils);
+    this.converter = new ImageTypeConverter();
+    this.imageTypeService = new ImageTypeServiceImpl(this.imageTypeDao, this.converter);
   }
 
   @Test
   public void testCreateImageType() throws Exception {
     final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type.json");
-    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
     when(this.imageTypeDao.createImageType(any(ImageType.class))).thenReturn(100);
-    final int imageTypeId = this.imageTypeService.createImageType(imageMetadataRequest);
-    final ArgumentCaptor<ImageType> imageTypeArgumentCaptor = ArgumentCaptor.forClass(ImageType.class);
+    final int imageTypeId = this.imageTypeService.createImageType(imageTypeDTO);
+    final ArgumentCaptor<ImageType> imageTypeArgumentCaptor =
+        ArgumentCaptor.forClass(ImageType.class);
     verify(this.imageTypeDao, times(1)).createImageType(imageTypeArgumentCaptor.capture());
-    final ImageType imageType = imageTypeArgumentCaptor.getValue();
-    Assert.assertEquals("kafka_push_job", imageType.getName());
-    Assert.assertEquals("azkaban", imageType.getCreatedBy());
-    Assert.assertEquals("image", imageType.getDeployable().getName());
-    Assert.assertNotNull(imageType.getOwnerships());
-    Assert.assertEquals(2, imageType.getOwnerships().size());
+    final ImageType capturedImageType = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("kafka_push_job", capturedImageType.getName());
+    Assert.assertEquals("azkaban", capturedImageType.getCreatedBy());
+    Assert.assertEquals("image", capturedImageType.getDeployable().getName());
+    Assert.assertNotNull(capturedImageType.getOwnerships());
+    Assert.assertEquals(2, capturedImageType.getOwnerships().size());
     Assert.assertEquals(100, imageTypeId);
   }
 
   @Test
   public void testCreateImageTypeForConfigs() throws Exception {
     final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type_configs.json");
-    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
     when(this.imageTypeDao.createImageType(any(ImageType.class))).thenReturn(100);
-    final int imageTypeId = this.imageTypeService.createImageType(imageMetadataRequest);
-    final ArgumentCaptor<ImageType> imageTypeArgumentCaptor = ArgumentCaptor.forClass(ImageType.class);
+    final int imageTypeId = this.imageTypeService.createImageType(imageTypeDTO);
+    final ArgumentCaptor<ImageType> imageTypeArgumentCaptor =
+        ArgumentCaptor.forClass(ImageType.class);
     verify(this.imageTypeDao, times(1)).createImageType(imageTypeArgumentCaptor.capture());
-    final ImageType imageType = imageTypeArgumentCaptor.getValue();
-    Assert.assertEquals("configs", imageType.getName());
-    Assert.assertEquals("azkaban", imageType.getCreatedBy());
-    Assert.assertEquals("tar", imageType.getDeployable().getName());
+    final ImageType capturedImageType = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("configs", capturedImageType.getName());
+    Assert.assertEquals("azkaban", capturedImageType.getCreatedBy());
+    Assert.assertEquals("tar", capturedImageType.getDeployable().getName());
     Assert.assertEquals(100, imageTypeId);
   }
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageTypeInvalidType() throws IOException {
     final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/invalid_image_type.json");
-    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
     when(this.imageTypeDao.createImageType(any(ImageType.class))).thenReturn(100);
-    this.imageTypeService.createImageType(imageMetadataRequest);
+    this.imageTypeService.createImageType(imageTypeDTO);
 
   }
 
@@ -105,12 +108,11 @@ public class ImageTypeServiceImplTest {
   public void testCreateImageTypeInvalidDeployable() throws IOException {
     final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/create_image_type_invalid_deployable.json");
-    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
     when(this.imageTypeDao.createImageType(any(ImageType.class))).thenReturn(100);
-    this.imageTypeService.createImageType(imageMetadataRequest);
+    this.imageTypeService.createImageType(imageTypeDTO);
 
   }
 
@@ -118,12 +120,11 @@ public class ImageTypeServiceImplTest {
   public void testCreateImageTypeInvalidRole() throws IOException {
     final String jsonPayload = JSONUtils
         .readJsonFileAsString("image_management/create_image_type_invalid_role.json");
-    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
-        .jsonPayload(jsonPayload)
-        .user("azkaban")
-        .build();
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
     when(this.imageTypeDao.createImageType(any(ImageType.class))).thenReturn(100);
-    this.imageTypeService.createImageType(imageMetadataRequest);
+    this.imageTypeService.createImageType(imageTypeDTO);
 
   }
 
