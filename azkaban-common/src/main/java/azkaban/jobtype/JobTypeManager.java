@@ -55,7 +55,7 @@ public class JobTypeManager {
   private final ClusterRouter clusterRouter;
   private JobTypePluginSet pluginSet;
   // Only used to load keyStore.
-  private Props cachedCommonPluginLoadProps = null;
+  private Props cachedCommonPluginLoadProps;
 
   @VisibleForTesting
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,

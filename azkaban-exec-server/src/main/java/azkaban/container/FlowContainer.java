@@ -114,7 +114,7 @@ public class FlowContainer {
   private final Props azKabanProps;
   private Props globalProps;
   private final int numJobThreadPerFlow;
-  private final String execDirPath;
+  private String execDirPath;
 
   // Max chunk size is 20MB.
   private final String jobLogChunkSize;
@@ -128,19 +128,20 @@ public class FlowContainer {
    * @param props Azkaban properties.
    * @throws IOException
    */
-  private FlowContainer(final Props props, final @Nonnull String execDirPath)
-          throws IOException {
+  private FlowContainer(final Props props) throws ExecutorManagerException {
 
     // Create Azkaban Props Map
     this.azKabanProps = props;
     // Setup global props if applicable
     final String globalPropsPath = this.azKabanProps.getString("executor.global.properties", null);
     if (globalPropsPath != null) {
-      this.globalProps = new Props(null, globalPropsPath);
+      try {
+        this.globalProps = new Props(null, globalPropsPath);
+      } catch (final IOException e) {
+        logger.error("Error creating global properties :" + globalPropsPath, e);
+        throw new ExecutorManagerException(e);
+      }
     }
-
-    // execution dir
-    this.execDirPath = execDirPath;
 
     this.executorLoader = SERVICE_PROVIDER.getInstance(JdbcExecutorLoader.class);
     logger.info("executorLoader from guice :" + this.executorLoader);
@@ -199,7 +200,7 @@ public class FlowContainer {
     // AZ_HOME must provide a correct path, if not then azHome is set to current working dir.
     final String azHome = Optional.ofNullable(System.getenv(AZ_HOME)).orElse("");
 
-    final Path currentDir = Paths.get(System.getenv(AZ_HOME)).toAbsolutePath();
+    final Path currentDir = Paths.get(azHome).toAbsolutePath();
 
     // Set Azkaban props
     final Path jobtypePluginPath = Paths.get(currentDir.toString(), JOBTYPE_DIR);
@@ -208,39 +209,41 @@ public class FlowContainer {
     // Setup Injector
     setInjector(azkabanProps);
 
-    FlowContainer flowContainer;
-    try {
-      // Setup work directories
-      final String execDirPath = setupWorkDir(currentDir, projectZipName);
-
-      // Constructor
-      flowContainer = new FlowContainer(azkabanProps, execDirPath);
-    } catch (final IOException e) {
-      logger.error(e.getMessage());
-      throw new ExecutorManagerException(e);
-    }
+    // Constructor
+    final FlowContainer flowContainer = new FlowContainer(azkabanProps);
 
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
     // execute the flow
-    flowContainer.submitFlow(execId);
+    flowContainer.submitFlow(execId, currentDir, projectZipName);
   }
 
-  private static String setupWorkDir(final Path currentDir, final String projectZipName)
-          throws IOException {
+  private void setupWorkDir(final Path currentDir, final String projectZipName)
+          throws ExecutorManagerException {
     // Move files to respective dirs
     // Create project dir
     final Path projectDirPath = Paths.get(currentDir.toString(), PROJECT_DIR);
     logger.info("Creating project dir");
-    Files.createDirectory(projectDirPath);
+    try {
+      Files.createDirectory(projectDirPath);
+    } catch (final IOException e) {
+      logger.error("Error creating directory :" + projectDirPath, e);
+      throw new ExecutorManagerException(e);
+    }
     Path projectZipPath = Paths.get(projectDirPath.toString(), projectZipName);
     logger.info("Moving projectDir:" + projectZipName + ": to " +
             projectZipPath);
 
-    Files.move(Paths.get(projectZipName), projectZipPath);
+
+    try {
+      Files.move(Paths.get(projectZipName), projectZipPath);
+    } catch (final IOException e) {
+      logger.error("Error moving projectzip to " + projectDirPath, e);
+      throw new ExecutorManagerException(e);
+    }
     // Unzip the project zip
     FlowContainer.unzipFile(projectZipPath.toString(), projectDirPath);
-    return projectDirPath.toString();
+    this.execDirPath = projectDirPath.toString();
   }
 
   /**
@@ -274,7 +277,8 @@ public class FlowContainer {
    * @param execId Execution Id of the flow.
    * @throws ExecutorManagerException
    */
-  private void submitFlow(final int execId) throws ExecutorManagerException {
+  private void submitFlow(final int execId, final Path currentDir, final String projectZipName)
+          throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
       logger.error("Error loading flow with execution Id " + execId);
@@ -286,6 +290,8 @@ public class FlowContainer {
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
+    // setup WorkDir
+    setupWorkDir(currentDir, projectZipName);
     submitFlowRunner(createFlowRunner(flow));
   }
 
@@ -346,15 +352,26 @@ public class FlowContainer {
    * Unzip a file.
    * @param zipPath The source zip file.
    * @param dirPath The destination of the zip file content.
-   * @throws IOException
+   * @throws ExecutorManagerException
    */
   private static void unzipFile(final String zipPath,
-      final Path dirPath) throws IOException {
-    try (ZipFile zipFile = new ZipFile(zipPath)) {
+      final Path dirPath)  throws ExecutorManagerException {
+    ZipFile zipFile;
+    File unzipped;
+    try {
+      zipFile = new ZipFile(zipPath);
       logger.info("Source path : " + zipPath);
-      final File unzipped = new File(dirPath.toString());
+      unzipped = new File(dirPath.toString());
       logger.info("Unzipped file dir : " + unzipped.toString());
+    } catch (final IOException e) {
+      logger.error("Error creating Zipfile object for zipPath : " + zipPath, e);
+      throw new ExecutorManagerException(e);
+    }
+    try {
       Utils.unzip(zipFile, unzipped);
+    } catch (final IOException e) {
+      logger.error("Error unzipping zipFile to unzipped : " + unzipped, e);
+      throw new ExecutorManagerException(e);
     }
   }
 
@@ -362,7 +379,7 @@ public class FlowContainer {
    * Setup in-memory keystore to be reused for all the job executions in the flow.
    * @throws IOException
    */
-  private void setupKeyStore() throws IOException {
+  private void setupKeyStore() throws ExecutorManagerException {
     // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
     Props commonPluginLoadProps = this.jobTypeManager.getCommonPluginLoadProps();
     if (commonPluginLoadProps != null) {
@@ -386,7 +403,7 @@ public class FlowContainer {
       final KeyStore keyStore = hadoopSecurityManager.getKeyStore(commonPluginLoadProps);
       if (keyStore == null) {
         logger.error("Failed to Prefetch KeyStore");
-        throw new IOException("Failed to Prefetch KeyStore");
+        throw new ExecutorManagerException("Failed to Prefetch KeyStore");
       }
       // Delete the cert file from disk as the KeyStore is already cached above.
       final File certFile = new File(Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION);
@@ -394,7 +411,7 @@ public class FlowContainer {
         logger.info("Successfully deleted the cert file");
       } else {
         logger.error("Failed to delete the cert file");
-        throw new IOException("Failed to delete the cert file");
+        throw new ExecutorManagerException("Failed to delete the cert file");
       }
     }
 
