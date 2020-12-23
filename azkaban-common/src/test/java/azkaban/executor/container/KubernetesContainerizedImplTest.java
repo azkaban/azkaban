@@ -227,8 +227,6 @@ public class KubernetesContainerizedImplTest {
     // Create a mock of ImageRampupManager to get the image type and version map. This mock is
     // required as the completed flow of getting image type and version can't be tested by
     // populating image management table due non supported "UNSIGNED" integer in HSQL.
-    /*imageRampupManager = new ImageRampupManagerImpl(imageRampupDao, imageVersionDao,
-        imageTypeDao);*/
     imageRampupManager = mock(ImageRampupManagerImpl.class);
     imageTypeConverter = new ImageTypeConverter();
     imageVersionConverter = new ImageVersionConverter();
