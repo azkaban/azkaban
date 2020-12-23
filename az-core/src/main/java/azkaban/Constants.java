@@ -400,6 +400,13 @@ public class Constants {
     //    oauth.redirect_uri=http://localhost:8081/?action=oauth_callback
 
     public static final String EXECUTOR_CONNECTION_TLS_ENABLED = "executor.connection.tls.enabled";
+
+    public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED =
+        "azkaban.executor.reverse.proxy.enabled";
+    public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME =
+        "azkaban.executor.reverse.proxy.hostname";
+    public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_PORT =
+        "azkaban.executor.reverse.proxy.port";
   }
 
   public static class FlowProperties {
