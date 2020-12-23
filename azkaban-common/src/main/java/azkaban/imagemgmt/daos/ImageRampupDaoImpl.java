@@ -390,9 +390,9 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         updateImageRampupPlanInternal(imageRampupPlan);
         // update each rampup
         if (!CollectionUtils.isEmpty(imageRampupPlan.getImageRampups())) {
-          for (final ImageRampup imageRampupRequest : imageRampupPlan
+          for (final ImageRampup imageRampup : imageRampupPlan
               .getImageRampups()) {
-            updateImageRampup(imageRampupRequest);
+            updateImageRampup(imageRampup);
           }
         }
         transOperator.getConnection().commit();
@@ -421,42 +421,42 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * This method updates image rampup plan for an image type and the plan can be either made active
    * or inactive.
    *
-   * @param imageRampupPlanRequest
+   * @param imageRampupPlan
    * @throws ImageMgmtException
    */
-  private void updateImageRampupPlanInternal(final ImageRampupPlan imageRampupPlanRequest)
+  private void updateImageRampupPlanInternal(final ImageRampupPlan imageRampupPlan)
       throws ImageMgmtException {
     try {
       final List<Object> params = new ArrayList<>();
       final StringBuilder queryBuilder = new StringBuilder("update image_rampup_plan set ");
       // As update is allowed only for active plan, if activatePlan is false then deactivate the
       // current plan.
-      if (!imageRampupPlanRequest.isActivatePlan() ||
-          !imageRampupPlanRequest.isForceActivatePlan()) {
+      if (!imageRampupPlan.isActivatePlan() ||
+          !imageRampupPlan.isForceActivatePlan()) {
         queryBuilder.append(" active = ?, ");
-        params.add(Boolean.valueOf(imageRampupPlanRequest.isActivatePlan()));
+        params.add(Boolean.valueOf(imageRampupPlan.isActivatePlan()));
       }
       queryBuilder.append(" modified_by = ?, modified_on = ?");
-      params.add(imageRampupPlanRequest.getModifiedBy());
+      params.add(imageRampupPlan.getModifiedBy());
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
-      params.add(imageRampupPlanRequest.getId());
+      params.add(imageRampupPlan.getId());
       final int updateCount = this.databaseOperator
           .update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
       if (updateCount < 1) {
         log.error(String.format("Exception while updating image rampup plan for image type: %s, "
                 + "updateCount: %d. ",
-            imageRampupPlanRequest.getImageTypeName(), updateCount));
+            imageRampupPlan.getImageTypeName(), updateCount));
         throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Exception while "
                 + "updating image rampup plan for image type: %s. ",
-            imageRampupPlanRequest.getImageTypeName()));
+            imageRampupPlan.getImageTypeName()));
       }
     } catch (final SQLException ex) {
       log.error(String.format("Exception while updating image rampup plan for image type: %s. ",
-          imageRampupPlanRequest.getImageTypeName()), ex);
+          imageRampupPlan.getImageTypeName()), ex);
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Exception while "
               + "updating image rampup plan for image type: %s. ",
-          imageRampupPlanRequest.getImageTypeName()));
+          imageRampupPlan.getImageTypeName()));
     }
   }
 
@@ -464,43 +464,43 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * This method up updates image rampup for an image type. The information such as version rampup
    * percentage, stability tag etc. can be updated.
    *
-   * @param imageRampupRequest
+   * @param imageRampup
    * @throws ImageMgmtException
    */
-  private void updateImageRampup(final ImageRampup imageRampupRequest)
+  private void updateImageRampup(final ImageRampup imageRampup)
       throws ImageMgmtException {
     try {
       final List<Object> params = new ArrayList<>();
       final StringBuilder queryBuilder = new StringBuilder("update image_rampup set ");
-      if (imageRampupRequest.getRampupPercentage() != null) {
+      if (imageRampup.getRampupPercentage() != null) {
         queryBuilder.append(" rampup_percentage = ?, ");
-        params.add(imageRampupRequest.getRampupPercentage());
+        params.add(imageRampup.getRampupPercentage());
       }
-      if (imageRampupRequest.getStabilityTag() != null) {
+      if (imageRampup.getStabilityTag() != null) {
         queryBuilder.append(" stability_tag = ?, ");
-        params.add(imageRampupRequest.getStabilityTag().getTagName());
+        params.add(imageRampup.getStabilityTag().getTagName());
       }
       queryBuilder.append(" modified_by = ?, modified_on = ?");
-      params.add(imageRampupRequest.getModifiedBy());
+      params.add(imageRampup.getModifiedBy());
       params.add(Timestamp.valueOf(LocalDateTime.now()));
       queryBuilder.append(" where id = ? ");
-      params.add(imageRampupRequest.getId());
+      params.add(imageRampup.getId());
       final int updateCount = this.databaseOperator
           .update(queryBuilder.toString(), Iterables.toArray(params, Object.class));
       if (updateCount < 1) {
         log.error(String.format("Exception while updating image rampup details for plan id: %s, "
                 + "updateCount: %d. ",
-            imageRampupRequest.getPlanId(), updateCount));
+            imageRampup.getPlanId(), updateCount));
         throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
             String.format("Exception while updating image rampup details for plan id: %s. ",
-                imageRampupRequest.getPlanId()));
+                imageRampup.getPlanId()));
       }
     } catch (final SQLException ex) {
       log.error(String.format("Exception while updating image rampup details for plan id: %s. ",
-          imageRampupRequest.getPlanId()), ex);
+          imageRampup.getPlanId()), ex);
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
           String.format("Exception while updating image rampup details for plan id: %s. ",
-              imageRampupRequest.getPlanId()));
+              imageRampup.getPlanId()));
     }
   }
 
