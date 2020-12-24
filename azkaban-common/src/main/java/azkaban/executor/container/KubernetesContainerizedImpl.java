@@ -83,6 +83,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       "/export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes";
   public static final String IMAGE = "image";
   public static final String VERSION = "version";
+  public static final String NSCD_SOCKET_VOLUME_NAME = "nscd-socket";
+  public static final String NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
+  public static final String HOST_PATH_TYPE = "Socket";
+  public static final String NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
 
   private final String namespace;
   private final ApiClient client;
@@ -320,12 +324,38 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
             azkabanBaseImageVersion, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
 
+    // Add volume for nscd-socket
+    addNscdSocketInVolume(v1SpecBuilder);
+
+    Map<String, String> envVariables = new HashMap<>();
+    envVariables.put(ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID,
+        String.valueOf(versionSet.getVersionSetId()));
+    // Add env variables to spec builder
+    addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
+
     // Create init container yaml file for each jobType
     addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder, versionSet);
 
     return v1SpecBuilder.build();
   }
 
+  /**
+   * Adding environment variables in pod spec builder.
+   * @param v1SpecBuilder
+   * @param envVariables
+   */
+  private void addEnvVariablesToSpecBuilder(AzKubernetesV1SpecBuilder v1SpecBuilder, Map<String, String> envVariables) {
+    envVariables.forEach((key,value) -> v1SpecBuilder.addEnvVarToFlowContainer(key, value));
+  }
+
+  /**
+   * This method is used to add volume for nscd socket.
+   * @param v1SpecBuilder
+   */
+  private void addNscdSocketInVolume(AzKubernetesV1SpecBuilder v1SpecBuilder) {
+    v1SpecBuilder.addHostPathVolume(NSCD_SOCKET_VOLUME_NAME, NSCD_SOCKET_HOST_PATH, HOST_PATH_TYPE,
+        NSCD_SOCKET_VOLUME_MOUNT_PATH);
+  }
   /**
    *
    * @param executionId

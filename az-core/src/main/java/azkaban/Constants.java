@@ -548,6 +548,8 @@ public class Constants {
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
+
+    public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
   }
 
   public static class ImageMgmtConstants {
