@@ -14,6 +14,8 @@ spec:
       value: mycluster
     - name: AZ_CONF_VERSION
       value: 0.0.3
+    - name: envKey
+      value: envValue
     image: path/azkaban-base-image:0.0.5
     imagePullPolicy: IfNotPresent
     name: az-flow-container
@@ -27,6 +29,8 @@ spec:
     volumeMounts:
     - mountPath: azBasePath/plugins/jobtypes/spark
       name: jobtype-volume-spark
+    - mountPath: /var/run/nscd/socket
+      name: nscd-socket
   initContainers:
   - env:
     - name: AZ_CLUSTER
@@ -43,3 +47,7 @@ spec:
   volumes:
   - emptyDir: {}
     name: jobtype-volume-spark
+  - hostPath:
+      type: Socket
+      path: /var/run/nscd/socket
+    name: nscd-socket
