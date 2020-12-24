@@ -513,6 +513,10 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH =
+        AZKABAN_KUBERNETES_PREFIX + "nscd.socket.volume.mount.path";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_HOST_PATH =
+        AZKABAN_KUBERNETES_PREFIX + "nscd.socket.host.path";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
