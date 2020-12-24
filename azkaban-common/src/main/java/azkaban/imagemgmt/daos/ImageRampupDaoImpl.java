@@ -434,7 +434,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       if (!imageRampupPlan.isActivatePlan() ||
           !imageRampupPlan.isForceActivatePlan()) {
         queryBuilder.append(" active = ?, ");
-        params.add(Boolean.valueOf(imageRampupPlan.isActivatePlan()));
+        params.add(Boolean.FALSE);
       }
       queryBuilder.append(" modified_by = ?, modified_on = ?");
       params.add(imageRampupPlan.getModifiedBy());
