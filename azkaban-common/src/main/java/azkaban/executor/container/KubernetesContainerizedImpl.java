@@ -83,6 +83,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       "/export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes";
   public static final String IMAGE = "image";
   public static final String VERSION = "version";
+  public static final String NSCD_SOCKET_VOLUME_NAME = "nscd-socket";
+  public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
+  public static final String HOST_PATH_TYPE = "Socket";
+  public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
 
   private final String namespace;
   private final ApiClient client;
@@ -99,6 +103,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String memoryRequest;
   private final int servicePort;
   private final long serviceTimeout;
+  private final String nscdSocketHostPath;
+  private final String nscdSocketVolumeMountPath;
   private final VersionSetLoader versionSetLoader;
   private final ImageRampupManager imageRampupManager;
   private final String initMountPathPrefixForJobtypes;
@@ -158,6 +164,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         this.azkProps
             .getString(ContainerizedDispatchManagerProperties.KUBERNETES_MOUNT_PATH_FOR_JOBTYPES,
                 DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_JOBTYPES);
+    this.nscdSocketHostPath =
+        this.azkProps
+            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_HOST_PATH,
+                DEFAULT_NSCD_SOCKET_HOST_PATH);
+    this.nscdSocketVolumeMountPath =
+        this.azkProps.getString(
+            ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH,
+            DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH);
+
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
@@ -302,7 +317,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
-   *
    * @param executionId
    * @param versionSet
    * @param jobTypes
@@ -310,20 +324,53 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet, SortedSet<String> jobTypes)
+  V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet,
+      SortedSet<String> jobTypes)
       throws ExecutorManagerException {
     final String azkabanBaseImageVersion = getAzkabanBaseImageVersion();
     final String azkabanConfigVersion = getAzkabanConfigVersion();
 
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
-        new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty()).addFlowContainer(this.flowContainerName,
-            azkabanBaseImageVersion, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
+        new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
+            .addFlowContainer(this.flowContainerName,
+                azkabanBaseImageVersion, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
+
+    // Add volume for nscd-socket
+    addNscdSocketInVolume(v1SpecBuilder);
+
+    Map<String, String> envVariables = new HashMap<>();
+    envVariables.put(ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID,
+        String.valueOf(versionSet.getVersionSetId()));
+    // Add env variables to spec builder
+    addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
     // Create init container yaml file for each jobType
     addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder, versionSet);
 
     return v1SpecBuilder.build();
+  }
+
+  /**
+   * Adding environment variables in pod spec builder.
+   *
+   * @param v1SpecBuilder
+   * @param envVariables
+   */
+  private void addEnvVariablesToSpecBuilder(AzKubernetesV1SpecBuilder v1SpecBuilder,
+      Map<String, String> envVariables) {
+    envVariables.forEach((key, value) -> v1SpecBuilder.addEnvVarToFlowContainer(key, value));
+  }
+
+  /**
+   * This method is used to add volume for nscd socket.
+   *
+   * @param v1SpecBuilder
+   */
+  private void addNscdSocketInVolume(AzKubernetesV1SpecBuilder v1SpecBuilder) {
+    v1SpecBuilder
+        .addHostPathVolume(NSCD_SOCKET_VOLUME_NAME, this.nscdSocketHostPath, HOST_PATH_TYPE,
+            this.nscdSocketVolumeMountPath);
   }
 
   /**
