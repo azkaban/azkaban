@@ -75,6 +75,16 @@ public class AzKubernetesV1SpecBuilder {
     }
 
     /**
+     * @param envKey Key for the environment variable to be added to the flow container.
+     * @param envVal Value for the environment variable to be added to the flow container.
+     */
+    public AzKubernetesV1SpecBuilder addEnvVarToFlowContainer(final String envKey,
+        final String envVal) {
+        this.flowContainerBuilder.addNewEnv().withName(envKey).withValue(envVal).endEnv();
+        return this;
+    }
+
+    /**
      * @param name Flow-container/ application-container name
      * @param image Docker image path in the image registry
      * @param imagePullPolicy Docker image pull policy
@@ -145,6 +155,28 @@ public class AzKubernetesV1SpecBuilder {
         LOGGER.debug("Added jobType volume mount for the application container");
         this.initContainers.add(initContainer);
         LOGGER.debug("Added jobType init container to the pod spec");
+        return this;
+    }
+
+    /**
+     * This method adds a HostPath volume to the pod-spec and also mounts the volume to the flow
+     * container.
+     *
+     * @param volName      Name of the volume.
+     * @param hostPath     Path for the hostPath volume.
+     * @param hostPathType     Type for the hostPath volume.
+     * @param volMountPath Path to be mounted for the flow container.
+     */
+    public AzKubernetesV1SpecBuilder addHostPathVolume(final String volName, final String hostPath,
+        final String hostPathType, final String volMountPath) {
+        final V1Volume hostPathVolume = new V1VolumeBuilder().withName(volName).withNewHostPath()
+            .withPath(hostPath).withType(hostPathType).endHostPath().build();
+        this.appVolumes.add(hostPathVolume);
+        final V1VolumeMount hostPathVolMount = new V1VolumeMountBuilder()
+            .withName(volName)
+            .withMountPath(volMountPath)
+            .build();
+        this.appVolumeMounts.add(hostPathVolMount);
         return this;
     }
 
