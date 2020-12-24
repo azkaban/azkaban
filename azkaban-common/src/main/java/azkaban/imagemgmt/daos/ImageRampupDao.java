@@ -32,10 +32,10 @@ public interface ImageRampupDao {
   /**
    * Creates image version metadata for an image type.
    *
-   * @param imageRampupPlanRequest
+   * @param imageRampupPlan
    * @return int - id of the image version
    */
-  public int createImageRampupPlan(ImageRampupPlan imageRampupPlanRequest)
+  public int createImageRampupPlan(ImageRampupPlan imageRampupPlan)
       throws ImageMgmtException;
 
   /**
@@ -72,9 +72,9 @@ public interface ImageRampupDao {
   /**
    * Update image rampup for an image type.
    *
-   * @param imageRampupPlanRequest
+   * @param imageRampupPlan
    * @return int - id of the image version
    */
-  public void updateImageRampupPlan(ImageRampupPlan imageRampupPlanRequest)
+  public void updateImageRampupPlan(ImageRampupPlan imageRampupPlan)
       throws ImageMgmtException;
 }

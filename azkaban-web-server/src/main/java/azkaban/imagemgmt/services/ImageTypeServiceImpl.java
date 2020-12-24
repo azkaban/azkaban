@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,8 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   private boolean validateOwnership(final ImageTypeDTO imageType)
       throws ImageMgmtValidationException {
     // Check if ownership record exists
-    if (imageType.getOwnerships() == null) {
+    if (CollectionUtils.isEmpty(imageType.getOwnerships())
+        || imageType.getOwnerships().size() < 2) {
       log.error("Please specify at least two owners for the image type: {} ", imageType.getName());
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Please specify"
           + " at least two owners for the image type: %s. ", imageType.getName()));
