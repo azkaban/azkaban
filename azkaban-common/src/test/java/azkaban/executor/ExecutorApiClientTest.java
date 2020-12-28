@@ -31,14 +31,14 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.security.SslSocketConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
 
 /**
  * For testing of ExecutorApiClient. This is currently focused on sanity testing TLS client side
@@ -85,7 +85,8 @@ public class ExecutorApiClientTest {
     tlsEnabledServer.setThreadPool(queuedThreadPool);
     tlsEnabledServer.addConnector(secureConnector);
 
-    final Context root = new Context(tlsEnabledServer, "/", Context.SESSIONS);
+    final ServletContextHandler root = new ServletContextHandler(tlsEnabledServer, "/",
+        ServletContextHandler.SESSIONS);
     root.addServlet(new ServletHolder(new SimpleServlet()), "/simple");
 
     tlsEnabledServer.start();
@@ -103,14 +104,14 @@ public class ExecutorApiClientTest {
 
   @Test
   public void testTlsEnabledApiClient() {
-    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
+    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(tlsEnabledProps);
     Assert.assertNotNull(tlsEnabledClient);
     Assert.assertNotNull(tlsEnabledClient.getTlsSocketFactory());
   }
 
   @Test
   public void testPostResponse() throws Exception {
-    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
+    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(tlsEnabledProps);
     final String postResponse = tlsEnabledClient
         .httpPost(new URI(SimpleServlet.TLS_ENABLED_URI), null);
     Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
@@ -121,7 +122,7 @@ public class ExecutorApiClientTest {
     // Currently ExecutorApiClient does not make any POST requests.
     // This is for sanity testing that TLS enabled http-client continues working as expected with
     // GET requests as well.
-    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
+    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(tlsEnabledProps);
     final HttpClient httpClient = tlsEnabledClient.createHttpClient();
     final HttpGet httpGet = new HttpGet(SimpleServlet.TLS_ENABLED_URI);
     final HttpResponse httpResponse = httpClient.execute(httpGet);
@@ -171,13 +172,13 @@ public class ExecutorApiClientTest {
     @Override
     protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
         throws ServletException, IOException {
-      resp.getWriter().print(this.GET_RESPONSE_STRING);
+      resp.getWriter().print(GET_RESPONSE_STRING);
     }
 
     @Override
     protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
         throws ServletException, IOException {
-      resp.getWriter().print(this.POST_RESPONSE_STRING);
+      resp.getWriter().print(POST_RESPONSE_STRING);
     }
   }
 }

@@ -103,15 +103,14 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.DefaultServlet;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.FilterMapping;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
 
 /**
  * The Azkaban Jetty server class
@@ -302,7 +301,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     });
   }
 
-  private static void loadViewerPlugins(final Context root, final String pluginPath,
+  private static void loadViewerPlugins(final ServletContextHandler root, final String pluginPath,
       final VelocityEngine ve) {
     final File viewerPluginPath = new File(pluginPath);
     if (!viewerPluginPath.exists()) {
@@ -409,7 +408,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   private void configureRoutes() throws TriggerManagerException {
-    final Context root = new Context(this.server, "/", Context.SESSIONS);
+    final ServletContextHandler root = new ServletContextHandler(this.server, "/",
+        ServletContextHandler.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
     root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
 
@@ -487,7 +487,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     metricsFilterMapping.setFilterName(metricsFilter.getName());
     final String[] servletPaths = routesMap.keySet().stream().toArray(String[]::new);
     metricsFilterMapping.setPathSpecs(servletPaths);
-    metricsFilterMapping.setDispatches(Handler.REQUEST);
+    metricsFilterMapping.setDispatches(org.eclipse.jetty.servlet.FilterMapping.REQUEST);
     root.getServletHandler().addFilter(metricsFilter, metricsFilterMapping);
   }
 
@@ -549,7 +549,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       @Override
       public int getServerJobsQueueSize() {
         // The number of requests queued in the Jetty thread pool.
-        return queuedThreadPool.getQueueSize();
+        // @TODO fix jetty upgrade
+        // return queuedThreadPool.getQueueSize();
+        return queuedThreadPool.getMaxQueued();
       }
 
       @Override

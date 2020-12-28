@@ -10,11 +10,11 @@ import com.google.inject.Provides;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class ExecJettyServerModule extends AbstractModule {
 
@@ -52,12 +52,14 @@ public class ExecJettyServerModule extends AbstractModule {
       connector.setStatsOn(isStatsOn);
       logger.info(String.format(
           "Jetty connector name: %s, default header buffer size: %d",
-          connector.getName(), connector.getHeaderBufferSize()));
-      connector
-          .setHeaderBufferSize(props.getInt(JETTY_HEADER_BUFFER_SIZE, DEFAULT_HEADER_BUFFER_SIZE));
+          connector.getName(), connector.getRequestHeaderSize()));
+      connector.setRequestBufferSize(
+          props.getInt(JETTY_HEADER_BUFFER_SIZE, DEFAULT_HEADER_BUFFER_SIZE));
+      connector.setResponseBufferSize(
+          props.getInt(JETTY_HEADER_BUFFER_SIZE, DEFAULT_HEADER_BUFFER_SIZE));
       logger.info(String.format(
           "Jetty connector name: %s, (if) new header buffer size: %d",
-          connector.getName(), connector.getHeaderBufferSize()));
+          connector.getName(), connector.getRequestHeaderSize()));
     }
 
     return server;
@@ -66,8 +68,9 @@ public class ExecJettyServerModule extends AbstractModule {
   @Provides
   @Named(EXEC_ROOT_CONTEXT)
   @Singleton
-  private Context createRootContext(@Named(EXEC_JETTY_SERVER) final Server server) {
-    final Context root = new Context(server, "/", Context.SESSIONS);
+  private ServletContextHandler createRootContext(@Named(EXEC_JETTY_SERVER) final Server server) {
+    final ServletContextHandler root = new ServletContextHandler(server, "/",
+        ServletContextHandler.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
     root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");

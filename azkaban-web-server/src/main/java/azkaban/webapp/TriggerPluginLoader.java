@@ -25,7 +25,6 @@ import azkaban.utils.PropsUtils;
 import azkaban.webapp.plugin.TriggerPlugin;
 import java.io.File;
 import java.lang.reflect.Constructor;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +32,7 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
-import org.mortbay.jetty.servlet.Context;
-
+import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class TriggerPluginLoader {
 
@@ -45,7 +43,7 @@ public class TriggerPluginLoader {
     this.pluginPath = props.getString("trigger.plugin.dir", "plugins/triggers");
   }
 
-  public Map<String, TriggerPlugin> loadTriggerPlugins(final Context root) {
+  public Map<String, TriggerPlugin> loadTriggerPlugins(final ServletContextHandler root) {
     /*
      * TODO spyne: TriggerPluginLoader should not have any dependency on Azkaban Web Server
      **/
@@ -93,7 +91,8 @@ public class TriggerPluginLoader {
       Constructor<?> constructor = null;
       try {
         constructor = triggerClass
-            .getConstructor(String.class, Props.class, Context.class, AzkabanWebServer.class);
+            .getConstructor(String.class, Props.class, ServletContextHandler.class,
+                AzkabanWebServer.class);
       } catch (final NoSuchMethodException e) {
         log.error("Constructor not found in " + pluginClass);
         continue;

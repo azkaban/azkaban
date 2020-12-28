@@ -50,7 +50,7 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Server;
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This

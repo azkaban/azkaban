@@ -32,6 +32,8 @@ dependencies {
     compile deps.httpclient
     compile deps.jetty
     compile deps.jettyUtil
+    compile deps.jettyServer
+    compile deps.jettyServlet
     compile deps.jopt
     compile (deps.k8sClient) {
         exclude module: 'builder-annotations'
