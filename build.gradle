@@ -151,6 +151,10 @@ subprojects {
         }
     }
 
+    configurations.all {
+        exclude group: 'javax.servlet'
+    }
+
     plugins.withType(JavaPlugin) {
         sourceCompatibility = JavaVersion.VERSION_1_8
 
