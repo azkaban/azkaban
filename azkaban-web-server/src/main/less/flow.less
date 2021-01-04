@@ -141,6 +141,7 @@ td {
 
     &.READY,
     &.UNKNOWN,
+    &.DISPATCHING,
     &.PREPARING {
       background-color: @flow-default-color;
     }
@@ -225,8 +226,8 @@ td {
 
 .graph-sidebar-float {
   position: absolute;
-  top: 0px;
-  bottom: 0px;
+  top: 5px;
+  left: 110px;
 
   .graph-sidebar-list {
     overflow-y: auto;
@@ -325,6 +326,10 @@ li.tree-list-item {
       background-position: 16px 0px;
     }
 
+    &.DISPATCHING .icon {
+      background-position: 16px 0px;
+    }
+
     &.QUEUED .icon {
       opacity: 0.5;
       background-position: 32px 0px;
@@ -380,10 +385,29 @@ li.tree-list-item {
       font-size: 8pt;
     }
 
+    .expandallarrow {
+      top: 4px;
+    }
+
     .filterHighlight {
       background-color: #FFFF00;
     }
   }
+}
+
+.expandallarrow {
+  float: right;
+  display: inline-block;
+  position: relative;
+  font-size: 8pt;
+  margin-right: 0.6em;
+  margin-left: 1.5em;
+  top: 9px;
+}
+
+.expandallarrow .glyphicon-chevron-down:first-child {
+  position: absolute;
+  top: -3px;
 }
 
 #analyzerButton {

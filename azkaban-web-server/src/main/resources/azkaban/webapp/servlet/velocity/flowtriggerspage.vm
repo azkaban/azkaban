@@ -1,0 +1,226 @@
+#*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  #parse("azkaban/webapp/servlet/velocity/style.vm")
+  #parse("azkaban/webapp/servlet/velocity/javascript.vm")
+  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+    var errorMessage = null;
+    var successMessage = null;
+
+    $(document).ready(function () {
+      var jobTable = $("#scheduleFlowTriggers");
+      jobTable.tablesorter();
+    });
+  </script>
+
+  <script type="text/javascript">
+    function pauseTrigger(projectId, flowId) {
+      var requestURL = document.location.href;
+      var requestData = {"projectId": projectId, "flowId": flowId, "ajax": "pauseTrigger"};
+      var successHandler = function (data) {
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          window.location = requestURL;
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+
+    function resumeTrigger(projectId, flowId) {
+      var requestURL = document.location.href;
+      var requestData = {"projectId": projectId, "flowId": flowId, "ajax": "resumeTrigger"};
+      var successHandler = function (data) {
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          window.location = requestURL;
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+  </script>
+</head>
+<body>
+
+  #set ($current_page="flowtrigger")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+## Page header.
+
+<div class="az-page-header">
+  <div class="container-full">
+    <h1><a href="${context}/flowtrigger">Scheduled Flow Triggers</a></h1>
+  </div>
+</div>
+
+<div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+## Page Content
+
+  <ul class="nav nav-tabs nav-sm" id="header-tabs">
+    <li id="currently-running-view-link"><a href="#currently-running">Flow Triggers</a></li>
+  </ul>
+
+  <div class="row" id="currently-running-view">
+    <div class="col-xs-12">
+      <table id="scheduleFlowTriggers"
+             class="table table-striped table-bordered table-hover table-condensed executions-table">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th>Flow</th>
+          <th>Project</th>
+          <th>Submitted by</th>
+          <th>First Schedule to Run</th>
+          <th>Next Execution Time</th>
+          <th>Schedule</th>
+          <th>Max Wait Mins</th>
+          <th>Dependencies</th>
+          <th>Is Paused</th>
+          <th>Pause/Resume</th>
+        </tr>
+        </thead>
+        <tbody>
+
+          #if ( !$null.isNull(${flowTriggers}))
+            #foreach ($trigger in $flowTriggers)
+            <tr class="parent" id=${trigger.getId()}>
+              <td class="tb-name">
+                $velocityCount
+              </td>
+            #*todo chengren311: keep result of vmutils.getProjectName as a variable *#
+              <td><a
+                  href="${context}/manager?project=${trigger.getProjectName()}&flow=${trigger.getFlowId()}">${trigger.getFlowId()}</a>
+              </td>
+              <td>
+                <a href="${context}/manager?project=${trigger.getProjectName()}">${trigger.getProjectName()}</a>
+              </td>
+
+              <td>${trigger.getSubmitUser()}</td>
+
+              <td>
+                $TimeUtils.formatDateTime(${trigger.getQuartzTrigger().getStartTime().getTime()})
+              </td>
+              <td>
+                $TimeUtils.formatDateTime(${trigger.getQuartzTrigger().getNextFireTime().getTime()})
+              </td>
+
+              <td>${trigger.getFlowTrigger().getSchedule().getCronExpression()}</td>
+
+              #if (${trigger.getFlowTrigger().getMaxWaitDuration().isPresent()} == "true")
+                <td>${trigger.getFlowTrigger().getMaxWaitDuration().get().toMinutes()}</td>
+              #else
+                <td>-</td>
+              #end
+
+
+            ## adopted from template to show executionOption in scheduledflowpage.vm
+              <td>
+              ## Changed the style of "Show" button to be consistent with other buttons.
+                <button type="button" class="btn btn-sm btn-info" data-toggle="modal"
+                        data-target="#dependencyList-${velocityCount}">Show
+                </button>
+              </td>
+
+              <div class="modal fade" id="dependencyList-${velocityCount}" tabindex="-1"
+                   role="dialog"
+                   aria-labelledby="dependencyLabel">
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                      <h4 class="modal-title" id="dependencyLabel">Dependencies</h4>
+                    </div>
+                    <div class="modal-body">
+                    ## Used <pre> to display text with code format
+                      <pre>${trigger.getDependencyListJson()}</pre>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <td>${trigger.isPaused()}</td>
+
+            ##todo chengren311: add pause/resume button in flow page.
+              <td>
+                #if (${trigger.isPaused()} == "false")
+                  <button type="button" id="pausebtn" class="btn btn-danger btn-sm"
+                          onclick="pauseTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">
+                    Pause
+                  </button>
+                #else
+                  #set($isDisabled = "#if(${trigger.isLocked()})disabled#end")
+                  <button type="button" id="resumebtn" class="btn btn-info btn-sm  ${isDisabled}"
+                          onclick="resumeTrigger('${trigger.getProjectId()}', '${trigger.getFlowId()}')">
+                    Resume
+                  </button>
+                #end
+              </td>
+
+            </tr>
+            #end
+          #else
+          <tr>
+            <td colspan="10">No Scheduled Flow Trigger</td>
+          </tr>
+          #end
+        </tbody>
+      </table>
+    </div><!-- /col-xs-12 -->
+  </div><!-- /row -->
+
+  <div class="modal" id="messageDialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" id="messageTitle">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;
+          </button>
+          <h4 class="modal-title">Error</h4>
+        </div>
+        <div class="modal-body" id="messageDiv">
+          <p id="messageBox"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal"
+                  onclick="window.location.reload(true);">Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /container-full -->
+</body>
+</html>

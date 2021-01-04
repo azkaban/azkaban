@@ -17,6 +17,7 @@
 
 package azkaban.execapp;
 
+import azkaban.execapp.action.KillExecutionAction;
 import azkaban.trigger.Condition;
 import azkaban.trigger.TriggerAction;
 import java.util.List;
@@ -50,20 +51,26 @@ public class Trigger implements Runnable {
    */
   @Override
   public void run() {
+    logger.info("Running trigger for " + this);
     if (isTriggerExpired()) {
       logger.info(this + " expired");
       return;
     }
 
+    logger.info("Check if trigger condition met for " + this);
     final boolean isTriggerConditionMet = this.triggerCondition.isMet();
+    logger.info("Trigger condition for execid = " + this.execId + " met? = " + isTriggerConditionMet);
     if (isTriggerConditionMet) {
       logger.info("Condition " + this.triggerCondition.getExpression() + " met");
       for (final TriggerAction action : this.actions) {
         try {
+          if (action instanceof KillExecutionAction) {
+            logger.info("Killing execution " + this.execId);
+          }
           action.doAction();
         } catch (final Exception e) {
           logger.error("Failed to do action " + action.getDescription()
-              + " for execution " + azkaban.execapp.Trigger.this.execId, e);
+              + " for execution " + this.execId, e);
         }
       }
     }

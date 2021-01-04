@@ -39,7 +39,7 @@
               <div class="form-group">
                 <label for="fix" class="col-sm-3 control-label">
                   $validatorFixLabel.toString()
-                  <a href=$validatorFixLink.toString()target="_blank">
+                  <a href=$validatorFixLink.toString() target="_blank">
                     <span class="ui-icon ui-icon-info" style="display:inline-block;"></span>
                   </a>
                 </label>

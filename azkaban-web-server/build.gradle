@@ -1,42 +1,46 @@
 buildscript {
-  repositories {
-    mavenCentral()
-    maven {
-      url 'https://plugins.gradle.org/m2/'
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
     }
-  }
-  dependencies {
-    classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
-    classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
-  }
+    dependencies {
+        classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
+        classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
+    }
 }
 
 // This node plugin enables users to run any NodeJS script.  The plugin will download and
 // manage NodeJS distributions, use them from there.
 // ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
 plugins {
-  id "com.moowork.node" version "0.13"
+    id "com.moowork.node" version "1.2.0"
 }
 
 node {
-  // Version of node to use.
-  version = '6.2.1'
+    // Version of node to use.
+    version = '8.10.0'
 
-  // Version of npm to use.
-  npmVersion = '3.9.3'
+    // Version of npm to use.
+    npmVersion = '5.6.0'
 
-  // Base URL for fetching node distributions (change if you have a mirror).
-  distBaseUrl = 'https://nodejs.org/dist'
+    // Base URL for fetching node distributions (change if you have a mirror).
+    distBaseUrl = 'https://nodejs.org/dist'
 
-  // If true, it will download node using above parameters.
-  // If false, it will try to use globally installed node.
-  download = true
+    // If true, it will download node using above parameters.
+    // If false, it will try to use globally installed node.
+    download = true
 
-  // Set the work directory for unpacking node
-  workDir = file("${project.buildDir}/nodejs")
+    // Set the work directory for unpacking node
+    workDir = file("${project.buildDir}/nodejs")
 
-  // Set the work directory where node_modules should be located
-  nodeModulesDir = file("${project.projectDir}")
+    // Set the work directory where node_modules should be located
+    nodeModulesDir = file("${project.projectDir}")
+}
+
+npm_cache_clean {
+    args = ['--force']
 }
 
 apply plugin: 'lesscss'
@@ -44,148 +48,153 @@ apply plugin: 'dustjs'
 apply plugin: 'distribution'
 
 configurations {
-  generateRestli
+    generateRestli
 }
 
 dependencies {
-  compile project(':az-core')
-  compile(project(':azkaban-common'))
+    compile project(':az-core')
+    compile(project(':azkaban-common'))
+    compile(project(':az-flow-trigger-dependency-plugin'))
 
-  compile deps.restliServer
-  compile deps.velocityTools
+    compile deps.restliServer
+    compile deps.velocityTools
 
-  testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
-  testCompile deps.collections
+    testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
+    testCompile deps.collections
 
-  //AZ web module tests need to access classes defined in azkaban-common test module
-  testCompile project(':azkaban-common').sourceSets.test.output
+    //AZ web module tests need to access classes defined in azkaban-common test module
+    testCompile project(':azkaban-common').sourceSets.test.output
 
-  generateRestli deps.restliGenerator
-  generateRestli deps.restliTools
+    generateRestli deps.restliGenerator
+    generateRestli deps.restliTools
 
-  testCompile project(':test')
-  testCompile project(path: ':azkaban-db', configuration: 'testOutput')
-  testRuntime deps.h2
+    testCompile(project(path: ':az-flow-trigger-dependency-plugin', configuration: 'testCompile'))
+    testCompile project(':test')
+    testCompile project(path: ':azkaban-db', configuration: 'testOutput')
+    testRuntime deps.h2
 }
 
 sourceSets {
-  main {
-    java {
-      srcDirs 'src/main/java', 'src/restli/generatedJava', 'src/restli/java'
+    main {
+        java {
+            srcDirs 'src/main/java', 'src/restli/generatedJava', 'src/restli/java'
+        }
     }
-  }
 }
 
 task movingJsTojsToPackage(dependsOn: ['npm_install']) {
 
-  doLast {
-    copy {
-      from "node_modules/later/later.min.js"
-      into "${buildDir}/jsToPackage"
+    doLast {
+        copy {
+            from "node_modules/later/later.min.js"
+            into "${buildDir}/jsToPackage"
+        }
+        copy {
+            from "node_modules/moment/min/moment.min.js"
+            into "${buildDir}/jsToPackage"
+        }
+        copy {
+            from "node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"
+            into "${buildDir}/jsToPackage"
+        }
+        copy {
+            from "node_modules/moment-timezone/builds/moment-timezone-with-data.min.js"
+            into "${buildDir}/jsToPackage"
+        }
     }
-    copy {
-      from "node_modules/moment/min/moment.min.js"
-      into "${buildDir}/jsToPackage"
-    }
-    copy {
-      from "node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"
-      into "${buildDir}/jsToPackage"
-    }
-    copy {
-      from "node_modules/moment-timezone/builds/moment-timezone-with-data.min.js"
-      into "${buildDir}/jsToPackage"
-    }
-  }
 }
 
 task cleanAll {
-  delete 'jsToPackage'
-  delete 'node_modules'
-  delete 'velocity.log'
+    delete 'jsToPackage'
+    delete 'node_modules'
+    delete 'velocity.log'
 }
 clean.dependsOn cleanAll
 
 task jsTest(dependsOn: ['npm_install'], type: NodeTask) {
 
-  // refer to mocha js script file.
-  script = file('node_modules/mocha/bin/mocha')
+    // refer to mocha js script file.
+    script = file('node_modules/mocha/bin/mocha')
 
-  // args keep the test files' location
-  args = ['src/web/js/azkaban/test/']
+    // args keep the test files' location
+    args = ['src/web/js/azkaban/test/']
 }
 test.dependsOn jsTest
 
 task restliTemplateGenerator(type: JavaExec) {
-  mkdir 'src/restli/generatedJava'
+    mkdir 'src/restli/generatedJava'
 
-  main = 'com.linkedin.pegasus.generator.PegasusDataTemplateGenerator'
-  args = ['src/restli/generatedJava','src/restli/schemas']
-  classpath = configurations.generateRestli
+    main = 'com.linkedin.pegasus.generator.PegasusDataTemplateGenerator'
+    args = ['src/restli/generatedJava', 'src/restli/schemas']
+    classpath = configurations.generateRestli
 }
 
 task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) {
-  doLast {
-    mkdir 'src/restli/generatedRestSpec'
+    doLast {
+        mkdir 'src/restli/generatedRestSpec'
 
-    main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
-    args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
-    classpath = configurations.generateRestli
-  }
+        main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
+        args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
+        classpath = configurations.generateRestli
+    }
 }
 
 task restli(dependsOn: restliTemplateGenerator) {
-  doLast {}
+    doLast {}
 }
 
 compileJava.dependsOn.add('restli')
 
 lesscss {
-  source = fileTree('src/main/less') {
-    include 'azkaban.less'
-    include 'azkaban-graph.less'
-  }
-  dest = 'build/less'
+    source = fileTree('src/main/less') {
+        include 'azkaban.less'
+        include 'azkaban-graph.less'
+    }
+    dest = 'build/less'
 }
 
 dustjs {
-  source = fileTree('src/main/tl')
-  dest = 'build/dust'
+    source = fileTree('src/main/tl')
+    dest = 'build/dust'
 }
 
 installDist.dependsOn 'lesscss'
 
 distributions {
-  main {
-    contents {
-      from('src/main/bash') {
-        into 'bin'
-        fileMode = 0755
-      }
-      from('../azkaban-common/src/main/bash') {
-        into 'bin'
-        fileMode = 0755
-      }
-      from(configurations.runtime) {
-        into 'lib'
-      }
-      from(jar) {
-        into 'lib'
-      }
-      from ('src/web') {
-        into 'web'
-      }
-      from (lesscss.dest) {
-        into 'web/css'
-      }
-      from (dustjs) {
-        into 'web/js'
-      }
-      from ("${buildDir}/jsToPackage") {
-        into 'web/js'
-      }
-      from (movingJsTojsToPackage) {
-        into 'web/js'
-      }
+    main {
+        contents {
+            from('src/main/bash') {
+                into 'bin'
+                fileMode = 0755
+            }
+            from('../azkaban-common/src/main/bash') {
+                into 'bin'
+                fileMode = 0755
+            }
+            from('src/main/resources/conf') {
+                into 'conf'
+            }
+            from(configurations.runtime) {
+                into 'lib'
+            }
+            from(jar) {
+                into 'lib'
+            }
+            from('src/web') {
+                into 'web'
+            }
+            from(lesscss.dest) {
+                into 'web/css'
+            }
+            from(dustjs) {
+                into 'web/js'
+            }
+            from("${buildDir}/jsToPackage") {
+                into 'web/js'
+            }
+            from(movingJsTojsToPackage) {
+                into 'web/js'
+            }
+        }
     }
-  }
 }

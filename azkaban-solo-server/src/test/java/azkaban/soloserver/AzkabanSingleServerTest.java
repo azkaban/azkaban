@@ -17,8 +17,12 @@
 
 package azkaban.soloserver;
 
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static azkaban.Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS;
+import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static azkaban.executor.ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertNotNull;
@@ -37,7 +41,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +49,6 @@ import org.junit.Test;
 public class AzkabanSingleServerTest {
 
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
-  private static final Logger log = Logger.getLogger(AzkabanSingleServerTest.class);
   private static final Props props = new Props();
 
   private static String getConfPath() {
@@ -64,10 +66,10 @@ public class AzkabanSingleServerTest {
   }
 
   @AfterClass
-  public static void tearDown() throws Exception {
+  public static void tearDown() {
     deleteQuietly(new File("h2.mv.db"));
     deleteQuietly(new File("h2.trace.db"));
-    deleteQuietly(new File("executor.port"));
+    deleteQuietly(new File(DEFAULT_EXECUTOR_PORT_FILE));
     deleteQuietly(new File("executions"));
     deleteQuietly(new File("projects"));
   }
@@ -81,13 +83,14 @@ public class AzkabanSingleServerTest {
     props.put("database.type", "h2");
     props.put("h2.path", "./h2");
 
-    props.put(AZKABAN_USE_MULTIPLE_EXECUTORS, "false");
+    props.put(USE_MULTIPLE_EXECUTORS, "true");
     props.put("server.port", "0");
-    props.put("jetty.port", "0");
+    props.put(JETTY_PORT, "0");
     props.put("server.useSSL", "true");
-    props.put("jetty.use.ssl", "false");
+    props.put(JETTY_USE_SSL, "false");
     props.put("user.manager.xml.file", new File(confPath, "azkaban-users.xml").getPath());
-    props.put("executor.port", "12321");
+    props.put("user.manager.class", "azkaban.user.XmlUserManager");
+    props.put(EXECUTOR_PORT, "12321");
 
     // Quartz settings
     props.put("org.quartz.threadPool.class", "org.quartz.simpl.SimpleThreadPool");
@@ -100,13 +103,13 @@ public class AzkabanSingleServerTest {
   }
 
   @Test
-  public void testInjection() throws Exception {
+  public void testInjection() {
     SERVICE_PROVIDER.unsetInjector();
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(),
-        new AzkabanExecServerModule()
+        new AzkabanExecServerModule(),
+        new AzkabanWebServerModule(props)
     );
     SERVICE_PROVIDER.setInjector(injector);
 

@@ -20,9 +20,11 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.ProjectManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import javax.servlet.ServletConfig;
@@ -33,17 +35,29 @@ import org.joda.time.format.DateTimeFormat;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String API_FETCH = "fetch";
+
   private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
-  private ExecutorManagerAdapter executorManager;
+  private ExecutorManagerAdapter executorManagerAdapter;
   private ProjectManager projectManager;
+
+  public HistoryServlet() {
+    super(createAPIEndpoints());
+  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    this.executorManager = server.getExecutorManager();
+    final AzkabanWebServer server = getApplication();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH));
+    return apiEndpoints;
   }
 
   @Override
@@ -67,7 +81,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
-    if (ajaxName.equals("fetch")) {
+    if (API_FETCH.equals(ajaxName)) {
       fetchHistoryData(req, resp, ret);
     }
 
@@ -87,7 +101,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/historypage.vm");
     int pageNum = getIntParam(req, "page", 1);
-    final int pageSize = getIntParam(req, "size", 16);
+    final int pageSize = getIntParam(req, "size", getDisplayExecutionPageSize());
     page.add("vmutils", new VelocityUtil(this.projectManager));
 
     if (pageNum < 0) {
@@ -111,7 +125,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
               .parseDateTime(end).getMillis();
       try {
         history =
-            this.executorManager.getExecutableFlows(projContain, flowContain,
+            this.executorManagerAdapter.getExecutableFlows(projContain, flowContain,
                 userContain, status, beginTime, endTime, (pageNum - 1)
                     * pageSize, pageSize);
       } catch (final ExecutorManagerException e) {
@@ -121,7 +135,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       final String searchTerm = getParam(req, "searchterm");
       try {
         history =
-            this.executorManager.getExecutableFlows(searchTerm, (pageNum - 1)
+            this.executorManagerAdapter.getExecutableFlows(searchTerm, (pageNum - 1)
                 * pageSize, pageSize);
       } catch (final ExecutorManagerException e) {
         page.add("error", e.getMessage());
@@ -129,7 +143,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     } else {
       try {
         history =
-            this.executorManager.getExecutableFlows((pageNum - 1) * pageSize,
+            this.executorManagerAdapter.getExecutableFlows((pageNum - 1) * pageSize,
                 pageSize);
       } catch (final ExecutorManagerException e) {
         e.printStackTrace();

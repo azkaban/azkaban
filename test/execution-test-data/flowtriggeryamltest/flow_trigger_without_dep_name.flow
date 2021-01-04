@@ -1,0 +1,59 @@
+---
+# Flow trigger
+trigger:
+  maxWaitMins: 5
+  schedule:
+    type: cron
+    value: 0 0 1 ? * *
+
+  triggerDependencies:
+    - type: dali-dataset
+      params:
+        view: search_mp_versioned.search_impression_event_0_0_47
+        delay: 1
+        window: 1
+        unit: daily
+        filter: is_guest=0
+
+    - name: other-name
+      type: dali-dataset
+      params:
+        delay: 1
+        window: 1
+        view: search_mp_versioned.search_impression_event_0_0_47
+        unit: daily
+        filter: is_guest=0
+
+# All flow level properties here
+config:
+  flow-level-parameter: value
+
+# This section defines the list of jobs
+# A node can be a job or a flow
+# In this example, all nodes are jobs
+nodes:
+  # Job definition
+  # The job definition is like a YAMLified version of properties file
+  # with one major difference. All custom properties are now clubbed together
+  # in a config section in the definition.
+  # The first line describes the name of the job
+  - name: shell_end
+    # Describe the type of the job
+    type: noop
+
+    # List the dependencies of the job
+    dependsOn:
+      - shell_pwd
+      - shell_echo
+
+  - name: shell_echo
+    # Describe the type of the job
+    type: command
+    config:
+      command: echo "This is an echoed text."
+
+  - name: shell_pwd
+    # Describe the type of the job
+    type: command
+    config:
+      command: pwd

@@ -17,10 +17,12 @@
 package azkaban.project;
 
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -48,16 +50,27 @@ public class FlowTriggerTest {
   @Test
   public void testFlowTriggerArgumentValidation() {
     final CronSchedule validSchedule = new CronSchedule("* * * * ? *");
-    final List<FlowTriggerDependency> validDependencyList = new ArrayList<>();
-    final List<FlowTriggerDependency> invalidDependencyList = null;
+    final CronSchedule nullSchedule = null;
+    final List<FlowTriggerDependency> emptyDependencyList = new ArrayList<>();
+    final List<FlowTriggerDependency> nullDependencyList = null;
+
+    final List<FlowTriggerDependency> nonEmptyDependencyList = Arrays.asList(createTestDependency
+        ("type", "dep1"));
+
     final Duration validDuration = Duration.ofMinutes(10);
-    final Duration invalidDuration = Duration.ofMinutes(-1);
+    final Duration nullDuration = null;
 
-    assertThatThrownBy(() -> new FlowTrigger(validSchedule, invalidDependencyList, validDuration))
+    assertThatThrownBy(() -> new FlowTrigger(nullSchedule, nonEmptyDependencyList, validDuration))
+        .isInstanceOf(NullPointerException.class);
+
+    assertThatThrownBy(() -> new FlowTrigger(validSchedule, nullDependencyList, validDuration))
+        .isInstanceOf(NullPointerException.class);
+
+    assertThatThrownBy(() -> new FlowTrigger(validSchedule, nonEmptyDependencyList, nullDuration))
         .isInstanceOf(IllegalArgumentException.class);
 
-    assertThatThrownBy(() -> new FlowTrigger(validSchedule, validDependencyList, invalidDuration))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThatCode(() -> new FlowTrigger(validSchedule, emptyDependencyList, nullDuration))
+        .doesNotThrowAnyException();
   }
 
   @Test

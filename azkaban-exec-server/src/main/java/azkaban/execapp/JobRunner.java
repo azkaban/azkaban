@@ -17,11 +17,13 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
+import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
+import azkaban.executor.ClusterInfo;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -42,6 +44,8 @@ import azkaban.utils.UndefinedPropertyException;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,8 +66,10 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
   private static final Object logCreatorLock = new Object();
-  private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
-      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+
+  private static final String DEFAULT_LAYOUT =
+      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n";
+
   private final Object syncObject = new Object();
   private final JobTypeManager jobtypeManager;
   private final ExecutorLoader loader;
@@ -71,7 +77,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private final Props azkabanProps;
   private final ExecutableNode node;
   private final File workingDir;
-  private final Layout loggerLayout = this.DEFAULT_LAYOUT;
+  private final Layout loggerLayout;
   private final String jobId;
   private final Set<String> pipelineJobs = new HashSet<>();
   private Logger logger = null;
@@ -93,6 +99,13 @@ public class JobRunner extends EventHandler implements Runnable {
   private long delayStartMs = 0;
   private volatile boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
+  private final ClassLoader threadClassLoader;
+
+  private volatile long timeInQueue = -1;
+  private volatile long jobKillTime = -1;
+
+  private volatile long queueDuration = 0;
+  private volatile long killDuration = 0;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
       final JobTypeManager jobtypeManager, final Props azkabanProps) {
@@ -102,9 +115,15 @@ public class JobRunner extends EventHandler implements Runnable {
 
     this.executionId = node.getParentFlow().getExecutionId();
     this.jobId = node.getId();
+
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
+    final String jobLogLayout = this.props.getString(
+        JobProperties.JOB_LOG_LAYOUT, DEFAULT_LAYOUT);
+
+    this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
+    this.threadClassLoader = Thread.currentThread().getContextClassLoader();
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {
@@ -168,6 +187,11 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public Props getProps() {
     return this.props;
+  }
+
+  public String getEffectiveUser() {
+    return this.props.getString(JobProperties.USER_TO_PROXY,
+        this.getNode().getExecutableFlow().getSubmitUser());
   }
 
   public void setPipeline(final FlowWatcher watcher, final int pipelineLevel) {
@@ -293,7 +317,9 @@ public class JobRunner extends EventHandler implements Runnable {
         .getExternalLogViewer(this.azkabanProps, this.jobId,
             this.props);
     if (!externalViewer.isEmpty()) {
-      this.logger.info("See logs at: " + externalViewer);
+      this.logger.info("If you want to leverage AZ ELK logging support, you need to follow the "
+          + "instructions: http://azkaban.github.io/azkaban/docs/latest/#how-to");
+      this.logger.info("If you did the above step, see logs at: " + externalViewer);
     }
   }
 
@@ -312,6 +338,7 @@ public class JobRunner extends EventHandler implements Runnable {
     final String logName = createLogFileName(this.node);
     this.logFile = new File(this.workingDir, logName);
     final String absolutePath = this.logFile.getAbsolutePath();
+    this.flowLogger.info("Log file path for job: " + this.jobId + " is: " + absolutePath);
 
     // Attempt to create FileAppender
     final RollingFileAppender fileAppender =
@@ -456,7 +483,7 @@ public class JobRunner extends EventHandler implements Runnable {
           this.currentBlockStatus = bStatus;
           bStatus.blockOnFinishedStatus();
           if (this.isKilled()) {
-            this.logger.info("Job was killed while waiting on pipeline. Quiting.");
+            this.logger.info("Job was killed while waiting on pipeline. Quitting.");
             return true;
           } else {
             this.logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
@@ -490,7 +517,7 @@ public class JobRunner extends EventHandler implements Runnable {
         }
 
         if (this.isKilled()) {
-          this.logger.info("Job was killed while in delay. Quiting.");
+          this.logger.info("Job was killed while in delay. Quitting.");
           return true;
         }
       }
@@ -553,6 +580,8 @@ public class JobRunner extends EventHandler implements Runnable {
     } catch (final Exception e) {
       serverLogger.error("Unexpected exception", e);
       throw e;
+    } finally {
+      Thread.currentThread().setContextClassLoader(this.threadClassLoader);
     }
   }
 
@@ -580,6 +609,10 @@ public class JobRunner extends EventHandler implements Runnable {
     Status finalStatus = this.node.getStatus();
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
+      // End of job in queue and start of execution
+      if (this.getTimeInQueue() != -1 && this.getQueueDuration() == 0) {
+        this.setQueueDuration(System.currentTimeMillis() - this.getTimeInQueue());
+      }
       fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
       final Status prepareStatus = prepareJob();
@@ -603,6 +636,9 @@ public class JobRunner extends EventHandler implements Runnable {
       // rather than
       // it being a legitimate failure.
       finalStatus = changeStatus(Status.KILLED);
+      if (this.getJobKillTime() != -1 && this.getKillDuration() == 0) {
+        this.setKillDuration(System.currentTimeMillis() - this.getJobKillTime());
+      }
     }
 
     logInfo(
@@ -614,9 +650,15 @@ public class JobRunner extends EventHandler implements Runnable {
       finalizeAttachmentFile();
       writeStatus();
     } finally {
-      // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
-      fireEvent(Event.create(this, EventType.JOB_FINISHED,
-          new EventData(finalStatus, this.node.getNestedId())), false);
+      try {
+        // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
+        fireEvent(Event.create(this, EventType.JOB_FINISHED,
+            new EventData(finalStatus, this.node.getNestedId())), false);
+      } catch (final RuntimeException e) {
+        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
+            + " jobId: " + this.jobId);
+        serverLogger.warn(e.getMessage(), e);
+      }
     }
   }
 
@@ -662,24 +704,73 @@ public class JobRunner extends EventHandler implements Runnable {
       this.props.put(CommonJobProperties.JOB_METADATA_FILE,
           createMetaDataFileName(this.node));
       this.props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, this.attachmentFileName);
+      this.props.put(CommonJobProperties.JOB_LOG_FILE, this.logFile.getAbsolutePath());
       finalStatus = changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
-      if (!this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+      if (this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+        if (!IsSpecifiedWorkingDirectoryValid()) {
+          logError("Specified " + AbstractProcessJob.WORKING_DIR + " is not valid: " +
+              this.props.get(AbstractProcessJob.WORKING_DIR) + ". Must be a subdirectory of " +
+              this.workingDir.getAbsolutePath());
+          return null;
+        }
+      } else {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
 
-      if (this.props.containsKey("user.to.proxy")) {
-        final String jobProxyUser = this.props.getString("user.to.proxy");
+      if (this.props.containsKey(JobProperties.USER_TO_PROXY)) {
+        final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
         if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
+          final String permissionsPageURL = getProjectPermissionsURL();
           this.logger.error("User " + jobProxyUser
-              + " has no permission to execute this job " + this.jobId + "!");
+              + " has no permission to execute this job " + this.jobId + "!"
+              + " If you want to execute this flow as " + jobProxyUser
+              + ", please add it to Proxy Users under project permissions page: " +
+              permissionsPageURL);
           return null;
         }
+      } else {
+        final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
+        this.props.put(JobProperties.USER_TO_PROXY, submitUser);
+        this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
+            submitUser);
+      }
+
+      final Props props = this.node.getRampProps();
+      if (props != null) {
+        this.logger.info(String
+            .format("RAMP_JOB_ATTACH_PROPS : (id = %s, props = %s)", this.node.getId(),
+                props.toString()));
+        this.props.putAll(props);
       }
 
       try {
-        this.job = this.jobtypeManager.buildJobExecutor(this.jobId, this.props, this.logger);
+        long jobCreationStartMillis = System.currentTimeMillis();
+        final JobTypeManager.JobParams jobParams = this.jobtypeManager
+            .createJobParams(this.jobId, this.props, this.logger);
+        Thread.currentThread().setContextClassLoader(jobParams.contextClassLoader);
+        this.job = JobTypeManager.createJob(this.jobId, jobParams, this.logger);
+        this.logger.info(String.format("%s creation took %s milliseconds.",
+            this.jobId, System.currentTimeMillis() - jobCreationStartMillis));
+
+        if (jobParams.jobProps.containsKey(CommonJobProperties.TARGET_CLUSTER_ID)) {
+          // save the information of the cluster that the job may be routed to
+          final String clusterId = jobParams.jobProps.getString(
+              CommonJobProperties.TARGET_CLUSTER_ID);
+          final String hadoopClusterURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.HADOOP_CLUSTER_URL);
+          final String rmURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.RESOURCE_MANAGER_JOB_URL);
+          final String hsURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.HISTORY_SERVER_JOB_URL);
+          final String shsURL = jobParams.jobProps.get(
+              Constants.ConfigurationKeys.SPARK_HISTORY_SERVER_JOB_URL);
+          final ClusterInfo clusterInfo =
+              new ClusterInfo(clusterId, hadoopClusterURL, rmURL, hsURL, shsURL);
+          this.node.setClusterInfo(clusterInfo);
+        }
+
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
         return null;
@@ -687,6 +778,37 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return finalStatus;
+  }
+
+  /**
+   * Validates execution directory specified by user.
+   */
+  private boolean IsSpecifiedWorkingDirectoryValid() {
+    final File usersWorkingDir = new File(this.props.get(AbstractProcessJob.WORKING_DIR));
+    try {
+      if (!usersWorkingDir.getCanonicalPath().startsWith(this.workingDir.getCanonicalPath())) {
+        return false;
+      }
+    } catch (final IOException e) {
+      this.logger.error("Failed to validate user's " + AbstractProcessJob.WORKING_DIR +
+          " property.", e);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Get project permissions page URL
+   */
+  private String getProjectPermissionsURL() {
+    String projectPermissionsURL = null;
+    final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
+    if (baseURL != null) {
+      final String projectName = this.node.getParentFlow().getProjectName();
+      projectPermissionsURL = String
+          .format("%s/manager?project=%s&permissions", baseURL, projectName);
+    }
+    return projectPermissionsURL;
   }
 
   /**
@@ -699,7 +821,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
     String jobJVMArgs =
         String.format(
-            "-Dazkaban.flowid=%s -Dazkaban.execid=%s -Dazkaban.jobid=%s",
+            "'-Dazkaban.flowid=%s' '-Dazkaban.execid=%s' '-Dazkaban.jobid=%s'",
             flowName, this.executionId, jobId);
 
     final String previousJVMArgs = this.props.get(JavaProcessJob.JVM_PARAMS);
@@ -716,17 +838,25 @@ public class JobRunner extends EventHandler implements Runnable {
   private void insertJobMetadata() {
     final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
     if (baseURL != null) {
+      URL webserverURL = null;
+      try {
+        webserverURL = new URL(baseURL);
+      } catch (MalformedURLException e) {
+        logger.error(String.format("Exception in parsing url: %s", baseURL), e);
+      }
+      final String azkabanWebserverHost = (webserverURL != null) ? webserverURL.getHost() : null;
       final String flowName = this.node.getParentFlow().getFlowId();
       final String projectName = this.node.getParentFlow().getProjectName();
 
       this.props.put(CommonJobProperties.AZKABAN_URL, baseURL);
+      this.props.put(CommonJobProperties.AZKABAN_WEBSERVERHOST, azkabanWebserverHost);
       this.props.put(CommonJobProperties.EXECUTION_LINK,
           String.format("%s/executor?execid=%d", baseURL, this.executionId));
       this.props.put(CommonJobProperties.JOBEXEC_LINK, String.format(
-          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.jobId));
+          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.node.getNestedId()));
       this.props.put(CommonJobProperties.ATTEMPT_LINK, String.format(
           "%s/executor?execid=%d&job=%s&attempt=%d", baseURL, this.executionId,
-          this.jobId, this.node.getAttempt()));
+          this.node.getNestedId(), this.node.getAttempt()));
       this.props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
           "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
       this.props.put(CommonJobProperties.JOB_LINK, String.format(
@@ -767,6 +897,7 @@ public class JobRunner extends EventHandler implements Runnable {
           }
           logError(e.getMessage() + " cause: " + e.getCause());
         }
+        this.getNode().setFailureMessage(e.toString());
       }
     }
 
@@ -806,8 +937,11 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public void killBySLA() {
-    kill();
-    this.getNode().setKilledBySLA(true);
+    synchronized (this.syncObject) {
+      kill();
+      this.getNode().setModifiedBy("SLA");
+      this.getNode().setKilledBySLA(true);
+    }
   }
 
   public void kill() {
@@ -835,6 +969,7 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       try {
+        this.setJobKillTime(System.currentTimeMillis());
         this.job.cancel();
       } catch (final Exception e) {
         logError(e.getMessage());
@@ -878,4 +1013,20 @@ public class JobRunner extends EventHandler implements Runnable {
   public Logger getLogger() {
     return this.logger;
   }
+
+  public long getTimeInQueue() { return this.timeInQueue; }
+
+  public void setTimeInQueue(long timeInQueue) { this.timeInQueue = timeInQueue; }
+
+  public long getJobKillTime() { return this.jobKillTime; }
+
+  public void setJobKillTime(long jobKillTime) { this.jobKillTime = jobKillTime; }
+
+  public long getQueueDuration() { return this.queueDuration; }
+
+  public void setQueueDuration(long queueDuration) { this.queueDuration = queueDuration; }
+
+  public long getKillDuration() { return this.killDuration; }
+
+  public void setKillDuration(long killDuration) { this.killDuration = killDuration; }
 }

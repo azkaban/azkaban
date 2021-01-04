@@ -15,6 +15,11 @@
  */
 package azkaban.utils;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -23,50 +28,29 @@ import org.junit.Test;
 public class AbstractMailerTest {
 
   List<String> senderList = new ArrayList<>();
-
-  public static Props createMailProperties() {
-    final Props props = new Props();
-    props.put("mail.user", "somebody");
-    props.put("mail.password", "pwd");
-    props.put("mail.sender", "somebody@xxx.com");
-    props.put("server.port", "114");
-    props.put("jetty.use.ssl", "false");
-    props.put("server.useSSL", "false");
-    props.put("jetty.port", "8786");
-    return props;
-
-  }
+  private EmailMessage message;
+  private EmailMessageCreator messageCreator;
+  private Props props;
 
   @Before
   public void setUp() throws Exception {
+    this.message = EmailerTest.mockEmailMessage();
+    this.messageCreator = EmailerTest.mockMessageCreator(this.message);
     this.senderList.add("sender@domain.com");
+    this.props = new Props();
+    this.props.put("server.port", "114");
+    this.props.put(JETTY_USE_SSL, "false");
+    this.props.put("server.useSSL", "false");
+    this.props.put(JETTY_PORT, "8786");
   }
 
-  /**
-   * test emailMessage properties
-   */
   @Test
   public void testCreateEmailMessage() {
-
-    final Props props = createMailProperties();
-    props.put("mail.port", "445");
-    final AbstractMailer mailer = new AbstractMailer(props);
-    final EmailMessage emailMessage = mailer.createEmailMessage("subject", "text/html",
-        this.senderList);
-
-    assert emailMessage.getMailPort() == 445;
-
-
-  }
-
-  @Test
-  public void testCreateDefaultEmailMessage() {
-    final Props defaultProps = createMailProperties();
-    final AbstractMailer mailer = new AbstractMailer(defaultProps);
-    final EmailMessage emailMessage = mailer.createEmailMessage("subject", "text/html",
-        this.senderList);
-    assert emailMessage.getMailPort() == 25;
-
+    final AbstractMailer mailer = new AbstractMailer(this.props, this.messageCreator);
+    final EmailMessage em = mailer.createEmailMessage("subject", "text/html", this.senderList);
+    verify(this.messageCreator).createMessage();
+    assertThat(this.message).isEqualTo(em);
+    verify(this.message).setSubject("subject");
   }
 
 }

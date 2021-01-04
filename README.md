@@ -1,6 +1,7 @@
-# Azkaban [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban)
+# Azkaban 
 
-[![Join the chat at https://gitter.im/azkaban-workflow-engine/Lobby](https://badges.gitter.im/azkaban-workflow-engine/Lobby.svg)](https://gitter.im/azkaban-workflow-engine/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.com/azkaban/azkaban.svg?branch=master)](https://travis-ci.com/azkaban/azkaban)[![codecov.io](https://codecov.io/github/azkaban/azkaban/branch/master/graph/badge.svg)](https://codecov.io/github/azkaban/azkaban)[![Join the chat at https://gitter.im/azkaban-workflow-engine/Lobby](https://badges.gitter.im/azkaban-workflow-engine/Lobby.svg)](https://gitter.im/azkaban-workflow-engine/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)[![Documentation Status](https://readthedocs.org/projects/azkaban/badge/?version=latest)](http://azkaban.readthedocs.org/en/latest/?badge=latest)
+
 
 ## Build
 Azkaban builds use Gradle and requires Java 8 or higher.
@@ -42,11 +43,33 @@ Build
 ```
 
 ## Documentation
-Documentation is available at [azkaban.github.io](http://azkaban.github.io). 
-The source code for the documentation is in the [gh-pages](https://github.com/azkaban/azkaban/tree/gh-pages) branch.
+
+The current documentation will be deprecated soon at [azkaban.github.io](http://azkaban.github.io). 
+The [new Documentation site](https://azkaban.readthedocs.io/en/latest/) is under development.
+The source code for the documentation is inside `docs` directory.
 
 For help, please visit the [Azkaban Google Group](https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev).
 
 ## Developer Guide
 
 See [the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONTRIBUTING.md).
+
+#### Documentation development
+
+If you want to contribute to the documentation or the release tool (inside the `tools` folder), 
+please make sure python3 is installed in your environment. python virtual environment is recommended to run these scripts.
+
+To download the python3 dependencies, run 
+
+```bash
+pip3 install -r requirements.txt
+```
+After, enter the documentation folder `docs` and make the build by running
+```bash
+cd docs
+make html
+```
+
+
+**[July, 2018]** We are actively improving our documentation. Everyone in the AZ community is 
+welcome to submit a pull request to edit/fix the documentation.

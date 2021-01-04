@@ -27,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class NumExecutionsDaoTest {
 
@@ -51,7 +52,8 @@ public class NumExecutionsDaoTest {
 
   @Before
   public void setup() {
-    this.executionFlowDao = new ExecutionFlowDao(dbOperator);
+    MysqlNamedLock mysqlNamedLock = Mockito.mock(MysqlNamedLock.class);
+    this.executionFlowDao = new ExecutionFlowDao(dbOperator, mysqlNamedLock);
     this.numExecutionsDao = new NumExecutionsDao(dbOperator);
   }
 

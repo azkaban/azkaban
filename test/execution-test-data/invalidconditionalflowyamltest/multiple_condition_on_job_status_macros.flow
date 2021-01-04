@@ -1,0 +1,17 @@
+nodes:
+  - name: jobB
+    type: test
+    config:
+      fail: false
+      seconds: 0
+
+    condition: one_success && all_success || all_failed
+
+    dependsOn:
+      - jobA
+
+  - name: jobA
+    type: test
+    config:
+      fail: false
+      seconds: 0

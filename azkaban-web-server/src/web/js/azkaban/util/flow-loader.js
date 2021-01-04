@@ -66,8 +66,6 @@ var closeAllSubDisplays = function () {
 }
 
 var nodeClickCallback = function (event, model, node) {
-  console.log("Node clicked callback");
-
   var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
@@ -75,24 +73,40 @@ var nodeClickCallback = function (event, model, node) {
 
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
       + flowId + "&job=" + jobId;
+  var logURL = contextURL + "/executor?execid=" + execId + "&job="
+      + node.nestedId + "&attempt=" + node.attempt;
   var menu = [];
 
   if (type == "flow") {
     var flowRequestURL = contextURL + "/manager?project=" + projectName
         + "&flow=" + node.flowId;
     if (node.expanded) {
-      menu = [{
-        title: "Collapse Flow...", callback: function () {
-          model.trigger("collapseFlow", node);
+      menu = [
+        {
+          title: "Collapse Flow...", callback: function () {
+            model.trigger("collapseFlow", node);
+          }
+        },
+        {
+          title: "Collapse All Flows...", callback: function () {
+            model.trigger("collapseAllFlows", node);
+          }
         }
-      }];
+      ];
     }
     else {
-      menu = [{
-        title: "Expand Flow...", callback: function () {
-          model.trigger("expandFlow", node);
+      menu = [
+        {
+          title: "Expand Flow...", callback: function () {
+            model.trigger("expandFlow", node);
+          }
+        },
+        {
+          title: "Expand All Flows...", callback: function () {
+            model.trigger("expandAllFlows", node);
+          }
         }
-      }];
+      ];
     }
 
     $.merge(menu, [
@@ -100,60 +114,83 @@ var nodeClickCallback = function (event, model, node) {
       {break: 1},
       {
         title: "Open Flow...", callback: function () {
-        window.location.href = flowRequestURL;
-      }
+          window.location.href = flowRequestURL;
+        }
       },
       {
         title: "Open Flow in New Window...", callback: function () {
-        window.open(flowRequestURL);
-      }
+          window.open(flowRequestURL);
+        }
       },
       {break: 1},
       {
         title: "Open Properties...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Properties in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Flow", callback: function () {
-        model.trigger("centerNode", node);
-      }
+          model.trigger("centerNode", node);
+        }
       }
     ]);
   }
   else {
-    menu = [
+    // this applies for type != 'flow' ie. job nodes in 2 cases:
+    // 1. Flow -> Graph tab
+    // 2. Execution -> Graph tab
+    menu = [];
+    $.merge(menu, [
       //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
       //  {break: 1},
       {
         title: "Open Job...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Job in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Job", callback: function () {
-        model.trigger("centerNode", node)
+          model.trigger("centerNode", node)
+        }
       }
-      }
-    ];
+    ]);
+    // Include job log links in job context menu unless job hasn't been started
+    if (node.status !== 'READY' && node.status !== 'SKIPPED'
+        && node.status !== 'DISABLED' && node.status !== 'CANCELLED'
+        && node.status !== 'DISPATCHING') {
+      // For "Flow Graph" (not an execution) node.status = READY, so this
+      // condition also works correctly for it
+      $.merge(menu, [
+        {break: 1},
+        {
+          title: "Open Log...", callback: function () {
+            window.location.href = logURL;
+          }
+        },
+        {
+          title: "Open Log in New Window...", callback: function () {
+            window.open(logURL);
+          }
+        }
+      ]);
+    }
   }
   contextMenuView.show(event, menu);
 }
 
 var jobClickCallback = function (event, model, node) {
-  console.log("Node clicked callback");
   var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
@@ -171,30 +208,30 @@ var jobClickCallback = function (event, model, node) {
       //  {break: 1},
       {
         title: "Open Flow...", callback: function () {
-        window.location.href = flowRequestURL;
-      }
+          window.location.href = flowRequestURL;
+        }
       },
       {
         title: "Open Flow in New Window...", callback: function () {
-        window.open(flowRequestURL);
-      }
+          window.open(flowRequestURL);
+        }
       },
       {break: 1},
       {
         title: "Open Properties...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Properties in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Flow", callback: function () {
-        model.trigger("centerNode", node)
-      }
+          model.trigger("centerNode", node)
+        }
       }
     ];
   }
@@ -204,31 +241,28 @@ var jobClickCallback = function (event, model, node) {
       //  {break: 1},
       {
         title: "Open Job...", callback: function () {
-        window.location.href = requestURL;
-      }
+          window.location.href = requestURL;
+        }
       },
       {
         title: "Open Job in New Window...", callback: function () {
-        window.open(requestURL);
-      }
+          window.open(requestURL);
+        }
       },
       {break: 1},
       {
         title: "Center Job", callback: function () {
-        graphModel.trigger("centerNode", node)
-      }
+          graphModel.trigger("centerNode", node)
+        }
       }
     ];
   }
   contextMenuView.show(event, menu);
 }
 
-var edgeClickCallback = function (event, model) {
-  console.log("Edge clicked callback");
-}
+var edgeClickCallback = function (event, model) {}
 
 var graphClickCallback = function (event, model) {
-  console.log("Graph clicked callback");
   var data = model.get("data");
   var flowId = data.flow;
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
@@ -236,20 +270,33 @@ var graphClickCallback = function (event, model) {
 
   var menu = [
     {
+      title: "Expand All Flows...", callback: function () {
+        model.trigger("expandAllFlows");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Collapse All Flows...", callback: function () {
+        model.trigger("collapseAllFlows");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {break: 1},
+    {
       title: "Open Flow...", callback: function () {
-      window.location.href = requestURL;
-    }
+        window.location.href = requestURL;
+      }
     },
     {
       title: "Open Flow in New Window...", callback: function () {
-      window.open(requestURL);
-    }
+        window.open(requestURL);
+      }
     },
     {break: 1},
     {
       title: "Center Graph", callback: function () {
-      model.trigger("resetPanZoom");
-    }
+        model.trigger("resetPanZoom");
+      }
     }
   ];
 

@@ -19,6 +19,7 @@ package azkaban.security.commons;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -39,6 +40,9 @@ public abstract class HadoopSecurityManager {
       "obtain.jobtracker.token";
   public static final String OBTAIN_NAMENODE_TOKEN = "obtain.namenode.token";
   public static final String OBTAIN_HCAT_TOKEN = "obtain.hcat.token";
+
+  // Add domain name
+  public static final String DOMAIN_NAME = "domain.name";
 
   public static boolean shouldProxy(final Properties prop) {
     final String shouldProxy = prop.getProperty(ENABLE_PROXYING);
@@ -72,13 +76,11 @@ public abstract class HadoopSecurityManager {
   public abstract FileSystem getFSAsUser(String user)
       throws HadoopSecurityManagerException;
 
-  public abstract void prefetchToken(File tokenFile, String userToProxy,
-      Logger logger) throws HadoopSecurityManagerException;
-
   public abstract void cancelTokens(File tokenFile, String userToProxy,
       Logger logger) throws HadoopSecurityManagerException;
 
   public abstract void prefetchToken(File tokenFile, Props props, Logger logger)
       throws HadoopSecurityManagerException;
 
+  public abstract KeyStore getKeyStore(final Props props);
 }

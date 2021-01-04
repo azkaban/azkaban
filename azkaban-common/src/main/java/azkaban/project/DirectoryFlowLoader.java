@@ -17,16 +17,17 @@
 package azkaban.project;
 
 import azkaban.flow.CommonJobProperties;
+import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
+import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,6 @@ import org.slf4j.LoggerFactory;
  */
 public class DirectoryFlowLoader implements FlowLoader {
 
-  private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
 
@@ -188,8 +189,13 @@ public class DirectoryFlowLoader implements FlowLoader {
             if (type == null) {
               this.errors.add("Job doesn't have type set '" + jobName + "'.");
             }
-
             node.setType(type);
+
+            String condition = prop.getString("condition", null);
+            if (null != condition && !condition.isEmpty()) {
+              logger.info(String.format("Setting condition %s for job %s", condition, jobName));
+              node.setCondition(condition);
+            }
 
             node.setJobSource(relative);
             if (parent != null) {
@@ -211,8 +217,8 @@ public class DirectoryFlowLoader implements FlowLoader {
       }
     }
 
-    final File[] subDirs = dir.listFiles(DIR_FILTER);
-    for (final File file : subDirs) {
+    validateConditions();
+    for (final File file : dir.listFiles(new DirFilter())) {
       loadProjectFromDir(base, file, parent);
     }
   }
@@ -317,7 +323,6 @@ public class DirectoryFlowLoader implements FlowLoader {
     }
 
     // Now create flows. Bad flows are marked invalid
-    final Set<String> visitedNodes = new HashSet<>();
     for (final Node base : this.nodeMap.values()) {
       // Root nodes can be discovered when parsing jobs
       if (this.rootNodes.contains(base.getId())
@@ -329,17 +334,23 @@ public class DirectoryFlowLoader implements FlowLoader {
         FlowLoaderUtils.addEmailPropsToFlow(flow, jobProp);
 
         flow.addAllFlowProperties(this.flowPropsList);
-        constructFlow(flow, base, visitedNodes);
+        final Set<String> visitedNodesOnPath = new HashSet<>();
+        final Set<String> visitedNodesEver = new HashSet<>();
+        constructFlow(flow, base, visitedNodesOnPath, visitedNodesEver);
+
         flow.initialize();
         this.flowMap.put(base.getId(), flow);
       }
     }
   }
 
-  private void constructFlow(final Flow flow, final Node node, final Set<String> visited) {
-    visited.add(node.getId());
+  private void constructFlow(final Flow flow, final Node node, final Set<String> visitedOnPath,
+      final Set<String> visitedEver) {
+    visitedOnPath.add(node.getId());
+    visitedEver.add(node.getId());
 
     flow.addNode(node);
+    flow.setCondition(node.getCondition());
     if (SpecialJobTypes.EMBEDDED_FLOW_TYPE.equals(node.getType())) {
       final Props props = this.jobPropsMap.get(node.getId());
       final String embeddedFlow = props.get(SpecialJobTypes.FLOW_NAME);
@@ -359,22 +370,25 @@ public class DirectoryFlowLoader implements FlowLoader {
       for (Edge edge : dependencies.values()) {
         if (edge.hasError()) {
           flow.addEdge(edge);
-        } else if (visited.contains(edge.getSourceId())) {
+        } else if (visitedOnPath.contains(edge.getSourceId())) {
           // We have a cycle. We set it as an error edge
           edge = new Edge(edge.getSourceId(), node.getId());
           edge.setError("Cyclical dependencies found.");
           this.errors.add("Cyclical dependency found at " + edge.getId());
           flow.addEdge(edge);
+        } else if (visitedEver.contains(edge.getSourceId())) {
+          // this node was already checked, don't need to check further
+          flow.addEdge(edge);
         } else {
           // This should not be null
           flow.addEdge(edge);
           final Node sourceNode = this.nodeMap.get(edge.getSourceId());
-          constructFlow(flow, sourceNode, visited);
+          constructFlow(flow, sourceNode, visitedOnPath, visitedEver);
         }
       }
     }
 
-    visited.remove(node.getId());
+    visitedOnPath.remove(node.getId());
   }
 
   private String getNameWithoutExtension(final File file) {
@@ -388,11 +402,62 @@ public class DirectoryFlowLoader implements FlowLoader {
     return filePath.substring(basePath.length() + 1);
   }
 
-  private static class DirFilter implements FileFilter {
 
-    @Override
-    public boolean accept(final File pathname) {
-      return pathname.isDirectory();
+  private void validateConditions() {
+    nodeMap.forEach((name, node) -> {
+      String condition = node.getCondition();
+      boolean foundConditionOnJobStatus = false;
+      if (condition == null) {
+        return;
+      }
+      // First, remove all the whitespaces and parenthesis ().
+      final String replacedCondition = condition.replaceAll("\\s+|\\(|\\)", "");
+      // Second, split the condition by operators &&, ||, ==, !=, >, >=, <, <=
+      final String[] operands = replacedCondition
+          .split(DirectoryYamlFlowLoader.VALID_CONDITION_OPERATORS);
+      // Third, check whether all the operands are valid: only conditionOnJobStatus macros, numbers,
+      // strings, and variable substitution ${jobName:param} are allowed.
+      for (int i = 0; i < operands.length; i++) {
+        final Matcher matcher = DirectoryYamlFlowLoader.CONDITION_ON_JOB_STATUS_PATTERN
+            .matcher(operands[i]);
+        if (matcher.matches()) {
+          this.logger.info("Operand " + operands[i] + " is a condition on job status.");
+          if (foundConditionOnJobStatus) {
+            this.errors.add("Invalid condition for " + node.getId()
+                + ": cannot combine more than one conditionOnJobStatus macros.");
+          }
+          foundConditionOnJobStatus = true;
+          node.setConditionOnJobStatus(ConditionOnJobStatus.fromString(matcher.group(1)));
+        } else {
+          if (operands[i].startsWith("!")) {
+            // Remove the operator '!' from the operand.
+            operands[i] = operands[i].substring(1);
+          }
+          if (operands[i].equals("")) {
+            this.errors
+                .add("Invalid condition fo" +
+                    " " + node.getId() + ": operand is an empty string.");
+          } else if (!DirectoryYamlFlowLoader.DIGIT_STRING_PATTERN.matcher(operands[i]).matches()) {
+            validateVariableSubstitution(operands[i], name);
+          }
+        }
+      }
+    });
+  }
+
+  private void validateVariableSubstitution(final String operand, String name) {
+    final Matcher matcher = DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN
+        .matcher(operand);
+    if (matcher.matches()) {
+      final String jobName = matcher.group(1);
+      final Node conditionNode = nodeMap.get(jobName);
+      if (conditionNode == null) {
+        this.errors.add("Invalid condition for " + name + ": " + jobName
+            + " doesn't exist in the flow.");
+      }
+    } else {
+      this.errors.add("Invalid condition for " + name
+          + ": cannot resolve the condition. Please check the syntax for supported conditions.");
     }
   }
 

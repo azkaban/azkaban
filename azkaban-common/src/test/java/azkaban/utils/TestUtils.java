@@ -24,9 +24,12 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
+import com.google.common.base.Charsets;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Commonly used utils method for unit/integration tests
@@ -75,6 +78,21 @@ public class TestUtils {
         + "azkaban-users.xml");
     final UserManager manager = new XmlUserManager(props);
     return manager;
+  }
+
+  /**
+   * Reads a resource into a String
+   *
+   * @param name Relative path to the resource (relative to the parent object's package)
+   * @param parent Instance of the class to use in finding the resource. The resource is looked up in the same package
+   * where the class of the parent object is in.
+   * @return Resource content as a String
+   * @throws IOException if an I/O error occurs
+   */
+  public static String readResource(final String name, final Object parent) throws IOException {
+    try (final InputStream is = parent.getClass().getResourceAsStream(name)) {
+      return IOUtils.toString(is, Charsets.UTF_8).trim();
+    }
   }
 
 }

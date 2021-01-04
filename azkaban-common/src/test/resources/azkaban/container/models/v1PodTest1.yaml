@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    akey1: aval1
+  labels:
+    lkey1: lvalue1
+  name: az-example
+  namespace: az-team
+spec:
+  containers:
+  - env:
+    - name: AZ_CLUSTER
+      value: mycluster
+    - name: AZ_CONF_VERSION
+      value: 0.0.3
+    - name: envKey
+      value: envValue
+    image: path/azkaban-base-image:0.0.5
+    imagePullPolicy: IfNotPresent
+    name: az-flow-container
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 500m
+        memory: 500Mi
+    volumeMounts:
+    - mountPath: azBasePath/plugins/jobtypes/spark
+      name: jobtype-volume-spark
+    - mountPath: /var/run/nscd/socket
+      name: nscd-socket
+  initContainers:
+  - env:
+    - name: AZ_CLUSTER
+      value: mycluster
+    - name: JOBTYPE_MOUNT_PATH
+      value: /data/jobtypes/spark
+    image: path/spark-jobtype:0.0.5
+    imagePullPolicy: IfNotPresent
+    name: jobtype-init-spark
+    volumeMounts:
+    - mountPath: /data/jobtypes/spark
+      name: jobtype-volume-spark
+  restartPolicy: Never
+  volumes:
+  - emptyDir: {}
+    name: jobtype-volume-spark
+  - hostPath:
+      type: Socket
+      path: /var/run/nscd/socket
+    name: nscd-socket

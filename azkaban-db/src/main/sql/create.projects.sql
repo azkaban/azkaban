@@ -8,8 +8,7 @@ CREATE TABLE projects (
   last_modified_by VARCHAR(64) NOT NULL,
   description      VARCHAR(2048),
   enc_type         TINYINT,
-  settings_blob    LONGBLOB,
-  UNIQUE INDEX project_id (id)
+  settings_blob    LONGBLOB
 );
 
 CREATE INDEX project_name

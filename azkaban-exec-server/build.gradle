@@ -1,12 +1,33 @@
+/*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 apply plugin: 'distribution'
 
 dependencies {
     compile(project(':az-core'))
     compile(project(':azkaban-common'))
+    compile(project(':azkaban-hadoop-security-plugin'))
+    compile(project(':az-hadoop-jobtype-plugin')) {
+        transitive = false
+    }
 
+    compile deps.hadoopCommon
+    compile deps.guava
     compile deps.jsr305
     compile deps.kafkaLog4jAppender
-    runtime(project(':azkaban-hadoop-security-plugin'))
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
@@ -14,7 +35,6 @@ dependencies {
     testCompile deps.h2
     testCompile deps.hadoopAnnotations
     testCompile deps.hadoopAuth
-    testCompile deps.hadoopCommon
     testCompile deps.hadoopHdfs
 }
 
@@ -24,6 +44,13 @@ distributions {
             from('src/main/bash') {
                 into 'bin'
                 fileMode = 0755
+            }
+            from('src/main/resources/conf') {
+                into 'conf'
+                fileMode = 0755
+            }
+            from('src/main/resources/commonprivate.properties') {
+                into 'plugins/jobtypes'
             }
             from('../azkaban-common/src/main/bash') {
                 into 'bin'

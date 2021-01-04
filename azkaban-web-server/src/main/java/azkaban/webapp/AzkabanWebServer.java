@@ -13,9 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp;
 
+import static azkaban.Constants.AZKABAN_SERVLET_CONTEXT_KEY;
+import static azkaban.Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID;
+import static azkaban.Constants.ConfigurationKeys.ENABLE_QUARTZ;
+import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
@@ -23,15 +26,24 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.flowtrigger.FlowTriggerService;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.jmx.JmxContainerizedDispatchManager;
+import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
-import azkaban.metrics.MetricsManager;
+import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.project.ProjectManager;
-import azkaban.scheduler.QuartzScheduler;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.AzkabanServer;
+import azkaban.server.IMBeanRegistrable;
+import azkaban.server.MBeanRegistrationManager;
 import azkaban.server.session.SessionCache;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
@@ -44,18 +56,23 @@ import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils;
+import azkaban.utils.PluginUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
+import azkaban.webapp.metrics.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.FlowTriggerInstanceServlet;
+import azkaban.webapp.servlet.FlowTriggerServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexRedirectServlet;
 import azkaban.webapp.servlet.JMXHttpServlet;
+import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.NoteServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.ProjectServlet;
@@ -70,108 +87,106 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
+import org.mortbay.jetty.servlet.FilterHolder;
+import org.mortbay.jetty.servlet.FilterMapping;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-
 /**
  * The Azkaban Jetty server class
- *
+ * <p>
  * Global azkaban properties for setup. All of them are optional unless otherwise marked:
  * azkaban.name - The displayed name of this instance. azkaban.label - Short descriptor of this
  * Azkaban instance. azkaban.color - Theme color azkaban.temp.dir - Temp dir used by Azkaban for
  * various file uses. web.resource.dir - The directory that contains the static web files.
  * default.timezone.id - The timezone code. I.E. America/Los Angeles
- *
+ * <p>
  * user.manager.class - The UserManager class used for the user manager. Default is XmlUserManager.
  * project.manager.class - The ProjectManager to load projects project.global.properties - The base
  * properties inherited by all projects and jobs
- *
+ * <p>
  * jetty.maxThreads - # of threads for jetty jetty.ssl.port - The ssl port used for sessionizing.
  * jetty.keystore - Jetty keystore . jetty.keypassword - Jetty keystore password jetty.truststore -
  * Jetty truststore jetty.trustpassword - Jetty truststore password
  */
 @Singleton
-public class AzkabanWebServer extends AzkabanServer {
+public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable {
 
-  public static final String DEFAULT_CONF_PATH = "conf";
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
       "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
-  private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
-  private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-  private static final String DEFAULT_STATIC_DIR = "";
 
   @Deprecated
   private static AzkabanWebServer app;
 
+  private final MBeanRegistrationManager mbeanRegistrationManager = new MBeanRegistrationManager();
   private final VelocityEngine velocityEngine;
   private final StatusService statusService;
   private final Server server;
   private final UserManager userManager;
   private final ProjectManager projectManager;
-  private final ExecutorManager executorManager;
+  private final ExecutorManagerAdapter executorManagerAdapter;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private final MetricsManager metricsManager;
+  private final WebMetrics webMetrics;
   private final Props props;
   private final SessionCache sessionCache;
-  private final List<ObjectName> registeredMBeans = new ArrayList<>();
-  private final QuartzScheduler quartzScheduler;
-
+  private final FlowTriggerScheduler flowTriggerScheduler;
+  private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
-  private MBeanServer mbeanServer;
+  private final ExecutionLogsCleaner executionLogsCleaner;
 
   @Inject
   public AzkabanWebServer(final Props props,
       final Server server,
-      final ExecutorManager executorManager,
+      final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
-      final MetricsManager metricsManager,
+      final WebMetrics webMetrics,
       final SessionCache sessionCache,
       final UserManager userManager,
       final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
-      final QuartzScheduler quartzScheduler,
-      final StatusService statusService) {
+      final FlowTriggerScheduler flowTriggerScheduler,
+      final FlowTriggerService flowTriggerService,
+      final StatusService statusService,
+      final ExecutionLogsCleaner executionLogsCleaner) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
-    this.executorManager = requireNonNull(executorManager, "executorManager is null.");
+    this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
+        "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
-    this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
+    this.webMetrics = requireNonNull(webMetrics, "webMetrics is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
-    this.quartzScheduler = requireNonNull(quartzScheduler, "quartzScheduler is null.");
     this.statusService = statusService;
-
+    this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
+    this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
+    this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -183,12 +198,14 @@ public class AzkabanWebServer extends AzkabanServer {
 
     // Setup time zone
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
-      final String timezone = props.getString(DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezone);
-      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
-      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
-      logger.info("Setting timezone to " + timezone);
+      final String timezoneId = props.getString(DEFAULT_TIMEZONE_ID);
+      System.setProperty("user.timezone", timezoneId);
+      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      TimeZone.setDefault(timeZone);
+      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
+      logger.info("Setting timezone to " + timezoneId);
     }
+
     configureMBeanServer();
   }
 
@@ -208,14 +225,12 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error("Azkaban Properties not loaded. Exiting..");
       System.exit(1);
     }
-
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule()
+        new AzkabanWebServerModule(props)
     );
     SERVICE_PROVIDER.setInjector(injector);
-
     launch(injector.getInstance(AzkabanWebServer.class));
   }
 
@@ -223,7 +238,8 @@ public class AzkabanWebServer extends AzkabanServer {
     /* This creates the Web Server instance */
     app = webServer;
 
-    // TODO refactor code into ServerProvider
+    webServer.validateDatabaseVersion();
+
     webServer.prepareAndStartServer();
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -231,32 +247,41 @@ public class AzkabanWebServer extends AzkabanServer {
       @Override
       public void run() {
         try {
-          if (webServer.quartzScheduler != null) {
-            webServer.quartzScheduler.shutdown();
+          if (webServer.props.getBoolean(ENABLE_QUARTZ, false)) {
+            AzkabanWebServer.logger.info("Shutting down flow trigger scheduler...");
+            webServer.flowTriggerScheduler.shutdown();
           }
         } catch (final Exception e) {
-          logger.error(("Exception while shutting down quartz scheduler."), e);
+          AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
         }
 
         try {
+          if (webServer.props.getBoolean(ENABLE_QUARTZ, false)) {
+            AzkabanWebServer.logger.info("Shutting down flow trigger service...");
+            webServer.flowTriggerService.shutdown();
+          }
+        } catch (final Exception e) {
+          AzkabanWebServer.logger.error("Exception while shutting down flow trigger service.", e);
+        }
+
+        try {
+          AzkabanWebServer.logger.info("Logging top memory consumers...");
           logTopMemoryConsumers();
+
+          AzkabanWebServer.logger.info("Shutting down http server...");
+          webServer.close();
+
         } catch (final Exception e) {
-          logger.error(("Exception when logging top memory consumers"), e);
+          AzkabanWebServer.logger.error("Exception while shutting down web server.", e);
         }
 
-        logger.info("Shutting down http server...");
-        try {
-          webServer.close();
-        } catch (final Exception e) {
-          logger.error("Error while shutting down http server.", e);
-        }
-        logger.info("kk thx bye.");
+        AzkabanWebServer.logger.info("kk thx bye.");
       }
 
       public void logTopMemoryConsumers() throws Exception {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
-          logger.info("logging top memory consumer");
+          AzkabanWebServer.logger.info("logging top memory consumer");
 
           final java.lang.ProcessBuilder processBuilder =
               new java.lang.ProcessBuilder("/bin/bash", "-c",
@@ -269,7 +294,7 @@ public class AzkabanWebServer extends AzkabanServer {
               new java.io.BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
           String line = null;
           while ((line = reader.readLine()) != null) {
-            logger.info(line);
+            AzkabanWebServer.logger.info(line);
           }
           is.close();
         }
@@ -287,40 +312,11 @@ public class AzkabanWebServer extends AzkabanServer {
     final ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
     final File[] pluginDirs = viewerPluginPath.listFiles();
     final ArrayList<String> jarPaths = new ArrayList<>();
+
     for (final File pluginDir : pluginDirs) {
-      if (!pluginDir.exists()) {
-        logger.error("Error viewer plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
-        continue;
-      }
-
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      final File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        final File propertiesFile = new File(propertiesDir, "plugin.properties");
-        final File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
+      // load plugin properties
+      final Props pluginProps = PropsUtils.loadPluginProps(pluginDir);
+      if (pluginProps == null) {
         continue;
       }
 
@@ -329,78 +325,21 @@ public class AzkabanWebServer extends AzkabanServer {
       final String pluginJobTypes = pluginProps.getString("viewer.jobtypes", null);
       final int pluginOrder = pluginProps.getInt("viewer.order", 0);
       final boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
-      final List<String> extLibClasspath =
+      final List<String> extLibClassPaths =
           pluginProps.getStringList("viewer.external.classpaths",
               (List<String>) null);
 
       final String pluginClass = pluginProps.getString("viewer.servlet.class");
       if (pluginClass == null) {
         logger.error("Viewer class is not set.");
+        continue;
       } else {
         logger.info("Plugin class " + pluginClass);
       }
 
-      URLClassLoader urlClassLoader = null;
-      final File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        final File[] files = libDir.listFiles();
-
-        final ArrayList<URL> urls = new ArrayList<>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            final URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (final MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-
-        // Load any external libraries.
-        if (extLibClasspath != null) {
-          for (final String extLib : extLibClasspath) {
-            final File extLibFile = new File(pluginDir, extLib);
-            if (extLibFile.exists()) {
-              if (extLibFile.isDirectory()) {
-                // extLibFile is a directory; load all the files in the
-                // directory.
-                final File[] extLibFiles = extLibFile.listFiles();
-                for (int i = 0; i < extLibFiles.length; ++i) {
-                  try {
-                    final URL url = extLibFiles[i].toURI().toURL();
-                    urls.add(url);
-                  } catch (final MalformedURLException e) {
-                    logger.error(e);
-                  }
-                }
-              } else { // extLibFile is a file
-                try {
-                  final URL url = extLibFile.toURI().toURL();
-                  urls.add(url);
-                } catch (final MalformedURLException e) {
-                  logger.error(e);
-                }
-              }
-            } else {
-              logger.error("External library path "
-                  + extLibFile.getAbsolutePath() + " not found.");
-              continue;
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger
-            .error("Library path " + libDir.getAbsolutePath() + " not found.");
-        continue;
-      }
-
-      Class<?> viewerClass = null;
-      try {
-        viewerClass = urlClassLoader.loadClass(pluginClass);
-      } catch (final ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
+      final Class<?> viewerClass =
+          PluginUtils.getPluginClass(pluginClass, pluginDir, extLibClassPaths, parentLoader);
+      if (viewerClass == null) {
         continue;
       }
 
@@ -437,13 +376,23 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     // Velocity needs the jar resource paths to be set.
-    final String jarResourcePath = StringUtils.join(jarPaths, ", ");
-    logger.info("Setting jar resource path " + jarResourcePath);
-    ve.addProperty("jar.resource.loader.path", jarResourcePath);
+    // ...but only when path is not empty! https://github.com/azkaban/azkaban/issues/917
+    if (!jarPaths.isEmpty()) {
+      final String jarResourcePath = StringUtils.join(jarPaths, ", ");
+      logger.info("Setting jar resource path " + jarResourcePath);
+      ve.addProperty("jar.resource.loader.path", jarResourcePath);
+    }
   }
 
-  private void validateDatabaseVersion()
-      throws IOException, SQLException {
+  public FlowTriggerService getFlowTriggerService() {
+    return this.flowTriggerService;
+  }
+
+  public FlowTriggerScheduler getFlowTriggerScheduler() {
+    return this.flowTriggerScheduler;
+  }
+
+  private void validateDatabaseVersion() throws IOException, SQLException {
     final boolean checkDB = this.props
         .getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
     if (checkDB) {
@@ -460,20 +409,13 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   private void configureRoutes() throws TriggerManagerException {
-    final String staticDir =
-        this.props.getString("web.resource.dir", DEFAULT_STATIC_DIR);
-    logger.info("Setting up web resource dir " + staticDir);
     final Context root = new Context(this.server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
+    root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
 
-    final String defaultServletPath =
-        this.props.getString("azkaban.default.servlet.path", "/index");
+    final String staticDir = this.props.getString("web.resource.dir", "");
+    logger.info("Setting up web resource dir " + staticDir);
     root.setResourceBase(staticDir);
-    final ServletHolder indexRedirect =
-        new ServletHolder(new IndexRedirectServlet(defaultServletPath));
-    root.addServlet(indexRedirect, "/");
-    final ServletHolder index = new ServletHolder(new ProjectServlet());
-    root.addServlet(index, "/index");
 
     final ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
     root.addServlet(staticServlet, "/css/*");
@@ -482,15 +424,29 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(staticServlet, "/fonts/*");
     root.addServlet(staticServlet, "/favicon.ico");
 
-    root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
-    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
-    root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
-    root.addServlet(new ServletHolder(new ScheduleServlet()), "/schedule");
-    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
-    root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
-    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
-    root.addServlet(new ServletHolder(new StatusServlet(this.statusService)), "/status");
-    root.addServlet(new ServletHolder(new NoteServlet()), "/notes");
+    final String defaultServletPath =
+        this.props.getString("azkaban.default.servlet.path", "/index");
+
+    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
+    routesMap.put("/index", new ProjectServlet());
+    routesMap.put("/manager", new ProjectManagerServlet());
+    routesMap.put("/executor", new ExecutorServlet());
+    routesMap.put("/schedule", new ScheduleServlet());
+    routesMap.put("/triggers", new TriggerManagerServlet());
+    routesMap.put("/flowtrigger", new FlowTriggerServlet());
+    routesMap.put("/flowtriggerinstance", new FlowTriggerInstanceServlet());
+    routesMap.put("/history", new HistoryServlet());
+    routesMap.put("/jmx", new JMXHttpServlet());
+    routesMap.put("/stats", new StatsServlet());
+    routesMap.put("/notes", new NoteServlet());
+    routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
+
+    routesMap.put("/status", new StatusServlet(this.statusService));
+
+    // Configure core routes
+    for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
+      root.addServlet(new ServletHolder(entry.getValue()), entry.getKey());
+    }
 
     final ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
@@ -509,21 +465,46 @@ public class AzkabanWebServer extends AzkabanServer {
     // TODO: find something else to do the job
     getTriggerManager().start();
 
-    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
-  }
-
-  private void prepareAndStartServer()
-      throws Exception {
-    validateDatabaseVersion();
-    createThreadPool();
-    configureRoutes();
-
-    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
-      startWebMetrics();
+    // Set up api endpoint metrics
+    // At the moment login action doesn't have a dedicated route, any route can be used to
+    // authenticate when passing the right parameters. The same metrics object is used for login
+    // requests on every route.
+    final AzkabanAPIMetrics loginAPIMetrics = this.webMetrics.setUpAzkabanAPIMetrics(
+        "_action-" + LoginAbstractAzkabanServlet.getLoginAPI().getParameterValue());
+    LoginAbstractAzkabanServlet.getLoginAPI().setMetrics(loginAPIMetrics);
+    for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
+      final List<AzkabanAPI> servletApiEndpoints = entry.getValue().getApiEndpoints();
+      for (final AzkabanAPI api : servletApiEndpoints) {
+        final String uri = entry.getKey().replace("/", "") + "_" + api.getRequestParameter() +
+            (api.getParameterValue().isEmpty() ? "" : "-" + api.getParameterValue());
+        api.setMetrics(this.webMetrics.setUpAzkabanAPIMetrics(uri));
+      }
     }
 
-    if (this.props.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
-      this.quartzScheduler.start();
+    // Configure api metrics filter
+    final FilterHolder metricsFilter = new FilterHolder(new APIMetricsFilter(routesMap));
+    final FilterMapping metricsFilterMapping = new FilterMapping();
+    metricsFilterMapping.setFilterName(metricsFilter.getName());
+    final String[] servletPaths = routesMap.keySet().stream().toArray(String[]::new);
+    metricsFilterMapping.setPathSpecs(servletPaths);
+    metricsFilterMapping.setDispatches(Handler.REQUEST);
+    root.getServletHandler().addFilter(metricsFilter, metricsFilterMapping);
+  }
+
+  private void prepareAndStartServer() throws Exception {
+    this.executorManagerAdapter.start();
+    this.executionLogsCleaner.start();
+
+    configureRoutes();
+    startWebMetrics();
+
+    if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
+      // flowTriggerService needs to be started first before scheduler starts to schedule
+      // existing flow triggers
+      logger.info("Starting flow trigger service");
+      this.flowTriggerService.start();
+      logger.info("Starting flow trigger scheduler");
+      this.flowTriggerScheduler.start();
     }
 
     try {
@@ -535,52 +516,84 @@ public class AzkabanWebServer extends AzkabanServer {
     }
   }
 
-  private void createThreadPool() {
-    final int maxThreads = this.props
-        .getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
+  private void startWebMetrics() {
+    final QueuedThreadPool queuedThreadPool = (QueuedThreadPool) this.server.getThreadPool();
+    final ExecutorManagerAdapter executorManagerAdapter = this.executorManagerAdapter;
+    final SessionCache sessionCache = this.sessionCache;
 
-    final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
-    this.server.setThreadPool(httpThreadPool);
-    addThreadPoolGauges(httpThreadPool);
-  }
+    final int minAgeForClassifyingAFlowAged = this.props.getInt(
+        ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
+        Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
+    if (minAgeForClassifyingAFlowAged < 0) {
+      logger.error(String.format("Property config file contains a value of %d for %s. "
+              + "Metric NumAgedQueuedFlows is emitted only when this value is non-negative.",
+          minAgeForClassifyingAFlowAged,
+          ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES));
+    }
 
-  private void addThreadPoolGauges(final QueuedThreadPool threadPool) {
-    // The number of idle threads in Jetty thread pool
-    this.metricsManager.addGauge("JETTY-NumIdleThreads", threadPool::getIdleThreads);
+    this.webMetrics.setUp(new WebMetrics.DataProvider() {
 
-    // The number of threads in Jetty thread pool. The formula is:
-    // threads = idleThreads + busyThreads
-    this.metricsManager.addGauge("JETTY-NumTotalThreads", threadPool::getThreads);
+      @Override
+      public int getNumberOfIdleServerThreads() {
+        // The number of idle threads in Jetty thread pool
+        return queuedThreadPool.getIdleThreads();
+      }
 
-    // The number of requests queued in the Jetty thread pool.
-    this.metricsManager.addGauge("JETTY-NumQueueSize", threadPool::getQueueSize);
-  }
+      @Override
+      public int getNumberOfServerThreads() {
+        // The number of threads in Jetty thread pool. The formula is:
+        // threads = idleThreads + busyThreads
+        return queuedThreadPool.getThreads();
+      }
 
+      @Override
+      public int getServerJobsQueueSize() {
+        // The number of requests queued in the Jetty thread pool.
+        return queuedThreadPool.getQueueSize();
+      }
 
-  private void startWebMetrics() throws Exception {
-    this.metricsManager.addGauge("WEB-NumQueuedFlows", this.executorManager::getQueuedFlowSize);
-    /*
-     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
-     * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
-     * in order to have the correct runnable flows.
-     * However, both getRunningFlows and getQueuedFlowSize are not synchronized, such that we can not make
-     * a thread safe subtraction. We need to fix this in the future.
-     */
-    this.metricsManager
-        .addGauge("WEB-NumRunningFlows", () -> this.executorManager.getRunningFlows().size());
+      @Override
+      public long getNumberOfQueuedFlows() {
+        return executorManagerAdapter.getQueuedFlowSize();
+      }
 
-    logger.info("starting reporting Web Server Metrics");
-    this.metricsManager.startReporting("AZ-WEB", this.props);
+      @Override
+      public int getNumberOfRunningFlows() {
+        /*
+         * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and
+         * non-dispatched flows. Originally we would like to do a subtraction between
+         * getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()}, in order to have the
+         * correct runnable flows. However, both getRunningFlows and getQueuedFlowSize are not
+         * synchronized, such that we can not make a thread safe subtraction. We need to fix this
+         *  in the future.
+         */
+        return executorManagerAdapter.getRunningFlows().size();
+      }
+
+      @Override
+      public long getNumberOfCurrentSessions() {
+        // Metric for flows that have been submitted, but haven't started for more than N minutes
+        // (N is configurable by MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES).
+        return sessionCache.getSessionCount();
+      }
+
+      @Override
+      public long getNumberOfAgedQueuedFlows() {
+        return executorManagerAdapter.getAgedQueuedFlowSize();
+      }
+    });
+
+    this.webMetrics.startReporting(this.props);
   }
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    ExecuteFlowAction.setExecutorManager(this.executorManager);
+    ExecuteFlowAction.setExecutorManager(this.executorManagerAdapter);
     ExecuteFlowAction.setProjectManager(this.projectManager);
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
-    KillExecutionAction.setExecutorManager(this.executorManager);
+    KillExecutionAction.setExecutorManager(this.executorManagerAdapter);
     CreateTriggerAction.setTriggerManager(this.triggerManager);
-    ExecutionChecker.setExecutorManager(this.executorManager);
+    ExecutionChecker.setExecutorManager(this.executorManagerAdapter);
 
     this.triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
     this.triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
@@ -616,8 +629,8 @@ public class AzkabanWebServer extends AzkabanServer {
     return this.projectManager;
   }
 
-  public ExecutorManager getExecutorManager() {
-    return this.executorManager;
+  public ExecutorManagerAdapter getExecutorManager() {
+    return this.executorManagerAdapter;
   }
 
   public ScheduleManager getScheduleManager() {
@@ -626,6 +639,10 @@ public class AzkabanWebServer extends AzkabanServer {
 
   public TriggerManager getTriggerManager() {
     return this.triggerManager;
+  }
+
+  public WebMetrics getWebMetrics() {
+    return this.webMetrics;
   }
 
   /**
@@ -644,45 +661,53 @@ public class AzkabanWebServer extends AzkabanServer {
     this.triggerPlugins = triggerPlugins;
   }
 
-  private void configureMBeanServer() {
-    logger.info("Registering MBeans...");
-    this.mbeanServer = ManagementFactory.getPlatformMBeanServer();
+  @Override
+  public MBeanRegistrationManager getMBeanRegistrationManager() {
+    return this.mbeanRegistrationManager;
+  }
 
-    registerMbean("jetty", new JmxJettyServer(this.server));
-    registerMbean("triggerManager", new JmxTriggerManager(this.triggerManager));
-    if (this.executorManager != null) {
-      registerMbean("executorManager", new JmxExecutorManager(this.executorManager));
+  @Override
+  public void configureMBeanServer() {
+    logger.info("Registering MBeans...");
+
+    this.mbeanRegistrationManager.registerMBean("jetty", new JmxJettyServer(this.server));
+    this.mbeanRegistrationManager
+        .registerMBean("triggerManager", new JmxTriggerManager(this.triggerManager));
+
+    if (this.executorManagerAdapter instanceof ExecutorManager) {
+      this.mbeanRegistrationManager.registerMBean("executorManager",
+          new JmxExecutorManager((ExecutorManager) this.executorManagerAdapter));
+    } else if (this.executorManagerAdapter instanceof ExecutionController) {
+      this.mbeanRegistrationManager.registerMBean("executionController",
+          new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
+    }
+    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+      this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
+          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
     // updated via JConsole or Java VisualVM
     final HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
-    registerMbean("log4jmxbean", log4jMBean);
+    this.mbeanRegistrationManager.registerMBean("log4jmxbean", log4jMBean);
+
     final ObjectName accessLogLoggerObjName =
         log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
-      System.out
-          .println(
-              "************* loginLoggerObjName is null, make sure there is a logger with name "
-                  + AZKABAN_ACCESS_LOGGER_NAME);
+      logger.info(
+          "************* loginLoggerObjName is null, make sure there is a logger with name "
+              + AZKABAN_ACCESS_LOGGER_NAME);
     } else {
-      System.out.println("******** loginLoggerObjName: "
+      logger.info("******** loginLoggerObjName: "
           + accessLogLoggerObjName.getCanonicalName());
     }
   }
 
   public void close() {
-    try {
-      for (final ObjectName name : this.registeredMBeans) {
-        this.mbeanServer.unregisterMBean(name);
-        logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
-      }
-    } catch (final Exception e) {
-      logger.error("Failed to cleanup MBeanServer", e);
-    }
+    this.mbeanRegistrationManager.closeMBeans();
     this.scheduleManager.shutdown();
-    this.executorManager.shutdown();
+    this.executorManagerAdapter.shutdown();
     try {
       this.server.stop();
     } catch (final Exception e) {
@@ -690,41 +715,5 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error(e);
     }
     this.server.destroy();
-  }
-
-  private void registerMbean(final String name, final Object mbean) {
-    final Class<?> mbeanClass = mbean.getClass();
-    final ObjectName mbeanName;
-    try {
-      mbeanName = new ObjectName(mbeanClass.getName() + ":name=" + name);
-      this.mbeanServer.registerMBean(mbean, mbeanName);
-      logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
-      this.registeredMBeans.add(mbeanName);
-    } catch (final Exception e) {
-      logger.error("Error registering mbean " + mbeanClass.getCanonicalName(),
-          e);
-    }
-  }
-
-  public List<ObjectName> getMbeanNames() {
-    return this.registeredMBeans;
-  }
-
-  public MBeanInfo getMBeanInfo(final ObjectName name) {
-    try {
-      return this.mbeanServer.getMBeanInfo(name);
-    } catch (final Exception e) {
-      logger.error(e);
-      return null;
-    }
-  }
-
-  public Object getMBeanAttribute(final ObjectName name, final String attribute) {
-    try {
-      return this.mbeanServer.getAttribute(name, attribute);
-    } catch (final Exception e) {
-      logger.error(e);
-      return null;
-    }
   }
 }

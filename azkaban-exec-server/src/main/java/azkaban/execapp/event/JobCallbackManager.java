@@ -26,7 +26,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicHeader;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Responsible processing job callback properties on job status change events.
@@ -41,10 +42,9 @@ import org.apache.log4j.Logger;
  *
  * @author hluu
  */
-public class JobCallbackManager implements EventListener {
+public class JobCallbackManager implements EventListener<Event> {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(JobCallbackManager.class);
   private static final JobCallbackStatusEnum[] ON_COMPLETION_JOB_CALLBACK_STATUS =
       {SUCCESS, FAILURE, COMPLETED};
   private static boolean isInitialized = false;
@@ -118,13 +118,15 @@ public class JobCallbackManager implements EventListener {
         // Use job runner logger so user can see the issue in their job log
         final JobRunner jobRunner = (JobRunner) event.getRunner();
         jobRunner.getLogger().error(
-            "Encountered error while hanlding job callback event", e);
+            "Encountered error while handling job callback event", e);
+        this.logger.warn("Error during handleEvent for event {}, execId: {}",
+            event.getData().getStatus(), jobRunner.getNode().getParentFlow().getExecutionId());
+        this.logger.warn(e.getMessage(), e);
       }
     } else {
       logger.warn("((( Got an unsupported runner: "
           + event.getRunner().getClass().getName() + " )))");
     }
-
   }
 
   private void processJobCallOnFinish(final Event event) {
@@ -133,6 +135,8 @@ public class JobCallbackManager implements EventListener {
 
     if (!JobCallbackUtil.isThereJobCallbackProperty(jobRunner.getProps(),
         ON_COMPLETION_JOB_CALLBACK_STATUS)) {
+      this.logger.info("No callback property for {}, exec id: {}", eventData.getStatus(),
+          jobRunner.getNode().getParentFlow().getExecutionId());
       return;
     }
 
@@ -144,20 +148,15 @@ public class JobCallbackManager implements EventListener {
         JobCallbackUtil.buildJobContextInfoMap(event, this.azkabanHostName);
 
     JobCallbackStatusEnum jobCallBackStatusEnum = null;
-    final Logger jobLogger = jobRunner.getLogger();
-
     final Status jobStatus = eventData.getStatus();
 
     if (jobStatus == Status.SUCCEEDED) {
-
       jobCallBackStatusEnum = JobCallbackStatusEnum.SUCCESS;
-
     } else if (jobStatus == Status.FAILED
         || jobStatus == Status.FAILED_FINISHING || jobStatus == Status.KILLED) {
-
       jobCallBackStatusEnum = JobCallbackStatusEnum.FAILURE;
     } else {
-      jobLogger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
+      this.logger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
           + jobStatus);
       jobCallBackStatusEnum = null; // to be explicit
     }
@@ -167,38 +166,38 @@ public class JobCallbackManager implements EventListener {
     if (jobCallBackStatusEnum != null) {
       final List<HttpRequestBase> jobCallbackHttpRequests =
           JobCallbackUtil.parseJobCallbackProperties(props,
-              jobCallBackStatusEnum, contextInfo, maxNumCallBack, jobLogger);
+              jobCallBackStatusEnum, contextInfo, maxNumCallBack, this.logger);
 
       if (!jobCallbackHttpRequests.isEmpty()) {
         final String msg =
             String.format("Making %d job callbacks for status: %s",
                 jobCallbackHttpRequests.size(), jobCallBackStatusEnum.name());
-        jobLogger.info(msg);
+        this.logger.info(msg);
 
         addDefaultHeaders(jobCallbackHttpRequests);
 
-        JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, jobLogger,
+        JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, this.logger,
             jobCallbackHttpRequests);
       } else {
-        jobLogger.info("No job callbacks for status: " + jobCallBackStatusEnum);
+        this.logger.info("No job callbacks for status: " + jobCallBackStatusEnum);
       }
     }
 
     // for completed status
     final List<HttpRequestBase> httpRequestsForCompletedStatus =
         JobCallbackUtil.parseJobCallbackProperties(props, COMPLETED,
-            contextInfo, maxNumCallBack, jobLogger);
+            contextInfo, maxNumCallBack, this.logger);
 
     // now make the call
     if (!httpRequestsForCompletedStatus.isEmpty()) {
-      jobLogger.info("Making " + httpRequestsForCompletedStatus.size()
+      this.logger.info("Making " + httpRequestsForCompletedStatus.size()
           + " job callbacks for status: " + COMPLETED);
 
       addDefaultHeaders(httpRequestsForCompletedStatus);
-      JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, jobLogger,
+      JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, this.logger,
           httpRequestsForCompletedStatus);
     } else {
-      jobLogger.info("No job callbacks for status: " + COMPLETED);
+      this.logger.info("No job callbacks for status: " + COMPLETED);
     }
   }
 
@@ -217,7 +216,7 @@ public class JobCallbackManager implements EventListener {
 
       final List<HttpRequestBase> jobCallbackHttpRequests =
           JobCallbackUtil.parseJobCallbackProperties(props, STARTED,
-              contextInfo, maxNumCallBack, jobRunner.getLogger());
+              contextInfo, maxNumCallBack, this.logger);
 
       final String jobId = contextInfo.get(CONTEXT_JOB_TOKEN);
       final String msg =
@@ -229,7 +228,7 @@ public class JobCallbackManager implements EventListener {
       addDefaultHeaders(jobCallbackHttpRequests);
 
       JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId,
-          jobRunner.getLogger(), jobCallbackHttpRequests);
+          this.logger, jobCallbackHttpRequests);
     }
   }
 
@@ -260,7 +259,6 @@ public class JobCallbackManager implements EventListener {
     for (final HttpRequestBase httpRequest : httpRequests) {
       httpRequest.addHeader(new BasicHeader("Date", this.gmtDateFormatter
           .format(new Date())));
-      httpRequest.addHeader(new BasicHeader("Host", this.azkabanHostName));
     }
 
   }

@@ -1,5 +1,9 @@
 package azkaban.execapp;
 
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_HEADER_BUFFER_SIZE;
+import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
+
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -19,7 +23,6 @@ public class ExecJettyServerModule extends AbstractModule {
 
   private static final int DEFAULT_THREAD_NUMBER = 50;
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
-  private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   private static final Logger logger = Logger.getLogger(ExecJettyServerModule.class);
 
@@ -38,7 +41,7 @@ public class ExecJettyServerModule extends AbstractModule {
      * The Jetty server automatically finds an unused port when the port number is set to zero
      * TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
      */
-    final Server server = new Server(props.getInt("executor.port", 0));
+    final Server server = new Server(props.getInt(EXECUTOR_PORT, 0));
     final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     server.setThreadPool(httpThreadPool);
 
@@ -50,8 +53,8 @@ public class ExecJettyServerModule extends AbstractModule {
       logger.info(String.format(
           "Jetty connector name: %s, default header buffer size: %d",
           connector.getName(), connector.getHeaderBufferSize()));
-      connector.setHeaderBufferSize(props.getInt("jetty.headerBufferSize",
-          DEFAULT_HEADER_BUFFER_SIZE));
+      connector
+          .setHeaderBufferSize(props.getInt(JETTY_HEADER_BUFFER_SIZE, DEFAULT_HEADER_BUFFER_SIZE));
       logger.info(String.format(
           "Jetty connector name: %s, (if) new header buffer size: %d",
           connector.getName(), connector.getHeaderBufferSize()));

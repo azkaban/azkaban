@@ -24,47 +24,42 @@ azkaban.JobLogModel = Backbone.Model.extend({
 
   refresh: function () {
     var requestURL = contextURL + "/executor";
-    var finished = false;
 
-    while (!finished) {
-      var requestData = {
-        "execid": execId,
-        "jobId": jobId,
-        "ajax": "fetchExecJobLogs",
-        "offset": this.get("offset"),
-        "length": 50000,
-        "attempt": attempt
-      };
+    var requestData = {
+      "execid": execId,
+      "jobId": jobId,
+      "ajax": "fetchExecJobLogs",
+      "offset": this.get("offset"),
+      "length": 50000,
+      "attempt": attempt
+    };
 
-      var self = this;
+    var self = this;
 
-      var successHandler = function (data) {
-        console.log("fetchLogs");
-        if (data.error) {
-          console.log(data.error);
-          finished = true;
-        }
-        else if (data.length == 0) {
-          finished = true;
-        }
-        else {
-          self.set("offset", data.offset + data.length);
-          self.set("logData", self.get("logData") + data.data);
+    var successHandler = function (data) {
+      console.log("fetchLogs " + data.offset);
+      if (data.error) {
+        console.log(data.error);
+      }
+      else {
+        self.set("offset", data.offset + data.length);
+        self.set("logData", self.get("logData") + data.data);
+        if (data.length != 0) {
+          // There may be more data available so request the next chunk
+          self.refresh();
         }
       }
+    };
 
-      $.ajax({
-        url: requestURL,
-        type: "get",
-        async: false,
-        data: requestData,
-        dataType: "json",
-        error: function (data) {
-          console.log(data);
-          finished = true;
-        },
-        success: successHandler
-      });
-    }
+    $.ajax({
+      url: requestURL,
+      type: "get",
+      data: requestData,
+      dataType: "json",
+      error: function (data) {
+        console.log(data);
+      },
+      success: successHandler
+    });
   },
 });

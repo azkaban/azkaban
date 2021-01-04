@@ -1,0 +1,13 @@
+type=hadoopJava
+job.class=azkaban.jobtype.examples.java.WordCount
+
+classpath=./lib/*,${hadoop.home}/lib/*
+
+main.args=${param.inData} ${param.outData}
+
+force.output.overwrite=true
+
+input.path=${param.inData}
+output.path=${param.outData}
+
+dependencies=pig-upload

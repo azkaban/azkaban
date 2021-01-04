@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.spi.Storage;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.sql.SQLException;
@@ -47,7 +48,8 @@ public class StorageCleaner {
    * When using DatabaseStorage, resourceId is always NULL. Hence, those rows will currently be
    * never cleaned up.
    */
-  static final String SQL_FETCH_PVR = "SELECT resource_id FROM project_versions WHERE project_id=? AND resource_id IS NOT NULL ORDER BY version DESC";
+  static final String SQL_FETCH_PVR = "SELECT resource_id, version FROM project_versions WHERE "
+      + "project_id=? AND resource_id IS NOT NULL ORDER BY version DESC";
 
   private static final Logger log = Logger.getLogger(StorageCleaner.class);
   private final DatabaseOperator databaseOperator;
@@ -79,12 +81,14 @@ public class StorageCleaner {
   }
 
   /**
-   * Remove all but last N artifacts as configured by AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION
+   * Remove all but:
+   * - last N artifacts as configured by AZKABAN_STORAGE_ARTIFACT_MAX_RETENTION
+   * - artifacts with the versions provided
    *
    * Since multiple versions can share the same filename, the algo is to collect all filenames and
    * from them, remove the latest ones. The remaining ones are deleted by the respective storage.
    *
-   * From the storage perspective, cleanup just needs the {@link Storage#delete(String)} API to
+   * From the storage perspective, cleanup just needs the {@link Storage#deleteProject(String)} API to
    * work.
    *
    * Failure cases: - If the storage cleanup fails, the cleanup will be attempted again on the next
@@ -93,11 +97,11 @@ public class StorageCleaner {
    *
    * @param projectId project ID
    */
-  public void cleanupProjectArtifacts(final int projectId) {
+  public void cleanupProjectArtifacts(final int projectId, final List<Integer> versionsToExclude) {
     if (!isCleanupPermitted()) {
       return;
     }
-    final Set<String> allResourceIds = findResourceIdsToDelete(projectId);
+    final Set<String> allResourceIds = findResourceIdsToDelete(projectId, versionsToExclude);
     if (allResourceIds.size() == 0) {
       return;
     }
@@ -106,17 +110,30 @@ public class StorageCleaner {
     allResourceIds.forEach(this::delete);
   }
 
-  private Set<String> findResourceIdsToDelete(final int projectId) {
-    final List<String> resourceIdOrderedList = fetchResourceIdOrderedList(projectId);
+  private Set<String> findResourceIdsToDelete(final int projectId,
+      final List<Integer> versionsToExclude) {
+    final List<Pair<String, Integer>> resourceIdOrderedList = fetchResourceIdOrderedList(projectId);
     if (resourceIdOrderedList.size() <= this.maxArtifactsPerProject) {
       return Collections.emptySet();
     }
+    // Different project versions may have the same resource id, we can only delete those
+    // resource ids that are not used by the versions we must keep.
+    Set<String> resourceIdsToKeep = new HashSet<>();
+    for (int i = 0; i < resourceIdOrderedList.size(); i++) {
+      Pair<String, Integer> pair = resourceIdOrderedList.get(i);
+      if (i < this.maxArtifactsPerProject || versionsToExclude.contains(pair.getSecond())) {
+        resourceIdsToKeep.add(pair.getFirst());
+      }
+    }
+    Set<String> resourceIdsToDelete = new HashSet<>();
+    for (Pair<String, Integer> pair: resourceIdOrderedList) {
+      String id = pair.getFirst();
+      if (!resourceIdsToKeep.contains(id)) {
+        resourceIdsToDelete.add(id);
+      }
+    }
 
-    final Set<String> allResourceIds = new HashSet<>(resourceIdOrderedList);
-    final Set<String> doNotDeleteSet = new HashSet<>(
-        resourceIdOrderedList.subList(0, this.maxArtifactsPerProject));
-    allResourceIds.removeAll(doNotDeleteSet);
-    return allResourceIds;
+    return resourceIdsToDelete;
   }
 
   /**
@@ -129,7 +146,7 @@ public class StorageCleaner {
    * @return true if deletion was successful. false otherwise
    */
   private boolean delete(final String resourceId) {
-    final boolean isDeleted = this.storage.delete(resourceId) && removeDbEntry(resourceId);
+    final boolean isDeleted = this.storage.deleteProject(resourceId) && removeDbEntry(resourceId);
     if (!isDeleted) {
       log.info("Failed to delete resourceId: " + resourceId);
     }
@@ -146,14 +163,17 @@ public class StorageCleaner {
     return false;
   }
 
-  private List<String> fetchResourceIdOrderedList(final int projectId) {
+  private List<Pair<String, Integer>> fetchResourceIdOrderedList(final int projectId) {
     try {
       return this.databaseOperator.query(SQL_FETCH_PVR,
           rs -> {
-            final List<String> results = new ArrayList<>();
+            final List<Pair<String, Integer>> results = new ArrayList<>();
             while (rs.next()) {
-              results.add(rs.getString(1));
+              final Pair<String, Integer> pair = new Pair<>(rs.getString("resource_id"),
+                  rs.getInt("version"));
+              results.add(pair);
             }
+
             return results;
           }, projectId);
     } catch (final SQLException e) {

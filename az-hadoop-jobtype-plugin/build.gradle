@@ -1,0 +1,65 @@
+/*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+apply plugin: 'distribution'
+
+dependencies {
+    compile project(':az-core')
+    compile project(":azkaban-common")
+    compile project(":azkaban-hadoop-security-plugin")
+
+    compile deps.hadoopCommon
+    compile deps.hadoopMRClientCommon
+    compile deps.hadoopMRClientCore
+    compile(deps.hiveCli) {
+        transitive = false
+    }
+    compile("org.apache.hive:hive-metastore:0.12.0") {
+        force = true
+    }
+    compile("org.apache.hive:hive-shims:0.12.0") {
+        force = true
+    }
+    compile(deps.hiveExecCore) {
+        exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
+        exclude group: 'eigenbase', module: 'eigenbase-properties'
+    }
+    compile(deps.pig) {
+        transitive = false
+    }
+    compile deps.sparkCore
+    compile deps.commonsCli
+
+    testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
+    testCompile(project(':azkaban-common').sourceSets.test.output)
+}
+
+/**
+ * TODO spyne: remove after fixing internal build.
+ *
+ * Just package the jar.
+ * Since, rest of the dependencies are just hadoop and hive. They are not packaged inside the plugin.
+ * It is assumed that classpaths of hadoop, hive, pig, etc will be externally fed into the application.
+ */
+distributions {
+    main {
+        contents {
+            from(jar) {
+                into 'lib'
+            }
+        }
+    }
+}

@@ -17,37 +17,49 @@
 package azkaban.project;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import java.io.Serializable;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * FlowTrigger is the logical representation of a trigger.
  * It couldn't be changed once gets constructed.
  * It will be used to create running trigger instance.
  */
-public class FlowTrigger {
+public class FlowTrigger implements Serializable {
 
-  private final List<FlowTriggerDependency> dependencies;
+  private static final long serialVersionUID = 5613379236523054097L;
+  private final Map<String, FlowTriggerDependency> dependencies;
   private final CronSchedule schedule;
   private final Duration maxWaitDuration;
 
   /**
-   * @throws IllegalArgumentException if any of the argument is null or there is duplicate
+   * @throws IllegalArgumentException if illegal argument is found or there is duplicate
    * dependency name or duplicate dependency type and params
    */
-  public FlowTrigger(final CronSchedule schedule,
-      final List<FlowTriggerDependency> dependencies, final Duration maxWaitDuration) {
-    Preconditions.checkArgument(schedule != null);
-    Preconditions.checkArgument(dependencies != null);
-    Preconditions.checkArgument(maxWaitDuration != null);
-    Preconditions.checkArgument(!maxWaitDuration.isNegative());
+  public FlowTrigger(final CronSchedule schedule, final List<FlowTriggerDependency> dependencies,
+      @Nullable final Duration maxWaitDuration) {
+    // will perform some basic validation here, and further validation will be performed on
+    // parsing time when NodeBeanLoader parses the XML to flow trigger.
+    Preconditions.checkNotNull(schedule, "schedule cannot be null");
+    Preconditions.checkNotNull(dependencies, "dependency cannot be null");
+    Preconditions.checkArgument(dependencies.isEmpty() || maxWaitDuration != null, "max wait "
+        + "time cannot be null unless no dependency is defined");
+
     validateDependencies(dependencies);
     this.schedule = schedule;
-    this.dependencies = Collections.unmodifiableList(dependencies);
+    final ImmutableMap.Builder builder = new Builder();
+    dependencies.forEach(dep -> builder.put(dep.getName(), dep));
+    this.dependencies = builder.build();
     this.maxWaitDuration = maxWaitDuration;
   }
 
@@ -63,6 +75,14 @@ public class FlowTrigger {
     }
   }
 
+  @Override
+  public String toString() {
+    return "FlowTrigger{" +
+        "schedule=" + this.schedule +
+        ", maxWaitDurationInMins=" + this.maxWaitDuration +
+        "\n " + StringUtils.join(this.dependencies.values(), "\n") + '}';
+  }
+
   /**
    * check uniqueness of dependency type and params
    */
@@ -72,9 +92,8 @@ public class FlowTrigger {
       final Map<String, String> props = dep.getProps();
       // set.add() returns false when there exists duplicate
       Preconditions.checkArgument(seen.add(dep.getType() + ":" + props.toString()), String.format
-          ("duplicate "
-              + "dependency"
-              + "config %s found, dependency config should be unique", dep.getName()));
+          ("duplicate dependency config %s found, dependency config should be unique",
+              dep.getName()));
     }
   }
 
@@ -83,21 +102,16 @@ public class FlowTrigger {
     validateDepDefinitionUniqueness(dependencies);
   }
 
-  @Override
-  public String toString() {
-    return "FlowTrigger{" +
-        "dependencies=" + this.dependencies +
-        ", schedule=" + this.schedule +
-        ", maxWaitDuration=" + this.maxWaitDuration +
-        '}';
+  public FlowTriggerDependency getDependencyByName(final String name) {
+    return this.dependencies.get(name);
   }
 
-  public List<FlowTriggerDependency> getDependencies() {
-    return this.dependencies;
+  public Collection<FlowTriggerDependency> getDependencies() {
+    return this.dependencies.values();
   }
 
-  public Duration getMaxWaitDuration() {
-    return this.maxWaitDuration;
+  public Optional<Duration> getMaxWaitDuration() {
+    return Optional.ofNullable(this.maxWaitDuration);
   }
 
   public CronSchedule getSchedule() {

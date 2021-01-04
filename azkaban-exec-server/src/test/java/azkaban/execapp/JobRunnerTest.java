@@ -13,13 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import static java.lang.Thread.State.TIMED_WAITING;
 import static java.lang.Thread.State.WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
@@ -28,13 +28,23 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
+import azkaban.flow.CommonJobProperties;
+import azkaban.jobExecutor.JobClassLoader;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.spi.EventType;
 import azkaban.test.TestUtils;
 import azkaban.utils.Props;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
@@ -46,6 +56,7 @@ import org.junit.Test;
 
 public class JobRunnerTest {
 
+  public static final String SUBMIT_USER = "testUser";
   private final Logger logger = Logger.getLogger("JobRunnerTest");
   private File workingDir;
   private JobTypeManager jobtypeManager;
@@ -65,7 +76,7 @@ public class JobRunnerTest {
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
-    pluginSet.addPluginClass("test", InteractiveTestJob.class);
+    pluginSet.addPluginClassName("test", InteractiveTestJob.class.getName());
   }
 
   @After
@@ -78,16 +89,20 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testBasicRun() {
+  public void testBasicRun() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
     final JobRunner runner =
         createJobRunner(1, "testJob", 0, false, loader, eventCollector);
     final ExecutableNode node = runner.getNode();
+    // Job starts to queue
+    runner.setTimeInQueue(System.currentTimeMillis());
+    // ensure that queue duration should be > 0
+    Thread.sleep(1L);
 
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
-        || runner.getStatus() != Status.FAILED);
+        && runner.getStatus() != Status.FAILED);
 
     runner.run();
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
@@ -97,16 +112,54 @@ public class JobRunnerTest {
         node.getStatus() == Status.SUCCEEDED);
     Assert.assertTrue(node.getStartTime() >= 0 && node.getEndTime() >= 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
+    Assert.assertTrue(runner.getQueueDuration() > 0);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps != null);
-    Assert.assertTrue(logFile.exists());
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
+
+    checkRequiredJobProperties(runner, logFile);
+
+    try (final BufferedReader br = getLogReader(logFile)) {
+      final String firstLine = br.readLine();
+      Assert.assertTrue("Unexpected default layout",
+          firstLine.startsWith(new SimpleDateFormat("dd-MM-yyyy").format(new Date())));
+    }
+    // Verify that user.to.proxy is default to submit user.
+    Assert.assertEquals(SUBMIT_USER, runner.getProps().get(JobProperties.USER_TO_PROXY));
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
+  }
+
+  private void checkRequiredJobProperties(JobRunner runner, File logFile) {
+    Field jobField = null;
+    try {
+      jobField = runner.getClass().getDeclaredField("job");
+    } catch (NoSuchFieldException e) {
+      Assert.fail("'job' field not found");
+    }
+    jobField.setAccessible(true);
+    InteractiveTestJob job = null;
+    try {
+      job = (InteractiveTestJob) jobField.get(runner);
+    } catch (IllegalAccessException e) {
+      Assert.fail("'job' field not accessible");
+    }
+    Props jobProps = job.getJobProps();
+    Assert.assertEquals("Unexpected log file path in properties",
+        logFile.getAbsolutePath(),
+        jobProps.get(CommonJobProperties.JOB_LOG_FILE));
+  }
+
+  private BufferedReader getLogReader(File logFile) throws FileNotFoundException {
+    return new BufferedReader(new InputStreamReader(new FileInputStream(logFile),
+        Charset.defaultCharset()));
   }
 
   @Test
@@ -132,9 +185,16 @@ public class JobRunnerTest {
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
+    // Check failureMessage and modifiedBy
+    Assert.assertEquals("unknown", runner.getNode().getModifiedBy());
+    Assert.assertEquals("java.lang.RuntimeException: Forced"
+            + " failure of testJob", runner.getNode().getFailureMessage());
 
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   @Test
@@ -166,6 +226,9 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 
     eventCollector.assertEvents(EventType.JOB_STARTED, EventType.JOB_FINISHED);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   @Test
@@ -197,6 +260,9 @@ public class JobRunnerTest {
     Assert.assertTrue(runner.getLogFilePath() == null);
     Assert.assertTrue(!runner.isKilled());
     eventCollector.assertEvents(EventType.JOB_STARTED, EventType.JOB_FINISHED);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
   }
 
   @Test
@@ -213,8 +279,12 @@ public class JobRunnerTest {
     final Thread thread = startThread(runner);
 
     StatusTestUtils.waitForStatus(node, Status.RUNNING);
+    runner.getNode().setModifiedBy("dementor1");
     runner.kill();
     assertThreadIsNotAlive(thread);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        thread.getContextClassLoader() instanceof JobClassLoader);
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Status is " + node.getStatus(),
@@ -223,6 +293,10 @@ public class JobRunnerTest {
     // Give it some time to fail.
     Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
+    // Check job kill time, user killed the job, and failure message
+    Assert.assertEquals("dementor1", runner.getNode().getModifiedBy());
+    Assert.assertTrue(runner.getJobKillTime() != -1);
+    Assert.assertTrue(runner.getKillDuration() >= 0);
 
     // Log file and output files should not exist.
     final File logFile = new File(runner.getLogFilePath());
@@ -264,6 +338,9 @@ public class JobRunnerTest {
     Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
     Assert.assertTrue(node.getEndTime() - node.getStartTime() >= 0);
     Assert.assertTrue(node.getStartTime() - startTime >= 0);
+
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        thread.getContextClassLoader() instanceof JobClassLoader);
 
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
@@ -309,6 +386,9 @@ public class JobRunnerTest {
     Assert.assertTrue(node.getStartTime() - startTime <= 5000);
     Assert.assertTrue(runner.isKilled());
 
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        thread.getContextClassLoader() instanceof JobClassLoader);
+
     final File logFile = new File(runner.getLogFilePath());
     final Props outputProps = runner.getNode().getOutputProps();
     Assert.assertTrue(outputProps == null);
@@ -320,8 +400,25 @@ public class JobRunnerTest {
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 
-  private Props createProps(final int sleepSec, final boolean fail) {
-    final Props props = new Props();
+  @Test
+  public void testCustomLogLayout() throws IOException {
+    final MockExecutorLoader loader = new MockExecutorLoader();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final Props azkabanProps = new Props();
+    azkabanProps.put(JobProperties.JOB_LOG_LAYOUT, "TEST %c{1} %p - %m\n");
+    final JobRunner runner =
+        createJobRunner(1, "testJob", 0, false, loader, eventCollector, azkabanProps);
+    runner.run();
+    try (final BufferedReader br = getLogReader(runner.getLogFile())) {
+      final String firstLine = br.readLine();
+      Assert.assertTrue("Unexpected default layout",
+          firstLine.startsWith("TEST"));
+    }
+    Assert.assertFalse("Thread ContextClassLoader not reset properly",
+        Thread.currentThread().getContextClassLoader() instanceof JobClassLoader);
+  }
+
+  private Props createProps(final int sleepSec, final boolean fail, Props props) {
     props.put("type", "test");
     props.put("seconds", sleepSec);
     props.put("fail", String.valueOf(fail));
@@ -330,14 +427,20 @@ public class JobRunnerTest {
 
   private JobRunner createJobRunner(final int execId, final String name, final int time,
       final boolean fail, final ExecutorLoader loader, final EventCollectorListener listener) {
+    return createJobRunner(execId, name, time, fail, loader, listener, new Props());
+  }
+
+  private JobRunner createJobRunner(final int execId, final String name, final int time,
+      final boolean fail, final ExecutorLoader loader, final EventCollectorListener listener, Props jobProps) {
     final Props azkabanProps = new Props();
     final ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(execId);
+    flow.setSubmitUser(SUBMIT_USER);
     final ExecutableNode node = new ExecutableNode();
     node.setId(name);
     node.setParentFlow(flow);
 
-    final Props props = createProps(time, fail);
+    final Props props = createProps(time, fail, jobProps);
     node.setInputProps(props);
     final HashSet<String> proxyUsers = new HashSet<>();
     proxyUsers.add(flow.getSubmitUser());

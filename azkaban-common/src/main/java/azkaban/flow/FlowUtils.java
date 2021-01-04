@@ -18,6 +18,7 @@ package azkaban.flow;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -25,6 +26,7 @@ import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
+import com.google.gson.Gson;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,6 +47,7 @@ public class FlowUtils {
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
     props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
+    props.put(CommonJobProperties.EXECUTION_SOURCE, flow.getExecutionSource());
 
     final DateTime loadTime = new DateTime();
 
@@ -66,28 +69,18 @@ public class FlowUtils {
   /**
    * Change job status to disabled in exflow if the job is in disabledJobs
    */
-  public static void applyDisabledJobs(final List<Object> disabledJobs,
+  public static void applyDisabledJobs(final List<DisabledJob> disabledJobs,
       final ExecutableFlowBase exflow) {
-    for (final Object disabled : disabledJobs) {
-      if (disabled instanceof String) {
-        final String nodeName = (String) disabled;
-        final ExecutableNode node = exflow.getExecutableNode(nodeName);
+    for (final DisabledJob disabled : disabledJobs) {
+      if (disabled.isEmbeddedFlow()) {
+        final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
+        if (node != null && node instanceof ExecutableFlowBase) {
+          applyDisabledJobs(disabled.getChildren(), (ExecutableFlowBase) node);
+        }
+       } else { // job
+        final ExecutableNode node = exflow.getExecutableNode(disabled.getName());
         if (node != null) {
           node.setStatus(Status.DISABLED);
-        }
-      } else if (disabled instanceof Map) {
-        final Map<String, Object> nestedDisabled = (Map<String, Object>) disabled;
-        final String nodeName = (String) nestedDisabled.get("id");
-        final List<Object> subDisabledJobs =
-            (List<Object>) nestedDisabled.get("children");
-
-        if (nodeName == null || subDisabledJobs == null) {
-          return;
-        }
-
-        final ExecutableNode node = exflow.getExecutableNode(nodeName);
-        if (node != null && node instanceof ExecutableFlowBase) {
-          applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase) node);
         }
       }
     }
@@ -115,5 +108,16 @@ public class FlowUtils {
     final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.addAllProxyUsers(project.getProxyUsers());
     return exflow;
+  }
+
+  public static String toJson(final Project proj) {
+    final Gson gson = new Gson();
+    final String jsonStr = gson.toJson(proj);
+    return jsonStr;
+  }
+
+  public static Project toProject(final String json) {
+    final Gson gson = new Gson();
+    return gson.fromJson(json, Project.class);
   }
 }

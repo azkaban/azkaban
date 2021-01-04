@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import static org.junit.Assert.fail;
@@ -25,6 +24,7 @@ import static org.mockito.Mockito.when;
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -35,15 +35,19 @@ import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
+import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.FlowLoader;
 import azkaban.project.FlowLoaderFactory;
 import azkaban.project.Project;
+import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -61,6 +65,7 @@ public class FlowRunnerTestUtil {
   private final File projectDir;
   private final ProjectLoader projectLoader;
   private ExecutorLoader executorLoader;
+  private final ProjectFileHandler handler;
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
       throws Exception {
@@ -73,8 +78,12 @@ public class FlowRunnerTestUtil {
         .prepareProject(this.project, this.projectDir, this.workingDir);
 
     this.executorLoader = mock(ExecutorLoader.class);
-    this.projectLoader = mock(ProjectLoader.class);
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+
+    this.projectLoader = mock(ProjectLoader.class);
+    handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
+            1, null, null, null, "111.111.111.111");
+    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
 
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
@@ -83,19 +92,19 @@ public class FlowRunnerTestUtil {
 
     this.jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
-    pluginSet.addPluginClass("test", InteractiveTestJob.class);
+    pluginSet.addPluginClassName("test", InteractiveTestJob.class.getName());
   }
 
   /**
    * Initialize the project with the flow definitions stored in the given source directory. Also
    * copy the source directory to the working directory.
    *
-   * @param project project to initialize
-   * @param sourceDir the source dir
+   * @param project    project to initialize
+   * @param sourceDir  the source dir
    * @param workingDir the working dir
    * @return the flow name to flow map
    * @throws ProjectManagerException the project manager exception
-   * @throws IOException the io exception
+   * @throws IOException             the io exception
    */
   public static Map<String, Flow> prepareProject(final Project project, final File sourceDir,
       final File workingDir)
@@ -149,8 +158,10 @@ public class FlowRunnerTestUtil {
     return execFlow;
   }
 
-  public static void startThread(final FlowRunner runner) {
-    new Thread(runner).start();
+  public static Thread startThread(final FlowRunner runner) {
+    final Thread thread = new Thread(runner);
+    thread.start();
+    return thread;
   }
 
   public FlowRunner createFromFlowFile(final String flowName) throws Exception {
@@ -250,9 +261,13 @@ public class FlowRunnerTestUtil {
     }
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
     this.executorLoader.uploadExecutableFlow(exFlow);
+    final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
+    final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
+    final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null);
+            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics,
+            execMetrics);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }

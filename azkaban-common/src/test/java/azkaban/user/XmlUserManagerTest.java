@@ -16,26 +16,61 @@
 
 package azkaban.user;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.fail;
 
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
+import com.google.common.io.Resources;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class XmlUserManagerTest {
 
+  private static final Logger log = LoggerFactory.getLogger(XmlUserManagerTest.class);
   private final Props baseProps = new Props();
+  @Mock
+  private FileWatcher fileWatcher;
+  @Mock
+  private WatchKey watchKey;
+  @Mock
+  private WatchEvent<Path> watchEvent;
+
+  @Rule
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Before
   public void setUp() throws Exception {
+    MockitoAnnotations.initMocks(this);
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
   }
 
   /**
@@ -47,7 +82,7 @@ public class XmlUserManagerTest {
 
     // Should throw
     try {
-      final XmlUserManager manager = new XmlUserManager(props);
+      final XmlUserManager manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final UndefinedPropertyException e) {
       return;
     }
@@ -58,19 +93,123 @@ public class XmlUserManagerTest {
   /**
    * Testing for when the xml path doesn't exist.
    */
-  @Ignore
   @Test
   public void testDoNotExist() throws Exception {
     final Props props = new Props(this.baseProps);
     props.put(XmlUserManager.XML_FILE_PARAM, "unit/test-conf/doNotExist.xml");
 
     try {
-      final UserManager manager = new XmlUserManager(props);
+      final UserManager manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final RuntimeException e) {
       return;
     }
 
     fail("XmlUserManager should throw an exception when the file doesn't exist");
+  }
+
+  private Path getFilePath(final String testName) throws IOException {
+    final URL configURL = Resources.getResource("test-conf/azkaban-users-test1.xml");
+    final String origPathStr = configURL.getPath();
+
+    // Create a new directory and copy the file in it.
+    final Path workDir = temporaryFolder.newFolder().toPath();
+    // Copy the file to keep original file unmodified
+    final String path = workDir.toString() + "/" + testName + ".xml";
+    final Path filePath = Paths.get(path);
+    Files.copy(Paths.get(origPathStr), filePath, StandardCopyOption.REPLACE_EXISTING);
+    return filePath;
+  }
+
+  /**
+   * Test auto reload of user XML
+   */
+  @Test
+  public void testAutoReload() throws Exception {
+    final Props props = new Props(this.baseProps);
+    final Path filePath = getFilePath("testAutoReload");
+    props.put(XmlUserManager.XML_FILE_PARAM, filePath.toString());
+
+    final CountDownLatch managerLoaded = setupMocks(filePath);
+
+    final UserManager manager = new XmlUserManager(props, () -> this.fileWatcher);
+
+    // Get the user8 from existing XML with password == password8
+    User user8 = manager.getUser("user8", "password8");
+
+    // Modify the password for user8
+    // TODO : djaiswal : Find a better way to modify XML
+    final List<String> lines = new ArrayList<>();
+    for (final String line : Files.readAllLines(filePath)) {
+      if (line.contains("password8")) {
+        lines.add(line.replace("password8", "passwordModified"));
+      } else {
+        lines.add(line);
+      }
+    }
+
+    // Make sure the file gets reverted back.
+    // Update the file
+    Files.write(filePath, lines);
+
+    managerLoaded.countDown();
+
+    // Wait until login fails with the old password
+    Awaitility.await().atMost(10L, TimeUnit.SECONDS).
+        pollInterval(10L, TimeUnit.MILLISECONDS).until(
+        () -> {
+          User user;
+          try {
+            user = manager.getUser("user8", "password8");
+          } catch (final UserManagerException e) {
+            user = null;
+          }
+          return user == null;
+        });
+
+    // Assert that login succeeds with the modified password
+    user8 = manager.getUser("user8", "passwordModified");
+    assertEquals("user8", user8.getUserId());
+
+    Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
+
+  }
+
+  /**
+   * Negative test auto reload of user XML
+   */
+  @Test
+  public void testAutoReloadFail() throws Exception {
+    final Props props = new Props(this.baseProps);
+    final Path filePath = getFilePath("testAutoReloadFail");
+    props.put(XmlUserManager.XML_FILE_PARAM, filePath.toString());
+
+    final CountDownLatch managerLoaded = setupMocks(filePath);
+
+    final UserManager manager;
+    try {
+      manager = new XmlUserManager(props, () -> this.fileWatcher);
+    } catch (final RuntimeException e) {
+      fail("Should have found the xml file");
+      return;
+    }
+
+    // Get the user8 from existing XML with password == password8
+    final User user8 = manager.getUser("user8", "password8");
+    assertEquals("user8", user8.getUserId());
+
+    // Update the file to make it empty.
+    Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
+    managerLoaded.countDown();
+
+    // Make sure the file gets reverted back.
+    managerLoaded.await(10L, TimeUnit.SECONDS);
+    assertEquals(0, managerLoaded.getCount());
+    // assert that watcher.take() was still called after the failed reload
+    Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
+
+    // Nothing should've changed, login should succeed as originally
+    final User user = manager.getUser("user8", "password8");
+    assertEquals("user8", user.getUserId());
   }
 
   @Ignore
@@ -82,7 +221,7 @@ public class XmlUserManagerTest {
 
     UserManager manager = null;
     try {
-      manager = new XmlUserManager(props);
+      manager = new XmlUserManager(props, () -> this.fileWatcher);
     } catch (final RuntimeException e) {
       e.printStackTrace();
       fail("XmlUserManager should've found file azkaban-users.xml");
@@ -142,6 +281,32 @@ public class XmlUserManagerTest {
 
     final User user9 = manager.getUser("user9", "password9");
     checkUser(user9, "", "");
+  }
+
+  private CountDownLatch setupMocks(final Path filePath) throws IOException, InterruptedException {
+    // mock registering the parent folder, but only if registered with the right args
+    Mockito.doReturn(this.watchKey).when(this.fileWatcher).register(
+        Paths.get(filePath.getParent().toString()));
+
+    Mockito.doReturn(this.watchKey).when(this.fileWatcher).take();
+
+    Mockito.doReturn(filePath).when(this.watchEvent).context();
+
+    // thread-safe latch to allow releasing an event
+    final CountDownLatch managerLoaded = new CountDownLatch(2);
+
+    Mockito.doAnswer(invocation -> {
+      // avoid busy-looping in UserUtils.java
+      long sleepMillis = managerLoaded.getCount() == 0 ? 5_000L : 10L;
+      if (managerLoaded.getCount() == 1) {
+        // go back to returning an empty list
+        managerLoaded.countDown();
+        return Collections.singletonList(this.watchEvent);
+      }
+      Thread.sleep(sleepMillis);
+      return Collections.emptyList();
+    }).when(this.fileWatcher).pollEvents(this.watchKey);
+    return managerLoaded;
   }
 
   private void checkUser(final User user, final String rolesStr, final String groupsStr) {

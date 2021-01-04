@@ -13,16 +13,13 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.execapp;
 
 import azkaban.executor.ExecutorInfo;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Utils;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -47,13 +44,20 @@ public class ServerStatisticsServlet extends HttpServlet {
   protected static ExecutorInfo cachedstats = null;
 
   /**
-   * Handle all get request to Statistics Servlet {@inheritDoc}
-   *
-   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
-   * javax.servlet.http.HttpServletResponse)
+   * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
    */
+  @Deprecated
   @Override
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+    doPost(req, resp);
+  }
+
+  /**
+   * Handle all requests to Statistics Servlet {@inheritDoc}
+   */
+  @Override
+  protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
     final boolean noCache = null != req && Boolean.valueOf(req.getParameter(noCacheParamName));
@@ -76,24 +80,9 @@ public class ServerStatisticsServlet extends HttpServlet {
    */
   protected void fillRemainingMemoryPercent(final ExecutorInfo stats) {
     if (exists_Bash && exists_Cat && exists_Grep && exists_Meminfo) {
-      final java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c",
-              "/bin/cat /proc/meminfo | grep -E \"^MemTotal:|^MemFree:|^Buffers:|^Cached:|^SwapCached:\"");
       try {
-        final ArrayList<String> output = new ArrayList<>();
-        final Process process = processBuilder.start();
-        process.waitFor();
-        final InputStream inputStream = process.getInputStream();
-        try {
-          final java.io.BufferedReader reader = new java.io.BufferedReader(
-              new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-          String line = null;
-          while ((line = reader.readLine()) != null) {
-            output.add(line);
-          }
-        } finally {
-          inputStream.close();
-        }
+        final ArrayList<String> output = Utils.runProcess("/bin/bash", "-c",
+            "/bin/cat /proc/meminfo | grep -E \"^MemTotal:|^MemFree:|^Buffers:|^Cached:|^SwapCached:\"");
 
         long totalMemory = 0;
         long totalFreeMemory = 0;
@@ -234,23 +223,9 @@ public class ServerStatisticsServlet extends HttpServlet {
    */
   protected void fillCpuUsage(final ExecutorInfo stats) {
     if (exists_Bash && exists_Cat && exists_LoadAvg) {
-      final java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/loadavg");
       try {
-        final ArrayList<String> output = new ArrayList<>();
-        final Process process = processBuilder.start();
-        process.waitFor();
-        final InputStream inputStream = process.getInputStream();
-        try {
-          final java.io.BufferedReader reader = new java.io.BufferedReader(
-              new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-          String line = null;
-          while ((line = reader.readLine()) != null) {
-            output.add(line);
-          }
-        } finally {
-          inputStream.close();
-        }
+        final ArrayList<String> output = Utils
+            .runProcess("/bin/bash", "-c", "/bin/cat /proc/loadavg");
 
         // process the output from bash call.
         if (output.size() > 0) {

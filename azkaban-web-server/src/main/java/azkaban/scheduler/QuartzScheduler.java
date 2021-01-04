@@ -21,7 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
-import java.util.Set;
+import com.google.common.annotations.VisibleForTesting;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.quartz.CronExpression;
@@ -32,20 +33,23 @@ import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
+import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
-import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one mapping.
+ * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
+ * mapping.
+ * Quartz job key naming standard:
+ * Job key is composed of job name and group name. Job type denotes job name. Project id+flow
+ * name denotes group name.
+ * E.x FLOW_TRIGGER as job name, 1.flow1 as group name
  */
 @Singleton
 public class QuartzScheduler {
 
-  //Unless specified, all Quartz jobs's identities comes with the default job name.
-  private static final String DEFAULT_JOB_NAME = "job1";
   private static final Logger logger = LoggerFactory.getLogger(QuartzScheduler.class);
   private Scheduler scheduler = null;
 
@@ -54,8 +58,11 @@ public class QuartzScheduler {
     if (!azProps.getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false)) {
       return;
     }
+    // TODO kunkun-tang: Many quartz properties should be defaulted such that not necessarily being
+    // checked into azkaban.properties. Also, we need to only assemble Quartz related properties
+    // here, which should be done in Azkaban WebServer Guice Module.
     final StdSchedulerFactory schedulerFactory =
-        new StdSchedulerFactory(azProps.toProperties());
+        new StdSchedulerFactory(azProps.toAllProperties());
     this.scheduler = schedulerFactory.getScheduler();
 
     // Currently Quartz only support internal job schedules. When we migrate to User Production
@@ -63,79 +70,114 @@ public class QuartzScheduler {
     this.scheduler.setJobFactory(SERVICE_PROVIDER.getInstance(SchedulerJobFactory.class));
   }
 
-  public void start() {
-    try {
-      this.scheduler.start();
-    } catch (final SchedulerException e) {
-      logger.error("Error starting Quartz scheduler: ", e);
-    }
+  public void start() throws SchedulerException {
+    this.scheduler.start();
     logger.info("Quartz Scheduler started.");
   }
 
-  public void cleanup() {
-    logger.info("Cleaning up schedules in scheduler");
-    try {
-      this.scheduler.clear();
-    } catch (final SchedulerException e) {
-      logger.error("Exception clearing scheduler: ", e);
-    }
+  @VisibleForTesting
+  void cleanup() throws SchedulerException {
+    this.scheduler.clear();
   }
 
-  public void pause() {
-    logger.info("pausing all schedules in Quartz");
-    try {
-      this.scheduler.pauseAll();
-    } catch (final SchedulerException e) {
-      logger.error("Exception pausing scheduler: ", e);
-    }
+  public void shutdown() throws SchedulerException {
+    this.scheduler.shutdown();
+    logger.info("Quartz Scheduler shut down.");
   }
 
-  public void resume() {
-    logger.info("resuming all schedules in Quartz");
-    try {
-      this.scheduler.resumeAll();
-    } catch (final SchedulerException e) {
-      logger.error("Exception resuming scheduler: ", e);
-    }
-  }
-
-  public void shutdown() {
-    logger.info("Shutting down scheduler");
-    try {
-      this.scheduler.shutdown();
-    } catch (final SchedulerException e) {
-      logger.error("Exception shutting down scheduler: ", e);
-    }
-  }
-
-  public void unregisterJob(final String groupName) throws SchedulerException {
-    if (!ifJobExist(groupName)) {
-      logger.warn("can not find job with " + groupName + " in quartz.");
+  /**
+   * Pause a job if it's present.
+   * @param jobName
+   * @param groupName
+   * @return true if job has been paused, no if job doesn't exist.
+   * @throws SchedulerException
+   */
+  public synchronized boolean pauseJobIfPresent(final String jobName, final String groupName)
+      throws SchedulerException {
+    if (ifJobExist(jobName, groupName)) {
+      this.scheduler.pauseJob(new JobKey(jobName, groupName));
+      return true;
     } else {
-      this.scheduler.deleteJob(new JobKey(DEFAULT_JOB_NAME, groupName));
+      return false;
     }
   }
 
   /**
-   * Only cron schedule register is supported.
+   * Check if job is paused.
+   *
+   * @return true if job is paused, false otherwise.
+   */
+  public synchronized boolean isJobPaused(final String jobName, final String groupName)
+      throws SchedulerException {
+    if (!ifJobExist(jobName, groupName)) {
+      throw new SchedulerException(String.format("Job (job name %s, group name %s) doesn't "
+          + "exist'", jobName, groupName));
+    }
+    final JobKey jobKey = new JobKey(jobName, groupName);
+    final JobDetail jobDetail = this.scheduler.getJobDetail(jobKey);
+    final List<? extends Trigger> triggers = this.scheduler.getTriggersOfJob(jobDetail.getKey());
+    for (final Trigger trigger : triggers) {
+      final TriggerState triggerState = this.scheduler.getTriggerState(trigger.getKey());
+      if (TriggerState.PAUSED.equals(triggerState)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Resume a job.
+   * @param jobName
+   * @param groupName
+   * @return true the job has been resumed, no if the job doesn't exist.
+   * @throws SchedulerException
+   */
+  public synchronized boolean resumeJobIfPresent(final String jobName, final String groupName)
+      throws SchedulerException {
+    if (ifJobExist(jobName, groupName)) {
+      this.scheduler.resumeJob(new JobKey(jobName, groupName));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Unschedule a job.
+   * @param jobName
+   * @param groupName
+   * @return true if job is found and unscheduled.
+   * @throws SchedulerException
+   */
+  public synchronized boolean unscheduleJob(final String jobName, final String groupName) throws
+      SchedulerException {
+    return this.scheduler.deleteJob(new JobKey(jobName, groupName));
+  }
+
+  /**
+   * Only cron schedule register is supported. Since register might be called when
+   * concurrently uploading projects, so synchronized is added to ensure thread safety.
    *
    * @param cronExpression the cron schedule for this job
    * @param jobDescription Regarding QuartzJobDescription#groupName, in order to guarantee no
    * duplicate quartz schedules, we design the naming convention depending on use cases: <ul>
-   * <li>User flow schedule: we use {@link org.quartz.JobKey#JobKey} to represent the identity of a
-   * flow's schedule. The format follows "$projectID_$flowName" to guarantee no duplicates.
-   * <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather than
+   * <li>User flow schedule: we use {@link JobKey#JobKey} to represent the identity of a
+   * flow's schedule. The format follows "$projectID.$flowName" to guarantee no duplicates.
+   * <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather
+   * than
    * number, which is the first case.</ul>
+   *
+   * @return true if job has been scheduled, false if the same job exists already.
    */
-  public void registerJob(final String cronExpression, final QuartzJobDescription jobDescription)
-      throws SchedulerException {
+  public synchronized boolean scheduleJobIfAbsent(final String cronExpression, final QuartzJobDescription
+      jobDescription) throws SchedulerException {
 
     requireNonNull(jobDescription, "jobDescription is null");
 
-    // Not allowed to register duplicate job name.
-    if (ifJobExist(jobDescription.getGroupName())) {
-      throw new SchedulerException(
-          "can not register existing job " + jobDescription.getGroupName());
+    if (ifJobExist(jobDescription.getJobName(), jobDescription.getGroupName())) {
+      logger.warn(String.format("can not register existing job with job name: "
+          + "%s and group name: %s", jobDescription.getJobName(), jobDescription.getGroupName()));
+      return false;
     }
 
     if (!CronExpression.isValidExpression(cronExpression)) {
@@ -145,7 +187,7 @@ public class QuartzScheduler {
 
     // TODO kunkun-tang: we will modify this when we start supporting multi schedules per flow.
     final JobDetail job = JobBuilder.newJob(jobDescription.getJobClass())
-        .withIdentity(DEFAULT_JOB_NAME, jobDescription.getGroupName()).build();
+        .withIdentity(jobDescription.getJobName(), jobDescription.getGroupName()).build();
 
     // Add external dependencies to Job Data Map.
     job.getJobDataMap().putAll(jobDescription.getContextMap());
@@ -156,19 +198,19 @@ public class QuartzScheduler {
         .withSchedule(
             CronScheduleBuilder.cronSchedule(cronExpression)
                 .withMisfireHandlingInstructionFireAndProceed()
-//            .withMisfireHandlingInstructionDoNothing()
-//            .withMisfireHandlingInstructionIgnoreMisfires()
         )
         .build();
 
     this.scheduler.scheduleJob(job, trigger);
     logger.info("Quartz Schedule with jobDetail " + job.getDescription() + " is registered.");
+    return true;
   }
 
 
-  public boolean ifJobExist(final String groupName) throws SchedulerException {
-    final Set<JobKey> jobKeySet = this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName));
-    return jobKeySet != null && jobKeySet.size() > 0;
+  @VisibleForTesting
+  boolean ifJobExist(final String jobName, final String groupName)
+      throws SchedulerException {
+    return this.scheduler.getJobDetail(new JobKey(jobName, groupName)) != null;
   }
 
   public Scheduler getScheduler() {

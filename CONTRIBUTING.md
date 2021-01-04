@@ -53,20 +53,21 @@ Install and enable the intellij's
 [save actions plugin](https://github.com/dubreuia/intellij-plugin-save-actions) 
 to reformat/refactor code automatically:
 
-Please turn on all the options except 
-  * Remove unused suppress warning annotation
+Please turn on the following options only (all of them are available in release 1.1.0 and above, see https://github.com/dubreuia/intellij-plugin-save-actions/releases):
+  * Optimize imports
+  * Reformat file
+  * Add final modifier to field	
+  * Add final modifier to local variable or parameter	
+  * Add this to field access
+  * Add class qualifier to static member access outside declaring class only
+  * Add missing @Override annotations
+  * Add blocks to if/while/for statements
+  * Add missing serialVersionUID field for Serializable classes
+  * Remove final from private method
+  * Remove explicit generic type for diamond	
+  * Remove unnecessary semicolon	
 
-It allows us to do following when saving a file:
-* Organize imports
-* Reformat code based on the code style
-* Rearrange code (reorder methods, fields, etc.)
-* Add final to local variable
-* Add final to field
-* Remove explicit generic type for diamond
-* Qualify field access with this
-* Remove final from private method
-* Remove unnecessary semicolon
-* Add missing @Override annotations
+Please refer to save actions plugin (https://github.com/dubreuia/intellij-plugin-save-actions) for implication of each option.
 
 ### New line at the end of a file
 
@@ -135,7 +136,7 @@ Add your user name to TODO items.
   private static final Logger logger = LoggerFactory.getLogger($CLASS_NAME$.class);
   ` 
 
-- Add or update the copyright notice for most files.
+- Add or update the copyright notice for most files. The year should be the year in which the file was originally created.
 
 - When ignoring a test, provide reasons for ignoring the test.
 

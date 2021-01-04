@@ -19,10 +19,9 @@ package azkaban.trigger;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.event.EventHandler;
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.Props;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -56,10 +57,10 @@ public class TriggerManager extends EventHandler implements
 
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
-      final ExecutorManager executorManager) throws TriggerManagerException {
+      final ExecutorManagerAdapter executorManagerAdapter) throws TriggerManagerException {
 
     requireNonNull(props);
-    requireNonNull(executorManager);
+    requireNonNull(executorManagerAdapter);
     this.triggerLoader = requireNonNull(triggerLoader);
 
     final long scannerInterval =
@@ -361,16 +362,24 @@ public class TriggerManager extends EventHandler implements
         try {
           logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
           action.doAction();
-        } catch (final Exception e) {
-          logger.error("Failed to do action " + action.getDescription() + " for " + t, e);
+        } catch (final ExecutorManagerException e) {
+          if (e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
+            logger.info("Skipped action [" + action.getDescription() + "] for [" + t +
+                "] because: " + e.getMessage());
+          } else {
+            logger.error("Failed to do action [" + action.getDescription() + "] for [" + t + "]",
+                e);
+          }
         } catch (final Throwable th) {
-          logger.error("Failed to do action " + action.getDescription() + " for " + t, th);
+          logger.error("Failed to do action [" + action.getDescription() + "] for [" + t + "]", th);
         }
       }
 
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
       } else {
+        logger.info("NextCheckTime did not change. Setting status to expired for trigger"
+            + t.getTriggerId());
         t.setStatus(TriggerStatus.EXPIRED);
       }
       try {

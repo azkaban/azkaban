@@ -1,11 +1,20 @@
 package azkaban.project.validator;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
+import azkaban.project.Project;
+import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
 import com.google.common.io.Resources;
+import java.io.File;
+import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
+
 
 public class XmlValidatorManagerTest {
 
@@ -61,4 +70,61 @@ public class XmlValidatorManagerTest {
         manager.getValidatorsInfo().get(0), "Test");
   }
 
+  @Test
+  public void testValidateProjectValidator() throws Exception {
+    final Project project = mock(Project.class);
+    final File projectDir = mock(File.class);
+    final Props props = new Props();
+
+    final ProjectValidator mockValidator = mock(ProjectValidator.class);
+    final XmlValidatorManager manager = new XmlValidatorManager(props);
+
+    // When we attempt to validate a project with our mock validator, return sampleReport
+    final ValidationReport sampleReport = new ValidationReport();
+    when(mockValidator.validateProject(project, projectDir, props)).thenReturn(sampleReport);
+
+    Map<String, ProjectValidator> mockedValidators = new HashMap();
+    mockedValidators.put("TEST", mockValidator);
+
+    // This is brittle and hacky, but we're directly setting the private validators field with our own
+    Field validatorsField = manager.getClass().getDeclaredField("validators");
+    validatorsField.setAccessible(true);
+    FieldSetter.setField(manager, validatorsField, mockedValidators);
+
+    Map<String, ValidationReport> expectedResultingReports = new HashMap();
+    expectedResultingReports.put("TEST", sampleReport);
+
+    // Make sure we get the reports back that we expect
+    assertEquals(expectedResultingReports, manager.validate(project, projectDir, props));
+  }
+
+  @Test
+  public void testGetCacheKeyProjectValidatorCacheable() throws Exception {
+    final Project project = mock(Project.class);
+    final File projectDir = mock(File.class);
+    final Props props = new Props();
+
+    final ProjectValidatorCacheable mockValidatorCacheable = mock(ProjectValidatorCacheable.class);
+    final ProjectValidator mockValidator = mock(ProjectValidator.class);
+    final XmlValidatorManager manager = new XmlValidatorManager(props);
+
+    // When we attempt to validate a project with our mock validator, return sampleReport
+    final String cacheKey = "abc123";
+    final String expectedResultingCacheKey = HashUtils.SHA1.getHashStr(cacheKey);
+    when(mockValidatorCacheable.getCacheKey(project, projectDir, props)).thenReturn(cacheKey);
+
+    Map<String, ProjectValidator> mockedValidators = new HashMap();
+    // We add a non cacheable validator as well to ensure that it is ignored properly and no exceptions are thrown.
+    mockedValidators.put("NORMAL", mockValidator);
+    // Only this cacheable validator should contribute to the cacheKey
+    mockedValidators.put("CACHEABLE", mockValidatorCacheable);
+
+    // This is brittle and hacky, but we're directly setting the private validators field with our own
+    Field validatorsField = manager.getClass().getDeclaredField("validators");
+    validatorsField.setAccessible(true);
+    FieldSetter.setField(manager, validatorsField, mockedValidators);
+
+    // Make sure we get the cache key we expected (the SHA1 of the one cache key returned)
+    assertEquals(expectedResultingCacheKey, manager.getCacheKey(project, projectDir, props));
+  }
 }

@@ -13,32 +13,47 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.event;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class EventHandler {
+public class EventHandler<T> {
 
-  private final HashSet<EventListener> listeners = new HashSet<>();
+  private final HashSet<EventListener<T>> listeners = new HashSet<>();
+  private static final Logger logger = LoggerFactory.getLogger(EventHandler.class);
 
   public EventHandler() {
   }
 
-  public void addListener(final EventListener listener) {
+  public EventHandler addListener(final EventListener<T> listener) {
     this.listeners.add(listener);
+    return this;
   }
 
-  public void fireEventListeners(final Event event) {
+  public EventHandler addListeners(final EventListener<T>... listeners) {
+    for (int i = listeners.length - 1; i >= 0; i--) {
+      this.listeners.add(listeners[i]);
+    }
+    return this;
+  }
+
+  public void fireEventListeners(final T event) {
     final ArrayList<EventListener> listeners =
         new ArrayList<>(this.listeners);
     for (final EventListener listener : listeners) {
-      listener.handleEvent(event);
+      try {
+        listener.handleEvent(event);
+      } catch (RuntimeException e) {
+        logger.warn("Error while calling handleEvent for: " + listener.getClass());
+        logger.warn(e.getMessage(), e);
+      }
     }
   }
 
-  public void removeListener(final EventListener listener) {
+  public void removeListener(final EventListener<T> listener) {
     this.listeners.remove(listener);
   }
 }

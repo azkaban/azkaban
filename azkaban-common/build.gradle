@@ -13,11 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 dependencies {
     compile project(':az-core')
     compile project(':azkaban-spi')
     compile project(':azkaban-db')
+    compile project(':cached-http-filesystem')
 
     compile deps.collections
     compile deps.dbcp2
@@ -33,6 +33,9 @@ dependencies {
     compile deps.jetty
     compile deps.jettyUtil
     compile deps.jopt
+    compile (deps.k8sClient) {
+        exclude module: 'builder-annotations'
+    }
     compile deps.mail
     compile deps.math3
     compile deps.metricsCore
@@ -49,6 +52,7 @@ dependencies {
     testCompile deps.hadoopHdfs
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
+    testCompile deps.commonsCompress
 }
 
 tasks.withType(JavaCompile) {

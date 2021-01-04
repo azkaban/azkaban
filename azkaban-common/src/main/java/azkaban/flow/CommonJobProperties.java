@@ -70,20 +70,30 @@ public class CommonJobProperties {
   public static final String AZKABAN_URL = "azkaban.url";
 
   /**
+   * Azkaban host name
+   */
+  public static final String AZKABAN_WEBSERVERHOST = "azkaban.webserverhost";
+
+  /**
    * The attempt number of the executing job.
    */
   public static final String JOB_ATTEMPT = "azkaban.job.attempt";
 
   /**
-   * The attempt number of the executing job.
+   * The job's metadata file name.
    */
   public static final String JOB_METADATA_FILE = "azkaban.job.metadata.file";
 
   /**
-   * The attempt number of the executing job.
+   * The job's attachment file absolute path.
    */
   public static final String JOB_ATTACHMENT_FILE =
       "azkaban.job.attachment.file";
+
+  /**
+   * The job's log file absolute path.
+   */
+  public static final String JOB_LOG_FILE = "azkaban.job.log.file";
 
   /**
    * The executing flow id
@@ -136,6 +146,10 @@ public class CommonJobProperties {
   public static final String SUBMIT_USER = "azkaban.flow.submituser";
 
   /**
+   * Represents the source of execution - adhoc, schedule or event
+   */
+  public static final String EXECUTION_SOURCE = "azkaban.flow.executionsource";
+  /**
    * A uuid assigned to every execution
    */
   public static final String FLOW_UUID = "azkaban.flow.uuid";
@@ -164,4 +178,10 @@ public class CommonJobProperties {
   public static final String FLOW_START_TIMEZONE =
       "azkaban.flow.start.timezone";
 
+  public static final String JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES = "jobtype.dependency.components";
+  public static final String JOB_CLUSTER_COMPONENTS_DEPENDENCIES = "job.dependency.components";
+  public static final String JOBTYPE_CLUSTER_COMPONENTS_DEPENDENCIES_EXCLUDED = "jobtype.dependency.components.excluded";
+  public static final String TARGET_CLUSTER_CLASSPATH = "azkaban.job.cluster.classpaths";
+  public static final String TARGET_CLUSTER_NATIVE_LIB = "azkaban.job.cluster.nativelib";
+  public static final String TARGET_CLUSTER_ID = "azkaban.job.cluster.id";
 }

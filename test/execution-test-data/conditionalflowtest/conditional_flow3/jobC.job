@@ -1,0 +1,5 @@
+type=test
+fail=false
+seconds=0
+condition=one_failed
+dependencies=jobA,jobB

@@ -1,0 +1,413 @@
+#*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  #parse("azkaban/webapp/servlet/velocity/style.vm")
+  #parse("azkaban/webapp/servlet/velocity/javascript.vm")
+  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+    var errorMessage = null;
+    var successMessage = null;
+
+    $(document).ready(function () {
+      var jobTable = $("#executingJobs");
+      jobTable.tablesorter();
+    });
+  </script>
+  <script>
+    $(function () {
+      $('tr.parent')
+      .css("cursor", "pointer")
+      .attr("title", "Click to expand/collapse")
+      .click(function () {
+        $(this).siblings('.child-' + this.id).toggle();
+      });
+      $('tr[class^=child-]').hide().children('tr');
+
+    });
+  </script>
+  <script type="text/javascript">
+    function killTrigger(id) {
+      var requestURL = document.location.href.replace("#currently-running", "");
+      var requestData = {"id": id, "ajax": "killRunningTrigger"};
+      var successHandler = function (data) {
+        console.log("cancel clicked");
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          showDialog("Killed", "Trigger " + id + " has been killed.");
+        }
+      };
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+
+    function showTriggerProperties(id) {
+      var requestURL = document.location.href.replace("#currently-running", "");
+      var requestData = {"id": id, "ajax": "showTriggerProperties"};
+      var successHandler = function (data) {
+        console.log("cancel clicked");
+        if (data.error) {
+          showDialog("Error", data.error);
+        }
+        else {
+          //showDialog("flow trigger properties", data.triggerProperties);
+          alert(data.triggerProperties);
+        }
+      };
+      //alert(requestURL);
+      ajaxCall(requestURL, requestData, successHandler);
+    }
+  </script>
+</head>
+<body>
+
+  #set ($current_page="flowtriggerinstance")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+## Page header.
+
+<div class="az-page-header">
+  <div class="container-full">
+    <h1><a href="${context}/flowtriggerinstance">Executing Triggers</a></h1>
+  </div>
+</div>
+
+<div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+## Page Content
+
+  <ul class="nav nav-tabs nav-sm" id="header-tabs">
+    <li id="currently-running-view-link"><a href="#currently-running">Trigger Executions</a></li>
+    <li id="recently-finished-view-link"><a href="#recently-finished">Recently Finished</a></li>
+  </ul>
+
+  <div class="row" id="currently-running-view">
+    <div class="col-xs-12">
+      <table id="executingTriggers"
+             class="table table-striped table-bordered table-hover table-condensed executions-table">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th class="execid">Trigger Instance Id</th>
+          <th>Flow</th>
+          <th>Project</th>
+          <th>Submitted by</th>
+          <th class="date">Start time</th>
+          <th class="date">End time</th>
+          <th class="status">Status</th>
+          <th class="elapse">Elapsed</th>
+          <th class="flowExecId">Triggered Flow Execution Id</th>
+          <th class="config">Trigger Properties</th>
+          <th class="action">Action</th>
+        </tr>
+        </thead>
+        <tbody>
+
+          #if ( !$null.isNull(${runningTriggers}))
+            #foreach ($trigger in $runningTriggers)
+            <tr class="parent" id=${trigger.getId()}>
+              <td class="tb-name">
+                $velocityCount
+              </td>
+              <td>
+                #if (${trigger.getId()})
+                  <a href="${context}/executor?triggerinstanceid=${trigger.getId()}" }>
+                    ${trigger.getId()} </a>
+                #else
+                  -
+                #end
+              </td>
+            #*todo chengren311: keep result of vmutils.getProjectName as a variable *#
+              <td><a
+                  href="${context}/manager?project=$vmutils.getProjectName(${trigger.getProject().getId()})&flow=${trigger.getFlowId()}">${trigger.getFlowId()}</a>
+              </td>
+              <td>
+                <a href="${context}/manager?project=$vmutils.getProjectName(${trigger.getProject().getId()})">$vmutils.getProjectName(${trigger.getProject().getId()})</a>
+              </td>
+
+              <td>${trigger.getSubmitUser()}</td>
+            #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
+              <td>$TimeUtils.formatDateTime(${trigger.getStartTime()})</td>
+              #if (${trigger.getEndTime()} != "0")
+                <td>$TimeUtils.formatDateTime(${trigger.getEndTime()})</td>
+              #else
+                <td>-</td>
+              #end
+              <td>${trigger.getStatus()}</td>
+              #if (${trigger.getStatus()} != "RUNNING" && ${trigger.getStatus()} != "CANCELLING")
+                <td>
+                  $TimeUtils.formatDuration(${trigger.getStartTime()}, ${trigger.getEndTime()})
+                </td>
+              #else
+                <td>
+                  $TimeUtils.formatDuration(${trigger.getStartTime()}, ${System.currentTimeMillis()})
+                </td>
+              #end
+
+              #if (${trigger.getFlowExecId()} == "-1")
+                <td>Flow not triggered yet</td>
+              #elseif (${trigger.getFlowExecId()} == "-2")
+                <td>Flow failed to be triggered</td>
+              #else
+                <td><a
+                    href="${context}/executor?execid=${trigger.getFlowExecId()}">${trigger.getFlowExecId()}</a>
+                </td>
+              #end
+
+              <td>
+                <button type="button" id="showTriggerProperties" class="btn btn-sm btn-info"
+                        onclick="showTriggerProperties('${trigger.getId()}')">
+                  Show
+                </button>
+              </td>
+
+              <td>
+                #if (${trigger.getStatus()} == "RUNNING")
+                  <button type="button" id="cancelbtn" class="btn btn-danger btn-sm"
+                          onclick="killTrigger('${trigger.getId()}')">Kill
+                  </button>
+                #else
+                  -
+                #end
+              </td>
+
+            <tr class="child-${trigger.getId()}">
+              <td>&nbsp;</td>
+              <td>Name</td>
+              <td>Start time</td>
+              <td>End time</td>
+              <td>Status</td>
+              <td>Elapsed time</td>
+            </tr>
+              #foreach ($dep in $trigger.getDepInstances())
+              <tr class="child-${trigger.getId()}">
+                <td>&nbsp;</td>
+                <td>${dep.getDepName()}</td>
+                <td>$TimeUtils.formatDateTime(${dep.getStartTime()})</td>
+                #if (${dep.getEndTime()} != "0")
+                  <td>$TimeUtils.formatDateTime(${dep.getEndTime()})</td>
+                #else
+                  <td>-</td>
+                #end
+                <td>${dep.getStatus()}</td>
+                #if (${dep.getEndTime()} != "0")
+                  <td>
+                    $TimeUtils.formatDuration(${dep.getStartTime()}, ${dep.getEndTime()})
+                  </td>
+                #else
+                  <td>
+                    $TimeUtils.formatDuration(${dep.getStartTime()}, ${System.currentTimeMillis()})
+                  </td>
+                #end
+              </tr>
+              #end
+
+            #*
+            <td>
+              <a href="${context}/manager?project=$vmutils.getProjectName(${flow.getFirst().projectId})"
+            >$vmutils.getProjectName(${flow.getFirst().projectId})</a>
+            </td>
+            <td>${flow.getFirst().submitUser}</td>
+            <td>${flow.getFirst().proxyUsers}</td>
+            <td>$TimeUtils.formatDateTime(${flow.getFirst().startTime})</td>
+            <td>$TimeUtils.formatDateTime(${flow.getFirst().endTime})</td>
+            <td>$TimeUtils.formatDuration(${flow.getFirst().startTime}, ${flow.getFirst().endTime})
+            </td>
+            <td>
+              <div
+                  class="status ${flow.getFirst().status}">$WebUtils.formatStatus(${flow.getFirst()
+                  .status})</div>
+            </td>
+            <td>
+              <button type="button" id="cancelbtn" class="btn btn-danger btn-sm"
+                              onclick="killFlow(${flow.getFirst().executionId})">Kill
+              </button>
+            </td>
+            *#
+            </tr>
+            #end
+          #else
+          <tr>
+            <td colspan="10">No Executing Flows</td>
+          </tr>
+          #end
+        </tbody>
+      </table>
+    </div><!-- /col-xs-12 -->
+  </div><!-- /row -->
+
+  <div class="row" id="recently-finished-view">
+    <div class="col-xs-12">
+      <table id="recentlyFinished"
+             class="table table-striped table-bordered table-hover table-condensed executions-table">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th class="execid">Trigger Instance Id</th>
+          <th>Flow</th>
+          <th>Project</th>
+          <th>Submitted by</th>
+          <th class="date">Start time</th>
+          <th class="date">End time</th>
+          <th class="status">Status</th>
+          <th class="elapse">Elapsed</th>
+          <th class="flowExecId">Triggered Flow Execution Id</th>
+          <th class="config">Trigger Properties</th>
+          <th class="action">Action</th>
+        </tr>
+        </thead>
+        <tbody>
+
+          #if ( !$null.isNull(${recentTriggers}))
+            #foreach ($trigger in $recentTriggers)
+            <tr class="parent" id=${trigger.getId()}>
+              <td class="tb-name">
+                $velocityCount
+              </td>
+              <td>
+                #if (${trigger.getId()})
+                  <a href="${context}/executor?triggerinstanceid=${trigger.getId()}" }>
+                    ${trigger.getId()} </a>
+                #else
+                  -
+                #end
+              </td>
+            #*todo chengren311: keep result of vmutils.getProjectName as a variable *#
+              <td><a
+                  href="${context}/manager?project=$vmutils.getProjectName(${trigger.getProject().getId()})&flow=${trigger.getFlowId()}">${trigger.getFlowId()}</a>
+              </td>
+              <td>
+                <a href="${context}/manager?project=$vmutils.getProjectName(${trigger.getProject().getId()})">$vmutils.getProjectName(${trigger.getProject().getId()})</a>
+              </td>
+
+              <td>${trigger.getSubmitUser()}</td>
+            #*todo chengren311: verify utils.formatDate will convert to user's timezone *#
+              <td>$TimeUtils.formatDateTime(${trigger.getStartTime()})</td>
+              #if (${trigger.getEndTime()} != "0")
+                <td>$TimeUtils.formatDateTime(${trigger.getEndTime()})</td>
+              #else
+                <td>-</td>
+              #end
+              <td>${trigger.getStatus()}</td>
+              #if (${trigger.getStatus()} != "RUNNING" && ${trigger.getStatus()} != "CANCELLING")
+                <td>
+                  $TimeUtils.formatDuration(${trigger.getStartTime()}, ${trigger.getEndTime()})
+                </td>
+              #else
+                <td>
+                  $TimeUtils.formatDuration(${trigger.getStartTime()}, ${System.currentTimeMillis()})
+                </td>
+              #end
+              #if (${trigger.getFlowExecId()} == "-1")
+                <td>Flow not triggered yet</td>
+              #elseif (${trigger.getFlowExecId()} == "-2")
+                <td>Flow failed to be triggered</td>
+              #else
+                <td><a
+                    href="${context}/executor?execid=${trigger.getFlowExecId()}">${trigger.getFlowExecId()}</a>
+                </td>
+              #end
+
+              <td>
+                <button type="button" id="showTriggerProperties" class="btn btn-sm btn-info"
+                "
+                onclick="showTriggerProperties('${trigger.getId()}')">
+                Show
+                </button>
+              </td>
+
+              <td>
+                -
+              </td>
+
+            <tr class="child-${trigger.getId()}">
+              <td>&nbsp;</td>
+              <td>Name</td>
+              <td>Start time</td>
+              <td>End time</td>
+              <td>Status</td>
+              <td>Cancellation Cause</td>
+              <td>Elapsed time</td>
+            </tr>
+              #foreach ($dep in $trigger.getDepInstances())
+              <tr class="child-${trigger.getId()}">
+                <td>&nbsp;</td>
+                <td>${dep.getDepName()}</td>
+                <td>$TimeUtils.formatDateTime(${dep.getStartTime()})</td>
+                #if (${dep.getEndTime()} != "0")
+                  <td>$TimeUtils.formatDateTime(${dep.getEndTime()})</td>
+                #else
+                  <td>-</td>
+                #end
+                <td>${dep.getStatus()}</td>
+                <td>${dep.getCancellationCause()}</td>
+                #if (${dep.getEndTime()} != "0")
+                  <td>
+                    $TimeUtils.formatDuration(${dep.getStartTime()}, ${dep.getEndTime()})
+                  </td>
+                #else
+                  <td>
+                    $TimeUtils.formatDuration(${dep.getStartTime()}, ${System.currentTimeMillis()})
+                  </td>
+                #end
+              </tr>
+              #end
+
+            </tr>
+            #end
+          #else
+          <tr>
+            <td colspan="10">No Executing Flows</td>
+          </tr>
+          #end
+        </tbody>
+      </table>
+    </div><!-- /col-xs-12 -->
+  </div><!-- /row -->
+
+  <div class="modal" id="messageDialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" id="messageTitle">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;
+          </button>
+          <h4 class="modal-title">Error</h4>
+        </div>
+        <div class="modal-body" id="messageDiv">
+          <p id="messageBox"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal"
+                  onclick="window.location.reload(true);">Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /container-full -->
+</body>
+</html>

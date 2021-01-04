@@ -4,7 +4,7 @@ CREATE TABLE project_permissions (
   name          VARCHAR(64) NOT NULL,
   permissions   INT         NOT NULL,
   isGroup       BOOLEAN     NOT NULL,
-  PRIMARY KEY (project_id, name)
+  PRIMARY KEY (project_id, name, isGroup)
 );
 
 CREATE INDEX permission_index

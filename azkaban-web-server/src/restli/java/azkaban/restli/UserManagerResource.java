@@ -18,15 +18,17 @@ package azkaban.restli;
 
 import azkaban.restli.user.User;
 import azkaban.server.session.Session;
+import azkaban.spi.EventType;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.servlet.WebUtils;
 import com.linkedin.restli.server.annotations.Action;
 import com.linkedin.restli.server.annotations.ActionParam;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
+import java.util.Set;
 import java.util.UUID;
-import javax.servlet.ServletException;
 import org.apache.log4j.Logger;
 
 @RestLiActions(name = "user", namespace = "azkaban.restli")
@@ -41,15 +43,26 @@ public class UserManagerResource extends ResourceContextHolder {
 
   @Action(name = "login")
   public String login(@ActionParam("username") final String username,
-      @ActionParam("password") final String password) throws UserManagerException,
-      ServletException {
+      @ActionParam("password") final String password) throws UserManagerException {
     final String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
-    logger
-        .info("Attempting to login for " + username + " from ip '" + ip + "'");
+    logger.info("Attempting to login for " + username + " from ip '" + ip + "'");
 
-    final Session session = createSession(username, password, ip);
+    final Session session;
+    try {
+      session = createSession(username, password, ip);
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip);
+    } catch (Exception e) {
+      WebUtils.reportLoginEvent(EventType.USER_LOGIN, username, ip, false, e.getMessage());
+      throw e;
+    }
 
-    logger.info("Session id created for user '" + username + "' and ip " + ip);
+    final Set<Session> sessionsOfSameIP = getAzkaban().getSessionCache()
+        .findSessionsByIP(session.getIp());
+    // Check potential DDoS attack by bad hosts.
+    logger.info(
+        "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
+            .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
+
     return session.getSessionId();
   }
 
@@ -66,15 +79,21 @@ public class UserManagerResource extends ResourceContextHolder {
   }
 
   private Session createSession(final String username, final String password, final String ip)
-      throws UserManagerException, ServletException {
+      throws UserManagerException {
     final UserManager manager = getAzkaban().getUserManager();
     final azkaban.user.User user = manager.getUser(username, password);
 
     final String randomUID = UUID.randomUUID().toString();
     final Session session = new Session(randomUID, user, ip);
-    getAzkaban().getSessionCache().addSession(session);
-
-    return session;
+    final boolean sessionAdded = getAzkaban().getSessionCache().addSession(session);
+    if (sessionAdded) {
+      return session;
+    } else {
+      throw new UserManagerException(
+          "Potential DDoS found, the number of sessions for this user and IP "
+              + "reached allowed limit (" + getAzkaban().getSessionCache()
+              .getMaxNumberOfSessionsPerIpPerUser().get() + ").");
+    }
   }
 
   private Session getSessionFromSessionId(final String sessionId) {

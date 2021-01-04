@@ -179,7 +179,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
   },
 
   handleSetSla: function (evt) {
-    var slaEmails = $('#slaEmails').val();
+    var slaEmails = $('#slaEmails').val().trim();
     var settings = {};
     var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
     for (var row = 0; row < tFlowRules.rows.length - 1; row++) {
@@ -189,6 +189,16 @@ azkaban.ChangeSlaView = Backbone.View.extend({
       var duration = rFlowRule.cells[2].firstChild.value;
       var email = rFlowRule.cells[3].firstChild.checked;
       var kill = rFlowRule.cells[4].firstChild.checked;
+      if (!email && !kill) {
+        alert("Unable to create SLA Action. Please set either Kill or Email"
+            + " action");
+        return false;
+      }
+      if (!email && slaEmails === "") {
+        alert("Unable to create SLA Action. Please provide at least one email"
+            + " address for Email action");
+        return false;
+      }
       settings[row] = id + "," + rule + "," + duration + "," + email + ","
           + kill;
     }

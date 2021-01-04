@@ -19,3 +19,17 @@
 <script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/namespace.js"></script>
 <script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+<script type="text/javascript">
+    #*
+     * This is to include the 'Azkaban-Trace-Origin' header to all Azkaban API requests made by
+     * the web application. $.ajaxSetup is not the recommended place to add it because the
+     * settings specified here will affect all Ajax calls including the ones made by any plugins
+     * being used. Because it's a custom header, there shouldn't be any issues but
+     * ideally there should be wrapper functions around the $.ajax and $.get jQuery functions
+     * used by all the views whenever APIs need to be called. Those wrapper functions should
+     * apply application related parameters common to all requests such as this header.
+    *#
+  ${esc.d}.ajaxSetup({
+    headers: {'Azkaban-Trace-Origin': 'webapp'}
+  });
+</script>

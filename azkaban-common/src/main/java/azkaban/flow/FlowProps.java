@@ -27,8 +27,20 @@ public class FlowProps {
   private Props props = null;
 
   public FlowProps(final String parentSource, final String propSource) {
-    this.parentSource = parentSource;
-    this.propSource = propSource;
+    /**
+     * Use String interning so that just 1 copy of the string value exists in String Constant Pool
+     * and the value is reused. Azkaban Heap dump analysis indicated a  high percentage of heap
+     * usage is coming from duplicate strings of FlowProps fields.
+     *
+     * Using intern() eliminates all the duplicate values, thereby significantly reducing heap
+     * memory usage.
+     */
+    if(parentSource != null) {
+      this.parentSource = parentSource.intern();
+    }
+    if (propSource != null) {
+      this.propSource = propSource.intern();
+    }
   }
 
   public FlowProps(final Props props) {

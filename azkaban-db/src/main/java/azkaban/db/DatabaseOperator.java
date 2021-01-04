@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import javax.inject.Inject;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
@@ -39,6 +40,9 @@ public class DatabaseOperator {
 
   private final QueryRunner queryRunner;
 
+  @Inject
+  private DBMetrics dbMetrics;
+
   /**
    * Note: this queryRunner should include a concrete {@link AzkabanDataSource} inside.
    */
@@ -52,7 +56,7 @@ public class DatabaseOperator {
    * Executes the given Azkaban related SELECT SQL operations. it will call
    * {@link AzkabanDataSource#getConnection()} inside queryrunner.query.
    *
-   * @param sqlQuery The SQL query statement to execute.
+   * @param baseQuery The SQL query statement to execute.
    * @param resultHandler The handler used to create the result object
    * @param params Initialize the PreparedStatement's IN parameters
    * @param <T> The type of object that the qeury handler returns
@@ -66,6 +70,9 @@ public class DatabaseOperator {
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("query failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailQuery();
+      }
       throw ex;
     }
   }
@@ -92,6 +99,9 @@ public class DatabaseOperator {
     } catch (final SQLException ex) {
       // todo kunkun-tang: Retry logics should be implemented here.
       logger.error("transaction failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailTransaction();
+      }
       throw ex;
     } finally {
       DbUtils.closeQuietly(conn);
@@ -108,11 +118,54 @@ public class DatabaseOperator {
    * @return The number of rows updated.
    */
   public int update(final String updateClause, final Object... params) throws SQLException {
+    int retryCount = 0;
+    SQLException exception;
+    String errorMsg =
+        "Update failed: Reached maximum number of retries: " + AzDBUtil.MAX_RETRIES_ON_DEADLOCK;
+    do {
+      try {
+        return this.queryRunner.update(updateClause, params);
+      } catch (final SQLException ex) {
+        exception = ex;
+        if (this.queryRunner.getDataSource() instanceof MySQLDataSource &&
+            ex.getErrorCode() == MySQLDataSource.MYSQL_ER_LOCK_DEADLOCK) {
+          retryCount++;
+          logger.warn("Deadlock detected when trying to execute: " + updateClause + " with values: "
+              + Arrays.toString(params));
+          try {
+            Thread.sleep(AzDBUtil.RETRY_WAIT_TIME);
+          } catch (final InterruptedException e) {
+            logger.info("Sleep during DB operation retry interrupted.");
+          }
+        } else {
+          errorMsg = "update failed";
+          break;
+        }
+      }
+    } while (retryCount < AzDBUtil.MAX_RETRIES_ON_DEADLOCK);
+
+    logger.error(errorMsg, exception);
+    if (this.dbMetrics != null) {
+      this.dbMetrics.markDBFailUpdate();
+    }
+    throw exception;
+  }
+
+  /**
+   * Execute a batch operation
+   *
+   * @param sqlCommand sqlCommand template
+   * @param params parameters
+   * @return result
+   */
+  public int[] batch(final String sqlCommand, final Object[]... params) throws SQLException {
     try {
-      return this.queryRunner.update(updateClause, params);
+      return this.queryRunner.batch(sqlCommand, params);
     } catch (final SQLException ex) {
-      // todo kunkun-tang: Retry logics should be implemented here.
-      logger.error("update failed", ex);
+      logger.error("batch operation failed", ex);
+      if (this.dbMetrics != null) {
+        this.dbMetrics.markDBFailUpdate();
+      }
       throw ex;
     }
   }

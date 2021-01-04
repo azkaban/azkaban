@@ -32,6 +32,9 @@ public class DBMetrics {
   private final MetricsManager metricsManager;
   private Meter dbConnectionMeter;
   private Meter dbConnectionFailMeter;
+  private Meter queryFailMeter;
+  private Meter updateFailMeter;
+  private Meter transactionFailMeter;
 
   @Inject
   public DBMetrics(final MetricsManager metricsManager) {
@@ -42,13 +45,16 @@ public class DBMetrics {
   private void setupAllMetrics() {
     this.dbConnectionMeter = this.metricsManager.addMeter("DB-Connection-meter");
     this.dbConnectionFailMeter = this.metricsManager.addMeter("DB-Fail-Connection-meter");
+    this.queryFailMeter = this.metricsManager.addMeter("DB-Fail-Query-meter");
+    this.updateFailMeter = this.metricsManager.addMeter("DB-Fail-Update-meter");
+    this.transactionFailMeter = this.metricsManager.addMeter("DB-Fail-Transaction-meter");
     this.metricsManager.addGauge("dbConnectionTime", this.dbConnectionTime::get);
   }
 
   /**
    * Mark the occurrence of an DB query event.
    */
-  public void markDBConnection() {
+  void markDBConnection() {
 
     /*
      * This method should be Thread Safe.
@@ -60,13 +66,35 @@ public class DBMetrics {
   }
 
   /**
+   * Mark the occurrence when DB query step fails
+   */
+  void markDBFailQuery() {
+    this.queryFailMeter.mark();
+  }
+
+  /**
+   * Mark the occurrence when DB update fails.
+   */
+  void markDBFailUpdate() {
+    this.updateFailMeter.mark();
+  }
+
+  /**
+   * Mark the occurrence when AZ DB transaction fails.
+   */
+  void markDBFailTransaction() {
+    this.transactionFailMeter.mark();
+  }
+
+  /**
    * Mark the occurrence when DB get connection fails.
    */
-  public void markDBFailConnection() {
+  void markDBFailConnection() {
     this.dbConnectionFailMeter.mark();
   }
 
-  public void setDBConnectionTime(final long milliseconds) {
+
+  void setDBConnectionTime(final long milliseconds) {
     this.dbConnectionTime.set(milliseconds);
   }
 }

@@ -98,4 +98,11 @@ public class StringUtils {
       return false;
     }
   }
+
+  public static boolean isEmpty(final String value) {
+    if (value == null) {
+      return true;
+    }
+    return  (value.trim().isEmpty());
+  }
 }

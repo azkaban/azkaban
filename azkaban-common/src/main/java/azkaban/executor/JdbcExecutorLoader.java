@@ -13,19 +13,19 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class JdbcExecutorLoader implements ExecutorLoader {
@@ -39,6 +39,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   private final FetchActiveFlowDao fetchActiveFlowDao;
   private final AssignExecutorDao assignExecutorDao;
   private final NumExecutionsDao numExecutionsDao;
+  private final ExecutionRampDao executionRampDao;
 
   @Inject
   public JdbcExecutorLoader(final ExecutionFlowDao executionFlowDao,
@@ -49,7 +50,8 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       final ActiveExecutingFlowsDao activeExecutingFlowsDao,
       final FetchActiveFlowDao fetchActiveFlowDao,
       final AssignExecutorDao assignExecutorDao,
-      final NumExecutionsDao numExecutionsDao) {
+      final NumExecutionsDao numExecutionsDao,
+      final ExecutionRampDao executionRampDao) {
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
@@ -59,6 +61,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.fetchActiveFlowDao = fetchActiveFlowDao;
     this.numExecutionsDao = numExecutionsDao;
     this.assignExecutorDao = assignExecutorDao;
+    this.executionRampDao = executionRampDao;
   }
 
   @Override
@@ -82,7 +85,25 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchQueuedFlows();
+    return fetchQueuedFlows(Status.PREPARING);
+  }
+
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchQueuedFlows(status);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchStaleFlows(executionDuration);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
   }
 
   /**
@@ -97,14 +118,24 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
-
     return this.fetchActiveFlowDao.fetchActiveFlows();
+  }
+
+  @Override
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
+      throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchUnfinishedFlows();
+  }
+
+  @Override
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
+      throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchUnfinishedFlowsMetadata();
   }
 
   @Override
   public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId)
       throws ExecutorManagerException {
-
     return this.fetchActiveFlowDao.fetchActiveFlowByExecId(execId);
   }
 
@@ -129,6 +160,12 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
       final int skip, final int num) throws ExecutorManagerException {
     return this.executionFlowDao.fetchFlowHistory(projectId, flowId, skip, num);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
+      final long startTime) throws ExecutorManagerException {
+    return this.executionFlowDao.fetchFlowHistory(projectId, flowId, startTime);
   }
 
   @Override
@@ -320,13 +357,78 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int removeExecutionLogsByTime(final long millis)
+  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
       throws ExecutorManagerException {
-    return this.executionLogsDao.removeExecutionLogsByTime(millis);
+    return this.executionLogsDao.removeExecutionLogsByTime(millis, recordCleanupLimit);
   }
 
   @Override
   public void unassignExecutor(final int executionId) throws ExecutorManagerException {
     this.assignExecutorDao.unassignExecutor(executionId);
+  }
+
+  @Override
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive);
+  }
+
+  @Override
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive);
+  }
+
+  @Override
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, int limit,
+      Status updatedStatus) throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(batchEnabled, limit,
+        updatedStatus);
+  }
+
+  @Override
+  public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
+    return this.executionRampDao.fetchExecutableRampMap();
+  }
+
+  @Override
+  public ExecutableRampItemsMap fetchExecutableRampItemsMap() throws ExecutorManagerException {
+    return this.executionRampDao.fetchExecutableRampItemsMap();
+  }
+
+  @Override
+  public ExecutableRampDependencyMap fetchExecutableRampDependencyMap() throws ExecutorManagerException {
+    return this.executionRampDao.fetchExecutableRampDependencyMap();
+  }
+
+  @Override
+  public ExecutableRampExceptionalFlowItemsMap fetchExecutableRampExceptionalFlowItemsMap() throws ExecutorManagerException {
+    return this.executionRampDao.fetchExecutableRampExceptionalFlowItemsMap();
+  }
+
+  @Override
+  public void updateExecutedRampFlows(final String ramp, ExecutableRampExceptionalItems executableRampExceptionalItems)
+      throws ExecutorManagerException {
+    this.executionRampDao.updateExecutedRampFlows(ramp, executableRampExceptionalItems);
+  }
+
+  @Override
+  public ExecutableRampExceptionalJobItemsMap fetchExecutableRampExceptionalJobItemsMap() throws ExecutorManagerException {
+    return this.executionRampDao.fetchExecutableRampExceptionalJobItemsMap();
+  }
+
+  @Override
+  public Map<String, String> doRampActions(List<Map<String, Object>> rampActionsMap) throws ExecutorManagerException {
+    return this.executionRampDao.doRampActions(rampActionsMap);
+  }
+
+  @Override
+  public void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException {
+    this.executionRampDao.updateExecutableRamp(executableRamp);
+  }
+
+  @Override
+  public void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException {
+    this.executionFlowDao.unsetExecutorIdForExecution(executionId);
   }
 }

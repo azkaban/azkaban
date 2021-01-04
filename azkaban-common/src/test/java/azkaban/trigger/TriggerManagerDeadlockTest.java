@@ -18,17 +18,22 @@ package azkaban.trigger;
 
 import static org.mockito.Mockito.mock;
 
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.executor.ActiveExecutors;
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutionFinalizer;
 import azkaban.executor.ExecutorApiGateway;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutorManagerUpdaterStage;
 import azkaban.executor.MockExecutorLoader;
+import azkaban.executor.RunningExecutions;
+import azkaban.executor.RunningExecutionsUpdater;
+import azkaban.executor.RunningExecutionsUpdaterThread;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
-import azkaban.utils.AbstractMailerTest;
-import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
@@ -46,20 +51,42 @@ public class TriggerManagerDeadlockTest {
   TriggerManager triggerManager;
   ExecutorLoader execLoader;
   ExecutorApiGateway apiGateway;
+  RunningExecutions runningExecutions;
+  private ExecutorManagerUpdaterStage updaterStage;
+  private AlerterHolder alertHolder;
+  private ExecutionFinalizer executionFinalizer;
+  private CommonMetrics commonMetrics;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
     this.loader = new MockTriggerLoader();
-    final Props props = AbstractMailerTest.createMailProperties();
+    final Props props = new Props();
     props.put("trigger.scan.interval", 1000);
-    props.put("executor.port", 12321);
+    props.put(ConfigurationKeys.EXECUTOR_PORT, 12321);
     this.execLoader = new MockExecutorLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
-    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
-    final ExecutorManager executorManager = new ExecutorManager(props, this.execLoader,
-        new AlerterHolder(props, new Emailer(props, commonMetrics)),
-        commonMetrics, this.apiGateway);
+    this.runningExecutions = new RunningExecutions();
+    this.updaterStage = new ExecutorManagerUpdaterStage();
+    this.alertHolder = mock(AlerterHolder.class);
+    this.executionFinalizer = new ExecutionFinalizer(this.execLoader,
+        this.updaterStage, this.alertHolder, this.runningExecutions);
+    this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final ExecutorManager executorManager = getExecutorManager(props);
     this.triggerManager = new TriggerManager(props, this.loader, executorManager);
+  }
+
+  private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
+    final ActiveExecutors activeExecutors = new ActiveExecutors(this.execLoader);
+    final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
+    return new ExecutorManager(props, this.execLoader, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, activeExecutors, this.updaterStage, this.executionFinalizer,
+        updaterThread);
+  }
+
+  private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {
+    return new RunningExecutionsUpdaterThread(new RunningExecutionsUpdater(
+        this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, this.executionFinalizer, this.execLoader), this.runningExecutions);
   }
 
   @After

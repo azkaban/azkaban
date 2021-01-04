@@ -1,0 +1,147 @@
+#*
+ * Copyright 2018 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Reportal</title>
+    <link href="${context}/reportal/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
+    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+    <script type="text/javascript" src="${context}/reportal/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var homeDir = "${homedir}";
+    </script>
+    <script type="text/javascript">
+      var reportals = [
+#if($projects)
+  #foreach($project in $projects)
+    #set($title = $esc.javascript(${project.getMetadata().title}))
+          {
+            "id" : "${project.id}",
+            "title" : "$title",
+            "time" : $project.createTimestamp,
+            "timeText" : "$TimeUtils.formatDateTime($project.createTimestamp)",
+            "user" : "$project.getMetadata().get("accessOwner")",
+            "scheduled" : $ReportalHelper.isScheduledProject($project),
+            "scheduledRepeating" : $ReportalHelper.isScheduledRepeatingProject($project),
+            "bookmark" : $ReportalHelper.isBookmarkProject($project, $user),
+            "subscribe" : $ReportalHelper.isSubscribeProject($project, $user),
+            "shown" : true
+          },
+  #end
+#end
+      ];
+    </script>
+    <script type="text/javascript" src="${context}/reportal/js/reportal.js"></script>
+    <script type="text/javascript" src="${context}/reportal/js/reportal-list.js"></script>
+    <script type="text/javascript" src="${context}/reportal/js/jquery.tablesorter.min.js"></script>
+    <link href="${context}/reportal/css/reportal.css" rel="stylesheet">
+  </head>
+  <body>
+#set($current_page="$viewerName")
+#if(!$hideNavigation)
+  #parse("azkaban/webapp/servlet/velocity/nav.vm")
+#end
+
+#parse("azkaban/viewer/reportal/reportalnavigation.vm")
+
+    <div class="content" style="margin-top: 41px;">
+      <div id="box-error">
+  #if($errorMsg)
+        <div class="box-error-message">$errorMsg</div>
+  #else
+    #if($error_message != "null")
+        <div class="box-error-message">$error_message</div>
+    #elseif($success_message != "null")
+        <div class="box-success-message">$success_message</div>
+    #end
+  #end
+      </div>
+      <div>&nbsp;</div>
+      <div class="container-fluid" style"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;">
+        <div class="row-fluid">
+          <div class="span2">
+            <div class="well">
+              <p style="margin-bottom:20px;"><a href="${context}/reportal?new" class="btn btn-success">Create Report</a></p>
+              <form method="get" accept-charset="utf-8" class="form-inline" id="search-facet-form">
+                <label class="input-list-label">Filter Reports</label>
+                <div class="control-group">
+                  <div class="controls">
+                    <label class="checkbox"><input id="facet_bookmarked" type="checkbox">Bookmarked</label>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <div class="controls">
+                    <label class="checkbox"><input id="facet_subscribed" type="checkbox">Subscribed</label>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <div class="controls">
+                    <label class="checkbox"><input id="facet_date_created" type="checkbox">Date Created</label>
+                  </div>
+                </div>
+                <div class="facet-input">
+                  <input class="span2 hasDatepicker" id="date_created_from" name="date_created_from" type="text" value="${startDate}" style="width:130px;">
+                  to
+                  <input class="span2 hasDatepicker" id="date_created_to" name="date_created_to" type="text" value="${endDate}" style="width:130px;">
+                </div>
+                <div class="control-group">
+                  <div class="controls">
+                    <label class="checkbox"><input id="facet_owner" type="checkbox" checked="checked">Owner</label>
+                  </div>
+                </div>
+                <div class="facet-input">
+                  <input class="span2" id="owner" type="text" value="$userid" style="width:130px;">
+                </div>
+              </form>
+            </div>
+          </div>
+          <div class="span10">
+            <table id="reportalTable" class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Date Created</th>
+                  <th>Owner</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+          <div id="action-template" style="display:none;">
+            <div class="report-actions">
+              <a href="" title="Toggle bookmarked" class="btn btn-icon btn-left button-bookmark"><span class="icon icon-bookmark icon-gray-light icon-small"></span></a><a href="" title="Toggle subscription" class="btn btn-icon btn-middle button-subscribe"><span class="icon icon-mail icon-gray-light icon-small"></span></a><div class="btn-dropdown"><a class="btn btn-icon btn-right dropdown-toggle"><span class="icon icon-cog icon-gray-light icon-small"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a class="button-view" href="">View</a></li>
+                  <li><a class="button-edit" href="">Edit</a></li>
+                  <li class="divider"></li>
+                  <li><a class="button-run" href="">Run</a></li>
+                  <li><a class="button-delete" href="">Delete</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

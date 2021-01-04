@@ -30,21 +30,23 @@
   <script type="text/javascript" src="${context}/js/flowstats.js"></script>
   <script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/job-list-common.js?v=1570835891"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js?v=1570835891"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-trigger-list.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1569610022"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/exflow.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/exflow.js?v=1579310616"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
     var currentTime = ${currentTime};
     var timezone = "${timezone}";
     var errorMessage = null;
     var successMessage = null;
-    ;
     var projectId = "${projectId}";
     var projectName = "${projectName}";
     var flowId = "${flowid}";
     var execId = "${execid}";
+    var triggerInstanceId = "${triggerInstanceId}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
@@ -68,7 +70,11 @@
           <h1>
             <a href="${context}/executor?execid=${execid}">
               Flow Execution
-              <small>$execid <span id="flowStatus">-</span></small>
+              #if (${execid} == "-1" || ${execid} == "-2")
+                <small>not started <span id="flowStatus">-</span></small>
+              #else
+                <small>$execid <span id="flowStatus">-</span></small>
+              #end
             </a>
           </h1>
         </div>
@@ -95,7 +101,8 @@
             href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName
         </a></li>
         <li><a
-            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid
+            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong>
+          $flowid
         </a></li>
         <li class="active"><strong>Execution</strong> $execid</li>
       </ol>
@@ -110,6 +117,7 @@
 
     <ul class="nav nav-tabs nav-sm" id="headertabs">
       <li id="graphViewLink"><a href="#graph">Graph</a></li>
+      <li id="flowTriggerlistViewLink"><a href="#triggerslist">Flow Trigger List</a></li>
       <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
       <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
       <li id="statsViewLink"><a href="#stats">Stats</a></li>
@@ -132,7 +140,8 @@
         <button type="button" id="retrybtn" class="btn btn-success btn-sm">Retry Failed</button>
       </li>
       <li class="nav-button pull-right">
-        <button type="button" id="executebtn" class="btn btn-success btn-sm">Prepare Execution
+        #set($isDisabled = "#if(${isLocked})disabled#end")
+        <button type="button" id="executebtn" class="btn btn-success btn-sm ${isDisabled}">Prepare Execution
         </button>
       </li>
     </ul>
@@ -141,6 +150,66 @@
   ## Graph View
 
     #parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
+
+  ## Flow Trigger List View
+
+  <div class="container-full" id="flowTriggerListView">
+    <div class="row">
+      <div class="col-xs-12">
+        <table class="table table-bordered table-condensed table-hover executions-table">
+          <thead>
+          <tr>
+            <th>Trigger Instance Id</th>
+            <th>Submitted by</th>
+            <th class="date">Start Time</th>
+            <th class="date">End Time</th>
+            <th class="elapse">Elapsed</th>
+            <th class="status">Status</th>
+            <th class="props">Trigger Properties</th>
+            <th class="action">Action</th>
+          </tr>
+
+          <div class="modal fade" id="dependencyList" tabindex="-1"
+               role="dialog"
+               aria-labelledby="dependencyLabel">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span></button>
+                  <h4 class="modal-title" id="dependencyLabel">Dependencies</h4>
+                </div>
+                <div id="triggerProp" class="modal-body">
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default" data-dismiss="modal">Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          </thead>
+          <tbody id="triggerBody">
+          </tbody>
+          <thead>
+          <tr>
+            <th>Trigger Instance Id</th>
+            <th>Dependency Name</th>
+            <th class="triggertype">Dependency Type</th>
+            <th class="date">Start Time</th>
+            <th class="date">End Time</th>
+            <th class="elapse">Elapsed</th>
+            <th class="status">Status</th>
+            <th class="cause">Cancellation Cause</th>
+          </tr>
+          </thead>
+          <tbody id="triggerExecutableBody">
+          </tbody>
+        </table>
+      </div><!-- /.col-xs-12 -->
+    </div><!-- /.row -->
+  </div><!-- /.container-full -->
 
   ## Job List View
 
@@ -158,6 +227,7 @@
             <th class="elapse">Elapsed</th>
             <th class="status">Status</th>
             <th class="logs">Details</th>
+            <th class="cluster">Cluster</th>
           </tr>
           </thead>
           <tbody id="executableBody">
@@ -169,24 +239,20 @@
 
   ## Flow Log View
 
-  <div class="container-full container-fill" id="flowLogView">
-    <div class="row">
-      <div class="col-xs-12 col-content">
-        <div class="log-viewer">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <div class="pull-right">
-                <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
-              </div>
-              Flow log
-            </div>
-            <div class="panel-body">
-              <pre id="logSection"></pre>
-            </div>
-          </div><!-- /.panel -->
-        </div><!-- /.log-viewer -->
-      </div><!-- /.col-xs-12 -->
-    </div><!-- /.row -->
+  <div class="container-full" id="flowLogView">
+    <div class="log-viewer">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="pull-right">
+            <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
+          </div>
+          Flow log
+        </div>
+        <div class="panel-body">
+          <pre id="logSection"></pre>
+        </div>
+      </div><!-- /.panel -->
+    </div><!-- /.log-viewer -->
   </div><!-- /.container-full -->
 
   ## Stats view.

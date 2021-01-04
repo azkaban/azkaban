@@ -32,6 +32,7 @@ public class NodeBean implements Serializable {
   private Map<String, String> config;
   private List<String> dependsOn;
   private String type;
+  private String condition;
   private List<NodeBean> nodes;
   private FlowTriggerBean trigger;
 
@@ -67,6 +68,14 @@ public class NodeBean implements Serializable {
     this.type = type;
   }
 
+  public String getCondition() {
+    return this.condition;
+  }
+
+  public void setCondition(final String condition) {
+    this.condition = condition;
+  }
+
   public List<NodeBean> getNodes() {
     return this.nodes;
   }
@@ -96,6 +105,7 @@ public class NodeBean implements Serializable {
         ", config=" + this.config +
         ", dependsOn=" + this.dependsOn +
         ", type='" + this.type + '\'' +
+        ", condition='" + this.condition + '\'' +
         ", nodes=" + this.nodes +
         ", trigger=" + this.trigger +
         '}';

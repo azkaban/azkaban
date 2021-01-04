@@ -13,12 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.webapp.servlet;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import azkaban.Constants;
+import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -31,11 +29,14 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.flowtrigger.FlowTriggerService;
+import azkaban.flowtrigger.TriggerInstance;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
@@ -47,7 +48,6 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
-import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
@@ -55,35 +55,79 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ExecutorServlet.class.getName());
+  private static final String API_FETCH_EXEC_FLOW = "fetchexecflow";
+  private static final String API_FETCH_EXEC_FLOW_UPDATE = "fetchexecflowupdate";
+  private static final String API_CANCEL_FLOW = "cancelFlow";
+  private static final String API_PAUSE_FLOW = "pauseFlow";
+  private static final String API_RESUME_FLOW = "resumeFlow";
+  private static final String API_FETCH_EXEC_FLOW_LOGS = "fetchExecFlowLogs";
+  private static final String API_FETCH_EXEC_JOB_LOGS = "fetchExecJobLogs";
+  private static final String API_FETCH_EXEC_JOB_STATS = "fetchExecJobStats";
+  private static final String API_RETRY_FAILED_JOBS = "retryFailedJobs";
+  private static final String API_FLOW_INFO = "flowInfo";
+  private static final String API_FETCH_SCHEDULED_FLOW_GRAPH = "fetchscheduledflowgraph";
+  private static final String API_RELOAD_EXECUTORS = "reloadExecutors";
+  private static final String API_ENABLE_QUEUE_PROCESSOR = "enableQueueProcessor";
+  private static final String API_DISABLE_QUEUE_PROCESSOR = "disableQueueProcessor";
+  private static final String API_GET_RUNNING = "getRunning";
+  private static final String API_EXECUTE_FLOW = "executeFlow";
+  private static final String API_RAMP = "ramp";
+
+  private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
-  private WebMetrics webMetrics;
   private ProjectManager projectManager;
-  private ExecutorManagerAdapter executorManager;
+  private FlowTriggerService flowTriggerService;
+  private ExecutorManagerAdapter executorManagerAdapter;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+
+  public ExecutorServlet() {
+    super(createAPIEndpoints());
+  }
 
   @Override
   public void init(final ServletConfig config) throws ServletException {
     super.init(config);
-    final AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    final AzkabanWebServer server = getApplication();
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
-    this.executorManager = server.getExecutorManager();
+    this.executorManagerAdapter = server.getExecutorManager();
     this.scheduleManager = server.getScheduleManager();
-    // TODO: reallocf fully guicify
-    this.webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
+    this.flowTriggerService = server.getFlowTriggerService();
+  }
+
+  private static List<AzkabanAPI> createAPIEndpoints() {
+    final List<AzkabanAPI> apiEndpoints = new ArrayList<>();
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_FLOW_UPDATE));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_CANCEL_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_PAUSE_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RESUME_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_FLOW_LOGS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_JOB_LOGS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_EXEC_JOB_STATS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RETRY_FAILED_JOBS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FLOW_INFO));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_SCHEDULED_FLOW_GRAPH));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RELOAD_EXECUTORS));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_ENABLE_QUEUE_PROCESSOR));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_DISABLE_QUEUE_PROCESSOR));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_GET_RUNNING));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_EXECUTE_FLOW));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_RAMP));
+    return apiEndpoints;
   }
 
   @Override
@@ -95,16 +139,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       if (hasParam(req, "job")) {
         handleExecutionJobDetailsPage(req, resp, session);
       } else {
-        handleExecutionFlowPage(req, resp, session);
+        handleExecutionFlowPageByExecId(req, resp, session);
       }
+    } else if (hasParam(req, "triggerinstanceid")) {
+      handleExecutionFlowPageByTriggerInstanceId(req, resp, session);
     } else {
       handleExecutionsPage(req, resp, session);
     }
   }
 
-  private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException,
-      IOException {
+  private void handleAJAXAction(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
@@ -113,7 +158,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       ExecutableFlow exFlow = null;
 
       try {
-        exFlow = this.executorManager.getExecutableFlow(execid);
+        exFlow = this.executorManagerAdapter.getExecutableFlow(execid);
       } catch (final ExecutorManagerException e) {
         ret.put("error",
             "Error fetching execution '" + execid + "': " + e.getMessage());
@@ -122,55 +167,55 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       if (exFlow == null) {
         ret.put("error", "Cannot find execution '" + execid + "'");
       } else {
-        if (ajaxName.equals("fetchexecflow")) {
+        if (API_FETCH_EXEC_FLOW.equals(ajaxName)) {
           ajaxFetchExecutableFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchexecflowupdate")) {
+        } else if (API_FETCH_EXEC_FLOW_UPDATE.equals(ajaxName)) {
           ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser(),
               exFlow);
-        } else if (ajaxName.equals("cancelFlow")) {
+        } else if (API_CANCEL_FLOW.equals(ajaxName)) {
           ajaxCancelFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("pauseFlow")) {
+        } else if (API_PAUSE_FLOW.equals(ajaxName)) {
           ajaxPauseFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("resumeFlow")) {
+        } else if (API_RESUME_FLOW.equals(ajaxName)) {
           ajaxResumeFlow(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchExecFlowLogs")) {
+        } else if (API_FETCH_EXEC_FLOW_LOGS.equals(ajaxName)) {
           ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchExecJobLogs")) {
+        } else if (API_FETCH_EXEC_JOB_LOGS.equals(ajaxName)) {
           ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("fetchExecJobStats")) {
+        } else if (API_FETCH_EXEC_JOB_STATS.equals(ajaxName)) {
           ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("retryFailedJobs")) {
+        } else if (API_RETRY_FAILED_JOBS.equals(ajaxName)) {
           ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
-        } else if (ajaxName.equals("flowInfo")) {
+        } else if (API_FLOW_INFO.equals(ajaxName)) {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
-    } else if (ajaxName.equals("fetchscheduledflowgraph")) {
+    } else if (API_RAMP.equals(ajaxName)) {
+      ajaxRampActions(req, resp, ret, session.getUser());
+    } else if (API_FETCH_SCHEDULED_FLOW_GRAPH.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
       ajaxFetchScheduledFlowGraph(projectName, flowName, ret, session.getUser());
-    } else if (ajaxName.equals("reloadExecutors")) {
+    } else if (API_RELOAD_EXECUTORS.equals(ajaxName)) {
       ajaxReloadExecutors(req, resp, ret, session.getUser());
-    } else if (ajaxName.equals("enableQueueProcessor")) {
+    } else if (API_ENABLE_QUEUE_PROCESSOR.equals(ajaxName)) {
       ajaxUpdateQueueProcessor(req, resp, ret, session.getUser(), true);
-    } else if (ajaxName.equals("disableQueueProcessor")) {
+    } else if (API_DISABLE_QUEUE_PROCESSOR.equals(ajaxName)) {
       ajaxUpdateQueueProcessor(req, resp, ret, session.getUser(), false);
-    } else if (ajaxName.equals("getRunning")) {
+    } else if (API_GET_RUNNING.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
-      ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName,
-          flowName);
-    } else if (ajaxName.equals("flowInfo")) {
+      ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
+    } else if (API_FLOW_INFO.equals(ajaxName)) {
       final String projectName = getParam(req, "project");
       final String flowName = getParam(req, "flow");
-      ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName,
-          flowName);
+      ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
     } else {
       final String projectName = getParam(req, "project");
 
       ret.put("project", projectName);
-      if (ajaxName.equals("executeFlow")) {
-        ajaxAttemptExecuteFlow(req, resp, ret, session.getUser());
+      if (API_EXECUTE_FLOW.equals(ajaxName)) {
+        ajaxExecuteFlow(req, resp, ret, session.getUser());
       }
     }
     if (ret != null) {
@@ -191,9 +236,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
       try {
         if (enableQueue) {
-          this.executorManager.enableQueueProcessorThread();
+          this.executorManagerAdapter.enableQueueProcessorThread();
         } else {
-          this.executorManager.disableQueueProcessorThread();
+          this.executorManagerAdapter.disableQueueProcessorThread();
         }
         returnMap.put(ConnectorParams.STATUS_PARAM,
             ConnectorParams.RESPONSE_SUCCESS);
@@ -249,7 +294,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     boolean wasSuccess = false;
     if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
       try {
-        this.executorManager.setupExecutors();
+        this.executorManagerAdapter.setupExecutors();
         returnMap.put(ConnectorParams.STATUS_PARAM,
             ConnectorParams.RESPONSE_SUCCESS);
         wasSuccess = true;
@@ -278,9 +323,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void handleExecutionJobDetailsPage(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
-    final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
+    final Page page = newPage(req, resp, session,
+        "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
     final User user = session.getUser();
     final int execId = getIntParam(req, "execid");
     final String jobId = getParam(req, "job");
@@ -292,7 +336,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ExecutableFlow flow = null;
     ExecutableNode node = null;
     try {
-      flow = this.executorManager.getExecutableFlow(execId);
+      flow = this.executorManagerAdapter.getExecutableFlow(execId);
       if (flow == null) {
         page.add("errorMsg", "Error loading executing flow " + execId
             + ": not found.");
@@ -302,14 +346,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
       node = flow.getExecutableNodePath(jobId);
       if (node == null) {
-        page.add("errorMsg",
-            "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
+        page.add("errorMsg", "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
         return;
       }
 
-      final List<ViewerPlugin> jobViewerPlugins =
-          PluginRegistry.getRegistry().getViewerPluginsForJobType(
-              node.getType());
+      final List<ViewerPlugin> jobViewerPlugins = PluginRegistry.getRegistry()
+          .getViewerPluginsForJobType(node.getType());
       page.add("jobViewerPlugins", jobViewerPlugins);
     } catch (final ExecutorManagerException e) {
       page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
@@ -325,10 +367,20 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    final Map<String, String> jobLogUrlsByAppId = this.executorManagerAdapter
+        .getExternalJobLogUrls(flow, jobId, attempt);
+    page.add("jobLogUrlsByAppId", jobLogUrlsByAppId);
+
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
+    page.add("jobType", node.getType());
+    page.add("attemptStatus", attempt == node.getAttempt() ?
+        node.getStatus() : node.getPastAttemptList().get(attempt).getStatus());
+    page.add("pastAttempts", node.getAttempt() > 0 ?
+        node.getPastAttemptList().size() : 0);
+    page.add("jobFailed", node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED);
 
     page.render();
   }
@@ -340,18 +392,75 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/executionspage.vm");
 
-    final List<Pair<ExecutableFlow, Executor>> runningFlows =
-        this.executorManager.getActiveFlowsWithExecutor();
+    final List<Pair<ExecutableFlow, Optional<Executor>>> runningFlows =
+        this.executorManagerAdapter.getActiveFlowsWithExecutor();
     page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
 
     final List<ExecutableFlow> finishedFlows =
-        this.executorManager.getRecentlyFinishedFlows();
+        this.executorManagerAdapter.getRecentlyFinishedFlows();
     page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
     page.add("vmutils", new VelocityUtil(this.projectManager));
     page.render();
   }
 
-  private void handleExecutionFlowPage(final HttpServletRequest req,
+  private void handleExecutionFlowPageByTriggerInstanceId(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session) throws ServletException,
+      IOException {
+    final Page page =
+        newPage(req, resp, session,
+            "azkaban/webapp/servlet/velocity/executingflowpage.vm");
+    final User user = session.getUser();
+    final String triggerInstanceId = getParam(req, "triggerinstanceid");
+
+    final TriggerInstance triggerInst = this.flowTriggerService
+        .findTriggerInstanceById(triggerInstanceId);
+
+    if (triggerInst == null) {
+      page.add("errorMsg", "Error loading trigger instance " + triggerInstanceId
+          + " not found.");
+      page.render();
+      return;
+    }
+
+    page.add("triggerInstanceId", triggerInstanceId);
+    page.add("execid", triggerInst.getFlowExecId());
+
+    final int projectId = triggerInst.getProject().getId();
+    final Project project =
+        getProjectPageByPermission(page, projectId, user, Type.READ);
+
+    if (project == null) {
+      page.render();
+      return;
+    }
+
+    addExternalLinkLabel(req, page);
+
+    page.add("projectId", project.getId());
+    page.add("projectName", project.getName());
+    page.add("flowid", triggerInst.getFlowId());
+
+    page.render();
+  }
+
+  private void addExternalLinkLabel(final HttpServletRequest req, final Page page) {
+    final Props props = getApplication().getServerProps();
+    final String execExternalLinkURL = ExternalLinkUtils.getExternalAnalyzerOnReq(props, req);
+
+    if (execExternalLinkURL.length() > 0) {
+      page.add("executionExternalLinkURL", execExternalLinkURL);
+      logger.debug("Added an External analyzer to the page");
+      logger.debug("External analyzer url: " + execExternalLinkURL);
+
+      final String execExternalLinkLabel =
+          props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
+              "External Analyzer");
+      page.add("executionExternalLinkLabel", execExternalLinkLabel);
+      logger.debug("External analyzer label set to : " + execExternalLinkLabel);
+    }
+  }
+
+  private void handleExecutionFlowPageByExecId(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
     final Page page =
@@ -360,10 +469,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final User user = session.getUser();
     final int execId = getIntParam(req, "execid");
     page.add("execid", execId);
+    page.add("triggerInstanceId", "-1");
 
     ExecutableFlow flow = null;
     try {
-      flow = this.executorManager.getExecutableFlow(execId);
+      flow = this.executorManagerAdapter.getExecutableFlow(execId);
       if (flow == null) {
         page.add("errorMsg", "Error loading executing flow " + execId
             + " not found.");
@@ -384,24 +494,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final Props props = getApplication().getServerProps();
-    final String execExternalLinkURL = ExternalLinkUtils.getExternalAnalyzerOnReq(props, req);
-
-    if (execExternalLinkURL.length() > 0) {
-      page.add("executionExternalLinkURL", execExternalLinkURL);
-      LOGGER.debug("Added an External analyzer to the page");
-      LOGGER.debug("External analyzer url: " + execExternalLinkURL);
-
-      final String execExternalLinkLabel =
-          props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
-              "External Analyzer");
-      page.add("executionExternalLinkLabel", execExternalLinkLabel);
-      LOGGER.debug("External analyzer label set to : " + execExternalLinkLabel);
-    }
+    addExternalLinkLabel(req, page);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
+
+    // check the current flow definition to see if the flow is locked.
+    final Flow currentFlow = project.getFlow(flow.getFlowId());
+    boolean isCurrentFlowLocked = false;
+    if (currentFlow != null) {
+      isCurrentFlowLocked = currentFlow.isLocked();
+    } else {
+      logger.info("Flow {} not found in project {}.", flow.getFlowId(), project.getName());
+    }
+    page.add("isLocked", isCurrentFlowLocked);
 
     page.render();
   }
@@ -425,36 +532,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
       final String projectName, final User user, final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectName);
-
-    if (project == null) {
-      ret.put("error", "Project '" + project + "' not found.");
-    } else if (!hasPermission(project, user, type)) {
-      ret.put("error",
-          "User '" + user.getUserId() + "' doesn't have " + type.name()
-              + " permissions on " + project.getName());
-    } else {
-      return project;
-    }
-
-    return null;
+    return filterProjectByPermission(this.projectManager.getProject(projectName), user, type, ret);
   }
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
       final int projectId, final User user, final Permission.Type type) {
-    final Project project = this.projectManager.getProject(projectId);
-
-    if (project == null) {
-      ret.put("error", "Project '" + project + "' not found.");
-    } else if (!hasPermission(project, user, type)) {
-      ret.put("error",
-          "User '" + user.getUserId() + "' doesn't have " + type.name()
-              + " permissions on " + project.getName());
-    } else {
-      return project;
-    }
-
-    return null;
+    return filterProjectByPermission(this.projectManager.getProject(projectId), user, type, ret);
   }
 
   private void ajaxRestartFailed(final HttpServletRequest req,
@@ -474,7 +557,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     try {
-      this.executorManager.retryFailures(exFlow, user.getUserId());
+      this.executorManagerAdapter.retryFailures(exFlow, user.getUserId());
     } catch (final ExecutorManagerException e) {
       ret.put("error", e.getMessage());
     }
@@ -486,9 +569,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecFlowLogs(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    final long startMs = System.currentTimeMillis();
-    final Project project =
-        getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+    final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
       return;
     }
@@ -499,28 +580,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     resp.setCharacterEncoding("utf-8");
 
     try {
-      final LogData data =
-          this.executorManager.getExecutableFlowLog(exFlow, offset, length);
-      if (data == null) {
-        ret.put("length", 0);
-        ret.put("offset", offset);
-        ret.put("data", "");
-      } else {
-        ret.put("length", data.getLength());
-        ret.put("offset", data.getOffset());
-        ret.put("data", StringEscapeUtils.escapeHtml(data.getData()));
-      }
+      final LogData data = this.executorManagerAdapter.getExecutableFlowLog(exFlow, offset, length);
+      ret.putAll(appendLogData(data, offset));
+
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
-
-    /*
-     * We originally consider leverage Drop Wizard's Timer API {@link com.codahale.metrics.Timer}
-     * to measure the duration time.
-     * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
-     * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
-     */
-    this.webMetrics.setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**
@@ -529,8 +594,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchJobLogs(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    final Project project =
-        getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+    final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
       return;
     }
@@ -544,27 +608,34 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     try {
       final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
       if (node == null) {
-        ret.put("error",
-            "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+        ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
         return;
       }
 
       final int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-      final LogData data =
-          this.executorManager.getExecutionJobLog(exFlow, jobId, offset, length,
-              attempt);
-      if (data == null) {
-        ret.put("length", 0);
-        ret.put("offset", offset);
-        ret.put("data", "");
-      } else {
-        ret.put("length", data.getLength());
-        ret.put("offset", data.getOffset());
-        ret.put("data", StringEscapeUtils.escapeHtml(data.getData()));
-      }
+      final LogData data = this.executorManagerAdapter
+          .getExecutionJobLog(exFlow, jobId, offset, length, attempt);
+      ret.putAll(appendLogData(data, offset));
+
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
+  }
+
+  private Map<String, Object> appendLogData(final LogData data, final int defaultOffset) {
+    final Map<String, Object> parameters = new HashMap<>();
+
+    if (data == null) {
+      parameters.put("length", 0);
+      parameters.put("offset", defaultOffset);
+      parameters.put("data", "");
+    } else {
+      parameters.put("length", data.getLength());
+      parameters.put("offset", data.getOffset());
+      parameters.put("data", StringEscapeUtils.escapeHtml(data.getData()));
+    }
+
+    return parameters;
   }
 
   private void ajaxFetchJobStats(final HttpServletRequest req,
@@ -588,7 +659,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       }
 
       final List<Object> jsonObj =
-          this.executorManager
+          this.executorManagerAdapter
               .getExecutionJobStats(exFlow, jobId, node.getAttempt());
       ret.put("jobStats", jsonObj);
     } catch (final ExecutorManagerException e) {
@@ -702,7 +773,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     try {
-      this.executorManager.cancelFlow(exFlow, user.getUserId());
+      this.executorManagerAdapter.cancelFlow(exFlow, user.getUserId());
     } catch (final ExecutorManagerException e) {
       ret.put("error", e.getMessage());
     }
@@ -718,7 +789,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     final List<Integer> refs =
-        this.executorManager.getRunningFlows(project.getId(), flowId);
+        this.executorManagerAdapter.getRunningFlows(project.getId(), flowId);
     if (!refs.isEmpty()) {
       ret.put("execIds", refs);
     }
@@ -735,7 +806,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     try {
-      this.executorManager.pauseFlow(exFlow, user.getUserId());
+      this.executorManagerAdapter.pauseFlow(exFlow, user.getUserId());
     } catch (final ExecutorManagerException e) {
       ret.put("error", e.getMessage());
     }
@@ -752,7 +823,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     try {
-      this.executorManager.resumeFlow(exFlow, user.getUserId());
+      this.executorManagerAdapter.resumeFlow(exFlow, user.getUserId());
     } catch (final ExecutorManagerException e) {
       ret.put("resume", e.getMessage());
     }
@@ -804,6 +875,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     nodeObj.put("endTime", node.getEndTime());
     nodeObj.put("updateTime", node.getUpdateTime());
     nodeObj.put("type", node.getType());
+    if (node.getCondition() != null) {
+      nodeObj.put("condition", node.getCondition());
+    }
     nodeObj.put("nestedId", node.getNestedId());
 
     nodeObj.put("attempt", node.getAttempt());
@@ -830,6 +904,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       nodeObj.put("flow", base.getFlowId());
       nodeObj.put("nodes", nodeList);
       nodeObj.put("flowId", base.getFlowId());
+    } else {
+      ClusterInfo cluster = node.getClusterInfo();
+      if (cluster != null && cluster.hadoopClusterURL != null) {
+        nodeObj.put("cluster", cluster.hadoopClusterURL);
+      }
     }
 
     return nodeObj;
@@ -839,7 +918,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
     final Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-    System.out.println("Fetching " + exFlow.getExecutionId());
+    logger.info("Fetching " + exFlow.getExecutionId());
 
     final Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -859,7 +938,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecutableFlow(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user,
       final ExecutableFlow exFlow) throws ServletException {
-    System.out.println("Fetching " + exFlow.getExecutionId());
+    logger.info("Fetching " + exFlow.getExecutionId());
 
     final Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -875,30 +954,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     final Map<String, Object> flowObj = getExecutableNodeInfo(exFlow);
     ret.putAll(flowObj);
-  }
-
-  private void ajaxAttemptExecuteFlow(final HttpServletRequest req,
-      final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
-      throws ServletException {
-    final String projectName = getParam(req, "project");
-    final String flowId = getParam(req, "flow");
-
-    final Project project =
-        getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
-    if (project == null) {
-      ret.put("error", "Project '" + projectName + "' doesn't exist.");
-      return;
-    }
-
-    ret.put("flow", flowId);
-    final Flow flow = project.getFlow(flowId);
-    if (flow == null) {
-      ret.put("error", "Flow '" + flowId + "' cannot be found in project "
-          + project);
-      return;
-    }
-
-    ajaxExecuteFlow(req, resp, ret, user);
   }
 
   private void ajaxExecuteFlow(final HttpServletRequest req,
@@ -917,15 +972,22 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("flow", flowId);
     final Flow flow = project.getFlow(flowId);
     if (flow == null) {
-      ret.put("error", "Flow '" + flowId + "' cannot be found in project "
-          + project);
+      ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
       return;
     }
 
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
+    exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
-    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req);
+    final ExecutionOptions options;
+    try {
+      options = HttpRequestUtils.parseFlowOptions(req, flowId);
+    } catch (final ServletException e) {
+      logger.info("parseFlowOptions failed", e);
+      ret.put("error", "Error parsing flow options: " + e.getMessage());
+      return;
+    }
     exflow.setExecutionOptions(options);
     if (!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());
@@ -938,7 +1000,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     try {
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, options, user);
       final String message =
-          this.executorManager.submitExecutableFlow(exflow, user.getUserId());
+          this.executorManagerAdapter.submitExecutableFlow(exflow, user.getUserId());
       ret.put("message", message);
     } catch (final Exception e) {
       e.printStackTrace();
@@ -947,5 +1009,31 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     ret.put("execid", exflow.getExecutionId());
+  }
+
+  private void ajaxRampActions(final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
+
+    try {
+      final Object body = HttpRequestUtils.getJsonBody(req);
+      if (HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
+        Map<String, String> result = new HashMap<>();
+        if (body instanceof List) { // A list of actions
+          final List<Map<String, Object>> rampActions = (List<Map<String, Object>>) body;
+          result = this.executorManagerAdapter.doRampActions(rampActions);
+        } else if (body instanceof Map) {
+          final List<Map<String, Object>> rampActions = new ArrayList<>();
+          rampActions.add((Map<String, Object>) body);
+          result = this.executorManagerAdapter.doRampActions(rampActions);
+        } else {
+          result.put("error", "Invalid Body Format");
+        }
+        ret.putAll(result);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+      ret.put("error", "Error on update Ramp. " + e.getMessage());
+    }
   }
 }

@@ -13,9 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.executor;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Node;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Base Executable that nodes and flows are based.
@@ -37,17 +39,22 @@ public class ExecutableNode {
 
   public static final String ID_PARAM = "id";
   public static final String STATUS_PARAM = "status";
-  public static final String STARTTIME_PARAM = "startTime";
-  public static final String ENDTIME_PARAM = "endTime";
-  public static final String UPDATETIME_PARAM = "updateTime";
-  public static final String INNODES_PARAM = "inNodes";
-  public static final String OUTNODES_PARAM = "outNodes";
+  public static final String START_TIME_PARAM = "startTime";
+  public static final String END_TIME_PARAM = "endTime";
+  public static final String UPDATE_TIME_PARAM = "updateTime";
+  public static final String IN_NODES_PARAM = "inNodes";
+  public static final String OUT_NODES_PARAM = "outNodes";
   public static final String TYPE_PARAM = "type";
+  public static final String CONDITION_PARAM = "condition";
+  public static final String CONDITION_ON_JOB_STATUS_PARAM = "conditionOnJobStatus";
   public static final String PROPS_SOURCE_PARAM = "propSource";
   public static final String JOB_SOURCE_PARAM = "jobSource";
   public static final String OUTPUT_PROPS_PARAM = "outputProps";
   public static final String ATTEMPT_PARAM = "attempt";
-  public static final String PASTATTEMPTS_PARAM = "pastAttempts";
+  public static final String PAST_ATTEMPTS_PARAM = "pastAttempts";
+  public static final String CLUSTER_PARAM = "cluster";
+
+  private ClusterInfo clusterInfo;
   private final AtomicInteger attempt = new AtomicInteger(0);
   private String id;
   private String type = null;
@@ -64,8 +71,14 @@ public class ExecutableNode {
   private Set<String> outNodes = new HashSet<>();
   private Props inputProps;
   private Props outputProps;
+  private Props rampProps;
   private long delayExecution = 0;
-  private ArrayList<ExecutionAttempt> pastAttempts = null;
+  private List<ExecutionAttempt> pastAttempts = new ArrayList<>();
+  private String condition;
+  private ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus.ALL_SUCCESS;
+
+  private String modifiedBy = "unknown";
+  private String failureMessage = "null";
 
   // Transient. These values aren't saved, but rediscovered.
   private ExecutableFlowBase parentFlow;
@@ -77,16 +90,19 @@ public class ExecutableNode {
   }
 
   public ExecutableNode(final Node node, final ExecutableFlowBase parent) {
-    this(node.getId(), node.getType(), node.getJobSource(), node
-        .getPropsSource(), parent);
+    this(node.getId(), node.getType(), node.getCondition(), node.getConditionOnJobStatus(),
+        node.getJobSource(), node.getPropsSource(), parent);
   }
 
-  public ExecutableNode(final String id, final String type, final String jobSource,
+  public ExecutableNode(final String id, final String type, final String condition,
+      final ConditionOnJobStatus conditionOnJobStatus, final String jobSource,
       final String propsSource, final ExecutableFlowBase parent) {
     this.id = id;
     this.jobSource = jobSource;
     this.propsSource = propsSource;
     this.type = type;
+    this.condition = condition;
+    this.conditionOnJobStatus = conditionOnJobStatus;
     setParentFlow(parent);
   }
 
@@ -139,6 +155,14 @@ public class ExecutableNode {
 
   public void setStartTime(final long startTime) {
     this.startTime = startTime;
+  }
+
+  public void setClusterInfo(final ClusterInfo clusterInfo) {
+    this.clusterInfo = clusterInfo;
+  }
+
+  public ClusterInfo getClusterInfo() {
+    return this.clusterInfo;
   }
 
   public long getEndTime() {
@@ -229,15 +253,27 @@ public class ExecutableNode {
     return this.attempt.get();
   }
 
+  public String getModifiedBy() {
+    return this.modifiedBy;
+  }
+
+  public void setModifiedBy(final String modifiedBy) {
+    this.modifiedBy = modifiedBy;
+  }
+
+  public String getFailureMessage() {
+    return this.failureMessage;
+  }
+
+  public void setFailureMessage(final String failureMessage) {
+    this.failureMessage = failureMessage;
+  }
+
   public void resetForRetry() {
     final ExecutionAttempt pastAttempt = new ExecutionAttempt(this.attempt.get(), this);
     this.attempt.incrementAndGet();
 
     synchronized (this) {
-      if (this.pastAttempts == null) {
-        this.pastAttempts = new ArrayList<>();
-      }
-
       this.pastAttempts.add(pastAttempt);
     }
 
@@ -246,10 +282,11 @@ public class ExecutableNode {
     this.setUpdateTime(System.currentTimeMillis());
     this.setStatus(Status.READY);
     this.setKilledBySLA(false);
+    this.setClusterInfo(null);
   }
 
   public List<Object> getAttemptObjects() {
-    final ArrayList<Object> array = new ArrayList<>();
+    final List<Object> array = new ArrayList<>();
 
     for (final ExecutionAttempt attempt : this.pastAttempts) {
       array.add(attempt.toObject());
@@ -263,8 +300,7 @@ public class ExecutableNode {
   }
 
   public String getPrintableId(final String delimiter) {
-    if (this.getParentFlow() == null
-        || this.getParentFlow() instanceof ExecutableFlow) {
+    if (this.getParentFlow() == null || this.getParentFlow() instanceof ExecutableFlow) {
       return getId();
     }
     return getParentFlow().getPrintableId(delimiter) + delimiter + getId();
@@ -280,17 +316,24 @@ public class ExecutableNode {
   protected void fillMapFromExecutable(final Map<String, Object> objMap) {
     objMap.put(ID_PARAM, this.id);
     objMap.put(STATUS_PARAM, this.status.toString());
-    objMap.put(STARTTIME_PARAM, this.startTime);
-    objMap.put(ENDTIME_PARAM, this.endTime);
-    objMap.put(UPDATETIME_PARAM, this.updateTime);
+    objMap.put(START_TIME_PARAM, this.startTime);
+    objMap.put(END_TIME_PARAM, this.endTime);
+    objMap.put(UPDATE_TIME_PARAM, this.updateTime);
     objMap.put(TYPE_PARAM, this.type);
+    objMap.put(CONDITION_PARAM, this.condition);
+    if (this.clusterInfo != null) {
+      objMap.put(CLUSTER_PARAM, ClusterInfo.toObject(this.clusterInfo));
+    }
+    if (this.conditionOnJobStatus != null) {
+      objMap.put(CONDITION_ON_JOB_STATUS_PARAM, this.conditionOnJobStatus.toString());
+    }
     objMap.put(ATTEMPT_PARAM, this.attempt);
 
     if (this.inNodes != null && !this.inNodes.isEmpty()) {
-      objMap.put(INNODES_PARAM, this.inNodes);
+      objMap.put(IN_NODES_PARAM, this.inNodes);
     }
     if (this.outNodes != null && !this.outNodes.isEmpty()) {
-      objMap.put(OUTNODES_PARAM, this.outNodes);
+      objMap.put(OUT_NODES_PARAM, this.outNodes);
     }
 
     if (hasPropsSource()) {
@@ -305,46 +348,50 @@ public class ExecutableNode {
     }
 
     if (this.pastAttempts != null) {
-      final ArrayList<Object> attemptsList =
-          new ArrayList<>(this.pastAttempts.size());
+      final List<Object> attemptsList = new ArrayList<>(this.pastAttempts.size());
       for (final ExecutionAttempt attempts : this.pastAttempts) {
         attemptsList.add(attempts.toObject());
       }
-      objMap.put(PASTATTEMPTS_PARAM, attemptsList);
+      objMap.put(PAST_ATTEMPTS_PARAM, attemptsList);
     }
   }
 
-  public void fillExecutableFromMapObject(
-      final TypedMapWrapper<String, Object> wrappedMap) {
+  public void fillExecutableFromMapObject(final TypedMapWrapper<String, Object> wrappedMap) {
     this.id = wrappedMap.getString(ID_PARAM);
     this.type = wrappedMap.getString(TYPE_PARAM);
+    this.condition = wrappedMap.getString(CONDITION_PARAM);
+    this.conditionOnJobStatus = ConditionOnJobStatus.fromString(wrappedMap.getString
+        (CONDITION_ON_JOB_STATUS_PARAM));
     this.status = Status.valueOf(wrappedMap.getString(STATUS_PARAM));
-    this.startTime = wrappedMap.getLong(STARTTIME_PARAM);
-    this.endTime = wrappedMap.getLong(ENDTIME_PARAM);
-    this.updateTime = wrappedMap.getLong(UPDATETIME_PARAM);
+    this.startTime = wrappedMap.getLong(START_TIME_PARAM);
+    this.endTime = wrappedMap.getLong(END_TIME_PARAM);
+    this.updateTime = wrappedMap.getLong(UPDATE_TIME_PARAM);
     this.attempt.set(wrappedMap.getInt(ATTEMPT_PARAM, 0));
 
     this.inNodes = new HashSet<>();
-    this.inNodes.addAll(wrappedMap.getStringCollection(INNODES_PARAM,
-        Collections.<String>emptySet()));
+    this.inNodes
+        .addAll(wrappedMap.getStringCollection(IN_NODES_PARAM, Collections.<String>emptySet()));
 
     this.outNodes = new HashSet<>();
-    this.outNodes.addAll(wrappedMap.getStringCollection(OUTNODES_PARAM,
-        Collections.<String>emptySet()));
+    this.outNodes
+        .addAll(wrappedMap.getStringCollection(OUT_NODES_PARAM, Collections.<String>emptySet()));
 
     this.propsSource = wrappedMap.getString(PROPS_SOURCE_PARAM);
     this.jobSource = wrappedMap.getString(JOB_SOURCE_PARAM);
 
-    final Map<String, String> outputProps =
-        wrappedMap.<String, String>getMap(OUTPUT_PROPS_PARAM);
+    final Object clusterObj = wrappedMap.getObject(CLUSTER_PARAM);
+    if (clusterObj != null) {
+      this.clusterInfo = ClusterInfo.fromObject(clusterObj);
+    }
+
+    final Map<String, String> outputProps = wrappedMap.<String, String>getMap(OUTPUT_PROPS_PARAM);
     if (outputProps != null) {
       this.outputProps = new Props(null, outputProps);
     }
 
-    final Collection<Object> pastAttempts =
-        wrappedMap.<Object>getCollection(PASTATTEMPTS_PARAM);
+    final Collection<Object> pastAttempts = wrappedMap.<Object>getCollection(PAST_ATTEMPTS_PARAM);
     if (pastAttempts != null) {
-      final ArrayList<ExecutionAttempt> attempts = new ArrayList<>();
+      final List<ExecutionAttempt> attempts = new ArrayList<>();
       for (final Object attemptObj : pastAttempts) {
         final ExecutionAttempt attempt = ExecutionAttempt.fromObject(attemptObj);
         attempts.add(attempt);
@@ -355,8 +402,7 @@ public class ExecutableNode {
   }
 
   public void fillExecutableFromMapObject(final Map<String, Object> objMap) {
-    final TypedMapWrapper<String, Object> wrapper =
-        new TypedMapWrapper<>(objMap);
+    final TypedMapWrapper<String, Object> wrapper = new TypedMapWrapper<>(objMap);
     fillExecutableFromMapObject(wrapper);
   }
 
@@ -364,44 +410,40 @@ public class ExecutableNode {
     final Map<String, Object> updatedNodeMap = new HashMap<>();
     updatedNodeMap.put(ID_PARAM, getId());
     updatedNodeMap.put(STATUS_PARAM, getStatus().getNumVal());
-    updatedNodeMap.put(STARTTIME_PARAM, getStartTime());
-    updatedNodeMap.put(ENDTIME_PARAM, getEndTime());
-    updatedNodeMap.put(UPDATETIME_PARAM, getUpdateTime());
+    updatedNodeMap.put(START_TIME_PARAM, getStartTime());
+    updatedNodeMap.put(END_TIME_PARAM, getEndTime());
+    updatedNodeMap.put(UPDATE_TIME_PARAM, getUpdateTime());
 
     updatedNodeMap.put(ATTEMPT_PARAM, getAttempt());
 
     if (getAttempt() > 0) {
-      final ArrayList<Map<String, Object>> pastAttempts =
-          new ArrayList<>();
+      final List<Map<String, Object>> pastAttempts = new ArrayList<>();
       for (final ExecutionAttempt attempt : getPastAttemptList()) {
         pastAttempts.add(attempt.toObject());
       }
-      updatedNodeMap.put(PASTATTEMPTS_PARAM, pastAttempts);
+      updatedNodeMap.put(PAST_ATTEMPTS_PARAM, pastAttempts);
     }
 
     return updatedNodeMap;
   }
 
   public void applyUpdateObject(final TypedMapWrapper<String, Object> updateData) {
-    this.status =
-        Status.fromInteger(updateData.getInt(STATUS_PARAM,
-            this.status.getNumVal()));
-    this.startTime = updateData.getLong(STARTTIME_PARAM);
-    this.updateTime = updateData.getLong(UPDATETIME_PARAM);
-    this.endTime = updateData.getLong(ENDTIME_PARAM);
+    this.status = Status.fromInteger(updateData.getInt(STATUS_PARAM, this.status.getNumVal()));
+    this.startTime = updateData.getLong(START_TIME_PARAM);
+    this.updateTime = updateData.getLong(UPDATE_TIME_PARAM);
+    this.endTime = updateData.getLong(END_TIME_PARAM);
 
     if (updateData.containsKey(ATTEMPT_PARAM)) {
       this.attempt.set(updateData.getInt(ATTEMPT_PARAM));
       if (this.attempt.get() > 0) {
-        updatePastAttempts(updateData.<Object>getList(PASTATTEMPTS_PARAM,
-            Collections.<Object>emptyList()));
+        updatePastAttempts(
+            updateData.<Object>getList(PAST_ATTEMPTS_PARAM, Collections.<Object>emptyList()));
       }
     }
   }
 
   public void applyUpdateObject(final Map<String, Object> updateData) {
-    final TypedMapWrapper<String, Object> wrapper =
-        new TypedMapWrapper<>(updateData);
+    final TypedMapWrapper<String, Object> wrapper = new TypedMapWrapper<>(updateData);
     applyUpdateObject(wrapper);
   }
 
@@ -429,29 +471,45 @@ public class ExecutableNode {
     }
 
     synchronized (this) {
-      if (this.pastAttempts == null) {
-        this.pastAttempts = new ArrayList<>();
-      }
-
       // We just check size because past attempts don't change
       if (pastAttemptsList.size() <= this.pastAttempts.size()) {
         return;
       }
-
-      final Object[] pastAttemptArray = pastAttemptsList.toArray();
-      for (int i = this.pastAttempts.size(); i < pastAttemptArray.length; ++i) {
-        final ExecutionAttempt attempt =
-            ExecutionAttempt.fromObject(pastAttemptArray[i]);
-        this.pastAttempts.add(attempt);
-      }
+      this.pastAttempts.addAll(pastAttemptsList.stream().skip(this.pastAttempts.size())
+          .map(obj -> ExecutionAttempt.fromObject(obj)).collect(Collectors.toList()));
     }
   }
 
   public int getRetries() {
-    return this.inputProps.getInt("retries", 0);
+    return this.inputProps.getInt(CommonJobProperties.RETRIES, 0);
   }
 
   public long getRetryBackoff() {
-    return this.inputProps.getLong("retry.backoff", 0);
+    return this.inputProps.getLong(CommonJobProperties.RETRY_BACKOFF, 0);
+  }
+
+  public String getCondition() {
+    return this.condition;
+  }
+
+  public void setCondition(final String condition) {
+    this.condition = condition;
+  }
+
+  public ConditionOnJobStatus getConditionOnJobStatus() {
+    return this.conditionOnJobStatus == null ? ConditionOnJobStatus.ALL_SUCCESS
+        : this.conditionOnJobStatus;
+  }
+
+  public void setConditionOnJobStatus(final ConditionOnJobStatus conditionOnJobStatus) {
+    this.conditionOnJobStatus = conditionOnJobStatus;
+  }
+
+  public Props getRampProps() {
+    return this.rampProps;
+  }
+
+  public void setRampProps(final Props rampProps) {
+    this.rampProps = rampProps;
   }
 }

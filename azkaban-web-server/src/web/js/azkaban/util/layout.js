@@ -392,7 +392,7 @@ function findAverage(nodes) {
   for (var i = 0; i < nodes.length; ++i) {
     sum += nodes[i].x;
   }
-  return sum / nodes.length;
+  return nodes.length != 0 ? sum / nodes.length : 0;
 }
 
 function uncrossWithOut(layer) {

@@ -16,11 +16,16 @@
 
 package azkaban.jobExecutor;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import azkaban.flow.CommonJobProperties;
+import azkaban.jobExecutor.utils.process.ProcessFailureException;
 import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -63,6 +68,7 @@ public class JavaProcessJobTest {
   public TemporaryFolder temp = new TemporaryFolder();
   private JavaProcessJob job = null;
   private Props props = null;
+  private File workingDir;
 
   @BeforeClass
   public static void init() throws IOException {
@@ -95,11 +101,11 @@ public class JavaProcessJobTest {
 
   @Before
   public void setUp() throws IOException {
-    final File workingDir = this.temp.newFolder("testJavaProcess");
+    this.workingDir = this.temp.newFolder("testJavaProcess");
 
     // Initialize job
     this.props = AllJobExecutorTests.setUpCommonProps();
-    this.props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
+    this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getCanonicalPath());
     this.props.put("type", "java");
 
     this.job = new JavaProcessJob("testJavaProcess", this.props, this.props, this.log);
@@ -122,11 +128,49 @@ public class JavaProcessJobTest {
   }
 
   @Test
+  public void noClassPath() throws Exception {
+    copyJarToJobDirectory();
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    assertThatThrownBy(() -> this.job.run())
+        .isInstanceOf(RuntimeException.class)
+        .hasCauseInstanceOf(ProcessFailureException.class);
+  }
+
+  @Test
+  public void emptyClassPath() throws Exception {
+    copyJarToJobDirectory();
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("classpath", "");
+    assertThatThrownBy(() -> this.job.run())
+        .isInstanceOf(RuntimeException.class)
+        .hasCauseInstanceOf(ProcessFailureException.class);
+  }
+
+  @Test
+  public void noClassPathNoJar() throws Exception {
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    assertThatThrownBy(() -> this.job.run())
+        .isInstanceOf(Exception.class)
+        .hasMessageContaining("No classpath defined and no .jar files found")
+        .hasCauseInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void emptyClassPathNoJar() throws Exception {
+    this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("classpath", "");
+    assertThatThrownBy(() -> this.job.run())
+        .isInstanceOf(Exception.class)
+        .hasMessageContaining("No classpath defined and no .jar files found")
+        .hasCauseInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   public void testJavaJobHashmap() throws Exception {
     // initialize the Props
     this.props.put(JavaProcessJob.JAVA_CLASS,
         "azkaban.executor.SleepJavaJob");
-    this.props.put("seconds", 1);
+    this.props.put("seconds", 0);
     this.props.put("input", inputFile);
     this.props.put("output", outputFile);
     this.props.put("classpath", classPaths);
@@ -147,4 +191,12 @@ public class JavaProcessJobTest {
       Assert.assertTrue(true);
     }
   }
+
+  private void copyJarToJobDirectory() throws IOException {
+    // this jar doesn't really contain any class with a main() method
+    // so the job will fail - this is just so that javaprocess finds it and sets '-cp test.jar'
+    FileUtils.copyFileToDirectory(new File("src/test/resources/project/testfailure/test.jar"),
+        this.workingDir);
+  }
+
 }

@@ -1,0 +1,5 @@
+type=command
+command=echo "hello"
+command.1=echo "This is how one runs a command job"
+command.2=whoami
+

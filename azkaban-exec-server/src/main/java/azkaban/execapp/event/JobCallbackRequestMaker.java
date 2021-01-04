@@ -7,6 +7,7 @@ import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_SOCKET_TIMEOUT
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_THREAD_POOL_SIZE;
 
 import azkaban.utils.Props;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,7 +32,8 @@ import org.apache.http.impl.client.FutureRequestExecutionMetrics;
 import org.apache.http.impl.client.FutureRequestExecutionService;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpRequestFutureTask;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Responsible for making the job callback HTTP requests.
@@ -43,8 +45,7 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackRequestMaker {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackRequestMaker.class);
+  private static final Logger logger = LoggerFactory.getLogger(JobCallbackRequestMaker.class);
 
   private static final int DEFAULT_TIME_OUT_MS = 3000;
   private static final int DEFAULT_RESPONSE_WAIT_TIME_OUT_MS = 5000;
@@ -89,7 +90,8 @@ public class JobCallbackRequestMaker {
     logger.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
 
     final ExecutorService executorService =
-        Executors.newFixedThreadPool(jobCallbackThreadPoolSize);
+        Executors.newFixedThreadPool(jobCallbackThreadPoolSize,
+            new ThreadFactoryBuilder().setNameFormat("azk-callback-pool-%d").build());
     this.futureRequestExecutionService =
         new FutureRequestExecutionService(httpClient, executorService);
   }
@@ -127,21 +129,19 @@ public class JobCallbackRequestMaker {
 
   public void makeHttpRequest(final String jobId, final Logger logger,
       final List<HttpRequestBase> httpRequestList) {
-
     if (httpRequestList == null || httpRequestList.isEmpty()) {
-      logger.info("No HTTP requests to make");
+      logger.info("No HTTP requests to make for: " + jobId);
       return;
     }
 
     for (final HttpRequestBase httpRequest : httpRequestList) {
-
-      logger.info("Job callback http request: " + httpRequest.toString());
-      logger.info("headers [");
+      logger.debug("Job callback http request for " + jobId + ": " + httpRequest.toString());
+      logger.debug("headers [");
       for (final Header header : httpRequest.getAllHeaders()) {
-        logger.info(String.format("  %s : %s", header.getName(),
+        logger.debug(String.format("  %s : %s", header.getName(),
             header.getValue()));
       }
-      logger.info("]");
+      logger.debug("]");
 
       final HttpRequestFutureTask<Integer> task =
           this.futureRequestExecutionService.execute(httpRequest,
@@ -152,11 +152,11 @@ public class JobCallbackRequestMaker {
         final Integer statusCode =
             task.get(this.responseWaitTimeoutMS, TimeUnit.MILLISECONDS);
 
-        logger.info("http callback status code: " + statusCode);
+        logger.info("http callback status code for " + jobId + ": " + statusCode);
       } catch (final TimeoutException timeOutEx) {
         logger
             .warn("Job callback target took longer "
-                    + (this.responseWaitTimeoutMS / 1000) + " seconds to respond",
+                    + (this.responseWaitTimeoutMS / 1000) + " seconds to respond for: " + jobId,
                 timeOutEx);
       } catch (final ExecutionException ee) {
         if (ee.getCause() instanceof SocketTimeoutException) {
@@ -164,12 +164,13 @@ public class JobCallbackRequestMaker {
               + (this.responseWaitTimeoutMS / 1000) + " seconds to respond", ee);
         } else {
           logger.warn(
-              "Encountered error while waiting for job callback to complete",
+              "Failed to execute job callback for: " + jobId,
               ee);
         }
       } catch (final Throwable e) {
         logger.warn(
-            "Encountered error while waiting for job callback to complete", e);
+            "Failed to execute job callback for: " + jobId,
+            e);
       }
     }
   }

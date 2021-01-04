@@ -1,8 +1,13 @@
 languages: java
-# TODO: Add openjdk8 once it is available in Travis.
 jdk:
-  - oraclejdk8
-sudo: false
+  - openjdk8
+os: linux
+dist: xenial
+
+before_install:
+  - sudo apt update
+  - sudo apt install openjfx
+
 script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
@@ -14,7 +19,18 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
 
+notifications:
+  email:
+    recipients:
+      - azkaban-dev@linkedin.com
+    on_success: never
+    on_failure: always
+
 env:
   global:
     # Reduce the memory pressure on Travis CI to reduce build failures.
     - GRADLE_OPTS="-Xms128m"
+
+after_success:
+  - ./gradlew coveralls --no-daemon
+  - bash <(curl -s https://codecov.io/bash)

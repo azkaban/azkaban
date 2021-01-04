@@ -1,0 +1,40 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobD
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: one_success && ${jobA:props} == 'foo'
+
+    dependsOn:
+      - jobB
+      - jobC
+
+  - name: jobA
+    type: test
+    config:
+      seconds: 0
+
+  - name: jobB
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ${jobA:props} == 'foo'
+
+    dependsOn:
+      - jobA
+
+  - name: jobC
+    type: test
+    config:
+      fail: false
+      seconds: 0
+    condition: ${jobA:props} == 'bar'
+
+    dependsOn:
+      - jobA

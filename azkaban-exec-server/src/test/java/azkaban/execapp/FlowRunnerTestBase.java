@@ -173,4 +173,8 @@ public class FlowRunnerTestBase {
     }
   }
 
+  protected void assertFlowVersion(final ExecutableFlow flow, final double flowVersion){
+    assertEquals(flow.getAzkabanFlowVersion(), flowVersion, 0.1);
+  }
+
 }

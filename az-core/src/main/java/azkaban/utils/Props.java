@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package azkaban.utils;
 
 import java.io.BufferedInputStream;
@@ -38,8 +37,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
+
 /**
- * Hashmap implementation of a hierarchitical properties with helpful converter functions and
+ * Hashmap implementation of a hierarchical properties with helpful converter functions and
  * Exception throwing. This class is not threadsafe.
  */
 public class Props {
@@ -75,15 +75,18 @@ public class Props {
    */
   public Props(final Props parent, final File file) throws IOException {
     this(parent);
-    setSource(file.getPath());
 
-    final InputStream input = new BufferedInputStream(new FileInputStream(file));
-    try {
-      loadFrom(input);
-    } catch (final IOException e) {
-      throw e;
-    } finally {
-      input.close();
+    if (file.exists()) {
+      setSource(file.getPath());
+
+      final InputStream input = new BufferedInputStream(new FileInputStream(file));
+      try {
+        loadFrom(input);
+      } catch (final IOException e) {
+        throw e;
+      } finally {
+        input.close();
+      }
     }
   }
 
@@ -158,9 +161,10 @@ public class Props {
   }
 
   /**
+   * Recursive Clone function of Props
    *
-   * @param source
-   * @return
+   * @param source the source Props object
+   * @return the cloned Props object
    */
   private static Props copyNext(final Props source) {
     Props priorNodeCopy = null;
@@ -176,9 +180,24 @@ public class Props {
   }
 
   /**
+   * Create a new Props instance
    *
-   * @param inputStream
-   * @throws IOException
+   * @param parent parent props
+   * @param current current props
+   * @param source source value
+   * @return new Prop Instance
+   */
+  public static Props getInstance(Props parent, Props current, String source) {
+    Props props = new Props(parent, current);
+    props.setSource(source);
+    return props;
+  }
+
+  /**
+   * load this Prop Object from a @Properties formatted InputStream
+   *
+   * @param inputStream inputStream for loading Properties Object
+   * @throws IOException read exception
    */
   private void loadFrom(final InputStream inputStream) throws IOException {
     final Properties properties = new Properties();
@@ -186,6 +205,11 @@ public class Props {
     this.put(properties);
   }
 
+  /**
+   * Get the Root Props Object
+   *
+   * @return the root Props Object or this Props itself
+   */
   public Props getEarliestAncestor() {
     if (this._parent == null) {
       return this;
@@ -194,6 +218,11 @@ public class Props {
     return this._parent.getEarliestAncestor();
   }
 
+  /**
+   * Set the Props Object as the root of this Props Object
+   *
+   * @param parent the earliest ancestor Props Object
+   */
   public void setEarliestAncestor(final Props parent) {
     final Props props = getEarliestAncestor();
     props.setParent(parent);
@@ -433,13 +462,14 @@ public class Props {
   /**
    * Returns a list of clusters with the comma as the separator of the value
    * e.g., for input string: "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port;"
-   * we will get ["thrift://hcat1:port,thrift://hcat2:port", "thrift://hcat3:port,thrift://hcat4:port"] as output
+   * we will get ["thrift://hcat1:port,thrift://hcat2:port", "thrift://hcat3:port,thrift://hcat4:port"]
+   * as output
    */
   public List<String> getStringListFromCluster(final String key) {
-    List<String> curlist = getStringList(key, "\\s*;\\s*");
+    final List<String> curlist = getStringList(key, "\\s*;\\s*");
     // remove empty elements in the array
-    for (Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
-      String a = iter.next();
+    for (final Iterator<String> iter = curlist.listIterator(); iter.hasNext(); ) {
+      final String a = iter.next();
       if (a.length() == 0) {
         iter.remove();
       }
@@ -531,6 +561,8 @@ public class Props {
    * UndefinedPropertyException will be thrown. If the value isn't a long, then a parse exception
    * will be thrown.
    */
+  //todo burgerkingeater: it might be better to return null instead of throwing exception to
+  // avoid repetitive exception handling
   public long getLong(final String name) {
     if (containsKey(name)) {
       return Long.parseLong(get(name));
@@ -593,13 +625,22 @@ public class Props {
   }
 
   /**
-   * Returns the uri representation of the value. If the value is null, then the default value is
-   * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
+   * Returns the uri representation of the value. If the value is null, then an
+   * UndefinedPropertyException will be thrown. If the value isn't a uri, then an
+   * IllegalArgumentException will be thrown.
+   *
+   * If addTrailingSlash is true and the value isn't null, a trailing forward slash will be added
+   * to the URI.
    */
-  public URI getUri(final String name) {
+  public URI getUri(final String name) { return getUri(name, false); }
+  public URI getUri(final String name, final Boolean addTrailingSlash) {
     if (containsKey(name)) {
       try {
-        return new URI(get(name));
+        String rawValue = get(name);
+        if (rawValue == null) return null;
+
+        String finalValue = !addTrailingSlash || rawValue.endsWith("/") ? rawValue : rawValue + "/";
+        return new URI(finalValue);
       } catch (final URISyntaxException e) {
         throw new IllegalArgumentException(e.getMessage());
       }
@@ -612,15 +653,22 @@ public class Props {
   /**
    * Returns the double representation of the value. If the value is null, then the default value is
    * returned. If the value isn't a uri, then a IllegalArgumentException will be thrown.
+   *
+   * If addTrailingSlash is true and the value isn't null, a trailing forward slash will be added
+   * to the URI.
    */
-  public URI getUri(final String name, final URI defaultValue) {
+  public URI getUri(final String name, final URI defaultValue) { return getUri(name, defaultValue, false); }
+  public URI getUri(final String name, final URI defaultValue, final Boolean addTrailingSlash) {
     if (containsKey(name)) {
-      return getUri(name);
+      return getUri(name, addTrailingSlash);
     } else {
       return defaultValue;
     }
   }
 
+  /**
+   * Convert a URI-formatted string value to URI object
+   */
   public URI getUri(final String name, final String defaultValue) {
     try {
       return getUri(name, new URI(defaultValue));
@@ -667,7 +715,9 @@ public class Props {
   }
 
   /**
-   * Returns a java.util.Properties file populated with the stuff in here.
+   * Returns a java.util.Properties file populated with the current Properties in here.
+   * Note: if you want to import parent properties (e.g., database credentials), please use
+   * toAllProperties
    */
   public Properties toProperties() {
     final Properties p = new Properties();
@@ -676,6 +726,22 @@ public class Props {
     }
 
     return p;
+  }
+
+  /**
+   * Returns a java.util.Properties file populated with both current and parent properties.
+   */
+  public Properties toAllProperties() {
+    final Properties allProp = new Properties();
+    // import local properties
+    allProp.putAll(toProperties());
+
+    // import parent properties
+    if (this._parent != null) {
+      allProp.putAll(this._parent.toProperties());
+    }
+
+    return allProp;
   }
 
   /**
@@ -714,10 +780,11 @@ public class Props {
   }
 
   /**
-   * Returns a map of all the flattened properties, the item in the returned map is sorted
-   * alphabetically by the key value.
+   * Returns a new constructed map of all the flattened properties, the item in the returned
+   * map is sorted alphabetically by the key value.
    *
-   * @Return
+   * @Return a new constructed TreeMap (sorted map) of all properties (including parents'
+   * properties)
    */
   public Map<String, String> getFlattened() {
     final TreeMap<String, String> returnVal = new TreeMap<>();
@@ -726,18 +793,28 @@ public class Props {
   }
 
   /**
-   * Get a map of all properties by string prefix
+   * Get a new de-duplicated map of all the flattened properties by given prefix. The prefix will
+   * be removed in the return map's keySet.
    *
-   * @param prefix The string prefix
+   * @param prefix the prefix string
+   * @return a new constructed de-duplicated HashMap of all properties (including parents'
+   * properties) with the give prefix
    */
   public Map<String, String> getMapByPrefix(final String prefix) {
-    final Map<String, String> values = this._parent == null ? new HashMap<>() :
-        this._parent.getMapByPrefix(prefix);
+    final Map<String, String> values = (this._parent == null)
+        ? new HashMap<>()
+        : this._parent.getMapByPrefix(prefix);
 
     // when there is a conflict, value from the child takes the priority.
+    if (prefix == null) { // when prefix is null, return an empty map
+      return values;
+    }
+
     for (final String key : this.localKeySet()) {
-      if (key.startsWith(prefix)) {
-        values.put(key.substring(prefix.length()), get(key));
+      if (key != null && key.length() >= prefix.length()) {
+        if (key.startsWith(prefix)) {
+          values.put(key.substring(prefix.length()), get(key));
+        }
       }
     }
     return values;
@@ -770,6 +847,7 @@ public class Props {
   }
 
   /**
+   * override object's default equal function
    */
   @Override
   public boolean equals(final Object o) {
@@ -786,25 +864,7 @@ public class Props {
   }
 
   /**
-   * Returns true if the properties are equivalent, regardless of the hierarchy.
-   */
-  public boolean equalsProps(final Props p) {
-    if (p == null) {
-      return false;
-    }
-
-    final Set<String> myKeySet = getKeySet();
-    for (final String s : myKeySet) {
-      if (!get(s).equals(p.get(s))) {
-        return false;
-      }
-    }
-
-    return myKeySet.size() == p.getKeySet().size();
-  }
-
-  /**
-   *
+   * override object's default hash code function
    */
   @Override
   public int hashCode() {
@@ -816,7 +876,7 @@ public class Props {
   }
 
   /**
-   *
+   * override object's default toString function
    */
   @Override
   public String toString() {
@@ -835,11 +895,18 @@ public class Props {
     return builder.toString();
   }
 
+  /**
+   * Get Source information
+   */
   public String getSource() {
     return this.source;
   }
 
-  public void setSource(final String source) {
+  /**
+   * Set Source information
+   */
+  public Props setSource(final String source) {
     this.source = source;
+    return this;
   }
 }
