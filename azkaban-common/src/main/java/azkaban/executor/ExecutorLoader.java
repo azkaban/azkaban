@@ -353,4 +353,6 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException;
+
+  int updateVersionSetId(final int executionId) throws ExecutorManagerException;
 }

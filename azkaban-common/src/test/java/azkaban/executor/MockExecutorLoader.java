@@ -574,6 +574,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public int updateVersionSetId(int executionId) throws ExecutorManagerException {
+    return 0;
+  }
+
+  @Override
   public Map<String, String> doRampActions(List<Map<String, Object>> rampActionsMap) throws ExecutorManagerException {
     return null;
   }

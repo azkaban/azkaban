@@ -431,4 +431,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException {
     this.executionFlowDao.unsetExecutorIdForExecution(executionId);
   }
+
+  @Override
+  public int updateVersionSetId(int executionId) throws ExecutorManagerException {
+    return this.executionFlowDao.updateVersionSetId(executionId);
+  }
 }

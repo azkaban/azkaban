@@ -435,7 +435,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       logger.error("ExecId: {}, Unable to create Pod: {}", executionId, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
-    // TODO: Store version set id in execution_flows for execution_id
+    // Store version set id in execution_flows for execution_id
+    this.executorLoader.updateVersionSetId(executionId);
   }
 
   /**
