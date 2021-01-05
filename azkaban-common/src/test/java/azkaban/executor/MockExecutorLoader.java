@@ -574,7 +574,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int updateVersionSetId(int executionId) throws ExecutorManagerException {
+  public int updateVersionSetId(int executionId, int versionSetId) throws ExecutorManagerException {
     return 0;
   }
 

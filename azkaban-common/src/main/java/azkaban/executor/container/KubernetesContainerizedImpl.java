@@ -436,7 +436,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       throw new ExecutorManagerException(e);
     }
     // Store version set id in execution_flows for execution_id
-    this.executorLoader.updateVersionSetId(executionId);
+    this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
   }
 
   /**
