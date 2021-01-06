@@ -354,6 +354,13 @@ public interface ExecutorLoader {
 
   void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException;
 
+  /**
+   * Update version set id for the given execution id.
+   * @param executionId
+   * @param versionSetId
+   * @return int
+   * @throws ExecutorManagerException
+   */
   int updateVersionSetId(final int executionId, final int versionSetId)
       throws ExecutorManagerException;
 }
