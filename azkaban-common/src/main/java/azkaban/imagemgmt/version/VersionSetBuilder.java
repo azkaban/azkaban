@@ -29,7 +29,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class VersionSetBuilder {
 
-  private final Map<String, String> versionSetElements = new TreeMap();
+  private final Map<String, String> versionSetElements = new TreeMap(String.CASE_INSENSITIVE_ORDER);
   private final VersionSetLoader loader;
 
   public VersionSetBuilder(VersionSetLoader loader) {

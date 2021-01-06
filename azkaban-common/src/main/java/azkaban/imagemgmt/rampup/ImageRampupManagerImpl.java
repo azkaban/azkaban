@@ -116,7 +116,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     final Set<String> imageTypeSet = imageTypeRampups.keySet();
     log.info("Found active rampup for the image types {} ", imageTypeSet);
     final Iterator<String> iterator = imageTypeSet.iterator();
-    final Map<String, String> imageTypeVersionMap = new TreeMap<>();
+    final Map<String, String> imageTypeVersionMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     while (iterator.hasNext()) {
       final String imageTypeName = iterator.next();
       final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
