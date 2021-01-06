@@ -518,6 +518,26 @@ public class ExecutionFlowDao {
     }
   }
 
+  /**
+   * Updates version set id for the given executionId
+   * @param executionId
+   * @param versionSetId
+   * @return int
+   * @throws ExecutorManagerException
+   */
+  public int updateVersionSetId(final int executionId, final int versionSetId)
+      throws ExecutorManagerException {
+    final String UPDATE_VERSION_SET_ID = "UPDATE execution_flows SET version_set_id = ?, "
+        + "update_time = ? where exec_id = ?";
+    try {
+      return this.dbOperator.update(UPDATE_VERSION_SET_ID, versionSetId,
+          System.currentTimeMillis(), executionId);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException(String.format("Error while updating version set id for "
+          + "execId: %d", executionId), e);
+    }
+  }
+
   public static class SelectFromExecutionFlows implements
       ResultSetHandler<List<Integer>> {
 

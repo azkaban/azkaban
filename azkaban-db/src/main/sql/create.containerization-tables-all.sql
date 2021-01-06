@@ -102,5 +102,5 @@ CREATE TABLE IF NOT EXISTS version_set (
 CREATE UNIQUE INDEX idx_md5 ON version_set (md5);
 
 -- TODO: Add the alter table script in the specific release
--- Adding image_version_set_id column in execution_flows
--- alter table execution_flows add column image_version_set_id INT default null;
+-- Adding version_set_id column in execution_flows
+-- alter table execution_flows add column version_set_id INT default null;
