@@ -284,6 +284,10 @@ Executor Server Properties
 +===========================================+=======================+=======================+
 | executor.port                             | The port for azkaban  | 0 (any free port)     |
 |                                           | executor server       |                       |
++-------------------------------------------+-----------------------|-----------------------|
+|azkaban.server.hostname                    | It Can be used to     |  Canonical Hostname   |
+|                                           | specify the Ip of     |                       |
+|                                           |   executor Node       |                       |
 +-------------------------------------------+-----------------------+-----------------------+
 | executor.global.properties                | A path to the         |   none                |
 |                                           | properties that will  |                       |
