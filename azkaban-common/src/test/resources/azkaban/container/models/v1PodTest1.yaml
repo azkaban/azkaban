@@ -31,6 +31,8 @@ spec:
       name: jobtype-volume-spark
     - mountPath: /var/run/nscd/socket
       name: nscd-socket
+    - mountPath: /var/azkaban/private/conf
+      name: azkaban-private-properties
   initContainers:
   - env:
     - name: AZ_CLUSTER
@@ -51,3 +53,7 @@ spec:
       type: Socket
       path: /var/run/nscd/socket
     name: nscd-socket
+  - name: azkaban-private-properties
+    secret:
+      defaultMode: 256
+      secretName: azkaban-private-properties
