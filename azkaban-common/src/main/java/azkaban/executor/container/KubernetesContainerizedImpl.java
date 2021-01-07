@@ -456,11 +456,11 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    *
    * @return
    */
-  private String getAzkabanBaseImageVersion(VersionSet versionSet) {
+  private String getAzkabanBaseImageVersion(final VersionSet versionSet) {
     return versionSet.getVersion(AZKABAN_BASE_IMAGE).get();
   }
 
-  private String getAzkabanConfigVersion(VersionSet versionSet) {
+  private String getAzkabanConfigVersion(final VersionSet versionSet) {
     return versionSet.getVersion(AZKABAN_CONFIG).get();
   }
 
