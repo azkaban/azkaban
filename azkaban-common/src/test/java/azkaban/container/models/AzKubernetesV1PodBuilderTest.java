@@ -49,6 +49,8 @@ public class AzKubernetesV1PodBuilderTest {
                 azConfVer)
             .addHostPathVolume("nscd-socket", "/var/run/nscd/socket", "Socket",
                 "/var/run/nscd/socket")
+            .addSecretVolume("azkaban-private-properties", "azkaban-private-properties",
+                "/var/azkaban/private/conf")
             .addEnvVarToFlowContainer("envKey", "envValue")
             .withResources("500m", "500m", "500Mi", "500Mi")
             .build();
