@@ -34,6 +34,16 @@ public class CaseInsensitiveKeyDeserializers implements KeyDeserializers {
 
   public static final CaseInsensitiveKeyDeserializer DESERIALIZER = new CaseInsensitiveKeyDeserializer();
 
+  /**
+   * This method is invoked while deserializing JSON content field names to Map keys. In this case,
+   * only keys of type string or object is considered.
+   * @param type
+   * @param config
+   * @param beanDesc
+   * @param property
+   * @return KeyDeserializer
+   * @throws JsonMappingException
+   */
   @Override
   public KeyDeserializer findKeyDeserializer(final JavaType type, final DeserializationConfig config,
       final BeanDescription beanDesc, final BeanProperty property)
@@ -51,6 +61,13 @@ public class CaseInsensitiveKeyDeserializers implements KeyDeserializers {
   private static class CaseInsensitiveKeyDeserializer
       extends KeyDeserializer {
 
+    /**
+     * This method deserializes a given key to lowercase.
+     * @param key
+     * @param ctxt
+     * @return Object
+     * @throws IOException
+     */
     @Override
     public Object deserializeKey(final String key, final DeserializationContext ctxt)
         throws IOException {
