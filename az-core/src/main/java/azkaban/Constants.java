@@ -563,6 +563,8 @@ public class Constants {
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
     public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
+    public static final String AZKABAN_BASE_IMAGE = "azkaban-base";
+    public static final String AZKABAN_CONFIG = "azkaban-config";
   }
 
   public static class FlowParameters {
