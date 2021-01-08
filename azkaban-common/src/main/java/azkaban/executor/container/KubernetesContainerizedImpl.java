@@ -58,6 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -206,8 +207,54 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     INCLUDED_JOB_TYPES.add("hive");
     INCLUDED_JOB_TYPES.add("java");
     INCLUDED_JOB_TYPES.add("java2");
-    INCLUDED_JOB_TYPES.add("pigLi-0.11.1");
+    INCLUDED_JOB_TYPES.add("pig");
+    INCLUDED_JOB_TYPES.add("pigLi");
     INCLUDED_JOB_TYPES.add("noop");
+  }
+
+  /**
+   * Check if job type contains in the included job types. If not check if the job type starts with
+   * the aay of the job types present in the included job type set. For example, in case of pig
+   * job type it can contain version such as pigLi-0.11.1. This is nothing but pointing to the
+   * different installation pig job. Hence, it just matches the prefix i.e. pigLi which is the
+   * actual job type name.
+   * @param jobType
+   * @return boolean
+   */
+  private boolean isPresentInIncludedJobTypes(String jobType) {
+    if(INCLUDED_JOB_TYPES.contains(jobType)) {
+      return true;
+    } else {
+      return isStartWithIncludedJobTypes(jobType);
+    }
+  }
+
+  /**
+   * Check if the job type starts with the aay of the job types present in the included job type
+   * set. For example, in case of pig job type it can contain version such as pigLi-0.11.1. This
+   * is nothing but pointing to the different installation pig job. Hence, it just matches the
+   * prefix i.e. pigLi which is the actual job type name.
+   * @param jobType
+   * @return boolean
+   */
+  private boolean isStartWithIncludedJobTypes(String jobType) {
+    for(String includedJobType : INCLUDED_JOB_TYPES) {
+      if(jobType.toLowerCase().startsWith(includedJobType.toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Filter out the included job types from the given job types.
+   * @param jobTypes
+   * @return Set<String>
+   */
+  private Set<String> filterIncludedJobTypes(Set<String> jobTypes) {
+    return jobTypes.stream()
+        .filter(jobType -> isPresentInIncludedJobTypes(jobType))
+        .collect(Collectors.toSet());
   }
 
   /**
@@ -283,7 +330,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
            for (String imageType : imageTypesUsedInFlow) {
              if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
                overlayMap.put(imageType, flowParams.get(imageTypeOverrideParam(imageType)));
-             } else if (!(INCLUDED_JOB_TYPES.contains(imageType) || versionSet.getVersion(imageType).isPresent())) {
+             } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType).isPresent())) {
                logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
                    executionId, imageType, versionSetId);
                imageVersionsNotFound.add(imageType);
@@ -317,8 +364,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
        if (versionSet == null) {
          // Need to build a version set
-         // Remove all the job types available in azkaban base image, if exists in the input map
-         imageTypesUsedInFlow.removeAll(INCLUDED_JOB_TYPES);
+         // Filter all the job types available in azkaban base image from the input image types set
+         imageTypesUsedInFlow = this.filterIncludedJobTypes(imageTypesUsedInFlow);
          Map<String, String> versionMap = imageRampupManager.getVersionByImageTypes(imageTypesUsedInFlow);
          // Now we will check the flow params for any override versions provided and apply them
          for (String imageType : imageTypesUsedInFlow) {
@@ -515,7 +562,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     for (String jobType: jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.
-      if(INCLUDED_JOB_TYPES.contains(jobType)) {
+      if(isPresentInIncludedJobTypes(jobType)) {
         continue;
       }
       try {
