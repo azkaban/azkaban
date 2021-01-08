@@ -214,7 +214,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   /**
    * Check if job type contains in the included job types. If not check if the job type starts with
-   * the aay of the job types present in the included job type set. For example, in case of pig
+   * the any of the job types present in the included job type set. For example, in case of pig
    * job type it can contain version such as pigLi-0.11.1. This is nothing but pointing to the
    * different installation pig job. Hence, it just matches the prefix i.e. pigLi which is the
    * actual job type name.
@@ -253,7 +253,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   private Set<String> filterIncludedJobTypes(Set<String> jobTypes) {
     return jobTypes.stream()
-        .filter(jobType -> isPresentInIncludedJobTypes(jobType))
+        .filter(jobType -> !isPresentInIncludedJobTypes(jobType))
         .collect(Collectors.toSet());
   }
 
