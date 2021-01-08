@@ -56,7 +56,7 @@ public class HdfsStorageTest {
   @Rule
   public final TemporaryFolder TEMP_DIR = new TemporaryFolder();
 
-  private HdfsAuth hdfsAuth;
+  private AbstractHdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
   private FileContext hdfsFileContext;
   private FileContext.Util hdfsFileContextUtil;

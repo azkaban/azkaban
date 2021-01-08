@@ -23,10 +23,8 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.spi.AzkabanException;
 import azkaban.utils.Props;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.IOException;
+import javax.inject.Singleton;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
@@ -37,19 +35,15 @@ import org.apache.log4j.Logger;
  * UserGroupInformation} class.
  */
 @Singleton
-public class HdfsAuth {
+public class HdfsAuth extends AbstractHdfsAuth {
+
   private static final Logger log = Logger.getLogger(HdfsAuth.class);
 
-  private final boolean isSecurityEnabled;
-
-  private UserGroupInformation loggedInUser = null;
   private String keytabPath = null;
   private String keytabPrincipal = null;
 
-  @Inject
-  public HdfsAuth(final Props props, @Named("hdfsConf") final Configuration conf) {
-    UserGroupInformation.setConfiguration(conf);
-    this.isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
+  public HdfsAuth(final Props props, final Configuration conf) {
+    super(props, conf);
     if (this.isSecurityEnabled) {
       log.info("The Hadoop cluster has enabled security");
       this.keytabPath = requireNonNull(props.getString(AZKABAN_KEYTAB_PATH));
@@ -61,6 +55,7 @@ public class HdfsAuth {
    * API to authorize HDFS access. This logins in the configured user via the keytab. If the user is
    * already logged in then it renews the TGT.
    */
+  @Override
   public void authorize() {
     if (this.isSecurityEnabled) {
       try {
@@ -74,6 +69,12 @@ public class HdfsAuth {
     }
   }
 
+  /**
+   * This method is used to login using keytab and set loggedInUser.
+   * @param keytabPrincipal
+   * @param keytabPath
+   * @throws IOException
+   */
   private void login(final String keytabPrincipal, final String keytabPath) throws IOException {
     if (this.loggedInUser == null) {
       log.info(
