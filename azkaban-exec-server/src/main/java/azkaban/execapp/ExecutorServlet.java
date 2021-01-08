@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static azkaban.common.ServletUtils.*;
+import static azkaban.server.HttpRequestUtils.*;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -46,7 +48,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
-  public static final String JSON_MIME_TYPE = "application/json";
   private static final Logger logger = Logger.getLogger(ExecutorServlet.class
       .getName());
   private static final long serialVersionUID = -3528600004096666451L;
@@ -71,13 +72,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     this.flowRunnerManager = this.application.getFlowRunnerManager();
   }
 
-  protected void writeJSON(final HttpServletResponse resp, final Object obj)
-      throws IOException {
-    resp.setContentType(JSON_MIME_TYPE);
-    final ObjectMapper mapper = new ObjectMapper();
-    final OutputStream stream = resp.getOutputStream();
-    mapper.writeValue(stream, obj);
-  }
+
 
   /**
    * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
@@ -481,49 +476,5 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
-  /**
-   * Duplicated code with AbstractAzkabanServlet, but ne
-   */
-  public boolean hasParam(final HttpServletRequest request, final String param) {
-    return request.getParameter(param) != null;
-  }
 
-  public String getParam(final HttpServletRequest request, final String name)
-      throws ServletException {
-    final String p = request.getParameter(name);
-    if (p == null) {
-      throw new ServletException("Missing required parameter '" + name + "'.");
-    } else {
-      return p;
-    }
-  }
-
-  public String getParam(final HttpServletRequest request, final String name,
-      final String defaultVal) {
-    final String p = request.getParameter(name);
-    if (p == null) {
-      return defaultVal;
-    }
-
-    return p;
-  }
-
-  public int getIntParam(final HttpServletRequest request, final String name)
-      throws ServletException {
-    final String p = getParam(request, name);
-    return Integer.parseInt(p);
-  }
-
-  public int getIntParam(final HttpServletRequest request, final String name,
-      final int defaultVal) {
-    if (hasParam(request, name)) {
-      try {
-        return getIntParam(request, name);
-      } catch (final Exception e) {
-        return defaultVal;
-      }
-    }
-
-    return defaultVal;
-  }
 }
