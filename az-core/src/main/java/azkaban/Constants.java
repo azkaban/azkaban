@@ -61,6 +61,7 @@ public class Constants {
   public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
+  public static final String AZKABAN_CONTAINER_CONTEXT_KEY = "flow_container";
 
   // Internal username used to perform SLA action
   public static final String AZKABAN_SLA_CHECKER_USERNAME = "azkaban_sla";

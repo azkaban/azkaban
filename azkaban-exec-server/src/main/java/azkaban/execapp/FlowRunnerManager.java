@@ -712,7 +712,7 @@ public class FlowRunnerManager implements EventListener<Event>,
         synchronized (this.executionDirDeletionSync) {
           if (!dir.exists()) {
             throw new ExecutorManagerException(
-                "Execution dir file doesn't exist. Probably has beend deleted");
+                "Execution dir file doesn't exist. Probably has been deleted");
           }
 
           final File logFile = runner.getFlowLogFile();
@@ -781,7 +781,7 @@ public class FlowRunnerManager implements EventListener<Event>,
       synchronized (this.executionDirDeletionSync) {
         if (!dir.exists()) {
           throw new ExecutorManagerException(
-              "Execution dir file doesn't exist. Probably has beend deleted");
+              "Execution dir file doesn't exist. Probably has been deleted");
         }
 
         final File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
