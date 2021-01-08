@@ -90,7 +90,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
   public static final String HOST_PATH_TYPE = "Socket";
   public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
-  private static final String NOOP_TYPE = "noop";
 
   private final String namespace;
   private final ApiClient client;
@@ -113,6 +112,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final ImageRampupManager imageRampupManager;
   private final String initMountPathPrefixForJobtypes;
   private final String appMountPathPrefixForJobtypes;
+  private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -192,6 +192,22 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       logger.error("Unable to read kube config file: {}", exception.getMessage());
       throw new ExecutorManagerException(exception);
     }
+    // Add all the job types that are readily available as part of azkaban base image.
+    this.addIncludedJobTypes();
+  }
+
+  /**
+   * Populate the included job types set with all the types that are readily available as part of
+   * azkaban base image.
+   */
+  private void addIncludedJobTypes() {
+    INCLUDED_JOB_TYPES.add("hadoopJava");
+    INCLUDED_JOB_TYPES.add("hadoopShell");
+    INCLUDED_JOB_TYPES.add("hive");
+    INCLUDED_JOB_TYPES.add("java");
+    INCLUDED_JOB_TYPES.add("java2");
+    INCLUDED_JOB_TYPES.add("pigLi-0.11.1");
+    INCLUDED_JOB_TYPES.add("noop");
   }
 
   /**
@@ -267,7 +283,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
            for (String imageType : imageTypesUsedInFlow) {
              if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
                overlayMap.put(imageType, flowParams.get(imageTypeOverrideParam(imageType)));
-             } else if (!(imageType.equals(NOOP_TYPE) || versionSet.getVersion(imageType).isPresent())) {
+             } else if (!(INCLUDED_JOB_TYPES.contains(imageType) || versionSet.getVersion(imageType).isPresent())) {
                logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
                    executionId, imageType, versionSetId);
                imageVersionsNotFound.add(imageType);
@@ -301,7 +317,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
        if (versionSet == null) {
          // Need to build a version set
-         imageTypesUsedInFlow.remove(NOOP_TYPE);  // Remove noop type if exists in the input map
+         // Remove all the job types available in azkaban base image, if exists in the input map
+         imageTypesUsedInFlow.removeAll(INCLUDED_JOB_TYPES);
          Map<String, String> versionMap = imageRampupManager.getVersionByImageTypes(imageTypesUsedInFlow);
          // Now we will check the flow params for any override versions provided and apply them
          for (String imageType : imageTypesUsedInFlow) {
@@ -496,8 +513,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       final VersionSet versionSet)
       throws ExecutorManagerException {
     for (String jobType: jobTypes) {
-      // Skip noop and create init container for the remaining job types.
-      if(jobType.equals(NOOP_TYPE)) {
+      // Skip all the job types that are available in the azkaban base image and create init
+      // container for the remaining job types.
+      if(INCLUDED_JOB_TYPES.contains(jobType)) {
         continue;
       }
       try {
