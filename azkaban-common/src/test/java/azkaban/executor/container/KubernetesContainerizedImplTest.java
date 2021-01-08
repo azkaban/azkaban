@@ -15,6 +15,8 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -148,9 +150,12 @@ public class KubernetesContainerizedImplTest {
     log.info("Jobtypes for flow {} are: {}", flow.getFlowId(), jobTypes);
 
     final Map<String, String> flowParam = new HashMap<>();  // empty map
-
+    final Set<String> allImageTypes = new TreeSet<>();
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.addAll(jobTypes);
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, jobTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
         .createPodSpec(flow.getExecutionId(), versionSet, jobTypes);
 
@@ -293,6 +298,8 @@ public class KubernetesContainerizedImplTest {
 
   private Map<String, String> getVersionMap() {
     Map<String, String> versionMap = new TreeMap<>();
+    versionMap.put(AZKABAN_BASE_IMAGE, "1.2.0");
+    versionMap.put(AZKABAN_CONFIG, "2.1.1");
     versionMap.put("spark", "5.1.5");
     versionMap.put("command", "3.1.2");
     versionMap.put("hadoopJava", "4.1.2");

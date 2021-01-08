@@ -15,6 +15,9 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
@@ -87,6 +90,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
   public static final String HOST_PATH_TYPE = "Socket";
   public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
+  private static final String NOOP_TYPE = "noop";
 
   private final String namespace;
   private final ApiClient client;
@@ -263,7 +267,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
            for (String imageType : imageTypesUsedInFlow) {
              if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
                overlayMap.put(imageType, flowParams.get(imageTypeOverrideParam(imageType)));
-             } else if (!(imageType.equals("noop") || versionSet.getVersion(imageType).isPresent())) {
+             } else if (!(imageType.equals(NOOP_TYPE) || versionSet.getVersion(imageType).isPresent())) {
                logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
                    executionId, imageType, versionSetId);
                imageVersionsNotFound.add(imageType);
@@ -280,10 +284,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
              // exception, we will have an incomplete/incorrect versionSet. Setting it null ensures, it will
              // be processed from scratch in the following code block
              versionSet = null;
-             if (!imageVersionsNotFound.isEmpty())
-               versionSetBuilder.addElements(this.imageRampupManager.getVersionByImageTypes(imageVersionsNotFound));
-             if (!overlayMap.isEmpty())
+             if (!imageVersionsNotFound.isEmpty()) {
+               versionSetBuilder.addElements(
+                   this.imageRampupManager.getVersionByImageTypes(imageVersionsNotFound));
+             }
+             if (!overlayMap.isEmpty()) {
                versionSetBuilder.addElements(overlayMap);
+             }
              versionSet = versionSetBuilder.build();
            }
          } catch (Exception e) {
@@ -294,7 +301,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
        if (versionSet == null) {
          // Need to build a version set
-         imageTypesUsedInFlow.remove("noop");  // Remove noop type if exists in the input map
+         imageTypesUsedInFlow.remove(NOOP_TYPE);  // Remove noop type if exists in the input map
          Map<String, String> versionMap = imageRampupManager.getVersionByImageTypes(imageTypesUsedInFlow);
          // Now we will check the flow params for any override versions provided and apply them
          for (String imageType : imageTypesUsedInFlow) {
@@ -327,8 +334,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet,
       SortedSet<String> jobTypes)
       throws ExecutorManagerException {
-    final String azkabanBaseImageVersion = getAzkabanBaseImageVersion();
-    final String azkabanConfigVersion = getAzkabanConfigVersion();
+    final String azkabanBaseImageVersion = getAzkabanBaseImageVersion(versionSet);
+    final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
 
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
@@ -418,8 +425,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     if (flowParam != null && !flowParam.isEmpty()) {
       logger.info("ExecId: {}, Flow Parameters are: {}", executionId, flowParam);
     }
-
-    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, jobTypes);
+    // Create all image types by adding azkaban base image, azkaban config and all job types for
+    // the flow.
+    final Set<String> allImageTypes = new TreeSet<>();
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.addAll(jobTypes);
+    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes);
 
     final V1Pod pod = createPodFromSpec(executionId, podSpec);
@@ -435,7 +447,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       logger.error("ExecId: {}, Unable to create Pod: {}", executionId, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
-    // TODO: Store version set id in execution_flows for execution_id
+    // Store version set id in execution_flows for execution_id
+    this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
   }
 
   /**
@@ -443,12 +456,12 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    *
    * @return
    */
-  private String getAzkabanBaseImageVersion() {
-    return null;
+  private String getAzkabanBaseImageVersion(final VersionSet versionSet) {
+    return versionSet.getVersion(AZKABAN_BASE_IMAGE).get();
   }
 
-  private String getAzkabanConfigVersion() {
-    return null;
+  private String getAzkabanConfigVersion(final VersionSet versionSet) {
+    return versionSet.getVersion(AZKABAN_CONFIG).get();
   }
 
   /**
@@ -483,6 +496,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       final VersionSet versionSet)
       throws ExecutorManagerException {
     for (String jobType: jobTypes) {
+      // Skip noop and create init container for the remaining job types.
+      if(jobType.equals(NOOP_TYPE)) {
+        continue;
+      }
       try {
         String imageVersion = versionSet.getVersion(jobType).get();
         v1SpecBuilder.addJobType(jobType, imageVersion, ImagePullPolicy.IF_NOT_PRESENT,

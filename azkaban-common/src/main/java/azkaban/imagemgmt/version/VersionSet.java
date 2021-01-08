@@ -16,12 +16,14 @@
 
 package azkaban.imagemgmt.version;
 
+import azkaban.imagemgmt.utils.CaseInsensitiveKeyDeserializers;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
+import org.codehaus.jackson.map.DeserializerProvider;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.deser.StdDeserializerProvider;
 import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,29 +47,34 @@ public class VersionSet {
 
   /**
    * Constructor
+   *
    * @param versionSetJsonString
    * @param versionSetMd5Hex
    * @param versionSetId
    */
-  public VersionSet(String versionSetJsonString, String versionSetMd5Hex, int versionSetId)
+  public VersionSet(final String versionSetJsonString, final String versionSetMd5Hex, final int versionSetId)
       throws IOException {
     this.versionSetJsonString = versionSetJsonString;
     this.versionSetMd5Hex = versionSetMd5Hex;
     this.versionSetId = versionSetId;
-    ObjectMapper mapper = new ObjectMapper();
+    final ObjectMapper mapper = new ObjectMapper();
     try {
+      // Apply case insensitive key deserializers
+      final DeserializerProvider provider = new StdDeserializerProvider()
+          .withAdditionalKeyDeserializers(new CaseInsensitiveKeyDeserializers());
+      mapper.setDeserializerProvider(provider);
       this.imageToVersionMap = mapper.readValue(this.versionSetJsonString,
           new TypeReference<TreeMap<String, String>>() {
-      });
-      } catch (Exception e) {
-      throw new IOException("Trouble converting Json string: " + this.versionSetJsonString + " to a TreeMap type");
+          });
+    } catch (final Exception e) {
+      throw new IOException(
+          "Trouble converting Json string: " + this.versionSetJsonString + " to a TreeMap type");
     }
     logger.debug("Created version set with id: {}, md5: {}, json: {}",
         versionSetId, versionSetMd5Hex, versionSetJsonString);
   }
 
   /**
-   *
    * @return
    */
   public String getVersionSetJsonString() {
@@ -75,24 +82,21 @@ public class VersionSet {
   }
 
   /**
-   *
    * @return
    */
   public SortedMap<String, String> getImageToVersionMap() {
-    return imageToVersionMap;
+    return this.imageToVersionMap;
   }
 
   /**
-   *
    * @param imageType
    * @return
    */
-  public Optional<String> getVersion(String imageType) {
-    return Optional.ofNullable(imageToVersionMap.get(imageType));
+  public Optional<String> getVersion(final String imageType) {
+    return Optional.ofNullable(this.imageToVersionMap.get(imageType.toLowerCase()));
   }
 
   /**
-   *
    * @return
    */
   public String getVersionSetMd5Hex() {
@@ -100,7 +104,6 @@ public class VersionSet {
   }
 
   /**
-   *
    * @return
    */
   public int getVersionSetId() {

@@ -57,6 +57,7 @@ import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.kubernetes.client.Exec;
@@ -75,6 +76,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.ZipFile;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -117,6 +119,10 @@ public class FlowContainer {
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
   // Should validate proxy user
   public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
+  public static final String JOB_LOG_CHUNK_SIZE = "job.log.chunk.size";
+  public static final String JOB_LOG_BACKUP_INDEX = "job.log.backup.index";
+  public static final String PROXY_USER_LOCK_DOWN = "proxy.user.lock.down";
+
 
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
 
@@ -152,7 +158,7 @@ public class FlowContainer {
   public FlowContainer(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
-      final AzkabanEventReporter eventReporter,
+      @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
 
@@ -185,10 +191,10 @@ public class FlowContainer {
 
     this.eventReporter = eventReporter;
 
-    this.jobLogChunkSize = this.azKabanProps.getString("job.log.chunk.size",
+    this.jobLogChunkSize = this.azKabanProps.getString(JOB_LOG_CHUNK_SIZE,
             DEFAULT_LOG_CHUNK_SIZE);
-    this.jobLogNumFiles = this.azKabanProps.getInt("job.log.backup.index", DEFAULT_LOG_NUM_FILES);
-    this.validateProxyUser = this.azKabanProps.getBoolean("proxy.user.lock.down",
+    this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
+    this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
             DEFAULT_VALIDATE_PROXY_USER);
     this.jobTypeManager =
         new JobTypeManager(
@@ -207,7 +213,7 @@ public class FlowContainer {
   /**
    * The entry point of FlowContainer. Validates the input arguments and submits the flow for
    * execution. It is assumed that AZ_HOME environment variable is set. If it is not set, then
-   * it explicitely sets it to present working directory.
+   * it explicitly sets it to present working directory.
    * @param args Takes the execution id and Project zip file path as inputs.
    * @throws IOException
    * @throws ExecutorManagerException
@@ -243,6 +249,7 @@ public class FlowContainer {
 
     // Constructor
     final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
+    flowContainer.start();
     launchCtrlMsgListener(flowContainer);
 
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
@@ -296,8 +303,8 @@ public class FlowContainer {
     return new Props(props, propsMap);
   }
 
-
-  private static void setInjector(final Props azkabanProps){
+  @VisibleForTesting
+  static void setInjector(final Props azkabanProps){
     // Inject AzkabanCommonModule
     final Injector injector = Guice.createInjector(
             new AzkabanCommonModule(azkabanProps),
@@ -312,7 +319,8 @@ public class FlowContainer {
    * @param execId Execution Id of the flow.
    * @throws ExecutorManagerException
    */
-  private void submitFlow(final int execId, final Path currentDir, final String projectZipName)
+  @VisibleForTesting
+  void submitFlow(final int execId, final Path currentDir, final String projectZipName)
           throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
@@ -453,6 +461,11 @@ public class FlowContainer {
     }
   }
 
+  @VisibleForTesting
+  void start() {
+     this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
+  }
+
   public void cancelFlow(final int execId, final String user)
     throws ExecutorManagerException {
 
@@ -469,6 +482,14 @@ public class FlowContainer {
     this.flowRunner.kill(user);
   }
 
+  /**
+   * Return accumulated flow logs with the specified length from the flow container starting from the given byte offset.
+   * @param execId
+   * @param startByte
+   * @param length
+   * @return
+   * @throws ExecutorManagerException
+   */
   public LogData readFlowLogs(final int execId, final int startByte, final int length)
     throws ExecutorManagerException {
     logger.info("readFlowLogs called");
@@ -494,6 +515,16 @@ public class FlowContainer {
         "Error reading file. Execution directory does not exist");
   }
 
+  /**
+   * Return accumulated job logs for a specific job starting with the provided byte offset.
+   * @param execId
+   * @param jobId
+   * @param attempt
+   * @param startByte
+   * @param length
+   * @return
+   * @throws ExecutorManagerException
+   */
   public LogData readJobLogs(final int execId, final String jobId, final int attempt,
       final int startByte, final int length) throws ExecutorManagerException {
 
@@ -520,6 +551,16 @@ public class FlowContainer {
         "Error reading file. Execution directory does not exist.");
   }
 
+  /**
+   *
+   * @param execId
+   * @param jobId
+   * @param attempt
+   * @param startByte
+   * @param length
+   * @return
+   * @throws ExecutorManagerException
+   */
   public JobMetaData readJobMetaData(final int execId, final String jobId,
       final int attempt, final int startByte, final int length) throws ExecutorManagerException {
 
@@ -545,7 +586,8 @@ public class FlowContainer {
         "Error reading file. Execution directory does not exist.");
   }
 
-  private static void launchCtrlMsgListener(FlowContainer flowContainer) {
+  @VisibleForTesting
+  static void launchCtrlMsgListener(FlowContainer flowContainer) {
     try {
       flowContainer.jettyServer.start();
     } catch (final Exception e) {

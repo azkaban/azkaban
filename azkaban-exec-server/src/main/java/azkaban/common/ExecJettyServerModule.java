@@ -4,6 +4,7 @@ import static azkaban.Constants.ConfigurationKeys.EXECUTOR_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_HEADER_BUFFER_SIZE;
 import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 
+import azkaban.Constants;
 import azkaban.container.ContainerServlet;
 import azkaban.execapp.ExecutorServlet;
 import azkaban.execapp.JMXHttpServlet;
@@ -91,6 +92,7 @@ public class ExecJettyServerModule extends AbstractModule {
     container.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
     container.addServlet(new ServletHolder(new ContainerServlet()), "/container");
+    //container.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, );
     return container;
   }
 

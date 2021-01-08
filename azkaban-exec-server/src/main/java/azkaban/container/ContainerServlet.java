@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,7 @@ package azkaban.container;
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.server.HttpRequestUtils;
 import azkaban.utils.FileIOUtils;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,28 +30,31 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import static azkaban.server.HttpRequestUtils.*;
-import static azkaban.common.ServletUtils.*;
+import static azkaban.common.ServletUtils.writeJSON;
+import static azkaban.server.HttpRequestUtils.hasParam;
+import static azkaban.server.HttpRequestUtils.getParam;
+import static azkaban.server.HttpRequestUtils.getIntParam;
 
 
 public class ContainerServlet extends HttpServlet implements ConnectorParams {
 
   public static final String JSON_MIME_TYPE = "application/json";
-  private static final Logger logger = Logger.getLogger(ContainerServlet.class);
-  private FlowContainer application;
+  private static final Logger logger = LoggerFactory.getLogger(ContainerServlet.class);
+  private FlowContainer flowContainer;
 
   public ContainerServlet() { super(); }
 
   @Override
   public void init(final ServletConfig config) {
-    this.application =
+    this.flowContainer =
         (FlowContainer) config.getServletContext().getAttribute(
-            Constants.AZKABAN_SERVLET_CONTEXT_KEY);
+            Constants.AZKABAN_CONTAINER_CONTEXT_KEY);
 
-    if (this.application == null) {
+    if (this.flowContainer == null) {
       throw new IllegalStateException(
           "No flow container defined in this servlet context!");
     }
@@ -117,7 +121,7 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     }
 
     try {
-      this.application.cancelFlow(execid, user);
+      this.flowContainer.cancelFlow(execid, user);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final ExecutorManagerException e) {
       logger.error(e.getMessage(), e);
@@ -138,7 +142,7 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     if (type.equals("flow")) {
       final FileIOUtils.LogData result;
       try {
-        result = this.application.readFlowLogs(execId, startByte, length);
+        result = this.flowContainer.readFlowLogs(execId, startByte, length);
         respMap.putAll(result.toObject());
       } catch (final Exception e) {
         logger.error(e.getMessage(), e);
@@ -149,7 +153,7 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
       final String jobId = getParam(req, "jobId");
       try {
         final FileIOUtils.LogData result =
-            this.application.readJobLogs(execId, jobId, attempt, startByte,
+            this.flowContainer.readJobLogs(execId, jobId, attempt, startByte,
                 length);
         respMap.putAll(result.toObject());
       } catch (final Exception e) {
@@ -172,7 +176,7 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     final String jobId = getParam(req, "jobId");
     try {
       final FileIOUtils.JobMetaData result =
-          this.application.readJobMetaData(execId, jobId, attempt, startByte,
+          this.flowContainer.readJobMetaData(execId, jobId, attempt, startByte,
               length);
       respMap.putAll(result.toObject());
     } catch (final Exception e) {
