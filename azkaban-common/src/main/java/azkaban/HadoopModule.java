@@ -23,8 +23,9 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.cachedhttpfilesystem.CachedHttpFileSystem;
 import azkaban.spi.AzkabanException;
-import azkaban.storage.HdfsAuth;
+import azkaban.storage.AbstractHdfsAuth;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import java.io.File;
@@ -52,6 +53,8 @@ public class HadoopModule extends AbstractModule {
 
   private static final String HDFS_FS_IMPL_CONFIG = "fs.hdfs.impl";
   private static final String ABSTRACT_FS_IMPL_CONFIG = "fs.AbstractFileSystem.hdfs.impl";
+  private static final String AZKABAN_HDFS_AUTH_IMPL_CLASS = "azkaban.hdfs.auth.impl.class";
+  private static final String DEFAULT_AZKABAN_HDFS_AUTH_IMPL_CLASS = "azkaban.storage.HdfsAuth";
 
   // These classes will be used in case a value is not already provided the resource files
   private static final String FALLBACK_HDFS_IMPL_CLASSS =
@@ -91,6 +94,36 @@ public class HadoopModule extends AbstractModule {
     log.info("Implementation of {} is {}", ABSTRACT_FS_IMPL_CONFIG, conf.get(ABSTRACT_FS_IMPL_CONFIG));
 
     return conf;
+  }
+
+  /**
+   * This method is used to create object of impl of @{@link AbstractHdfsAuth} abstract class. It expects
+   * impl class from
+   * AZKABAN_HDFS_AUTH_IMPL_CLASS. If this property is not set then if will use
+   * @{@link azkaban.storage.HdfsAuth} as default implementation class.
+   * @param azConfig
+   * @param conf
+   * @return object of implementation of @{@link AbstractHdfsAuth}
+   */
+  @Inject
+  @Provides
+  @Singleton
+  @Named("hdfsAuth")
+  public AbstractHdfsAuth createHdfsAuth(final AzkabanCommonModuleConfig azConfig,
+      @Named("hdfsConf") final Configuration conf) {
+    String hdfsAuthImplClass = azConfig.getProps()
+        .getString(AZKABAN_HDFS_AUTH_IMPL_CLASS, DEFAULT_AZKABAN_HDFS_AUTH_IMPL_CLASS);
+    try {
+      final Class<?> hdfsAuthClass =
+          HadoopModule.class.getClassLoader().loadClass(hdfsAuthImplClass);
+      log.info("Loading hdfs auth " + hdfsAuthClass.getName());
+      return (AbstractHdfsAuth)
+          Utils.callConstructor(hdfsAuthClass, azConfig.getProps(), conf);
+    } catch (ClassNotFoundException e) {
+      log.error("Could not instantiate hdfsAuth: ", e);
+      throw new AzkabanException("Failed to create object of hdfsAuth!"
+          + e.getCause(), e);
+    }
   }
 
   @Inject
@@ -139,7 +172,8 @@ public class HadoopModule extends AbstractModule {
   @Provides
   @Singleton
   @Named("hdfsFileContext")
-  public FileContext createHDFSFileContext(@Named("hdfsConf") final Configuration hdfsConf, final HdfsAuth auth) {
+  public FileContext createHDFSFileContext(@Named("hdfsConf") final Configuration hdfsConf,
+      @Named("hdfsAuth") final AbstractHdfsAuth auth) {
     try {
       auth.authorize();
       return FileContext.getFileContext(hdfsConf);
@@ -154,7 +188,9 @@ public class HadoopModule extends AbstractModule {
   @Singleton
   @Named("hdfs_cached_httpFS")
   public FileSystem createHDFSCachedHttpFileSystem(@Named("hdfsConf") final Configuration hdfsConf,
-      @Named("httpConf") @Nullable final Configuration httpConf, final HdfsAuth auth, final AzkabanCommonModuleConfig azConfig) {
+      @Named("httpConf") @Nullable final Configuration httpConf,
+      @Named("hdfsAuth") final AbstractHdfsAuth auth,
+      final AzkabanCommonModuleConfig azConfig) {
     if (httpConf == null) {
       return null;
     }
