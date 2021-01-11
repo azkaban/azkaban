@@ -471,6 +471,8 @@ public class FlowContainer {
 
     logger.info("Cancel Flow called");
     if (this.flowRunner == null) {
+      logger.warn("Attempt to cancel flow execId: {} before flow got a chance to start.",
+          execId);
       throw new ExecutorManagerException("Flow has not launched yet.");
     }
 
@@ -494,25 +496,30 @@ public class FlowContainer {
     throws ExecutorManagerException {
     logger.info("readFlowLogs called");
     if (this.flowRunner == null) {
+      logger.warn("Attempt to read flow logs before flow execId: {} got a chance to start",
+          execId);
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
     final File dir = flowRunner.getExecutionDir();
-    if (dir != null && dir.exists()) {
-      try {
-        final File logFile = flowRunner.getFlowLogFile();
-        if (logFile != null && logFile.exists()) {
-          return FileIOUtils.readUtf8File(logFile, startByte, length);
-        } else {
-          throw new ExecutorManagerException("Flow log file does not exist.");
-        }
-      } catch (final IOException e) {
-        throw new ExecutorManagerException(e);
-      }
+    if (dir == null || !dir.exists()) {
+      logger.warn("Error reading file. Execution directory does not exist for flow execId: {}", execId);
+      throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
     }
 
-    throw new ExecutorManagerException(
-        "Error reading file. Execution directory does not exist");
+   try {
+     final File logFile = flowRunner.getFlowLogFile();
+     if (logFile != null && logFile.exists()) {
+       return FileIOUtils.readUtf8File(logFile, startByte, length);
+     } else {
+       logger.warn("Flow log file does not exist for flow execId: {}", execId);
+       throw new ExecutorManagerException("Flow log file does not exist.");
+     }
+   } catch (final IOException e) {
+     logger.warn("IOException while trying to read flow log file for flow execId: {}",
+         execId);
+     throw new ExecutorManagerException(e);
+   }
   }
 
   /**
@@ -530,25 +537,33 @@ public class FlowContainer {
 
     logger.info("readJobLogs called");
     if (this.flowRunner == null) {
+      logger.warn("Attempt to read job logs before flow got a chance to start. " +
+          "Flow execId: {}, jobId: {}", execId, jobId);
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
     final File dir = flowRunner.getExecutionDir();
-    if (dir != null && dir.exists()) {
-      try {
-        final File logFile = flowRunner.getJobLogFile(jobId, attempt);
-        if (logFile != null && logFile.exists()) {
-          return FileIOUtils.readUtf8File(logFile, startByte, length);
-        } else {
-          throw new ExecutorManagerException("Job log file does not exist.");
-        }
-      } catch (final IOException e) {
-        throw new ExecutorManagerException(e);
-      }
+    if (dir == null || !dir.exists()) {
+      logger.warn("Error reading jobLogs. Execution dir does not exist. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(
+          "Error reading file. Execution directory does not exist.");
     }
 
-    throw new ExecutorManagerException(
-        "Error reading file. Execution directory does not exist.");
+    try {
+      final File logFile = flowRunner.getJobLogFile(jobId, attempt);
+      if (logFile != null && logFile.exists()) {
+        return FileIOUtils.readUtf8File(logFile, startByte, length);
+      } else {
+        logger.warn("Job log file does not exist. Flow execId: {}, jobId: {}",
+            execId, jobId);
+        throw new ExecutorManagerException("Job log file does not exist.");
+      }
+    } catch (final IOException e) {
+      logger.warn("IOException while trying to read Job logs. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(e);
+    }
   }
 
   /**
@@ -566,24 +581,33 @@ public class FlowContainer {
 
     logger.info("readJobMetaData called");
     if (this.flowRunner == null) {
+      logger.warn("Metadata cannot be read as flow has not started. execId: {}, jobId: {}",
+          execId, jobId);
       throw new ExecutorManagerException("The flow has not launched yet.");
     }
 
     final File dir = flowRunner.getExecutionDir();
-    if (dir != null && dir.exists()) {
-      try {
-        final File metaDataFile = flowRunner.getJobMetaDataFile(jobId, attempt);
-        if (metaDataFile != null && metaDataFile.exists()) {
-          return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
-        } else {
-          throw new ExecutorManagerException("Job metadata file does not exist.");
-        }
-      } catch (final IOException e) {
-        throw new ExecutorManagerException(e);
-      }
+    if (dir == null || !dir.exists()) {
+      logger.warn("Execution directory does not exist. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(
+          "Error reading file. Execution directory does not exist.");
     }
-    throw new ExecutorManagerException(
-        "Error reading file. Execution directory does not exist.");
+
+    try {
+      final File metaDataFile = flowRunner.getJobMetaDataFile(jobId, attempt);
+      if (metaDataFile != null && metaDataFile.exists()) {
+        return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
+      } else {
+        logger.warn("Job metadata file does not exist. execId: {}, jobId: {}",
+            execId, jobId);
+        throw new ExecutorManagerException("Job metadata file does not exist.");
+      }
+    } catch (final IOException e) {
+      logger.warn("IOException while trying to read metadata file. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(e);
+    }
   }
 
   @VisibleForTesting
