@@ -92,7 +92,6 @@ public class ExecJettyServerModule extends AbstractModule {
     container.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
     container.addServlet(new ServletHolder(new ContainerServlet()), "/container");
-    //container.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, );
     return container;
   }
 

@@ -35,7 +35,7 @@ import static java.util.Objects.*;
 import static org.mockito.Mockito.*;
 
 
-public class FlowContainerTest extends FlowContainerTestBase {
+public class FlowContainerTest {
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";

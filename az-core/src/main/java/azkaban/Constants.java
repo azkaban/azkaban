@@ -137,6 +137,9 @@ public class Constants {
   public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
   public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
+  public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
+  public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
+
   // Use in-memory keystore
   public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
 

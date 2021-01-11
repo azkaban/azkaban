@@ -136,8 +136,8 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     final int startByte = getIntParam(req, "offset");
     final int length = getIntParam(req, "length");
 
-    resp.setContentType("text/plain");
-    resp.setCharacterEncoding("utf-8");
+    resp.setContentType(Constants.CONTENT_TYPE_TEXT_PLAIN);
+    resp.setCharacterEncoding(Constants.CHARACTER_ENCODING_UTF_8);
 
     if (type.equals("flow")) {
       final FileIOUtils.LogData result;
