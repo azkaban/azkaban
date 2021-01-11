@@ -67,6 +67,7 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import java.util.TreeSet;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -174,47 +175,97 @@ public class KubernetesContainerizedImplTest {
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
+    // Add included job types
+    jobTypes.add("hadoopJava");
+    jobTypes.add("pig");
+    jobTypes.add("pigLi-0.11.1");
+    // Add azkaban base image and config
+    final Set<String> allImageTypes = new TreeSet<>();
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.addAll(jobTypes);
     VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
     VersionSet presetVersionSet = versionSetBuilder
         .addElement("command", "7.1")
         .addElement("spark", "8.0")
-        .addElement("hadoopJava", "7.0.4")
+        .addElement("azkaban-base", "7.0.4")
+        .addElement("azkaban-config", "9.1.1")
         .build();
 
     final Map<String, String> flowParam = new HashMap<>();
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
         String.valueOf(presetVersionSet.getVersionSetId()));
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, jobTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
 
     assert(versionSet.getVersion("command").get()
         .equals(presetVersionSet.getVersion("command").get()));
     assert(versionSet.getVersion("spark").get()
         .equals(presetVersionSet.getVersion("spark").get()));
-    assert(versionSet.getVersion("hadoopJava").get()
-        .equals(presetVersionSet.getVersion("hadoopJava").get()));
+    assert(versionSet.getVersion("azkaban-base").get()
+        .equals(presetVersionSet.getVersion("azkaban-base").get()));
+    assert(versionSet.getVersion("azkaban-config").get()
+        .equals(presetVersionSet.getVersion("azkaban-config").get()));
+    // Included jobs in the azkaban base image, so must not present in versionSet.
+    Assert.assertEquals(false, versionSet.getVersion("hadoopJava").isPresent());
+    Assert.assertEquals(false, versionSet.getVersion("pig").isPresent());
+    Assert.assertEquals(false, versionSet.getVersion("pigLi-0.11.1").isPresent());
 
     // Now let's try constructing an incomplete versionSet
     VersionSetBuilder incompleteVersionSetBuilder = new VersionSetBuilder(this.loader);
     VersionSet incompleteVersionSet = incompleteVersionSetBuilder
         .addElement("command", "7.1")
         .addElement("spark", "8.0")
-        .addElement("pig", "1.2")
         .build();
 
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
        String.valueOf(incompleteVersionSet.getVersionSetId()));
     flowParam.put(String.join(".",
-        KubernetesContainerizedImpl.IMAGE, "hadoopJava", KubernetesContainerizedImpl.VERSION),
-        "10.0.2");
+        KubernetesContainerizedImpl.IMAGE, "azkaban-base", KubernetesContainerizedImpl.VERSION),
+        "7.0.4");
     versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, jobTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
 
     assert(versionSet.getVersion("command").get()
         .equals(presetVersionSet.getVersion("command").get()));
     assert(versionSet.getVersion("spark").get()
         .equals(presetVersionSet.getVersion("spark").get()));
-    assert(versionSet.getVersion("hadoopJava").get().equals("10.0.2"));
+    assert(versionSet.getVersion("azkaban-base").get().equals("7.0.4"));
+    assert(versionSet.getVersion("azkaban-config").get().equals("9.1.1"));
+  }
+
+  @Test
+  public void testVersionSetConstructionWithRampupManager() throws Exception {
+    final ExecutableFlow flow = createFlowWithMultipleJobtypes();
+    flow.setExecutionId(2);
+    when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
+    final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
+    // Add included job types
+    jobTypes.add("hadoopJava");
+    jobTypes.add("pig");
+    jobTypes.add("pigLi-0.11.1");
+    jobTypes.add("noop");
+    // Add azkaban base image and config
+    final Set<String> allImageTypes = new TreeSet<>();
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.addAll(jobTypes);
+
+    final Map<String, String> flowParam = new HashMap<>();
+
+    VersionSet versionSet = this.kubernetesContainerizedImpl
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
+
+    // Included jobs in the azkaban base image, so must not present in versionSet.
+    Assert.assertEquals(false, versionSet.getVersion("hadoopJava").isPresent());
+    Assert.assertEquals(false, versionSet.getVersion("pig").isPresent());
+    Assert.assertEquals(false, versionSet.getVersion("pigLi-0.11.1").isPresent());
+    Assert.assertEquals(false, versionSet.getVersion("noop").isPresent());
+    Assert.assertEquals("7.0.4", versionSet.getVersion("azkaban-base").get());
+    Assert.assertEquals("9.1.1", versionSet.getVersion("azkaban-config").get());
+    Assert.assertEquals("8.0", versionSet.getVersion("spark").get());
+    Assert.assertEquals("7.1", versionSet.getVersion("command").get());
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
@@ -298,11 +349,10 @@ public class KubernetesContainerizedImplTest {
 
   private Map<String, String> getVersionMap() {
     Map<String, String> versionMap = new TreeMap<>();
-    versionMap.put(AZKABAN_BASE_IMAGE, "1.2.0");
-    versionMap.put(AZKABAN_CONFIG, "2.1.1");
-    versionMap.put("spark", "5.1.5");
-    versionMap.put("command", "3.1.2");
-    versionMap.put("hadoopJava", "4.1.2");
+    versionMap.put(AZKABAN_BASE_IMAGE, "7.0.4");
+    versionMap.put(AZKABAN_CONFIG, "9.1.1");
+    versionMap.put("spark", "8.0");
+    versionMap.put("command", "7.1");
     return versionMap;
   }
 }
