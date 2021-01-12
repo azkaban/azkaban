@@ -70,6 +70,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
+  public static final String DEFAULT_SECRET_NAME = "azkaban-private-properties";
+  public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
+  public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private/conf";
 
   private final String namespace;
   private final ApiClient client;
@@ -86,6 +89,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String memoryRequest;
   private final int servicePort;
   private final long serviceTimeout;
+  private final String secretName;
+  private final String secretVolume;
+  private final String secretMountpath;
 
 
   private static final Logger logger = LoggerFactory
@@ -129,6 +135,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         this.azkProps
             .getLong(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_CREATION_TIMEOUT_MS,
                 60000);
+    this.secretName = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_NAME,
+            DEFAULT_SECRET_NAME);
+    this.secretVolume = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_VOLUME,
+            DEFAULT_SECRET_VOLUME);
+    this.secretMountpath = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH,
+            DEFAULT_SECRET_MOUNTPATH);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
@@ -236,6 +251,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Create init container yaml file for each jobType
     addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder);
 
+    // Add volume with secrets mounted
+    addSecretVolume(v1SpecBuilder);
+
     final V1PodSpec podSpec = v1SpecBuilder.build();
 
     final ImmutableMap<String, String> labels = getLabelsForPod();
@@ -309,6 +327,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
       final Set<String> jobTypes, final AzKubernetesV1SpecBuilder v1SpecBuilder)
       throws ExecutorManagerException {
 
+  }
+
+  private void addSecretVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
+    v1SpecBuilder.addSecretVolume(secretVolume, secretName, secretMountpath);
   }
 
   /**
