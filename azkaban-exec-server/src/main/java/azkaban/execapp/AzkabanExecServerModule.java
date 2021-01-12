@@ -17,21 +17,12 @@
 
 package azkaban.execapp;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
-
 import azkaban.cluster.ClusterModule;
+import azkaban.common.ExecJettyServerModule;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
-import azkaban.spi.AzkabanEventReporter;
-import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This

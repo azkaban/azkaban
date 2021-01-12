@@ -17,10 +17,13 @@
 package azkaban.container;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.common.ExecJettyServerModule.*;
+import static com.google.common.base.Preconditions.*;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
+import azkaban.common.ExecJettyServerModule;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
@@ -47,12 +50,17 @@ import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.user.User;
+import azkaban.utils.FileIOUtils;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import io.kubernetes.client.Exec;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -68,7 +76,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.ZipFile;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,6 +119,10 @@ public class FlowContainer {
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
   // Should validate proxy user
   public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
+  public static final String JOB_LOG_CHUNK_SIZE = "job.log.chunk.size";
+  public static final String JOB_LOG_BACKUP_INDEX = "job.log.backup.index";
+  public static final String PROXY_USER_LOCK_DOWN = "proxy.user.lock.down";
+
 
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
 
@@ -111,10 +130,16 @@ public class FlowContainer {
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
+  private final Server jettyServer;
+  private final Context containerContext;
+  private final AzkabanEventReporter eventReporter;
   private final Props azKabanProps;
   private Props globalProps;
   private final int numJobThreadPerFlow;
   private String execDirPath;
+  private int port; // Listener port for incoming control & log messages (ContainerServlet)
+  private FlowRunner flowRunner;
+  private ExecutableFlow flow; // A flow container is tasked to only run a single flow
 
   // Max chunk size is 20MB.
   private final String jobLogChunkSize;
@@ -128,7 +153,14 @@ public class FlowContainer {
    * @param props Azkaban properties.
    * @throws IOException
    */
-  private FlowContainer(final Props props) throws ExecutorManagerException {
+  @Inject
+  @Singleton
+  public FlowContainer(final Props props,
+      final ExecutorLoader executorLoader,
+      final ProjectLoader projectLoader,
+      @Nullable final AzkabanEventReporter eventReporter,
+      @Named(EXEC_JETTY_SERVER) final Server jettyServer,
+      @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
 
     // Create Azkaban Props Map
     this.azKabanProps = props;
@@ -143,20 +175,26 @@ public class FlowContainer {
       }
     }
 
-    this.executorLoader = SERVICE_PROVIDER.getInstance(JdbcExecutorLoader.class);
+    this.executorLoader = executorLoader;
     logger.info("executorLoader from guice :" + this.executorLoader);
 
     // project Loader
-    this.projectLoader = SERVICE_PROVIDER.getInstance(JdbcProjectImpl.class);
+    this.projectLoader = projectLoader;
     logger.info("projectLoader from guice : " + this.projectLoader);
 
     // setup executor service
     this.executorService = Executors.newSingleThreadExecutor();
 
-    this.jobLogChunkSize = this.azKabanProps.getString("job.log.chunk.size",
+    // jetty server
+    this.jettyServer = jettyServer;
+    this.containerContext = context;
+
+    this.eventReporter = eventReporter;
+
+    this.jobLogChunkSize = this.azKabanProps.getString(JOB_LOG_CHUNK_SIZE,
             DEFAULT_LOG_CHUNK_SIZE);
-    this.jobLogNumFiles = this.azKabanProps.getInt("job.log.backup.index", DEFAULT_LOG_NUM_FILES);
-    this.validateProxyUser = this.azKabanProps.getBoolean("proxy.user.lock.down",
+    this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
+    this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
             DEFAULT_VALIDATE_PROXY_USER);
     this.jobTypeManager =
         new JobTypeManager(
@@ -175,7 +213,7 @@ public class FlowContainer {
   /**
    * The entry point of FlowContainer. Validates the input arguments and submits the flow for
    * execution. It is assumed that AZ_HOME environment variable is set. If it is not set, then
-   * it explicitely sets it to present working directory.
+   * it explicitly sets it to present working directory.
    * @param args Takes the execution id and Project zip file path as inputs.
    * @throws IOException
    * @throws ExecutorManagerException
@@ -210,7 +248,9 @@ public class FlowContainer {
     setInjector(azkabanProps);
 
     // Constructor
-    final FlowContainer flowContainer = new FlowContainer(azkabanProps);
+    final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
+    flowContainer.start();
+    launchCtrlMsgListener(flowContainer);
 
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
@@ -263,10 +303,12 @@ public class FlowContainer {
     return new Props(props, propsMap);
   }
 
-  private static void setInjector(final Props azkabanProps){
+  @VisibleForTesting
+  static void setInjector(final Props azkabanProps){
     // Inject AzkabanCommonModule
     final Injector injector = Guice.createInjector(
-            new AzkabanCommonModule(azkabanProps)
+            new AzkabanCommonModule(azkabanProps),
+            new ExecJettyServerModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
   }
@@ -277,7 +319,8 @@ public class FlowContainer {
    * @param execId Execution Id of the flow.
    * @throws ExecutorManagerException
    */
-  private void submitFlow(final int execId, final Path currentDir, final String projectZipName)
+  @VisibleForTesting
+  void submitFlow(final int execId, final Path currentDir, final String projectZipName)
           throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
@@ -287,12 +330,14 @@ public class FlowContainer {
     }
 
     // Update the status of the flow from DISPATCHING to PREPARING
+    this.flow = flow;
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
     // setup WorkDir
     setupWorkDir(currentDir, projectZipName);
-    submitFlowRunner(createFlowRunner(flow));
+    this.flowRunner = createFlowRunner(flow);
+    submitFlowRunner(this.flowRunner);
   }
 
   /**
@@ -414,7 +459,171 @@ public class FlowContainer {
         throw new ExecutorManagerException("Failed to delete the cert file");
       }
     }
-
   }
 
+  @VisibleForTesting
+  void start() {
+     this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
+  }
+
+  public void cancelFlow(final int execId, final String user)
+    throws ExecutorManagerException {
+
+    logger.info("Cancel Flow called");
+    if (this.flowRunner == null) {
+      logger.warn("Attempt to cancel flow execId: {} before flow got a chance to start.",
+          execId);
+      throw new ExecutorManagerException("Flow has not launched yet.");
+    }
+
+    if (Status.isStatusFinished(this.flowRunner.getExecutableFlow().getStatus())) {
+      logger.warn("Found a finished execution in the list of running flows: " + execId);
+      throw new ExecutorManagerException("Execution is already finished.");
+    }
+
+    this.flowRunner.kill(user);
+  }
+
+  /**
+   * Return accumulated flow logs with the specified length from the flow container starting from the given byte offset.
+   * @param execId
+   * @param startByte
+   * @param length
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public LogData readFlowLogs(final int execId, final int startByte, final int length)
+    throws ExecutorManagerException {
+    logger.info("readFlowLogs called");
+    if (this.flowRunner == null) {
+      logger.warn("Attempt to read flow logs before flow execId: {} got a chance to start",
+          execId);
+      throw new ExecutorManagerException("The flow has not launched yet!");
+    }
+
+    final File dir = flowRunner.getExecutionDir();
+    if (dir == null || !dir.exists()) {
+      logger.warn("Error reading file. Execution directory does not exist for flow execId: {}", execId);
+      throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
+    }
+
+   try {
+     final File logFile = flowRunner.getFlowLogFile();
+     if (logFile != null && logFile.exists()) {
+       return FileIOUtils.readUtf8File(logFile, startByte, length);
+     } else {
+       logger.warn("Flow log file does not exist for flow execId: {}", execId);
+       throw new ExecutorManagerException("Flow log file does not exist.");
+     }
+   } catch (final IOException e) {
+     logger.warn("IOException while trying to read flow log file for flow execId: {}",
+         execId);
+     throw new ExecutorManagerException(e);
+   }
+  }
+
+  /**
+   * Return accumulated job logs for a specific job starting with the provided byte offset.
+   * @param execId
+   * @param jobId
+   * @param attempt
+   * @param startByte
+   * @param length
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public LogData readJobLogs(final int execId, final String jobId, final int attempt,
+      final int startByte, final int length) throws ExecutorManagerException {
+
+    logger.info("readJobLogs called");
+    if (this.flowRunner == null) {
+      logger.warn("Attempt to read job logs before flow got a chance to start. " +
+          "Flow execId: {}, jobId: {}", execId, jobId);
+      throw new ExecutorManagerException("The flow has not launched yet!");
+    }
+
+    final File dir = flowRunner.getExecutionDir();
+    if (dir == null || !dir.exists()) {
+      logger.warn("Error reading jobLogs. Execution dir does not exist. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(
+          "Error reading file. Execution directory does not exist.");
+    }
+
+    try {
+      final File logFile = flowRunner.getJobLogFile(jobId, attempt);
+      if (logFile != null && logFile.exists()) {
+        return FileIOUtils.readUtf8File(logFile, startByte, length);
+      } else {
+        logger.warn("Job log file does not exist. Flow execId: {}, jobId: {}",
+            execId, jobId);
+        throw new ExecutorManagerException("Job log file does not exist.");
+      }
+    } catch (final IOException e) {
+      logger.warn("IOException while trying to read Job logs. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(e);
+    }
+  }
+
+  /**
+   *
+   * @param execId
+   * @param jobId
+   * @param attempt
+   * @param startByte
+   * @param length
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public JobMetaData readJobMetaData(final int execId, final String jobId,
+      final int attempt, final int startByte, final int length) throws ExecutorManagerException {
+
+    logger.info("readJobMetaData called");
+    if (this.flowRunner == null) {
+      logger.warn("Metadata cannot be read as flow has not started. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException("The flow has not launched yet.");
+    }
+
+    final File dir = flowRunner.getExecutionDir();
+    if (dir == null || !dir.exists()) {
+      logger.warn("Execution directory does not exist. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(
+          "Error reading file. Execution directory does not exist.");
+    }
+
+    try {
+      final File metaDataFile = flowRunner.getJobMetaDataFile(jobId, attempt);
+      if (metaDataFile != null && metaDataFile.exists()) {
+        return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
+      } else {
+        logger.warn("Job metadata file does not exist. execId: {}, jobId: {}",
+            execId, jobId);
+        throw new ExecutorManagerException("Job metadata file does not exist.");
+      }
+    } catch (final IOException e) {
+      logger.warn("IOException while trying to read metadata file. execId: {}, jobId: {}",
+          execId, jobId);
+      throw new ExecutorManagerException(e);
+    }
+  }
+
+  @VisibleForTesting
+  static void launchCtrlMsgListener(FlowContainer flowContainer) {
+    try {
+      flowContainer.jettyServer.start();
+    } catch (final Exception e) {
+      logger.error(e.getMessage());
+    }
+    // TODO Add hook for JobCallback
+
+    final Connector[] connectors = flowContainer.jettyServer.getConnectors();
+    checkState(connectors.length >= 1, "Server must have at least 1 connector");
+
+    // The first connector is created upon initializing the server. That's the one that has the port.
+    flowContainer.port = connectors[0].getLocalPort();
+    logger.info("Listening on port {} for control messages.", flowContainer.port);
+  }
 }

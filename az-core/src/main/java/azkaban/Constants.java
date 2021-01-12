@@ -61,6 +61,7 @@ public class Constants {
   public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
+  public static final String AZKABAN_CONTAINER_CONTEXT_KEY = "flow_container";
 
   // Internal username used to perform SLA action
   public static final String AZKABAN_SLA_CHECKER_USERNAME = "azkaban_sla";
@@ -135,6 +136,9 @@ public class Constants {
   public static final String EXECUTION_SOURCE_EVENT = "event";
   public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
   public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
+
+  public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
+  public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
 
   // Use in-memory keystore
   public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
