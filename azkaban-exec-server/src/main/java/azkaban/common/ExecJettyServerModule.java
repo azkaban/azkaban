@@ -1,9 +1,15 @@
-package azkaban.execapp;
+package azkaban.common;
 
 import static azkaban.Constants.ConfigurationKeys.EXECUTOR_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_HEADER_BUFFER_SIZE;
 import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 
+import azkaban.Constants;
+import azkaban.container.ContainerServlet;
+import azkaban.execapp.ExecutorServlet;
+import azkaban.execapp.JMXHttpServlet;
+import azkaban.execapp.ServerStatisticsServlet;
+import azkaban.execapp.StatsServlet;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -20,6 +26,7 @@ public class ExecJettyServerModule extends AbstractModule {
 
   public static final String EXEC_JETTY_SERVER = "ExecServer";
   public static final String EXEC_ROOT_CONTEXT = "root";
+  public static final String EXEC_CONTAINER_CONTEXT = "container";
 
   private static final int DEFAULT_THREAD_NUMBER = 50;
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
@@ -75,6 +82,17 @@ public class ExecJettyServerModule extends AbstractModule {
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
     root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
     return root;
+  }
+
+  @Provides
+  @Named(EXEC_CONTAINER_CONTEXT)
+  @Singleton
+  private Context createContainerContext(@Named(EXEC_JETTY_SERVER) final Server server) {
+    final Context container = new Context(server, "/", Context.SESSIONS);
+    container.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
+
+    container.addServlet(new ServletHolder(new ContainerServlet()), "/container");
+    return container;
   }
 
 }
