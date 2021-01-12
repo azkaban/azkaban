@@ -1268,7 +1268,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   public void kill() {
     synchronized (this.mainSyncObj) {
-      if (isKilled()) {
+      if (isKilled() || this.flowFinished) {
+        this.logger.info(
+            "Dropping Kill action as execution " + this.execId + " is already finished.");
         return;
       }
       this.logger.info("Kill has been called on execution " + this.execId);

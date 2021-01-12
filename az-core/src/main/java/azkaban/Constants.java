@@ -538,6 +538,13 @@ public class Constants {
             "memory.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_SECRET_NAME =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.name";
+    public static final String KUBERNETES_FLOW_CONTAINER_SECRET_VOLUME =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.volume";
+    public static final String KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.mountpath";
+
     public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
     public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =

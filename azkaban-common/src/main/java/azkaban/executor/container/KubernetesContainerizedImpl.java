@@ -91,6 +91,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
   public static final String HOST_PATH_TYPE = "Socket";
   public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
+  public static final String DEFAULT_SECRET_NAME = "azkaban-private-properties";
+  public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
+  public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private/conf";
+
 
   private final String namespace;
   private final ApiClient client;
@@ -114,6 +118,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String initMountPathPrefixForJobtypes;
   private final String appMountPathPrefixForJobtypes;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+  private final String secretName;
+  private final String secretVolume;
+  private final String secretMountpath;
+
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -177,6 +185,16 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         this.azkProps.getString(
             ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH,
             DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH);
+    this.secretName = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_NAME,
+            DEFAULT_SECRET_NAME);
+    this.secretVolume = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_VOLUME,
+            DEFAULT_SECRET_VOLUME);
+    this.secretMountpath = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH,
+            DEFAULT_SECRET_MOUNTPATH);
+
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
@@ -419,6 +437,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Create init container yaml file for each jobType
     addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder, versionSet);
 
+    // Add volume with secrets mounted
+    addSecretVolume(v1SpecBuilder);
     return v1SpecBuilder.build();
   }
 
@@ -575,6 +595,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
             jobType + " in versionSet");
       }
     }
+  }
+
+  private void addSecretVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
+    v1SpecBuilder.addSecretVolume(secretVolume, secretName, secretMountpath);
   }
 
   /**
