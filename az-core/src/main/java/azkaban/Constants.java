@@ -565,6 +565,7 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
 
     public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
+    public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
   }
 
   public static class ImageMgmtConstants {
