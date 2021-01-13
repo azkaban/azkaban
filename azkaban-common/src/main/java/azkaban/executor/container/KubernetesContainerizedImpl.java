@@ -431,6 +431,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     Map<String, String> envVariables = new HashMap<>();
     envVariables.put(ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID,
         String.valueOf(versionSet.getVersionSetId()));
+    envVariables.put(ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID,
+        String.valueOf(executionId));
     // Add env variables to spec builder
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
