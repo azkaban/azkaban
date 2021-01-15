@@ -227,6 +227,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     INCLUDED_JOB_TYPES.add("java2");
     INCLUDED_JOB_TYPES.add("pig");
     INCLUDED_JOB_TYPES.add("pigLi");
+    INCLUDED_JOB_TYPES.add("command");
+    INCLUDED_JOB_TYPES.add("javaprocess");
     INCLUDED_JOB_TYPES.add("noop");
   }
 
