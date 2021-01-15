@@ -26,6 +26,7 @@ import azkaban.Constants.PluginManager;
 import azkaban.common.ExecJettyServerModule;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
+import azkaban.execapp.FlowPreparer;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
@@ -34,7 +35,6 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
@@ -43,24 +43,20 @@ import azkaban.jobtype.HadoopProxy;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
-import azkaban.project.JdbcProjectImpl;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
+import azkaban.storage.ProjectStorageManager;
 import azkaban.user.User;
-import azkaban.utils.FileIOUtils;
+import azkaban.utils.*;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.FileIOUtils.JobMetaData;
-import azkaban.utils.Props;
-import azkaban.utils.StdOutErrRedirect;
-import azkaban.utils.Utils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.kubernetes.client.Exec;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -113,7 +109,6 @@ public class FlowContainer {
   private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
   private static final int DEFAULT_LOG_NUM_FILES = 4;
   private static final int EXEC_ID_INDEX = 0;
-  private static final int PROJECT_LOCATION_INDEX = 1;
   private static final int DEFAULT_JOB_TREAD_COUNT = 10;
   private static final String AZ_HOME = "AZ_HOME";
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
@@ -130,13 +125,14 @@ public class FlowContainer {
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
+  private final FlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
   private final Props azKabanProps;
   private Props globalProps;
   private final int numJobThreadPerFlow;
-  private String execDirPath;
+  private Path execDirPath;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
   private ExecutableFlow flow; // A flow container is tasked to only run a single flow
@@ -208,6 +204,10 @@ public class FlowContainer {
       // Setting up the in-memory KeyStore for all the job executions in the flow.
       setupKeyStore();
     }
+    // Create a flow preparer
+    this.flowPreparer = new FlowPreparer(
+            SERVICE_PROVIDER.getInstance(ProjectStorageManager.class),
+            SERVICE_PROVIDER.getInstance(DependencyTransferManager.class));
   }
 
   /**
@@ -223,7 +223,6 @@ public class FlowContainer {
     StdOutErrRedirect.redirectOutAndErrToLog();
     // Get all the arguments
     final String execIdStr = args[EXEC_ID_INDEX];
-    final String projectZipName = args[PROJECT_LOCATION_INDEX];
     // Process Execution ID.
     int execId = -1;
     try {
@@ -255,35 +254,19 @@ public class FlowContainer {
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
     // execute the flow
-    flowContainer.submitFlow(execId, currentDir, projectZipName);
+    flowContainer.submitFlow(execId, currentDir);
   }
 
-  private void setupWorkDir(final Path currentDir, final String projectZipName)
-          throws ExecutorManagerException {
-    // Move files to respective dirs
+  private void setupWorkDir(final Path currentDir) throws ExecutorManagerException {
     // Create project dir
-    final Path projectDirPath = Paths.get(currentDir.toString(), PROJECT_DIR);
+    this.execDirPath = Paths.get(currentDir.toString(), PROJECT_DIR);
     logger.info("Creating project dir");
     try {
-      Files.createDirectory(projectDirPath);
+      Files.createDirectory(this.execDirPath);
     } catch (final IOException e) {
-      logger.error("Error creating directory :" + projectDirPath, e);
+      logger.error("Error creating directory :" + this.execDirPath, e);
       throw new ExecutorManagerException(e);
     }
-    Path projectZipPath = Paths.get(projectDirPath.toString(), projectZipName);
-    logger.info("Moving projectDir:" + projectZipName + ": to " +
-            projectZipPath);
-
-
-    try {
-      Files.move(Paths.get(projectZipName), projectZipPath);
-    } catch (final IOException e) {
-      logger.error("Error moving projectzip to " + projectDirPath, e);
-      throw new ExecutorManagerException(e);
-    }
-    // Unzip the project zip
-    FlowContainer.unzipFile(projectZipPath.toString(), projectDirPath);
-    this.execDirPath = projectDirPath.toString();
   }
 
   /**
@@ -320,7 +303,7 @@ public class FlowContainer {
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  void submitFlow(final int execId, final Path currentDir, final String projectZipName)
+  void submitFlow(final int execId, final Path currentDir)
           throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
@@ -335,21 +318,28 @@ public class FlowContainer {
     this.executorLoader.updateExecutableFlow(flow);
 
     // setup WorkDir
-    setupWorkDir(currentDir, projectZipName);
+    setupWorkDir(currentDir);
     this.flowRunner = createFlowRunner(flow);
     submitFlowRunner(this.flowRunner);
   }
 
   /**
-   * create Flow Runner
+   * create Flow Runner and setup the flow execution directory with project dependencies.
    * @param flow Executable flow object.
    * @return FlowRunner object.
    * @throws ExecutorManagerException
    */
   private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
+    // Prepare the flow with project dependencies.
+    try {
+      this.flowPreparer.setupContainerizedExecution(flow, this.execDirPath.toFile());
+    } catch (final ExecutorManagerException e) {
+      logger.error("Error setting up flow execution directory for execution id {}",
+              flow.getExecutionId(), e);
+      throw e;
+    }
     // set the execution dir
-    //TODO : May leverage FlowPreparer for this when project management logic is added.
-    flow.setExecutionPath(this.execDirPath);
+    flow.setExecutionPath(this.execDirPath.toString());
 
     // Setup flow watcher
     FlowWatcher watcher = null;
@@ -450,8 +440,10 @@ public class FlowContainer {
         logger.error("Failed to Prefetch KeyStore");
         throw new ExecutorManagerException("Failed to Prefetch KeyStore");
       }
+      logger.info("In-memory Keystore is setup, delete the cert file");
       // Delete the cert file from disk as the KeyStore is already cached above.
-      final File certFile = new File(Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION);
+      final File certFile = new File(this.azKabanProps.get(
+              Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION));
       if (certFile.delete()) {
         logger.info("Successfully deleted the cert file");
       } else {
@@ -626,4 +618,5 @@ public class FlowContainer {
     flowContainer.port = connectors[0].getLocalPort();
     logger.info("Listening on port {} for control messages.", flowContainer.port);
   }
+
 }

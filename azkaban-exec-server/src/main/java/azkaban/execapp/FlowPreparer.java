@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-class FlowPreparer {
+public class FlowPreparer {
 
   // Name of the file which keeps project directory size
   static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
@@ -85,6 +85,28 @@ class FlowPreparer {
   }
 
   /**
+   * Constructor
+   * This constructor is used for Containerized execution which does not need projectCache
+   *
+   * @param projectStorageManager projectStorageManager
+   * @param dependencyTransferManager dependencyStorageManager
+   */
+  public FlowPreparer(final ProjectStorageManager projectStorageManager,
+               final DependencyTransferManager dependencyTransferManager) {
+    Preconditions.checkNotNull(projectStorageManager);
+    Preconditions.checkNotNull(dependencyTransferManager);
+
+    this.projectStorageManager = projectStorageManager;
+    this.dependencyTransferManager = dependencyTransferManager;
+
+    // Not needed.
+    this.executionsDir = null;
+    this.projectCacheDir = null;
+    this.projectCacheCleaner = Optional.empty();
+    this.projectCacheHitRatio = null;
+  }
+
+  /**
    * Calculate the directory size and save it to a file.
    *
    * @param dir the directory whose size needs to be saved.
@@ -108,7 +130,6 @@ class FlowPreparer {
    * @param flow Executable Flow instance.
    */
   void setup(final ExecutableFlow flow) throws ExecutorManagerException {
-    final ProjectFileHandler projectFileHandler = null;
     File tempDir = null;
     try {
       final ProjectDirectoryMetadata project = new ProjectDirectoryMetadata(
@@ -149,7 +170,7 @@ class FlowPreparer {
       }
 
       final long flowPrepCompletionTime = System.currentTimeMillis();
-      LOGGER.info("Flow preparation completed in {} sec(s), out ot which {} sec(s) was spent inside "
+      LOGGER.info("Flow preparation completed in {} sec(s), out of which {} sec(s) was spent inside "
               + "critical section. [execid: {}, path: {}]",
           (flowPrepCompletionTime - flowPrepStartTime) / 1000,
           (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
@@ -158,10 +179,27 @@ class FlowPreparer {
       FileIOUtils.deleteDirectorySilently(tempDir);
       LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
       throw new ExecutorManagerException(ex);
-    } finally {
-      if (projectFileHandler != null) {
-        projectFileHandler.deleteLocalFile();
-      }
+    }
+  }
+
+  public void setupContainerizedExecution(final ExecutableFlow flow, final File projectDir)
+    throws ExecutorManagerException {
+    final ProjectDirectoryMetadata projectDirMetadata = new ProjectDirectoryMetadata(
+              flow.getProjectId(),
+              flow.getVersion());
+    final long flowPrepStartTime = System.currentTimeMillis();
+    final int execId = flow.getExecutionId();
+
+    LOGGER.info("Deepak : Using containerized execution flow setup");
+    try {
+      downloadAndUnzipProject(projectDirMetadata, execId, projectDir);
+      final long flowPrepCompletionTime = System.currentTimeMillis();
+      LOGGER.info("Flow preparation completed in {} sec(s). [execid: {}, path: {}]",
+              (flowPrepCompletionTime - flowPrepStartTime) / 1000,
+              flow.getExecutionId(), projectDir.getPath());
+    } catch (final IOException e) {
+      LOGGER.error("Error in downloading project files for flow execution {}", execId, e);
+      throw new ExecutorManagerException(e);
     }
   }
 
@@ -296,6 +334,7 @@ class FlowPreparer {
       return null;
     }
 
+    LOGGER.info("Project {} not cached, downloading.", proj);
     this.projectCacheHitRatio.markMiss();
 
     // Download project to a temp dir if not exists in local cache.

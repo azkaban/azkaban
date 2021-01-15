@@ -225,4 +225,16 @@ public class FlowPreparerTest {
     Set<Dependency> expectedDownloadedDeps = ThinArchiveTestUtils.getDepSetAB();
     verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps));
   }
+
+  @Test
+  public void testsetupContainerizedFlow() throws ExecutorManagerException {
+    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
+    when(executableFlow.getExecutionId()).thenReturn(12345);
+    when(executableFlow.getProjectId()).thenReturn(FAT_PROJECT_ID);
+    when(executableFlow.getVersion()).thenReturn(34);
+
+    final File execDir = new File(this.executionsDir, "12345");
+    this.instance.setupContainerizedExecution(executableFlow, execDir);
+    assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
+  }
 }
