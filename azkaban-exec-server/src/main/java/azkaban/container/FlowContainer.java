@@ -257,7 +257,7 @@ public class FlowContainer {
     flowContainer.submitFlow(execId, currentDir);
   }
 
-  private void setupWorkDir(final Path currentDir) throws ExecutorManagerException {
+  private void setupExecutionDir(final Path currentDir) throws ExecutorManagerException {
     // Create project dir
     this.execDirPath = Paths.get(currentDir.toString(), PROJECT_DIR);
     logger.info("Creating project dir");
@@ -318,13 +318,13 @@ public class FlowContainer {
     this.executorLoader.updateExecutableFlow(flow);
 
     // setup WorkDir
-    setupWorkDir(currentDir);
+    setupExecutionDir(currentDir);
     this.flowRunner = createFlowRunner(flow);
     submitFlowRunner(this.flowRunner);
   }
 
   /**
-   * create Flow Runner and setup the flow execution directory with project dependencies.
+   * Create Flow Runner and setup the flow execution directory with project dependencies.
    * @param flow Executable flow object.
    * @return FlowRunner object.
    * @throws ExecutorManagerException

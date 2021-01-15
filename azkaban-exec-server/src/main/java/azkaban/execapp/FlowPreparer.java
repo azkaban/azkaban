@@ -190,7 +190,7 @@ public class FlowPreparer {
     final long flowPrepStartTime = System.currentTimeMillis();
     final int execId = flow.getExecutionId();
 
-    LOGGER.info("Deepak : Using containerized execution flow setup");
+    LOGGER.info("Using containerized execution flow setup");
     try {
       downloadAndUnzipProject(projectDirMetadata, execId, projectDir);
       final long flowPrepCompletionTime = System.currentTimeMillis();
@@ -334,7 +334,6 @@ public class FlowPreparer {
       return null;
     }
 
-    LOGGER.info("Project {} not cached, downloading.", proj);
     this.projectCacheHitRatio.markMiss();
 
     // Download project to a temp dir if not exists in local cache.
