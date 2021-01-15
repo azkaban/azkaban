@@ -31,6 +31,7 @@ import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -188,6 +189,21 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           + "version");
     }
     return imageVersions;
+  }
+
+  @Override
+  public Optional<ImageVersion> getImageVersion(final String imageTypeName,
+      final String imageVersion) throws ImageMgmtException {
+    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
+        .addParam(IMAGE_TYPE, imageTypeName)
+        .addParam(IMAGE_VERSION, imageVersion)
+        .build();
+    final List<ImageVersion> imageVersions = findImageVersions(imageMetadataRequest);
+    Preconditions.checkNotNull(imageVersions, "Image version should not be null");
+    Preconditions.checkState(!imageVersions.isEmpty(), "Image version should not be empty");
+    Preconditions.checkState(imageVersions.size() == 1,
+        "Image version result set has more than 1 value");
+    return Optional.of(imageVersions.get(0));
   }
 
   @Override

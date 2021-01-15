@@ -45,6 +45,9 @@ import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.imagemgmt.version.ExtendedVersionSet;
+import azkaban.imagemgmt.version.ExtendedVersionSet.ImageVersionPath;
+import azkaban.imagemgmt.version.ExtendedVersionSetLoader;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
@@ -59,8 +62,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import javax.swing.text.html.Option;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import azkaban.utils.Props;
@@ -85,7 +90,8 @@ public class KubernetesContainerizedImplTest {
   private KubernetesContainerizedImpl kubernetesContainerizedImpl;
   private ExecutorLoader executorLoader;
   private static DatabaseOperator dbOperator;
-  private VersionSetLoader loader;
+  private VersionSetLoader versionSetLoader;
+  private ExtendedVersionSetLoader extendedVersionSetLoader;
   private static ImageRampupManager imageRampupManager;
   private static ImageTypeDao imageTypeDao;
   private static ImageVersionDao imageVersionDao;
@@ -122,9 +128,11 @@ public class KubernetesContainerizedImplTest {
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
         + "/resources/container/kubeconfig");
     this.executorLoader = mock(ExecutorLoader.class);
-    this.loader = new JdbcVersionSetLoader(this.dbOperator);
+    this.versionSetLoader = new JdbcVersionSetLoader(this.dbOperator);
+    this.extendedVersionSetLoader = mock(ExtendedVersionSetLoader.class);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
-        this.executorLoader, this.loader, this.imageRampupManager);
+        this.executorLoader, this.versionSetLoader, this.extendedVersionSetLoader,
+        this.imageRampupManager);
   }
 
   @Test
@@ -157,13 +165,16 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.addAll(jobTypes);
     VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
+    ExtendedVersionSet extendedVersionSet =
+        extendedVersionSetLoader.createExtendedVersionSet(versionSet);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
-        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes);
+        .createPodSpec(flow.getExecutionId(), extendedVersionSet, jobTypes);
 
     assert(podSpec != null);
 
     final V1Pod pod = this.kubernetesContainerizedImpl.createPodFromSpec(flow.getExecutionId(), podSpec);
     String podSpecYaml = Yaml.dump(pod).trim();
+    System.out.println(podSpecYaml);
     assert(!podSpecYaml.isEmpty());
     log.info("Pod spec for execution id {} is {}", flow.getExecutionId(), podSpecYaml);
   }
@@ -184,7 +195,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
+    VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
     VersionSet presetVersionSet = versionSetBuilder
         .addElement("command", "7.1")
         .addElement("spark", "8.0")
@@ -212,7 +223,7 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals(false, versionSet.getVersion("pigLi-0.11.1").isPresent());
 
     // Now let's try constructing an incomplete versionSet
-    VersionSetBuilder incompleteVersionSetBuilder = new VersionSetBuilder(this.loader);
+    VersionSetBuilder incompleteVersionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
     VersionSet incompleteVersionSet = incompleteVersionSetBuilder
         .addElement("command", "7.1")
         .addElement("spark", "8.0")

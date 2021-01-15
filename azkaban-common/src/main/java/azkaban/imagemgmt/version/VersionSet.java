@@ -74,6 +74,23 @@ public class VersionSet {
         versionSetId, versionSetMd5Hex, versionSetJsonString);
   }
 
+  protected VersionSet(final String versionSetJsonString,
+      final String versionSetMd5Hex,
+      final int versionSetId,
+      final SortedMap<String, String> imageToVersionMap)
+      throws IOException {
+    this.versionSetJsonString = versionSetJsonString;
+    this.versionSetMd5Hex = versionSetMd5Hex;
+    this.versionSetId = versionSetId;
+    this.imageToVersionMap = imageToVersionMap;
+  }
+
+  // Copy constructor
+  protected VersionSet(VersionSet vs) throws IOException {
+   this(vs.getVersionSetJsonString(), vs.getVersionSetMd5Hex(), vs.getVersionSetId(),
+        vs.getImageToVersionMap());
+  }
+
   /**
    * @return
    */

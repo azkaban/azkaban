@@ -30,7 +30,10 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
+import azkaban.imagemgmt.version.ExtendedVersionSet;
+import azkaban.imagemgmt.version.ExtendedVersionSetLoader;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
@@ -114,6 +117,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String nscdSocketHostPath;
   private final String nscdSocketVolumeMountPath;
   private final VersionSetLoader versionSetLoader;
+  private final ExtendedVersionSetLoader extendedVersionSetLoader;
   private final ImageRampupManager imageRampupManager;
   private final String initMountPathPrefixForJobtypes;
   private final String appMountPathPrefixForJobtypes;
@@ -130,11 +134,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public KubernetesContainerizedImpl(final Props azkProps,
       final ExecutorLoader executorLoader,
       final VersionSetLoader versionSetLoader,
+      final ExtendedVersionSetLoader extendedVersionSetLoader,
       final ImageRampupManager imageRampupManager)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.versionSetLoader = versionSetLoader;
+    this.extendedVersionSetLoader = extendedVersionSetLoader;
     this.imageRampupManager = imageRampupManager;
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
@@ -415,16 +421,16 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet,
+  V1PodSpec createPodSpec(final int executionId, final ExtendedVersionSet versionSet,
       SortedSet<String> jobTypes)
       throws ExecutorManagerException {
-    final String azkabanBaseImageVersion = getAzkabanBaseImageVersion(versionSet);
+    final String azkabanImagePath = getAzkabanBaseImageVersionPath(versionSet);
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
 
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
             .addFlowContainer(this.flowContainerName,
-                azkabanBaseImageVersion, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
+                azkabanImagePath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
 
     // Add volume for nscd-socket
@@ -520,7 +526,14 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes);
-    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes);
+    final ExtendedVersionSet extendedVersionSet;
+    try {
+      extendedVersionSet = this.extendedVersionSetLoader.createExtendedVersionSet(versionSet);
+    } catch (IOException e) {
+      logger.error("IOExectpion while creating extended version set", e);
+      throw new ExecutorManagerException(e);
+    }
+    final V1PodSpec podSpec = createPodSpec(executionId, extendedVersionSet, jobTypes);
 
     final V1Pod pod = createPodFromSpec(executionId, podSpec);
     String podSpecYaml = Yaml.dump(pod).trim();
@@ -544,8 +557,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    *
    * @return
    */
-  private String getAzkabanBaseImageVersion(final VersionSet versionSet) {
-    return versionSet.getVersion(AZKABAN_BASE_IMAGE).get();
+  private String getAzkabanBaseImageVersionPath(final ExtendedVersionSet versionSet) {
+    return versionSet.getVersionPath(AZKABAN_BASE_IMAGE).get().pathWithVersion();
   }
 
   private String getAzkabanConfigVersion(final VersionSet versionSet) {
@@ -581,7 +594,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   private void addInitContainerForAllJobTypes(final int executionId,
       final Set<String> jobTypes, final AzKubernetesV1SpecBuilder v1SpecBuilder,
-      final VersionSet versionSet)
+      final ExtendedVersionSet versionSet)
       throws ExecutorManagerException {
     for (String jobType: jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
@@ -590,8 +603,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         continue;
       }
       try {
-        String imageVersion = versionSet.getVersion(jobType).get();
-        v1SpecBuilder.addJobType(jobType, imageVersion, ImagePullPolicy.IF_NOT_PRESENT,
+        String imagePath = versionSet.getVersionPath(jobType).get().pathWithVersion();
+        v1SpecBuilder.addJobType(jobType, imagePath, ImagePullPolicy.IF_NOT_PRESENT,
             String.join("/", this.initMountPathPrefixForJobtypes, jobType),
             String.join("/", this.appMountPathPrefixForJobtypes,  jobType));
       } catch (Exception e) {

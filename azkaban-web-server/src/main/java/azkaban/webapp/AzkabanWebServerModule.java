@@ -37,6 +37,8 @@ import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageTypeServiceImpl;
 import azkaban.imagemgmt.services.ImageVersionService;
 import azkaban.imagemgmt.services.ImageVersionServiceImpl;
+import azkaban.imagemgmt.version.ExtendedVersionSet;
+import azkaban.imagemgmt.version.ExtendedVersionSetLoader;
 import azkaban.imagemgmt.version.JdbcVersionSetLoader;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.scheduler.ScheduleLoader;
@@ -102,6 +104,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ImageVersionService.class).to(ImageVersionServiceImpl.class);
     bind(ImageRampupService.class).to(ImageRampupServiceImpl.class);
     bind(VersionSetLoader.class).to(JdbcVersionSetLoader.class);
+    bind(ExtendedVersionSetLoader.class);
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {

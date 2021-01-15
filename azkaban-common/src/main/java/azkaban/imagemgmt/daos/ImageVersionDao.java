@@ -49,6 +49,17 @@ public interface ImageVersionDao {
       throws ImageMgmtException;
 
   /**
+   * Method to get image version based on image type, image version
+   *
+   * @param imageTypeName
+   * @param imageVersion
+   * @return Optional<ImageVersion>
+   * @throws ImageMgmtException
+   */
+  public Optional<ImageVersion> getImageVersion(String imageTypeName, String imageVersion)
+      throws ImageMgmtException;
+
+  /**
    * Method to get image version based on image type, image version and version state
    *
    * @param imageTypeName
