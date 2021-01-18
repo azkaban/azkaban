@@ -25,6 +25,8 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodSpecBuilder;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1ResourceRequirementsBuilder;
+import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
+import io.kubernetes.client.openapi.models.V1SecretVolumeSourceBuilder;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeBuilder;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
@@ -52,6 +54,7 @@ public class AzKubernetesV1SpecBuilder {
     private static final String AZ_CONF_VERSION_KEY = "AZ_CONF_VERSION";
     private static final String JOBTYPE_MOUNT_PATH_KEY = "JOBTYPE_MOUNT_PATH";
     private static final String DEFAULT_RESTART_POLICY = "Never";
+    private static final int SECRET_VOLUME_DEFAULT_MODE = 0400; // file read permitted only for the user
 
     private final V1ContainerBuilder flowContainerBuilder = new V1ContainerBuilder();
 
@@ -177,6 +180,33 @@ public class AzKubernetesV1SpecBuilder {
             .withMountPath(volMountPath)
             .build();
         this.appVolumeMounts.add(hostPathVolMount);
+        return this;
+    }
+
+    /**
+     * Adds a volume mount populated from a kubernetes secret.
+     *
+     * @param volName volume name
+     * @param secretName secret name
+     * @param volMountPath directory where secret will be mounted
+     */
+    public AzKubernetesV1SpecBuilder addSecretVolume(final String volName,
+        final String secretName, final String volMountPath) {
+        final V1SecretVolumeSource secretVolumeSource =
+            new V1SecretVolumeSourceBuilder()
+                .withNewSecretName(secretName)
+                .withDefaultMode(SECRET_VOLUME_DEFAULT_MODE)
+                .build();
+        final V1Volume secretVolume =
+            new V1VolumeBuilder()
+                .withName(volName)
+                .withSecret(secretVolumeSource).build();
+        this.appVolumes.add(secretVolume);
+        final V1VolumeMount secretVolumeMount = new V1VolumeMountBuilder()
+            .withMountPath(volMountPath)
+            .withName(volName)
+            .build();
+        this.appVolumeMounts.add(secretVolumeMount);
         return this;
     }
 

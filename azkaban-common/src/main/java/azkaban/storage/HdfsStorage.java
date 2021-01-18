@@ -58,7 +58,7 @@ public class HdfsStorage implements Storage {
   // value used in FileSystem.copyFromLocalFile().
   private static final int UPLOAD_BUFFER_SIZE_BYTES = 4096;
 
-  private final HdfsAuth hdfsAuth;
+  private final AbstractHdfsAuth hdfsAuth;
   private final URI projectRootUri;
   private final URI dependencyRootUri;
 
@@ -75,7 +75,8 @@ public class HdfsStorage implements Storage {
   private final FileSystem http;
 
   @Inject
-  public HdfsStorage(final AzkabanCommonModuleConfig config, final HdfsAuth hdfsAuth,
+  public HdfsStorage(final AzkabanCommonModuleConfig config,
+      @Named("hdfsAuth") final AbstractHdfsAuth hdfsAuth,
       @Named("hdfsFileContext") final FileContext hdfsFileContext,
       @Named("hdfs_cached_httpFS") @Nullable final FileSystem http) {
     this.hdfsAuth = requireNonNull(hdfsAuth);
