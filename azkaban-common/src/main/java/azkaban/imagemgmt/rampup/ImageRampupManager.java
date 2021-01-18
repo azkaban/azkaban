@@ -16,6 +16,8 @@
 package azkaban.imagemgmt.rampup;
 
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.models.ImageVersionMetadata;
+import azkaban.imagemgmt.version.VersionInfo;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,17 +30,38 @@ public interface ImageRampupManager {
   /**
    * Gets the version of all the available active image types based on rampup
    *
-   * @return Map<String, String>
+   * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, String> getVersionForAllImageTypes() throws ImageMgmtException;
+  public Map<String, VersionInfo> getVersionForAllImageTypes() throws ImageMgmtException;
 
   /**
    * Fetches the version of all the given image types based on rampup
    *
-   * @return Map<String, String>
+   * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, String> getVersionByImageTypes(Set<String> imageTypes)
+  public Map<String, VersionInfo> getVersionByImageTypes(Set<String> imageTypes)
+      throws ImageMgmtException;
+
+  /**
+   * Gets the versionMetadata of all the available active image types based on random rampup and
+   * active version
+   *
+   * @return
+   * @throws ImageMgmtException
+   */
+  public Map<String, ImageVersionMetadata> getVersionMetadataForAllImageTypes()
+      throws ImageMgmtException;
+
+  /**
+   * Gets VersionInfo for the given image type and image version.
+   *
+   * @param imageType
+   * @param imageVersion
+   * @return VersionInfo
+   * @throws ImageMgmtException
+   */
+  public VersionInfo getVersionInfo(final String imageType, final String imageVersion)
       throws ImageMgmtException;
 }

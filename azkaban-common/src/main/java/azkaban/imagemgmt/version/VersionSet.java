@@ -41,7 +41,7 @@ public class VersionSet {
   private final String versionSetJsonString;
   private final String versionSetMd5Hex;
   private final int versionSetId;
-  private final SortedMap<String, String> imageToVersionMap;
+  private final SortedMap<String, VersionInfo> imageToVersionMap;
   private static final Logger logger = LoggerFactory
       .getLogger(VersionSet.class);
 
@@ -52,7 +52,8 @@ public class VersionSet {
    * @param versionSetMd5Hex
    * @param versionSetId
    */
-  public VersionSet(final String versionSetJsonString, final String versionSetMd5Hex, final int versionSetId)
+  public VersionSet(final String versionSetJsonString, final String versionSetMd5Hex,
+      final int versionSetId)
       throws IOException {
     this.versionSetJsonString = versionSetJsonString;
     this.versionSetMd5Hex = versionSetMd5Hex;
@@ -64,11 +65,11 @@ public class VersionSet {
           .withAdditionalKeyDeserializers(new CaseInsensitiveKeyDeserializers());
       mapper.setDeserializerProvider(provider);
       this.imageToVersionMap = mapper.readValue(this.versionSetJsonString,
-          new TypeReference<TreeMap<String, String>>() {
+          new TypeReference<TreeMap<String, VersionInfo>>() {
           });
     } catch (final Exception e) {
       throw new IOException(
-          "Trouble converting Json string: " + this.versionSetJsonString + " to a TreeMap type");
+          "Trouble converting Json string: " + this.versionSetJsonString + " to a TreeMap type", e);
     }
     logger.debug("Created version set with id: {}, md5: {}, json: {}",
         versionSetId, versionSetMd5Hex, versionSetJsonString);
@@ -84,7 +85,7 @@ public class VersionSet {
   /**
    * @return
    */
-  public SortedMap<String, String> getImageToVersionMap() {
+  public SortedMap<String, VersionInfo> getImageToVersionMap() {
     return this.imageToVersionMap;
   }
 
@@ -92,7 +93,7 @@ public class VersionSet {
    * @param imageType
    * @return
    */
-  public Optional<String> getVersion(final String imageType) {
+  public Optional<VersionInfo> getVersion(final String imageType) {
     return Optional.ofNullable(this.imageToVersionMap.get(imageType.toLowerCase()));
   }
 

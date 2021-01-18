@@ -17,6 +17,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.imagemgmt.services.ImageVersionMetadataService;
 import azkaban.server.AzkabanAPI;
 import azkaban.webapp.StatusService;
 import com.google.gson.GsonBuilder;
