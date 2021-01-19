@@ -48,6 +48,9 @@ public class ExecutionFlowDao {
   private final DatabaseOperator dbOperator;
   private final MysqlNamedLock mysqlNamedLock;
 
+  private static final String POLLING_LOCK_NAME = "execution_flows_polling";
+  private static final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
+
   @Inject
   public ExecutionFlowDao(final DatabaseOperator dbOperator, final MysqlNamedLock mysqlNamedLock) {
     this.dbOperator = dbOperator;
@@ -417,8 +420,6 @@ public class ExecutionFlowDao {
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
-      final String POLLING_LOCK_NAME = "execution_flows_polling";
-      final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
       int execId = -1;
       final boolean hasLocked = this.mysqlNamedLock.getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
       logger.info("ExecutionFlow polling lock value: " + hasLocked + " for executorId: " + executorId);
@@ -466,8 +467,6 @@ public class ExecutionFlowDao {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
         + "where exec_id = ?";
     final SQLTransaction<Set<Integer>> selectAndUpdateExecution = transOperator -> {
-      final String POLLING_LOCK_NAME = "execution_flows_polling";
-      final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
       final Set<Integer> executions = new HashSet<>();
       final boolean hasLocked = this.mysqlNamedLock
           .getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);

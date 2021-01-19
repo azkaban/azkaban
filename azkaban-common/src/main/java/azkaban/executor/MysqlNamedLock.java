@@ -17,8 +17,11 @@ import org.apache.commons.dbutils.ResultSetHandler;
 
 @Singleton
 public class MysqlNamedLock implements ResultSetHandler<Boolean> {
-  private final String getLockTemplate = "SELECT GET_LOCK(CONCAT(DATABASE(), '.', '%s'), %s)";
-  private final String releaseLockTemplate = "SELECT RELEASE_LOCK(CONCAT(DATABASE(), '.', '%s'))";
+
+  private static final String getLockTemplate =
+      "SELECT GET_LOCK(CONCAT(DATABASE(), '.', '%s'), %s)";
+  private static final String releaseLockTemplate =
+      "SELECT RELEASE_LOCK(CONCAT(DATABASE(), '.', '%s'))";
 
   public boolean getLock(DatabaseTransOperator transOperator, String lockName, int lockTimeoutInSeconds) throws SQLException {
     if (StringUtils.isEmpty(lockName)) {
