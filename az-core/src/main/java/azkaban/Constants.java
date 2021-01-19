@@ -143,6 +143,10 @@ public class Constants {
   // Use in-memory keystore
   public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
 
+  // AZ_HOME in containerized execution
+  public static final String AZ_HOME = "AZ_HOME";
+
+
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";

@@ -51,53 +51,11 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 
-public class FlowPreparerTest {
+public class FlowPreparerTest extends FlowPreparerTestBase {
 
-  public static final String SAMPLE_FLOW_01 = "sample_flow_01";
-
-  public static final Integer FAT_PROJECT_ID = 10;
-  public static final Integer THIN_PROJECT_ID = 11;
-
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File executionsDir;
   private File projectsDir;
   private FlowPreparer instance;
-  private DependencyTransferManager dependencyTransferManager;
-
-  private ProjectStorageManager createMockStorageManager() throws Exception {
-    final ClassLoader classLoader = getClass().getClassLoader();
-    final File zipFAT = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
-
-    final File thinZipFolder = temporaryFolder.newFolder("thinproj");
-    ThinArchiveTestUtils.makeSampleThinProjectDirAB(thinZipFolder);
-    File zipTHIN = temporaryFolder.newFile("thinzipproj.zip");
-    Utils.zipFolderContent(thinZipFolder, zipTHIN);
-
-    final ProjectFileHandler projectFileHandlerFAT = mock(ProjectFileHandler.class);
-    when(projectFileHandlerFAT.getFileType()).thenReturn("zip");
-    when(projectFileHandlerFAT.getLocalFile()).thenReturn(zipFAT);
-    when(projectFileHandlerFAT.getStartupDependencies()).thenReturn(Collections.emptySet());
-
-    final ProjectFileHandler projectFileHandlerTHIN = mock(ProjectFileHandler.class);
-    when(projectFileHandlerTHIN.getFileType()).thenReturn("zip");
-    when(projectFileHandlerTHIN.getLocalFile()).thenReturn(zipTHIN);
-    when(projectFileHandlerTHIN.getStartupDependencies()).thenReturn(ThinArchiveTestUtils.getDepSetAB());
-
-    final ProjectStorageManager projectStorageManager = mock(ProjectStorageManager.class);
-    when(projectStorageManager.getProjectFile(eq(FAT_PROJECT_ID), anyInt())).thenReturn(projectFileHandlerFAT);
-    when(projectStorageManager.getProjectFile(eq(THIN_PROJECT_ID), anyInt())).thenReturn(projectFileHandlerTHIN);
-    return projectStorageManager;
-  }
-
-  private ExecutableFlow mockExecutableFlow(final int execId, final int projectId,
-      final int version) {
-    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
-    when(executableFlow.getExecutionId()).thenReturn(execId);
-    when(executableFlow.getProjectId()).thenReturn(projectId);
-    when(executableFlow.getVersion()).thenReturn(version);
-    return executableFlow;
-  }
 
   @Before
   public void setUp() throws Exception {
@@ -107,8 +65,8 @@ public class FlowPreparerTest {
     this.dependencyTransferManager = mock(DependencyTransferManager.class);
 
     this.instance = spy(
-        new FlowPreparer(createMockStorageManager(), this.dependencyTransferManager, this.projectsDir, null,
-            new ProjectCacheHitRatio(), this.executionsDir));
+            new FlowPreparer(createMockStorageManager(), this.dependencyTransferManager, this.projectsDir, null,
+                    new ProjectCacheHitRatio(), this.executionsDir));
     doNothing().when(this.instance).updateLastModifiedTime(any());
   }
 
@@ -224,17 +182,5 @@ public class FlowPreparerTest {
     // This is a thin zip, we expect both dependencies to be downloaded
     Set<Dependency> expectedDownloadedDeps = ThinArchiveTestUtils.getDepSetAB();
     verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps));
-  }
-
-  @Test
-  public void testsetupContainerizedFlow() throws ExecutorManagerException {
-    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
-    when(executableFlow.getExecutionId()).thenReturn(12345);
-    when(executableFlow.getProjectId()).thenReturn(FAT_PROJECT_ID);
-    when(executableFlow.getVersion()).thenReturn(34);
-
-    final File execDir = new File(this.executionsDir, "12345");
-    this.instance.setupContainerizedExecution(executableFlow, execDir);
-    assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }
 }

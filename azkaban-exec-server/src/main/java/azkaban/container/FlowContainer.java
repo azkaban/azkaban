@@ -101,7 +101,6 @@ import javax.annotation.Nonnull;
  */
 public class FlowContainer {
 
-  private static final String PROJECT_DIR = "project";
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
   private static final String CONF_DIR = "conf";
@@ -110,7 +109,6 @@ public class FlowContainer {
   private static final int DEFAULT_LOG_NUM_FILES = 4;
   private static final int EXEC_ID_INDEX = 0;
   private static final int DEFAULT_JOB_TREAD_COUNT = 10;
-  private static final String AZ_HOME = "AZ_HOME";
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
   // Should validate proxy user
   public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
@@ -125,7 +123,7 @@ public class FlowContainer {
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
-  private final FlowPreparer flowPreparer;
+  private final ContainerizedFlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
@@ -205,7 +203,7 @@ public class FlowContainer {
       setupKeyStore();
     }
     // Create a flow preparer
-    this.flowPreparer = new FlowPreparer(
+    this.flowPreparer = new ContainerizedFlowPreparer(
             SERVICE_PROVIDER.getInstance(ProjectStorageManager.class),
             SERVICE_PROVIDER.getInstance(DependencyTransferManager.class));
   }
@@ -234,10 +232,7 @@ public class FlowContainer {
 
     logger.info("Execution ID : " + execId);
 
-    // AZ_HOME must provide a correct path, if not then azHome is set to current working dir.
-    final String azHome = Optional.ofNullable(System.getenv(AZ_HOME)).orElse("");
-
-    final Path currentDir = Paths.get(azHome).toAbsolutePath();
+    final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
 
     // Set Azkaban props
     final Path jobtypePluginPath = Paths.get(currentDir.toString(), JOBTYPE_DIR);
@@ -255,18 +250,6 @@ public class FlowContainer {
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
     // execute the flow
     flowContainer.submitFlow(execId, currentDir);
-  }
-
-  private void setupExecutionDir(final Path currentDir) throws ExecutorManagerException {
-    // Create project dir
-    this.execDirPath = Paths.get(currentDir.toString(), PROJECT_DIR);
-    logger.info("Creating project dir");
-    try {
-      Files.createDirectory(this.execDirPath);
-    } catch (final IOException e) {
-      logger.error("Error creating directory :" + this.execDirPath, e);
-      throw new ExecutorManagerException(e);
-    }
   }
 
   /**
@@ -317,8 +300,6 @@ public class FlowContainer {
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
-    // setup WorkDir
-    setupExecutionDir(currentDir);
     this.flowRunner = createFlowRunner(flow);
     submitFlowRunner(this.flowRunner);
   }
@@ -332,14 +313,12 @@ public class FlowContainer {
   private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
     // Prepare the flow with project dependencies.
     try {
-      this.flowPreparer.setupContainerizedExecution(flow, this.execDirPath.toFile());
+      this.flowPreparer.setup(flow);
     } catch (final ExecutorManagerException e) {
       logger.error("Error setting up flow execution directory for execution id {}",
               flow.getExecutionId(), e);
       throw e;
     }
-    // set the execution dir
-    flow.setExecutionPath(this.execDirPath.toString());
 
     // Setup flow watcher
     FlowWatcher watcher = null;
