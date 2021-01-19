@@ -9,12 +9,16 @@ import org.apache.commons.dbutils.ResultSetHandler;
 
 /**
  *  Util class for locking using named lock in mysql
+ *  Note that named locks are global in MySQL, in the sense that names are locked on a
+ *  server-wide basis. Multiple Azkaban instances sharing the same MySQL instance, even if using
+ *  different schemas, will block each other. To avoid this, we are adding schema (database) name
+ *  to the lock name below. Ref: https://dev.mysql.com/doc/refman/5.6/en/locking-functions.html
  */
 
 @Singleton
 public class MysqlNamedLock implements ResultSetHandler<Boolean> {
-  private String getLockTemplate = "SELECT GET_LOCK('%s', %s)";
-  private String releaseLockTemplate = "SELECT RELEASE_LOCK('%s')";
+  private final String getLockTemplate = "SELECT GET_LOCK(CONCAT(DATABASE(), '.', '%s'), %s)";
+  private final String releaseLockTemplate = "SELECT RELEASE_LOCK(CONCAT(DATABASE(), '.', '%s'))";
 
   public boolean getLock(DatabaseTransOperator transOperator, String lockName, int lockTimeoutInSeconds) throws SQLException {
     if (StringUtils.isEmpty(lockName)) {
