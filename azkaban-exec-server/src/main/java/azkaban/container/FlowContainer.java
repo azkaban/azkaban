@@ -96,8 +96,9 @@ public class FlowContainer {
   private static final String CONF_DIR = "conf";
   private static final String JOB_THREAD_COUNT = "flow.num.job.threads";
   private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
+  private static final String FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
+  private static final String VERSION_SET_ID = "VERSION_SET_ID";
   private static final int DEFAULT_LOG_NUM_FILES = 4;
-  private static final int EXEC_ID_INDEX = 0;
   private static final int DEFAULT_JOB_TREAD_COUNT = 10;
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
   // Should validate proxy user
@@ -123,7 +124,6 @@ public class FlowContainer {
   private Path execDirPath;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
-  private ExecutableFlow flow; // A flow container is tasked to only run a single flow
 
   // Max chunk size is 20MB.
   private final String jobLogChunkSize;
@@ -209,18 +209,31 @@ public class FlowContainer {
   public static void main(final String[] args) throws ExecutorManagerException {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
-    // Get all the arguments
-    final String execIdStr = args[EXEC_ID_INDEX];
+    // Get the execution ID from the environment
+    final String execIdStr = System.getenv(FLOW_EXECUTION_ID);
+    if (execIdStr == null) {
+      String msg = "Execution ID is not set!";
+      logger.error(msg);
+      throw new ExecutorManagerException(msg);
+    }
     // Process Execution ID.
     int execId = -1;
     try {
       execId = Integer.parseInt(execIdStr);
+      logger.info("Execution ID : " + execId);
     } catch (NumberFormatException ne) {
       logger.error("Execution ID passed in argument is invalid {}", execIdStr);
       throw new ExecutorManagerException(ne);
     }
 
-    logger.info("Execution ID : " + execId);
+    // Get the version set id.
+    final String versionSetId = System.getenv(VERSION_SET_ID);
+    if (versionSetId == null) {
+      // Should not happen
+      logger.warn("VersionSet ID is not set!");
+    } else {
+      logger.info("VersionSet ID : {}", versionSetId );
+    }
 
     final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
 
@@ -286,12 +299,11 @@ public class FlowContainer {
     }
 
     // Update the status of the flow from DISPATCHING to PREPARING
-    this.flow = flow;
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
-    this.flowRunner = createFlowRunner(flow);
-    submitFlowRunner(this.flowRunner);
+    createFlowRunner(flow);
+    submitFlowRunner();
   }
 
   /**
@@ -300,7 +312,7 @@ public class FlowContainer {
    * @return FlowRunner object.
    * @throws ExecutorManagerException
    */
-  private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
+  private void createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
     // Prepare the flow with project dependencies.
     this.flowPreparer.setup(flow);
 
@@ -319,25 +331,22 @@ public class FlowContainer {
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final AzkabanEventReporter eventReporter =
             SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
-    final FlowRunner flowRunner = new FlowRunner(flow, this.executorLoader,
+    this.flowRunner = new FlowRunner(flow, this.executorLoader,
         this.projectLoader, this.jobTypeManager, this.azKabanProps, eventReporter,
             null, commonMetrics, execMetrics);
-    flowRunner.setFlowWatcher(watcher)
+    this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
         .setNumJobThreads(this.numJobThreadPerFlow);
-
-    return flowRunner;
   }
 
   /**
    * Submits the flow to executorService for execution.
-   * @param flowRunner The FlowRunner object.
    */
-  private void submitFlowRunner(final FlowRunner flowRunner) throws ExecutorManagerException {
+  private void submitFlowRunner() throws ExecutorManagerException {
     // set running flow, put it in DB
-    logger.info("Submitting flow with execution Id " + flowRunner.getExecutionId());
-    final Future<?> flowFuture = this.executorService.submit(flowRunner);
+    logger.info("Submitting flow with execution Id " + this.flowRunner.getExecutionId());
+    final Future<?> flowFuture = this.executorService.submit(this.flowRunner);
     try {
       flowFuture.get();
     } catch (final InterruptedException | ExecutionException e) {
@@ -348,7 +357,7 @@ public class FlowContainer {
 
   /**
    * Setup in-memory keystore to be reused for all the job executions in the flow.
-   * @throws IOException
+   * @throws ExecutorManagerException
    */
   private void setupKeyStore() throws ExecutorManagerException {
     // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
@@ -429,14 +438,14 @@ public class FlowContainer {
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
-    final File dir = flowRunner.getExecutionDir();
+    final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
       logger.warn("Error reading file. Execution directory does not exist for flow execId: {}", execId);
       throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
     }
 
    try {
-     final File logFile = flowRunner.getFlowLogFile();
+     final File logFile = this.flowRunner.getFlowLogFile();
      if (logFile != null && logFile.exists()) {
        return FileIOUtils.readUtf8File(logFile, startByte, length);
      } else {
@@ -470,7 +479,7 @@ public class FlowContainer {
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
-    final File dir = flowRunner.getExecutionDir();
+    final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
       logger.warn("Error reading jobLogs. Execution dir does not exist. execId: {}, jobId: {}",
           execId, jobId);
@@ -479,7 +488,7 @@ public class FlowContainer {
     }
 
     try {
-      final File logFile = flowRunner.getJobLogFile(jobId, attempt);
+      final File logFile = this.flowRunner.getJobLogFile(jobId, attempt);
       if (logFile != null && logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
@@ -514,7 +523,7 @@ public class FlowContainer {
       throw new ExecutorManagerException("The flow has not launched yet.");
     }
 
-    final File dir = flowRunner.getExecutionDir();
+    final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
       logger.warn("Execution directory does not exist. execId: {}, jobId: {}",
           execId, jobId);
@@ -523,7 +532,7 @@ public class FlowContainer {
     }
 
     try {
-      final File metaDataFile = flowRunner.getJobMetaDataFile(jobId, attempt);
+      final File metaDataFile = this.flowRunner.getJobMetaDataFile(jobId, attempt);
       if (metaDataFile != null && metaDataFile.exists()) {
         return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
       } else {
