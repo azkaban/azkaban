@@ -60,17 +60,17 @@ public class ProjectCacheCleanerTest {
     unzip(Paths.get(classLoader.getResource("1.1.zip").getPath()),
         this.cacheDir.toPath());
     Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "1.1",
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 2000));
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 2000));
 
     unzip(Paths.get(classLoader.getResource("2.1.zip").getPath()),
         this.cacheDir.toPath());
     Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "2.1",
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 1000));
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current - 1000));
 
     unzip(Paths.get(classLoader.getResource("3.1.zip").getPath()),
         this.cacheDir.toPath());
     Files.setLastModifiedTime(Paths.get(this.cacheDir.toString(), "3.1",
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current));
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME), FileTime.fromMillis(current));
   }
 
   @Test
