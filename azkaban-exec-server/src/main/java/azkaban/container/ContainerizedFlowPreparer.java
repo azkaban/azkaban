@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * FlowPreparer implementation for containerized execution.
+ * It creates the PROJECT_DIR and downloads and unzips the project zip in it thus READYing it
+ * for execution.
  */
 public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
   private static final Logger LOGGER = LoggerFactory.getLogger(ContainerizedFlowPreparer.class);

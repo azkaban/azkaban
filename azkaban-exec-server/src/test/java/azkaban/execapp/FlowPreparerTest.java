@@ -81,7 +81,7 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
 
     assertThat(proj.getDirSizeInByte()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(
-        Paths.get(tmp.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
+        Paths.get(tmp.getPath(), AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);
   }
 
@@ -92,7 +92,7 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
     final File tmp = this.instance.downloadProjectIfNotExists(proj, 124);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
     verify(this.instance, never()).updateLastModifiedTime(projectDirSizeFile);
     assertThat(tmp).isNotNull();
@@ -110,7 +110,7 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
     tmp = this.instance.downloadProjectIfNotExists(proj, 126);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
     verify(this.instance).updateLastModifiedTime(projectDirSizeFile);
     assertThat(tmp).isNull();
