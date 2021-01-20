@@ -24,6 +24,7 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
 import azkaban.common.ExecJettyServerModule;
+import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
@@ -34,48 +35,35 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
-import azkaban.flow.FlowUtils;
 import azkaban.jobtype.HadoopJobUtils;
 import azkaban.jobtype.HadoopProxy;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
-import azkaban.project.JdbcProjectImpl;
-import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
-import azkaban.user.User;
-import azkaban.utils.FileIOUtils;
+import azkaban.storage.ProjectStorageManager;
+import azkaban.utils.*;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.FileIOUtils.JobMetaData;
-import azkaban.utils.Props;
-import azkaban.utils.StdOutErrRedirect;
-import azkaban.utils.Utils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.kubernetes.client.Exec;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.zip.ZipFile;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -86,8 +74,6 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
 
 /**
  *  This class is the entrypoint for launching a flow execution in a container.
@@ -105,7 +91,6 @@ import javax.annotation.Nonnull;
  */
 public class FlowContainer {
 
-  private static final String PROJECT_DIR = "project";
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
   private static final String CONF_DIR = "conf";
@@ -113,9 +98,7 @@ public class FlowContainer {
   private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
   private static final int DEFAULT_LOG_NUM_FILES = 4;
   private static final int EXEC_ID_INDEX = 0;
-  private static final int PROJECT_LOCATION_INDEX = 1;
   private static final int DEFAULT_JOB_TREAD_COUNT = 10;
-  private static final String AZ_HOME = "AZ_HOME";
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
   // Should validate proxy user
   public static final boolean DEFAULT_VALIDATE_PROXY_USER = false;
@@ -130,13 +113,14 @@ public class FlowContainer {
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
+  private final AbstractFlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
   private final Props azKabanProps;
   private Props globalProps;
   private final int numJobThreadPerFlow;
-  private String execDirPath;
+  private Path execDirPath;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
   private ExecutableFlow flow; // A flow container is tasked to only run a single flow
@@ -208,6 +192,10 @@ public class FlowContainer {
       // Setting up the in-memory KeyStore for all the job executions in the flow.
       setupKeyStore();
     }
+    // Create a flow preparer
+    this.flowPreparer = new ContainerizedFlowPreparer(
+            SERVICE_PROVIDER.getInstance(ProjectStorageManager.class),
+            SERVICE_PROVIDER.getInstance(DependencyTransferManager.class));
   }
 
   /**
@@ -223,7 +211,6 @@ public class FlowContainer {
     StdOutErrRedirect.redirectOutAndErrToLog();
     // Get all the arguments
     final String execIdStr = args[EXEC_ID_INDEX];
-    final String projectZipName = args[PROJECT_LOCATION_INDEX];
     // Process Execution ID.
     int execId = -1;
     try {
@@ -235,10 +222,7 @@ public class FlowContainer {
 
     logger.info("Execution ID : " + execId);
 
-    // AZ_HOME must provide a correct path, if not then azHome is set to current working dir.
-    final String azHome = Optional.ofNullable(System.getenv(AZ_HOME)).orElse("");
-
-    final Path currentDir = Paths.get(azHome).toAbsolutePath();
+    final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
 
     // Set Azkaban props
     final Path jobtypePluginPath = Paths.get(currentDir.toString(), JOBTYPE_DIR);
@@ -255,35 +239,7 @@ public class FlowContainer {
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
     // execute the flow
-    flowContainer.submitFlow(execId, currentDir, projectZipName);
-  }
-
-  private void setupWorkDir(final Path currentDir, final String projectZipName)
-          throws ExecutorManagerException {
-    // Move files to respective dirs
-    // Create project dir
-    final Path projectDirPath = Paths.get(currentDir.toString(), PROJECT_DIR);
-    logger.info("Creating project dir");
-    try {
-      Files.createDirectory(projectDirPath);
-    } catch (final IOException e) {
-      logger.error("Error creating directory :" + projectDirPath, e);
-      throw new ExecutorManagerException(e);
-    }
-    Path projectZipPath = Paths.get(projectDirPath.toString(), projectZipName);
-    logger.info("Moving projectDir:" + projectZipName + ": to " +
-            projectZipPath);
-
-
-    try {
-      Files.move(Paths.get(projectZipName), projectZipPath);
-    } catch (final IOException e) {
-      logger.error("Error moving projectzip to " + projectDirPath, e);
-      throw new ExecutorManagerException(e);
-    }
-    // Unzip the project zip
-    FlowContainer.unzipFile(projectZipPath.toString(), projectDirPath);
-    this.execDirPath = projectDirPath.toString();
+    flowContainer.submitFlow(execId, currentDir);
   }
 
   /**
@@ -320,7 +276,7 @@ public class FlowContainer {
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  void submitFlow(final int execId, final Path currentDir, final String projectZipName)
+  void submitFlow(final int execId, final Path currentDir)
           throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
@@ -334,22 +290,19 @@ public class FlowContainer {
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
-    // setup WorkDir
-    setupWorkDir(currentDir, projectZipName);
     this.flowRunner = createFlowRunner(flow);
     submitFlowRunner(this.flowRunner);
   }
 
   /**
-   * create Flow Runner
+   * Create Flow Runner and setup the flow execution directory with project dependencies.
    * @param flow Executable flow object.
    * @return FlowRunner object.
    * @throws ExecutorManagerException
    */
   private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
-    // set the execution dir
-    //TODO : May leverage FlowPreparer for this when project management logic is added.
-    flow.setExecutionPath(this.execDirPath);
+    // Prepare the flow with project dependencies.
+    this.flowPreparer.setup(flow);
 
     // Setup flow watcher
     FlowWatcher watcher = null;
@@ -394,33 +347,6 @@ public class FlowContainer {
   }
 
   /**
-   * Unzip a file.
-   * @param zipPath The source zip file.
-   * @param dirPath The destination of the zip file content.
-   * @throws ExecutorManagerException
-   */
-  private static void unzipFile(final String zipPath,
-      final Path dirPath)  throws ExecutorManagerException {
-    ZipFile zipFile;
-    File unzipped;
-    try {
-      zipFile = new ZipFile(zipPath);
-      logger.info("Source path : " + zipPath);
-      unzipped = new File(dirPath.toString());
-      logger.info("Unzipped file dir : " + unzipped.toString());
-    } catch (final IOException e) {
-      logger.error("Error creating Zipfile object for zipPath : " + zipPath, e);
-      throw new ExecutorManagerException(e);
-    }
-    try {
-      Utils.unzip(zipFile, unzipped);
-    } catch (final IOException e) {
-      logger.error("Error unzipping zipFile to unzipped : " + unzipped, e);
-      throw new ExecutorManagerException(e);
-    }
-  }
-
-  /**
    * Setup in-memory keystore to be reused for all the job executions in the flow.
    * @throws IOException
    */
@@ -450,8 +376,10 @@ public class FlowContainer {
         logger.error("Failed to Prefetch KeyStore");
         throw new ExecutorManagerException("Failed to Prefetch KeyStore");
       }
+      logger.info("In-memory Keystore is setup, delete the cert file");
       // Delete the cert file from disk as the KeyStore is already cached above.
-      final File certFile = new File(Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION);
+      final File certFile = new File(this.azKabanProps.get(
+              Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION));
       if (certFile.delete()) {
         logger.info("Successfully deleted the cert file");
       } else {
@@ -626,4 +554,5 @@ public class FlowContainer {
     flowContainer.port = connectors[0].getLocalPort();
     logger.info("Listening on port {} for control messages.", flowContainer.port);
   }
+
 }
