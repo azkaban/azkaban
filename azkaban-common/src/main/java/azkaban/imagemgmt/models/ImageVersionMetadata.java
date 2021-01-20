@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,14 +24,20 @@ public class ImageVersionMetadata {
 
   private final ImageVersion imageVersion;
   private List<ImageRampup> imageRampups;
+  // Captures the information about version selection process such as the version is based on
+  // either random rampup or based on latest available active version.
+  private final String message;
 
-  public ImageVersionMetadata(final ImageVersion imageVersion) {
+  public ImageVersionMetadata(final ImageVersion imageVersion, final String message) {
     this.imageVersion = imageVersion;
+    this.message = message;
   }
 
-  public ImageVersionMetadata(final ImageVersion imageVersion, final List<ImageRampup> imageRampups) {
+  public ImageVersionMetadata(final ImageVersion imageVersion,
+      final List<ImageRampup> imageRampups, String message) {
     this.imageVersion = imageVersion;
     this.imageRampups = imageRampups;
+    this.message = message;
   }
 
   public ImageVersion getImageVersion() {
@@ -40,5 +46,9 @@ public class ImageVersionMetadata {
 
   public List<ImageRampup> getImageRampups() {
     return this.imageRampups;
+  }
+
+  public String getMessage() {
+    return message;
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -20,34 +20,31 @@ package azkaban.webapp;
 import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonPropertyOrder;
 
 /**
  * This POJO is used by GSON library to create a status JSON object. This class represents status
  * for containerized cluster.
  */
-@SuppressWarnings({"FieldCanBeLocal", "unused"})
-public class ContainerizedClusterStatus implements Status {
+@JsonPropertyOrder({"version", "pid", "installationPath", "usedMemory", "xmx", "isDatabaseUp", "imageTypeVersionMap"})
+public class ContainerizedClusterStatus extends Status {
 
-  private final String version;
-  private final String pid;
-  private final String installationPath;
-  private final long usedMemory, xmx;
-  private final boolean isDatabaseUp;
+  @JsonProperty("imageTypeVersionMap")
   private final Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap;
 
-  ContainerizedClusterStatus(final String version,
+  public ContainerizedClusterStatus(final String version,
       final String pid,
       final String installationPath,
       final long usedMemory,
       final long xmx,
       final boolean isDatabaseUp,
       final Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap) {
-    this.version = version;
-    this.pid = pid;
-    this.installationPath = installationPath;
-    this.usedMemory = usedMemory;
-    this.xmx = xmx;
-    this.isDatabaseUp = isDatabaseUp;
-    this.imageTypeVersionMap = ImmutableMap.copyOf(imageTypeVersionMap);
+    super(version, pid, installationPath, usedMemory, xmx, isDatabaseUp);
+    this.imageTypeVersionMap = imageTypeVersionMap;
+  }
+
+  public Map<String, ImageVersionMetadataResponseDTO> getImageTypeVersionMap() {
+    return imageTypeVersionMap;
   }
 }

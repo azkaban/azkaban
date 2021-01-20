@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,33 +18,31 @@ package azkaban.webapp;
 import azkaban.executor.Executor;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonPropertyOrder;
 
 /**
  * This POJO is used by GSON library to create a status JSON object. This class represents status
  * for azkaban cluster.
  */
-@SuppressWarnings({"FieldCanBeLocal", "unused"})
-public class ClusterStatus implements Status {
-  private final String version;
-  private final String pid;
-  private final String installationPath;
-  private final long usedMemory, xmx;
-  private final boolean isDatabaseUp;
+@JsonPropertyOrder({"version", "pid", "installationPath", "usedMemory", "xmx", "isDatabaseUp", "executorStatusMap"})
+public class ClusterStatus extends Status {
+
+  @JsonProperty("executorStatusMap")
   private final Map<Integer, Executor> executorStatusMap;
 
-  ClusterStatus(final String version,
+  public ClusterStatus(final String version,
       final String pid,
       final String installationPath,
       final long usedMemory,
       final long xmx,
       final boolean isDatabaseUp,
       final Map<Integer, Executor> executorStatusMap) {
-    this.version = version;
-    this.pid = pid;
-    this.installationPath = installationPath;
-    this.usedMemory = usedMemory;
-    this.xmx = xmx;
-    this.isDatabaseUp = isDatabaseUp;
+    super(version, pid, installationPath, usedMemory, xmx, isDatabaseUp);
     this.executorStatusMap = ImmutableMap.copyOf(executorStatusMap);
+  }
+
+  public Map<Integer, Executor> getExecutorStatusMap() {
+    return executorStatusMap;
   }
 }

@@ -67,6 +67,10 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   private final ImageTypeDao imageTypeDao;
   private final ImageVersionDao imageVersionDao;
   private final ImageRampupDao imageRampupDao;
+  private static final String MSG_RANDOM_RAMPUP_VERSION_SELECTION = "The version selection is "
+      + "based on random rampup.";
+  private static final String MSG_ACTIVE_VERSION_SELECTION = "The version selection is "
+      + "based on latest available active version.";
 
   @Inject
   public ImageRampupManagerImpl(final ImageRampupDao imageRampupDao,
@@ -92,8 +96,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     // Throw exception if there are left over image types
     if (!remainingImageTypes.isEmpty()) {
       throw new ImageMgmtException("Could not fetch version for below image types. Reasons: "
-          + " 1. There is not active rampup plan in the image_rampup_plan table. 2. There is no "
-          + " acitve version in the image_versions table. Image Types: " + remainingImageTypes);
+          + " 1. There is no active rampup plan in the image_rampup_plan table. 2. There is no "
+          + " active version in the image_versions table. Image Types: " + remainingImageTypes);
     }
     return this.createVersionInfoMap(imageTypeVersionMap);
   }
@@ -124,8 +128,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     // Throw exception if there are left over image types
     if (!remainingImageTypes.isEmpty()) {
       throw new ImageMgmtException("Could not fetch version for below image types. Reasons: "
-          + " 1. There is not active rampup plan in the image_rampup_plan table. 2. There is no "
-          + " acitve version in the image_versions table. Image Types: " + remainingImageTypes);
+          + " 1. There is no active rampup plan in the image_rampup_plan table. 2. There is no "
+          + " active version in the image_versions table. Image Types: " + remainingImageTypes);
     }
     return this.createVersionInfoMap(imageTypeVersionMap);
   }
@@ -170,14 +174,13 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       final Map<String, List<ImageRampup>> imageTypeRampups, Set<String> remainingImageTypes) {
     final Set<String> imageTypeSet = imageTypeRampups.keySet();
     log.info("Found active rampup for the image types {} ", imageTypeSet);
-    final Iterator<String> iterator = imageTypeSet.iterator();
     final Map<String, ImageVersionMetadata> imageTypeVersionMap = new TreeMap<>(
         String.CASE_INSENSITIVE_ORDER);
     final Map<String, ImageVersion> imageTypeRampupVersionMap =
         this.processAndGetRandomRampupVersion(imageTypeRampups);
     imageTypeRampupVersionMap
         .forEach((k, v) -> imageTypeVersionMap.put(k, new ImageVersionMetadata(v,
-            imageTypeRampups.get(k))));
+            imageTypeRampups.get(k), MSG_RANDOM_RAMPUP_VERSION_SELECTION)));
     log.info("After processing rampup records -> imageTypeVersionMap: {}", imageTypeVersionMap);
 
     /*
@@ -197,7 +200,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     final Map<String, ImageVersion> imageTypeActiveVersionMap =
         this.processAndGetActiveImageVersion(remainingImageTypes);
     imageTypeActiveVersionMap
-        .forEach((k, v) -> imageTypeVersionMap.put(k, new ImageVersionMetadata(v)));
+        .forEach((k, v) -> imageTypeVersionMap.put(k,
+            new ImageVersionMetadata(v, MSG_ACTIVE_VERSION_SELECTION)));
     log.info("After fetching active image version -> imageTypeVersionMap {}", imageTypeVersionMap);
 
     // For the leftover image types throw exception with appropriate error message.

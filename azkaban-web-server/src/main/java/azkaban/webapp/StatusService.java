@@ -74,6 +74,10 @@ public class StatusService {
     }
   }
 
+  /**
+   * Gets the status of the azkaban cluster.
+   * @return Status
+   */
   public Status getStatus() {
     if(isContainerizedDispatchMethodEnabled()) {
       return getContainerizedStatus();
@@ -81,7 +85,12 @@ public class StatusService {
     return getClusterStatus();
   }
 
-  public Status getClusterStatus() {
+  /**
+   * This returns implementation instance for Status containing status information for Azkaban
+   * cluster pertaining to web server, memory, active executors etc.
+   * @return Status
+   */
+  private Status getClusterStatus() {
     final String version = jarVersion == null ? "unknown" : jarVersion;
     final Runtime runtime = Runtime.getRuntime();
     final long usedMemory = runtime.totalMemory() - runtime.freeMemory();
@@ -96,7 +105,14 @@ public class StatusService {
         getActiveExecutors());
   }
 
-  public ContainerizedClusterStatus getContainerizedStatus() {
+  /**
+   * This returns implementation instance for Status containing cluster status information for
+   * Azkaban containerization. It includes information pertaining to web server, memory and
+   * containerization information such as image types and version for each image types selected
+   * based on either random rampup or latest active image version.
+   * @return Status
+   */
+  private Status getContainerizedStatus() {
     final String version = jarVersion == null ? "unknown" : jarVersion;
     final Runtime runtime = Runtime.getRuntime();
     final long usedMemory = runtime.totalMemory() - runtime.freeMemory();

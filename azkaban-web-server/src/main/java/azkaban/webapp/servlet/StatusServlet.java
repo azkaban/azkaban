@@ -27,6 +27,8 @@ import java.util.Optional;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,12 +48,12 @@ public class StatusServlet extends AbstractAzkabanServlet {
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.configure(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS, false);
+      String status = objectMapper.writerWithDefaultPrettyPrinter()
+          .writeValueAsString(this.statusService.getStatus());
       resp.setContentType(AbstractAzkabanServlet.JSON_MIME_TYPE);
-      resp.getOutputStream()
-          .println(new GsonBuilder()
-              .setPrettyPrinting()
-              .create()
-              .toJson(this.statusService.getStatus()));
+      resp.getOutputStream().println(status);
       resp.setStatus(HttpServletResponse.SC_OK);
     } catch (final Exception e) {
       logger.error("Error!! while reporting status: ", e);

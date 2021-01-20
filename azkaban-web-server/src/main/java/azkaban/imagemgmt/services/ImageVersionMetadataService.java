@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,6 +23,9 @@ public interface ImageVersionMetadataService {
 
   /**
    * Method for getting image version metadata such as version specific details, rampup information.
+   * This method provides image version information and rampup details in
+   * ImageVersionMetadataResponseDTO format and used as a response for dispaying on /status API
+   * page.
    * @return Map<String, ImageVersionMetadataResponseDTO>
    * @throws ImageMgmtException
    */

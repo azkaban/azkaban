@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -28,6 +28,10 @@ import org.codehaus.jackson.annotate.JsonProperty;
 public class VersionInfo {
 
   private final String version;
+  // This refers to the path of the image types. This field is applicable for azkaban-base image
+  // and job type images. As by default azkaban-configs are baked in as part of azkaban image, so
+  // the path is readily available and will be fetched based on specified version. Hence, for
+  // azkaban-config path value can be null or empty.
   private final String path;
   private final State state;
 

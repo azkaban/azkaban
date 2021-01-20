@@ -17,9 +17,60 @@
 
 package azkaban.webapp;
 
-/**
- * This is a marker interface for representing azkaban status.
- */
-public interface Status {
+import org.codehaus.jackson.annotate.JsonProperty;
 
+/**
+ * This is an abstract class for representing azkaban common status.
+ */
+public abstract class Status {
+  @JsonProperty("version")
+  private final String version;
+  @JsonProperty("pid")
+  private final String pid;
+  @JsonProperty("installationPath")
+  private final String installationPath;
+  @JsonProperty("usedMemory")
+  private final long usedMemory;
+  @JsonProperty("xmx")
+  private final long xmx;
+  @JsonProperty("isDatabaseUp")
+  private final boolean isDatabaseUp;
+
+  public Status(final String version,
+      final String pid,
+      final String installationPath,
+      final long usedMemory,
+      final long xmx,
+      final boolean isDatabaseUp) {
+    this.version = version;
+    this.pid = pid;
+    this.installationPath = installationPath;
+    this.usedMemory = usedMemory;
+    this.xmx = xmx;
+    this.isDatabaseUp = isDatabaseUp;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public String getPid() {
+    return pid;
+  }
+
+  public String getInstallationPath() {
+    return installationPath;
+  }
+
+  public long getUsedMemory() {
+    return usedMemory;
+  }
+
+  public long getXmx() {
+    return xmx;
+  }
+
+  public boolean isDatabaseUp() {
+    return isDatabaseUp;
+  }
 }
