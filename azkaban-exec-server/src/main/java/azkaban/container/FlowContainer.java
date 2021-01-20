@@ -24,9 +24,9 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
 import azkaban.common.ExecJettyServerModule;
+import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
-import azkaban.execapp.FlowPreparer;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
@@ -36,20 +36,16 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
-import azkaban.flow.Flow;
-import azkaban.flow.FlowUtils;
 import azkaban.jobtype.HadoopJobUtils;
 import azkaban.jobtype.HadoopProxy;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
-import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.storage.ProjectStorageManager;
-import azkaban.user.User;
 import azkaban.utils.*;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.FileIOUtils.JobMetaData;
@@ -59,19 +55,15 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.zip.ZipFile;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -82,8 +74,6 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
 
 /**
  *  This class is the entrypoint for launching a flow execution in a container.
@@ -123,7 +113,7 @@ public class FlowContainer {
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
-  private final ContainerizedFlowPreparer flowPreparer;
+  private final AbstractFlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
@@ -312,13 +302,7 @@ public class FlowContainer {
    */
   private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
     // Prepare the flow with project dependencies.
-    try {
-      this.flowPreparer.setup(flow);
-    } catch (final ExecutorManagerException e) {
-      logger.error("Error setting up flow execution directory for execution id {}",
-              flow.getExecutionId(), e);
-      throw e;
-    }
+    this.flowPreparer.setup(flow);
 
     // Setup flow watcher
     FlowWatcher watcher = null;
@@ -358,33 +342,6 @@ public class FlowContainer {
       flowFuture.get();
     } catch (final InterruptedException | ExecutionException e) {
       logger.error(ExceptionUtils.getStackTrace(e));
-      throw new ExecutorManagerException(e);
-    }
-  }
-
-  /**
-   * Unzip a file.
-   * @param zipPath The source zip file.
-   * @param dirPath The destination of the zip file content.
-   * @throws ExecutorManagerException
-   */
-  private static void unzipFile(final String zipPath,
-      final Path dirPath)  throws ExecutorManagerException {
-    ZipFile zipFile;
-    File unzipped;
-    try {
-      zipFile = new ZipFile(zipPath);
-      logger.info("Source path : " + zipPath);
-      unzipped = new File(dirPath.toString());
-      logger.info("Unzipped file dir : " + unzipped.toString());
-    } catch (final IOException e) {
-      logger.error("Error creating Zipfile object for zipPath : " + zipPath, e);
-      throw new ExecutorManagerException(e);
-    }
-    try {
-      Utils.unzip(zipFile, unzipped);
-    } catch (final IOException e) {
-      logger.error("Error unzipping zipFile to unzipped : " + unzipped, e);
       throw new ExecutorManagerException(e);
     }
   }

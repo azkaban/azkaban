@@ -29,10 +29,6 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,12 +37,18 @@ import java.nio.file.Paths;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import static azkaban.utils.ThinArchiveUtils.getDependencyFile;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
-
+/**
+ * This class is used as abstract class for all FlowPreparer implementations.
+ */
 public abstract class AbstractFlowPreparer {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFlowPreparer.class);
   protected final ProjectStorageManager projectStorageManager;

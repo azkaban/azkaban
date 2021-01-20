@@ -25,16 +25,19 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferManager;
 import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+
+/**
+ * FlowPreparer implementation for containerized execution.
+ */
 public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
   private static final Logger LOGGER = LoggerFactory.getLogger(ContainerizedFlowPreparer.class);
   @VisibleForTesting
@@ -57,7 +60,7 @@ public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
   }
 
   /**
-   * Prepare the flow directory for execution.
+   * Prepare the directory for flow execution.
    *
    * @param flow Executable Flow instance.
    */
@@ -72,7 +75,7 @@ public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
     // Setup project/execution directory
     final File projectDir = setupExecutionDir(getCurrentDir(), flow);
 
-    LOGGER.info("Using containerized execution flow setup");
+    LOGGER.info("Starting the flow preparation for containerized execution");
     try {
       downloadAndUnzipProject(projectDirMetadata, execId, projectDir);
       final long flowPrepCompletionTime = System.currentTimeMillis();
@@ -97,7 +100,7 @@ public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
       throw new ExecutorManagerException(msg);
     }
 
-    LOGGER.info("Creating project dir");
+    LOGGER.info("Creating execution dir");
     try {
       Files.createDirectory(projectDirPath);
     } catch (final IOException e) {
