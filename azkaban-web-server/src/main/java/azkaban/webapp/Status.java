@@ -17,37 +17,9 @@
 
 package azkaban.webapp;
 
-import azkaban.executor.Executor;
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-
 /**
- * This POJO is used by GSON library to create a status JSON object. Certain warnings do not apply
- * here.
+ * This is a marker interface for representing azkaban status.
  */
-@SuppressWarnings({"FieldCanBeLocal", "unused"})
-public class Status {
+public interface Status {
 
-  private final String version;
-  private final String pid;
-  private final String installationPath;
-  private final long usedMemory, xmx;
-  private final boolean isDatabaseUp;
-  private final Map<Integer, Executor> executorStatusMap;
-
-  Status(final String version,
-      final String pid,
-      final String installationPath,
-      final long usedMemory,
-      final long xmx,
-      final boolean isDatabaseUp,
-      final Map<Integer, Executor> executorStatusMap) {
-    this.version = version;
-    this.pid = pid;
-    this.installationPath = installationPath;
-    this.usedMemory = usedMemory;
-    this.xmx = xmx;
-    this.isDatabaseUp = isDatabaseUp;
-    this.executorStatusMap = ImmutableMap.copyOf(executorStatusMap);
-  }
 }

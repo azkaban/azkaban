@@ -29,19 +29,20 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class VersionSetBuilder {
 
-  private final Map<String, String> versionSetElements = new TreeMap(String.CASE_INSENSITIVE_ORDER);
+  private final Map<String, VersionInfo> versionSetElements =
+      new TreeMap(String.CASE_INSENSITIVE_ORDER);
   private final VersionSetLoader loader;
 
   public VersionSetBuilder(VersionSetLoader loader) {
     this.loader = loader;
   }
 
-  public VersionSetBuilder addElement(String key, String version) {
-    this.versionSetElements.put(key, version);
+  public VersionSetBuilder addElement(String key, VersionInfo versionInfo) {
+    this.versionSetElements.put(key, versionInfo);
     return this;
   }
 
-  public VersionSetBuilder addElements(Map<String, String> keyVals) {
+  public VersionSetBuilder addElements(Map<String, VersionInfo> keyVals) {
     this.versionSetElements.putAll(keyVals);
     return this;
   }
@@ -49,6 +50,7 @@ public class VersionSetBuilder {
   public VersionSet build() throws IOException {
     ObjectMapper objectMapper = new ObjectMapper();
     String versionSetJsonString = objectMapper.writeValueAsString(versionSetElements);
+    System.out.println("versionSetJsonString: "+versionSetJsonString);
     String versionSetMd5Hex = DigestUtils.md5Hex(versionSetJsonString);
     return this.loader.getVersionSet(versionSetMd5Hex, versionSetJsonString)
         .orElse(null);  // null implies Exception was thrown by the Dao Layer

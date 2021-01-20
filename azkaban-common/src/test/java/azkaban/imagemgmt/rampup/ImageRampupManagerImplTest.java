@@ -28,6 +28,7 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.dto.ImageTypeDTO;
 import azkaban.imagemgmt.dto.ImageVersionDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
@@ -35,6 +36,7 @@ import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.utils.ConverterUtils;
+import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.utils.JSONUtils;
 import java.io.IOException;
 import java.util.List;
@@ -86,6 +88,13 @@ public class ImageRampupManagerImplTest {
     final String jsonInput = JSONUtils.readJsonFileAsString("image_management/image_type_rampups"
         + ".json");
     final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonInput);
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management"
+            + "/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
     final Set<String> imageTypes = new TreeSet<>();
     imageTypes.add("spark_job");
     imageTypes.add("hive_job");
@@ -93,7 +102,8 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("azkaban_config");
     imageTypes.add("azkaban_exec");
     when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
-    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
+    final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
@@ -129,10 +139,18 @@ public class ImageRampupManagerImplTest {
         jsonImageTypeActiveVersion, ImageVersionDTO.class);
     final List<ImageVersion> activeImageVersions =
         this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management"
+            + "/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
     when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
+    final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -144,9 +162,9 @@ public class ImageRampupManagerImplTest {
     Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
     // Below two image types are from based on active image version
     Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
-    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job"));
+    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("hadoop_job"));
-    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job"));
+    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job").getVersion());
   }
 
   /**
@@ -177,10 +195,18 @@ public class ImageRampupManagerImplTest {
         jsonImageTypeActiveVersion, ImageVersionDTO.class);
     final List<ImageVersion> activeImageVersions =
         this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management"
+            + "/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
     when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
+    final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(imageTypes);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -192,9 +218,9 @@ public class ImageRampupManagerImplTest {
     Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
     Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
     // Below two image types are from based on active image version
-    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job"));
+    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("hadoop_job"));
-    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job"));
+    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job").getVersion());
   }
 
   /**
@@ -220,11 +246,22 @@ public class ImageRampupManagerImplTest {
         jsonImageTypeActiveVersion, ImageVersionDTO.class);
     final List<ImageVersion> activeImageVersions =
         this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management"
+        + "/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
+
     when(this.imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
     when(this.imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
+
+    final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
@@ -236,15 +273,15 @@ public class ImageRampupManagerImplTest {
     Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
     // Below two image types are from based on active image version
     Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
-    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job"));
+    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("hadoop_job"));
-    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job"));
+    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("kafka_push_job"));
-    Assert.assertEquals("3.1.2", imageTypeVersionMap.get("kafka_push_job"));
+    Assert.assertEquals("3.1.2", imageTypeVersionMap.get("kafka_push_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("wormhole_job"));
-    Assert.assertEquals("1.1.8", imageTypeVersionMap.get("wormhole_job"));
+    Assert.assertEquals("1.1.8", imageTypeVersionMap.get("wormhole_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("kabootar_job"));
-    Assert.assertEquals("1.1.4", imageTypeVersionMap.get("kabootar_job"));
+    Assert.assertEquals("1.1.4", imageTypeVersionMap.get("kabootar_job").getVersion());
 
   }
 
@@ -272,11 +309,19 @@ public class ImageRampupManagerImplTest {
         jsonImageTypeActiveVersion, ImageVersionDTO.class);
     final List<ImageVersion> activeImageVersions =
         this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management"
+            + "/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
     when(this.imageRampupDao.getRampupForAllImageTypes()).thenReturn(imageTypeRampups);
     when(this.imageTypeDao.getAllImageTypes()).thenReturn(allImageTypes);
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
-    final Map<String, String> imageTypeVersionMap = this.imageRampupManger
+    final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionForAllImageTypes();
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly

@@ -43,8 +43,10 @@ import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.models.ImageVersion;
+import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
@@ -174,6 +176,8 @@ public class KubernetesContainerizedImplTest {
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
+    when(imageRampupManager.getVersionInfo(any(String.class), any(String.class)))
+        .thenReturn(new VersionInfo("7.0.4", "path1", State.ACTIVE));
     final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
     // Add included job types
     jobTypes.add("hadoopJava");
@@ -186,10 +190,10 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.addAll(jobTypes);
     VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
     VersionSet presetVersionSet = versionSetBuilder
-        .addElement("command", "7.1")
-        .addElement("spark", "8.0")
-        .addElement("azkaban-base", "7.0.4")
-        .addElement("azkaban-config", "9.1.1")
+        .addElement("azkaban-base", new VersionInfo("7.0.4", "path1", State.ACTIVE))
+        .addElement("azkaban-config", new VersionInfo("9.1.1", "path2", State.ACTIVE))
+        .addElement("spark", new VersionInfo("8.0", "path3", State.ACTIVE))
+        .addElement("kafkaPush", new VersionInfo("7.1", "path4", State.ACTIVE))
         .build();
 
     final Map<String, String> flowParam = new HashMap<>();
@@ -198,8 +202,8 @@ public class KubernetesContainerizedImplTest {
     VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
 
-    assert(versionSet.getVersion("command").get()
-        .equals(presetVersionSet.getVersion("command").get()));
+    assert(versionSet.getVersion("kafkaPush").get()
+        .equals(presetVersionSet.getVersion("kafkaPush").get()));
     assert(versionSet.getVersion("spark").get()
         .equals(presetVersionSet.getVersion("spark").get()));
     assert(versionSet.getVersion("azkaban-base").get()
@@ -214,8 +218,8 @@ public class KubernetesContainerizedImplTest {
     // Now let's try constructing an incomplete versionSet
     VersionSetBuilder incompleteVersionSetBuilder = new VersionSetBuilder(this.loader);
     VersionSet incompleteVersionSet = incompleteVersionSetBuilder
-        .addElement("command", "7.1")
-        .addElement("spark", "8.0")
+        .addElement("kafkaPush", new VersionInfo("7.1", "path1", State.ACTIVE))
+        .addElement("spark", new VersionInfo("8.0", "path2", State.ACTIVE))
         .build();
 
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
@@ -226,12 +230,12 @@ public class KubernetesContainerizedImplTest {
     versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
 
-    assert(versionSet.getVersion("command").get()
-        .equals(presetVersionSet.getVersion("command").get()));
+    assert(versionSet.getVersion("kafkaPush").get()
+        .equals(presetVersionSet.getVersion("kafkaPush").get()));
     assert(versionSet.getVersion("spark").get()
         .equals(presetVersionSet.getVersion("spark").get()));
-    assert(versionSet.getVersion("azkaban-base").get().equals("7.0.4"));
-    assert(versionSet.getVersion("azkaban-config").get().equals("9.1.1"));
+    assert(versionSet.getVersion("azkaban-base").get().getVersion().equals("7.0.4"));
+    assert(versionSet.getVersion("azkaban-config").get().getVersion().equals("9.1.1"));
   }
 
   @Test
@@ -262,10 +266,10 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals(false, versionSet.getVersion("pig").isPresent());
     Assert.assertEquals(false, versionSet.getVersion("pigLi-0.11.1").isPresent());
     Assert.assertEquals(false, versionSet.getVersion("noop").isPresent());
-    Assert.assertEquals("7.0.4", versionSet.getVersion("azkaban-base").get());
-    Assert.assertEquals("9.1.1", versionSet.getVersion("azkaban-config").get());
-    Assert.assertEquals("8.0", versionSet.getVersion("spark").get());
-    Assert.assertEquals("7.1", versionSet.getVersion("command").get());
+    Assert.assertEquals("7.0.4", versionSet.getVersion("azkaban-base").get().getVersion());
+    Assert.assertEquals("9.1.1", versionSet.getVersion("azkaban-config").get().getVersion());
+    Assert.assertEquals("8.0", versionSet.getVersion("spark").get().getVersion());
+    Assert.assertEquals("7.1", versionSet.getVersion("kafkaPush").get().getVersion());
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
@@ -347,12 +351,12 @@ public class KubernetesContainerizedImplTest {
     }
   }
 
-  private Map<String, String> getVersionMap() {
-    Map<String, String> versionMap = new TreeMap<>();
-    versionMap.put(AZKABAN_BASE_IMAGE, "7.0.4");
-    versionMap.put(AZKABAN_CONFIG, "9.1.1");
-    versionMap.put("spark", "8.0");
-    versionMap.put("command", "7.1");
+  private Map<String, VersionInfo> getVersionMap() {
+    Map<String, VersionInfo> versionMap = new TreeMap<>();
+    versionMap.put(AZKABAN_BASE_IMAGE, new VersionInfo("7.0.4", "path1", State.ACTIVE));
+    versionMap.put(AZKABAN_CONFIG, new VersionInfo("9.1.1", "path2", State.ACTIVE));
+    versionMap.put("spark", new VersionInfo("8.0", "path3", State.ACTIVE));
+    versionMap.put("kafkaPush", new VersionInfo("7.1", "path4", State.ACTIVE));
     return versionMap;
   }
 }

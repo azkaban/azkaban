@@ -61,7 +61,10 @@ public class JdbcVersionSetLoaderTest {
   public void test() throws IOException {
     VersionSetLoader loaderSpy = Mockito.spy(this.loader);
 
-    String testJsonString1 = "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}";
+    String testJsonString1 = "{\"key1\":{\"version\":\"value1\",\"path\":\"path1\","
+        + "\"state\":\"ACTIVE\"},\"key2\":{\"version\":\"value2\",\"path\":\"path2\","
+        + "\"state\":\"ACTIVE\"},\"key3\":{\"version\":\"value3\",\"path\":\"path3\","
+        + "\"state\":\"ACTIVE\"}}";
     String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
 
     // Assert that it doesn't exist before
