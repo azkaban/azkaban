@@ -69,6 +69,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -96,8 +98,6 @@ public class FlowContainer {
   private static final String CONF_DIR = "conf";
   private static final String JOB_THREAD_COUNT = "flow.num.job.threads";
   private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
-  private static final String FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
-  private static final String VERSION_SET_ID = "VERSION_SET_ID";
   private static final int DEFAULT_LOG_NUM_FILES = 4;
   private static final int DEFAULT_JOB_TREAD_COUNT = 10;
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
@@ -210,9 +210,10 @@ public class FlowContainer {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
     // Get the execution ID from the environment
-    final String execIdStr = System.getenv(FLOW_EXECUTION_ID);
+    final String execIdStr = System.getenv(
+            Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID);
     if (execIdStr == null) {
-      String msg = "Execution ID is not set!";
+      final String msg = "Execution ID is not set!";
       logger.error(msg);
       throw new ExecutorManagerException(msg);
     }
@@ -227,12 +228,18 @@ public class FlowContainer {
     }
 
     // Get the version set id.
-    final String versionSetId = System.getenv(VERSION_SET_ID);
+    final String versionSetId = System.getenv(
+            Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
     if (versionSetId == null) {
       // Should not happen
       logger.warn("VersionSet ID is not set!");
     } else {
-      logger.info("VersionSet ID : {}", versionSetId );
+      try {
+        JSONObject jsonObject = new JSONObject(versionSetId);
+        logger.info(jsonObject.toString(4));
+      } catch (final JSONException je) {
+        logger.warn("Error converting VersionSet ID to JSON {}", versionSetId);
+      }
     }
 
     final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
@@ -252,7 +259,7 @@ public class FlowContainer {
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
     // execute the flow
-    flowContainer.submitFlow(execId, currentDir);
+    flowContainer.submitFlow(execId);
   }
 
   /**
@@ -289,7 +296,7 @@ public class FlowContainer {
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  void submitFlow(final int execId, final Path currentDir)
+  void submitFlow(final int execId)
           throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
