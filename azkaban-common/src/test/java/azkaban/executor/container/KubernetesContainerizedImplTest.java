@@ -123,6 +123,7 @@ public class KubernetesContainerizedImplTest {
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
         + "/resources/container/kubeconfig");
+    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_REQUIRED, "true");
     this.executorLoader = mock(ExecutorLoader.class);
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
