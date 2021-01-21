@@ -142,11 +142,12 @@ public class FlowContainer {
   public FlowContainer(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
-      final VersionSetLoader versionSetLoader,
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
-    logVersionSet(versionSetLoader);
+
+    // TODO : Figure out how to get VersionSetLoader and enable
+    //logVersionSet(versionSetLoader);
 
     // Create Azkaban Props Map
     this.azKabanProps = props;
