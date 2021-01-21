@@ -95,6 +95,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_SECRET_NAME = "azkaban-k8s-secret";
   public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
   public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
+  public static final String SERVICE_SELECTOR_PREFIX = "flow";
 
 
   private final String namespace;
@@ -500,7 +501,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   @VisibleForTesting
   V1Pod createPodFromSpec(int executionId, V1PodSpec podSpec) {
-    final ImmutableMap<String, String> labels = getLabelsForPod();
+    final ImmutableMap<String, String> labels = getLabelsForPod(executionId);
     final ImmutableMap<String, String> annotations = getAnnotationsForPod();
 
     final V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), this.namespace, podSpec)
@@ -577,12 +578,20 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   }
 
   /**
-   * TODO: Add implementation to get labels for Pod.
+   * Create labels that should be applied to the Pod.
    *
    * @return
    */
-  private ImmutableMap getLabelsForPod() {
-    return ImmutableMap.of("cluster", this.clusterName);
+  private ImmutableMap getLabelsForPod(int executionId) {
+    final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
+    mapBuilder.put("cluster", this.clusterName);
+
+    // Note that the service label must match the selector used for the corresponding service
+    if (isServiceRequired()) {
+      mapBuilder.put("service", String.join("-", SERVICE_SELECTOR_PREFIX,
+          Integer.toString(executionId)));
+    }
+    return mapBuilder.build();
   }
 
   /**
