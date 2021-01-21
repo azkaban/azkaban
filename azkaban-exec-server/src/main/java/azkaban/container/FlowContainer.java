@@ -36,6 +36,8 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.imagemgmt.version.VersionSet;
+import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.jobtype.HadoopJobUtils;
 import azkaban.jobtype.HadoopProxy;
 import azkaban.jobtype.JobTypeManager;
@@ -97,7 +99,6 @@ public class FlowContainer {
   private static final String JOB_THREAD_COUNT = "flow.num.job.threads";
   private static final String DEFAULT_LOG_CHUNK_SIZE = "5MB";
   private static final int DEFAULT_LOG_NUM_FILES = 4;
-  private static final int EXEC_ID_INDEX = 0;
   private static final int DEFAULT_JOB_TREAD_COUNT = 10;
   private static final boolean DEFAULT_USE_IN_MEMORY_KEYSTORE = false;
   // Should validate proxy user
@@ -123,7 +124,6 @@ public class FlowContainer {
   private Path execDirPath;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
-  private ExecutableFlow flow; // A flow container is tasked to only run a single flow
 
   // Max chunk size is 20MB.
   private final String jobLogChunkSize;
@@ -146,6 +146,9 @@ public class FlowContainer {
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
 
+    // TODO : Figure out how to get VersionSetLoader and enable
+    //logVersionSet(versionSetLoader);
+
     // Create Azkaban Props Map
     this.azKabanProps = props;
     // Setup global props if applicable
@@ -160,11 +163,7 @@ public class FlowContainer {
     }
 
     this.executorLoader = executorLoader;
-    logger.info("executorLoader from guice :" + this.executorLoader);
-
-    // project Loader
     this.projectLoader = projectLoader;
-    logger.info("projectLoader from guice : " + this.projectLoader);
 
     // setup executor service
     this.executorService = Executors.newSingleThreadExecutor();
@@ -209,24 +208,13 @@ public class FlowContainer {
   public static void main(final String[] args) throws ExecutorManagerException {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
-    // Get all the arguments
-    final String execIdStr = args[EXEC_ID_INDEX];
-    // Process Execution ID.
-    int execId = -1;
-    try {
-      execId = Integer.parseInt(execIdStr);
-    } catch (NumberFormatException ne) {
-      logger.error("Execution ID passed in argument is invalid {}", execIdStr);
-      throw new ExecutorManagerException(ne);
-    }
-
-    logger.info("Execution ID : " + execId);
-
+    // Get the execution ID from the environment
+    final int execId = getExecutionId();
     final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
 
     // Set Azkaban props
     final Path jobtypePluginPath = Paths.get(currentDir.toString(), JOBTYPE_DIR);
-    Props azkabanProps = setAzkabanProps(jobtypePluginPath);
+    final Props azkabanProps = setAzkabanProps(jobtypePluginPath);
 
     // Setup Injector
     setInjector(azkabanProps);
@@ -239,7 +227,7 @@ public class FlowContainer {
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
     // execute the flow
-    flowContainer.submitFlow(execId, currentDir);
+    flowContainer.submitFlow(execId);
   }
 
   /**
@@ -276,7 +264,7 @@ public class FlowContainer {
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  void submitFlow(final int execId, final Path currentDir)
+  void submitFlow(final int execId)
           throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
@@ -286,12 +274,11 @@ public class FlowContainer {
     }
 
     // Update the status of the flow from DISPATCHING to PREPARING
-    this.flow = flow;
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
 
-    this.flowRunner = createFlowRunner(flow);
-    submitFlowRunner(this.flowRunner);
+    createFlowRunner(flow);
+    submitFlowRunner();
   }
 
   /**
@@ -300,7 +287,7 @@ public class FlowContainer {
    * @return FlowRunner object.
    * @throws ExecutorManagerException
    */
-  private FlowRunner createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
+  private void createFlowRunner(final ExecutableFlow flow) throws ExecutorManagerException {
     // Prepare the flow with project dependencies.
     this.flowPreparer.setup(flow);
 
@@ -319,25 +306,22 @@ public class FlowContainer {
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final AzkabanEventReporter eventReporter =
             SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
-    final FlowRunner flowRunner = new FlowRunner(flow, this.executorLoader,
+    this.flowRunner = new FlowRunner(flow, this.executorLoader,
         this.projectLoader, this.jobTypeManager, this.azKabanProps, eventReporter,
             null, commonMetrics, execMetrics);
-    flowRunner.setFlowWatcher(watcher)
+    this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
         .setNumJobThreads(this.numJobThreadPerFlow);
-
-    return flowRunner;
   }
 
   /**
    * Submits the flow to executorService for execution.
-   * @param flowRunner The FlowRunner object.
    */
-  private void submitFlowRunner(final FlowRunner flowRunner) throws ExecutorManagerException {
+  private void submitFlowRunner() throws ExecutorManagerException {
     // set running flow, put it in DB
-    logger.info("Submitting flow with execution Id " + flowRunner.getExecutionId());
-    final Future<?> flowFuture = this.executorService.submit(flowRunner);
+    logger.info("Submitting flow with execution Id " + this.flowRunner.getExecutionId());
+    final Future<?> flowFuture = this.executorService.submit(this.flowRunner);
     try {
       flowFuture.get();
     } catch (final InterruptedException | ExecutionException e) {
@@ -348,7 +332,7 @@ public class FlowContainer {
 
   /**
    * Setup in-memory keystore to be reused for all the job executions in the flow.
-   * @throws IOException
+   * @throws ExecutorManagerException
    */
   private void setupKeyStore() throws ExecutorManagerException {
     // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
@@ -429,14 +413,14 @@ public class FlowContainer {
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
-    final File dir = flowRunner.getExecutionDir();
+    final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
       logger.warn("Error reading file. Execution directory does not exist for flow execId: {}", execId);
       throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
     }
 
    try {
-     final File logFile = flowRunner.getFlowLogFile();
+     final File logFile = this.flowRunner.getFlowLogFile();
      if (logFile != null && logFile.exists()) {
        return FileIOUtils.readUtf8File(logFile, startByte, length);
      } else {
@@ -470,7 +454,7 @@ public class FlowContainer {
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
-    final File dir = flowRunner.getExecutionDir();
+    final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
       logger.warn("Error reading jobLogs. Execution dir does not exist. execId: {}, jobId: {}",
           execId, jobId);
@@ -479,7 +463,7 @@ public class FlowContainer {
     }
 
     try {
-      final File logFile = flowRunner.getJobLogFile(jobId, attempt);
+      final File logFile = this.flowRunner.getJobLogFile(jobId, attempt);
       if (logFile != null && logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
@@ -514,7 +498,7 @@ public class FlowContainer {
       throw new ExecutorManagerException("The flow has not launched yet.");
     }
 
-    final File dir = flowRunner.getExecutionDir();
+    final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
       logger.warn("Execution directory does not exist. execId: {}, jobId: {}",
           execId, jobId);
@@ -523,7 +507,7 @@ public class FlowContainer {
     }
 
     try {
-      final File metaDataFile = flowRunner.getJobMetaDataFile(jobId, attempt);
+      final File metaDataFile = this.flowRunner.getJobMetaDataFile(jobId, attempt);
       if (metaDataFile != null && metaDataFile.exists()) {
         return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
       } else {
@@ -555,4 +539,59 @@ public class FlowContainer {
     logger.info("Listening on port {} for control messages.", flowContainer.port);
   }
 
+  private static int getExecutionId() throws ExecutorManagerException {
+    final String execIdStr = System.getenv(
+            Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID);
+    if (execIdStr == null) {
+      final String msg = "Execution ID is not set!";
+      logger.error(msg);
+      throw new ExecutorManagerException(msg);
+    }
+    // Process Execution ID.
+    int execId = -1;
+    try {
+      execId = Integer.parseInt(execIdStr);
+      logger.info("Execution ID : {}", execId);
+    } catch (final NumberFormatException ne) {
+      logger.error("Execution ID set in environment is invalid {}", execIdStr);
+      throw new ExecutorManagerException(ne);
+    }
+    if (execId < 1) {
+      final String msg = "Invalid Execution ID : " + execId;
+      logger.error(msg);
+      throw new ExecutorManagerException(msg);
+    }
+    return execId;
+  }
+
+
+  /**
+   * Log the VersionSet for the flow.
+   * @param versionSetLoader
+   */
+  private void logVersionSet(final VersionSetLoader versionSetLoader) {
+    // Get the version set id.
+    final String versionSetIdStr = System.getenv(
+            Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
+    if (versionSetIdStr == null) {
+      // Should not happen
+      logger.warn("VersionSet ID is not set!");
+      return;
+    }
+    int versionSetId = -1;
+    try {
+      versionSetId = Integer.parseInt(versionSetIdStr);
+    } catch (final NumberFormatException ne) {
+      logger.warn("VersionSet ID set in environment is invalid {}", versionSetIdStr);
+      return;
+    }
+    VersionSet versionSet;
+    try {
+      versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
+    } catch (final IOException ioe) {
+      logger.warn("Failed to fetch versionSet using versionSet ID : {}", versionSetId);
+      return;
+    }
+    logger.info("VersionSet: {}", versionSet.getVersionSetJsonString());
+  }
 }
