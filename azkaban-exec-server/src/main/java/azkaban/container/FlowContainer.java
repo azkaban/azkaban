@@ -36,6 +36,8 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.imagemgmt.version.VersionSet;
+import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.jobtype.HadoopJobUtils;
 import azkaban.jobtype.HadoopProxy;
 import azkaban.jobtype.JobTypeManager;
@@ -69,8 +71,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -142,9 +142,11 @@ public class FlowContainer {
   public FlowContainer(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
+      final VersionSetLoader versionSetLoader,
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
+    logVersionSet(versionSetLoader);
 
     // Create Azkaban Props Map
     this.azKabanProps = props;
@@ -160,11 +162,7 @@ public class FlowContainer {
     }
 
     this.executorLoader = executorLoader;
-    logger.info("executorLoader from guice :" + this.executorLoader);
-
-    // project Loader
     this.projectLoader = projectLoader;
-    logger.info("projectLoader from guice : " + this.projectLoader);
 
     // setup executor service
     this.executorService = Executors.newSingleThreadExecutor();
@@ -210,43 +208,12 @@ public class FlowContainer {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
     // Get the execution ID from the environment
-    final String execIdStr = System.getenv(
-            Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID);
-    if (execIdStr == null) {
-      final String msg = "Execution ID is not set!";
-      logger.error(msg);
-      throw new ExecutorManagerException(msg);
-    }
-    // Process Execution ID.
-    int execId = -1;
-    try {
-      execId = Integer.parseInt(execIdStr);
-      logger.info("Execution ID : " + execId);
-    } catch (NumberFormatException ne) {
-      logger.error("Execution ID passed in argument is invalid {}", execIdStr);
-      throw new ExecutorManagerException(ne);
-    }
-
-    // Get the version set id.
-    final String versionSetId = System.getenv(
-            Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
-    if (versionSetId == null) {
-      // Should not happen
-      logger.warn("VersionSet ID is not set!");
-    } else {
-      try {
-        JSONObject jsonObject = new JSONObject(versionSetId);
-        logger.info(jsonObject.toString(4));
-      } catch (final JSONException je) {
-        logger.warn("Error converting VersionSet ID to JSON {}", versionSetId);
-      }
-    }
-
+    final int execId = getExecutionId();
     final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
 
     // Set Azkaban props
     final Path jobtypePluginPath = Paths.get(currentDir.toString(), JOBTYPE_DIR);
-    Props azkabanProps = setAzkabanProps(jobtypePluginPath);
+    final Props azkabanProps = setAzkabanProps(jobtypePluginPath);
 
     // Setup Injector
     setInjector(azkabanProps);
@@ -571,4 +538,57 @@ public class FlowContainer {
     logger.info("Listening on port {} for control messages.", flowContainer.port);
   }
 
+  private static int getExecutionId() throws ExecutorManagerException {
+    final String execIdStr = System.getenv(
+            Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID);
+    if (execIdStr == null) {
+      final String msg = "Execution ID is not set!";
+      logger.error(msg);
+      throw new ExecutorManagerException(msg);
+    }
+    // Process Execution ID.
+    int execId = -1;
+    try {
+      execId = Integer.parseInt(execIdStr);
+      logger.info("Execution ID : {}", execId);
+    } catch (final NumberFormatException ne) {
+      logger.error("Execution ID set in environment is invalid {}", execIdStr);
+      throw new ExecutorManagerException(ne);
+    }
+    if (execId < 1) {
+      logger.error("Invalid Execution ID : {}", execId);
+    }
+    return execId;
+  }
+
+
+  /**
+   * Log the VersionSet for the flow.
+   * @param versionSetLoader
+   */
+  private void logVersionSet(final VersionSetLoader versionSetLoader) {
+    // Get the version set id.
+    final String versionSetIdStr = System.getenv(
+            Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
+    if (versionSetIdStr == null) {
+      // Should not happen
+      logger.warn("VersionSet ID is not set!");
+      return;
+    }
+    int versionSetId = -1;
+    try {
+      versionSetId = Integer.parseInt(versionSetIdStr);
+    } catch (final NumberFormatException ne) {
+      logger.warn("VersionSet ID set in environment is invalid {}", versionSetIdStr);
+      return;
+    }
+    VersionSet versionSet;
+    try {
+      versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
+    } catch (final IOException ioe) {
+      logger.warn("Failed to fetch versionSet using versionSet ID : {}", versionSetId);
+      return;
+    }
+    logger.info("VersionSet: {}", versionSet.getVersionSetJsonString());
+  }
 }
