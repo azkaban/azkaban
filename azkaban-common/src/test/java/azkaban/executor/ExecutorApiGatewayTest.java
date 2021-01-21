@@ -18,11 +18,17 @@ package azkaban.executor;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import java.net.URI;
 import java.util.Collections;
@@ -47,7 +53,7 @@ public class ExecutorApiGatewayTest {
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
     this.client = Mockito.mock(ExecutorApiClient.class);
-    this.gateway = new ExecutorApiGateway(this.client);
+    this.gateway = new ExecutorApiGateway(this.client, new Props());
   }
 
   @Test
@@ -65,7 +71,7 @@ public class ExecutorApiGatewayTest {
   public void updateExecutions() throws Exception {
     final ImmutableMap<String, String> map = ImmutableMap.of("test", "response");
     when(this.client
-        .httpPost(eq(new URI("http://executor-2:1234/executor")), this.params.capture()))
+        .httpPost(any(), this.params.capture()))
         .thenReturn(JSONUtils.toJSON(map));
     final Map<String, Object> response = this.gateway
         .updateExecutions(new Executor(2, "executor-2", 1234, true),
@@ -76,5 +82,26 @@ public class ExecutorApiGatewayTest {
     assertEquals(new Pair<>("action", "update"), this.params.getValue().get(2));
     assertEquals(new Pair<>("execid", "null"), this.params.getValue().get(3));
     assertEquals(new Pair<>("user", null), this.params.getValue().get(4));
+  }
+
+  @Test
+  public void testPathWithDefaultConfigs() {
+    int executionId = 12345;
+    String path = gateway.createExecutionPath(12345);
+    Assert.assertEquals("/"+ExecutorApiGateway.DEFAULT_EXECUTION_RESOURCE, path);
+  }
+
+  @Test
+  public void testPathWithContainerizedConfigs() {
+    Props containerizedConfigs = new Props();
+    containerizedConfigs.put(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
+    containerizedConfigs.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+        DispatchMethod.CONTAINERIZED.name());
+    ExecutorApiGateway gateway = new ExecutorApiGateway(client, containerizedConfigs);
+    int executionId = 12345;
+    String path = gateway.createExecutionPath(12345);
+    Assert.assertEquals("/" + executionId + "/" +
+            ExecutorApiGateway.CONTAINERIZED_EXECUTION_RESOURCE,
+        path);
   }
 }

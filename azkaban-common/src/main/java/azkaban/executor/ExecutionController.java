@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 public class ExecutionController extends AbstractExecutorManagerAdapter {
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
-  private final AlerterHolder alerterHolder;
   private final ExecutorHealthChecker executorHealthChecker;
 
 
@@ -50,8 +49,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
   ExecutorHealthChecker executorHealthChecker) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway);
-    this.alerterHolder = alerterHolder;
+    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder);
     this.executorHealthChecker = executorHealthChecker;
   }
 
@@ -182,60 +180,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   @Override
   public DispatchMethod getDispatchMethod() {
     return DispatchMethod.POLL;
-  }
-
-  @Override
-  public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
-      final int length) throws ExecutorManagerException {
-    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
-        .fetchActiveFlowByExecId(exFlow.getExecutionId());
-    return getFlowLogData(exFlow, offset, length, pair);
-  }
-
-  @Override
-  public LogData getExecutionJobLog(final ExecutableFlow exFlow, final String jobId,
-      final int offset, final int length, final int attempt) throws ExecutorManagerException {
-    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
-        .fetchActiveFlowByExecId(exFlow.getExecutionId());
-    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
-  }
-
-  @Override
-  public List<Object> getExecutionJobStats(final ExecutableFlow exFlow, final String jobId,
-      final int attempt) throws ExecutorManagerException {
-    final Pair<ExecutionReference, ExecutableFlow> pair =
-        this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
-    return getExecutionJobStats(exFlow, jobId, attempt, pair);
-  }
-
-  /**
-   * If a flow is already dispatched to an executor, cancel by calling Executor. Else if it's still
-   * queued in DB, remove it from DB queue and finalize. {@inheritDoc}
-   */
-  @Override
-  public void cancelFlow(final ExecutableFlow exFlow, final String userId)
-      throws ExecutorManagerException {
-    synchronized (exFlow) {
-      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
-          .fetchUnfinishedFlows();
-      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
-        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
-            .get(exFlow.getExecutionId());
-        if (pair.getFirst().getExecutor().isPresent()) {
-          // Flow is already dispatched to an executor, so call that executor to cancel the flow.
-          this.apiGateway
-              .callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
-        } else {
-          // Flow is still queued, need to finalize it and update the status in DB.
-          ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder, exFlow,
-              "Cancelled before dispatching to executor", null);
-        }
-      } else {
-        throw new ExecutorManagerException("Execution "
-            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
-            + " isn't running.");
-      }
-    }
   }
 
   @Override

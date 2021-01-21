@@ -132,12 +132,12 @@ class ProjectCacheCleaner {
          * recursive space calculation is a very expensive operation.
          */
         projectDirectoryMetadata.setDirSizeInByte(
-            FlowPreparer.calculateDirSizeAndSave(projectDirectoryMetadata.getInstalledDir()));
+            AbstractFlowPreparer.calculateDirSizeAndSave(projectDirectoryMetadata.getInstalledDir()));
       }
 
       projectDirectoryMetadata.setLastAccessTime(
           Files.getLastModifiedTime(Paths.get(projectDirectoryMetadata.getInstalledDir().toString(),
-              FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
+              AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
 
     } catch (final Exception e) {
       log.warn("Error while loading project dir metadata for project {}",

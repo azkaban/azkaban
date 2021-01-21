@@ -19,6 +19,7 @@ import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AbstractExecutorManagerAdapter;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
@@ -65,8 +66,9 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   @Inject
   public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
-      final ContainerizedImpl containerizedImpl) throws ExecutorManagerException {
-    super(azkProps, executorLoader, commonMetrics, apiGateway);
+      final ContainerizedImpl containerizedImpl,
+      final AlerterHolder alerterHolder) throws ExecutorManagerException {
+    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder);
     rateLimiter =
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
@@ -320,106 +322,79 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
   @Override
-  public LogData getExecutableFlowLog(ExecutableFlow exFlow, int offset, int length)
-      throws ExecutorManagerException {
-    return null;
-  }
-
-  //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
-  @Override
-  public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length,
-      int attempt) throws ExecutorManagerException {
-    return null;
-  }
-
-  //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
-  @Override
-  public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId, int attempt)
-      throws ExecutorManagerException {
-    return null;
-  }
-
-  //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
-  @Override
-  public void cancelFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
-
-  }
-
-  //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
-  @Override
   public void resumeFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
-
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
   @Override
   public void pauseFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
-
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
   @Override
   public void retryFailures(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
-
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   //TODO: BDP-2567 Add container stats information
   @Override
   public Map<String, Object> callExecutorStats(int executorId, String action,
       Pair<String, String>... param) throws IOException, ExecutorManagerException {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   //TODO: BDP-2567 Add way to call jmx endpoint for flow container
   @Override
   public Map<String, Object> callExecutorJMX(String hostPort, String action, String mBean)
       throws IOException {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public Map<String, String> doRampActions(List<Map<String, Object>> rampAction)
       throws ExecutorManagerException {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public Set<String> getAllActiveExecutorServerHosts() {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public State getExecutorManagerThreadState() {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public boolean isExecutorManagerThreadActive() {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public long getLastExecutorManagerThreadCheckTime() {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public Set<? extends String> getPrimaryServerHosts() {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public Collection<Executor> getAllActiveExecutors() {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public Executor fetchExecutor(int executorId) throws ExecutorManagerException {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 
   @Override
   public void setupExecutors() throws ExecutorManagerException {
-    throw new UnsupportedOperationException("Invalid Method");
+    throw new UnsupportedOperationException("Unsupported Method");
   }
 }
