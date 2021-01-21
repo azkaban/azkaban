@@ -15,6 +15,10 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_PORT;
+import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
+import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -24,22 +28,27 @@ import static org.mockito.Mockito.when;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.DispatchMethod;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
+import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.concurrent.NotThreadSafe;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -94,8 +103,17 @@ public class ContainerizedDispatchManagerTest {
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
+    when(this.loader.fetchActiveFlowByExecId(flow1.getExecutionId())).thenReturn(
+        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId()), flow1));
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
     when(this.loader.fetchQueuedFlows(Status.READY)).thenReturn(this.queuedFlows);
+
+    Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
+        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(
+            flow1.getExecutionId(), new Executor(1, "host", 2021, true)),
+            flow1);
+    when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
+        executionReferencePair));
   }
 
   @Test
@@ -248,8 +266,124 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager =
         new ContainerizedDispatchManager(this.props, this.loader,
         this.commonMetrics,
-        this.apiGateway, this.containerizedImpl);
+        this.apiGateway, this.containerizedImpl, null);
     this.containerizedDispatchManager.start();
+  }
+
+  @Test
+  public void testGetFlowLogs() throws Exception {
+    WrappedExecutorApiClient apiClient =
+        new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
+    ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
+    apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.DEFAULT_LOG_JSON);
+    LogData logResponse = dispatchManager.getExecutableFlowLog(this.flow1, 0, 1024);
+    Assert.assertEquals(WrappedExecutorApiClient.DEFAULT_LOG_TEXT, logResponse.getData());
+    Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
+        apiClient.getLastBuildExecutorUriRespone());
+  }
+
+  @Test
+  public void testGetJobLogs() throws Exception {
+    WrappedExecutorApiClient apiClient =
+        new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
+    ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
+    apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.DEFAULT_LOG_JSON);
+    LogData logResponse = dispatchManager.getExecutionJobLog(this.flow1, "job1",0, 1, 1024);
+    Assert.assertEquals(WrappedExecutorApiClient.DEFAULT_LOG_TEXT, logResponse.getData());
+    Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
+        apiClient.getLastBuildExecutorUriRespone());
+  }
+
+  @Test
+  public void testCancelFlow() throws Exception {
+    WrappedExecutorApiClient apiClient =
+        new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
+    ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
+    apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_SUCCESS_JSON);
+    dispatchManager.cancelFlow(flow1, this.user.getUserId());
+    Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
+        apiClient.getLastBuildExecutorUriRespone());
+    //Verify that httpPost was requested with the 'cancel' param.
+    Pair cancelAction = new Pair<String, String> ("action", "cancel");
+    Assert.assertTrue(apiClient.getLastHttpPostParams().stream().anyMatch(pair -> cancelAction.equals(pair)));
+  }
+
+  private Props createContainerDispatchEnabledProps(Props parentProps) {
+    Props containerProps = new Props(parentProps);
+    containerProps.put(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
+    containerProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME, REVERSE_PROXY_HOST);
+    containerProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_PORT, REVERSE_PROXY_PORT);
+    containerProps.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+        DispatchMethod.CONTAINERIZED.name());
+    return containerProps;
+  }
+
+  private ContainerizedDispatchManager createDefaultDispatchWithGateway(ExecutorApiClient apiClient) throws Exception {
+    Props containerEnabledProps = createContainerDispatchEnabledProps(this.props);
+    ExecutorApiGateway executorApiGateway = new ExecutorApiGateway(apiClient, containerEnabledProps);
+    return createDispatchWithGateway(executorApiGateway, containerEnabledProps);
+  }
+
+  private ContainerizedDispatchManager createDispatchWithGateway(ExecutorApiGateway apiGateway,
+      Props containerEnabledProps) throws Exception {
+    ContainerizedDispatchManager dispatchManager =
+        new ContainerizedDispatchManager(containerEnabledProps, this.loader,
+            this.commonMetrics, apiGateway, this.containerizedImpl, null);
+    dispatchManager.start();
+    return dispatchManager;
+  }
+
+  @NotThreadSafe
+  private static class WrappedExecutorApiClient extends ExecutorApiClient {
+    private static String DEFAULT_LOG_TEXT = "line1";
+    private static String DEFAULT_LOG_JSON =
+        String.format("{\"length\":%d,\"offset\":0,\"data\":\"%s\"}",
+            DEFAULT_LOG_TEXT.length(),
+            DEFAULT_LOG_TEXT);
+    private static String STATUS_SUCCESS_JSON = "{\"status\":\"success\"}";
+    private URI lastBuildExecutorUriRespone = null;
+    private URI lastHttpPostUri = null;
+    private List<Pair<String, String>> lastHttpPostParams = null;
+    private String nextHttpPostResponse = DEFAULT_LOG_JSON;
+
+    public WrappedExecutorApiClient(Props azkProps) {
+      super(azkProps);
+    }
+
+    public URI getExpectedReverseProxyContainerizedURI() throws IOException {
+      return buildExecutorUri(null, 1, "container", false, (Pair<String, String>[]) null);
+    }
+
+    @Override
+    public URI buildExecutorUri(String host, int port, String path,
+        boolean isHttp, Pair<String, String>... params) throws IOException {
+      this.lastBuildExecutorUriRespone = super.buildExecutorUri(host, port, path, isHttp, params);
+      return lastBuildExecutorUriRespone;
+    }
+
+    @Override
+    public String httpPost(URI uri, List<Pair<String, String>> params)
+        throws IOException {
+      this.lastHttpPostUri = uri;
+      this.lastHttpPostParams = params;
+      return nextHttpPostResponse;
+    }
+
+  public void setNextHttpPostResponse(String nextHttpPostResponse) {
+    this.nextHttpPostResponse = nextHttpPostResponse;
+  }
+
+  public URI getLastBuildExecutorUriRespone() {
+      return lastBuildExecutorUriRespone;
+    }
+
+    public URI getLastHttpPostUri() {
+      return lastHttpPostUri;
+    }
+
+    public List<Pair<String, String>> getLastHttpPostParams() {
+      return lastHttpPostParams;
+    }
   }
 
   @After
