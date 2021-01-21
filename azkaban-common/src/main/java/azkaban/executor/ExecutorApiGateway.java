@@ -16,8 +16,13 @@
 
 package azkaban.executor;
 
+import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
@@ -25,17 +30,43 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import javax.inject.Singleton;
 import org.codehaus.jackson.map.ObjectMapper;
 
 @Singleton
 public class ExecutorApiGateway {
+  public final static String DEFAULT_EXECUTION_RESOURCE = "executor";
+  public final static String CONTAINERIZED_EXECUTION_RESOURCE = "container";
 
+  // Default procedure for modifying a resource path that a reverse proxy, such as an
+  // ingress-controller, can use to route the request to correct endpoint.
+  //   - This is a first-class function to make it easier to switch to a different mechanism of
+  //     creating the path, depending on how the reverse-proxy is configured.
+  //   - In future this implementation could be guice-injected (possibly based on a config property)
+  //   - This implementation simply prefixes resource name with the execution-id and assumes that
+  //     that a reverse proxy can route the request correctly based on this prefix.
+  private final static BiFunction<Integer, String, String> executionResourceNameModifier =
+      ((e,r) -> String.join("/",  e.toString(), r));
+
+  private final static Executor defaultEmptyExecutor = new Executor(-1, "", 1, false);
   private final ExecutorApiClient apiClient;
+  private final String executionResourceName;
+  private final boolean isReverseProxyEnabled;
 
   @Inject
-  public ExecutorApiGateway(final ExecutorApiClient apiClient) {
+  public ExecutorApiGateway(final ExecutorApiClient apiClient, Props azkProps) {
     this.apiClient = apiClient;
+    isReverseProxyEnabled =
+        azkProps.getBoolean(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED,
+            false);
+    String executionResourceName = DEFAULT_EXECUTION_RESOURCE;
+    if (DispatchMethod.getDispatchMethod(azkProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name())) == DispatchMethod.CONTAINERIZED) {
+      executionResourceName = CONTAINERIZED_EXECUTION_RESOURCE;
+    }
+    this.executionResourceName = executionResourceName;
   }
 
   Map<String, Object> callWithExecutable(final ExecutableFlow exflow,
@@ -46,7 +77,7 @@ public class ExecutorApiGateway {
 
   Map<String, Object> callWithReference(final ExecutionReference ref, final String action,
       final Pair<String, String>... params) throws ExecutorManagerException {
-    final Executor executor = ref.getExecutor().get();
+    final Executor executor = (isReverseProxyEnabled ? defaultEmptyExecutor : ref.getExecutor().get());
     return callWithExecutionId(executor.getHost(), executor.getPort(), action, ref.getExecId(),
         null, params);
   }
@@ -54,9 +85,17 @@ public class ExecutorApiGateway {
   Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
       final String action, final String user, final Pair<String, String>... params)
       throws ExecutorManagerException {
-    final Executor executor = ref.getExecutor().get();
+    final Executor executor = (isReverseProxyEnabled ? defaultEmptyExecutor : ref.getExecutor().get());
     return callWithExecutionId(executor.getHost(), executor.getPort(), action,
         ref.getExecId(), user, params);
+  }
+
+  @VisibleForTesting
+  String createExecutionPath(int execId) {
+    if (!isReverseProxyEnabled) {
+      return "/" + executionResourceName;
+    }
+    return "/" + executionResourceNameModifier.apply(execId, executionResourceName);
   }
 
   Map<String, Object> callWithExecutionId(final String host, final int port,
@@ -75,7 +114,10 @@ public class ExecutorApiGateway {
           .valueOf(executionId)));
       paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
 
-      return callForJsonObjectMap(host, port, "/executor", paramList);
+      // Ideally we should throw an exception if executionId is null but some existing code
+      // (updateExecutions()) expects to call this method with a null executionId.
+      String executionPath = (executionId == null) ? null : createExecutionPath(executionId);
+      return callForJsonObjectMap(host, port, executionPath, paramList);
     } catch (final IOException e) {
       throw new ExecutorManagerException(e.getMessage(), e);
     }
@@ -120,7 +162,7 @@ public class ExecutorApiGateway {
     }
 
     @SuppressWarnings("unchecked") final URI uri =
-        ExecutorApiClient.buildUri(host, port, path, true);
+        apiClient.buildExecutorUri(host, port, path, true);
 
     return this.apiClient.httpPost(uri, paramList);
   }

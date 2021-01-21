@@ -17,6 +17,7 @@ package azkaban.executor;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.event.EventHandler;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
@@ -54,6 +55,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   protected final ExecutorLoader executorLoader;
   protected final CommonMetrics commonMetrics;
   protected final ExecutorApiGateway apiGateway;
+  private final AlerterHolder alerterHolder;
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
@@ -61,11 +63,13 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   protected AbstractExecutorManagerAdapter(final Props azkProps,
       final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
-      final ExecutorApiGateway apiGateway) {
+      final ExecutorApiGateway apiGateway,
+      final AlerterHolder alerterHolder) {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
+    this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
   }
@@ -269,7 +273,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     }
   }
 
-  protected String uploadExecutableFlow(ExecutableFlow exflow, String userId, String flowId,
+  protected String uploadExecutableFlow(
+      final ExecutableFlow exflow, final String userId, final String flowId,
       String message) throws ExecutorManagerException {
     final int projectId = exflow.getProjectId();
     exflow.setSubmitUser(userId);
@@ -442,6 +447,60 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         .get("attachments");
 
     return jobStats;
+  }
+
+  @Override
+  public LogData getExecutableFlowLog(final ExecutableFlow exFlow, final int offset,
+      final int length) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
+    return getFlowLogData(exFlow, offset, length, pair);
+  }
+
+  @Override
+  public LogData getExecutionJobLog(final ExecutableFlow exFlow, final String jobId,
+      final int offset, final int length, final int attempt) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
+  }
+
+  @Override
+  public List<Object> getExecutionJobStats(final ExecutableFlow exFlow, final String jobId,
+      final int attempt) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair =
+        this.executorLoader.fetchActiveFlowByExecId(exFlow.getExecutionId());
+    return getExecutionJobStats(exFlow, jobId, attempt, pair);
+  }
+
+  /**
+   * If a flow is already dispatched to an executor, cancel by calling Executor. Else if it's still
+   * queued in DB, remove it from DB queue and finalize. {@inheritDoc}
+   */
+  @Override
+  public void cancelFlow(final ExecutableFlow exFlow, final String userId)
+      throws ExecutorManagerException {
+    synchronized (exFlow) {
+      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+          .fetchUnfinishedFlows();
+      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
+        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
+            .get(exFlow.getExecutionId());
+        if (pair.getFirst().getExecutor().isPresent()) {
+          // Flow is already dispatched to an executor, so call that executor to cancel the flow.
+          this.apiGateway
+              .callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
+        } else {
+          // Flow is still queued, need to finalize it and update the status in DB.
+          ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder, exFlow,
+              "Cancelled before dispatching to executor", null);
+        }
+      } else {
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
+            + " isn't running.");
+      }
+    }
   }
 
   protected Map<String, Object> modifyExecutingJobs(final ExecutableFlow exFlow,

@@ -19,7 +19,7 @@ public class ExecutorApiGatewaySystemTest {
   @Before
   public void setUp() throws Exception {
     final ExecutorApiClient client = new ExecutorApiClient(new Props());
-    this.apiGateway = new ExecutorApiGateway(client);
+    this.apiGateway = new ExecutorApiGateway(client, new Props());
   }
 
   @Test
