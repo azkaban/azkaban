@@ -427,7 +427,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   @VisibleForTesting
   V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet,
-      SortedSet<String> jobTypes)
+      SortedSet<String> jobTypes, final Map<String, String> flowParam)
       throws ExecutorManagerException {
     // Gets azkaban base image full path containing version.
     final String azkabanBaseImageFullPath = getAzkabanBaseImageFullPath(versionSet);
@@ -448,6 +448,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         String.valueOf(versionSet.getVersionSetId()));
     envVariables.put(ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID,
         String.valueOf(executionId));
+    setupJavaRemoteDebug(envVariables, flowParam);
+
     // Add env variables to spec builder
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
@@ -457,6 +459,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Add volume with secrets mounted
     addSecretVolume(v1SpecBuilder);
     return v1SpecBuilder.build();
+  }
+
+  private void setupJavaRemoteDebug(Map<String, String> envVariables,
+      final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(Constants.FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG)) {
+      envVariables.put(ContainerizedDispatchManagerProperties.ENV_JAVA_ENABLE_DEBUG,
+          flowParam.get(Constants.FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG));
+    }
   }
 
   /**
@@ -533,7 +544,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes);
-    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes);
+    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, flowParam);
 
     final V1Pod pod = createPodFromSpec(executionId, podSpec);
     String podSpecYaml = Yaml.dump(pod).trim();

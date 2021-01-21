@@ -160,7 +160,7 @@ public class KubernetesContainerizedImplTest {
     VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
-        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes);
+        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, flowParam);
 
     assert(podSpec != null);
 
