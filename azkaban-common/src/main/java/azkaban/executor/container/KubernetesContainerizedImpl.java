@@ -92,9 +92,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
   public static final String HOST_PATH_TYPE = "Socket";
   public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
-  public static final String DEFAULT_SECRET_NAME = "azkaban-private-properties";
+  public static final String DEFAULT_SECRET_NAME = "azkaban-k8s-secret";
   public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
-  public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private/conf";
+  public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
 
 
   private final String namespace;
