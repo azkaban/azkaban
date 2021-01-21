@@ -570,6 +570,7 @@ public class Constants {
 
     public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
     public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
+    public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
   }
 
   public static class ImageMgmtConstants {
@@ -587,5 +588,8 @@ public class Constants {
 
     // Constants for Flow parameters
     public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
+
+    // Constant to enable java remote debug for Flow Container
+    public static final String FLOW_PARAM_JAVA_ENABLE_DEBUG = "java.enable.debug";
   }
 }
