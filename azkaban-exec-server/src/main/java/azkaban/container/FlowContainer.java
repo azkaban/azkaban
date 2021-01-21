@@ -556,7 +556,9 @@ public class FlowContainer {
       throw new ExecutorManagerException(ne);
     }
     if (execId < 1) {
-      logger.error("Invalid Execution ID : {}", execId);
+      final String msg = "Invalid Execution ID : " + execId;
+      logger.error(msg);
+      throw new ExecutorManagerException(msg);
     }
     return execId;
   }
