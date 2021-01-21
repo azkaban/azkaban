@@ -15,11 +15,16 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_PORT;
 import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CONNECTION_TLS_ENABLED;
 import static azkaban.Constants.JETTY_TRUSTSTORE_PASSWORD;
 import static azkaban.Constants.JETTY_TRUSTSTORE_PATH;
 
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
 import java.io.IOException;
 import java.net.URI;
 import javax.net.ssl.SSLHandshakeException;
@@ -59,8 +64,12 @@ public class ExecutorApiClientTest {
   private static final String KEYSTORE_PATH =
       ExecutorApiClient.class.getResource("test-keystore").getPath();
   private static final String DEFAULT_PASSWORD = "changeit"; //for key, keystore and truststore
+
+  public static final String REVERSE_PROXY_HOST = "reversehost";
+  public static final int REVERSE_PROXY_PORT = 31234;
   private static Props tlsEnabledProps;
   private static Server tlsEnabledServer;
+  private static Props validReverseProxyProps;
 
   // Commands used to create a self-signed certificate, build the test truststore and keystore.
   // $> openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 3650
@@ -99,6 +108,11 @@ public class ExecutorApiClientTest {
         .put(JETTY_TRUSTSTORE_PATH, ExecutorApiClient.class.getResource("test-cacerts").getPath());
     tlsEnabledProps.put(JETTY_TRUSTSTORE_PASSWORD, "changeit");
     setupTlsEnabledServer();
+
+    validReverseProxyProps = new Props();
+    validReverseProxyProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
+    validReverseProxyProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME, REVERSE_PROXY_HOST);
+    validReverseProxyProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_PORT, REVERSE_PROXY_PORT);
   }
 
   @Test
@@ -158,6 +172,64 @@ public class ExecutorApiClientTest {
     final String postResponse = tlsEnabledClient
         .httpPost(new URI(SimpleServlet.TLS_ENABLED_URI), null);
     Assert.fail();
+  }
+
+  @Test
+  public void testReverseProxyValidProperties() {
+    final Props validProps = new Props(validReverseProxyProps);
+    final ExecutorApiClient validClient = new ExecutorApiClient(validProps);
+    Assert.assertEquals(true, validClient.isReverseProxyEnabled());
+    Assert.assertEquals(REVERSE_PROXY_HOST, validClient.getReverseProxyHost().get());
+    Assert.assertEquals(REVERSE_PROXY_PORT, validClient.getReverseProxyPort().get().intValue());
+  }
+
+  @Test
+  public void testReverseProxyMissingProperties() {
+    final Props invalidProps = new Props();
+    invalidProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
+    // missing reverse proxy host
+    try {
+      final ExecutorApiClient client = new ExecutorApiClient(invalidProps);
+      Assert.fail();
+    } catch (UndefinedPropertyException upe) {
+      Assert.assertTrue(upe.getMessage().contains(AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME));
+    }
+    invalidProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME, REVERSE_PROXY_HOST);
+
+    // missing reverse proxy port
+    try {
+      final ExecutorApiClient client = new ExecutorApiClient(invalidProps);
+      Assert.fail();
+    } catch (UndefinedPropertyException upe) {
+      Assert.assertTrue(upe.getMessage().contains(AZKABAN_EXECUTOR_REVERSE_PROXY_PORT));
+    }
+
+    // sanity check for success
+    invalidProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_PORT, REVERSE_PROXY_PORT);
+    try {
+      final ExecutorApiClient client = new ExecutorApiClient(invalidProps);
+      Assert.assertNotNull(client);
+    } catch (UndefinedPropertyException upe) {
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testBuildUriWithoutReverseProxy() throws  Exception {
+    final ExecutorApiClient client = new ExecutorApiClient(new Props());
+    URI uri = client.buildExecutorUri("localhost", JETTY_TLS_PORT, "executor",true,
+        (Pair<String,String>[])null);
+    Assert.assertEquals("http://localhost:" + JETTY_TLS_PORT+ "/executor", uri.toString());
+  }
+
+  @Test
+  public void testBuildUriWithReverseProxy() throws Exception {
+    final ExecutorApiClient client = new ExecutorApiClient(validReverseProxyProps);
+    URI uri = client.buildExecutorUri(null, 0, "execid-101/container",false,
+        (Pair<String,String>[])null);
+    Assert.assertEquals("https://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
+            "/execid-101/container",
+        uri.toString());
   }
 
   private static class SimpleServlet extends HttpServlet {
