@@ -560,6 +560,8 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
     public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
+    public static final String KUBERNETES_POD_TEMPLATE_PATH =
+        KUBERNETES_POD_PREFIX + "template.path";
 
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
