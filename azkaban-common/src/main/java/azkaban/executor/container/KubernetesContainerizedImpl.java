@@ -22,6 +22,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
+import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
@@ -41,11 +42,14 @@ import com.google.common.annotations.VisibleForTesting;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Status;
+import io.kubernetes.client.openapi.models.V1Volume;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
@@ -54,6 +58,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -62,6 +67,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +129,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String secretName;
   private final String secretVolume;
   private final String secretMountpath;
+  private final String podTemplatePath;
 
 
   private static final Logger logger = LoggerFactory
@@ -196,7 +203,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.secretMountpath = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH,
             DEFAULT_SECRET_MOUNTPATH);
-
+    this.podTemplatePath = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_TEMPLATE_PATH,
+            StringUtils.EMPTY);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
@@ -546,7 +555,17 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, flowParam);
-
+    if (StringUtils.isNotEmpty(this.podTemplatePath)) {
+      try {
+        AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate
+            .getInstance(this.podTemplatePath);
+        mergePodSpec(podSpec, podTemplate);
+      } catch (IOException e) {
+        logger.info("ExecId: {}, Failed to create k8s pod from template: {}", executionId,
+            e.getMessage());
+        throw new ExecutorManagerException(e);
+      }
+    }
     final V1Pod pod = createPodFromSpec(executionId, podSpec);
     String podSpecYaml = Yaml.dump(pod).trim();
     logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
@@ -562,6 +581,51 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     }
     // Store version set id in execution_flows for execution_id
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
+  }
+
+  /**
+   * Items extracted from the podTemplate will be merged with the pod-spec. Merging criteria is
+   * such that, if the item, in the already created pod-spec, has the same name as of the item
+   * extracted from the template, then it will retained.
+   *
+   * @param podSpec     Already created podSpec using the {@link AzKubernetesV1SpecBuilder}
+   * @param podTemplate Instance of the class {@link AzKubernetesV1PodTemplate} to extract items
+   */
+  public static void mergePodSpec(V1PodSpec podSpec, AzKubernetesV1PodTemplate podTemplate) {
+    // Add those volumes which are not already available in the podSpec
+    List<V1Volume> podSpecVolumes = podSpec.getVolumes();
+    if (null != podSpecVolumes) {
+      List<V1Volume> templateVolumes = podTemplate.getVolumes(
+          tempVol -> podSpecVolumes.stream().map(V1Volume::getName)
+              .noneMatch(name -> name.equals(tempVol.getName())));
+      for (V1Volume volumeItem : templateVolumes) {
+        podSpec.addVolumesItem(volumeItem);
+      }
+    }
+
+    // Add those initContainers which are not already available in the podSpec
+    List<V1Container> podSpecInitContainers = podSpec.getInitContainers();
+    if (null != podSpecInitContainers) {
+      List<V1Container> templateInitContainers = podTemplate.getInitContainers(
+          tempInitContainer -> podSpecInitContainers.stream().map(V1Container::getName)
+              .noneMatch(name -> name.equals(tempInitContainer.getName())));
+      for (V1Container containerItem : templateInitContainers) {
+        podSpec.addInitContainersItem(containerItem);
+      }
+    }
+
+    List<V1VolumeMount> podContainerVolumeMounts =
+        podSpec.getContainers().get(AzKubernetesV1PodTemplate.FLOW_CONTAINER_INDEX)
+            .getVolumeMounts();
+    if (null != podContainerVolumeMounts) {
+      List<V1VolumeMount> templateContainerVolumeMounts = podTemplate.getContainerVolumeMounts(
+          tempVolMount -> podContainerVolumeMounts.stream().map(V1VolumeMount::getName)
+              .noneMatch(name -> name.equals(tempVolMount.getName())));
+      for (V1VolumeMount volumeMountItem : templateContainerVolumeMounts) {
+        podSpec.getContainers().get(AzKubernetesV1PodTemplate.FLOW_CONTAINER_INDEX)
+            .addVolumeMountsItem(volumeMountItem);
+      }
+    }
   }
 
   /**

@@ -17,6 +17,7 @@
 
 package azkaban.container.models;
 
+import azkaban.executor.container.KubernetesContainerizedImpl;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableMap;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -54,13 +55,24 @@ public class AzKubernetesV1PodBuilderTest {
             .addEnvVarToFlowContainer("envKey", "envValue")
             .withResources("500m", "500m", "500Mi", "500Mi")
             .build();
+        V1Pod pod1 = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
+            .withPodLabels(labels)
+            .withPodAnnotations(annotations)
+            .build();
+        String createdPodSpec1 = Yaml.dump(pod1).trim();
+        String readPodSpec1 = TestUtils.readResource("v1PodTest1.yaml", this).trim();
+        Assert.assertEquals(readPodSpec1, createdPodSpec1);
 
-        V1Pod pod = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
-                .withPodLabels(labels)
-                .withPodAnnotations(annotations)
-                .build();
-        String createdPodSpec = Yaml.dump(pod).trim();
-        String readPodSpec = TestUtils.readResource("v1PodTest1.yaml", this).trim();
-        Assert.assertEquals(readPodSpec, createdPodSpec);
+        // Merge the podSpec created earlier with the pod from the template
+        AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate.getInstance(
+            this.getClass().getResource("v1PodTestTemplate1.yaml").getFile());
+        KubernetesContainerizedImpl.mergePodSpec(podSpec, podTemplate);
+        V1Pod pod2 = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
+            .withPodLabels(labels)
+            .withPodAnnotations(annotations)
+            .build();
+        String createdPodSpec2 = Yaml.dump(pod2).trim();
+        String readPodSpec2 = TestUtils.readResource("v1PodTest2.yaml", this).trim();
+        Assert.assertEquals(readPodSpec2, createdPodSpec2);
     }
 }
