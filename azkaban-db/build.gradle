@@ -93,6 +93,8 @@ installDist.dependsOn concat
 distTar.dependsOn concat
 distZip.dependsOn concat
 
+build.dependsOn installDist
+
 distributions {
     main {
         contents {
