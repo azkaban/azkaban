@@ -183,7 +183,7 @@ public class AzkabanPostgresTest {
 
 		injector = getInjector();
 
-		webServer = CompletableFuture.runAsync(() -> {
+		execServer = CompletableFuture.runAsync(() -> {
 			try {
 				AzkabanExecutorServer.launch(injector.getInstance(AzkabanExecutorServer.class));
 			} catch (Exception e) {
@@ -195,7 +195,7 @@ public class AzkabanPostgresTest {
 
 		activateExecutor();
 
-		execServer = CompletableFuture.runAsync(() -> {
+		webServer = CompletableFuture.runAsync(() -> {
 			try {
 				AzkabanWebServer.launch(injector.getInstance(AzkabanWebServer.class));
 			} catch (Exception e) {
@@ -252,7 +252,6 @@ public class AzkabanPostgresTest {
 
 		return injector;
 	}
-
 
 	@Test
 	public void test1CreateDeleteProject() throws Exception {
