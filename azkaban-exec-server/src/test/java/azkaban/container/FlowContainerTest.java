@@ -34,6 +34,7 @@ import azkaban.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -115,5 +116,23 @@ public class FlowContainerTest {
     final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
     flowContainer.start();
     FlowContainer.launchCtrlMsgListener(flowContainer);
+  }
+
+  @Test
+  public void testDeleteFile() throws Exception {
+    // Create a file
+    final Path filePath = Files.createFile(Paths.get("abc.txt"));
+    // Create symlink to the file
+    final Path symLink1 = Paths.get("link1");
+    Files.createSymbolicLink(symLink1, filePath);
+    // Create symlink to the symlink created above
+    final Path symLink2 = Paths.get("link2");
+    Files.createSymbolicLink(symLink2, symLink1);
+    // A sanity check
+    assert((Files.exists(symLink2) && Files.exists(symLink1) && Files.exists(filePath)));
+    // Must delete all the links and files as top level symlink is provided.
+    deleteSymlinkedFile(symLink2);
+    // Make sure none of the symlinks or files exist.
+    assert(!(Files.exists(symLink2) || Files.exists(symLink1) || Files.exists(filePath)));
   }
 }
