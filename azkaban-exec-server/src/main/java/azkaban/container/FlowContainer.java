@@ -57,6 +57,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
@@ -362,14 +363,9 @@ public class FlowContainer {
       }
       logger.info("In-memory Keystore is setup, delete the cert file");
       // Delete the cert file from disk as the KeyStore is already cached above.
-      final File certFile = new File(this.azKabanProps.get(
+      final Path certFilePath = Paths.get(this.azKabanProps.get(
               Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION));
-      if (certFile.delete()) {
-        logger.info("Successfully deleted the cert file");
-      } else {
-        logger.error("Failed to delete the cert file");
-        throw new ExecutorManagerException("Failed to delete the cert file");
-      }
+      deleteSymlinkedFile(certFilePath);
     }
   }
 
@@ -593,5 +589,32 @@ public class FlowContainer {
       return;
     }
     logger.info("VersionSet: {}", versionSet.getVersionSetJsonString());
+  }
+
+  /**
+   * Deletes all the symlinks and targeted files recursively.
+   * @param symlinkedFilePath Path to file, could be a symlink
+   * @throws ExecutorManagerException
+   */
+  public static void deleteSymlinkedFile(final Path symlinkedFilePath)
+          throws ExecutorManagerException {
+    if (Files.isSymbolicLink(symlinkedFilePath)) {
+      Path filePath = null;
+      try {
+        filePath = Files.readSymbolicLink(symlinkedFilePath);
+      } catch (final IOException e) {
+        logger.error("Error reading symlink {}", symlinkedFilePath, e);
+        throw new ExecutorManagerException(e);
+      }
+      // Delete the symlink and then delete the symlinked file
+      deleteSymlinkedFile(filePath);
+    }
+    // Delete the file, it could be a symlink
+    try {
+      Files.delete(symlinkedFilePath);
+    } catch (final IOException e) {
+      logger.error("Error deleting : {}", symlinkedFilePath, e);
+      throw new ExecutorManagerException(e);
+    }
   }
 }
