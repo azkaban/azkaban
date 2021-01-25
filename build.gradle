@@ -59,7 +59,7 @@ allprojects {
   }
 }
 
-ext.versions = [hadoop: '2.7.4',
+ext.versions = [hadoop: '2.10.0',
                 hive  : '1.1.0',
                 pig   : '0.11.0',
                 restli: '28.3.11',
