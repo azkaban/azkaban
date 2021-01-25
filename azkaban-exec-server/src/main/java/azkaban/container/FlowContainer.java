@@ -24,6 +24,8 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
 import azkaban.common.ExecJettyServerModule;
+import azkaban.event.Event;
+import azkaban.event.EventListener;
 import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
@@ -47,6 +49,7 @@ import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
+import azkaban.spi.EventType;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.*;
 import azkaban.utils.FileIOUtils.LogData;
@@ -92,7 +95,7 @@ import org.slf4j.LoggerFactory;
  *  The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to
  *  PREPARING before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
  */
-public class FlowContainer {
+public class FlowContainer implements EventListener<Event> {
 
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
@@ -313,7 +316,8 @@ public class FlowContainer {
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(this.numJobThreadPerFlow);
+        .setNumJobThreads(this.numJobThreadPerFlow)
+        .addListener(this);
   }
 
   /**
@@ -616,5 +620,42 @@ public class FlowContainer {
       logger.error("Error deleting : {}", symlinkedFilePath, e);
       throw new ExecutorManagerException(e);
     }
+  }
+
+  /**
+   * Handles the FLOW_FINISHED event and initiates the shutdown sequence.
+   * @param event
+   */
+  @Override
+  public void handleEvent(final Event event) {
+    if (event.getType() == EventType.FLOW_FINISHED) {
+      final FlowRunner eventFlowRunner = (FlowRunner)event.getRunner();
+      // Sanity check, assert that the event is for same flow execution
+      if (eventFlowRunner.getExecutionId() != this.flowRunner.getExecutionId()) {
+        logger.warn("Execution id mismatch! Expected execution id: {}, got execution id: {}",
+                eventFlowRunner.getExecutionId(), this.flowRunner.getExecutionId());
+      } else {
+        logger.info("Flow execution finished for execution id: {}",
+                eventFlowRunner.getExecutionId());
+      }
+      shutdown();
+    }
+  }
+
+  /**
+   * Shutdown the Container
+   */
+  private void shutdown() {
+    logger.info("Shutting down the pod");
+    try {
+      this.executorService.shutdown();
+      this.jettyServer.stop();
+      this.jettyServer.destroy();
+    } catch (final Exception e) {
+      // Eat up the exception
+      logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
+    }
+    logger.info("Sayonara!");
+    System.exit(0);
   }
 }
