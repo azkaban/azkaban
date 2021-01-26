@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -57,5 +58,21 @@ public class PropsTest {
     Props parent = new Props();
     Props props = new Props(parent, file);
     Assert.assertNull(props.getSource());
+  }
+
+  @Test
+  public void testPropsWithOverriding() {
+    final String property = "property.a";
+
+    final Props parent = new Props();
+    final String valueInParent = "parentValue";
+    parent.put("property.a", valueInParent);
+
+    final Props child = new Props(parent);
+    final String valueInChild = "childValue";
+    child.put(property, valueInChild);
+
+    final Properties merged = child.toAllProperties();
+    Assert.assertEquals(valueInChild, merged.get(property));
   }
 }
