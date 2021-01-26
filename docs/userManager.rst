@@ -5,7 +5,7 @@ UserManager
 ==================================
 
 When you start Azkaban, you may notice the login page. Azkaban makes you authenticate before you can use it.
-This is prevent seeing or executing workflows you shoudn’t see or touch.
+This prevents seeing or executing workflows you shouldn’t see or touch.
 
 We also used authenticated users for auditing purposes. Whenever project files change, is modified, scheduled, etc.
 we often want to know which user performed that action.
@@ -184,7 +184,7 @@ contents of ``azkaban.properties`` will be available for the UserManager
 for configuration.
 
 Package your new custom UserManager into a jar and drop it into the
-``./extlib`` directory or alternatively into the plugins directory (i.e.
+``./extlib`` directory or into the plugins directory (i.e.
 ``./plugins/ldap/linkedin-ldap.jar``).
 
 Change the ``azkaban.properties`` configuration to point to the custom

@@ -15,7 +15,7 @@ HadoopSecurityManager
 ---------------------------
 
 The most common adoption of Azkaban has been in the big data platforms
-such as Hadoop, etc. Azkaban's jobtype plugin system allows most
+such as Hadoop, etc. Azkaban's jobtype plugin system allows the most
 flexible support to such systems.
 
 Azkaban is able to support all Hadoop versions, with support for Hadoop
@@ -30,7 +30,7 @@ cluster and take care of Hadoop security, in a secure way.
 Hadoop Security with Kerberos, Hadoop Tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When Hadoop is used in enterprise production environment, it is
+When Hadoop is used in an enterprise production environment, it is
 advisable to have its security feature turned on, to protect your data
 and guard against mistakes.
 
@@ -53,7 +53,7 @@ description of tokens, see
 
 **Hadoop SecurityManager**
 
-For human users, one authenticate with KDC with a kinit command. But for
+For human users, one authenticates with KDC with a kinit command. But for
 scheduler such as Azkaban that runs jobs on behalf as other users, it
 needs to acquire tokens that will be used by the users. Specific Azkaban
 job types should handle this, with the use of ``HadoopSecurityManager``
@@ -89,7 +89,7 @@ should be specified in java.library.path in azkaban executor server.
 **temp dir**
 
 Besides those, many tools on Hadoop, such as Pig/Hive/Crunch write files
-into temporary directory. By default, they all go to ``/tmp``. This
+into a temporary directory. By default, they all go to ``/tmp``. This
 could cause operations issue when a lot of jobs run concurrently.
 Because of this, you may want to change this by setting
 ``java.io.tmp.dir`` to a different directory.
@@ -178,7 +178,7 @@ can use the HadoopSecurityManager to take care of security.
 
 For unsecure Hadoop cluster, there is nothing special that is needed.
 
-For secure Hadoop clusters, there are two ways inlcuded in the
+For secure Hadoop clusters, there are two ways included in the
 hadoopsecuritymanager package:
 
 -  give the key tab information to user job process. The
@@ -189,7 +189,7 @@ hadoopsecuritymanager package:
    and proxy as someone else, which presents a security hole.
 -  obtain Hadoop tokens prior to user job process start. The job wrapper
    will pick up these binary tokens inside user job process. The tokens
-   should be explicitly cancelled after user job finishes.
+   should be explicitly canceled after user job finishes.
 
 By paring properly configured hadoopsecuritymanager with basic job types
 such as hadoopJava, pig, hive, one can make these job types work with
@@ -230,7 +230,7 @@ the web server's plugin's directory. This is often
 By default, Azkaban HDFS browser does a do-as to impersonate the
 logged-in user. Often times, data is created and handled by a headless
 account. To view these files, if user proxy is turned on, then the user
-can switch to the headless account as long as its validated by the
+can switch to the headless account as long as it's validated by the
 UserManager.
 
 **Settings**
@@ -323,16 +323,16 @@ running Azkaban instances.
 **Introduction**
 
 
-Jobtype plugins determine how individual jobs are actually run locally
-or on a remote cluster. It gives great benefits: one can add or change
-any job type without touching Azkaban core code; one can easily extend
-Azkaban to run on different hadoop versions or distributions; one can
-keep old versions around while adding new versions of the same types.
-However, it is really up to the admin who manages these plugins to make
-sure they are installed and configured correctly.
+Jobtype plugins determine how individual jobs are run locally or on a 
+remote cluster. It gives great benefits: one can add or changeany job 
+type without touching Azkaban core code; one can easily extendAzkaban
+to run on different hadoop versions or distributions; one cankeep old 
+versions around while adding new versions of the same types.However, 
+it is really up to the admin who manages these plugins to make sure 
+they are installed and configured correctly.
 
 Upon AzkabanExecutorServer start up, Azkaban will try to load all the
-job type plugins it can find. Azkaban will do very simply tests and drop
+job type plugins it can find. Azkaban will do very simple tests and drop
 the bad ones. One should always try to run some test jobs to make sure
 the job types really work as expected.
 
@@ -393,10 +393,10 @@ visible by user code, in ``common.properties``. For example,
 
 **Settings for individual job types**
 
-In most cases, there is no extra settings needed for job types to work,
+In most cases, there are no extra settings needed for job types to work,
 other than variables like ``hadoop.home``, ``pig.home``, ``hive.home``,
 etc. However, it is also where most of the customizations come from. For
-example, one can configure a two Java job types with the same jar
+example, one can configure two Java job types with the same jar
 resources but with different hadoop configurations, thereby submitting
 pig jobs to different clusters. One can also configure pig job with
 pre-registered jars and namespace imports for specific organizations.
