@@ -102,6 +102,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
   public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
   public static final String SERVICE_SELECTOR_PREFIX = "flow";
+  public static final String POD_APPLICATION_TAG = "azkaban-exec-server";
 
 
   private final String namespace;
@@ -649,6 +650,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private ImmutableMap getLabelsForPod(final int executionId) {
     final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
     mapBuilder.put("cluster", this.clusterName);
+    mapBuilder.put("app", POD_APPLICATION_TAG);
 
     // Note that the service label must match the selector used for the corresponding service
     if (isServiceRequired()) {
