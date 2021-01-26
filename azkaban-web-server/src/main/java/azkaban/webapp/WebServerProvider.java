@@ -30,11 +30,11 @@ import com.google.inject.Provider;
 import java.util.List;
 import javax.inject.Inject;
 import org.apache.log4j.Logger;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.security.SslSocketConnector;
-import org.mortbay.thread.QueuedThreadPool;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 public class WebServerProvider implements Provider<Server> {
@@ -79,7 +79,8 @@ public class WebServerProvider implements Provider<Server> {
   private SocketConnector getSocketConnector(final int port) {
     final SocketConnector connector = new SocketConnector();
     connector.setPort(port);
-    connector.setHeaderBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
+    connector.setRequestBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
+    connector.setResponseBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
     return connector;
   }
 
@@ -91,12 +92,13 @@ public class WebServerProvider implements Provider<Server> {
     secureConnector.setKeyPassword(this.props.getString("jetty.keypassword"));
     secureConnector.setTruststore(this.props.getString("jetty.truststore"));
     secureConnector.setTrustPassword(this.props.getString("jetty.trustpassword"));
-    secureConnector.setHeaderBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
+    secureConnector.setRequestBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
+    secureConnector.setResponseBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
 
     // set up vulnerable cipher suites to exclude
     final List<String> cipherSuitesToExclude = this.props
         .getStringList("jetty.excludeCipherSuites");
-    logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
+    logger.info("Excluded Cipher Suites: " + cipherSuitesToExclude);
     if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
       secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
     }

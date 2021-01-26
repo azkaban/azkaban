@@ -16,8 +16,8 @@
 
 package azkaban.jmx;
 
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
 
 public class JmxJettyServer implements JmxJettyServerMBean {
 
@@ -86,12 +86,14 @@ public class JmxJettyServer implements JmxJettyServerMBean {
 
   @Override
   public int getConnectionsOpenMin() {
-    return this.connector.getConnectionsOpenMin();
+    // @TODO fix jetty upgrade
+    // return this.connector.getConnectionsOpenMin();
+    return this.connector.getConnectionsOpen();
   }
 
   @Override
   public long getConnectionsDurationAve() {
-    return this.connector.getConnectionsDurationAve();
+    return (long) this.connector.getConnectionsDurationMean();
   }
 
   @Override
@@ -101,7 +103,8 @@ public class JmxJettyServer implements JmxJettyServerMBean {
 
   @Override
   public long getConnectionsDurationMin() {
-    return this.connector.getConnectionsDurationMin();
+    // @TODO fix jetty upgrade
+    return (long) this.connector.getConnectionsRequestsMean();
   }
 
   @Override
@@ -111,7 +114,7 @@ public class JmxJettyServer implements JmxJettyServerMBean {
 
   @Override
   public long getConnectionsRequestAve() {
-    return this.connector.getConnectionsRequestsAve();
+    return (long) this.connector.getConnectionsRequestsMean();
   }
 
   @Override
@@ -121,7 +124,8 @@ public class JmxJettyServer implements JmxJettyServerMBean {
 
   @Override
   public long getConnectionsRequestMin() {
-    return this.connector.getConnectionsRequestsMin();
+    // @TODO fix jetty upgrade getConnectionsRequestsMin
+    return (long) this.connector.getConnectionsRequestsMean();
   }
 
   @Override

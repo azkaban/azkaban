@@ -70,10 +70,10 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
 
 
 @Singleton
@@ -98,7 +98,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
   private final MetricsManager metricsManager;
   private final Props props;
   private final Server server;
-  private final Context root;
+  private final ServletContextHandler root;
 
   @Inject
   public AzkabanExecutorServer(final Props props,
@@ -107,7 +107,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       final FlowRampManager rampManager,
       final MetricsManager metricsManager,
       @Named(EXEC_JETTY_SERVER) final Server server,
-      @Named(EXEC_ROOT_CONTEXT) final Context root) {
+      @Named(EXEC_ROOT_CONTEXT) final ServletContextHandler root) {
     this.props = props;
     this.executionLoader = executionLoader;
     this.runnerManager = runnerManager;
@@ -198,7 +198,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
         }
       }
 
-      public void logTopMemoryConsumers() throws Exception, IOException {
+      public void logTopMemoryConsumers() throws Exception {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
             && new File("/usr/bin/head").exists()) {
           AzkabanExecutorServer.logger.info("logging top memory consumer");
