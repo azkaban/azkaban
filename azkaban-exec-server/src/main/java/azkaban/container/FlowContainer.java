@@ -24,8 +24,6 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
 import azkaban.common.ExecJettyServerModule;
-import azkaban.event.Event;
-import azkaban.event.EventListener;
 import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
@@ -49,7 +47,6 @@ import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
-import azkaban.spi.EventType;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.*;
 import azkaban.utils.FileIOUtils.LogData;
@@ -70,6 +67,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -95,7 +93,7 @@ import org.slf4j.LoggerFactory;
  *  The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to
  *  PREPARING before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
  */
-public class FlowContainer implements EventListener<Event> {
+public class FlowContainer {
 
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
@@ -128,6 +126,7 @@ public class FlowContainer implements EventListener<Event> {
   private Path execDirPath;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
+  private Future<?> flowFuture;
 
   // Max chunk size is 20MB.
   private final String jobLogChunkSize;
@@ -230,8 +229,10 @@ public class FlowContainer implements EventListener<Event> {
 
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
-    // execute the flow
+    // execute the flow, this is a blocking call until flow finishes
     flowContainer.submitFlow(execId);
+    // Shutdown the container
+    flowContainer.shutdown();
   }
 
   /**
@@ -316,8 +317,7 @@ public class FlowContainer implements EventListener<Event> {
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(this.numJobThreadPerFlow)
-        .addListener(this);
+        .setNumJobThreads(this.numJobThreadPerFlow);
   }
 
   /**
@@ -326,9 +326,10 @@ public class FlowContainer implements EventListener<Event> {
   private void submitFlowRunner() throws ExecutorManagerException {
     // set running flow, put it in DB
     logger.info("Submitting flow with execution Id " + this.flowRunner.getExecutionId());
-    final Future<?> flowFuture = this.executorService.submit(this.flowRunner);
+    this.flowFuture = this.executorService.submit(this.flowRunner);
     try {
-      flowFuture.get();
+      // Blocking call
+      this.flowFuture.get();
     } catch (final InterruptedException | ExecutionException e) {
       logger.error(ExceptionUtils.getStackTrace(e));
       throw new ExecutorManagerException(e);
@@ -623,32 +624,32 @@ public class FlowContainer implements EventListener<Event> {
   }
 
   /**
-   * Handles the FLOW_FINISHED event and initiates the shutdown sequence.
-   * @param event
-   */
-  @Override
-  public void handleEvent(final Event event) {
-    if (event.getType() == EventType.FLOW_FINISHED) {
-      final FlowRunner eventFlowRunner = (FlowRunner)event.getRunner();
-      // Sanity check, assert that the event is for same flow execution
-      if (eventFlowRunner.getExecutionId() != this.flowRunner.getExecutionId()) {
-        logger.warn("Execution id mismatch! Expected execution id: {}, got execution id: {}",
-                eventFlowRunner.getExecutionId(), this.flowRunner.getExecutionId());
-      } else {
-        logger.info("Flow execution finished for execution id: {}",
-                eventFlowRunner.getExecutionId());
-      }
-      shutdown();
-    }
-  }
-
-  /**
-   * Shutdown the Container
+   * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution
+   * as well as JettyServer.
    */
   private void shutdown() {
     logger.info("Shutting down the pod");
+    while (!this.flowFuture.isDone()) {
+      // This should not happen immediately as submitFlowRunner is a blocking call.
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        logger.error("The sleep while waiting for execution : {} to finish was interrupted",
+                this.flowRunner.getExecutionId());
+      }
+    }
+
     try {
       this.executorService.shutdown();
+      boolean result = false;
+      while (!result) {
+        logger.info("Awaiting Shutdown of executing flow");
+        try {
+          result = this.executorService.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (final InterruptedException e) {
+          logger.error(e.getMessage());
+        }
+      }
       this.jettyServer.stop();
       this.jettyServer.destroy();
     } catch (final Exception e) {
