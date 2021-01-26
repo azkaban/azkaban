@@ -227,7 +227,7 @@ public class ExecutorApiClientTest {
     final ExecutorApiClient client = new ExecutorApiClient(validReverseProxyProps);
     URI uri = client.buildExecutorUri(null, 0, "execid-101/container",false,
         (Pair<String,String>[])null);
-    Assert.assertEquals("https://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
+    Assert.assertEquals("http://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
             "/execid-101/container",
         uri.toString());
   }

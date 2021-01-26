@@ -19,4 +19,4 @@ spec:
   ports:
     - name: flowport
       port: ${port}
-      targetPort: flowport
+      targetPort: ${port}

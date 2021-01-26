@@ -17,6 +17,6 @@ spec:
   ports:
   - name: flowport
     port: 54343
-    targetPort: flowport
+    targetPort: 54343
   selector:
     service: flow-12345
