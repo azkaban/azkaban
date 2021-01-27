@@ -108,6 +108,7 @@ public class FlowContainer {
   public static final String JOB_LOG_CHUNK_SIZE = "job.log.chunk.size";
   public static final String JOB_LOG_BACKUP_INDEX = "job.log.backup.index";
   public static final String PROXY_USER_LOCK_DOWN = "proxy.user.lock.down";
+  private static final int SHUTDOWN_TIMEOUT_IN_SECONDS = 10;
 
 
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
@@ -639,17 +640,22 @@ public class FlowContainer {
       }
     }
 
+    boolean result = false;
     try {
       this.executorService.shutdown();
-      boolean result = false;
-      while (!result) {
-        logger.info("Awaiting Shutdown of executing flow");
-        try {
-          result = this.executorService.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (final InterruptedException e) {
-          logger.error(e.getMessage());
-        }
-      }
+      // Wait upto 10 seconds for clean shutdown, otherwise, System.exit() will wipe out
+      // everything
+      logger.info("Awaiting Shutdown of executing flow");
+      result = this.executorService.awaitTermination(
+              SHUTDOWN_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+    } catch (final InterruptedException e) {
+      logger.error(e.getMessage());
+    }
+    if (!result) {
+      logger.warn("ExecutorService did not shut down cleanly yet. Ignoring it.");
+    }
+
+    try {
       this.jettyServer.stop();
       this.jettyServer.destroy();
     } catch (final Exception e) {
