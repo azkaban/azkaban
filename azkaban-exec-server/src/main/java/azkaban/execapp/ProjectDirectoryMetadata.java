@@ -22,14 +22,14 @@ import java.io.File;
 import java.nio.file.attribute.FileTime;
 
 
-class ProjectDirectoryMetadata {
+public class ProjectDirectoryMetadata {
   private final int projectId;
   private final int version;
   private File installedDir;
   private Long dirSizeInByte;
   private FileTime lastAccessTime;
 
-  ProjectDirectoryMetadata(final int projectId, final int version) {
+  public ProjectDirectoryMetadata(final int projectId, final int version) {
     checkArgument(projectId > 0);
     checkArgument(version > 0);
 

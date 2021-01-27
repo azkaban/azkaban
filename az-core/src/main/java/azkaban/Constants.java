@@ -61,6 +61,7 @@ public class Constants {
   public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
+  public static final String AZKABAN_CONTAINER_CONTEXT_KEY = "flow_container";
 
   // Internal username used to perform SLA action
   public static final String AZKABAN_SLA_CHECKER_USERNAME = "azkaban_sla";
@@ -136,8 +137,15 @@ public class Constants {
   public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
   public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
+  public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
+  public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
+
   // Use in-memory keystore
   public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
+
+  // AZ_HOME in containerized execution
+  public static final String AZ_HOME = "AZ_HOME";
+
 
   public static class ConfigurationKeys {
 
@@ -557,5 +565,8 @@ public class Constants {
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
+
+    public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
+    public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
   }
 }
