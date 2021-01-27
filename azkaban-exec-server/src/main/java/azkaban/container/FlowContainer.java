@@ -67,6 +67,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -107,6 +108,7 @@ public class FlowContainer {
   public static final String JOB_LOG_CHUNK_SIZE = "job.log.chunk.size";
   public static final String JOB_LOG_BACKUP_INDEX = "job.log.backup.index";
   public static final String PROXY_USER_LOCK_DOWN = "proxy.user.lock.down";
+  private static final int SHUTDOWN_TIMEOUT_IN_SECONDS = 10;
 
 
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
@@ -125,6 +127,7 @@ public class FlowContainer {
   private Path execDirPath;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
+  private Future<?> flowFuture;
 
   // Max chunk size is 20MB.
   private final String jobLogChunkSize;
@@ -227,8 +230,10 @@ public class FlowContainer {
 
     // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
-    // execute the flow
+    // execute the flow, this is a blocking call until flow finishes
     flowContainer.submitFlow(execId);
+    // Shutdown the container
+    flowContainer.shutdown();
   }
 
   /**
@@ -322,9 +327,10 @@ public class FlowContainer {
   private void submitFlowRunner() throws ExecutorManagerException {
     // set running flow, put it in DB
     logger.info("Submitting flow with execution Id " + this.flowRunner.getExecutionId());
-    final Future<?> flowFuture = this.executorService.submit(this.flowRunner);
+    this.flowFuture = this.executorService.submit(this.flowRunner);
     try {
-      flowFuture.get();
+      // Blocking call
+      this.flowFuture.get();
     } catch (final InterruptedException | ExecutionException e) {
       logger.error(ExceptionUtils.getStackTrace(e));
       throw new ExecutorManagerException(e);
@@ -616,5 +622,47 @@ public class FlowContainer {
       logger.error("Error deleting : {}", symlinkedFilePath, e);
       throw new ExecutorManagerException(e);
     }
+  }
+
+  /**
+   * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution
+   * as well as JettyServer.
+   */
+  private void shutdown() {
+    logger.info("Shutting down the pod");
+    while (!this.flowFuture.isDone()) {
+      // This should not happen immediately as submitFlowRunner is a blocking call.
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        logger.error("The sleep while waiting for execution : {} to finish was interrupted",
+                this.flowRunner.getExecutionId());
+      }
+    }
+
+    boolean result = false;
+    try {
+      this.executorService.shutdown();
+      // Wait upto 10 seconds for clean shutdown, otherwise, System.exit() will wipe out
+      // everything
+      logger.info("Awaiting Shutdown of executing flow");
+      result = this.executorService.awaitTermination(
+              SHUTDOWN_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+    } catch (final InterruptedException e) {
+      logger.error(e.getMessage());
+    }
+    if (!result) {
+      logger.warn("ExecutorService did not shut down cleanly yet. Ignoring it.");
+    }
+
+    try {
+      this.jettyServer.stop();
+      this.jettyServer.destroy();
+    } catch (final Exception e) {
+      // Eat up the exception
+      logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
+    }
+    logger.info("Sayonara!");
+    System.exit(0);
   }
 }
