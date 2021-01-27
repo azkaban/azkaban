@@ -147,7 +147,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * Otherwise, appropriate error message will be thrown.
        */
       if (optionalImageRampupPlan.isPresent()) {
-        if (imageRampupPlan.isForceActivatePlan()) {
+        if (imageRampupPlan.getForceActivatePlan() != null && imageRampupPlan.getForceActivatePlan()) {
           transOperator.update(DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY,
               false, optionalImageRampupPlan.get().getId());
         } else {
@@ -431,8 +431,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       final StringBuilder queryBuilder = new StringBuilder("update image_rampup_plan set ");
       // As update is allowed only for active plan, if activatePlan is false then deactivate the
       // current plan.
-      if (!imageRampupPlan.isActivatePlan() ||
-          !imageRampupPlan.isForceActivatePlan()) {
+      if ((imageRampupPlan.getActivatePlan() != null && !imageRampupPlan.getActivatePlan()) ||
+          (imageRampupPlan.getForceActivatePlan() != null && !imageRampupPlan.getForceActivatePlan())) {
         queryBuilder.append(" active = ?, ");
         params.add(Boolean.FALSE);
       }
