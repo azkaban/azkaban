@@ -21,6 +21,7 @@ import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
 import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
 import static azkaban.Constants.UTF_8;
 
+import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
@@ -679,5 +680,31 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected void handleMultiformPost(final HttpServletRequest req,
       final HttpServletResponse resp, final Map<String, Object> multipart, final Session session)
       throws ServletException, IOException {
+  }
+
+  /**
+   * Method to check permission to access image management APIs.
+   *
+   * @param imageTypeName
+   * @param user
+   * @param type
+   * @return boolean
+   */
+  protected boolean hasImageManagementPermission(final String imageTypeName, final User user,
+      final Permission.Type type) {
+    final UserManager userManager = getApplication().getUserManager();
+    for (final String roleName : user.getRoles()) {
+      final Role role = userManager.getRole(roleName);
+      /**
+       * Azkaban ADMIN role must have full permission to access image management APIs. Hence, no
+       * further permission check is required.
+       */
+      if (role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+        return true;
+      }
+    }
+    // Check image management APIs access permission for other users.
+    final PermissionManager permissionManager = getApplication().getPermissionManager();
+    return permissionManager.hasPermission(imageTypeName, user.getUserId(), type);
   }
 }

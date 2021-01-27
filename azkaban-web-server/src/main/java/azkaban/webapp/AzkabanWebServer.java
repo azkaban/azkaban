@@ -32,6 +32,14 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.services.ImageRampupService;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.servlets.ImageRampupServlet;
+import azkaban.imagemgmt.servlets.ImageTypeServlet;
+import azkaban.imagemgmt.servlets.ImageVersionServlet;
+import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.jmx.JmxContainerizedDispatchManager;
 import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
@@ -103,6 +111,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -156,6 +165,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
+  private final ObjectMapper objectMapper;
+  private final ImageTypeService imageTypeService;
+  private final ImageVersionService imageVersionService;
+  private final ImageRampupService imageRampupService;
+  private final PermissionManager permissionManager;
+  private final ConverterUtils converterUtils;
+
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -171,7 +187,13 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerScheduler flowTriggerScheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
-      final ExecutionLogsCleaner executionLogsCleaner) {
+      final ExecutionLogsCleaner executionLogsCleaner,
+      final ObjectMapper objectMapper,
+      final ImageTypeService imageTypeService,
+      final ImageVersionService imageVersionService,
+      final ImageRampupService imageRampupService,
+      final PermissionManager permissionManager,
+      final ConverterUtils converterUtils) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -187,6 +209,18 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
+    this.objectMapper = objectMapper;
+    this.imageTypeService = requireNonNull(imageTypeService, "imageTypeService is "
+        + "null");
+    this.imageVersionService = requireNonNull(imageVersionService, "imageVersionService is "
+        + "null");
+    this.imageRampupService = requireNonNull(imageRampupService, "imageRampupService is "
+        + "null");
+    this.permissionManager = requireNonNull(permissionManager, "permissionManager is "
+        + "null");
+    this.converterUtils = requireNonNull(converterUtils, "converterUtils is "
+        + "null");
+
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -443,6 +477,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     routesMap.put("/status", new StatusServlet(this.statusService));
 
+    routesMap.put("/imageTypes/*", new ImageTypeServlet());
+    routesMap.put("/imageVersions/*", new ImageVersionServlet());
+    routesMap.put("/imageRampup/*", new ImageRampupServlet());
+
     // Configure core routes
     for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
       root.addServlet(new ServletHolder(entry.getValue()), entry.getKey());
@@ -680,10 +718,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     } else if (this.executorManagerAdapter instanceof ExecutionController) {
       this.mbeanRegistrationManager.registerMBean("executionController",
           new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
-    }
-    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+    } else if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
       this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
-          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
+          new JmxContainerizedDispatchManager(
+              (ContainerizedDispatchManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
@@ -715,5 +753,29 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       logger.error(e);
     }
     this.server.destroy();
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return this.objectMapper;
+  }
+
+  public ImageTypeService getImageTypeService() {
+    return this.imageTypeService;
+  }
+
+  public ImageVersionService getImageVersionsService() {
+    return this.imageVersionService;
+  }
+
+  public ImageRampupService getImageRampupService() {
+    return this.imageRampupService;
+  }
+
+  public PermissionManager getPermissionManager() {
+    return this.permissionManager;
+  }
+
+  public ConverterUtils getConverterUtils() {
+    return this.converterUtils;
   }
 }

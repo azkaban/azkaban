@@ -51,53 +51,11 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 
-public class FlowPreparerTest {
+public class FlowPreparerTest extends FlowPreparerTestBase {
 
-  public static final String SAMPLE_FLOW_01 = "sample_flow_01";
-
-  public static final Integer FAT_PROJECT_ID = 10;
-  public static final Integer THIN_PROJECT_ID = 11;
-
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File executionsDir;
   private File projectsDir;
   private FlowPreparer instance;
-  private DependencyTransferManager dependencyTransferManager;
-
-  private ProjectStorageManager createMockStorageManager() throws Exception {
-    final ClassLoader classLoader = getClass().getClassLoader();
-    final File zipFAT = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
-
-    final File thinZipFolder = temporaryFolder.newFolder("thinproj");
-    ThinArchiveTestUtils.makeSampleThinProjectDirAB(thinZipFolder);
-    File zipTHIN = temporaryFolder.newFile("thinzipproj.zip");
-    Utils.zipFolderContent(thinZipFolder, zipTHIN);
-
-    final ProjectFileHandler projectFileHandlerFAT = mock(ProjectFileHandler.class);
-    when(projectFileHandlerFAT.getFileType()).thenReturn("zip");
-    when(projectFileHandlerFAT.getLocalFile()).thenReturn(zipFAT);
-    when(projectFileHandlerFAT.getStartupDependencies()).thenReturn(Collections.emptySet());
-
-    final ProjectFileHandler projectFileHandlerTHIN = mock(ProjectFileHandler.class);
-    when(projectFileHandlerTHIN.getFileType()).thenReturn("zip");
-    when(projectFileHandlerTHIN.getLocalFile()).thenReturn(zipTHIN);
-    when(projectFileHandlerTHIN.getStartupDependencies()).thenReturn(ThinArchiveTestUtils.getDepSetAB());
-
-    final ProjectStorageManager projectStorageManager = mock(ProjectStorageManager.class);
-    when(projectStorageManager.getProjectFile(eq(FAT_PROJECT_ID), anyInt())).thenReturn(projectFileHandlerFAT);
-    when(projectStorageManager.getProjectFile(eq(THIN_PROJECT_ID), anyInt())).thenReturn(projectFileHandlerTHIN);
-    return projectStorageManager;
-  }
-
-  private ExecutableFlow mockExecutableFlow(final int execId, final int projectId,
-      final int version) {
-    final ExecutableFlow executableFlow = mock(ExecutableFlow.class);
-    when(executableFlow.getExecutionId()).thenReturn(execId);
-    when(executableFlow.getProjectId()).thenReturn(projectId);
-    when(executableFlow.getVersion()).thenReturn(version);
-    return executableFlow;
-  }
 
   @Before
   public void setUp() throws Exception {
@@ -107,8 +65,8 @@ public class FlowPreparerTest {
     this.dependencyTransferManager = mock(DependencyTransferManager.class);
 
     this.instance = spy(
-        new FlowPreparer(createMockStorageManager(), this.dependencyTransferManager, this.projectsDir, null,
-            new ProjectCacheHitRatio(), this.executionsDir));
+            new FlowPreparer(createMockStorageManager(), this.dependencyTransferManager, this.projectsDir, null,
+                    new ProjectCacheHitRatio(), this.executionsDir));
     doNothing().when(this.instance).updateLastModifiedTime(any());
   }
 
@@ -123,7 +81,7 @@ public class FlowPreparerTest {
 
     assertThat(proj.getDirSizeInByte()).isEqualTo(actualDirSize);
     assertThat(FileIOUtils.readNumberFromFile(
-        Paths.get(tmp.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
+        Paths.get(tmp.getPath(), AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)))
         .isEqualTo(actualDirSize);
   }
 
@@ -134,7 +92,7 @@ public class FlowPreparerTest {
     final File tmp = this.instance.downloadProjectIfNotExists(proj, 124);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
     verify(this.instance, never()).updateLastModifiedTime(projectDirSizeFile);
     assertThat(tmp).isNotNull();
@@ -152,7 +110,7 @@ public class FlowPreparerTest {
     tmp = this.instance.downloadProjectIfNotExists(proj, 126);
 
     final Path projectDirSizeFile = Paths.get(proj.getInstalledDir().getPath(),
-        FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
+        AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
 
     verify(this.instance).updateLastModifiedTime(projectDirSizeFile);
     assertThat(tmp).isNull();

@@ -26,9 +26,9 @@ import java.util.Optional;
 public interface VersionSetLoader {
 
   /**
-   * @return versionSetId after created post insert.
+   * @return versionSet after created post insert.
    */
-  int insertAndGetVersionSetId(String versionSetMd5Hex, String versionSetJsonString)
+  Optional<VersionSet> insertAndGetVersionSet(String versionSetMd5Hex, String versionSetJsonString)
       throws IOException;
 
   /**
@@ -37,9 +37,9 @@ public interface VersionSetLoader {
   boolean deleteVersionSet(String versionSetMd5Hex) throws IOException;
 
   /**
-   * @return versionSetId corresponding to versionSetJsonString and versionSetMd5Hex.
+   * @return versionSet corresponding to versionSetJsonString and versionSetMd5Hex.
    */
-  int getVersionSetId(String versionSetMd5Hex, String versionSetJsonString) throws IOException;
+  Optional<VersionSet> getVersionSet(String versionSetMd5Hex, String versionSetJsonString) throws IOException;
 
   /**
    * @return {@link VersionSet} corresponding to versionSetMd5Hex.

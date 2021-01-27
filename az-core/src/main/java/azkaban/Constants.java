@@ -61,6 +61,7 @@ public class Constants {
   public static final String DEFAULT_EXECUTOR_PORT_FILE = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
+  public static final String AZKABAN_CONTAINER_CONTEXT_KEY = "flow_container";
 
   // Internal username used to perform SLA action
   public static final String AZKABAN_SLA_CHECKER_USERNAME = "azkaban_sla";
@@ -136,8 +137,15 @@ public class Constants {
   public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
   public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
+  public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
+  public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
+
   // Use in-memory keystore
   public static final String USE_IN_MEMORY_KEYSTORE = "use.in-memory.keystore";
+
+  // AZ_HOME in containerized execution
+  public static final String AZ_HOME = "AZ_HOME";
+
 
   public static class ConfigurationKeys {
 
@@ -520,6 +528,10 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH =
+        AZKABAN_KUBERNETES_PREFIX + "nscd.socket.volume.mount.path";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_HOST_PATH =
+        AZKABAN_KUBERNETES_PREFIX + "nscd.socket.host.path";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
@@ -544,6 +556,13 @@ public class Constants {
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.mountpath";
 
+    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
+    public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
+    public static final String KUBERNETES_POD_TEMPLATE_PATH =
+        KUBERNETES_POD_PREFIX + "template.path";
+
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
     public static final String KUBERNETES_SERVICE_REQUIRED = KUBERNETES_SERVICE_PREFIX +
@@ -557,5 +576,29 @@ public class Constants {
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
+
+    public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
+    public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
+    public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
+  }
+
+  public static class ImageMgmtConstants {
+
+    public static final String IMAGE_TYPE = "imageType";
+    public static final String IMAGE_VERSION = "imageVersion";
+    public static final String VERSION_STATE = "versionState";
+    public static final String ID_KEY = "id";
+    public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
+    public static final String AZKABAN_BASE_IMAGE = "azkaban-base";
+    public static final String AZKABAN_CONFIG = "azkaban-config";
+  }
+
+  public static class FlowParameters {
+
+    // Constants for Flow parameters
+    public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
+
+    // Constant to enable java remote debug for Flow Container
+    public static final String FLOW_PARAM_JAVA_ENABLE_DEBUG = "java.enable.debug";
   }
 }

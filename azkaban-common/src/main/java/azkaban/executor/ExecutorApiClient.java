@@ -132,7 +132,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     checkState(reverseProxyHost.isPresent());
     checkState(reverseProxyPort.isPresent());
     return RestfulApiClient.buildUri(reverseProxyHost.get(), reverseProxyPort.get(), path,
-        isTlsEnabled, params);
+        !isTlsEnabled, params);
   }
 
   private void setupTlsSocketFactory() {

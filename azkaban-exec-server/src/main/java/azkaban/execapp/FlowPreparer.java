@@ -16,21 +16,12 @@
  */
 package azkaban.execapp;
 
-import static azkaban.utils.ThinArchiveUtils.getDependencyFile;
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.Objects.requireNonNull;
-
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.project.ProjectFileHandler;
-import azkaban.spi.Dependency;
-import azkaban.spi.DependencyFile;
 import azkaban.storage.ProjectStorageManager;
-import azkaban.utils.DependencyTransferException;
 import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.io.File;
@@ -40,18 +31,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.zip.ZipFile;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-class FlowPreparer {
-
-  // Name of the file which keeps project directory size
-  static final String PROJECT_DIR_SIZE_FILE_NAME = "___azkaban_project_dir_size_in_bytes___";
+/**
+ * FlowPreparer implementation for ExecutorServer implementation. It enables project cache for
+ * optimal performance.
+ */
+public class FlowPreparer extends AbstractFlowPreparer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowPreparer.class);
 
@@ -59,16 +46,16 @@ class FlowPreparer {
   private final File executionsDir;
   // TODO spyne: move to config class
   private final File projectCacheDir;
-  private final ProjectStorageManager projectStorageManager;
   // Null if cache clean-up is disabled
   private final Optional<ProjectCacheCleaner> projectCacheCleaner;
   private final ProjectCacheHitRatio projectCacheHitRatio;
-  private final DependencyTransferManager dependencyTransferManager;
 
-  FlowPreparer(final ProjectStorageManager projectStorageManager, final DependencyTransferManager dependencyTransferManager,
-      final File projectsDir, final ProjectCacheCleaner cleaner, final ProjectCacheHitRatio projectCacheHitRatio,
+  FlowPreparer(final ProjectStorageManager projectStorageManager,
+      final DependencyTransferManager dependencyTransferManager, final File projectsDir,
+      final ProjectCacheCleaner cleaner, final ProjectCacheHitRatio projectCacheHitRatio,
       final File executionsDir) {
-    Preconditions.checkNotNull(projectStorageManager);
+    super(projectStorageManager, dependencyTransferManager);
+
     Preconditions.checkNotNull(executionsDir);
     Preconditions.checkNotNull(projectsDir);
     Preconditions.checkNotNull(projectCacheHitRatio);
@@ -76,29 +63,10 @@ class FlowPreparer {
     Preconditions.checkArgument(projectsDir.exists());
     Preconditions.checkArgument(executionsDir.exists());
 
-    this.projectStorageManager = projectStorageManager;
     this.executionsDir = executionsDir;
     this.projectCacheDir = projectsDir;
     this.projectCacheCleaner = Optional.ofNullable(cleaner);
     this.projectCacheHitRatio = projectCacheHitRatio;
-    this.dependencyTransferManager = dependencyTransferManager;
-  }
-
-  /**
-   * Calculate the directory size and save it to a file.
-   *
-   * @param dir the directory whose size needs to be saved.
-   * @return the size of the dir.
-   */
-  static long calculateDirSizeAndSave(final File dir) throws IOException {
-    final Path path = Paths.get(dir.getPath(), FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME);
-    if (!Files.exists(path)) {
-      final long sizeInByte = FileUtils.sizeOfDirectory(dir);
-      FileIOUtils.dumpNumberToFile(path, sizeInByte);
-      return sizeInByte;
-    } else {
-      return FileIOUtils.readNumberFromFile(path);
-    }
   }
 
 
@@ -107,8 +75,8 @@ class FlowPreparer {
    *
    * @param flow Executable Flow instance.
    */
-  void setup(final ExecutableFlow flow) throws ExecutorManagerException {
-    final ProjectFileHandler projectFileHandler = null;
+  @Override
+  public void setup(final ExecutableFlow flow) throws ExecutorManagerException {
     File tempDir = null;
     try {
       final ProjectDirectoryMetadata project = new ProjectDirectoryMetadata(
@@ -134,22 +102,20 @@ class FlowPreparer {
         if (!project.getInstalledDir().exists() && tempDir != null) {
           // If new project is downloaded and project dir cache clean-up feature is enabled, then
           // perform clean-up if size of all project dirs exceeds the cache size.
-          if (this.projectCacheCleaner.isPresent()) {
-            this.projectCacheCleaner.get()
-                .deleteProjectDirsIfNecessary(project.getDirSizeInByte());
-          }
+          this.projectCacheCleaner.ifPresent(cacheCleaner -> cacheCleaner
+                  .deleteProjectDirsIfNecessary(project.getDirSizeInByte()));
           // Rename temp dir to a proper project directory name.
           Files.move(tempDir.toPath(), project.getInstalledDir().toPath());
         }
 
         final long start = System.currentTimeMillis();
-        execDir = setupExecutionDir(project.getInstalledDir(), flow);
+        execDir = setupExecutionDir(project.getInstalledDir().toPath(), flow);
         final long end = System.currentTimeMillis();
         LOGGER.info("Setting up execution dir {} took {} sec(s)", execDir, (end - start) / 1000);
       }
 
       final long flowPrepCompletionTime = System.currentTimeMillis();
-      LOGGER.info("Flow preparation completed in {} sec(s), out ot which {} sec(s) was spent inside "
+      LOGGER.info("Flow preparation completed in {} sec(s), out of which {} sec(s) was spent inside "
               + "critical section. [execid: {}, path: {}]",
           (flowPrepCompletionTime - flowPrepStartTime) / 1000,
           (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
@@ -158,24 +124,21 @@ class FlowPreparer {
       FileIOUtils.deleteDirectorySilently(tempDir);
       LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
       throw new ExecutorManagerException(ex);
-    } finally {
-      if (projectFileHandler != null) {
-        projectFileHandler.deleteLocalFile();
-      }
     }
   }
 
-  private File setupExecutionDir(final File installedDir, final ExecutableFlow flow)
-      throws IOException {
+  @Override
+  protected File setupExecutionDir(final Path dir, final ExecutableFlow flow)
+      throws ExecutorManagerException {
     File execDir = null;
     try {
       execDir = createExecDir(flow);
       // Create hardlinks from the project
-      FileIOUtils.createDeepHardlink(installedDir, execDir);
+      FileIOUtils.createDeepHardlink(dir.toFile(), execDir);
       return execDir;
     } catch (final Exception ex) {
       FileIOUtils.deleteDirectorySilently(execDir);
-      throw ex;
+      throw new ExecutorManagerException(ex);
     }
   }
 
@@ -206,65 +169,6 @@ class FlowPreparer {
         "_temp." + projectDir + "." + System.currentTimeMillis());
     tempDir.mkdirs();
     return tempDir;
-  }
-
-  @VisibleForTesting
-  void downloadAndUnzipProject(final ProjectDirectoryMetadata proj, final int execId, final File dest)
-      throws IOException {
-    final long start = System.currentTimeMillis();
-    final ProjectFileHandler projectFileHandler = requireNonNull(this.projectStorageManager
-        .getProjectFile(proj.getProjectId(), proj.getVersion()));
-    LOGGER.info("Downloading zip file for project {} when preparing "
-            + "execution [execid {}] completed in {} second(s)", proj, execId,
-        (System.currentTimeMillis() - start) / 1000);
-
-    try {
-      checkState("zip".equalsIgnoreCase(projectFileHandler.getFileType()));
-      final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
-      final ZipFile zip = new ZipFile(zipFile);
-      Utils.unzip(zip, dest);
-
-      // Download all startup dependencies. If this is a fat archive, it will be an empty set (so we won't download
-      // anything). Note that we are getting our list of startup dependencies from the DB, NOT from the
-      // startup-dependencies.json file contained in the archive. Both should be IDENTICAL, however we chose to get the
-      // list from the DB because this will be consistent with how containerized executions determine the startup
-      // dependency list.
-      downloadAllDependencies(proj, execId, dest, projectFileHandler.getStartupDependencies());
-
-      proj.setDirSizeInByte(calculateDirSizeAndSave(dest));
-    } finally {
-      projectFileHandler.deleteLocalFile();
-    }
-  }
-
-  /**
-   * Download necessary JAR dependencies from storage
-   *
-   * @param proj project to download
-   * @param execId execution id number
-   * @param folder root of unzipped project
-   * @param dependencies the set of dependencies to download
-   */
-  private void downloadAllDependencies(final ProjectDirectoryMetadata proj, final int execId, final File folder,
-      final Set<Dependency> dependencies) {
-    // Download all of the dependencies from storage
-    LOGGER.info("Downloading {} JAR dependencies... Project: {}, ExecId: {}", dependencies.size(), proj, execId);
-    Set<DependencyFile> depFiles = dependencies
-        .stream()
-        .map(d -> getDependencyFile(folder, d))
-        .collect(Collectors.toSet());
-
-    try {
-      final long start = System.currentTimeMillis();
-      this.dependencyTransferManager.downloadAllDependencies(depFiles);
-      LOGGER.info("Downloading {} JAR dependencies for project {} when preparing "
-              + "execution [execid {}] completed in {} second(s)", dependencies.size(), proj, execId,
-          (System.currentTimeMillis() - start) / 1000);
-    } catch (DependencyTransferException e) {
-      LOGGER.error("Unable to download one or more dependencies when preparing execId {}.",
-          execId, proj);
-      throw e;
-    }
   }
 
   /**
