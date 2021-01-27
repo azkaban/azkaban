@@ -76,7 +76,7 @@ public class ImageRampupServiceImplTest {
     final ImageRampupPlan capturedImageRampupPlanRequest = imageTypeArgumentCaptor.getValue();
     Assert.assertEquals("Rampup plan 1", capturedImageRampupPlanRequest.getPlanName());
     Assert.assertEquals("spark_job", capturedImageRampupPlanRequest.getImageTypeName());
-    Assert.assertEquals(true, capturedImageRampupPlanRequest.isActivatePlan());
+    Assert.assertEquals(true, capturedImageRampupPlanRequest.getActivatePlan());
     Assert.assertEquals("azkaban", capturedImageRampupPlanRequest.getCreatedBy());
     Assert.assertEquals(2, capturedImageRampupPlanRequest.getImageRampups().size());
     Assert.assertEquals(100, imageRampupPlanId);
@@ -144,7 +144,7 @@ public class ImageRampupServiceImplTest {
     final ImageRampupPlan capturedImageRampupPlanRequest = imageTypeArgumentCaptor.getValue();
     Assert.assertEquals("Rampup plan 1", capturedImageRampupPlanRequest.getPlanName());
     Assert.assertEquals("spark_job", capturedImageRampupPlanRequest.getImageTypeName());
-    Assert.assertEquals(true, capturedImageRampupPlanRequest.isActivatePlan());
+    Assert.assertEquals(true, capturedImageRampupPlanRequest.getActivatePlan());
     Assert.assertEquals("azkaban", capturedImageRampupPlanRequest.getModifiedBy());
     Assert.assertEquals(2, capturedImageRampupPlanRequest.getImageRampups().size());
   }

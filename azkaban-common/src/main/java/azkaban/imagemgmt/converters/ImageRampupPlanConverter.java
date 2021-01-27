@@ -40,8 +40,8 @@ public class ImageRampupPlanConverter implements Converter<ImageRampupPlanReques
     imageRampupPlan.setModifiedOn(imageRampupPlanRequest.getModifiedOn());
     imageRampupPlan.setPlanName(imageRampupPlanRequest.getPlanName());
     imageRampupPlan.setDescription(imageRampupPlanRequest.getDescription());
-    imageRampupPlan.setActivatePlan(imageRampupPlanRequest.isActivatePlan());
-    imageRampupPlan.setForceActivatePlan(imageRampupPlanRequest.isForceActivatePlan());
+    imageRampupPlan.setActivatePlan(imageRampupPlanRequest.getActivatePlan());
+    imageRampupPlan.setForceActivatePlan(imageRampupPlanRequest.getForceActivatePlan());
     imageRampupPlan.setImageTypeName(imageRampupPlanRequest.getImageTypeName());
     imageRampupPlan.setImageRampups(
         CollectionUtils.emptyIfNull(imageRampupPlanRequest.getImageRampups()).stream()
