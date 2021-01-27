@@ -70,6 +70,7 @@ public class ImageVersionMetadataServiceImpl implements ImageVersionMetadataServ
           .collect(Collectors.toList());
     }
     return new ImageVersionMetadataResponseDTO(versionMetadata.getImageVersion().getVersion(),
-        versionMetadata.getImageVersion().getState(), rampups, versionMetadata.getMessage());
+        versionMetadata.getImageVersion().getState(), versionMetadata.getImageVersion().getPath(),
+        rampups, versionMetadata.getMessage());
   }
 }

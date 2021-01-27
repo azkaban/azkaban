@@ -31,6 +31,9 @@ public class ImageVersionMetadataResponseDTO {
   // Current state of the version.
   @JsonProperty("state")
   private final State state;
+  // Represents image path
+  @JsonProperty("path")
+  private final String path;
   @JsonProperty("rampups")
   private final List<RampupMetadata> rampups;
   // Captures the information about version selection process such as the version is based on
@@ -38,10 +41,11 @@ public class ImageVersionMetadataResponseDTO {
   @JsonProperty("message")
   private final String message;
 
-  public ImageVersionMetadataResponseDTO(final String version, final State state,
+  public ImageVersionMetadataResponseDTO(final String version, final State state, final String path,
       final List<RampupMetadata> rampups, final String message) {
     this.version = version;
     this.state = state;
+    this.path = path;
     this.rampups = rampups;
     this.message = message;
   }
@@ -52,6 +56,10 @@ public class ImageVersionMetadataResponseDTO {
 
   public State getState() {
     return state;
+  }
+
+  public String getPath() {
+    return path;
   }
 
   public List<RampupMetadata> getRampups() {
