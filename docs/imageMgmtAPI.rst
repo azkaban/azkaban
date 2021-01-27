@@ -229,11 +229,11 @@ Create new Ramp-Up Plan
 | ``imageRampups``     |  ``List``   | List of rampup definitions as shown below               |
 +----------------------+-------------+---------------------------------------------------------+
 
-**Rampup Definition json block:**
+**Ramp-up Definition json block:**
 
 .. _rampup-definition:
 
-.. code-block:: json
+.. code-block::
 
      {
       "imageVersion": "string",
