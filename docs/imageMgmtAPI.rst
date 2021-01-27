@@ -13,7 +13,7 @@ Image Management API
 `Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_ ,
 `Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
 
-Ref: :file:`docs/containerization-design.rst`
+Ref: :doc:`containerization-design.rst`
 
 .. contents:: Table of Contents
   :local:
@@ -38,17 +38,24 @@ Key Requirements
 
 REST API EndPoints
 ------------------
-Azkaban web server will host these APIs for each Azkaban cluster. Initially to start with there will be image management CRUD APIs and percentage wise image ramp up API.
-API for populating new image type
-This API will be used to populate newly created image types. As a result of invocation of this API, a new image type will be inserted in the image_types table. One owner and role (admin by default) can be specified during image creation. Separate ownerships API will be provided later to manage image ownerships. Ownership information will be stored in the image_ownerships table.
+Azkaban web server will host these APIs for each Azkaban cluster.
 
 /imageTypes
 ***********
+This end-point is accessible by Azkaban ADMIN only. Creating new imageTypes/jobtypes is one time activity.
 
 .. _create-image-type:
 
 Register new image type (Create)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+While registering image type one of the owners must be image type ADMIN (with ADMIN role). At least two owners must
+be specified while registering new image types and one of them must be ADMIN. This would help manage the image types
+if any one of the owners leaves the organization.
+
+Other two roles are ``MEMBER`` and ``GUEST``. ``ADMIN`` has full access including adding and deleting new owners
+(these APIs will be provided later). ``MEMBER`` can perform all the CRUD operations except adding/deleting new
+owner (these APIs will be provided later). ``GUEST`` role can have only read/get access to view the image metadata.
+
 - **Method:** POST
 - **Request URL:** /imageTypes
 - **Request Body:**
@@ -65,7 +72,8 @@ Register new image type (Create)
 |  ownerships     | JSON String | List of:                             |
 |                 |             | {"owner": <user-id>, "role": <role>} |
 |                 |             |                                      |
-|                 |             | Possible roles: "admin" or "member"  |
+|                 |             | Possible roles: ``ADMIN``,           |
+|                 |             | ``MEMBER`` or ``GUEST``              |
 +-----------------+-------------+--------------------------------------+
 
 **Response:**
@@ -79,9 +87,11 @@ Register new image type (Create)
 **************
 This endpoint is used to register or list image versions for a given image type. The API
 assumes that image type is already registered (Create API for /imageTypes was called before) with Azkaban.
-Also the image binary must already be uploaded to a location in artifactory, accessible to Azkaban.
-Hence, by calling this API, the image admin is informing Azkaban for the availability
-of a given image version.
+
+The image binary must already be uploaded to a location in artifactory, accessible to Azkaban. Azkaban
+does not explicitly check if the image is in fact available. It is the image owner's responsibility to
+ensure it's availability prior to calling this API. By calling this API, the image
+admin is merely informing Azkaban for the availability of a given image version.
 
 .. _create-image-version:
 
@@ -100,10 +110,23 @@ Create (Register) new Image Version
 +-----------------+-------------+-------------------------------------------------+
 |  description    |   String    |                                                 |
 +-----------------+-------------+-------------------------------------------------+
-|  versionState   |   String    | “new”, “active” “unstable” or “deprecated”      |
+|  versionState   |   String    | ``NEW``, ``ACTIVE``, ``UNSTABLE``,              |
+|                 |             | ``DEPRECATED``                                  |
 +-----------------+-------------+-------------------------------------------------+
 |  releaseTag     |   String    |                                                 |
 +-----------------+-------------+-------------------------------------------------+
+
+Following is the description of the versionState fields:
+
+.. _image-version-states:
+
+* **NEW** - All newly registered image versions will be in this state and are yet to be ramped up.
+* **ACTIVE** - Post ramp-up, if the image owner finds this version stable, the `update API <#update-image-version>`_
+  should be used to update the versionState as ACTIVE.
+* **UNSTABLE** - During the process of ramp-up or otherwise, the image owner can mark the image type as ``UNSTABLE``
+  to let Azkaban know the state of the image.
+* **DEPRECATED** - Any version which is unused or no longer required can be marked as ``DEPRECATED`` using
+  the `update API <#update-image-version>`_.
 
 **Response:**
 
@@ -116,10 +139,13 @@ Create (Register) new Image Version
 
 Get Image Version Metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-This API gets the image metadata for an image type. It fetches all the active records for an image version.
-If most_recent is specified, the api returns the latest active record. To get the metadata
-for a specific image version, the Optional parameter; 'imageVersion" should be populated in
-the request structure.
+This API gets the image metadata for an image type. This is typically a search API. In addition to mandatory
+parameter ``imageType``, the API takes two optional parameters: ``imageVersion`` and ``versionState``. Based
+on these parameters we should be able to perform search on top of all the available/registered image versions
+for an image type. To get the metadata for a specific image version, the Optional parameter: **imageVersion**
+should be populated in the request structure. Similarly, to filter the versions based on state, the caller
+should populate the optional parameter: **versionState**.
+
 - **Method:** GET
 - **Request URL:** /imageVersions?imageType=<image_type>
 - **Request Body:**
@@ -130,6 +156,8 @@ the request structure.
 | ``imageType``   | ``String``  |                                                 |
 +-----------------+-------------+-------------------------------------------------+
 | ``imageVersion``| ``String``  | OPTIONAL Parameter.                             |
++-----------------+-------------+-------------------------------------------------+
+| ``versionState``| ``String``  | OPTIONAL Parameter.                             |
 +-----------------+-------------+-------------------------------------------------+
 
 **Example:**
@@ -160,7 +188,7 @@ Update image version metadata such as state. Possible values for ``state`` are:
 +------------------+-------------+-----------------------------------------------------+
 |    Field Name    |     Type    |            Description                              |
 +==================+=============+=====================================================+
-| ``versionState`` | ``String``  | ``new``, ``active``, ``unstable`` or ``deprecated`` |
+| ``versionState`` | ``String``  | ``NEW``, ``ACTIVE``, ``UNSTABLE`` or ``DEPRECATED`` |
 +------------------+-------------+-----------------------------------------------------+
 
 .. _delete-image-version:
@@ -170,32 +198,36 @@ Delete Image Metadata
 Delete the image metadata for the given image version id. This API can be used to clean up stale metadata records.
 
 - **Method:** DELETE
-- **Request URL:** /imageVersions/{imageType}
+- **Request URL:** /imageVersions/{versionId}
 
 /imageRampup
 ************
 
 .. _create-rampup-plan:
 
-Create new Rampup Plan
-^^^^^^^^^^^^^^^^^^^^^^
+Create new Ramp-Up Plan
+^^^^^^^^^^^^^^^^^^^^^^^
 - **Method:** POST
 - **Request URL:** /imageRampup
 - **Request Body:**
 
-+-----------------+-------------+---------------------------------------------------------+
-|   Field Name    |     Type    |            Description                                  |
-+=================+=============+=========================================================+
-| ``planName``    | ``String``  | User provided name                                      |
-+-----------------+-------------+---------------------------------------------------------+
-| ``imageType``   | ``String``  | Image type                                              |
-+-----------------+-------------+---------------------------------------------------------+
-| ``description`` | ``String``  | Description                                             |
-+-----------------+-------------+---------------------------------------------------------+
-| ``activePlan``  | ``boolean`` | ``True`` to mark the plan active, ``False`` otherwise.  |
-+-----------------+-------------+---------------------------------------------------------+
-| ``imageRampups``|  ``List``   | List of rampup definitions as shown below               |
-+-----------------+-------------+---------------------------------------------------------+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``planName``         | ``String``  | User provided name                                      |
++----------------------+-------------+---------------------------------------------------------+
+| ``imageType``        | ``String``  | Image type                                              |
++----------------------+-------------+---------------------------------------------------------+
+| ``description``      | ``String``  | Description                                             |
++----------------------+-------------+---------------------------------------------------------+
+| ``activatePlan``     | ``boolean`` | If ``True``, will activate this plan if no existing     |
+|                      |             | active plan exists. Otherwise the API will error out.   |
++----------------------+-------------+---------------------------------------------------------+
+| ``forceActivatePlan``| ``boolean`` | If ``True``, will mark this plan as Active and          |
+|                      |             | mark any existing active plan as: inactive.             |
++----------------------+-------------+---------------------------------------------------------+
+| ``imageRampups``     |  ``List``   | List of rampup definitions as shown below               |
++----------------------+-------------+---------------------------------------------------------+
 
 **Rampup Definition json block:**
 
@@ -215,7 +247,7 @@ Refer to `usage of this API <#use-case-image-rampup>`_ for implementing a Canary
 
 Get an existing Image Rampup Plan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Returns a list of matching rampup plans for a given imageType
+Returns an active ramp-up plan for the specified image type if there is one.
 
 - **Method:** GET
 - **Request URL:** /imageRampup
@@ -240,16 +272,20 @@ Update an existing Image Rampup Plan
 Update the active rampup plan and rampup details for an image type.
 
 - **Method:** PATCH
-- **Request URL:** /imageRampup/{planName}
+- **Request URL:** /imageRampup/{imageType}
 - **Request Body:**
 
-+-----------------+-------------+---------------------------------------------------------+
-|   Field Name    |     Type    |            Description                                  |
-+=================+=============+=========================================================+
-| ``activePlan``  | ``boolean`` | ``True`` to mark the plan active, ``False`` otherwise.  |
-+-----------------+-------------+---------------------------------------------------------+
-| ``imageRampups``|  ``List``   | List of `rampup definitions <#rampup-definition>`_      |
-+-----------------+-------------+---------------------------------------------------------+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``activatePlan``     | ``boolean`` | If ``True``, will activate this plan if no existing     |
+|                      |             | active plan exists. Otherwise the API will error out.   |
++----------------------+-------------+---------------------------------------------------------+
+| ``forceActivatePlan``| ``boolean`` | If ``True``, will mark this plan as Active and          |
+|                      |             | mark any existing active plan as: inactive.             |
++----------------------+-------------+---------------------------------------------------------+
+| ``imageRampups``     |  ``List``   | List of `rampup definitions <#rampup-definition>`_      |
++----------------------+-------------+---------------------------------------------------------+
 
 Use-Cases and Workflows
 -----------------------
@@ -257,17 +293,17 @@ Use-Cases and Workflows
 New Jobtype/Platform Binary
 ***************************
 When a jobtype/platform developer wants to publish their binary for the 1st time, they need to
-register their **imageType** with Azkaban clusters. Hence, the API to `create image type <#create-image-type>`_
-should be called with the required details.
+register their **imageType** with Azkaban clusters. For this purpose, they can request the Azkaban
+ADMIN to call the API to `create image type <#create-image-type>`_ with the required details.
 
 Following this, a `version of the image type must be published <#create-image-version>`_ to be used within Azkaban.
-This is an Admin API and the privileges for this API are with the Azkaban team.
+Either Azkaban ADMIN or any image owner with role set to ``ADMIN`` or ``MEMBER`` can call this API.
 
 Image owner wants to publish a new version
 ******************************************
 When a jobtype/platform developer wants to deploy a new version of their binary, they need to invoke the API
-to `create new image version <#create-image-version>`_. All imageType users with role as: "admin" as well as
-Azkaban admin will have privileges to invoke this API.
+to `create new image version <#create-image-version>`_. All imageType users with role as: ``ADMIN`` or ``MEMBER``
+as well as Azkaban admin will have privileges to invoke this API.
 
 .. _use-case-image-rampup:
 
@@ -282,7 +318,7 @@ imageType. Here is the ramp-up process:
 #. The image versions used in the ramp-up plan must be already published/registered with Azkaban and the corresponding
    images are expected to be available in Artifactory.
 #. The ramp-up plan and ramp ups can be created using the `Create ramp-up plan API <#create-rampup-plan>`_.
-#. The caller of the API must be registered with role as: ``admin`` for the imageType.
+#. The caller of the API must be registered with role as: ``ADMIN`` or ``MEMBER`` for the imageType.
 #. The ramp-up plan and ramp-up details for an image type can be updated using
    `Update ramp-up API <#update-rampup-plan>`_.
 #. In the active ramp up plan, once the new version is successfully ramped up to 100%, the imageType owner must call
@@ -298,7 +334,7 @@ imageType. Here is the ramp-up process:
     {
       "planName": "SparkJobRampupPlan",
       "description": "Ramping up the new release for spark job type",
-      "activePlan": "True",
+      "activatePlan": "True",
       "imageRampups": [
               {image_version:1.2.1, rampup_percentage: 70},
               {image_version:1.3, rampup_percentage: 30}

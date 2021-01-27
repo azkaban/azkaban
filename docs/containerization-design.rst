@@ -9,10 +9,14 @@ Azkaban Containerized Executions - Design Doc
 `Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_  ,
 `Abhishek Nath <https://github.com/orgs/azkaban/people/abhisheknath2011>`_
 
+.. contents:: Table of Contents
+  :local:
+  :depth: 2
+
 Background/Overview of Bare-Metal Architecture
 **********************************************
 
-.. image:: docs/figures/azkaban-architecture.png
+.. image:: figures/azkaban-architecture.png
 
 * Each Azkaban Cluster is made of a single web server, one or more “bare metal” executor servers and a mysql db to
   track history and state.
@@ -62,7 +66,7 @@ Issues with Bare Metal Executor Server Model
 
 Noisy-neighbor Issues (No resource Isolation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Azkaban’s Job Type model allows users to inject arbitrary code on the executor. It is easy to write a jobtype
+Azkaban’s Job Type model allows users to inject arbitrary code on the executor. It is easy to write a job
 that consumes an unfair share of resources (Compute, Memory or Storage) which may overwhelm the executor server;
 thereby causing noisy-neighbor issues.
 
@@ -114,7 +118,7 @@ Future Extensions
 High Level Design Summary
 *************************
 
-.. image:: docs/figures/containerized-high-level-arch.png
+.. image:: figures/containerized-high-level-arch.png
 
 1. Azkaban will follow a **Disposable Container** model. This implies that whenever a flow is to be launched, the
    **dispatch logic** will launch a fresh Pod and the pod is destroyed at the conclusion of the flow.
@@ -132,7 +136,7 @@ High Level Design Summary
 #. For this design iteration, the web server will stay outside of k8s. This does not preclude the need for the
    web server to talk to flow pods to fetch logs or send control commands (Such as Cancel). To enable this
    communication, an Envoy Proxy based Ingress Controller is introduced, which will allow the web server to
-   communicate with Flow Pods. There is no need to set node ports for flow pods.
+   communicate with Flow Pods. There is no need to directly expose flow pods outside of the Kubernetes cluster.
 #. In order to satisfy `key Requirement #3 <#Key-Requirements-for-Containerization>`_, the execution environment
    for flow pods will be constructed dynamically at run-time.
 
@@ -149,7 +153,7 @@ Design Details
 Image Management
 ----------------
 * Azkaban will rely on docker images to create execution environment for flows. In order to satisfy
-  `key Requirement #3 <#Key-Requirements-for-Containerization>`_, the final container image will be constructed
+  `key Requirement #3 <#Key-Requirements-for-Containerization>`_, the final pod will be constructed
   dynamically using init-containers [1]_ when the flow pod is launched. The required layers will be
   discovered as laid out in the `dispatch logic <#Dispatch-Logic>`_.
 * Azkaban execution environment is composed of the following types of dependencies:
@@ -174,9 +178,9 @@ Image Management
 
 .. code-block:: docker
 
-  FROM container-image-registry.corp.linkedin.com/rhel7-base-image/rhel7-base-image:0.16.9
+  FROM container-image-registry.mycorp.com/rhel7-base-image/rhel7-base-image:0.16.9
 
-  ARG KPJ_URL=https://artifactory.corp.linkedin.com/artifactory/DDS/com/linkedin/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
+  ARG KPJ_URL=https://artifactory.mycorp.com/kafka-push-job/kafka-push-job/0.2.61/kafka-push-job-0.2.61.jar
 
   RUN curl $KPJ_URL --output ~/kafka-push-job-0.2.61.jar
 
@@ -198,13 +202,14 @@ Admin API to:
 * Register new versions of already registered image types
 * Create/Update ramp-up plans for registered image versions
 
-For details regarding these API, please refer to :file:`docs/imageMgmtAPI.rst`
+For details regarding these API, please refer to :doc:`imageMgmtAPI.rst`
+
 
 
 Dispatch Logic
 --------------
 
-.. image:: docs/figures/dispatch_logic.png
+.. image:: figures/dispatch_logic.png
 
 1. Whenever a flow is ready to run (By schedule, by data triggers or manually through UI/API call),
    the AZ Web Server will mark the flow with the state: ``READY`` and insert the flow in the queue
@@ -241,19 +246,15 @@ Dispatch Logic
 
 Kubernetes Secrets
 ------------------
-Kubernetes secret will be used to package:
-
-* Credentials to access mysql database for flow/job status updates.
-* Azkaban Executor Server Certificate that will be used to fetch Hadoop Tokens before launching jobs on Yarn.
-* Azkaban Executor Kafka Event Certificate (Different cert) with ACLs to send events to the Kafka topic.
-* Azkaban Executor Kafka Logging Certificate with ACLs to dispatch logs from the running container to Kafka.
+Kubernetes secrets will be used to package any credentials such as passwords, certificates
+etc. that are required for internal services used by Flow Containers.
 
 Init Containers
 ---------------
 Init containers [1]_ is a Kubernetes concept. The role of init containers is to put together everything necessary
 to launch a fully functional flow container.
 
-.. image:: docs/figures/init-container-images.png
+.. image:: figures/init-container-images.png
 
 1. Kubernetes will run the init containers in a sequence before the control is given to the application container
    as shown in the picture.
@@ -303,8 +304,10 @@ Ingress Controller
 
 #. The ingress controller will provide necessary routing between web server and the flow pods running on
    kubernetes infrastructure. A key aspect of this architecture is that the routes between web server and flow pods
-   need to be updated dynamically at flow dispatch time and right after a flow finishes. The Ambassador Ingress
-   Controller enables this by providing APIs that are key to dynamically updating these routes. This is realized
+   need to be updated dynamically at flow dispatch time and right after a flow finishes.
+
+#. The Ambassador Ingress Controller essentially provides a dynamically configurable reverse proxy that
+   allows routing of request from the web server to the correct flow pod. This is realized
    through annotations [3]_.
 
 Logging in Executor
