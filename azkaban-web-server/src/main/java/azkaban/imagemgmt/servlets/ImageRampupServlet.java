@@ -150,8 +150,13 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
       final ImageRampupPlanRequestDTO imageRampupPlanRequest =
           this.converterUtils.convertToDTO(jsonPayload, ImageRampupPlanRequestDTO.class);
       // Check for required permission to invoke the API
-      final String imageType = JSONUtils
-          .extractTextFieldValueFromJsonString(jsonPayload, IMAGE_TYPE);
+      final String imageType = imageRampupPlanRequest.getImageTypeName();
+      if (imageType == null) {
+        log.error("Required field imageType is null. Must provide valid imageType to "
+            + "create rampup.");
+        throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST,
+            "Required field imageType is null. Must provide valid imageType to create rampup.");
+      }
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image rampup "
             + "plan for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
@@ -192,9 +197,10 @@ public class ImageRampupServlet extends LoginAbstractAzkabanServlet {
     try {
       final String imageType = templateVariableToValue.get(IMAGE_TYPE);
       if (imageType == null) {
-        log.error("Image type can't be null. Must provide valid image type to update rampup.");
-        throw new ImageMgmtValidationException(
-            "Image type can't be null. Must provide valid image type to update rampup.");
+        log.error("Required field imageType is null. Must provide valid imageType to "
+            + "update rampup.");
+        throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST,
+            "Required field imageType is null. Must provide valid imageType to update rampup.");
       }
       // Check for required permission to invoke the API
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {

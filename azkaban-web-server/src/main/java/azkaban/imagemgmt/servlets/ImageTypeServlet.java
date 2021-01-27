@@ -19,6 +19,7 @@ import azkaban.imagemgmt.dto.ImageTypeDTO;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
@@ -95,6 +96,12 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
           ImageTypeDTO.class);
       // Check for required permission to invoke the API
       final String imageType = genericImageType.getName();
+      if(imageType == null) {
+        log.info("Required field imageType is null. Must provide valid imageType to "
+            + "create/register image type.");
+        throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
+            + " null. Must provide valid imageType to create/register image type.");
+      }
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image type for "
             + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
