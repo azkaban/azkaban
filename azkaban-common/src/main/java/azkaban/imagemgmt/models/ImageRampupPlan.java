@@ -31,10 +31,10 @@ public class ImageRampupPlan extends BaseModel {
   // Indicates if the plan is active or not.
   private boolean active;
   // User specified flag to activate the plan
-  private boolean activatePlan;
+  private Boolean activatePlan;
   // This flag if set will forcefully activate the new plan by deactivating the existing active
   // rampup plan
-  private boolean forceActivatePlan;
+  private Boolean forceActivatePlan;
   // Rampups for the image type
   private List<ImageRampup> imageRampups;
 
@@ -70,19 +70,19 @@ public class ImageRampupPlan extends BaseModel {
     this.active = active;
   }
 
-  public boolean isActivatePlan() {
+  public Boolean getActivatePlan() {
     return activatePlan;
   }
 
-  public void setActivatePlan(boolean activatePlan) {
+  public void setActivatePlan(Boolean activatePlan) {
     this.activatePlan = activatePlan;
   }
 
-  public boolean isForceActivatePlan() {
+  public Boolean getForceActivatePlan() {
     return forceActivatePlan;
   }
 
-  public void setForceActivatePlan(boolean forceActivatePlan) {
+  public void setForceActivatePlan(Boolean forceActivatePlan) {
     this.forceActivatePlan = forceActivatePlan;
   }
 

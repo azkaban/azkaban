@@ -37,12 +37,12 @@ public class ImageRampupPlanRequestDTO extends BaseDTO {
   private String description;
   // This flag indicates if the plan needs to be activated or not
   @JsonProperty("activatePlan")
-  private boolean activatePlan;
+  private Boolean activatePlan;
 
   // This flag if set will forcefully activate the new plan by deactivating the existing active
   // rampup plan
   @JsonProperty("forceActivatePlan")
-  private boolean forceActivatePlan;
+  private Boolean forceActivatePlan;
 
   // Rampup details for the image type
   private List<ImageRampupDTO> imageRampups;
@@ -71,19 +71,19 @@ public class ImageRampupPlanRequestDTO extends BaseDTO {
     this.description = description;
   }
 
-  public boolean isActivatePlan() {
+  public Boolean getActivatePlan() {
     return this.activatePlan;
   }
 
-  public void setActivatePlan(final boolean activatePlan) {
+  public void setActivatePlan(final Boolean activatePlan) {
     this.activatePlan = activatePlan;
   }
 
-  public boolean isForceActivatePlan() {
+  public Boolean getForceActivatePlan() {
     return this.forceActivatePlan;
   }
 
-  public void setForceActivatePlan(final boolean forceActivatePlan) {
+  public void setForceActivatePlan(final Boolean forceActivatePlan) {
     this.forceActivatePlan = forceActivatePlan;
   }
 
