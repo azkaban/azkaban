@@ -402,6 +402,13 @@ How does the proposal solve Issues with Bare Metal Model?
    take most of the time in deployment.
 #. Flow executions can be made resumable-on-crash.
 
+De-bugging Azkaban with Kubernetes
+**********************************
+For Azkaban developers, debugging looks considerably different. It is extremely helpful to be able to remote
+connect with a Flow Pod. The blog:
+https://blog.christianposta.com/kubernetes/java-remote-debug-for-applications-running-in-kubernetes/
+mentions how to do so.
+
 Open Items
 **********
 1. Over-ride param for flows to specify a particular image version
