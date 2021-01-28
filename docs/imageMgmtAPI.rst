@@ -408,7 +408,7 @@ imageType. Here is the ramp-up process:
    `Update ramp-up plan API <#update-rampup-plan>`_.
 #. The following flowchart ties in the ramp-up process.
 
-.. image:: docs/figures/ImageMgmtFlowchart.jpeg
+.. image:: figures/ImageMgmtFlowchart.jpeg
 
 Image owner wants to Ramp-up/Ramp-down an image version
 *******************************************************
