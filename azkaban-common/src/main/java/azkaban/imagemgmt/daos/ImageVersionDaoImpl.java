@@ -205,6 +205,18 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   }
 
   @Override
+  public Optional<ImageVersion> getImageVersion(final String imageTypeName,
+      final String imageVersion) throws ImageMgmtException {
+    final ImageMetadataRequest imageMetadataRequest = ImageMetadataRequest.newBuilder()
+        .addParam(IMAGE_TYPE, imageTypeName)
+        .addParam(IMAGE_VERSION, imageVersion)
+        .build();
+    final List<ImageVersion> imageVersions = findImageVersions(imageMetadataRequest);
+    return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
+        : Optional.empty();
+  }
+
+  @Override
   public List<ImageVersion> getActiveVersionByImageTypes(final Set<String> imageTypes)
       throws ImageMgmtException {
     List<ImageVersion> imageVersions = new ArrayList<>();

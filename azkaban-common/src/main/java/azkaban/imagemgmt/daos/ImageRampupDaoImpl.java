@@ -173,22 +173,29 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         for (final ImageRampup imageRampupRequest : imageRampupPlan
             .getImageRampups()) {
           // The image version which is marked as NEW can be picked for rampup up
-          final Optional<ImageVersion> imageVersion = this.imageVersionDao
-              .getImageVersion(imageType.getName(),
-                  imageRampupRequest.getImageVersion(), State.NEW);
-          if (imageVersion.isPresent()) {
+          final Optional<ImageVersion> optionalImageVersion = this.imageVersionDao
+              .getImageVersion(imageType.getName(), imageRampupRequest.getImageVersion());
+          if (optionalImageVersion.isPresent()) {
+            ImageVersion imageVersion = optionalImageVersion.get();
+            if(!(State.NEW.equals(imageVersion.getState()) ||
+                State.ACTIVE.equals(imageVersion.getState()))) {
+              throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("The image "
+                      + "versions with state NEW, ACTIVE can be selected for rampup. The "
+                      + "image version: %s for image type: %s has version state: %s.",
+                  imageRampupRequest.getImageVersion(), imageType.getName(),
+                  imageVersion.getState().name()));
+            }
             // During rampup plan creation all the verions will be marked as EXPERIMENTAL by
             // default in the image_rampup table. During the course of rampup, the version can be
             // marked as either STABLE or UNSTABLE using uddate API
             transOperator.update(INSERT_IMAGE_RAMPUP_QUERY, rampupPlanId,
-                imageVersion.get().getId(), imageRampupRequest.getRampupPercentage(),
+                imageVersion.getId(), imageRampupRequest.getRampupPercentage(),
                 StabilityTag.EXPERIMENTAL.getTagName(), imageType.getCreatedBy(), currentTimestamp,
                 imageType.getModifiedBy(), currentTimestamp);
           } else {
             throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format("Unable to get the "
-                    + "image version: %s with version state: %s for image type: %s.  ",
-                imageRampupRequest.getImageVersion(), State.NEW.getStateValue(),
-                imageType.getName()));
+                    + "image version: %s for image type: %s.  ",
+                imageRampupRequest.getImageVersion(), imageType.getName()));
           }
         }
       }
