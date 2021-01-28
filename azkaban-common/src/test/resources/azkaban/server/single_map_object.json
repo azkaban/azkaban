@@ -1,0 +1,11 @@
+{
+  "action": "update",
+  "table": "ramp",
+  "conditions" : {
+    "rampId" : "dali"
+  },
+  "values": {
+    "rampStage": 2,
+    "lastUpdatedTime": 1566259437000
+  }
+}
