@@ -235,7 +235,17 @@ public class JobRunner extends EventHandler implements Runnable {
           }
         }
       }
+    } else if (this.pipelineLevel == 3) {
+      final ExecutableFlowBase parentFlow = findRootParentFlow(this.node.getParentFlow());
+      findAllEndingNodes(parentFlow, this.pipelineJobs);
     }
+  }
+
+  private ExecutableFlowBase findRootParentFlow(final ExecutableFlowBase node) {
+    if (node.getParentFlow() != null) {
+      return findRootParentFlow(node.getParentFlow());
+    }
+    return node;
   }
 
   private void findAllStartingNodes(final ExecutableFlowBase flow,
@@ -244,6 +254,18 @@ public class JobRunner extends EventHandler implements Runnable {
       final ExecutableNode node = flow.getExecutableNode(startingNode);
       if (node instanceof ExecutableFlowBase) {
         findAllStartingNodes((ExecutableFlowBase) node, pipelineJobs);
+      } else {
+        pipelineJobs.add(node.getNestedId());
+      }
+    }
+  }
+
+  private void findAllEndingNodes(final ExecutableFlowBase flow,
+      final Set<String> pipelineJobs) {
+    for (final String endingNode : flow.getEndNodes()) {
+      final ExecutableNode node = flow.getExecutableNode(endingNode);
+      if (node instanceof ExecutableFlowBase) {
+        findAllEndingNodes((ExecutableFlowBase) node, pipelineJobs);
       } else {
         pipelineJobs.add(node.getNestedId());
       }
