@@ -202,9 +202,12 @@ Admin API to:
 * Register new versions of already registered image types
 * Create/Update ramp-up plans for registered image versions
 
-For details regarding these API, please refer to :doc:`imageMgmtAPI.rst`
+For details regarding these API, please refer to :ref:`imageMgmtAPI.rst`
 
+To support these APIs, schema updates were done to the Database. Following is the ER diagram for the schema
+updates.
 
+.. image:: figures/ImageMgmtERDiagram.png
 
 Dispatch Logic
 --------------
