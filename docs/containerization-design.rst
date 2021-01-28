@@ -330,6 +330,52 @@ Logging in Executor
    a configurable directory path in HDFS. However, the scope of this is outside the containerization
    track. Also this will be beneficial to containerized as well as non-containerized Azkaban.
 
+Status Page
+-----------
+To get the latest snapshot of ramped-up versions of various images that come together in a flow pod, the
+status page has been enhanced to give a quick snapshot. Here is an example Json payload when the status page
+is invoked:
+
+.. code-block:: json
+
+  {
+    "version" : "3.92.0-153-g98f13c5b",
+    "pid" : "8177",
+    "installationPath" : "/export/apps/azkaban/azkaban-web-server/azkaban-web-server-01191713.01343_00783/lib/azkaban-web-server-3.92.0-153-g98f13c5b.jar",
+    "usedMemory" : 8429778512,
+    "xmx" : 17179869184,
+    "isDatabaseUp" : true,
+    "imageTypeVersionMap" : {
+      "azkaban-base" : {
+        "version" : "0.0.23",
+        "state" : "NEW",
+        "rampups" : [ {
+          "version" : "0.0.23",
+          "rampupPercentage" : 100,
+          "stabilityTag" : "EXPERIMENTAL"
+        } ],
+        "message" : "The version selection is based on random rampup."
+      },
+      "azkaban-config" : {
+        "version" : "0.0.801",
+        "state" : "ACTIVE",
+        "rampups" : [ ],
+        "message" : "The version selection is based on latest available active version."
+      },
+      "spark" : {
+        "version" : "0.0.19",
+        "state" : "ACTIVE",
+        "rampups" : [ {
+          "version" : "0.0.19",
+          "rampupPercentage" : 100,
+          "stabilityTag" : "EXPERIMENTAL"
+        } ],
+        "message" : "The version selection is based on random rampup."
+      }
+    },
+    "databaseUp" : true
+  }
+
 How does the proposal solve Issues with Bare Metal Model?
 *********************************************************
 1. Full Resource Isolation - 1 DAG per container.
