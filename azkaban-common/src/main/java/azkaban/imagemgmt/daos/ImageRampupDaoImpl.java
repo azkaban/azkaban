@@ -373,6 +373,15 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * ID map based on the version and id available in the image_rampup table.
        */
       if (!CollectionUtils.isEmpty(imageRampupPlan.getImageRampups())) {
+        // Existing rampup record is not empty as rampup plan can't be created with empty rampups.
+        // The size of rampup record to be updated must match with the size of the existing rampups.
+        if(existingImageRampupPlan.getImageRampups().size() !=
+            imageRampupPlan.getImageRampups().size()) {
+          throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Invalid rampup "
+              + "details. The size of rampup details to be updated (%s) is not matching with the "
+              + "size of the existing rampups (%s).", imageRampupPlan.getImageRampups().size(),
+              existingImageRampupPlan.getImageRampups().size()));
+        }
         final Map<String, Integer> versionIdKeyMap = new HashMap<>();
         for (final ImageRampup imageRampup : existingImageRampupPlan.getImageRampups()) {
           versionIdKeyMap.put(imageRampup.getImageVersion(), imageRampup.getId());
