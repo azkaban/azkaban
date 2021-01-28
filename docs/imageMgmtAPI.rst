@@ -13,7 +13,7 @@ Image Management API
 `Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_ ,
 `Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
 
-Ref: :doc:`containerization-design.rst`
+Ref: :ref:`containerization-design.rst`
 
 .. contents:: Table of Contents
   :local:
@@ -63,13 +63,13 @@ owner (these APIs will be provided later). ``GUEST`` role can have only read/get
 +-----------------+-------------+--------------------------------------+
 |   Field Name    |     Type    |            Description               |
 +=================+=============+======================================+
-|  imageType      |   String    |  Image Type Name (PK)                |
+|  ``imageType``  |   String    |  Image Type Name (PK)                |
 +-----------------+-------------+--------------------------------------+
-|  description    |   String    |  Description of the image type       |
+|  ``description``|   String    |  Description of the image type       |
 +-----------------+-------------+--------------------------------------+
-|  deployable     |   enum      |  IMAGE (docker image), JAR or TAR    |
+|  ``deployable`` |   enum      |  IMAGE (docker image), JAR or TAR    |
 +-----------------+-------------+--------------------------------------+
-|  ownerships     | JSON String | List of:                             |
+|  ``ownerships`` | JSON String | List of:                             |
 |                 |             | {"owner": <user-id>, "role": <role>} |
 |                 |             |                                      |
 |                 |             | Possible roles: ``ADMIN``,           |
@@ -104,16 +104,20 @@ Create (Register) new Image Version
 +-----------------+-------------+-------------------------------------------------+
 |   Field Name    |     Type    |            Description                          |
 +=================+=============+=================================================+
-|  imagePath      |   String    |                                                 |
+| ``imagePath``   |   String    | complete path of the image in the artifactory   |
+|                 |             | excluding the version string.                   |
 +-----------------+-------------+-------------------------------------------------+
-|  imageVersion   |   String    |                                                 |
+| ``imageVersion``|   String    | version string of the format: <major>.<minor>.  |
+|                 |             | <patch>                                         |
 +-----------------+-------------+-------------------------------------------------+
-|  description    |   String    |                                                 |
+| ``description`` |   String    |                                                 |
 +-----------------+-------------+-------------------------------------------------+
-|  versionState   |   String    | ``NEW``, ``ACTIVE``, ``UNSTABLE``,              |
-|                 |             | ``DEPRECATED``                                  |
+| ``versionState``|   String    | Current state of the image version: ``NEW``,    |
+|                 |             | ``ACTIVE``, ``UNSTABLE`` or ``DEPRECATED``.     |
 +-----------------+-------------+-------------------------------------------------+
-|  releaseTag     |   String    |                                                 |
+| ``releaseTag``  |   String    | Specific release associated with the version or |
+|                 |             | the release which triggered the creation of this|
+|                 |             | version                                         |
 +-----------------+-------------+-------------------------------------------------+
 
 Following is the description of the versionState fields:
@@ -135,6 +139,19 @@ Following is the description of the versionState fields:
      Status: 201 Created
      Header -> Location: /imageVersions/{id}
 
+**Example payload for create version request:**
+
+.. code-block:: json
+
+  {
+    "imagePath": "container-image-registry.mycorp.com/azkaban/jobtypes/spark-jobtype-image",
+    "imageVersion": "1.6.1",
+    "imageType": "spark",
+    "description": "spark new version",
+    "versionState": "NEW",
+    "releaseTag": "1.5.9"
+  }
+
 .. _get-image-version:
 
 Get Image Version Metadata
@@ -148,12 +165,12 @@ should populate the optional parameter: **versionState**.
 
 - **Method:** GET
 - **Request URL:** /imageVersions?imageType=<image_type>
-- **Request Body:**
+- **Request Parameters:**
 
 +-----------------+-------------+-------------------------------------------------+
 |   Field Name    |     Type    |            Description                          |
 +=================+=============+=================================================+
-| ``imageType``   | ``String``  |                                                 |
+| ``imageType``   | ``String``  | A registered imageType with Azkaban             |
 +-----------------+-------------+-------------------------------------------------+
 | ``imageVersion``| ``String``  | OPTIONAL Parameter.                             |
 +-----------------+-------------+-------------------------------------------------+
@@ -174,22 +191,54 @@ should populate the optional parameter: **versionState**.
      Returns the matching records
      Format: json
 
+**Example payload for Response:**
+
+.. code-block:: json
+
+  {
+    "id": 13,
+    "createdBy": "jakhani",
+    "createdOn": "2021-01-26 15:28:46.0",
+    "modifiedBy": "jakhani",
+    "modifiedOn": "2021-01-26 15:31:24.0",
+    "description": "Update to active version",
+    "releaseTag": "azkaban-docker_0.0.19",
+    "imageType": "azkaban-base",
+    "imagePath": "container-image-registry.mycorp.com/azkaban-docker/azkaban-base-image",
+    "imageVersion": "0.0.19",
+    "versionState": "ACTIVE"
+  }
+
 .. _update-image-version:
 
 Update Image Version Metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Update image version metadata such as state. Possible values for ``state`` are:
-``new``, ``active``, ``unstable`` or “deprecated” etc. The state will be updated during the process of ramp up.
+Update image version metadata such as state, path and description. Possible values for ``state`` are:
+``NEW``, ``ACTIVE``, ``UNSTABLE`` or ``DEPRECATED``. The state will be updated during the process of ramp up.
 
 - **Method:** PATCH
-- **Request URL:** /imageVersions/{imageType}
+- **Request URL:** /imageVersions/{versionId}
 - **Request Body:**
 
 +------------------+-------------+-----------------------------------------------------+
 |    Field Name    |     Type    |            Description                              |
 +==================+=============+=====================================================+
-| ``versionState`` | ``String``  | ``NEW``, ``ACTIVE``, ``UNSTABLE`` or ``DEPRECATED`` |
+| ``versionState`` | ``String``  | (REQUIRED) ``NEW``, ``ACTIVE``, ``UNSTABLE`` or     |
+|                  |             | ``DEPRECATED``                                      |
 +------------------+-------------+-----------------------------------------------------+
+| ``imageType``    | ``String``  | (REQUIRED) To validate if the versionId indeed      |
+|                  |             | corresponds to the registered imageType.            |
++------------------+-------------+-----------------------------------------------------+
+| ``imagePath``    |   String    | (OPTIONAL) Complete path of the image in the        |
+|                  |             | artifactory excluding the version string.           |
++------------------+-------------+-----------------------------------------------------+
+| ``imageVersion`` |   String    | (OPTIONAL) Version string of the format: <major>.   |
+|                  |             | <minor>.<patch>                                     |
++------------------+-------------+-----------------------------------------------------+
+| ``description``  |   String    | (OPTIONAL) Updated description string               |
++------------------+-------------+-----------------------------------------------------+
+
+
 
 .. _delete-image-version:
 
@@ -226,7 +275,8 @@ Create new Ramp-Up Plan
 | ``forceActivatePlan``| ``boolean`` | If ``True``, will mark this plan as Active and          |
 |                      |             | mark any existing active plan as: inactive.             |
 +----------------------+-------------+---------------------------------------------------------+
-| ``imageRampups``     |  ``List``   | List of rampup definitions as shown below               |
+| ``imageRampups``     |  ``List``   | List of `ramp-up definitions <#rampup-definition>`_ as  |
+|                      |             | shown below. Percentages must add up to 100.            |
 +----------------------+-------------+---------------------------------------------------------+
 
 **Ramp-up Definition json block:**
@@ -235,13 +285,29 @@ Create new Ramp-Up Plan
 
 .. code-block::
 
-     {
-      "imageVersion": "string",
-      "rampupPercentage": "int",
-      "stability_tag": "enum"   // [experimental/stable/unstable]
-      }
+   {
+      "imageVersion": <major>.<minor>.<patch>,
+      "rampupPercentage": int, // 0-100
+      "stabilityTag": enum  // Possible values: EXPERIMENTAL, STABLE or UNSTABLE
+   }
 
 Refer to `usage of this API <#use-case-image-rampup>`_ for implementing a Canary.
+
+**Example payload for create Image Ramp-up:**
+After the following API is called successfully, Azkaban will pick imageVersion: ``3.1.4``, 70% of the times,
+``3.1.2``, 20% of the times and ``3.1.1``, 10% of the times.
+
+.. code-block:: json
+
+  {
+    "planName": "Rampup plan for spark job",
+    "imageType": "spark",
+    "description": "Ramp up for spark job",
+    "activatePlan": true,
+    "imageRampups":[{"imageVersion": "3.1.4", "rampupPercentage": "70", "stabilityTag": "EXPERIMENTAL"},
+                    {"imageVersion": "3.1.2", "rampupPercentage": "20", "stabilityTag": "EXPERIMENTAL"},
+                    {"imageVersion": "3.1.1", "rampupPercentage": "10", "stabilityTag": "EXPERIMENTAL"}]
+  }
 
 .. _get-rampup-plan:
 
@@ -251,7 +317,7 @@ Returns an active ramp-up plan for the specified image type if there is one.
 
 - **Method:** GET
 - **Request URL:** /imageRampup
-- **Request Body:**
+- **Request Parameters:**
 
 +-----------------+-------------+---------------------------------------------------------+
 |   Field Name    |     Type    |            Description                                  |
@@ -263,13 +329,17 @@ Returns an active ramp-up plan for the specified image type if there is one.
 
 .. code-block::
 
-     GET /imageRampup?imageType=spark_job
+     GET /imageRampup?imageType=spark
 
 .. _update-rampup-plan:
 
 Update an existing Image Rampup Plan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Update the active rampup plan and rampup details for an image type.
+Update the active ramp-up plan and rampup details for an image type.
+
+Only 1 active ramp-up plan is allowed per imageType at any given time. Hence, if the API request
+has ``activatePlan`` set to false, the plan will be deactivated. If true, the plan is left active.
+Similarly, if ``forceActivatePlan`` is set to false, the plan will be deactivated.
 
 - **Method:** PATCH
 - **Request URL:** /imageRampup/{imageType}
@@ -286,6 +356,17 @@ Update the active rampup plan and rampup details for an image type.
 +----------------------+-------------+---------------------------------------------------------+
 | ``imageRampups``     |  ``List``   | List of `rampup definitions <#rampup-definition>`_      |
 +----------------------+-------------+---------------------------------------------------------+
+
+**Example payload for Update:**
+
+.. code-block:: json
+
+  {
+    "activatePlan": true,
+    "imageRampups":[{"imageVersion": "3.1.4", "rampupPercentage": "80", "stabilityTag": "STABLE"},
+                    {"imageVersion": "3.1.2", "rampupPercentage": "10", "stabilityTag": "STABLE"},
+                    {"imageVersion": "3.1.1", "rampupPercentage": "10", "stabilityTag": "STABLE"}]
+  }
 
 Use-Cases and Workflows
 -----------------------
@@ -326,23 +407,6 @@ imageType. Here is the ramp-up process:
    past 100% ramp-up, it is advised for the image owner to de-activate the ramp-up plan using
    `Update ramp-up plan API <#update-rampup-plan>`_.
 
-**Example:**
-
-.. code-block::
-
-  POST /image_rampup/sparkJob --body
-    {
-      "planName": "SparkJobRampupPlan",
-      "description": "Ramping up the new release for spark job type",
-      "activatePlan": "True",
-      "imageRampups": [
-              {image_version:1.2.1, rampup_percentage: 70},
-              {image_version:1.3, rampup_percentage: 30}
-      ]
-    }
-
-Once this ramp-up plan is posted, Azkaban will automatically pick version: ``1.3``, 30% of the times and ``1.2.1``,
-70% of the times.
 
 Image owner wants to Ramp-up/Ramp-down an image version
 *******************************************************
@@ -359,8 +423,8 @@ of the times and ``1.2.1``, 60% of the times.
   PATCH /image_rampup/SparkJobRampupPlan --body
     {
       "imageRampups": [
-              {image_version:1.2.1, rampup_percentage: 60},
-              {image_version:1.3, rampup_percentage: 40}
+              {image_version: "1.2.1", rampup_percentage: 60},
+              {image_version: "1.3", rampup_percentage: 40}
       ]
     }
 
