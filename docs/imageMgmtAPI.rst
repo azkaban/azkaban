@@ -406,7 +406,9 @@ imageType. Here is the ramp-up process:
    `Update Image Version API <#update-image-version>`_ to mark the fully ramped-up image as: **active**. Also,
    past 100% ramp-up, it is advised for the image owner to de-activate the ramp-up plan using
    `Update ramp-up plan API <#update-rampup-plan>`_.
+#. The following flowchart ties in the ramp-up process.
 
+.. image:: docs/figures/ImageMgmtFlowchart.jpeg
 
 Image owner wants to Ramp-up/Ramp-down an image version
 *******************************************************

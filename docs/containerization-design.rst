@@ -202,6 +202,10 @@ Admin API to:
 * Register new versions of already registered image types
 * Create/Update ramp-up plans for registered image versions
 
+Following flowchart illustrates the usage of these APIs:
+
+.. image:: figures/ImageMgmtFlowchart.jpeg
+
 For details regarding these API, please refer to :ref:`imageMgmtAPI.rst`
 
 To support these APIs, schema updates were done to the Database. Following is the ER diagram for the schema
@@ -235,7 +239,8 @@ Dispatch Logic
    * The needed versions Config are put together in alphabetical order in a JSON file and it constitutes the
      **Version-Set** that is used to create the execution environment. The Version Set constitutes all details
      required to reconstruct the execution environment if a repeat execution is required. If the version set
-     is not already existing in tables, is added to **version_set** table.
+     is not already existing in tables, is added to **version_set** table. The flowchart below illustrates this
+     process.
 
    * The version_set is a very useful concept. With the proposed changes, Azkaban will become a very dynamic
      environment where the list of binaries used to launch a flow will become very dynamic (Some combination of
@@ -246,6 +251,8 @@ Dispatch Logic
 
    * Finally, a YAML file is constructed on the fly for all parameters necessary to create the execution
      environment for the pod. This YAML is then used to launch the Pod in the kubernetes namespace.
+
+.. image:: figures/VersionSetUsageFlowchart.jpeg
 
 Kubernetes Secrets
 ------------------
