@@ -19,6 +19,8 @@ import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
 
 import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.daos.ImageRampupDao;
+import azkaban.imagemgmt.dto.BaseDTO.ValidationOnCreate;
+import azkaban.imagemgmt.dto.BaseDTO.ValidationOnUpdate;
 import azkaban.imagemgmt.dto.ImageRampupDTO;
 import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
 import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
@@ -66,7 +68,8 @@ public class ImageRampupServiceImpl implements ImageRampupService {
       throws ImageMgmtException {
     // input validation for ImageRampupPlanRequest
     final List<String> validationErrors = new ArrayList<>();
-    if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors)) {
+    if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors,
+        ValidationOnCreate.class)) {
       final String errors = validationErrors.stream().collect(Collectors.joining(","));
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
           + "input for creating image rampup plan. Error(s): [%s]", errors));
@@ -96,7 +99,8 @@ public class ImageRampupServiceImpl implements ImageRampupService {
 
     // input validation for image version create request
     final List<String> validationErrors = new ArrayList<>();
-    if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors)) {
+    if (!ValidatorUtils.validateObject(imageRampupPlanRequest, validationErrors,
+        ValidationOnUpdate.class)) {
       final String errors = validationErrors.stream().collect(Collectors.joining(","));
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
           + "input for updating image rampup plan. Error(s): [%s]", errors));
