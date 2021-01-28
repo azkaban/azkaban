@@ -150,6 +150,12 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           ImageVersionDTO.class);
       // Check for required permission to invoke the API
       final String imageType = imageVersion.getName();
+      if(imageType == null) {
+        log.info("Required field imageType is null. Must provide valid imageType to create image "
+            + "version.");
+        throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
+            + " null. Must provide valid imageType to create image version.");
+      }
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image version "
             + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
@@ -192,6 +198,12 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           ImageVersionDTO.class);
       // Check for required permission to invoke the API
       final String imageType = imageVersion.getName();
+      if(imageType == null) {
+        log.info("Required field imageType is null. Must provide valid imageType to update image "
+            + "version.");
+        throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
+            + " null. Must provide valid imageType to update image version.");
+      }
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
         log.debug(String.format("Invalid permission to update image version "
             + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));

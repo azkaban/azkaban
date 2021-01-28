@@ -27,11 +27,12 @@ public class ImageRampupPlanRequestDTO extends BaseDTO {
 
   // Represents the name of the ramp up plan
   @JsonProperty("planName")
-  @NotBlank(message = "PlanName cannot be blank.")
+  @NotBlank(message = "PlanName cannot be blank.", groups = ValidationOnCreate.class)
   private String planName;
   // Represents the name of the image type
   @JsonProperty("imageType")
-  @NotBlank(message = "ImageType cannot be blank.")
+  @NotBlank(message = "ImageType cannot be blank.", groups = {ValidationOnCreate.class,
+      ValidationOnUpdate.class})
   private String imageTypeName;
   // Rampup plan description
   private String description;
