@@ -370,27 +370,23 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
 
     final Credentials cred = new Credentials();
-    fetchMetaStoreToken(userToProxyFQN, userToProxy, props, logger, cred);
 
     try {
-      fetchJHSToken(userToProxyFQN, userToProxy, props, logger, cred);
+      fetchAllHadoopTokens(userToProxyFQN, userToProxy, props, logger, cred);
 
       getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          getToken(userToProxyFQN, userToProxy);
+          getCustomTokens(userToProxyFQN, userToProxy);
           return null;
         }
 
-        private void getToken(final String userToProxyFQN, final String userToProxy)
+        private void getCustomTokens(final String userToProxyFQN, final String userToProxy)
             throws InterruptedException, IOException, HadoopSecurityManagerException {
           logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN +
               ": " + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
 
           registerAllCustomCredentials(userToProxy, props, cred, logger);
-
-          fetchNameNodeToken(userToProxyFQN, userToProxy, props, logger, cred);
-          fetchJobTrackerToken(userToProxyFQN, userToProxy, props, logger, cred);
         }
       });
 
@@ -636,8 +632,8 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   }
 
   /**
-   * This method is used to fetch delegation token for JHS and add it in cred object.
-   *
+   * This method is used to fetch all Hadoop tokens which includes NameNode, JHS, JT and
+   * Metastore and add it in cred object.
    * @param userToProxyFQN
    * @param userToProxy
    * @param props
@@ -646,53 +642,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
    * @throws HadoopSecurityManagerException
    * @throws IOException
    */
-  protected abstract void fetchJHSToken(final String userToProxyFQN, final String userToProxy,
+  protected abstract void fetchAllHadoopTokens(final String userToProxyFQN, final String userToProxy,
       final Props props, final Logger logger, final Credentials cred)
-      throws HadoopSecurityManagerException, IOException;
-
-  /**
-   * This method is used to fetch delegation token for MetaStore and add it in cred object.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
-   * @param props
-   * @param logger
-   * @param cred
-   * @throws HadoopSecurityManagerException
-   */
-  protected abstract void fetchMetaStoreToken(final String userToProxyFQN,
-      final String userToProxy, final Props props, final Logger logger,
-      final Credentials cred) throws HadoopSecurityManagerException;
-
-  /**
-   * This method is used to fetch delegation token for NameNode and add it in cred object.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
-   * @param props
-   * @param logger
-   * @param cred
-   * @throws IOException
-   * @throws HadoopSecurityManagerException
-   */
-  protected abstract void fetchNameNodeToken(final String userToProxyFQN,
-      final String userToProxy, final Props props, final Logger logger,
-      final Credentials cred) throws IOException, HadoopSecurityManagerException;
-
-  /**
-   * This method is used to fetch delegation token for JT and add it in cred object.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
-   * @param props
-   * @param logger
-   * @param cred
-   * @throws IOException
-   * @throws InterruptedException
-   * @throws HadoopSecurityManagerException
-   */
-  protected abstract void fetchJobTrackerToken(final String userToProxyFQN,
-      final String userToProxy, final Props props,
-      final Logger logger, final Credentials cred)
-      throws IOException, InterruptedException, HadoopSecurityManagerException;
+      throws HadoopSecurityManagerException, IOException, InterruptedException;
 }

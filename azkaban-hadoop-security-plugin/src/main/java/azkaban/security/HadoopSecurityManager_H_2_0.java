@@ -26,6 +26,7 @@ import azkaban.utils.UndefinedPropertyException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -182,8 +183,19 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
     return hcatToken;
   }
 
-  @Override
-  protected void fetchJobTrackerToken(final String userToProxyFQN,
+  /**
+   * This method is used to fetch delegation token for JT and add it in cred object.
+   *
+   * @param userToProxyFQN
+   * @param userToProxy
+   * @param props
+   * @param logger
+   * @param cred
+   * @throws IOException
+   * @throws InterruptedException
+   * @throws HadoopSecurityManagerException
+   */
+  private void fetchJobTrackerToken(final String userToProxyFQN,
       final String userToProxy, final Props props,
       final Logger logger, final Credentials cred)
       throws IOException, InterruptedException, HadoopSecurityManagerException {
@@ -211,7 +223,33 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
   }
 
   @Override
-  protected void fetchNameNodeToken(final String userToProxyFQN,
+  protected void fetchAllHadoopTokens(final String userToProxyFQN,
+      final String userToProxy, final Props props,
+      final Logger logger,
+      final Credentials cred) throws IOException, InterruptedException,
+      HadoopSecurityManagerException {
+    logger.info("Fetching all hadoop tokens.");
+    fetchMetaStoreToken(userToProxyFQN, userToProxy, props, logger, cred);
+    fetchJHSToken(userToProxyFQN, userToProxy, props, logger, cred);
+    getProxiedUser(userToProxyFQN).doAs((PrivilegedExceptionAction<Void>) () -> {
+      fetchNameNodeToken(userToProxyFQN, userToProxy, props, logger, cred);
+      fetchJobTrackerToken(userToProxyFQN, userToProxy, props, logger, cred);
+      return null;
+    });
+  }
+
+  /**
+   * This method is used to fetch delegation token for NameNode and add it in cred object.
+   *
+   * @param userToProxyFQN
+   * @param userToProxy
+   * @param props
+   * @param logger
+   * @param cred
+   * @throws IOException
+   * @throws HadoopSecurityManagerException
+   */
+  private void fetchNameNodeToken(final String userToProxyFQN,
       final String userToProxy, final Props props,
       final Logger logger,
       final Credentials cred) throws IOException, HadoopSecurityManagerException {
@@ -250,7 +288,6 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
    * @throws IOException
    * @throws HadoopSecurityManagerException
    */
-
   private void fetchNameNodeTokenInternal(final String renewer, final Credentials cred,
       final String userToProxyFQN, final URI uri)
       throws IOException, HadoopSecurityManagerException {
@@ -285,8 +322,18 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
     }
   }
 
-  @Override
-  protected void fetchJHSToken(final String userToProxyFQN,
+  /**
+   * This method is used to fetch delegation token for JHS and add it in cred object.
+   *
+   * @param userToProxyFQN
+   * @param userToProxy
+   * @param props
+   * @param logger
+   * @param cred
+   * @throws HadoopSecurityManagerException
+   * @throws IOException
+   */
+  private void fetchJHSToken(final String userToProxyFQN,
       final String userToProxy, final Props props, final Logger logger, final Credentials cred)
       throws HadoopSecurityManagerException, IOException {
     if (props.getBoolean(OBTAIN_JOBHISTORYSERVER_TOKEN, false)) {
@@ -328,8 +375,17 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
     }
   }
 
-  @Override
-  protected void fetchMetaStoreToken(final String userToProxyFQN,
+  /**
+   * This method is used to fetch delegation token for MetaStore and add it in cred object.
+   *
+   * @param userToProxyFQN
+   * @param userToProxy
+   * @param props
+   * @param logger
+   * @param cred
+   * @throws HadoopSecurityManagerException
+   */
+  private void fetchMetaStoreToken(final String userToProxyFQN,
       final String userToProxy, final Props props, final Logger logger,
       final Credentials cred)
       throws HadoopSecurityManagerException {
