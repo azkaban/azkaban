@@ -1,2 +1,2 @@
 type=test
-dependencies=pipelineEmbeddedFlow3
+dependencies=pipelineEmbeddedFlow3,pipelineEmbeddedFlow4

@@ -162,12 +162,14 @@
                         class="form-control form-control-auto input-sm">
                   <option value="1">Level 1</option>
                   <option value="2">Level 2</option>
+                  <option value="3">Level 3</option>
                 </select>
                 <span class="help-block">
                         Pipeline the flow, so the current execution will not be overrun.
                         <ul>
                           <li>Level 1: block job A until the previous flow job A has completed.</li>
-                          <li>Level 2: block job A until the previous flow job A's children have completed.</li>
+                          <li>Level 2: block job A until the previous flow job A's immediate children have completed.</li>
+                          <li>Level 3: block all jobs until the previous flow has completed.</li>
                           </li>
                       </span>
               </div>
