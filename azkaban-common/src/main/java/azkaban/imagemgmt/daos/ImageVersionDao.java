@@ -60,6 +60,12 @@ public interface ImageVersionDao {
   public Optional<ImageVersion> getImageVersion(String imageTypeName, String imageVersion,
       State versionState) throws ImageMgmtException;
 
+  /**
+   * Returns active image versions for the given image types.
+   * @param imageTypes
+   * @return List<ImageVersion>
+   * @throws ImageMgmtException
+   */
   public List<ImageVersion> getActiveVersionByImageTypes(Set<String> imageTypes)
       throws ImageMgmtException;
 
@@ -71,4 +77,14 @@ public interface ImageVersionDao {
    */
   public void updateImageVersion(ImageVersion imageVersionRequest)
       throws ImageMgmtException;
+
+  /**
+   * Gets image version based on image type and version.
+   * @param imageTypeName
+   * @param imageVersion
+   * @return Optional<ImageVersion>
+   * @throws ImageMgmtException
+   */
+  public Optional<ImageVersion> getImageVersion(final String imageTypeName,
+      final String imageVersion) throws ImageMgmtException;
 }

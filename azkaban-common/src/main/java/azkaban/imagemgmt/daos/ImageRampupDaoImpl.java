@@ -173,22 +173,29 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         for (final ImageRampup imageRampupRequest : imageRampupPlan
             .getImageRampups()) {
           // The image version which is marked as NEW can be picked for rampup up
-          final Optional<ImageVersion> imageVersion = this.imageVersionDao
-              .getImageVersion(imageType.getName(),
-                  imageRampupRequest.getImageVersion(), State.NEW);
-          if (imageVersion.isPresent()) {
+          final Optional<ImageVersion> optionalImageVersion = this.imageVersionDao
+              .getImageVersion(imageType.getName(), imageRampupRequest.getImageVersion());
+          if (optionalImageVersion.isPresent()) {
+            ImageVersion imageVersion = optionalImageVersion.get();
+            if(!(State.NEW.equals(imageVersion.getState()) ||
+                State.ACTIVE.equals(imageVersion.getState()))) {
+              throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("The image "
+                      + "versions with state NEW, ACTIVE can be selected for rampup. The "
+                      + "image version: %s for image type: %s has version state: %s.",
+                  imageRampupRequest.getImageVersion(), imageType.getName(),
+                  imageVersion.getState().name()));
+            }
             // During rampup plan creation all the verions will be marked as EXPERIMENTAL by
             // default in the image_rampup table. During the course of rampup, the version can be
             // marked as either STABLE or UNSTABLE using uddate API
             transOperator.update(INSERT_IMAGE_RAMPUP_QUERY, rampupPlanId,
-                imageVersion.get().getId(), imageRampupRequest.getRampupPercentage(),
+                imageVersion.getId(), imageRampupRequest.getRampupPercentage(),
                 StabilityTag.EXPERIMENTAL.getTagName(), imageType.getCreatedBy(), currentTimestamp,
                 imageType.getModifiedBy(), currentTimestamp);
           } else {
             throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format("Unable to get the "
-                    + "image version: %s with version state: %s for image type: %s.  ",
-                imageRampupRequest.getImageVersion(), State.NEW.getStateValue(),
-                imageType.getName()));
+                    + "image version: %s for image type: %s.  ",
+                imageRampupRequest.getImageVersion(), imageType.getName()));
           }
         }
       }
@@ -366,6 +373,15 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * ID map based on the version and id available in the image_rampup table.
        */
       if (!CollectionUtils.isEmpty(imageRampupPlan.getImageRampups())) {
+        // Existing rampup record is not empty as rampup plan can't be created with empty rampups.
+        // The size of rampup record to be updated must match with the size of the existing rampups.
+        if(existingImageRampupPlan.getImageRampups().size() !=
+            imageRampupPlan.getImageRampups().size()) {
+          throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Invalid rampup "
+              + "details. The size of rampup details to be updated (%s) is not matching with the "
+              + "size of the existing rampups (%s).", imageRampupPlan.getImageRampups().size(),
+              existingImageRampupPlan.getImageRampups().size()));
+        }
         final Map<String, Integer> versionIdKeyMap = new HashMap<>();
         for (final ImageRampup imageRampup : existingImageRampupPlan.getImageRampups()) {
           versionIdKeyMap.put(imageRampup.getImageVersion(), imageRampup.getId());
