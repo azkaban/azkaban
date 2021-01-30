@@ -253,9 +253,10 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       final String userToProxy, final Props props,
       final Logger logger,
       final Credentials cred) throws IOException, HadoopSecurityManagerException {
+    logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN +
+        ": " + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
     if (props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN, false)) {
       final String renewer = getMRTokenRenewerInternal(new JobConf()).toString();
-
       // Get the tokens name node
       fetchNameNodeTokenInternal(renewer, cred, userToProxyFQN, null);
       Optional<String[]> otherNameNodes = getOtherNameNodes(props);
