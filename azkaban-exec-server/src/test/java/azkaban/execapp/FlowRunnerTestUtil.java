@@ -33,6 +33,7 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.metrics.CommonMetrics;
@@ -258,6 +259,7 @@ public class FlowRunnerTestUtil {
     exFlow.setExecutionId(exId);
     if (options != null) {
       exFlow.setExecutionOptions(options);
+      FlowUtils.applyDisabledJobs(options.getDisabledJobs(), exFlow);
     }
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
     this.executorLoader.uploadExecutableFlow(exFlow);

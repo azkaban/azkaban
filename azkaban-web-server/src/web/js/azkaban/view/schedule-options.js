@@ -64,8 +64,7 @@ azkaban.ScheduleContextMenu = Backbone.View.extend({
       evt.currentTarget.expanded = false;
       $('#scheduleEnableArrow').removeClass('collapse');
       $('#scheduleEnableSub').hide();
-    }
-    else {
+    } else {
       evt.currentTarget.expanded = true;
       $('#scheduleEnableArrow').addClass('collapse');
       $('#scheduleEnableSub').show();
@@ -81,8 +80,7 @@ azkaban.ScheduleContextMenu = Backbone.View.extend({
       evt.currentTarget.expanded = false;
       $('#scheduleDisableArrow').removeClass('collapse');
       $('#scheduleDisableSub').hide();
-    }
-    else {
+    } else {
       evt.currentTarget.expanded = true;
       $('#scheduleDisableArrow').addClass('collapse');
       $('#scheduleDisableSub').show();
@@ -145,19 +143,16 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
           if (data.action == "redirect") {
             window.location = contextURL + "/manager?project=" + projectName
                 + "&flow=" + flowName;
-          }
-          else {
+          } else {
             $("#success_message").text("Flow " + projectName + "." + flowName
                 + " scheduled!");
             window.location = contextURL + "/manager?project=" + projectName
                 + "&flow=" + flowName;
           }
-        }
-        else {
+        } else {
           if (data.action == "login") {
             window.location = "";
-          }
-          else {
+          } else {
             $("#errorMsg").text("ERROR: " + data.message);
             $("#errorMsg").slideDown("fast");
           }
@@ -253,8 +248,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
         function (data) {
           if (data.error) {
             alert(data.error);
-          }
-          else {
+          } else {
             if (data.successEmails) {
               $('#scheduleSuccessEmails').val(data.successEmails.join());
             }
@@ -392,8 +386,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
         function (data) {
           if (data.error) {
             alert(data.error);
-          }
-          else {
+          } else {
             window.location = scheduleURL;
           }
         },
@@ -481,18 +474,15 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
         + flowName + "&job=" + jobid;
     if (action == "open") {
       window.location.href = requestURL;
-    }
-    else if (action == "openwindow") {
+    } else if (action == "openwindow") {
       window.open(requestURL);
-    }
-    else if (action == "disable") {
+    } else if (action == "disable") {
       var disabled = flowData.get("disabled");
 
       disabled[jobid] = true;
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "disableAll") {
+    } else if (action == "disableAll") {
       var disabled = flowData.get("disabled");
 
       var nodes = flowData.get("nodes");
@@ -502,8 +492,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "disableParents") {
+    } else if (action == "disableParents") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
       var inNodes = nodes[jobid].inNodes;
@@ -516,8 +505,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "disableChildren") {
+    } else if (action == "disableChildren") {
       var disabledMap = flowData.get("disabled");
       var nodes = flowData.get("nodes");
       var outNodes = nodes[jobid].outNodes;
@@ -530,8 +518,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabledMap});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "disableAncestors") {
+    } else if (action == "disableAncestors") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
 
@@ -539,8 +526,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "disableDescendents") {
+    } else if (action == "disableDescendents") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
 
@@ -548,20 +534,17 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "enable") {
+    } else if (action == "enable") {
       var disabled = flowData.get("disabled");
 
       disabled[jobid] = false;
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "enableAll") {
+    } else if (action == "enableAll") {
       disabled = {};
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "enableParents") {
+    } else if (action == "enableParents") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
       var inNodes = nodes[jobid].inNodes;
@@ -574,8 +557,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "enableChildren") {
+    } else if (action == "enableChildren") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
       var outNodes = nodes[jobid].outNodes;
@@ -588,8 +570,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "enableAncestors") {
+    } else if (action == "enableAncestors") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
 
@@ -597,8 +578,7 @@ azkaban.AdvancedScheduleView = Backbone.View.extend({
 
       flowData.set({disabled: disabled});
       flowData.trigger("change:disabled");
-    }
-    else if (action == "enableDescendents") {
+    } else if (action == "enableDescendents") {
       var disabled = flowData.get("disabled");
       var nodes = flowData.get("nodes");
 

@@ -234,12 +234,14 @@ executing, several options can be set.
 + **Pipeline** runs the the flow in a manner that the new execution will
   not overrun the concurrent execution.
 
-    + Level 1: blocks executing **job A** until the the previous flow's **job A**
+    + Level 1: blocks executing **job A** until the previous flow's **job A**
       has completed.
-    + Level 2: blocks executing **job A** until the the children of the
-      previous flow's **job A** has completed. This is useful if you need to run
-      your flows a few steps behind an already executin flow.
-
+    + Level 2: blocks executing **job A** until the immediate children of the
+      previous flow's **job A** have completed. This is useful if you need to run
+      your flows two steps behind an already executing flow, as opposed to Level 1 which executes
+      one step behind. If the child node is a sub-flow, Level 2 only blocks on the immediate
+      start node(s) inside the sub-flow. This does **not** wait for the entire sub-flow.
+    + Level 3: blocks all jobs until the previous flow has completed.
 
 .. image:: figures/executeflowconcurrent.png
 

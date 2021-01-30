@@ -18,10 +18,12 @@ package azkaban.execapp;
 
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
+import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
+import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -318,12 +320,14 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
 
     InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobA")
         .succeedJob();
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow4:innerJobA").succeedJob();
     assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobA",
         Status.SUCCEEDED);
     assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobB",
         Status.RUNNING);
     assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobC",
         Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow4:innerJobA", Status.SUCCEEDED);
     assertStatus(pipelineFlow, "pipeline2", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:pipeline2").succeedJob();
@@ -362,6 +366,7 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerFlow",
         Status.SUCCEEDED);
     assertStatus(previousFlow, "pipelineEmbeddedFlow3", Status.SUCCEEDED);
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow4:innerFlow2").succeedJob();
     assertStatus(previousFlow, "pipeline4", Status.RUNNING);
     assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobC",
         Status.RUNNING);
@@ -395,6 +400,8 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerFlow",
         Status.SUCCEEDED);
     assertStatus(pipelineFlow, "pipelineEmbeddedFlow3", Status.SUCCEEDED);
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow4:innerJobA").succeedJob();
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow4:innerFlow2").succeedJob();
     assertStatus(pipelineFlow, "pipeline4", Status.RUNNING);
 
     InteractiveTestJob.getTestJob("pipe:pipeline4").succeedJob();
@@ -483,4 +490,239 @@ public class FlowRunnerPipelineTest extends FlowRunnerTestBase {
     assertThreadShutDown(pipelineRunner);
   }
 
+  @Test
+  public void testBasicPipelineLevel3RunWithDisabledSubFlows() throws Exception {
+    // disable either sub-flow in each execution: pipelineEmbeddedFlow4 or pipelineEmbeddedFlow3
+
+    final ExecutionOptions prevOptions = new ExecutionOptions();
+    prevOptions.setDisabledJobs(Arrays.asList(new DisabledJob("pipelineEmbeddedFlow4")));
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("pipelineFlow", "prev",
+        prevOptions);
+
+    final ExecutionOptions pipeOptions = new ExecutionOptions();
+    pipeOptions.setPipelineExecutionId(previousRunner.getExecutableFlow()
+        .getExecutionId());
+    pipeOptions.setPipelineLevel(3);
+    pipeOptions.setDisabledJobs(Arrays.asList(new DisabledJob("pipelineEmbeddedFlow3")));
+    final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
+    final FlowRunner pipelineRunner = this.testUtil
+        .createFromFlowMap("pipelineFlow", "pipe", pipeOptions);
+    pipelineRunner.setFlowWatcher(watcher);
+
+    // 1. START FLOW
+    final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
+    final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+    FlowRunnerTestUtil.startThread(previousRunner);
+    FlowRunnerTestUtil.startThread(pipelineRunner);
+
+    assertStatus(previousFlow, "pipeline1", Status.RUNNING);
+    assertStatus(pipelineFlow, "pipeline1", Status.QUEUED);
+
+    InteractiveTestJob.getTestJob("prev:pipeline1").succeedJob();
+    InteractiveTestJob.getTestJob("prev:pipeline2").succeedJob();
+
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3", Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobA",
+        Status.RUNNING);
+
+    // this should still be queued because some jobs are still running in previousFlow
+    assertStatus(pipelineFlow, "pipeline1", Status.QUEUED);
+  }
+
+  @Test
+  public void testBasicPipelineLevel3RunWithMoreDisabledJobs() throws Exception {
+    // disable either sub-flow in each execution: pipelineEmbeddedFlow4 or pipelineEmbeddedFlow3
+    // also disable pipeline1 & pipeline2 in both flows so that the first job that should be blocked
+    // is actually inside a sub-flow
+
+    final ExecutionOptions prevOptions = new ExecutionOptions();
+    prevOptions.setDisabledJobs(Arrays.asList(new DisabledJob("pipelineEmbeddedFlow4"),
+        new DisabledJob("pipeline1"), new DisabledJob("pipeline2"), new DisabledJob("pipelineFlow")
+    ));
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("pipelineFlow", "prev",
+        prevOptions);
+
+    final ExecutionOptions pipeOptions = new ExecutionOptions();
+    pipeOptions.setPipelineExecutionId(previousRunner.getExecutableFlow()
+        .getExecutionId());
+    pipeOptions.setPipelineLevel(3);
+    pipeOptions.setDisabledJobs(Arrays.asList(new DisabledJob("pipelineEmbeddedFlow3"),
+        new DisabledJob("pipeline1"), new DisabledJob("pipeline2")));
+    final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
+    final FlowRunner pipelineRunner = this.testUtil
+        .createFromFlowMap("pipelineFlow", "pipe", pipeOptions);
+    pipelineRunner.setFlowWatcher(watcher);
+
+    // 1. START FLOW
+    final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
+    final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+    FlowRunnerTestUtil.startThread(previousRunner);
+    FlowRunnerTestUtil.startThread(pipelineRunner);
+
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3", Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobA",
+        Status.RUNNING);
+    // flow nodes that are just wrappers are immediately started even if there would be something
+    // to block basically
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow4", Status.RUNNING);
+    // this should still be queued because some jobs are still running in previousFlow
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow4:innerJobA", Status.QUEUED);
+
+    // succeed prev until pipeline4
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobA").succeedJob();
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobB").succeedJob();
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobC").succeedJob();
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerFlow").succeedJob();
+
+    // check that pipeline job is still queued
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow4:innerJobA", Status.QUEUED);
+
+    // now finish the last pending job
+    InteractiveTestJob.getTestJob("prev:pipeline4").succeedJob();
+
+    // pipelineFlow was disabled, so nothing to do manually
+    // InteractiveTestJob.getTestJob("prev:pipelineFlow").succeedJob();
+
+    assertStatus(previousFlow, "pipelineFlow", Status.SKIPPED);
+    assertFlowStatus(previousFlow, Status.SUCCEEDED);
+    assertThreadShutDown(previousRunner);
+
+    // now this job should've been unblocked
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow4:innerJobA", Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow4:innerJobA").succeedJob();
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow4:innerFlow2").succeedJob();
+    InteractiveTestJob.getTestJob("pipe:pipeline4").succeedJob();
+    InteractiveTestJob.getTestJob("pipe:pipelineFlow").succeedJob();
+    assertStatus(pipelineFlow, "pipelineFlow", Status.SUCCEEDED);
+    assertFlowStatus(pipelineFlow, Status.SUCCEEDED);
+    assertThreadShutDown(pipelineRunner);
+  }
+
+  @Test
+  public void testBasicPipelineLevel3Run() throws Exception {
+    final FlowRunner previousRunner = this.testUtil.createFromFlowMap("pipelineFlow", "prev");
+
+    final ExecutionOptions options = new ExecutionOptions();
+    options.setPipelineExecutionId(previousRunner.getExecutableFlow()
+        .getExecutionId());
+    options.setPipelineLevel(3);
+    final FlowWatcher watcher = new LocalFlowWatcher(previousRunner);
+    final FlowRunner pipelineRunner = this.testUtil
+        .createFromFlowMap("pipelineFlow", "pipe", options);
+    pipelineRunner.setFlowWatcher(watcher);
+
+    // 1. START FLOW
+    final ExecutableFlow pipelineFlow = pipelineRunner.getExecutableFlow();
+    final ExecutableFlow previousFlow = previousRunner.getExecutableFlow();
+
+    FlowRunnerTestUtil.startThread(previousRunner);
+    assertStatus(previousFlow, "pipeline1", Status.RUNNING);
+
+    FlowRunnerTestUtil.startThread(pipelineRunner);
+    assertStatus(pipelineFlow, "pipeline1", Status.QUEUED);
+
+    InteractiveTestJob.getTestJob("prev:pipeline1").succeedJob();
+    assertStatus(previousFlow, "pipeline1", Status.SUCCEEDED);
+    assertStatus(previousFlow, "pipeline2", Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("prev:pipeline2").succeedJob();
+    assertStatus(previousFlow, "pipeline2", Status.SUCCEEDED);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3", Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobA",
+        Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobA")
+        .succeedJob();
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow4:innerJobA").succeedJob();
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobA",
+        Status.SUCCEEDED);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobB",
+        Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobC",
+        Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow4:innerJobA", Status.SUCCEEDED);
+
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobB")
+        .succeedJob();
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobB",
+        Status.SUCCEEDED);
+
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerJobC")
+        .succeedJob();
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerFlow",
+        Status.RUNNING);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerJobC",
+        Status.SUCCEEDED);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerFlow",
+        Status.RUNNING);
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow3:innerFlow")
+        .succeedJob();
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3:innerFlow",
+        Status.SUCCEEDED);
+    assertStatus(previousFlow, "pipelineEmbeddedFlow3", Status.SUCCEEDED);
+    InteractiveTestJob.getTestJob("prev:pipelineEmbeddedFlow4:innerFlow2").succeedJob();
+    assertStatus(previousFlow, "pipeline4", Status.RUNNING);
+    InteractiveTestJob.getTestJob("prev:pipeline4").succeedJob();
+    assertStatus(previousFlow, "pipeline4", Status.SUCCEEDED);
+    assertStatus(previousFlow, "pipelineFlow", Status.RUNNING);
+
+    // Should still be queued until the last job in the previous flow has finished.
+    assertStatus(pipelineFlow, "pipeline1", Status.QUEUED);
+
+    InteractiveTestJob.getTestJob("prev:pipelineFlow").succeedJob();
+    assertStatus(previousFlow, "pipelineFlow", Status.SUCCEEDED);
+    assertFlowStatus(previousFlow, Status.SUCCEEDED);
+    assertThreadShutDown(previousRunner);
+
+    assertStatus(pipelineFlow, "pipeline1", Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipeline1").succeedJob();
+    assertStatus(pipelineFlow, "pipeline1", Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipeline2", Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipeline2").succeedJob();
+    assertStatus(pipelineFlow, "pipeline2", Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3", Status.RUNNING);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobA",
+        Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow3:innerJobA")
+        .succeedJob();
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobA",
+        Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobC",
+        Status.RUNNING);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobB",
+        Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow3:innerJobB")
+        .succeedJob();
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow3:innerJobC")
+        .succeedJob();
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobC",
+        Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerJobB",
+        Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerFlow",
+        Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow3:innerFlow")
+        .succeedJob();
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3:innerFlow",
+        Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipelineEmbeddedFlow3", Status.SUCCEEDED);
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow4:innerJobA").succeedJob();
+    InteractiveTestJob.getTestJob("pipe:pipelineEmbeddedFlow4:innerFlow2").succeedJob();
+    assertStatus(pipelineFlow, "pipeline4", Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipeline4").succeedJob();
+    assertStatus(pipelineFlow, "pipeline4", Status.SUCCEEDED);
+    assertStatus(pipelineFlow, "pipelineFlow", Status.RUNNING);
+
+    InteractiveTestJob.getTestJob("pipe:pipelineFlow").succeedJob();
+    assertStatus(pipelineFlow, "pipelineFlow", Status.SUCCEEDED);
+    assertFlowStatus(pipelineFlow, Status.SUCCEEDED);
+    assertThreadShutDown(pipelineRunner);
+  }
 }
