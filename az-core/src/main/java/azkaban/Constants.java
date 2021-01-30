@@ -407,6 +407,11 @@ public class Constants {
     public static final String OAUTH_REDIRECT_URI_KEY = "oauth.redirect_uri";  // how OAuth calls us back, e.g.:
     //    oauth.redirect_uri=http://localhost:8081/?action=oauth_callback
 
+    // By default job props always win over flow override props.
+    // If this flag is set to true, then override props override also override existing job props.
+    public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
+        "executor.props.resolve.overrideExisting.enabled";
+
     public static final String EXECUTOR_CONNECTION_TLS_ENABLED = "executor.connection.tls.enabled";
 
     public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED =
