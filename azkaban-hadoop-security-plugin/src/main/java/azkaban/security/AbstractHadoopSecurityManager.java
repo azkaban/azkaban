@@ -204,6 +204,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /**
    * Get file system as User passed in parameter.
+   *
    * @param user
    * @return
    * @throws HadoopSecurityManagerException
@@ -238,6 +239,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /**
    * This method will verify whether proxy is allowed or not.
+   *
    * @return
    */
   public boolean shouldProxy() {
@@ -246,6 +248,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /**
    * This method is used to get custom credential provider.
+   *
    * @param props
    * @param hadoopCred
    * @param jobLogger
@@ -277,8 +280,9 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   }
 
   /**
-   * This method is used to register custom credentials which will be used when doPrefetch method
-   * is called.
+   * This method is used to register custom credentials which will be used when doPrefetch method is
+   * called.
+   *
    * @param props
    * @param hadoopCred
    * @param userToProxy
@@ -333,6 +337,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /**
    * This method is used to verify whether Hadoop security is enabled or not.
+   *
    * @return
    */
   @Override
@@ -353,6 +358,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /**
    * This method is used to prefetch all required tokens for a job.
+   *
    * @param tokenFile
    * @param props
    * @param logger
@@ -370,30 +376,13 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
 
     final Credentials cred = new Credentials();
-    fetchMetaStoreToken(userToProxyFQN, userToProxy, props, logger, cred);
 
     try {
-      fetchJHSToken(userToProxyFQN, userToProxy, props, logger, cred);
-
-      getProxiedUser(userToProxyFQN).doAs(new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          getToken(userToProxyFQN, userToProxy);
-          return null;
-        }
-
-        private void getToken(final String userToProxyFQN, final String userToProxy)
-            throws InterruptedException, IOException, HadoopSecurityManagerException {
-          logger.info("Here is the props for " + HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN +
-              ": " + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
-
-          registerAllCustomCredentials(userToProxy, props, cred, logger);
-
-          fetchNameNodeToken(userToProxyFQN, userToProxy, props, logger, cred);
-          fetchJobTrackerToken(userToProxyFQN, userToProxy, props, logger, cred);
-        }
+      fetchAllHadoopTokens(userToProxyFQN, userToProxy, props, logger, cred);
+      getProxiedUser(userToProxyFQN).doAs((PrivilegedExceptionAction<Void>) () -> {
+        registerAllCustomCredentials(userToProxy, props, cred, logger);
+        return null;
       });
-
       logger.info("Preparing token file " + tokenFile.getAbsolutePath());
       prepareTokenFile(userToProxy, cred, tokenFile, logger,
           props.getString(Constants.ConfigurationKeys.SECURITY_USER_GROUP, "azkaban"));
@@ -437,8 +426,9 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   }
 
   /**
-   * This method is used to write all the credentials into file so that the file can be shared
-   * with user job process.
+   * This method is used to write all the credentials into file so that the file can be shared with
+   * user job process.
+   *
    * @param credentials
    * @param tokenFile
    * @param logger
@@ -552,6 +542,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /**
    * This method is used to cancel token.
+   *
    * @param tokenFile
    * @param userToProxy
    * @param logger
@@ -636,7 +627,8 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   }
 
   /**
-   * This method is used to fetch delegation token for JHS and add it in cred object.
+   * This method is used to fetch all Hadoop tokens which includes NameNode, JHS, JT and Metastore
+   * and add it in cred object.
    *
    * @param userToProxyFQN
    * @param userToProxy
@@ -646,53 +638,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
    * @throws HadoopSecurityManagerException
    * @throws IOException
    */
-  protected abstract void fetchJHSToken(final String userToProxyFQN, final String userToProxy,
-      final Props props, final Logger logger, final Credentials cred)
-      throws HadoopSecurityManagerException, IOException;
-
-  /**
-   * This method is used to fetch delegation token for MetaStore and add it in cred object.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
-   * @param props
-   * @param logger
-   * @param cred
-   * @throws HadoopSecurityManagerException
-   */
-  protected abstract void fetchMetaStoreToken(final String userToProxyFQN,
-      final String userToProxy, final Props props, final Logger logger,
-      final Credentials cred) throws HadoopSecurityManagerException;
-
-  /**
-   * This method is used to fetch delegation token for NameNode and add it in cred object.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
-   * @param props
-   * @param logger
-   * @param cred
-   * @throws IOException
-   * @throws HadoopSecurityManagerException
-   */
-  protected abstract void fetchNameNodeToken(final String userToProxyFQN,
-      final String userToProxy, final Props props, final Logger logger,
-      final Credentials cred) throws IOException, HadoopSecurityManagerException;
-
-  /**
-   * This method is used to fetch delegation token for JT and add it in cred object.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
-   * @param props
-   * @param logger
-   * @param cred
-   * @throws IOException
-   * @throws InterruptedException
-   * @throws HadoopSecurityManagerException
-   */
-  protected abstract void fetchJobTrackerToken(final String userToProxyFQN,
-      final String userToProxy, final Props props,
-      final Logger logger, final Credentials cred)
-      throws IOException, InterruptedException, HadoopSecurityManagerException;
+  protected abstract void fetchAllHadoopTokens(final String userToProxyFQN,
+      final String userToProxy, final Props props, final Logger logger, final Credentials cred)
+      throws HadoopSecurityManagerException, IOException, InterruptedException;
 }
