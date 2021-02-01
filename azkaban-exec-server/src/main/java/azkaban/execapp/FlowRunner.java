@@ -108,8 +108,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private static final Splitter SPLIT_ON_COMMA = Splitter.on(",").omitEmptyStrings().trimResults();
 
-  private static final Layout DEFAULT_LAYOUT = new PatternLayout(
-      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
   // We check update every 5 minutes, just in case things get stuck. But for the
   // most part, we'll be idling.
   private static final long CHECK_WAIT_MS = 5 * 60 * 1000;
@@ -117,7 +115,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   // Sync object for queuing
   private final Object mainSyncObj = new Object();
   private final JobTypeManager jobtypeManager;
-  private final Layout loggerLayout = DEFAULT_LAYOUT;
+  private final Layout loggerLayout = Constants.DEFAULT_FLOWRUNNER_LAYOUT;
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final int execId;
@@ -253,7 +251,11 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     // Create logger and execution dir in flowRunner initialization instead of flow runtime to avoid NPE
     // where the uninitialized logger is used in flow preparing state
-    createLogger(this.flow.getFlowId());
+    // If it is containerized flow execution, skip logger creation as FlowRunner uses the logger
+    // from FlowContainer
+    if (!isContainerizedDispatchMethodEnabled()) {
+      createLogger(this.flow.getFlowId());
+    }
     this.azkabanEventReporter = azkabanEventReporter;
 
     this.projectFileHandler =
@@ -279,6 +281,17 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   public FlowRunner setValidateProxyUser(final boolean validateUserProxy) {
     this.validateUserProxy = validateUserProxy;
+    return this;
+  }
+
+  /**
+   * Set flow logger for containerized executions.
+   * @param logger
+   * @return
+   */
+  public FlowRunner setFlowLogger(final Logger logger) {
+    assert(isContainerizedDispatchMethodEnabled());
+    this.logger = logger;
     return this;
   }
 
@@ -357,6 +370,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return DispatchMethod.isPollMethodEnabled(azkabanProps
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()));
+  }
+
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(azkabanProps
+            .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+                    DispatchMethod.PUSH.name()));
   }
 
   private void reportFlowFinishedMetrics() {
@@ -469,7 +488,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   private void closeLogger() {
-    if (this.logger != null) {
+    if (!isContainerizedDispatchMethodEnabled() && this.logger != null) {
       this.logger.removeAppender(this.flowAppender);
       this.flowAppender.close();
 

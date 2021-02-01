@@ -73,11 +73,12 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.log4j.Appender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *  This class is the entrypoint for launching a flow execution in a container.
@@ -111,7 +112,10 @@ public class FlowContainer {
   private static final int SHUTDOWN_TIMEOUT_IN_SECONDS = 10;
 
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
+  // Logging objects
+  private static final Logger logger = Logger.getLogger(FlowContainer.class);
+  private File logFile;
+  private Appender appender;
 
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
@@ -212,6 +216,8 @@ public class FlowContainer {
   public static void main(final String[] args) throws ExecutorManagerException {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
+    // Setup the logger appender
+    final FlowContainerLogger containerLogger = new FlowContainerLogger(logger);
     // Get the execution ID from the environment
     final int execId = getExecutionId();
     final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
@@ -225,6 +231,8 @@ public class FlowContainer {
 
     // Constructor
     final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
+    flowContainer.logFile = containerLogger.logFile;
+    flowContainer.appender = containerLogger.appender;
     flowContainer.start();
     launchCtrlMsgListener(flowContainer);
 
@@ -318,7 +326,8 @@ public class FlowContainer {
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(this.numJobThreadPerFlow);
+        .setNumJobThreads(this.numJobThreadPerFlow)
+        .setFlowLogger(logger);
   }
 
   /**
@@ -385,8 +394,8 @@ public class FlowContainer {
 
     logger.info("Cancel Flow called");
     if (this.flowRunner == null) {
-      logger.warn("Attempt to cancel flow execId: {} before flow got a chance to start.",
-          execId);
+      logger.warn(String.format("Attempt to cancel flow execId: %d before flow got a chance "
+              + "to start.", execId));
       throw new ExecutorManagerException("Flow has not launched yet.");
     }
 
@@ -410,28 +419,28 @@ public class FlowContainer {
     throws ExecutorManagerException {
     logger.info("readFlowLogs called");
     if (this.flowRunner == null) {
-      logger.warn("Attempt to read flow logs before flow execId: {} got a chance to start",
-          execId);
+      logger.warn(String.format("Attempt to read flow logs before flow execId: %d got a chance to start",
+          execId));
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Error reading file. Execution directory does not exist for flow execId: {}", execId);
+      logger.warn(String.format("Error reading file. Execution directory does not exist for "
+              +" flow execId: %d", execId));
       throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
     }
 
    try {
-     final File logFile = this.flowRunner.getFlowLogFile();
-     if (logFile != null && logFile.exists()) {
-       return FileIOUtils.readUtf8File(logFile, startByte, length);
+     if (this.logFile != null && this.logFile.exists()) {
+       return FileIOUtils.readUtf8File(this.logFile, startByte, length);
      } else {
-       logger.warn("Flow log file does not exist for flow execId: {}", execId);
+       logger.warn(String.format("Flow log file does not exist for flow execId: %d", execId));
        throw new ExecutorManagerException("Flow log file does not exist.");
      }
    } catch (final IOException e) {
-     logger.warn("IOException while trying to read flow log file for flow execId: {}",
-         execId);
+     logger.warn(String.format("IOException while trying to read flow log file for flow execId: %d",
+         execId));
      throw new ExecutorManagerException(e);
    }
   }
@@ -451,15 +460,15 @@ public class FlowContainer {
 
     logger.info("readJobLogs called");
     if (this.flowRunner == null) {
-      logger.warn("Attempt to read job logs before flow got a chance to start. " +
-          "Flow execId: {}, jobId: {}", execId, jobId);
+      logger.warn(String.format("Attempt to read job logs before flow got a chance to start. " +
+          "Flow execId: %d, jobId: %s", execId, jobId));
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Error reading jobLogs. Execution dir does not exist. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("Error reading jobLogs. Execution dir does not exist. "
+              + "execId: %d, jobId: %s", execId, jobId));
       throw new ExecutorManagerException(
           "Error reading file. Execution directory does not exist.");
     }
@@ -469,13 +478,13 @@ public class FlowContainer {
       if (logFile != null && logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
-        logger.warn("Job log file does not exist. Flow execId: {}, jobId: {}",
-            execId, jobId);
+        logger.warn(String.format("Job log file does not exist. Flow execId: %d, jobId: %s",
+            execId, jobId));
         throw new ExecutorManagerException("Job log file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn("IOException while trying to read Job logs. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("IOException while trying to read Job logs. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(e);
     }
   }
@@ -495,15 +504,15 @@ public class FlowContainer {
 
     logger.info("readJobMetaData called");
     if (this.flowRunner == null) {
-      logger.warn("Metadata cannot be read as flow has not started. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("Metadata cannot be read as flow has not started. "
+              + " execId: %d, jobId: %s", execId, jobId));
       throw new ExecutorManagerException("The flow has not launched yet.");
     }
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Execution directory does not exist. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("Execution directory does not exist. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(
           "Error reading file. Execution directory does not exist.");
     }
@@ -513,13 +522,13 @@ public class FlowContainer {
       if (metaDataFile != null && metaDataFile.exists()) {
         return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
       } else {
-        logger.warn("Job metadata file does not exist. execId: {}, jobId: {}",
-            execId, jobId);
+        logger.warn(String.format("Job metadata file does not exist. execId: %d, jobId: %s",
+            execId, jobId));
         throw new ExecutorManagerException("Job metadata file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn("IOException while trying to read metadata file. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("IOException while trying to read metadata file. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(e);
     }
   }
@@ -538,7 +547,7 @@ public class FlowContainer {
 
     // The first connector is created upon initializing the server. That's the one that has the port.
     flowContainer.port = connectors[0].getLocalPort();
-    logger.info("Listening on port {} for control messages.", flowContainer.port);
+    logger.info(String.format("Listening on port %d for control messages.", flowContainer.port));
   }
 
   private static int getExecutionId() throws ExecutorManagerException {
@@ -553,9 +562,9 @@ public class FlowContainer {
     int execId = -1;
     try {
       execId = Integer.parseInt(execIdStr);
-      logger.info("Execution ID : {}", execId);
+      logger.info("Execution ID : " + execId);
     } catch (final NumberFormatException ne) {
-      logger.error("Execution ID set in environment is invalid {}", execIdStr);
+      logger.error("Execution ID set in environment is invalid " + execIdStr);
       throw new ExecutorManagerException(ne);
     }
     if (execId < 1) {
@@ -584,17 +593,17 @@ public class FlowContainer {
     try {
       versionSetId = Integer.parseInt(versionSetIdStr);
     } catch (final NumberFormatException ne) {
-      logger.warn("VersionSet ID set in environment is invalid {}", versionSetIdStr);
+      logger.warn("VersionSet ID set in environment is invalid " + versionSetIdStr);
       return;
     }
     VersionSet versionSet;
     try {
       versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
     } catch (final IOException ioe) {
-      logger.warn("Failed to fetch versionSet using versionSet ID : {}", versionSetId);
+      logger.warn("Failed to fetch versionSet using versionSet ID : " + versionSetId);
       return;
     }
-    logger.info("VersionSet: {}", versionSet.getVersionSetJsonString());
+    logger.info("VersionSet: " + versionSet.getVersionSetJsonString());
   }
 
   /**
@@ -609,7 +618,7 @@ public class FlowContainer {
       try {
         filePath = Files.readSymbolicLink(symlinkedFilePath);
       } catch (final IOException e) {
-        logger.error("Error reading symlink {}", symlinkedFilePath, e);
+        logger.error(String.format("Error reading symlink %s", symlinkedFilePath), e);
         throw new ExecutorManagerException(e);
       }
       // Delete the symlink and then delete the symlinked file
@@ -619,7 +628,7 @@ public class FlowContainer {
     try {
       Files.delete(symlinkedFilePath);
     } catch (final IOException e) {
-      logger.error("Error deleting : {}", symlinkedFilePath, e);
+      logger.error(String.format("Error deleting : %s", symlinkedFilePath), e);
       throw new ExecutorManagerException(e);
     }
   }
@@ -630,13 +639,14 @@ public class FlowContainer {
    */
   private void shutdown() {
     logger.info("Shutting down the pod");
+    final int execId = this.flowRunner.getExecutionId();
     while (!this.flowFuture.isDone()) {
       // This should not happen immediately as submitFlowRunner is a blocking call.
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
-        logger.error("The sleep while waiting for execution : {} to finish was interrupted",
-                this.flowRunner.getExecutionId());
+        logger.error(String.format("The sleep while waiting for execution : %d to finish was "
+                + " interrupted", execId));
       }
     }
 
@@ -663,6 +673,46 @@ public class FlowContainer {
       logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
     }
     logger.info("Sayonara!");
+    closeLogger(execId);
     System.exit(0);
+  }
+
+
+  private void closeLogger(final int execId) {
+    logger.removeAppender(this.appender);
+    this.appender.close();
+
+    try {
+      this.executorLoader.uploadLogFile(execId, "", 0, this.logFile);
+    } catch (final ExecutorManagerException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * setup logger and execution dir for the flowId
+   */
+  private static class FlowContainerLogger {
+    public File logFile;
+    public Appender appender;
+
+    public FlowContainerLogger(final Logger logger) throws ExecutorManagerException {
+      // Create Logfile
+      final String logName = "_flow.log";
+      final String execDir = ContainerizedFlowPreparer.getExecutionDir().toString();
+      this.logFile = new File(execDir, logName);
+      final String absolutePath = this.logFile.getAbsolutePath();
+
+      // Create File Appender, this also creates the project directory
+      this.appender = null;
+      try {
+        this.appender = new FileAppender(
+                Constants.DEFAULT_FLOWRUNNER_LAYOUT, absolutePath, false);
+        logger.addAppender(this.appender);
+      } catch (final IOException e) {
+        logger.error("Could not open log file in " + execDir, e);
+        throw new ExecutorManagerException(e);
+      }
+    }
   }
 }

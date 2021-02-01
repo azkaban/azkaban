@@ -51,6 +51,11 @@ public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
     return Paths.get(azHome).toAbsolutePath();
   }
 
+  public static Path getExecutionDir() {
+    return Paths.get(getCurrentDir().toString(), PROJECT_DIR);
+  }
+
+
   /**
    * Constructor
    * @param projectStorageManager ProjectStorageManager
@@ -93,22 +98,15 @@ public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
   @Override
   protected File setupExecutionDir(final Path dir, final ExecutableFlow flow)
           throws ExecutorManagerException {
-    // Create project dir
+    // Create project dir path
     final Path projectDirPath = Paths.get(dir.toString(), PROJECT_DIR);
-    // A directory of name projectDirPath cannot pre-exist.
-    if (Files.exists(projectDirPath)) {
-      final String msg = "A project directory of name " + projectDirPath + " already exists";
+    // A directory of name projectDirPath must be there by now.
+    if (!Files.exists(projectDirPath)) {
+      final String msg = "A project directory of name " + projectDirPath + " does not exist";
       LOGGER.error(msg);
       throw new ExecutorManagerException(msg);
     }
 
-    LOGGER.info("Creating execution dir");
-    try {
-      Files.createDirectory(projectDirPath);
-    } catch (final IOException e) {
-      LOGGER.error("Error creating directory :" + projectDirPath, e);
-      throw new ExecutorManagerException(e);
-    }
     flow.setExecutionPath(projectDirPath.toString());
     return projectDirPath.toFile();
   }

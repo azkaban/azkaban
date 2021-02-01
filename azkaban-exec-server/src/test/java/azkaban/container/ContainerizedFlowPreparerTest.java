@@ -27,6 +27,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -51,6 +54,11 @@ public class ContainerizedFlowPreparerTest extends FlowPreparerTestBase {
     when(executableFlow.getProjectId()).thenReturn(FAT_PROJECT_ID);
     when(executableFlow.getVersion()).thenReturn(34);
 
+    try {
+      Files.createDirectory(execDir.toPath());
+    } catch (final IOException e) {
+     throw new ExecutorManagerException(e);
+    }
     this.instance.setup(executableFlow);
     assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
   }

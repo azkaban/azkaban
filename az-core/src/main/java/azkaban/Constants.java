@@ -16,6 +16,9 @@
 
 package azkaban;
 
+import org.apache.log4j.Layout;
+import org.apache.log4j.PatternLayout;
+
 import java.time.Duration;
 
 /**
@@ -145,6 +148,9 @@ public class Constants {
 
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
+
+  public static final Layout DEFAULT_FLOWRUNNER_LAYOUT = new PatternLayout(
+          "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
 
   public static class ConfigurationKeys {
