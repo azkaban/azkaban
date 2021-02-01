@@ -32,6 +32,7 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
@@ -166,11 +167,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
   private final ObjectMapper objectMapper;
-  private final ImageTypeService imageTypeService;
-  private final ImageVersionService imageVersionService;
-  private final ImageRampupService imageRampupService;
-  private final PermissionManager permissionManager;
-  private final ConverterUtils converterUtils;
 
 
   @Inject
@@ -188,12 +184,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
-      final ObjectMapper objectMapper,
-      final ImageTypeService imageTypeService,
-      final ImageVersionService imageVersionService,
-      final ImageRampupService imageRampupService,
-      final PermissionManager permissionManager,
-      final ConverterUtils converterUtils) {
+      final ObjectMapper objectMapper) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -210,16 +201,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     this.objectMapper = objectMapper;
-    this.imageTypeService = requireNonNull(imageTypeService, "imageTypeService is "
-        + "null");
-    this.imageVersionService = requireNonNull(imageVersionService, "imageVersionService is "
-        + "null");
-    this.imageRampupService = requireNonNull(imageRampupService, "imageRampupService is "
-        + "null");
-    this.permissionManager = requireNonNull(permissionManager, "permissionManager is "
-        + "null");
-    this.converterUtils = requireNonNull(converterUtils, "converterUtils is "
-        + "null");
 
     loadBuiltinCheckersAndActions();
 
@@ -760,22 +741,22 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   public ImageTypeService getImageTypeService() {
-    return this.imageTypeService;
+    return SERVICE_PROVIDER.getInstance(ImageTypeService.class);
   }
 
   public ImageVersionService getImageVersionsService() {
-    return this.imageVersionService;
+    return SERVICE_PROVIDER.getInstance(ImageVersionService.class);
   }
 
   public ImageRampupService getImageRampupService() {
-    return this.imageRampupService;
+    return SERVICE_PROVIDER.getInstance(ImageRampupService.class);
   }
 
   public PermissionManager getPermissionManager() {
-    return this.permissionManager;
+    return SERVICE_PROVIDER.getInstance(PermissionManager.class);
   }
 
   public ConverterUtils getConverterUtils() {
-    return this.converterUtils;
+    return SERVICE_PROVIDER.getInstance(ConverterUtils.class);
   }
 }

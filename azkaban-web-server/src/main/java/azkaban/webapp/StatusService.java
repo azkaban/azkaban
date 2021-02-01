@@ -17,6 +17,7 @@
 
 package azkaban.webapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.webapp.servlet.AbstractAzkabanServlet.jarVersion;
 
 import azkaban.Constants;
@@ -53,15 +54,13 @@ public class StatusService {
   private final DatabaseOperator dbOperator;
   private final String pidFilename;
   private final Props props;
-  private final ImageVersionMetadataService versionMetadataService;
 
   @Inject
   public StatusService(final Props props, final ExecutorLoader executorLoader,
-      final DatabaseOperator dbOperator, final ImageVersionMetadataService versionMetadataService) {
+      final DatabaseOperator dbOperator) {
     this.executorLoader = executorLoader;
     this.dbOperator = dbOperator;
     this.props = props;
-    this.versionMetadataService = versionMetadataService;
     this.pidFilename = props.getString(ConfigurationKeys.AZKABAN_PID_FILENAME, "currentpid");
   }
 
@@ -118,7 +117,8 @@ public class StatusService {
     final long usedMemory = runtime.totalMemory() - runtime.freeMemory();
     Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap = new TreeMap<>();
     try {
-      imageTypeVersionMap = this.versionMetadataService.getVersionMetadataForAllImageTypes();
+      imageTypeVersionMap =
+          this.getImageVersionMetadataService().getVersionMetadataForAllImageTypes();
     } catch (final Exception ex) {
       log.error("Error while geting version metadata for all the image types", ex);
     }
@@ -130,6 +130,10 @@ public class StatusService {
         runtime.maxMemory(),
         getDbStatus(),
         imageTypeVersionMap);
+  }
+
+  private ImageVersionMetadataService getImageVersionMetadataService() {
+    return SERVICE_PROVIDER.getInstance(ImageVersionMetadataService.class);
   }
 
   private String getPid() {

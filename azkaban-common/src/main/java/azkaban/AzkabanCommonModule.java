@@ -50,6 +50,7 @@ import azkaban.utils.OsCpuUtil;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import org.apache.commons.dbutils.QueryRunner;
 import org.slf4j.Logger;
@@ -102,17 +103,7 @@ public class AzkabanCommonModule extends AbstractModule {
               Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
       return new OsCpuUtil(Math.max(1, (cpuLoadPeriodSec * 1000) / pollingIntervalMs));
     });
-    bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class);
-    bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class);
-    bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class);
-    bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class);
-    bind(PermissionManager.class).to(PermissionManagerImpl.class);
-    bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
-        .to(ImageTypeConverter.class);
-    bind(Converter.class).annotatedWith(Names.named(IMAGE_VERSION))
-        .to(ImageVersionConverter.class);
-    bind(Converter.class).annotatedWith(Names.named(IMAGE_RAMPUP_PLAN))
-        .to(ImageRampupPlanConverter.class);
+    bindImageManagementDependencies();
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -184,5 +175,27 @@ public class AzkabanCommonModule extends AbstractModule {
       }
     }
     return null;
+  }
+
+  private void bindImageManagementDependencies() {
+    if(isContainerizedDispatchMethodEnabled()) {
+      bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class).in(Scopes.SINGLETON);
+      bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class).in(Scopes.SINGLETON);
+      bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class).in(Scopes.SINGLETON);
+      bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class).in(Scopes.SINGLETON);
+      bind(PermissionManager.class).to(PermissionManagerImpl.class).in(Scopes.SINGLETON);
+      bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
+          .to(ImageTypeConverter.class).in(Scopes.SINGLETON);;
+      bind(Converter.class).annotatedWith(Names.named(IMAGE_VERSION))
+          .to(ImageVersionConverter.class).in(Scopes.SINGLETON);
+      bind(Converter.class).annotatedWith(Names.named(IMAGE_RAMPUP_PLAN))
+          .to(ImageRampupPlanConverter.class).in(Scopes.SINGLETON);
+    }
+  }
+
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 }
