@@ -91,23 +91,23 @@ public class ExecutorApiGatewayTest {
 
   @Test
   public void testPathWithDefaultConfigs() throws Exception {
-    int executionId = 12345;
-    String path = gateway.createExecutionPath(Optional.of(12345));
+    final int executionId = 12345;
+    final String path = gateway.createExecutionPath(Optional.of(executionId));
     Assert.assertEquals("/"+ExecutorApiGateway.DEFAULT_EXECUTION_RESOURCE, path);
   }
 
   @Test
   public void testPathWithContainerizedConfigs() throws Exception {
     final ExecutorApiGateway gateway = gatewayWithConfigs(this.client, containerizationEnabledProps());
-    int executionId = 12345;
-    String path = gateway.createExecutionPath(Optional.of(12345));
+    final int executionId = 12345;
+    final String path = gateway.createExecutionPath(Optional.of(executionId));
     Assert.assertEquals("/" + executionId + "/" +
             ExecutorApiGateway.CONTAINERIZED_EXECUTION_RESOURCE,
         path);
   }
 
   private Props containerizationEnabledProps() {
-    Props containerizedProps = new Props();
+    final Props containerizedProps = new Props();
     containerizedProps.put(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
     containerizedProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME, REVERSE_PROXY_HOST);
     containerizedProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_PORT, REVERSE_PROXY_PORT);
@@ -116,13 +116,13 @@ public class ExecutorApiGatewayTest {
     return containerizedProps;
   }
 
-  private ExecutorApiGateway gatewayWithConfigs(ExecutorApiClient client, Props props) {
+  private ExecutorApiGateway gatewayWithConfigs(final ExecutorApiClient client, final Props props) {
     return new ExecutorApiGateway(client, props);
   }
 
   @Test
   public void testPingWithDefaultConfigs() throws Exception {
-    Props props = new Props();
+    final Props props = new Props();
     final ExecutorApiClient clientSpy = Mockito.spy(new SendDisabledExecutorApiClient(props));
 
     final ExecutorApiGateway gateway = gatewayWithConfigs(clientSpy, props);
@@ -131,6 +131,7 @@ public class ExecutorApiGatewayTest {
     final int apiPort = 1234;
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
         null, null);
+
     final URI expectedUri = new URI("http://host1:1234/executor");
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
         new Pair<>("action", "ping"),
@@ -141,7 +142,7 @@ public class ExecutorApiGatewayTest {
 
   @Test
   public void testPingWithContainerization() throws Exception {
-    Props props = new Props();
+    final Props props = new Props();
     props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, DispatchMethod.CONTAINERIZED.name());
     final ExecutorApiClient clientSpy = Mockito.spy(new SendDisabledExecutorApiClient(props));
     final ExecutorApiGateway gateway = gatewayWithConfigs(clientSpy, props);
@@ -161,7 +162,7 @@ public class ExecutorApiGatewayTest {
 
   @Test(expected = ExecutorManagerException.class)
   public void testPingWithReverseProxy() throws Exception {
-    Props props = containerizationEnabledProps();
+    final Props props = containerizationEnabledProps();
     final ExecutorApiClient client = new SendDisabledExecutorApiClient(props);
     final ExecutorApiGateway gateway = gatewayWithConfigs(client, props);
     final String apiAction = ConnectorParams.PING_ACTION;

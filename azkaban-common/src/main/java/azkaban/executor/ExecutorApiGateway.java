@@ -34,9 +34,12 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.inject.Singleton;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ExecutorApiGateway {
+  private final static Logger logger = LoggerFactory.getLogger(ExecutorApiGateway.class);
   public final static String DEFAULT_EXECUTION_RESOURCE = "executor";
   public final static String CONTAINERIZED_EXECUTION_RESOURCE = "container";
 
@@ -92,14 +95,15 @@ public class ExecutorApiGateway {
   }
 
   @VisibleForTesting
-  String createExecutionPath(Optional<Integer> executionId) throws ExecutorManagerException {
+  String createExecutionPath(final Optional<Integer> executionId) throws ExecutorManagerException {
     if (!isReverseProxyEnabled) {
       return "/" + executionResourceName;
     }
 
     if(!executionId.isPresent()) {
-      throw new ExecutorManagerException(
-          "Execution Id must be provided when reverse-proxy is enabled");
+      final String errorMessage = "Execution Id must be provided when reverse-proxy is enabled";
+      logger.error(errorMessage);
+      throw new ExecutorManagerException(errorMessage);
     }
     return "/" + executionResourceNameModifier.apply(executionId.get(), executionResourceName);
   }
