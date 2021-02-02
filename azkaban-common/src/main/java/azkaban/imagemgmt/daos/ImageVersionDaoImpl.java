@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -83,19 +84,20 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
    * column can't be used directly in the where clause hence, two inner tables are created on top of
    * the inner queries.
    */
-  private static final String SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY = "select outer_tbl.id, "
+  private static final String SELECT_LATEST_IMAGE_VERSION_QUERY = "select outer_tbl.id, "
       + "outer_tbl.path, outer_tbl.description, outer_tbl.version, outer_tbl.name, outer_tbl.state, "
       + "outer_tbl.release_tag, outer_tbl.created_on, outer_tbl.created_by, outer_tbl.modified_on, "
       + "outer_tbl.modified_by from (select iv.id, iv.path, iv.description, iv.version, "
       + "cast(replace(iv.version, '.', '') as unsigned integer) as int_version, it.name, iv.state, "
       + "iv.release_tag, iv.created_on, iv.created_by, iv.modified_on, iv.modified_by "
-      + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
-      + "and lower(it.name) in ( ${image_types} )) "
+      + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state in "
+      + "( ${version_states} )  and lower(it.name) in ( ${image_types} )) "
       + "outer_tbl where outer_tbl.int_version in (select max(inner_tbl.int_version) max_version "
       + "from (select it.name, cast(replace(iv.version, '.', '') as unsigned integer) as int_version "
-      + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state = ?  "
-      + "and lower(it.name) in ( ${image_types} )) "
+      + "from image_versions iv, image_types it where it.id = iv.type_id and iv.state in "
+      + "( ${version_states} )  and lower(it.name) in ( ${image_types} )) "
       + "inner_tbl group by inner_tbl.name);";
+
 
   @Inject
   public ImageVersionDaoImpl(final DatabaseOperator databaseOperator,
@@ -229,8 +231,13 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       inClauseBuilder.setLength(inClauseBuilder.length() - 1);
       final Map<String, String> valueMap = new HashMap<>();
       valueMap.put("image_types", inClauseBuilder.toString());
+
+      final StringBuilder statesInClauseBuilder = new StringBuilder();
+      statesInClauseBuilder.append("?");
+      valueMap.put("version_states", statesInClauseBuilder.toString());
+
       final StrSubstitutor strSubstitutor = new StrSubstitutor(valueMap);
-      final String query = strSubstitutor.replace(SELECT_LATEST_ACTIVE_IMAGE_VERSION_QUERY);
+      final String query = strSubstitutor.replace(SELECT_LATEST_IMAGE_VERSION_QUERY);
       log.info("Image version getActiveVersionByImageTypes query : " + query);
       final List<Object> params = new ArrayList<>();
       final Set<String> imageTypesInLowerCase =
@@ -239,6 +246,54 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       params.add(State.ACTIVE.getStateValue());
       params.addAll(imageTypesInLowerCase);
       params.add(State.ACTIVE.getStateValue());
+      params.addAll(imageTypesInLowerCase);
+      imageVersions = this.databaseOperator.query(query,
+          new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
+      log.info("imageVersions {}", imageVersions);
+    } catch (final SQLException ex) {
+      log.error("Exception while fetching image version ", ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while fetching image "
+          + "version");
+    }
+    return imageVersions;
+  }
+
+  @Override
+  public List<ImageVersion> getLatestNonActiveVersionByImageTypes(final Set<String> imageTypes)
+      throws ImageMgmtException {
+    List<ImageVersion> imageVersions = new ArrayList<>();
+    try {
+      // Add outer select clause
+      final StringBuilder inClauseBuilder = new StringBuilder();
+      for (int i = 0; i < imageTypes.size(); i++) {
+        inClauseBuilder.append("?,");
+      }
+      inClauseBuilder.setLength(inClauseBuilder.length() - 1);
+      final Map<String, String> valueMap = new HashMap<>();
+      valueMap.put("image_types", inClauseBuilder.toString());
+
+      Set<String> nonActiveStates = new TreeSet<>();
+      nonActiveStates.add(State.NEW.getStateValue());
+      nonActiveStates.add(State.UNSTABLE.getStateValue());
+      nonActiveStates.add(State.DEPRECATED.getStateValue());
+      final StringBuilder statesInClauseBuilder = new StringBuilder();
+      for (int i = 0; i < nonActiveStates.size(); i++) {
+        statesInClauseBuilder.append("?,");
+      }
+      statesInClauseBuilder.setLength(statesInClauseBuilder.length() - 1);
+      valueMap.put("version_states", statesInClauseBuilder.toString());
+
+      final StrSubstitutor strSubstitutor = new StrSubstitutor(valueMap);
+      final String query = strSubstitutor.replace(SELECT_LATEST_IMAGE_VERSION_QUERY);
+      log.info("Image version getActiveVersionByImageTypes query : " + query);
+      final List<Object> params = new ArrayList<>();
+      final Set<String> imageTypesInLowerCase =
+          imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet());
+      log.info("imageTypesInLowerCase: " + imageTypesInLowerCase);
+
+      params.addAll(nonActiveStates);
+      params.addAll(imageTypesInLowerCase);
+      params.addAll(nonActiveStates);
       params.addAll(imageTypesInLowerCase);
       imageVersions = this.databaseOperator.query(query,
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));

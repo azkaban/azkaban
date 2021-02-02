@@ -71,6 +71,9 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       + "based on random rampup.";
   private static final String MSG_ACTIVE_VERSION_SELECTION = "The version selection is "
       + "based on latest available active version.";
+  private static final String MSG_NON_ACTIVE_VERSION_SELECTION = "Non active latest version is "
+      + "selected as there is no active rampup and active version. This version either "
+      + "requires rampup or non eligible if deprecated.";
 
   @Inject
   public ImageRampupManagerImpl(final ImageRampupDao imageRampupDao,
@@ -113,8 +116,16 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       imageTypes.add(imageType.getName());
     }
     final Set<String> remainingImageTypes = new TreeSet<>();
-    return this
-        .processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+    final Map<String, ImageVersionMetadata> imageTypeVersionMap =
+        this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+    if(!remainingImageTypes.isEmpty()) {
+      final Map<String, ImageVersion> imageTypeLatestNonActiveVersionMap =
+          this.getLatestNonActiveImageVersion(remainingImageTypes);
+      log.info("imageTypeLatestNonActiveVersionMap: "+imageTypeLatestNonActiveVersionMap);
+      imageTypeLatestNonActiveVersionMap.forEach((k, v) -> imageTypeVersionMap.put(k,
+          new ImageVersionMetadata(v, MSG_NON_ACTIVE_VERSION_SELECTION)));
+    }
+    return imageTypeVersionMap;
   }
 
   @Override
@@ -269,6 +280,27 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       }
     }
     return imageTypeActiveVersionMap;
+  }
+
+  /**
+   * Get latest non active image version for the given image types.
+   * @param imageTypes
+   * @return Map<String, ImageVersion>
+   */
+  private Map<String, ImageVersion> getLatestNonActiveImageVersion(final Set<String> imageTypes) {
+    final Map<String, ImageVersion> imageTypeLatestNonActiveVersionMap =
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    if (!CollectionUtils.isEmpty(imageTypes)) {
+      final List<ImageVersion> imageVersions =
+          this.imageVersionDao.getLatestNonActiveVersionByImageTypes(imageTypes);
+      log.debug("Non Active image versions fetched: {} ", imageVersions);
+      if (imageVersions != null && !imageVersions.isEmpty()) {
+        for (final ImageVersion imageVersion : imageVersions) {
+          imageTypeLatestNonActiveVersionMap.put(imageVersion.getName(), imageVersion);
+        }
+      }
+    }
+    return imageTypeLatestNonActiveVersionMap;
   }
 
   /**
