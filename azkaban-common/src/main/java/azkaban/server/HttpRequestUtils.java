@@ -127,8 +127,8 @@ public class HttpRequestUtils {
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
     execOptions.addAllFlowParameters(flowParamGroup);
 
-    final Map<String, Map<String, String>> jobParamGroup = getMapParamGroup(req, "jobOverride");
-    execOptions.addAllJobParameters(jobParamGroup);
+    final Map<String, Map<String, String>> nodeParamGroup = getMapParamGroup(req, "nodeOverride");
+    execOptions.addAllNodeParameters(nodeParamGroup);
 
     if (hasParam(req, "disabled")) {
       final String disabled = getParam(req, "disabled");

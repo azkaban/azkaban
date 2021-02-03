@@ -222,13 +222,13 @@ public final class HttpRequestUtilsTest {
   }
 
   @Test
-  public void testParseFlowOptionsJobOverride() throws Exception {
+  public void testParseFlowOptionsNodeOverride() throws Exception {
     final HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
         "flowOverride[key1]", "val1",
         "flowOverride[key.2]", "val.2",
-        "jobOverride[job-1][job.key]", "job-val",
-        "jobOverride[job-1][job.key2]", "job-val2",
-        "jobOverride[job-2][job.key]", "job-2-val"));
+        "nodeOverride[job-1][job.key]", "job-val",
+        "nodeOverride[job-1][job.key2]", "job-val2",
+        "nodeOverride[job-2][job.key]", "job-2-val"));
     final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
     Assert.assertEquals(ImmutableMap.of(
         "key1", "val1",
@@ -239,7 +239,7 @@ public final class HttpRequestUtilsTest {
             "job.key2", "job-val2"),
         "job-2", ImmutableMap.of(
             "job.key", "job-2-val")
-    ), options.getJobParameters());
+    ), options.getNodeParameters());
   }
 
   private static HttpServletRequest mockRequestWithSla(final Map<String, String> params) {

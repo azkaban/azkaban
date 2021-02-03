@@ -317,10 +317,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       if (flowParam != null && !flowParam.isEmpty()) {
         this.logger.info("FlowOverride Props: " + flowParam);
       }
-      final Map<String, Map<String, String>> jobParams = this.flow.getExecutionOptions()
-          .getJobParameters();
-      if (jobParams != null && !jobParams.isEmpty()) {
-        this.logger.info("jobOverride Props: " + jobParams);
+      final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
+          .getNodeParameters();
+      if (nodeParams != null && !nodeParams.isEmpty()) {
+        this.logger.info("nodeOverride Props: " + nodeParams);
       }
 
       this.fireEventListeners(
@@ -934,29 +934,29 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
     }
 
-    // 6. If there are any job-specific flow overrides, we also apply them
-    final Map<String, Map<String, String>> jobParams = this.flow.getExecutionOptions()
-        .getJobParameters();
-    if (jobParams != null && !jobParams.isEmpty()) {
-      applyJobOverrides(node, jobParams, props);
+    // 6. If there are any node-specific flow overrides, we also apply them
+    final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
+        .getNodeParameters();
+    if (nodeParams != null && !nodeParams.isEmpty()) {
+      applyNodeOverrides(node, nodeParams, props);
     }
 
     node.setInputProps(props);
   }
 
-  private void applyJobOverrides(final ExecutableNode node,
-      final Map<String, Map<String, String>> jobParams, final Props props) {
+  private void applyNodeOverrides(final ExecutableNode node,
+      final Map<String, Map<String, String>> nodeParams, final Props props) {
     if (node.getParentFlow() != null) {
       // apply recursively top->down
-      applyJobOverrides(node.getParentFlow(), jobParams, props);
+      applyNodeOverrides(node.getParentFlow(), nodeParams, props);
     }
     // overrides by plain node id
-    if (jobParams.containsKey(node.getId())) {
-      props.putAll(jobParams.get(node.getId()));
+    if (nodeParams.containsKey(node.getId())) {
+      props.putAll(nodeParams.get(node.getId()));
     }
     // full nested id path overrides plain node id
-    if (jobParams.containsKey(node.getNestedId())) {
-      props.putAll(jobParams.get(node.getNestedId()));
+    if (nodeParams.containsKey(node.getNestedId())) {
+      props.putAll(nodeParams.get(node.getNestedId()));
     }
   }
 

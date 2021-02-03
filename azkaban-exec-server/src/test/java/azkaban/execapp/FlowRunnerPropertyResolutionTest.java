@@ -69,7 +69,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
   }
 
   @Test
-  public void testJobOverrides() throws Exception {
+  public void testNodeOverrides() throws Exception {
     this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
 
     final HashMap<String, String> flowProps = new HashMap<>();
@@ -80,8 +80,8 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     // enable overriding also for existing job props
     final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, null, flowProps,
         Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, "true"));
-    // Set some job-specific overrides
-    runner.getExecutableFlow().getExecutionOptions().addAllJobParameters(ImmutableMap.of(
+    // Set some node-specific overrides
+    runner.getExecutableFlow().getExecutionOptions().addAllNodeParameters(ImmutableMap.of(
         "job2", ImmutableMap.of("job-prop-2", "job2-val-2", "props6", "job2-val-6"),
         "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
         // overrides by nested job id: this is the most specific, so always wins
@@ -107,18 +107,18 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("moo3", job2Props.get("props3"));
     Assert.assertEquals("execflow7", job2Props.get("props7"));
     Assert.assertEquals("execflow5", job2Props.get("props5"));
-    // should've been overridden by jobOverride
+    // should've been overridden by nodeOverride
     Assert.assertEquals("job2-val-6", job2Props.get("props6"));
     Assert.assertEquals("shared4", job2Props.get("props4"));
     Assert.assertEquals("shared8", job2Props.get("props8"));
-    // entirely new prop via jobOverride
+    // entirely new prop via nodeOverride
     Assert.assertEquals("job2-val-2", job2Props.get("job-prop-2"));
 
     final Props job1Props = nodeMap.get("innerflow:job1").getInputProps();
     Assert.assertEquals("job1", job1Props.get("props1"));
     Assert.assertEquals("job2", job1Props.get("props2"));
     Assert.assertEquals("job8", job1Props.get("props8"));
-    // jobOverride by the sub-flow parent
+    // nodeOverride by the sub-flow parent
     Assert.assertEquals("innerflow-val-6", job1Props.get("props6"));
     Assert.assertEquals("execflow5", job1Props.get("props5"));
     Assert.assertEquals("execflow7", job1Props.get("props7"));
@@ -128,11 +128,11 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     final Props job4Props = nodeMap.get("innerflow:job4").getInputProps();
     Assert.assertEquals("job8", job4Props.get("props8"));
     Assert.assertEquals("job9", job4Props.get("props9"));
-    // jobOverride by the sub-flow parent
+    // nodeOverride by the sub-flow parent
     Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
-    // jobOverride with plain job id
+    // nodeOverride with plain job id
     Assert.assertEquals("job4-val-7", job4Props.get("props7"));
-    // jobOverride with nested id
+    // nodeOverride with nested id
     Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
     Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
     Assert.assertEquals("shared1", job4Props.get("props1"));

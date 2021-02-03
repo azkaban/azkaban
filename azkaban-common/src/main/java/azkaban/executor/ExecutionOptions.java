@@ -42,7 +42,7 @@ public class ExecutionOptions {
   public static final int DEFAULT_FLOW_PRIORITY = 5;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
-  private static final String JOB_PARAMETERS = "jobParameters";
+  private static final String NODE_PARAMETERS = "nodeParameters";
   private static final String NOTIFY_ON_FIRST_FAILURE = "notifyOnFirstFailure";
   private static final String NOTIFY_ON_LAST_FAILURE = "notifyOnLastFailure";
   private static final String SUCCESS_EMAILS = "successEmails";
@@ -79,7 +79,7 @@ public class ExecutionOptions {
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<>();
-  private Map<String, Map<String, String>> jobParameters = new HashMap<>();
+  private Map<String, Map<String, String>> nodeParameters = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
   private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
   private List<SlaOption> slaOptions = new ArrayList<>();
@@ -105,9 +105,9 @@ public class ExecutionOptions {
       options.flowParameters.putAll(wrapper
           .<String, String>getMap(FLOW_PARAMETERS));
     }
-    if (optionsMap.containsKey(JOB_PARAMETERS)) {
-      options.jobParameters = new HashMap<>();
-      options.jobParameters.putAll(wrapper.getMap(JOB_PARAMETERS));
+    if (optionsMap.containsKey(NODE_PARAMETERS)) {
+      options.nodeParameters = new HashMap<>();
+      options.nodeParameters.putAll(wrapper.getMap(NODE_PARAMETERS));
     }
     // Failure notification
     options.notifyOnFirstFailure =
@@ -161,16 +161,16 @@ public class ExecutionOptions {
     this.flowParameters.putAll(flowParam);
   }
 
-  public void addAllJobParameters(final Map<String, Map<String, String>> jobParams) {
-    this.jobParameters.putAll(jobParams);
+  public void addAllNodeParameters(final Map<String, Map<String, String>> nodeParams) {
+    this.nodeParameters.putAll(nodeParams);
   }
 
   public Map<String, String> getFlowParameters() {
     return this.flowParameters;
   }
 
-  public Map<String, Map<String, String>> getJobParameters() {
-    return this.jobParameters;
+  public Map<String, Map<String, String>> getNodeParameters() {
+    return this.nodeParameters;
   }
 
   public boolean isFailureEmailsOverridden() {
@@ -302,7 +302,7 @@ public class ExecutionOptions {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
     flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
-    flowOptionObj.put(JOB_PARAMETERS, this.jobParameters);
+    flowOptionObj.put(NODE_PARAMETERS, this.nodeParameters);
     flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
     flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
     flowOptionObj.put(SUCCESS_EMAILS, this.successEmails);

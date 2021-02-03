@@ -56,7 +56,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var successEmailsOverride = $("#override-success-emails").is(':checked');
 
     var flowOverride = {};
-    var jobOverride = {};
+    var nodeOverride = {};
     var editRows = $(".editRow");
     for (var i = 0; i < editRows.length; ++i) {
       var row = editRows[i];
@@ -67,10 +67,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
       if (key && key.length > 0) {
         if (jobOrFlow && jobOrFlow.length > 0) {
-          if (!jobOverride.hasOwnProperty(jobOrFlow)) {
-            jobOverride[jobOrFlow] = {};
+          if (!nodeOverride.hasOwnProperty(jobOrFlow)) {
+            nodeOverride[jobOrFlow] = {};
           }
-          jobOverride[jobOrFlow][key] = val;
+          nodeOverride[jobOrFlow][key] = val;
         } else {
           flowOverride[key] = val;
         }
@@ -94,7 +94,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       notifyFailureFirst: notifyFailureFirst,
       notifyFailureLast: notifyFailureLast,
       flowOverride: flowOverride,
-      jobOverride: jobOverride,
+      nodeOverride: nodeOverride,
     };
 
     // Set concurrency option, default is skip
@@ -117,7 +117,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var failureActions = this.model.get("failureAction");
     var notifyFailure = this.model.get("notifyFailure");
     var flowParams = this.model.get("flowParams");
-    var jobParams = this.model.get("jobParams");
+    var nodeParams = this.model.get("nodeParams");
     var isRunning = this.model.get("isRunning");
     var concurrentOption = this.model.get("concurrentOption");
     var pipelineLevel = this.model.get("pipelineLevel");
@@ -178,13 +178,13 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
           });
         }
       }
-      if (jobParams) {
-        for (var jobOrFlow in jobParams) {
-          for (var key in jobParams[jobOrFlow]) {
+      if (nodeParams) {
+        for (var jobOrFlow in nodeParams) {
+          for (var key in nodeParams[jobOrFlow]) {
             editTableView.handleAddRow({
               paramJobOrFlow: jobOrFlow,
               paramkey: key,
-              paramvalue: jobParams[jobOrFlow][key]
+              paramvalue: nodeParams[jobOrFlow][key]
             });
           }
         }
@@ -386,7 +386,7 @@ azkaban.EditTableView = Backbone.View.extend({
     // global option (flowOverride)
     idSelect.options[0] = new Option("", "");
 
-    // job-specific options (jobOverride)
+    // node-specific options (nodeOverride)
     for (var i = 0; i < nodeIdsAndNestedIds.length; ++i) {
       var idOrNestedId = nodeIdsAndNestedIds[i];
       idSelect.options[i + 1] = new Option(idOrNestedId, idOrNestedId);
