@@ -336,8 +336,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         // to handle this scenario.
         this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
       } else {
-        throw new ExecutorManagerException("Execution "
+        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
+        logger.warn("Exception while cancelling flow. ", eme);
+        throw eme;
       }
     }
   }
