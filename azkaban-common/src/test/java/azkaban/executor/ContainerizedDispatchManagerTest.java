@@ -308,6 +308,26 @@ public class ContainerizedDispatchManagerTest {
     Assert.assertTrue(apiClient.getLastHttpPostParams().stream().anyMatch(pair -> cancelAction.equals(pair)));
   }
 
+  @Test
+  public void testCancelFlowWithMissingExecutor() throws Exception {
+    // Return a null executor for the unfinished execution
+    Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
+        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), null), flow1);
+    when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
+        executionReferencePair));
+
+    WrappedExecutorApiClient apiClient =
+        new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
+    ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
+    apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_SUCCESS_JSON);
+    dispatchManager.cancelFlow(flow1, this.user.getUserId());
+    Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
+        apiClient.getLastBuildExecutorUriRespone());
+    //Verify that httpPost was requested with the 'cancel' param.
+    Pair cancelAction = new Pair<String, String> ("action", "cancel");
+    Assert.assertTrue(apiClient.getLastHttpPostParams().stream().anyMatch(pair -> cancelAction.equals(pair)));
+  }
+
   private Props createContainerDispatchEnabledProps(Props parentProps) {
     Props containerProps = new Props(parentProps);
     containerProps.put(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
