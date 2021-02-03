@@ -30,12 +30,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.inject.Singleton;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ExecutorApiGateway {
+  private final static Logger logger = LoggerFactory.getLogger(ExecutorApiGateway.class);
   public final static String DEFAULT_EXECUTION_RESOURCE = "executor";
   public final static String CONTAINERIZED_EXECUTION_RESOURCE = "container";
 
@@ -91,11 +95,17 @@ public class ExecutorApiGateway {
   }
 
   @VisibleForTesting
-  String createExecutionPath(int execId) {
+  String createExecutionPath(final Optional<Integer> executionId) throws ExecutorManagerException {
     if (!isReverseProxyEnabled) {
       return "/" + executionResourceName;
     }
-    return "/" + executionResourceNameModifier.apply(execId, executionResourceName);
+
+    if(!executionId.isPresent()) {
+      final String errorMessage = "Execution Id must be provided when reverse-proxy is enabled";
+      logger.error(errorMessage);
+      throw new ExecutorManagerException(errorMessage);
+    }
+    return "/" + executionResourceNameModifier.apply(executionId.get(), executionResourceName);
   }
 
   Map<String, Object> callWithExecutionId(final String host, final int port,
@@ -116,7 +126,7 @@ public class ExecutorApiGateway {
 
       // Ideally we should throw an exception if executionId is null but some existing code
       // (updateExecutions()) expects to call this method with a null executionId.
-      String executionPath = (executionId == null) ? null : createExecutionPath(executionId);
+      String executionPath = createExecutionPath(Optional.ofNullable(executionId));
       return callForJsonObjectMap(host, port, executionPath, paramList);
     } catch (final IOException e) {
       throw new ExecutorManagerException(e.getMessage(), e);
