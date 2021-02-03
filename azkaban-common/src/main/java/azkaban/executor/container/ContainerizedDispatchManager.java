@@ -20,7 +20,10 @@ import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
+import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
 import azkaban.executor.ExecutorLoader;
@@ -316,6 +319,25 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
         }
+      }
+    }
+  }
+
+  @Override
+  public void cancelFlow(ExecutableFlow exFlow, String userId)
+      throws ExecutorManagerException {
+    synchronized (exFlow) {
+      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+          .fetchUnfinishedFlows();
+      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
+        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
+            .get(exFlow.getExecutionId());
+        // Note that ExecutionReference may have the 'executor' as null. ApiGateway call is expected
+        // to handle this scenario.
+        this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
+      } else {
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
       }
     }
   }

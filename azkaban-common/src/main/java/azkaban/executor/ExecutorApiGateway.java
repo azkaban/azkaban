@@ -86,7 +86,7 @@ public class ExecutorApiGateway {
         null, params);
   }
 
-  Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
+  public Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
       final String action, final String user, final Pair<String, String>... params)
       throws ExecutorManagerException {
     final Executor executor = (isReverseProxyEnabled ? defaultEmptyExecutor : ref.getExecutor().get());
