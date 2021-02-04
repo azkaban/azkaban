@@ -32,6 +32,7 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
@@ -592,6 +593,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     }
     // Store version set id in execution_flows for execution_id
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
+
+    // Marking flow as PREPARING from DISPATCHING as POD creation request is submitted
+    flow.setStatus(Status.PREPARING);
+    this.executorLoader.updateExecutableFlow(flow);
   }
 
   /**

@@ -54,9 +54,9 @@ import org.slf4j.LoggerFactory;
  * When the flow will be executed or triggered by schedule, it will be added in a queue maintained
  * in database. The state of execution will be READY in case of Containerized dispatch. When the
  * flow will be picked up by @{@link QueueProcessorThread} to dispatch it to containerized
- * infrastructure, it will be marked as DISPATCHING. Once flow preparation will start on container,
- * it will be marked as PREPARING. When a flow will be ready to run on container, it will be marked
- * as RUNNING. In case of failure in dispatch, it will move back to READY state in queue.
+ * infrastructure, it will be marked as DISPATCHING. Once the container creation request is
+ * sent, it will be marked as PREPARING. When a flow will be ready to run on container, it will
+ * be marked as RUNNING. In case of failure in dispatch, it will move back to READY state in queue.
  */
 @Singleton
 public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter {
