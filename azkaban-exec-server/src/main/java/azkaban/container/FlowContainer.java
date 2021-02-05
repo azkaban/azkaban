@@ -90,8 +90,8 @@ import org.slf4j.LoggerFactory;
  *  3.The FlowContainer creates the project directory named "project" which contains all the
  *    project dependencies. It also serves as execution directory.
  *
- *  The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to
- *  PREPARING before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
+ *  The flow execution's status is PREPARING when FlowContainer is called. It's status is set to
+ *  RUNNING from FlowRunner. The rest of the state machine is handled by FlowRunner.
  */
 public class FlowContainer {
 
@@ -278,10 +278,6 @@ public class FlowContainer {
       throw new ExecutorManagerException("Error loading flow for exec: " + execId +
               ". Terminating flow container launch");
     }
-
-    // Update the status of the flow from DISPATCHING to PREPARING
-    flow.setStatus(Status.PREPARING);
-    this.executorLoader.updateExecutableFlow(flow);
 
     createFlowRunner(flow);
     submitFlowRunner();
