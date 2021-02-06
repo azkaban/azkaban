@@ -134,8 +134,6 @@ public class Constants {
   public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
-  public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
-  public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
   public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
   public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
@@ -412,7 +410,10 @@ public class Constants {
     public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
         "executor.props.resolve.overrideExisting.enabled";
 
-    public static final String EXECUTOR_CONNECTION_TLS_ENABLED = "executor.connection.tls.enabled";
+    // Executor client TLS properties
+    public static final String EXECUTOR_CLIENT_TLS_ENABLED = "azkaban.executor.client.tls.enabled";
+    public static final String EXECUTOR_CLIENT_TRUSTSTORE_PATH = "azkaban.executor.client.truststore";
+    public static final String EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD = "azkaban.executor.client.trustpassword";
 
     public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED =
         "azkaban.executor.reverse.proxy.enabled";
