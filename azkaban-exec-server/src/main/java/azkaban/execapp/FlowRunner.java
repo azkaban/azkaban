@@ -930,7 +930,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       final Map<String, String> flowParam =
           this.flow.getExecutionOptions().getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
-        props.putAll(flowParam);
+        props = new Props(props, flowParam);
       }
     }
 
@@ -938,26 +938,28 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
         .getNodeParameters();
     if (nodeParams != null && !nodeParams.isEmpty()) {
-      applyNodeOverrides(node, nodeParams, props);
+      props = applyNodeOverrides(node, nodeParams, props);
     }
 
     node.setInputProps(props);
   }
 
-  private void applyNodeOverrides(final ExecutableNode node,
+  private Props applyNodeOverrides(final ExecutableNode node,
       final Map<String, Map<String, String>> nodeParams, final Props props) {
+    Props propsWithOverides = props;
     if (node.getParentFlow() != null) {
       // apply recursively top->down
-      applyNodeOverrides(node.getParentFlow(), nodeParams, props);
+      propsWithOverides = applyNodeOverrides(node.getParentFlow(), nodeParams, props);
     }
     // overrides by plain node id
     if (nodeParams.containsKey(node.getId())) {
-      props.putAll(nodeParams.get(node.getId()));
+      propsWithOverides = new Props(propsWithOverides, nodeParams.get(node.getId()));
     }
     // full nested id path overrides plain node id
     if (nodeParams.containsKey(node.getNestedId())) {
-      props.putAll(nodeParams.get(node.getNestedId()));
+      propsWithOverides = new Props(propsWithOverides, nodeParams.get(node.getNestedId()));
     }
+    return propsWithOverides;
   }
 
   /**
