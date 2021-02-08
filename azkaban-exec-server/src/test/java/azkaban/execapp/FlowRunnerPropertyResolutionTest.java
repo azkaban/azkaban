@@ -65,7 +65,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
   @Test
   public void testPropertyResolution() throws Exception {
     this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
-    assertProperties(false);
+    assertProperties();
   }
 
   @Test
@@ -155,13 +155,13 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         .getUploadedFlowFile(eq(project.getId()), eq(project.getVersion()), eq(FLOW_YAML_FILE),
             eq(1), any(File.class)))
         .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE));
-    assertProperties(true);
+    assertProperties();
   }
 
   /**
    * Helper method to test the flow property resolution.
    */
-  private void assertProperties(final boolean isAzkabanFlowVersion20) throws Exception {
+  private void assertProperties() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
     flowProps.put("props7", "flow7");
     flowProps.put("props6", "flow6");
