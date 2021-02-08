@@ -90,10 +90,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
         // overrides by nested job id: this is the most specific, so always wins
         "innerflow:job4", ImmutableMap.of(
-            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5"),
-        // overrides by plain job id: most specific after full nested id
-        "job4", ImmutableMap.of(
-            "props4", "job4-val-4", "props5", "job4-val-5", "props7", "job4-val-7")
+            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5")
     ));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
@@ -134,8 +131,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("job9", job4Props.get("props9"));
     // nodeOverride by the sub-flow parent
     Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
-    // nodeOverride with plain job id
-    Assert.assertEquals("job4-val-7", job4Props.get("props7"));
+    Assert.assertEquals("execflow7", job4Props.get("props7"));
     // nodeOverride with nested id
     Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
     Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
@@ -162,10 +158,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
         // overrides by nested job id: this is the most specific, so always wins
         "innerflow:job4", ImmutableMap.of(
-            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5"),
-        // overrides by plain job id: most specific after full nested id
-        "job4", ImmutableMap.of(
-            "props4", "job4-val-4", "props5", "job4-val-5", "props7", "job4-val-7")
+            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5")
     ));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
@@ -206,9 +199,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("job9", job4Props.get("props9"));
     // nodeOverride by the sub-flow parent
     Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
-    // nodeOverride with plain job id
-    Assert.assertEquals("job4-val-7", job4Props.get("props7"));
-    // nodeOverride with nested id
+    Assert.assertEquals("execflow7", job4Props.get("props7"));
     Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
     Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
     Assert.assertEquals("shared1", job4Props.get("props1"));

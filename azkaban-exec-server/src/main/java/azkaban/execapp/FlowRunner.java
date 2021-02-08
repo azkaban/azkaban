@@ -951,11 +951,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // apply recursively top->down
       propsWithOverides = applyNodeOverrides(node.getParentFlow(), nodeParams, props);
     }
-    // overrides by plain node id
-    if (nodeParams.containsKey(node.getId())) {
-      propsWithOverides = new Props(propsWithOverides, nodeParams.get(node.getId()));
-    }
-    // full nested id path overrides plain node id
     if (nodeParams.containsKey(node.getNestedId())) {
       propsWithOverides = new Props(propsWithOverides, nodeParams.get(node.getNestedId()));
     }

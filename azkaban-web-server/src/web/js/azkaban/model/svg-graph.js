@@ -28,24 +28,23 @@ azkaban.GraphModel = Backbone.Model.extend({
   addFlow: function (data) {
     this.processFlowData(data);
     this.set({'data': data});
-    this.set({'nodeIdsAndNestedIds': this.getAllNodeIdsAndNestedIds(data)});
+    this.set({'nestedIds': this.getAllNestedIds(data)});
   },
 
-  getAllNodeIdsAndNestedIds: function (rootNode) {
+  getAllNestedIds: function (rootNode) {
     var nodes = rootNode["nodes"]
-    var nodeIdsAndNestedIds = [];
+    var nestedIds = [];
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i];
-      nodeIdsAndNestedIds.push(node.id);
-      nodeIdsAndNestedIds.push(node.nestedId);
+      nestedIds.push(node.nestedId);
       if (node.type == "flow") {
-        var childIds = this.getAllNodeIdsAndNestedIds(node);
+        var childIds = this.getAllNestedIds(node);
         if (childIds && childIds.length > 0) {
-          nodeIdsAndNestedIds.push(...childIds);
+          nestedIds.push(...childIds);
         }
       }
     }
-    return [...new Set(nodeIdsAndNestedIds)].sort();
+    return [...new Set(nestedIds)].sort();
   },
 
   processFlowData: function (data) {

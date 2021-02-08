@@ -206,7 +206,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
     var self = this;
     var loadCallback = function () {
-      // loadFlowInfo needs the list of nodeIdsAndNestedIds. that's why loading
+      // loadFlowInfo needs the list of nestedIds. that's why loading
       // it here in the callback.
       self.loadFlowInfo(projectName, flowId, execId);
       if (jobId) {
@@ -342,7 +342,7 @@ azkaban.EditTableView = Backbone.View.extend({
   },
 
   handleAddRow: function (data) {
-    var nodeIdsAndNestedIds = executableGraphModel.get("nodeIdsAndNestedIds");
+    var nestedIds = executableGraphModel.get("nestedIds");
 
     var jobOrFlow = "";
     if (data.paramJobOrFlow) {
@@ -387,10 +387,10 @@ azkaban.EditTableView = Backbone.View.extend({
     idSelect.options[0] = new Option("", "");
 
     // node-specific options (nodeOverride)
-    for (var i = 0; i < nodeIdsAndNestedIds.length; ++i) {
-      var idOrNestedId = nodeIdsAndNestedIds[i];
-      idSelect.options[i + 1] = new Option(idOrNestedId, idOrNestedId);
-      if (jobOrFlow == idOrNestedId) {
+    for (var i = 0; i < nestedIds.length; ++i) {
+      var nestedId = nestedIds[i];
+      idSelect.options[i + 1] = new Option(nestedId, nestedId);
+      if (jobOrFlow == nestedId) {
         idSelect.options[i + 1].selected = true;
       }
     }
