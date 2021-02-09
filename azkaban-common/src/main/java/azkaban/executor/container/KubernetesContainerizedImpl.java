@@ -21,6 +21,7 @@ import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.Constants.FlowParameters;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
 import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
@@ -31,6 +32,7 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
@@ -460,7 +462,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     envVariables.put(ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID,
         String.valueOf(executionId));
     setupJavaRemoteDebug(envVariables, flowParam);
-
+    setupDevPod(envVariables, flowParam);
     // Add env variables to spec builder
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
@@ -478,6 +480,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         .containsKey(Constants.FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG)) {
       envVariables.put(ContainerizedDispatchManagerProperties.ENV_JAVA_ENABLE_DEBUG,
           flowParam.get(Constants.FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG));
+    }
+  }
+
+  private void setupDevPod(Map<String, String> envVariables,
+      final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
+      envVariables.put(ContainerizedDispatchManagerProperties.ENV_ENABLE_DEV_POD,
+          flowParam.get(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD));
     }
   }
 
@@ -582,6 +593,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     }
     // Store version set id in execution_flows for execution_id
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
+
+    // Marking flow as PREPARING from DISPATCHING as POD creation request is submitted
+    flow.setStatus(Status.PREPARING);
+    this.executorLoader.updateExecutableFlow(flow);
   }
 
   /**

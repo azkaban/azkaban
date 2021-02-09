@@ -15,6 +15,8 @@
  */
 package azkaban.server;
 
+import azkaban.Constants;
+import azkaban.Constants.FlowParameters;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 
 public class HttpRequestUtils {
@@ -152,9 +155,13 @@ public class HttpRequestUtils {
     if (!hasPermission(userManager, user, Type.ADMIN)) {
       params.remove(ExecutionOptions.FLOW_PRIORITY);
       params.remove(ExecutionOptions.USE_EXECUTOR);
+      params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
+      params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
     } else {
       validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
+      validateBooleanParam(params, FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
+      validateBooleanParam(params, FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
     }
   }
 
@@ -168,6 +175,23 @@ public class HttpRequestUtils {
     if (params != null && params.containsKey(paramName)
         && !StringUtils.isNumeric(params.get(paramName))) {
       throw new ExecutorManagerException(paramName + " should be an integer");
+    }
+    return true;
+  }
+
+  /**
+   * Parse a string as boolean and throws exception if parsed value is not a valid boolean.
+   *
+   * @param params
+   * @param paramName
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public static boolean validateBooleanParam(final Map<String, String> params,
+      final String paramName) throws ExecutorManagerException {
+    if (params != null && params.containsKey(paramName) && null ==
+        BooleanUtils.toBooleanObject(params.get(paramName))) {
+      throw new ExecutorManagerException(paramName + " should be boolean");
     }
     return true;
   }
