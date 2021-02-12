@@ -43,6 +43,7 @@ Features
    howTo
    plugins
    jobTypes
+   imageMgmtAPI
 
 
 *****
