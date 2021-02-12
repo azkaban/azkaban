@@ -18,7 +18,6 @@ package azkaban.imagemgmt.services;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.dto.ImageVersionDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -33,11 +32,9 @@ public interface ImageVersionService {
    *
    * @param imageVersion
    * @return int
-   * @throws IOException
    * @throws ImageMgmtException
    */
-  public int createImageVersion(ImageVersionDTO imageVersion) throws IOException,
-      ImageMgmtException;
+  public int createImageVersion(ImageVersionDTO imageVersion) throws ImageMgmtException;
 
   /**
    * Method to find image versions based on image metadata such as image type, image version,
@@ -54,10 +51,7 @@ public interface ImageVersionService {
    * Update a new version of an image type using given image metadata.
    *
    * @param imageVersion
-   * @throws IOException
    * @throws ImageMgmtException
    */
-  public void updateImageVersion(ImageVersionDTO imageVersion) throws IOException,
-      ImageMgmtException;
-
+  public void updateImageVersion(ImageVersionDTO imageVersion) throws ImageMgmtException;
 }

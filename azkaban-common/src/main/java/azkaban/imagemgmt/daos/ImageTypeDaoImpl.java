@@ -71,7 +71,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
 
   @Override
   public int createImageType(final ImageType imageType) {
-    final SQLTransaction<Integer> insertAndGetSpaceId = transOperator -> {
+    final SQLTransaction<Integer> insertAndGetId = transOperator -> {
       // insert image type record
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
       final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
@@ -96,7 +96,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       /* what will happen if there is a partial failure in
          any of the below statements?
          Ideally all should happen in a transaction */
-      imageTypeId = this.databaseOperator.transaction(insertAndGetSpaceId);
+      imageTypeId = this.databaseOperator.transaction(insertAndGetId);
       if (imageTypeId < 1) {
         log.error(String.format("Exception while creating image type due to invalid input, "
             + "imageTypeId: %d.", imageTypeId));

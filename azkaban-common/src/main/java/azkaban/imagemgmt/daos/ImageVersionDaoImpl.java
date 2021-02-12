@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.slf4j.Logger;
@@ -97,6 +98,11 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       + "and lower(it.name) in ( ${image_types} )) "
       + "inner_tbl group by inner_tbl.name);";
 
+  private static final String SELECT_IMAGE_VERSION_BY_TYPE_AND_VERSION_ID = "select iv.id, iv.path, "
+      + "iv.description, iv.version, iv.version, it.name, iv.state, iv.release_tag, iv.created_on, "
+      + "iv.created_by, iv.modified_on, iv.modified_by from image_versions iv, image_types it where "
+      + "it.id = iv.type_id and lower(it.name) = ? and iv.id = ?";
+
   @Inject
   public ImageVersionDaoImpl(final DatabaseOperator databaseOperator,
       final ImageTypeDao imageTypeDao) {
@@ -109,7 +115,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
     final ImageType imageType = this.imageTypeDao.getImageTypeByName(imageVersion.getName())
         .orElseThrow(() -> new ImageMgmtDaoException("Unable to fetch image type metadata. Invalid "
             + "image type : " + imageVersion.getName()));
-    final SQLTransaction<Long> insertAndGetSpaceId = transOperator -> {
+    final SQLTransaction<Long> insertAndGetId = transOperator -> {
       // Passing timestamp from the code base and can be formatted accordingly based on timezone
       final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
       transOperator
@@ -126,7 +132,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       /* what will happen if there is a partial failure in
          any of the below statements?
          Ideally all should happen in a transaction */
-      imageVersionId = this.databaseOperator.transaction(insertAndGetSpaceId).intValue();
+      imageVersionId = this.databaseOperator.transaction(insertAndGetId).intValue();
       if (imageVersionId < 1) {
         log.error(String.format("Exception while creating image version due to invalid input, "
             + "imageVersionId: %d.", imageVersionId));
@@ -214,6 +220,22 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
     final List<ImageVersion> imageVersions = findImageVersions(imageMetadataRequest);
     return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
         : Optional.empty();
+  }
+
+  @Override
+  public Optional<ImageVersion> getImageVersion(final String imageTypeName,
+      final int versionId) throws ImageMgmtException {
+    try {
+      List<ImageVersion> imageVersions = this.databaseOperator.query(
+          SELECT_IMAGE_VERSION_BY_TYPE_AND_VERSION_ID, new FetchImageVersionHandler(),
+          imageTypeName, versionId);
+      return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
+          : Optional.empty();
+    } catch (final SQLException ex) {
+      log.error("Exception while fetching image version ", ex);
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format("Exception while fetching "
+          + "image version for image type: %s, version id: %d", imageTypeName, versionId));
+    }
   }
 
   @Override

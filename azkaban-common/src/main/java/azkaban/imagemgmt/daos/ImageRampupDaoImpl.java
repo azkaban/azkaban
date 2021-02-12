@@ -104,6 +104,12 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.type_id = it.id and irp.active = ? "
       + "and iv.type_id = it.id and it.active = ?";
 
+  private static final String SELECT_RAMPUP_PLAN_CONTAINING_IMAGE_VERSION_QUERY = "select irp.id, "
+      + "irp.name, irp.description, irp.active, it.name image_type_name, irp.created_on, "
+      + "irp.created_by, irp.modified_on, irp.modified_by from image_rampup_plan irp, "
+      + "image_types it where irp.type_id = it.id and lower(it.name) = ? and irp.id in (select "
+      + "plan_id from image_rampup where version_id = ?)";
+
 
   @Inject
   public ImageRampupDaoImpl(final DatabaseOperator databaseOperator,
@@ -241,11 +247,41 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         getActiveImageRampupPlan(imageTypeName);
   }
 
+  @Override
+  public List<ImageRampupPlan> getImageRampupPlans(final String imageTypeName, final int versionId)
+      throws ImageMgmtException {
+    try {
+      List<ImageRampupPlan> imageRampupPlans = this.databaseOperator.query(
+          SELECT_RAMPUP_PLAN_CONTAINING_IMAGE_VERSION_QUERY, new FetchImageRampupPlanHandler(),
+          imageTypeName.toLowerCase(), versionId);
+      for(ImageRampupPlan imageRampupPlan : imageRampupPlans) {
+        final List<ImageRampup> imageRampups = this.databaseOperator
+            .query(SELECT_IMAGE_RAMPUP_QUERY,
+                new FetchImageRampupHandler(), imageRampupPlan.getId());
+        imageRampupPlan.setImageRampups(imageRampups);
+      }
+      return imageRampupPlans;
+    } catch (final SQLException ex) {
+      log.error(String.format("Exception while fetching rampup plans for image type: %s, version "
+              + "id: %d. ", imageTypeName, versionId), ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          String.format("Exception while fetching rampup plans for image type: %s, version "
+              + "id: %d. ", imageTypeName, versionId));
+    }
+  }
+
   private Optional<ImageRampupPlan> getActiveImageRampupPlan(final String imageTypeName)
       throws ImageMgmtException {
     try {
-      return this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
+      List<ImageRampupPlan> imageRampupPlans =
+          this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
           new FetchImageRampupPlanHandler(), imageTypeName.toLowerCase(), true);
+      if (imageRampupPlans != null && imageRampupPlans.size() > 1) {
+        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+            String.format("Unable to fetch active rampup plan as there are more than one active "
+                + "rampup plan for image type: %s. ", imageTypeName));
+      }
+      return imageRampupPlans.isEmpty() ? Optional.empty() : Optional.of(imageRampupPlans.get(0));
     } catch (final SQLException ex) {
       log.error(String.format("Exception while fetching active rampup plan for image type: %s. ",
           imageTypeName), ex);
@@ -524,14 +560,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * ResultSetHandler implementation class for fetching image rampup plan
    */
   public static class FetchImageRampupPlanHandler implements
-      ResultSetHandler<Optional<ImageRampupPlan>> {
+      ResultSetHandler<List<ImageRampupPlan>> {
 
     @Override
-    public Optional<ImageRampupPlan> handle(final ResultSet rs) throws SQLException {
+    public List<ImageRampupPlan> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Optional.empty();
+        return Collections.emptyList();
       }
-      final ImageRampupPlan imageRampupPlan = new ImageRampupPlan();
+      final List<ImageRampupPlan> imageRampupPlans = new ArrayList<>();
       do {
         final int id = rs.getInt("id");
         final String name = rs.getString("name");
@@ -542,6 +578,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         final String createdBy = rs.getString("created_by");
         final String modifiedOn = rs.getString("modified_on");
         final String modifiedBy = rs.getString("modified_by");
+        final ImageRampupPlan imageRampupPlan = new ImageRampupPlan();
         imageRampupPlan.setId(id);
         imageRampupPlan.setPlanName(name);
         imageRampupPlan.setDescription(description);
@@ -551,8 +588,9 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         imageRampupPlan.setCreatedBy(createdBy);
         imageRampupPlan.setModifiedBy(modifiedBy);
         imageRampupPlan.setModifiedOn(modifiedOn);
+        imageRampupPlans.add(imageRampupPlan);
       } while (rs.next());
-      return Optional.of(imageRampupPlan);
+      return imageRampupPlans;
     }
   }
 
