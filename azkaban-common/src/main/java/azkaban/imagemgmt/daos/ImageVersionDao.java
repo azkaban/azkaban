@@ -62,6 +62,7 @@ public interface ImageVersionDao {
 
   /**
    * Returns active image versions for the given image types.
+   *
    * @param imageTypes
    * @return List<ImageVersion>
    * @throws ImageMgmtException
@@ -80,6 +81,7 @@ public interface ImageVersionDao {
 
   /**
    * Gets image version based on image type and version.
+   *
    * @param imageTypeName
    * @param imageVersion
    * @return Optional<ImageVersion>
@@ -90,6 +92,7 @@ public interface ImageVersionDao {
 
   /**
    * Get image version for the given image type and version id.
+   *
    * @param imageTypeName
    * @param versionId
    * @return Optional<ImageVersion>

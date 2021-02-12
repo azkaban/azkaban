@@ -21,6 +21,7 @@ import java.util.List;
  * Represents image version and its associated metadata.
  */
 public class ImageVersionUsageDataDTO {
+
   private final ImageVersionDTO imageVersion;
   private final List<ImageRampupPlanResponseDTO> imageRampupPlans;
 
@@ -31,10 +32,10 @@ public class ImageVersionUsageDataDTO {
   }
 
   public ImageVersionDTO getImageVersion() {
-    return imageVersion;
+    return this.imageVersion;
   }
 
   public List<ImageRampupPlanResponseDTO> getImageRampupPlans() {
-    return imageRampupPlans;
+    return this.imageRampupPlans;
   }
 }

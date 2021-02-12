@@ -81,6 +81,7 @@ public interface ImageRampupDao {
   /**
    * Returns list of image rampup plans for the given image type and version id. This is
    * predominantly used to fetch the plan containing the image version id.
+   *
    * @param imageTypeName
    * @param versionId
    * @return List<ImageRampupPlan>

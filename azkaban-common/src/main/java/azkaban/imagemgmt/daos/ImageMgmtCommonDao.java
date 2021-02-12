@@ -23,6 +23,16 @@ import azkaban.imagemgmt.exception.ImageMgmtException;
  * image version deletes image version and all the associated metadata.
  */
 public interface ImageMgmtCommonDao {
+
+  /**
+   * Method to delete image version and associated metadata.
+   *
+   * @param imageTypeName
+   * @param versionId
+   * @param forceDelete
+   * @return
+   * @throws ImageMgmtException
+   */
   public DeleteResponse deleteImageVersion(final String imageTypeName, final int versionId,
       final Boolean forceDelete) throws ImageMgmtException;
 }

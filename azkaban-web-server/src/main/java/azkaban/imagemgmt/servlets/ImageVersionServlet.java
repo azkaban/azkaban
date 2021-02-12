@@ -165,7 +165,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           ImageVersionDTO.class);
       // Check for required permission to invoke the API
       final String imageType = imageVersion.getName();
-      if(imageType == null) {
+      if (imageType == null) {
         log.info("Required field imageType is null. Must provide valid imageType to create image "
             + "version.");
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
@@ -213,7 +213,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           ImageVersionDTO.class);
       // Check for required permission to invoke the API
       final String imageType = imageVersion.getName();
-      if(imageType == null) {
+      if (imageType == null) {
         log.info("Required field imageType is null. Must provide valid imageType to update image "
             + "version.");
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
@@ -256,7 +256,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       }
       final String imageType = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_TYPE);
       // Check for required permission to invoke the API
-      if(imageType == null) {
+      if (imageType == null) {
         log.info("Required field imageType is null. Must provide valid imageType to update image "
             + "version.");
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
@@ -274,11 +274,12 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           Boolean.valueOf(strForceDelete);
 
       // Invoke delete image version metadata for image version id and image type
-      DeleteResponse deleteResponse = this.imageMgmtCommonService.deleteImageVersion(imageType, id,
-          forceDelete);
-      if(deleteResponse.hasErrors()) {
-        sendResponse(resp, deleteResponse.getErrorCode().get().getCode(), deleteResponse.getMessage()
-            , deleteResponse.getData().orElse(null));
+      final DeleteResponse deleteResponse = this.imageMgmtCommonService
+          .deleteImageVersion(imageType, id,
+              forceDelete);
+      if (deleteResponse.hasErrors()) {
+        sendResponse(resp, deleteResponse.getErrorCode().get().getCode(),
+            deleteResponse.getMessage(), deleteResponse.getData().orElse(null));
       } else {
         sendResponse(resp, HttpServletResponse.SC_OK, deleteResponse.getMessage());
       }

@@ -18,7 +18,11 @@ package azkaban.imagemgmt.dto;
 import azkaban.imagemgmt.exception.ErrorCode;
 import java.util.Optional;
 
+/**
+ * Response DTO for representing delete response
+ */
 public class DeleteResponse {
+
   private Optional<Object> data = Optional.empty();
   private Optional<ErrorCode> errorCode = Optional.empty();
   private String message;
@@ -31,7 +35,7 @@ public class DeleteResponse {
     return this.data;
   }
 
-  public void setData(Object data) {
+  public void setData(final Object data) {
     this.data = Optional.ofNullable(data);
   }
 
@@ -39,15 +43,15 @@ public class DeleteResponse {
     return this.errorCode;
   }
 
-  public void setErrorCode(ErrorCode errorCode) {
+  public void setErrorCode(final ErrorCode errorCode) {
     this.errorCode = Optional.ofNullable(errorCode);
   }
 
   public String getMessage() {
-    return message;
+    return this.message;
   }
 
-  public void setMessage(String message) {
+  public void setMessage(final String message) {
     this.message = message;
   }
 }

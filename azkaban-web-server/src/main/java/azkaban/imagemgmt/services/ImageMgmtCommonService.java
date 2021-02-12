@@ -22,12 +22,13 @@ public interface ImageMgmtCommonService {
 
   /**
    * Delete an image version and associated metadata for an image type.
+   *
    * @param imageType
    * @param versionId
    * @param forceDelete
    * @return DeleteResponse
    * @throws ImageMgmtException
    */
-  public DeleteResponse deleteImageVersion(String imageType, int versionId, Boolean forceDelete)
-      throws ImageMgmtException;
+  public DeleteResponse deleteImageVersion(final String imageType, final int versionId,
+      final Boolean forceDelete) throws ImageMgmtException;
 }

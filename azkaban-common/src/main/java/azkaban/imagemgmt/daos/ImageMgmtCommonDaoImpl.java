@@ -84,44 +84,47 @@ public class ImageMgmtCommonDaoImpl implements ImageMgmtCommonDao {
   @Override
   public DeleteResponse deleteImageVersion(final String imageTypeName, final int versionId,
       final Boolean forceDelete) throws ImageMgmtException {
-    DeleteResponse deleteResponse = new DeleteResponse();
+    final DeleteResponse deleteResponse = new DeleteResponse();
     // Get the image version for the image type and id. Throw exception if not exits.
-    Optional<ImageVersion> imageVersion = this.imageVersionDao.getImageVersion(
+    final Optional<ImageVersion> imageVersion = this.imageVersionDao.getImageVersion(
         imageTypeName, versionId);
-    if(!imageVersion.isPresent()) {
+    if (!imageVersion.isPresent()) {
       deleteResponse.setErrorCode(ErrorCode.NOT_FOUND);
       deleteResponse.setMessage(String.format("The version id: %d for image type: %s does not "
-              + "exist.", versionId, imageTypeName));
+          + "exist.", versionId, imageTypeName));
       return deleteResponse;
     }
     // Get the rampup plan and rampup details for the image type and version id.
-    List<ImageRampupPlan> imageRampupPlans = this.imageRampupDao.getImageRampupPlans(imageTypeName,
-        versionId);
+    final List<ImageRampupPlan> imageRampupPlans = this.imageRampupDao
+        .getImageRampupPlans(imageTypeName,
+            versionId);
     // Collect the plan ids and delete the image rampup and rampup plan using that.
-    List<Integer> planIds = new ArrayList<>();
-    if(!CollectionUtils.isEmpty(imageRampupPlans)) {
-      for(ImageRampupPlan imageRampupPlan : imageRampupPlans) {
+    final List<Integer> planIds = new ArrayList<>();
+    if (!CollectionUtils.isEmpty(imageRampupPlans)) {
+      for (final ImageRampupPlan imageRampupPlan : imageRampupPlans) {
         planIds.add(imageRampupPlan.getId());
       }
       // If the version is used in any of the rampup plans throw error with the rampup plan details.
-      if(!forceDelete) {
+      if (!forceDelete) {
         log.info(String.format("The version id: %d (i.e. version: %s) for image type: %s is part "
-            + "of the existing rampup plans %s", versionId, imageVersion.get().getVersion(),
+                + "of the existing rampup plans %s", versionId, imageVersion.get().getVersion(),
             imageTypeName, imageRampupPlans));
-        ImageVersionUsageData imageVersionUsageData = new ImageVersionUsageData(imageVersion.get(),
+        final ImageVersionUsageData imageVersionUsageData = new ImageVersionUsageData(
+            imageVersion.get(),
             imageRampupPlans);
         deleteResponse.setData(imageVersionUsageData);
         deleteResponse.setErrorCode(ErrorCode.BAD_REQUEST);
         deleteResponse.setMessage(String.format("The version id: %d (i.e. version: %s) for "
-            + "image type: %s has below state and is associated with below rampup plans. Still "
+                + "image type: %s has below state and is associated with below rampup plans. Still "
                 + "want to proceed with the delete specify 'forceDelete' parameter as true.",
             versionId, imageVersion.get().getVersion(), imageTypeName));
         return deleteResponse;
       }
     } else {
-      if(!forceDelete && (State.ACTIVE.equals(imageVersion.get().getState()) ||
+      if (!forceDelete && (State.ACTIVE.equals(imageVersion.get().getState()) ||
           State.NEW.equals(imageVersion.get().getState()))) {
-        ImageVersionUsageData imageVersionUsageData = new ImageVersionUsageData(imageVersion.get(),
+        final ImageVersionUsageData imageVersionUsageData = new ImageVersionUsageData(
+            imageVersion.get(),
             null);
         deleteResponse.setData(imageVersionUsageData);
         deleteResponse.setErrorCode(ErrorCode.BAD_REQUEST);
@@ -134,18 +137,18 @@ public class ImageMgmtCommonDaoImpl implements ImageMgmtCommonDao {
     }
     // If forceDelete is set to true delete all the metadata pertaining the the image version
     // including rampup plan and rampup details (if exists).
-    this.deleteImageVersionAndRampupMetadata(imageTypeName,versionId, planIds);
+    deleteImageVersionAndRampupMetadata(imageTypeName, versionId, planIds);
     deleteResponse.setMessage(String.format("Successfully deleted image version metadata for "
-        + "version id: %d (i.e. version: %s) for image type: %s", versionId,
+            + "version id: %d (i.e. version: %s) for image type: %s", versionId,
         imageVersion.get().getVersion(), imageTypeName));
     return deleteResponse;
   }
 
   private void deleteImageVersionAndRampupMetadata(final String imageTypeName, final int versionId,
-      List<Integer> planIds) throws ImageMgmtException {
+      final List<Integer> planIds) throws ImageMgmtException {
     // If there is no plan delete the corresponding image version.
-    if(CollectionUtils.isEmpty(planIds)) {
-      this.deleteImageVersion(imageTypeName, versionId);
+    if (CollectionUtils.isEmpty(planIds)) {
+      deleteImageVersion(imageTypeName, versionId);
       return;
     }
     // In clause builder
@@ -184,8 +187,9 @@ public class ImageMgmtCommonDaoImpl implements ImageMgmtCommonDao {
       if (deleteCount < 1) {
         log.error(String.format("Exception while deleting from image version due to invalid input, "
             + "deleteCount: %d.", deleteCount));
-        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while deleting from image "
-            + "version due to invalid input");
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            "Exception while deleting from image "
+                + "version due to invalid input");
       }
     } catch (final SQLException e) {
       log.error("Unable to delete image version metadata", e);
@@ -213,8 +217,9 @@ public class ImageMgmtCommonDaoImpl implements ImageMgmtCommonDao {
       if (deleteCount < 1) {
         log.error(String.format("Exception while deleting from image version due to invalid input, "
             + "deleteCount: %d.", deleteCount));
-        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while deleting from image "
-            + "version due to invalid input");
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            "Exception while deleting from image "
+                + "version due to invalid input");
       }
     } catch (final SQLException e) {
       log.error("Unable to delete image version metadata", e);

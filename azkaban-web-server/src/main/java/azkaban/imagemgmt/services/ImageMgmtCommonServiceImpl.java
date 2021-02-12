@@ -35,6 +35,9 @@ import javax.inject.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation for image management common service
+ */
 public class ImageMgmtCommonServiceImpl implements ImageMgmtCommonService {
 
   private static final Logger log = LoggerFactory.getLogger(ImageVersionServiceImpl.class);
@@ -53,20 +56,22 @@ public class ImageMgmtCommonServiceImpl implements ImageMgmtCommonService {
   }
 
   @Override
-  public DeleteResponse deleteImageVersion(String imageType, int versionId, Boolean forceDelete)
+  public DeleteResponse deleteImageVersion(
+      final String imageType, final int versionId, final Boolean forceDelete)
       throws ImageMgmtException {
-    DeleteResponse deleteResponse = this.imageMgmtCommonDao.deleteImageVersion(imageType,
+    final DeleteResponse deleteResponse = imageMgmtCommonDao.deleteImageVersion(imageType,
         versionId, forceDelete);
     // Check if there are errors and data. If present convert to API specific response
-    if(deleteResponse.hasErrors() && deleteResponse.getData().isPresent()) {
-      ImageVersionUsageData imageVersionUsageData =
-          (ImageVersionUsageData)deleteResponse.getData().get();
-      ImageVersionDTO imageVersionDTO = imageVersionUsageData.getImageVersion() == null ? null :
-      this.versionConverter.convertToApiResponseDTO(imageVersionUsageData.getImageVersion());
-      List<ImageRampupPlanResponseDTO> imageRampupPlanResponseDTOs =
+    if (deleteResponse.hasErrors() && deleteResponse.getData().isPresent()) {
+      final ImageVersionUsageData imageVersionUsageData =
+          (ImageVersionUsageData) deleteResponse.getData().get();
+      final ImageVersionDTO imageVersionDTO = imageVersionUsageData.getImageVersion() == null ? null :
+          versionConverter.convertToApiResponseDTO(imageVersionUsageData.getImageVersion());
+      final List<ImageRampupPlanResponseDTO> imageRampupPlanResponseDTOs =
           imageVersionUsageData.getImageRampupPlans() == null ? null :
-      this.rampupPlanConverter.convertToApiResponseDTOs(imageVersionUsageData.getImageRampupPlans());
-      ImageVersionUsageDataDTO imageVersionUsageDataDTO = new ImageVersionUsageDataDTO(
+              rampupPlanConverter
+                  .convertToApiResponseDTOs(imageVersionUsageData.getImageRampupPlans());
+      final ImageVersionUsageDataDTO imageVersionUsageDataDTO = new ImageVersionUsageDataDTO(
           imageVersionDTO, imageRampupPlanResponseDTOs);
       deleteResponse.setData(imageVersionUsageDataDTO);
     }

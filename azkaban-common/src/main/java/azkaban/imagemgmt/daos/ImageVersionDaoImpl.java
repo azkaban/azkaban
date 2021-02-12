@@ -46,7 +46,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.slf4j.Logger;
@@ -98,10 +97,11 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       + "and lower(it.name) in ( ${image_types} )) "
       + "inner_tbl group by inner_tbl.name);";
 
-  private static final String SELECT_IMAGE_VERSION_BY_TYPE_AND_VERSION_ID = "select iv.id, iv.path, "
-      + "iv.description, iv.version, iv.version, it.name, iv.state, iv.release_tag, iv.created_on, "
-      + "iv.created_by, iv.modified_on, iv.modified_by from image_versions iv, image_types it where "
-      + "it.id = iv.type_id and lower(it.name) = ? and iv.id = ?";
+  private static final String SELECT_IMAGE_VERSION_BY_TYPE_AND_VERSION_ID =
+      "select iv.id, iv.path, "
+          + "iv.description, iv.version, iv.version, it.name, iv.state, iv.release_tag, iv.created_on, "
+          + "iv.created_by, iv.modified_on, iv.modified_by from image_versions iv, image_types it where "
+          + "it.id = iv.type_id and lower(it.name) = ? and iv.id = ?";
 
   @Inject
   public ImageVersionDaoImpl(final DatabaseOperator databaseOperator,
@@ -226,7 +226,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
   public Optional<ImageVersion> getImageVersion(final String imageTypeName,
       final int versionId) throws ImageMgmtException {
     try {
-      List<ImageVersion> imageVersions = this.databaseOperator.query(
+      final List<ImageVersion> imageVersions = this.databaseOperator.query(
           SELECT_IMAGE_VERSION_BY_TYPE_AND_VERSION_ID, new FetchImageVersionHandler(),
           imageTypeName, versionId);
       return imageVersions != null && imageVersions.size() > 0 ? Optional.of(imageVersions.get(0))
