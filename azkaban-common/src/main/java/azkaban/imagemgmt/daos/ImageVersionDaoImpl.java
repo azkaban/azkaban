@@ -272,7 +272,7 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       final Map<String, String> valueMap = new HashMap<>();
       valueMap.put("image_types", inClauseBuilder.toString());
 
-      Set<String> nonActiveStates = new TreeSet<>();
+      final Set<String> nonActiveStates = new TreeSet<>();
       nonActiveStates.add(State.NEW.getStateValue());
       nonActiveStates.add(State.UNSTABLE.getStateValue());
       nonActiveStates.add(State.DEPRECATED.getStateValue());

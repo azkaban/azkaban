@@ -18,6 +18,8 @@ package azkaban.imagemgmt.services;
 import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO;
 import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO.RampupMetadata;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.models.ImageVersion;
+import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ public class ImageVersionMetadataServiceImpl implements ImageVersionMetadataServ
    * This method provides image version information and rampup details in
    * ImageVersionMetadataResponseDTO format and used as a response for dispaying on /status API
    * page.
+   *
    * @return
    * @throws ImageMgmtException
    */
@@ -69,8 +72,11 @@ public class ImageVersionMetadataServiceImpl implements ImageVersionMetadataServ
               imageRampup.getRampupPercentage(), imageRampup.getStabilityTag()))
           .collect(Collectors.toList());
     }
-    return new ImageVersionMetadataResponseDTO(versionMetadata.getImageVersion().getVersion(),
-        versionMetadata.getImageVersion().getState(), versionMetadata.getImageVersion().getPath(),
-        rampups, versionMetadata.getMessage());
+    final ImageVersion imageVersion = versionMetadata.getImageVersion();
+    final String version = imageVersion != null ? imageVersion.getVersion() : null;
+    final State state = imageVersion != null ? imageVersion.getState() : null;
+    final String path = imageVersion != null ? imageVersion.getPath() : null;
+    return new ImageVersionMetadataResponseDTO(version, state, path, rampups,
+        versionMetadata.getMessage());
   }
 }
