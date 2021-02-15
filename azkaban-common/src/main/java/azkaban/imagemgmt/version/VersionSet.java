@@ -16,8 +16,8 @@
 
 package azkaban.imagemgmt.version;
 
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.utils.CaseInsensitiveKeyDeserializers;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -54,7 +54,7 @@ public class VersionSet {
    */
   public VersionSet(final String versionSetJsonString, final String versionSetMd5Hex,
       final int versionSetId)
-      throws IOException {
+      throws ImageMgmtException {
     this.versionSetJsonString = versionSetJsonString;
     this.versionSetMd5Hex = versionSetMd5Hex;
     this.versionSetId = versionSetId;
@@ -68,7 +68,7 @@ public class VersionSet {
           new TypeReference<TreeMap<String, VersionInfo>>() {
           });
     } catch (final Exception e) {
-      throw new IOException(
+      throw new ImageMgmtException(
           "Trouble converting Json string: " + this.versionSetJsonString + " to a TreeMap type", e);
     }
     logger.debug("Created version set with id: {}, md5: {}, json: {}",
