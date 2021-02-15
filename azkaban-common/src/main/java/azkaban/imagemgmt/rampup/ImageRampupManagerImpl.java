@@ -304,7 +304,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     if (!CollectionUtils.isEmpty(imageTypes)) {
       final List<ImageVersion> imageVersions =
           this.imageVersionDao.getLatestNonActiveVersionByImageTypes(imageTypes);
-      log.debug("Non Active image versions fetched: {} ", imageVersions);
+      log.info("Non Active image versions fetched: {} ", imageVersions);
       if (imageVersions != null && !imageVersions.isEmpty()) {
         for (final ImageVersion imageVersion : imageVersions) {
           imageTypeLatestNonActiveVersionMap.put(imageVersion.getName(), imageVersion);

@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -272,12 +271,8 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       final Map<String, String> valueMap = new HashMap<>();
       valueMap.put("image_types", inClauseBuilder.toString());
 
-      final Set<String> nonActiveStates = new TreeSet<>();
-      nonActiveStates.add(State.NEW.getStateValue());
-      nonActiveStates.add(State.UNSTABLE.getStateValue());
-      nonActiveStates.add(State.DEPRECATED.getStateValue());
       final StringBuilder statesInClauseBuilder = new StringBuilder();
-      for (int i = 0; i < nonActiveStates.size(); i++) {
+      for (int i = 0; i < State.getNonActiveStateValues().size(); i++) {
         statesInClauseBuilder.append("?,");
       }
       statesInClauseBuilder.setLength(statesInClauseBuilder.length() - 1);
@@ -291,9 +286,9 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet());
       log.info("imageTypesInLowerCase: " + imageTypesInLowerCase);
 
-      params.addAll(nonActiveStates);
+      params.addAll(State.getNonActiveStateValues());
       params.addAll(imageTypesInLowerCase);
-      params.addAll(nonActiveStates);
+      params.addAll(State.getNonActiveStateValues());
       params.addAll(imageTypesInLowerCase);
       imageVersions = this.databaseOperator.query(query,
           new FetchImageVersionHandler(), Iterables.toArray(params, Object.class));
