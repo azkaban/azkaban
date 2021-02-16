@@ -17,8 +17,9 @@
 package azkaban.container;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static azkaban.common.ExecJettyServerModule.*;
-import static com.google.common.base.Preconditions.*;
+import static azkaban.common.ExecJettyServerModule.EXEC_CONTAINER_CONTEXT;
+import static azkaban.common.ExecJettyServerModule.EXEC_JETTY_SERVER;
+import static com.google.common.base.Preconditions.checkState;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
@@ -36,6 +37,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.jobtype.HadoopJobUtils;
@@ -48,9 +50,13 @@ import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.storage.ProjectStorageManager;
-import azkaban.utils.*;
-import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.DependencyTransferManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Props;
+import azkaban.utils.StdOutErrRedirect;
+import azkaban.utils.Utils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
@@ -80,18 +86,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *  This class is the entrypoint for launching a flow execution in a container.
- *  It sets up the Azkaban Properties, the DAO, injects all the required classes, sets up the
- *  execution directory along with the project files, creates the FlowRunner and submits it to
- *  the executor service for execution.
- *  It assumes that their is a certain directory structure consisting of all the dependencies.
- *  1.The dependencies such as Hadoop, Hive, Pig, and other libraries.
- *  2.The jobtype plugins are expected in "$AZ_HOME/plugins/jobtypes">
- *  3.The FlowContainer creates the project directory named "project" which contains all the
- *    project dependencies. It also serves as execution directory.
- *
- *  The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to
- *  PREPARING before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
+ * This class is the entrypoint for launching a flow execution in a container. It sets up the
+ * Azkaban Properties, the DAO, injects all the required classes, sets up the execution directory
+ * along with the project files, creates the FlowRunner and submits it to the executor service for
+ * execution. It assumes that their is a certain directory structure consisting of all the
+ * dependencies. 1.The dependencies such as Hadoop, Hive, Pig, and other libraries. 2.The jobtype
+ * plugins are expected in "$AZ_HOME/plugins/jobtypes"> 3.The FlowContainer creates the project
+ * directory named "project" which contains all the project dependencies. It also serves as
+ * execution directory.
+ * <p>
+ * The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to PREPARING
+ * before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
  */
 public class FlowContainer {
 
@@ -136,8 +141,8 @@ public class FlowContainer {
   private final boolean validateProxyUser;
 
   /**
-   * Constructor of FlowContainer.
-   * It sets up all the DAO, all the loaders and Azkaban KeyStore.
+   * Constructor of FlowContainer. It sets up all the DAO, all the loaders and Azkaban KeyStore.
+   *
    * @param props Azkaban properties.
    * @throws IOException
    */
@@ -179,10 +184,10 @@ public class FlowContainer {
     this.eventReporter = eventReporter;
 
     this.jobLogChunkSize = this.azKabanProps.getString(JOB_LOG_CHUNK_SIZE,
-            DEFAULT_LOG_CHUNK_SIZE);
+        DEFAULT_LOG_CHUNK_SIZE);
     this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
-            DEFAULT_VALIDATE_PROXY_USER);
+        DEFAULT_VALIDATE_PROXY_USER);
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
@@ -191,20 +196,21 @@ public class FlowContainer {
 
     this.numJobThreadPerFlow = props.getInt(JOB_THREAD_COUNT, DEFAULT_JOB_TREAD_COUNT);
     if (this.azKabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
-            DEFAULT_USE_IN_MEMORY_KEYSTORE)) {
+        DEFAULT_USE_IN_MEMORY_KEYSTORE)) {
       // Setting up the in-memory KeyStore for all the job executions in the flow.
       setupKeyStore();
     }
     // Create a flow preparer
     this.flowPreparer = new ContainerizedFlowPreparer(
-            SERVICE_PROVIDER.getInstance(ProjectStorageManager.class),
-            SERVICE_PROVIDER.getInstance(DependencyTransferManager.class));
+        SERVICE_PROVIDER.getInstance(ProjectStorageManager.class),
+        SERVICE_PROVIDER.getInstance(DependencyTransferManager.class));
   }
 
   /**
    * The entry point of FlowContainer. Validates the input arguments and submits the flow for
-   * execution. It is assumed that AZ_HOME environment variable is set. If it is not set, then
-   * it explicitly sets it to present working directory.
+   * execution. It is assumed that AZ_HOME environment variable is set. If it is not set, then it
+   * explicitly sets it to present working directory.
+   *
    * @param args Takes the execution id and Project zip file path as inputs.
    * @throws IOException
    * @throws ExecutorManagerException
@@ -238,6 +244,7 @@ public class FlowContainer {
 
   /**
    * Set Azkaban Props
+   *
    * @param jobtypePluginPath Path where all the jobtype plugins are mounted.
    * @return Populated Azkaban properties.
    */
@@ -254,29 +261,29 @@ public class FlowContainer {
   }
 
   @VisibleForTesting
-  static void setInjector(final Props azkabanProps){
+  static void setInjector(final Props azkabanProps) {
     // Inject AzkabanCommonModule
     final Injector injector = Guice.createInjector(
-            new AzkabanCommonModule(azkabanProps),
-            new ExecJettyServerModule()
+        new AzkabanCommonModule(azkabanProps),
+        new ExecJettyServerModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
   }
 
   /**
-   * Submit flow
-   * Creates and submits the FlowRunner.
+   * Submit flow Creates and submits the FlowRunner.
+   *
    * @param execId Execution Id of the flow.
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
   void submitFlow(final int execId)
-          throws ExecutorManagerException {
+      throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
     if (flow == null) {
       logger.error("Error loading flow with execution Id " + execId);
       throw new ExecutorManagerException("Error loading flow for exec: " + execId +
-              ". Terminating flow container launch");
+          ". Terminating flow container launch");
     }
 
     // Update the status of the flow from DISPATCHING to PREPARING
@@ -289,6 +296,7 @@ public class FlowContainer {
 
   /**
    * Create Flow Runner and setup the flow execution directory with project dependencies.
+   *
    * @param flow Executable flow object.
    * @return FlowRunner object.
    * @throws ExecutorManagerException
@@ -311,10 +319,10 @@ public class FlowContainer {
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final AzkabanEventReporter eventReporter =
-            SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
+        SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     this.flowRunner = new FlowRunner(flow, this.executorLoader,
         this.projectLoader, this.jobTypeManager, this.azKabanProps, eventReporter,
-            null, commonMetrics, execMetrics);
+        null, commonMetrics, execMetrics);
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
@@ -339,27 +347,28 @@ public class FlowContainer {
 
   /**
    * Setup in-memory keystore to be reused for all the job executions in the flow.
+   *
    * @throws ExecutorManagerException
    */
   private void setupKeyStore() throws ExecutorManagerException {
     // Fetch keyStore props and use it to get the KeyStore, put it in JobTypeManager
-    Props commonPluginLoadProps = this.jobTypeManager.getCommonPluginLoadProps();
+    final Props commonPluginLoadProps = this.jobTypeManager.getCommonPluginLoadProps();
     if (commonPluginLoadProps != null) {
       // Load HadoopSecurityManager
       HadoopSecurityManager hadoopSecurityManager = null;
       try {
         final String hadoopSecurityClassName =
-                commonPluginLoadProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
+            commonPluginLoadProps.getString(HadoopJobUtils.HADOOP_SECURITY_MANAGER_CLASS_PARAM);
         final Class<?> hadoopSecurityManagerClass =
-                HadoopProxy.class.getClassLoader().loadClass(hadoopSecurityClassName);
+            HadoopProxy.class.getClassLoader().loadClass(hadoopSecurityClassName);
 
         logger.info("Loading hadoop security manager " + hadoopSecurityManagerClass.getName());
         hadoopSecurityManager = (HadoopSecurityManager)
-                Utils.callConstructor(hadoopSecurityManagerClass, commonPluginLoadProps);
+            Utils.callConstructor(hadoopSecurityManagerClass, commonPluginLoadProps);
       } catch (final Exception e) {
         logger.error("Could not instantiate Hadoop Security Manager ", e);
         throw new RuntimeException("Failed to get hadoop security manager!"
-                + e.getCause(), e);
+            + e.getCause(), e);
       }
 
       final KeyStore keyStore = hadoopSecurityManager.getKeyStore(commonPluginLoadProps);
@@ -370,18 +379,18 @@ public class FlowContainer {
       logger.info("In-memory Keystore is setup, delete the cert file");
       // Delete the cert file from disk as the KeyStore is already cached above.
       final Path certFilePath = Paths.get(this.azKabanProps.get(
-              Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION));
+          Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION));
       deleteSymlinkedFile(certFilePath);
     }
   }
 
   @VisibleForTesting
   void start() {
-     this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
+    this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
   }
 
   public void cancelFlow(final int execId, final String user)
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
 
     logger.info("Cancel Flow called");
     if (this.flowRunner == null) {
@@ -399,7 +408,9 @@ public class FlowContainer {
   }
 
   /**
-   * Return accumulated flow logs with the specified length from the flow container starting from the given byte offset.
+   * Return accumulated flow logs with the specified length from the flow container starting from
+   * the given byte offset.
+   *
    * @param execId
    * @param startByte
    * @param length
@@ -407,7 +418,7 @@ public class FlowContainer {
    * @throws ExecutorManagerException
    */
   public LogData readFlowLogs(final int execId, final int startByte, final int length)
-    throws ExecutorManagerException {
+      throws ExecutorManagerException {
     logger.info("readFlowLogs called");
     if (this.flowRunner == null) {
       logger.warn("Attempt to read flow logs before flow execId: {} got a chance to start",
@@ -417,27 +428,29 @@ public class FlowContainer {
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Error reading file. Execution directory does not exist for flow execId: {}", execId);
+      logger.warn("Error reading file. Execution directory does not exist for flow execId: {}",
+          execId);
       throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
     }
 
-   try {
-     final File logFile = this.flowRunner.getFlowLogFile();
-     if (logFile != null && logFile.exists()) {
-       return FileIOUtils.readUtf8File(logFile, startByte, length);
-     } else {
-       logger.warn("Flow log file does not exist for flow execId: {}", execId);
-       throw new ExecutorManagerException("Flow log file does not exist.");
-     }
-   } catch (final IOException e) {
-     logger.warn("IOException while trying to read flow log file for flow execId: {}",
-         execId);
-     throw new ExecutorManagerException(e);
-   }
+    try {
+      final File logFile = this.flowRunner.getFlowLogFile();
+      if (logFile != null && logFile.exists()) {
+        return FileIOUtils.readUtf8File(logFile, startByte, length);
+      } else {
+        logger.warn("Flow log file does not exist for flow execId: {}", execId);
+        throw new ExecutorManagerException("Flow log file does not exist.");
+      }
+    } catch (final IOException e) {
+      logger.warn("IOException while trying to read flow log file for flow execId: {}",
+          execId);
+      throw new ExecutorManagerException(e);
+    }
   }
 
   /**
    * Return accumulated job logs for a specific job starting with the provided byte offset.
+   *
    * @param execId
    * @param jobId
    * @param attempt
@@ -481,7 +494,6 @@ public class FlowContainer {
   }
 
   /**
-   *
    * @param execId
    * @param jobId
    * @param attempt
@@ -525,7 +537,7 @@ public class FlowContainer {
   }
 
   @VisibleForTesting
-  static void launchCtrlMsgListener(FlowContainer flowContainer) {
+  static void launchCtrlMsgListener(final FlowContainer flowContainer) {
     try {
       flowContainer.jettyServer.start();
     } catch (final Exception e) {
@@ -543,7 +555,7 @@ public class FlowContainer {
 
   private static int getExecutionId() throws ExecutorManagerException {
     final String execIdStr = System.getenv(
-            Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID);
+        Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID);
     if (execIdStr == null) {
       final String msg = "Execution ID is not set!";
       logger.error(msg);
@@ -569,12 +581,13 @@ public class FlowContainer {
 
   /**
    * Log the VersionSet for the flow.
+   *
    * @param versionSetLoader
    */
   private void logVersionSet(final VersionSetLoader versionSetLoader) {
     // Get the version set id.
     final String versionSetIdStr = System.getenv(
-            Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
+        Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
     if (versionSetIdStr == null) {
       // Should not happen
       logger.warn("VersionSet ID is not set!");
@@ -587,10 +600,10 @@ public class FlowContainer {
       logger.warn("VersionSet ID set in environment is invalid {}", versionSetIdStr);
       return;
     }
-    VersionSet versionSet;
+    final VersionSet versionSet;
     try {
       versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
-    } catch (final IOException ioe) {
+    } catch (final ImageMgmtException ex) {
       logger.warn("Failed to fetch versionSet using versionSet ID : {}", versionSetId);
       return;
     }
@@ -599,11 +612,12 @@ public class FlowContainer {
 
   /**
    * Deletes all the symlinks and targeted files recursively.
+   *
    * @param symlinkedFilePath Path to file, could be a symlink
    * @throws ExecutorManagerException
    */
   public static void deleteSymlinkedFile(final Path symlinkedFilePath)
-          throws ExecutorManagerException {
+      throws ExecutorManagerException {
     if (Files.isSymbolicLink(symlinkedFilePath)) {
       Path filePath = null;
       try {
@@ -625,8 +639,8 @@ public class FlowContainer {
   }
 
   /**
-   * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution
-   * as well as JettyServer.
+   * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution as
+   * well as JettyServer.
    */
   private void shutdown() {
     logger.info("Shutting down the pod");
@@ -636,7 +650,7 @@ public class FlowContainer {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
         logger.error("The sleep while waiting for execution : {} to finish was interrupted",
-                this.flowRunner.getExecutionId());
+            this.flowRunner.getExecutionId());
       }
     }
 
@@ -647,7 +661,7 @@ public class FlowContainer {
       // everything
       logger.info("Awaiting Shutdown of executing flow");
       result = this.executorService.awaitTermination(
-              SHUTDOWN_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+          SHUTDOWN_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
     } catch (final InterruptedException e) {
       logger.error(e.getMessage());
     }
