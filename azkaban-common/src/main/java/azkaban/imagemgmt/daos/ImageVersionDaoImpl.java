@@ -242,8 +242,10 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       final Set<String> imageTypesInLowerCase =
           imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet());
       log.info("imageTypesInLowerCase: " + imageTypesInLowerCase);
+      // Add the state (active) and image types for the first inner query
       params.add(State.ACTIVE.getStateValue());
       params.addAll(imageTypesInLowerCase);
+      // Add the state (active) and image types for the second inner query
       params.add(State.ACTIVE.getStateValue());
       params.addAll(imageTypesInLowerCase);
       imageVersions = this.databaseOperator.query(query,
@@ -285,9 +287,10 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       final Set<String> imageTypesInLowerCase =
           imageTypes.stream().map(String::toLowerCase).collect(Collectors.toSet());
       log.info("imageTypesInLowerCase: " + imageTypesInLowerCase);
-
+      // Add the states (new/unstable/deprecated)  and image types for the first inner query
       params.addAll(State.getNonActiveStateValues());
       params.addAll(imageTypesInLowerCase);
+      // Add the states (new/unstable/deprecated)  and image types for the second inner query
       params.addAll(State.getNonActiveStateValues());
       params.addAll(imageTypesInLowerCase);
       imageVersions = this.databaseOperator.query(query,
