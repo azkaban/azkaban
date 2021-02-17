@@ -13,7 +13,7 @@ Image Management API
 `Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_ ,
 `Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
 
-Ref: :ref:``ContainerizationDesignDoc`
+Ref: :ref:`ContainerizationDesignDoc`
 
 .. contents:: Table of Contents
   :local:
