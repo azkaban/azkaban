@@ -70,7 +70,12 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   private static final String MSG_RANDOM_RAMPUP_VERSION_SELECTION = "The version selection is "
       + "based on random rampup.";
   private static final String MSG_ACTIVE_VERSION_SELECTION = "The version selection is "
-      + "based on latest available active version.";
+      + "based on latest available ACTIVE version.";
+  private static final String MSG_NON_ACTIVE_VERSION_SELECTION = "Non ACTIVE "
+      + "(i.e. NEW/UNSTABLE/DEPRECATED) latest version is selected as there is no active rampup "
+      + "and ACTIVE version.";
+  private static final String MSG_IMAGE_TYPE_WITHOUT_VERSION = "This image type does not have a "
+      + "version yet.";
 
   @Inject
   public ImageRampupManagerImpl(final ImageRampupDao imageRampupDao,
@@ -113,8 +118,20 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       imageTypes.add(imageType.getName());
     }
     final Set<String> remainingImageTypes = new TreeSet<>();
-    return this
-        .processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+    final Map<String, ImageVersionMetadata> imageTypeVersionMap =
+        this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+    if (!remainingImageTypes.isEmpty()) {
+      final Map<String, ImageVersion> imageTypeLatestNonActiveVersionMap =
+          this.getLatestNonActiveImageVersion(remainingImageTypes);
+      log.info("imageTypeLatestNonActiveVersionMap: " + imageTypeLatestNonActiveVersionMap);
+      imageTypeLatestNonActiveVersionMap.forEach((k, v) -> imageTypeVersionMap.put(k,
+          new ImageVersionMetadata(v, MSG_NON_ACTIVE_VERSION_SELECTION)));
+      if (!remainingImageTypes.isEmpty()) {
+        remainingImageTypes.forEach(k -> imageTypeVersionMap.put(k,
+            new ImageVersionMetadata(null, MSG_IMAGE_TYPE_WITHOUT_VERSION)));
+      }
+    }
+    return imageTypeVersionMap;
   }
 
   @Override
@@ -137,7 +154,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   @Override
   public VersionInfo getVersionInfo(final String imageType, final String imageVersion)
       throws ImageMgmtException {
-    final Optional<ImageVersion> optionalImageVersion = this.fetchImageVersion(imageType, imageVersion);
+    final Optional<ImageVersion> optionalImageVersion = this
+        .fetchImageVersion(imageType, imageVersion);
     if (optionalImageVersion.isPresent()) {
       return new VersionInfo(optionalImageVersion.get().getVersion(),
           optionalImageVersion.get().getPath(), optionalImageVersion.get().getState());
@@ -166,12 +184,13 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
    * @param imageTypes          - set of specified image types
    * @param imageTypeRampups    - contains rampup list for an image type
    * @param remainingImageTypes - This set is used to keep track of the image types for which
-   *                              version metadata is not available.
+   *                            version metadata is not available.
    * @return Map<String, VersionMetadata>
    */
   private Map<String, ImageVersionMetadata> processAndGetVersionForImageTypes(
       final Set<String> imageTypes,
-      final Map<String, List<ImageRampup>> imageTypeRampups, Set<String> remainingImageTypes) {
+      final Map<String, List<ImageRampup>> imageTypeRampups,
+      final Set<String> remainingImageTypes) {
     final Set<String> imageTypeSet = imageTypeRampups.keySet();
     log.info("Found active rampup for the image types {} ", imageTypeSet);
     final Map<String, ImageVersionMetadata> imageTypeVersionMap = new TreeMap<>(
@@ -214,8 +233,9 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   /**
-   * Method to process the rampup list and get the random rampup version based on rampup logic
-   * for the given image types in the rampup map.
+   * Method to process the rampup list and get the random rampup version based on rampup logic for
+   * the given image types in the rampup map.
+   *
    * @param imageTypeRampups
    * @return Map<String, ImageVersion>
    */
@@ -252,6 +272,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
 
   /**
    * Process and get latest active image version for the given image types.
+   *
    * @param imageTypes
    * @return Map<String, ImageVersion>
    */
@@ -272,7 +293,34 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   /**
+   * Get latest non active image version for the given image types.
+   *
+   * @param imageTypes
+   * @return Map<String, ImageVersion>
+   */
+  private Map<String, ImageVersion> getLatestNonActiveImageVersion(final Set<String> imageTypes) {
+    final Map<String, ImageVersion> imageTypeLatestNonActiveVersionMap =
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    if (!CollectionUtils.isEmpty(imageTypes)) {
+      final List<ImageVersion> imageVersions =
+          this.imageVersionDao.getLatestNonActiveVersionByImageTypes(imageTypes);
+      log.info("Non Active image versions fetched: {} ", imageVersions);
+      if (imageVersions != null && !imageVersions.isEmpty()) {
+        for (final ImageVersion imageVersion : imageVersions) {
+          imageTypeLatestNonActiveVersionMap.put(imageVersion.getName(), imageVersion);
+        }
+        // Retain the the remaining/left over image types (i.e. image types without any version)
+        imageTypes.removeAll(imageTypeLatestNonActiveVersionMap.keySet().stream()
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet()));
+      }
+    }
+    return imageTypeLatestNonActiveVersionMap;
+  }
+
+  /**
    * Method to fetch image version based on image type and image version.
+   *
    * @param imageType
    * @param imageVersion
    * @return Optional<ImageVersion>
@@ -293,6 +341,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
 
   /**
    * Creates VersionInfo map from the ImageVersionMetadata map for the given image type keys.
+   *
    * @param imageVersionMetadataMap
    * @return Map<String, VersionInfo>
    */

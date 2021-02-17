@@ -16,13 +16,17 @@
 
 package azkaban.container;
 
+import static azkaban.common.ServletUtils.writeJSON;
+import static azkaban.server.HttpRequestUtils.getIntParam;
+import static azkaban.server.HttpRequestUtils.getParam;
+import static azkaban.server.HttpRequestUtils.hasParam;
+
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.server.HttpRequestUtils;
 import azkaban.utils.FileIOUtils;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletConfig;
@@ -32,12 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.codehaus.jackson.map.ObjectMapper;
-
-import static azkaban.common.ServletUtils.writeJSON;
-import static azkaban.server.HttpRequestUtils.hasParam;
-import static azkaban.server.HttpRequestUtils.getParam;
-import static azkaban.server.HttpRequestUtils.getIntParam;
 
 
 public class ContainerServlet extends HttpServlet implements ConnectorParams {
@@ -46,7 +44,9 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
   private static final Logger logger = LoggerFactory.getLogger(ContainerServlet.class);
   private FlowContainer flowContainer;
 
-  public ContainerServlet() { super(); }
+  public ContainerServlet() {
+    super();
+  }
 
   @Override
   public void init(final ServletConfig config) {
@@ -68,12 +68,12 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
 
   @Override
   public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
-    throws IOException {
+      throws IOException {
     handleRequest(req, resp);
   }
 
   public void handleRequest(final HttpServletRequest req, final HttpServletResponse resp)
-    throws IOException {
+      throws IOException {
     final HashMap<String, Object> respMap = new HashMap<>();
     try {
       if (!hasParam(req, ConnectorParams.ACTION_PARAM)) {
@@ -84,25 +84,26 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
         respMap.put(ConnectorParams.RESPONSE_ERROR, "Parameter execId not provided");
       } else {
         final String action = getParam(req, ConnectorParams.ACTION_PARAM);
-        if (!(action.equals(ConnectorParams.CANCEL_ACTION) ||
-              action.equals(ConnectorParams.LOG_ACTION)) ||
-              action.equals(ConnectorParams.METADATA_ACTION)) {
-          // Only the above 3 actions are supported for Containerized ecosystem
-          respMap.put(ConnectorParams.RESPONSE_ERROR, "Unsupported action type: " + action);
-        } else {
-          final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
-          final String user = getParam(req, ConnectorParams.USER_PARAM, null);
+        final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
+        final String user = getParam(req, ConnectorParams.USER_PARAM, null);
 
-          logger.info("User " + user + " has called action " + action + " on " + execid);
-
-          if (action.equals(ConnectorParams.CANCEL_ACTION)) {
+        logger.info("User " + user + " has called action " + action + " on " + execid);
+        switch (action) {
+          case ConnectorParams.CANCEL_ACTION:
             handleAjaxCancel(respMap, execid, user);
-          } else if (action.equals(ConnectorParams.METADATA_ACTION)) {
+            break;
+          case ConnectorParams.METADATA_ACTION:
             handleFetchMetaDataEvent(execid, req, resp, respMap);
-          } else {
-            // action == LOG_ACTION
+            break;
+          case ConnectorParams.PING_ACTION:
+            handlePing(respMap);
+            break;
+          case ConnectorParams.LOG_ACTION:
             handleFetchLogEvent(execid, req, resp, respMap);
-          }
+            break;
+          default:
+            respMap.put(ConnectorParams.RESPONSE_ERROR, "Unsupported action type: " + action);
+            break;
         }
       }
     } catch (Exception e) {
@@ -111,6 +112,11 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     }
     writeJSON(resp, respMap);
     resp.flushBuffer();
+  }
+
+  @VisibleForTesting
+  void handlePing(HashMap<String, Object> respMap) {
+    respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE);
   }
 
   private void handleAjaxCancel(final Map<String, Object> respMap, final int execid,

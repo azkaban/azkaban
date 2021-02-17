@@ -17,13 +17,14 @@ package azkaban.imagemgmt.models;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
-import org.codehaus.jackson.annotate.JsonProperty;
-import javax.validation.constraints.NotBlank;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This class represents image version metadata.
  */
 public class ImageVersion extends BaseModel {
+
   // Path of the image version
   private String path;
   // Represents image version. Version is in major.minor.patch format
@@ -38,84 +39,82 @@ public class ImageVersion extends BaseModel {
    * Associated release of the image version. For example, in case of azkaban images the
    * corresponding azkaban release number. In case of job type release, the corresponding release
    * number
-    */
+   */
   private String releaseTag;
 
   public String getPath() {
-    return path;
+    return this.path;
   }
 
-  public void setPath(String path) {
+  public void setPath(final String path) {
     this.path = path;
   }
 
   public String getDescription() {
-    return description;
+    return this.description;
   }
 
-  public void setDescription(String description) {
+  public void setDescription(final String description) {
     this.description = description;
   }
 
   public String getVersion() {
-    return version;
+    return this.version;
   }
 
-  public void setVersion(String version) {
+  public void setVersion(final String version) {
     this.version = version;
   }
 
   public String getName() {
-    return name;
+    return this.name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
   public State getState() {
-    return state;
+    return this.state;
   }
 
-  public void setState(State state) {
+  public void setState(final State state) {
     this.state = state;
   }
 
   public String getReleaseTag() {
-    return releaseTag;
+    return this.releaseTag;
   }
 
-  public void setReleaseTag(String releaseTag) {
+  public void setReleaseTag(final String releaseTag) {
     this.releaseTag = releaseTag;
   }
 
   @Override
   public String toString() {
     return "ImageVersion{" +
-        "path='" + path + '\'' +
-        ", version='" + version + '\'' +
-        ", name='" + name + '\'' +
-        ", description='" + description + '\'' +
-        ", state=" + state +
-        ", releaseTag='" + releaseTag + '\'' +
-        ", id=" + id +
-        ", createdBy='" + createdBy + '\'' +
-        ", createdOn='" + createdOn + '\'' +
-        ", modifiedBy='" + modifiedBy + '\'' +
-        ", modifiedOn='" + modifiedOn + '\'' +
+        "path='" + this.path + '\'' +
+        ", version='" + this.version + '\'' +
+        ", name='" + this.name + '\'' +
+        ", description='" + this.description + '\'' +
+        ", state=" + this.state +
+        ", releaseTag='" + this.releaseTag + '\'' +
+        ", id=" + this.id +
+        ", createdBy='" + this.createdBy + '\'' +
+        ", createdOn='" + this.createdOn + '\'' +
+        ", modifiedBy='" + this.modifiedBy + '\'' +
+        ", modifiedOn='" + this.modifiedOn + '\'' +
         '}';
   }
 
   /**
-   * Enum to represent state of the image version. Below are the significance of the enums
-   * NEW - An image type version is marked with state as NEW when it is first created/registered
-   * using image management API
-   * ACTIVE - An image type version goes through the ramp up process and once the version is
-   * fully ramped upto 100% the version is marked as ACTIVE in the image_versions table.
+   * Enum to represent state of the image version. Below are the significance of the enums NEW - An
+   * image type version is marked with state as NEW when it is first created/registered using image
+   * management API ACTIVE - An image type version goes through the ramp up process and once the
+   * version is fully ramped upto 100% the version is marked as ACTIVE in the image_versions table.
    * UNSTABLE - An image type version goes through the ramp up process and once the version is
    * identified as faulty or unstable, the version is marked as UNSTABLE in the image_versions
-   * table.
-   * DEPRECATED - An image type version which is no longer in use is marked as DEPRECATED
+   * table. DEPRECATED - An image type version which is no longer in use is marked as DEPRECATED
    */
   public enum State {
     NEW("new"),
@@ -123,7 +122,8 @@ public class ImageVersion extends BaseModel {
     UNSTABLE("unstable"),
     DEPRECATED("deprecated");
     private final String stateValue;
-    private State(String stateValue) {
+
+    private State(final String stateValue) {
       this.stateValue = stateValue;
     }
 
@@ -132,16 +132,29 @@ public class ImageVersion extends BaseModel {
         .collect(ImmutableMap.toImmutableMap(state -> state.getStateValue(), state -> state));
 
     public String getStateValue() {
-      return stateValue;
+      return this.stateValue;
     }
 
     /**
      * Create state enum from state value
+     *
      * @param stateValue
      * @return
      */
     public static State fromStateValue(final String stateValue) {
       return stateMap.getOrDefault(stateValue, NEW);
+    }
+
+    /**
+     * Create set of non active state values
+     */
+    private static final Set<String> nonActiveStateValueSet =
+        Arrays.stream(State.values()).filter(state -> !state.equals(State.ACTIVE))
+            .map(nonActiveState -> nonActiveState.getStateValue()).collect(
+            Collectors.toSet());
+
+    public static Set<String> getNonActiveStateValues() {
+      return nonActiveStateValueSet;
     }
   }
 }

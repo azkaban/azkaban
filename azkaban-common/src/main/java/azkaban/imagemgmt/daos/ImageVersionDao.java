@@ -71,6 +71,16 @@ public interface ImageVersionDao {
       throws ImageMgmtException;
 
   /**
+   * Returns latest non active image versions for the given image types.
+   *
+   * @param imageTypes
+   * @return List<ImageVersion>
+   * @throws ImageMgmtException
+   */
+  public List<ImageVersion> getLatestNonActiveVersionByImageTypes(final Set<String> imageTypes)
+      throws ImageMgmtException;
+
+  /**
    * Updates image version metadata.
    *
    * @param imageVersionRequest
