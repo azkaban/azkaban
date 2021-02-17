@@ -104,11 +104,13 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.type_id = it.id and irp.active = ? "
       + "and iv.type_id = it.id and it.active = ?";
 
+  // Query to select associated image rampup plans for the given image type and version id
   private static final String SELECT_RAMPUP_PLAN_CONTAINING_IMAGE_VERSION_QUERY = "select irp.id, "
       + "irp.name, irp.description, irp.active, it.name image_type_name, irp.created_on, "
-      + "irp.created_by, irp.modified_on, irp.modified_by from image_rampup_plan irp, "
-      + "image_types it where irp.type_id = it.id and lower(it.name) = ? and irp.id in (select "
-      + "plan_id from image_rampup where version_id = ?)";
+      + "irp.created_by, irp.modified_on, irp.modified_by from image_rampup_plan irp "
+      + "inner join image_types it on it.id = irp.type_id "
+      + "inner join image_rampup ir on irp.id = ir.plan_id "
+      + "where lower(it.name) = ? and ir.version_id = ?";
 
 
   @Inject
