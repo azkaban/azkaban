@@ -67,9 +67,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
       if (key && key.length > 0) {
         if (jobOrFlow && jobOrFlow.length > 0) {
-          if (!nodeOverride.hasOwnProperty(jobOrFlow)) {
-            nodeOverride[jobOrFlow] = {};
-          }
+          nodeOverride[jobOrFlow] = nodeOverride[jobOrFlow] || {}
           nodeOverride[jobOrFlow][key] = val;
         } else {
           flowOverride[key] = val;
