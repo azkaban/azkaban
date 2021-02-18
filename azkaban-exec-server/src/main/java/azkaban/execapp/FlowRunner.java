@@ -312,16 +312,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
         loadAllProperties();
       }
-      final Map<String, String> flowParam =
-          this.flow.getExecutionOptions().getFlowParameters();
-      if (flowParam != null && !flowParam.isEmpty()) {
-        this.logger.info("FlowOverride Props: " + flowParam);
-      }
-      final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
-          .getNodeParameters();
-      if (nodeParams != null && !nodeParams.isEmpty()) {
-        this.logger.info("nodeOverride Props: " + nodeParams);
-      }
 
       this.fireEventListeners(
           Event.create(this, EventType.FLOW_STARTED, new EventData(this.getExecutableFlow())));
@@ -425,13 +415,21 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
     }
 
-    // If there are flow overrides, we apply them now.
+    // If there are flow overrides, we log them & apply them on the flow node.
     final Map<String, String> flowParam =
         this.flow.getExecutionOptions().getFlowParameters();
     if (flowParam != null && !flowParam.isEmpty()) {
+      this.logger.info("FlowOverride Props: " + flowParam);
       commonFlowProps = new Props(commonFlowProps, flowParam);
     }
     this.flow.setInputProps(commonFlowProps);
+
+    // If there are node overrides, we log them now.
+    final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
+        .getNodeParameters();
+    if (nodeParams != null && !nodeParams.isEmpty()) {
+      this.logger.info("NodeOverride Props: " + nodeParams);
+    }
 
     if (this.watcher != null) {
       this.watcher.setLogger(this.logger);
