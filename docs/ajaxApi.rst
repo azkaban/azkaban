@@ -27,7 +27,7 @@ Authenticate
 
 -  **Method:** POST
 -  **Request URL:** /?action=login
--  **Parameter Location:** Request Query String
+-  **Parameter Location:** Request body
 
 This API helps authenticate a user and provides a ``session.id`` in
 response.
