@@ -62,7 +62,24 @@ public class ExecutionFlowDao {
 
     final String useExecutorParam =
         flow.getExecutionOptions().getFlowParameters().get(ExecutionOptions.USE_EXECUTOR);
-    final String executorId = StringUtils.isNotEmpty(useExecutorParam) ? useExecutorParam : null;
+
+    Integer xid = ExecutionOptions.useExecutorById(useExecutorParam);
+    if (xid == null) {
+      //try now using host/port format.
+      ExecutionOptions.HostPort box = ExecutionOptions.useExecutorByHostPort(useExecutorParam);
+      if (box != null) {
+        try {
+          List<Executor> executors = dbOperator.query(ExecutorDao.FetchExecutorHandler.FETCH_EXECUTOR_BY_HOST_PORT, new ExecutorDao.FetchExecutorHandler(), box.host, box.port);
+          if (executors.size() > 0) {
+            xid = executors.get(0).getId();
+          }
+        } catch (SQLException e) {
+          logger.warn("failed to query executor by host: " + box.host + ", port: " + box.port, e);
+        }
+      }
+    }
+
+    final String executorId = xid != null ? String.valueOf(xid) : null;
 
     final String flowPriorityParam =
         flow.getExecutionOptions().getFlowParameters().get(ExecutionOptions.FLOW_PRIORITY);

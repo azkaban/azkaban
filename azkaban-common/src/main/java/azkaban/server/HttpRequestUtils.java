@@ -154,7 +154,7 @@ public class HttpRequestUtils {
       params.remove(ExecutionOptions.USE_EXECUTOR);
     } else {
       validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
-      validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
+      validateUseExecutorParam(params);
     }
   }
 
@@ -164,10 +164,25 @@ public class HttpRequestUtils {
    * @throws ExecutorManagerException if paramName is not a valid integer
    */
   public static boolean validateIntegerParam(final Map<String, String> params,
-      final String paramName) throws ExecutorManagerException {
+                                             final String paramName) throws ExecutorManagerException {
     if (params != null && params.containsKey(paramName)
-        && !StringUtils.isNumeric(params.get(paramName))) {
+            && !StringUtils.isNumeric(params.get(paramName))) {
       throw new ExecutorManagerException(paramName + " should be an integer");
+    }
+    return true;
+  }
+
+  /**
+   * checks is string provided to 'useExecutor' flow parameter is valid or not.
+   *
+   * @throws ExecutorManagerException if value provided is neither in format 'host:port' nor a valid integer.
+   */
+  public static boolean validateUseExecutorParam(final Map<String, String> params) throws ExecutorManagerException {
+    if (params != null && params.containsKey(ExecutionOptions.USE_EXECUTOR)) {
+      String useExecutorParamValue = params.get(ExecutionOptions.USE_EXECUTOR);
+      if (ExecutionOptions.useExecutorById(useExecutorParamValue) == null && ExecutionOptions.useExecutorByHostPort(useExecutorParamValue) == null) {
+        throw new ExecutorManagerException(ExecutionOptions.USE_EXECUTOR + " should either be an integer or in format 'hostName:validPortNumber' !");
+      }
     }
     return true;
   }

@@ -907,25 +907,24 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
           && options.getFlowParameters().containsKey(
           ExecutionOptions.USE_EXECUTOR)) {
         try {
-          final int executorId =
-              Integer.valueOf(options.getFlowParameters().get(
-                  ExecutionOptions.USE_EXECUTOR));
-          executor = fetchExecutor(executorId);
+          final String useExecutorValue = options.getFlowParameters().get(ExecutionOptions.USE_EXECUTOR);
+          final Integer executorId = ExecutionOptions.useExecutorById(useExecutorValue);
+          if (executorId != null) {
+            executor = fetchExecutor(executorId);
+          } else {
+            //try now using host/port format.
+            ExecutionOptions.HostPort box = ExecutionOptions.useExecutorByHostPort(useExecutorValue);
+            if (box != null) {
+              executor = ExecutorManager.this.executorLoader.fetchExecutor(box.host, box.port);
+            }
+          }
 
           if (executor == null) {
             ExecutorManager.logger
-                .warn(String
-                    .format(
-                        "User specified executor id: %d for execution id: %d is not active, Looking up db.",
-                        executorId, executionId));
-            executor = ExecutorManager.this.executorLoader.fetchExecutor(executorId);
-            if (executor == null) {
-              ExecutorManager.logger
-                  .warn(String
-                      .format(
-                          "User specified executor id: %d for execution id: %d is missing from db. Defaulting to availableExecutors",
-                          executorId, executionId));
-            }
+                    .warn(String
+                            .format(
+                                    "Could not find executor specified by user, via 'useExecutor' flow parameter: %s for execution id: %d. Defaulting to availableExecutors",
+                                    useExecutorValue, executionId));
           }
         } catch (final ExecutorManagerException ex) {
           ExecutorManager.logger.error("Failed to fetch user specified executor for exec_id = "
