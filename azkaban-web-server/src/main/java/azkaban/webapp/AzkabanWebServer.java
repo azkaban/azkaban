@@ -32,8 +32,8 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
-import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.services.ImageMgmtCommonService;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageVersionService;
@@ -758,5 +758,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   public ConverterUtils getConverterUtils() {
     return SERVICE_PROVIDER.getInstance(ConverterUtils.class);
+  }
+
+  public ImageMgmtCommonService getImageMgmtCommonService() {
+    return SERVICE_PROVIDER.getInstance(ImageMgmtCommonService.class);
   }
 }

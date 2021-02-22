@@ -79,7 +79,9 @@ public class ImageRampupPlanConverter implements Converter<ImageRampupPlanReques
   @Override
   public List<ImageRampupPlanResponseDTO> convertToApiResponseDTOs(
       final List<ImageRampupPlan> imageRampupPlans) {
-    return null;
+    return CollectionUtils.emptyIfNull(imageRampupPlans).stream()
+        .map(imageRampupPlan -> convertToApiResponseDTO(imageRampupPlan))
+        .collect(Collectors.toList());
   }
 
   /**

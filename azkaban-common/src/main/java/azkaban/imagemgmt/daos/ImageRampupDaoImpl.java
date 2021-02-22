@@ -104,6 +104,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.type_id = it.id and irp.active = ? "
       + "and iv.type_id = it.id and it.active = ?";
 
+  // Query to select associated image rampup plans for the given image type and version id
+  private static final String SELECT_RAMPUP_PLAN_CONTAINING_IMAGE_VERSION_QUERY = "select irp.id, "
+      + "irp.name, irp.description, irp.active, it.name image_type_name, irp.created_on, "
+      + "irp.created_by, irp.modified_on, irp.modified_by from image_rampup_plan irp "
+      + "inner join image_types it on it.id = irp.type_id "
+      + "inner join image_rampup ir on irp.id = ir.plan_id "
+      + "where lower(it.name) = ? and ir.version_id = ?";
+
 
   @Inject
   public ImageRampupDaoImpl(final DatabaseOperator databaseOperator,
@@ -147,7 +155,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
        * Otherwise, appropriate error message will be thrown.
        */
       if (optionalImageRampupPlan.isPresent()) {
-        if (imageRampupPlan.getForceActivatePlan() != null && imageRampupPlan.getForceActivatePlan()) {
+        if (imageRampupPlan.getForceActivatePlan() != null && imageRampupPlan
+            .getForceActivatePlan()) {
           transOperator.update(DEACTIVATE_ACTIVE_RAMPUP_PLAN_QUERY,
               false, optionalImageRampupPlan.get().getId());
         } else {
@@ -176,8 +185,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
           final Optional<ImageVersion> optionalImageVersion = this.imageVersionDao
               .getImageVersion(imageType.getName(), imageRampupRequest.getImageVersion());
           if (optionalImageVersion.isPresent()) {
-            ImageVersion imageVersion = optionalImageVersion.get();
-            if(!(State.NEW.equals(imageVersion.getState()) ||
+            final ImageVersion imageVersion = optionalImageVersion.get();
+            if (!(State.NEW.equals(imageVersion.getState()) ||
                 State.ACTIVE.equals(imageVersion.getState()))) {
               throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("The image "
                       + "versions with state NEW, ACTIVE can be selected for rampup. The "
@@ -241,11 +250,41 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         getActiveImageRampupPlan(imageTypeName);
   }
 
+  @Override
+  public List<ImageRampupPlan> getImageRampupPlans(final String imageTypeName, final int versionId)
+      throws ImageMgmtException {
+    try {
+      final List<ImageRampupPlan> imageRampupPlans = this.databaseOperator.query(
+          SELECT_RAMPUP_PLAN_CONTAINING_IMAGE_VERSION_QUERY, new FetchImageRampupPlanHandler(),
+          imageTypeName.toLowerCase(), versionId);
+      for (final ImageRampupPlan imageRampupPlan : imageRampupPlans) {
+        final List<ImageRampup> imageRampups = this.databaseOperator
+            .query(SELECT_IMAGE_RAMPUP_QUERY,
+                new FetchImageRampupHandler(), imageRampupPlan.getId());
+        imageRampupPlan.setImageRampups(imageRampups);
+      }
+      return imageRampupPlans;
+    } catch (final SQLException ex) {
+      log.error(String.format("Exception while fetching rampup plans for image type: %s, version "
+          + "id: %d. ", imageTypeName, versionId), ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+          String.format("Exception while fetching rampup plans for image type: %s, version "
+              + "id: %d. ", imageTypeName, versionId));
+    }
+  }
+
   private Optional<ImageRampupPlan> getActiveImageRampupPlan(final String imageTypeName)
       throws ImageMgmtException {
     try {
-      return this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
-          new FetchImageRampupPlanHandler(), imageTypeName.toLowerCase(), true);
+      final List<ImageRampupPlan> imageRampupPlans =
+          this.databaseOperator.query(SELECT_IMAGE_RAMPUP_ACTIVE_PLAN_QUERY,
+              new FetchImageRampupPlanHandler(), imageTypeName.toLowerCase(), true);
+      if (imageRampupPlans != null && imageRampupPlans.size() > 1) {
+        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+            String.format("Unable to fetch active rampup plan as there are more than one active "
+                + "rampup plan for image type: %s. ", imageTypeName));
+      }
+      return imageRampupPlans.isEmpty() ? Optional.empty() : Optional.of(imageRampupPlans.get(0));
     } catch (final SQLException ex) {
       log.error(String.format("Exception while fetching active rampup plan for image type: %s. ",
           imageTypeName), ex);
@@ -375,11 +414,11 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       if (!CollectionUtils.isEmpty(imageRampupPlan.getImageRampups())) {
         // Existing rampup record is not empty as rampup plan can't be created with empty rampups.
         // The size of rampup record to be updated must match with the size of the existing rampups.
-        if(existingImageRampupPlan.getImageRampups().size() !=
+        if (existingImageRampupPlan.getImageRampups().size() !=
             imageRampupPlan.getImageRampups().size()) {
           throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Invalid rampup "
-              + "details. The size of rampup details to be updated (%s) is not matching with the "
-              + "size of the existing rampups (%s).", imageRampupPlan.getImageRampups().size(),
+                  + "details. The size of rampup details to be updated (%s) is not matching with the "
+                  + "size of the existing rampups (%s).", imageRampupPlan.getImageRampups().size(),
               existingImageRampupPlan.getImageRampups().size()));
         }
         final Map<String, Integer> versionIdKeyMap = new HashMap<>();
@@ -448,7 +487,8 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
       // As update is allowed only for active plan, if activatePlan is false then deactivate the
       // current plan.
       if ((imageRampupPlan.getActivatePlan() != null && !imageRampupPlan.getActivatePlan()) ||
-          (imageRampupPlan.getForceActivatePlan() != null && !imageRampupPlan.getForceActivatePlan())) {
+          (imageRampupPlan.getForceActivatePlan() != null && !imageRampupPlan
+              .getForceActivatePlan())) {
         queryBuilder.append(" active = ?, ");
         params.add(Boolean.FALSE);
       }
@@ -524,14 +564,14 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * ResultSetHandler implementation class for fetching image rampup plan
    */
   public static class FetchImageRampupPlanHandler implements
-      ResultSetHandler<Optional<ImageRampupPlan>> {
+      ResultSetHandler<List<ImageRampupPlan>> {
 
     @Override
-    public Optional<ImageRampupPlan> handle(final ResultSet rs) throws SQLException {
+    public List<ImageRampupPlan> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return Optional.empty();
+        return Collections.emptyList();
       }
-      final ImageRampupPlan imageRampupPlan = new ImageRampupPlan();
+      final List<ImageRampupPlan> imageRampupPlans = new ArrayList<>();
       do {
         final int id = rs.getInt("id");
         final String name = rs.getString("name");
@@ -542,6 +582,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         final String createdBy = rs.getString("created_by");
         final String modifiedOn = rs.getString("modified_on");
         final String modifiedBy = rs.getString("modified_by");
+        final ImageRampupPlan imageRampupPlan = new ImageRampupPlan();
         imageRampupPlan.setId(id);
         imageRampupPlan.setPlanName(name);
         imageRampupPlan.setDescription(description);
@@ -551,8 +592,9 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         imageRampupPlan.setCreatedBy(createdBy);
         imageRampupPlan.setModifiedBy(modifiedBy);
         imageRampupPlan.setModifiedOn(modifiedOn);
+        imageRampupPlans.add(imageRampupPlan);
       } while (rs.next());
-      return Optional.of(imageRampupPlan);
+      return imageRampupPlans;
     }
   }
 

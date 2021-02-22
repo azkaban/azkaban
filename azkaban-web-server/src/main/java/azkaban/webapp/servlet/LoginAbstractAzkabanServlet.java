@@ -153,6 +153,43 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
   }
 
+  @Override
+  protected void doDelete(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+
+    getWebMetrics().markWebGetCall();
+    // Set session id
+    final Session session = getSessionFromRequest(req);
+    logRequest(req, session);
+    if (hasParam(req, "logout")) {
+      resp.sendRedirect(req.getContextPath());
+      if (session != null) {
+        getApplication().getSessionCache().removeSession(session.getSessionId());
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, session.getUser().getUserId(),
+            WebUtils.getRealClientIpAddr(req));
+      } else {
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, null,
+            WebUtils.getRealClientIpAddr(req), false, "Not logged in");
+      }
+      return;
+    }
+
+    if (session != null) {
+      if (logger.isDebugEnabled()) {
+        logger.debug("Found session " + session.getUser());
+      }
+      handleDelete(req, resp, session);
+    } else {
+      if (hasParam(req, "ajax")) {
+        final Map<String, String> retVal = new HashMap<>();
+        retVal.put("error", "session");
+        this.writeJSON(resp, retVal);
+      } else {
+        handleLogin(req, resp);
+      }
+    }
+  }
+
   /**
    * Log out request - the format should be close to Apache access log format
    */
@@ -673,6 +710,15 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected abstract void handlePost(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException,
       IOException;
+
+  /**
+   * The delete request is handed off to the implementor after the user is logged in.
+   */
+  protected void handleDelete(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException,
+      IOException {
+
+  }
 
   /**
    * The post request is handed off to the implementor after the user is logged in.

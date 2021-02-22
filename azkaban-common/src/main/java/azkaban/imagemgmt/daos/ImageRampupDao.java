@@ -77,4 +77,16 @@ public interface ImageRampupDao {
    */
   public void updateImageRampupPlan(ImageRampupPlan imageRampupPlan)
       throws ImageMgmtException;
+
+  /**
+   * Returns list of image rampup plans for the given image type and version id. This is
+   * predominantly used to fetch the plan containing the image version id.
+   *
+   * @param imageTypeName
+   * @param versionId
+   * @return List<ImageRampupPlan>
+   * @throws ImageMgmtException
+   */
+  public List<ImageRampupPlan> getImageRampupPlans(final String imageTypeName, final int versionId)
+      throws ImageMgmtException;
 }

@@ -16,6 +16,7 @@
 package azkaban.imagemgmt.servlets;
 
 import azkaban.Constants.ImageMgmtConstants;
+import azkaban.imagemgmt.dto.DeleteResponse;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.dto.ImageVersionDTO;
 import azkaban.imagemgmt.exception.ErrorCode;
@@ -23,6 +24,7 @@ import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageVersion.State;
+import azkaban.imagemgmt.services.ImageMgmtCommonService;
 import azkaban.imagemgmt.services.ImageVersionService;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
@@ -61,6 +63,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       String.format("/imageVersions/{%s}", IMAGE_VERSION_ID_KEY));
   private ImageVersionService imageVersionService;
   private ConverterUtils converterUtils;
+  private ImageMgmtCommonService imageMgmtCommonService;
 
   private static final Logger log = LoggerFactory.getLogger(ImageVersionServlet.class);
 
@@ -74,6 +77,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.imageVersionService = server.getImageVersionsService();
     this.converterUtils = server.getConverterUtils();
+    this.imageMgmtCommonService = server.getImageMgmtCommonService();
   }
 
   @Override
@@ -142,6 +146,17 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  @Override
+  protected void handleDelete(
+      final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+      throws ServletException, IOException {
+    final Map<String, String> templateVariableToValue = new HashMap<>();
+    if (SINGLE_IMAGE_VERSION_URI_TEMPLATE.match(req.getRequestURI(),
+        templateVariableToValue)) {
+      handleDeleteImageVersion(req, resp, session, templateVariableToValue);
+    }
+  }
+
   private void handleCreateImageVersion(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException, IOException {
     try {
@@ -150,7 +165,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           ImageVersionDTO.class);
       // Check for required permission to invoke the API
       final String imageType = imageVersion.getName();
-      if(imageType == null) {
+      if (imageType == null) {
         log.info("Required field imageType is null. Must provide valid imageType to create image "
             + "version.");
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
@@ -198,7 +213,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
           ImageVersionDTO.class);
       // Check for required permission to invoke the API
       final String imageType = imageVersion.getName();
-      if(imageType == null) {
+      if (imageType == null) {
         log.info("Required field imageType is null. Must provide valid imageType to update image "
             + "version.");
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
@@ -228,4 +243,53 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  private void handleDeleteImageVersion(final HttpServletRequest req,
+      final HttpServletResponse resp, final Session session,
+      final Map<String, String> templateVariableToValue) throws ServletException,
+      IOException {
+    try {
+      final String idString = templateVariableToValue.get(IMAGE_VERSION_ID_KEY);
+      final Integer id = Ints.tryParse(idString);
+      if (id == null) {
+        log.error("Invalid image version id: ", idString);
+        throw new ImageMgmtValidationException("Image version id is invalid");
+      }
+      final String imageType = HttpRequestUtils.getParam(req, ImageMgmtConstants.IMAGE_TYPE);
+      // Check for required permission to invoke the API
+      if (imageType == null) {
+        log.info("Required field imageType is null. Must provide valid imageType to update image "
+            + "version.");
+        throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
+            + " null. Must provide valid imageType to update image version.");
+      }
+      if (!hasImageManagementPermission(imageType, session.getUser(), Type.DELETE)) {
+        log.debug(String.format("Invalid permission to delete image version "
+            + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+        throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+            + "delete image version");
+      }
+
+      final String strForceDelete = HttpRequestUtils.getParam(req, "forceDelete", null);
+      final Boolean forceDelete = strForceDelete == null ? Boolean.FALSE :
+          Boolean.valueOf(strForceDelete);
+
+      // Invoke delete image version metadata for image version id and image type
+      final DeleteResponse deleteResponse = this.imageMgmtCommonService
+          .deleteImageVersion(imageType, id,
+              forceDelete);
+      if (deleteResponse.hasErrors()) {
+        sendResponse(resp, deleteResponse.getErrorCode().get().getCode(),
+            deleteResponse.getMessage(), deleteResponse.getData().orElse(null));
+      } else {
+        sendResponse(resp, HttpServletResponse.SC_OK, deleteResponse.getMessage());
+      }
+    } catch (final ImageMgmtException e) {
+      log.error("Exception while deleting image version metadata", e);
+      sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
+    } catch (final Exception e) {
+      log.error("Exception while deleting image version metadata", e);
+      sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+          "Exception while deleting image version metadata. " + e.getMessage());
+    }
+  }
 }

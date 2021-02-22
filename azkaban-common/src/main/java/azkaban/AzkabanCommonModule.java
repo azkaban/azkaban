@@ -26,6 +26,8 @@ import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
 import azkaban.imagemgmt.converters.ImageTypeConverter;
 import azkaban.imagemgmt.converters.ImageVersionConverter;
+import azkaban.imagemgmt.daos.ImageMgmtCommonDao;
+import azkaban.imagemgmt.daos.ImageMgmtCommonDaoImpl;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDao;
@@ -183,6 +185,7 @@ public class AzkabanCommonModule extends AbstractModule {
       bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class).in(Scopes.SINGLETON);
+      bind(ImageMgmtCommonDao.class).to(ImageMgmtCommonDaoImpl.class).in(Scopes.SINGLETON);
       bind(PermissionManager.class).to(PermissionManagerImpl.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
           .to(ImageTypeConverter.class).in(Scopes.SINGLETON);;

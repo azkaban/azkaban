@@ -99,4 +99,15 @@ public interface ImageVersionDao {
    */
   public Optional<ImageVersion> getImageVersion(final String imageTypeName,
       final String imageVersion) throws ImageMgmtException;
+
+  /**
+   * Get image version for the given image type and version id.
+   *
+   * @param imageTypeName
+   * @param versionId
+   * @return Optional<ImageVersion>
+   * @throws ImageMgmtException
+   */
+  public Optional<ImageVersion> getImageVersion(final String imageTypeName,
+      final int versionId) throws ImageMgmtException;
 }
