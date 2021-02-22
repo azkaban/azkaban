@@ -13,7 +13,7 @@ Image Management API
 `Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_ ,
 `Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
 
-Ref: :ref:`containerization-design.rst`
+Ref: :ref:`ContainerizationDesignDoc`
 
 .. contents:: Table of Contents
   :local:
@@ -216,7 +216,7 @@ Update Image Version Metadata
 Update image version metadata such as state, path and description. Possible values for ``state`` are:
 ``NEW``, ``ACTIVE``, ``UNSTABLE`` or ``DEPRECATED``. The state will be updated during the process of ramp up.
 
-- **Method:** PATCH
+- **Method:** POST
 - **Request URL:** /imageVersions/{versionId}
 - **Request Body:**
 
@@ -248,6 +248,17 @@ Delete the image metadata for the given image version id. This API can be used t
 
 - **Method:** DELETE
 - **Request URL:** /imageVersions/{versionId}
+- **Request Parameters:**
+
++-----------------+-------------+-------------------------------------------------------+
+|   Field Name    |     Type    |            Description                                |
++=================+=============+=======================================================+
+| ``imageType``   | ``String``  | A registered imageType with Azkaban                   |
++-----------------+-------------+-------------------------------------------------------+
+| ``forceDelete`` | ``Boolean`` | OPTIONAL Parameter. When set to ``true``, forcefully  |
+|                 |             | deletes image version and associated rampup plans.    |
++-----------------+-------------+-------------------------------------------------------+
+
 
 /imageRampup
 ************
@@ -341,7 +352,7 @@ Only 1 active ramp-up plan is allowed per imageType at any given time. Hence, if
 has ``activatePlan`` set to false, the plan will be deactivated. If true, the plan is left active.
 Similarly, if ``forceActivatePlan`` is set to false, the plan will be deactivated.
 
-- **Method:** PATCH
+- **Method:** POST
 - **Request URL:** /imageRampup/{imageType}
 - **Request Body:**
 

@@ -86,17 +86,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is the entrypoint for launching a flow execution in a container. It sets up the
- * Azkaban Properties, the DAO, injects all the required classes, sets up the execution directory
- * along with the project files, creates the FlowRunner and submits it to the executor service for
- * execution. It assumes that their is a certain directory structure consisting of all the
- * dependencies. 1.The dependencies such as Hadoop, Hive, Pig, and other libraries. 2.The jobtype
- * plugins are expected in "$AZ_HOME/plugins/jobtypes"> 3.The FlowContainer creates the project
- * directory named "project" which contains all the project dependencies. It also serves as
- * execution directory.
- * <p>
- * The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to PREPARING
- * before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
+ *  This class is the entrypoint for launching a flow execution in a container.
+ *  It sets up the Azkaban Properties, the DAO, injects all the required classes, sets up the
+ *  execution directory along with the project files, creates the FlowRunner and submits it to
+ *  the executor service for execution.
+ *  It assumes that their is a certain directory structure consisting of all the dependencies.
+ *  1.The dependencies such as Hadoop, Hive, Pig, and other libraries.
+ *  2.The jobtype plugins are expected in "$AZ_HOME/plugins/jobtypes">
+ *  3.The FlowContainer creates the project directory named "project" which contains all the
+ *    project dependencies. It also serves as execution directory.
+ *
+ *  The Flow's status is DISPATCHING when FlowContainer is called. It's status is set to
+ *  PREPARING before FlowRunner is created. The rest of the state machine is handled by FlowRunner.
  */
 public class FlowContainer {
 

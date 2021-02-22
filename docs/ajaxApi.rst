@@ -1716,3 +1716,11 @@ A response sample:
   "project" : "azkaban-test-project",
   "projectId" : 1
 }
+
+.. _api-image-management-api:
+
+Image Management APIs
+---------------------
+
+:ref:`image-mgmt-api`
+
