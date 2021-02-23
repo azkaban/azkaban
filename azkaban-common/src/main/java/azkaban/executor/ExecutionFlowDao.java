@@ -382,7 +382,7 @@ public class ExecutionFlowDao {
 
   public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
-    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
         + "where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
@@ -392,12 +392,13 @@ public class ExecutionFlowDao {
       transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), executorId);
+          new SelectFromExecutionFlows(), Status.READY.getNumVal(), executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
         execId = execIds.get(0);
-        transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
+        transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(),
+            Status.PREPARING.getNumVal(), execId);
       }
       transOperator.getConnection().commit();
       return execId;
@@ -413,7 +414,7 @@ public class ExecutionFlowDao {
 
   public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
-    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
         + "where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
@@ -426,10 +427,11 @@ public class ExecutionFlowDao {
       if (hasLocked) {
         try {
           final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-              new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), executorId);
+              new SelectFromExecutionFlows(), Status.READY.getNumVal(), executorId);
           if (CollectionUtils.isNotEmpty(execIds)) {
             execId = execIds.get(0);
-            transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
+            transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(),
+                Status.PREPARING.getNumVal(), execId);
           }
         } finally {
           this.mysqlNamedLock.releaseLock(transOperator, POLLING_LOCK_NAME);
@@ -604,7 +606,7 @@ public class ExecutionFlowDao {
     private static final String FETCH_FLOWS_QUEUED_FOR_LONG_TIME =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
             + " WHERE submit_time < ? AND status = "
-            + Status.PREPARING.getNumVal();
+            + Status.READY.getNumVal();
 
     @Override
     public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {
