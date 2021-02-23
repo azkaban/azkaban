@@ -99,7 +99,10 @@ CREATE TABLE IF NOT EXISTS version_set (
      PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX idx_md5 ON version_set (md5);
+-- Commented out index creation as solo server automatically creates the index during start
+-- and hence solo server start fails as index already exists. TODO: This will be taken care
+-- separately as part of db sync.
+-- CREATE UNIQUE INDEX idx_md5 ON version_set (md5);
 
 -- TODO: Add the alter table script in the specific release
 -- Adding version_set_id column in execution_flows
