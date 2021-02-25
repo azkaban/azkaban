@@ -121,10 +121,19 @@
       <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
       <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
       <li id="statsViewLink"><a href="#stats">Stats</a></li>
-      #if ($executionExternalLinkURL)
-        <li><a id="analyzerButton" href="${executionExternalLinkURL}" class="btn btn-info btn-sm"
-               type="button" target="_blank"
-               title="Analyze job in ${executionExternalLinkLabel}">${executionExternalLinkLabel}</a>
+      #foreach ($analyzer in $externalAnalyzers)
+        #if (!${analyzer.isLinkUrlValid()})
+          #set($title = "Execution is not analyzable in ${analyzer.getLabel()} at the moment. "
+          + "If ${analyzer.getLabel()} is applicable for this execution, you can try again later.")
+          #set($isDisabled = "disabled")
+        #else
+          #set($title = "Analyze execution in ${analyzer.getLabel()}")
+          #set($isDisabled = "")
+        #end
+        #set($id = "analyzerButton${analyzer.getTopic()}")
+        <li><a id="${id}" href="${analyzer.getLinkUrl()}" class="btn btn-info btn-sm btn-external"
+               type="button" ${isDisabled} target="_blank"
+               title="${title}">${analyzer.getLabel()}</a>
         </li>
       #end
       <li class="nav-button pull-right">

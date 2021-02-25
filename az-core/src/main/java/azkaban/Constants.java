@@ -146,7 +146,6 @@ public class Constants {
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
 
-
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
@@ -176,15 +175,32 @@ public class Constants {
     // These properties are configurable through azkaban.properties
     public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";
 
-    // Defines a list of external links, each referred to as a topic
-    public static final String AZKABAN_SERVER_EXTERNAL_TOPICS = "azkaban.server.external.topics";
-
     // External URL template of a given topic, specified in the list defined above
+    //Deprecated, it is replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL
     public static final String AZKABAN_SERVER_EXTERNAL_TOPIC_URL = "azkaban.server.external.${topic}.url";
 
     // Designates one of the external link topics to correspond to an execution analyzer
+    //Deprecated, replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS
     public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC = "azkaban.server.external.analyzer.topic";
+    //Deprecated, it is replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL
     public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL = "azkaban.server.external.analyzer.label";
+
+    // Defines a list of external links, each referred to as a topic
+    // external links defined here will be translated into buttons and rendered in the Flow Execution page
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS = "azkaban.server.external.analyzer.topics";
+
+    // Defines timeout in milliseconds for azkaban to validate exernal links
+    // If this config is missing, azkaban will use default 3000 milliseconds as timeout.
+    // If validation fails, buttons is disabled in Flow Execution page.
+    // external links defined here will be translated into buttons and rendered in the Flow Execution page
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = "azkaban.server.external.analyzer.timeout.ms";
+
+    // Designates one of the external link topics to correspond to an execution analyzer
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL = "azkaban.server"
+        + ".external.analyzer.${topic}.label";
+    // External URL template of a given topic, specified in the list defined above
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL = "azkaban.server"
+        + ".external.analyzer.${topic}.url";
 
     // Designates one of the external link topics to correspond to a job log viewer
     public static final String AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC = "azkaban.server.external.logviewer.topic";

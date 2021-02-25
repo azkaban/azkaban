@@ -43,6 +43,7 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.utils.ExternalLink;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -434,7 +435,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    addExternalLinkLabel(req, page);
+    addExternalAnalyzers(req, page);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
@@ -443,20 +444,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void addExternalLinkLabel(final HttpServletRequest req, final Page page) {
+  private void addExternalAnalyzers(final HttpServletRequest req, final Page page) {
     final Props props = getApplication().getServerProps();
-    final String execExternalLinkURL = ExternalLinkUtils.getExternalAnalyzerOnReq(props, req);
+    List<ExternalLink> externalLinks = ExternalLinkUtils.getExternalAnalyzers(props, req);
 
-    if (execExternalLinkURL.length() > 0) {
-      page.add("executionExternalLinkURL", execExternalLinkURL);
-      logger.debug("Added an External analyzer to the page");
-      logger.debug("External analyzer url: " + execExternalLinkURL);
-
-      final String execExternalLinkLabel =
-          props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
-              "External Analyzer");
-      page.add("executionExternalLinkLabel", execExternalLinkLabel);
-      logger.debug("External analyzer label set to : " + execExternalLinkLabel);
+    if (!externalLinks.isEmpty()) {
+      logger.debug("addExternalLinkLabels");
+      page.add("externalAnalyzers", externalLinks);
     }
   }
 
@@ -494,7 +488,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    addExternalLinkLabel(req, page);
+    addExternalAnalyzers(req, page);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
