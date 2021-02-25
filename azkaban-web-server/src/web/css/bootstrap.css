@@ -2773,6 +2773,18 @@ fieldset[disabled] .btn-link:focus {
   border-radius: 3px;
 }
 
+.btn-external {
+  margin: 2px 20px 5px;
+  word-break: break-all;
+}
+
+.btn-external.disabled,
+.btn-external[disabled],
+fieldset[disabled] .btn-external {
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
 .btn-xs {
   padding: 1px 5px;
 }
