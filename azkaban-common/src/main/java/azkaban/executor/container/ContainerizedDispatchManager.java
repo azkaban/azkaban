@@ -142,18 +142,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * Get the status for executions maintained in queue. For other dispatch implementations, the
-   * status for executions in queue is PREPARING. But for containerized dispatch method, the status
-   * will be READY.
-   *
-   * @return
-   */
-  @Override
-  public Status getStartStatus() {
-    return Status.READY;
-  }
-
-  /**
    * This method will shutdown the queue processor thread. It won't pick up executions from queue
    * for dispatch after this. This method will be called when webserver will shutdown.
    */
