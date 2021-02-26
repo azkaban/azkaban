@@ -117,7 +117,7 @@ public class ExecutionFlowDaoTest {
 
     final ExecutableFlow flow = createTestFlow();
     flow.setSubmitUser("testUser1");
-    flow.setStatus(Status.PREPARING);
+    flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setExecutionId(0);
     this.executionFlowDao.uploadExecutableFlow(flow);
@@ -167,13 +167,13 @@ public class ExecutionFlowDaoTest {
   @Test
   public void fetchFlowHistoryWithStartTime() throws Exception {
     final ExecutableFlow flow1 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), Status.READY);
     final ExecutableFlow flow2 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.READY);
     final ExecutableFlow flow3 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.READY);
     final ExecutableFlow flow4 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"), Status.READY);
 
     final List<ExecutableFlow> expectedFlows = new ArrayList<>();
     expectedFlows.add(flow1);
@@ -243,7 +243,7 @@ public class ExecutionFlowDaoTest {
         ExecutionOptions.DEFAULT_FLOW_PRIORITY);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows =
-        this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
+        this.executionFlowDao.fetchQueuedFlows(Status.READY);
     assertThat(fetchedQueuedFlows.size()).isEqualTo(2);
     final Pair<ExecutionReference, ExecutableFlow> fetchedFlow1 = fetchedQueuedFlows.get(0);
     final Pair<ExecutionReference, ExecutableFlow> fetchedFlow2 = fetchedQueuedFlows.get(1);
@@ -384,10 +384,10 @@ public class ExecutionFlowDaoTest {
     final Executor executor = this.executorDao.addExecutor("test", 1);
     final long currentTime = System.currentTimeMillis();
 
-    final ExecutableFlow flow1 = createExecutionAndAssign(Status.PREPARING, executor);
+    final ExecutableFlow flow1 = createExecutionAndAssign(Status.READY, executor);
 
     // flow2 is not assigned
-    final ExecutableFlow flow2 = createExecution(currentTime, Status.PREPARING);
+    final ExecutableFlow flow2 = createExecution(currentTime, Status.READY);
 
     final ExecutableFlow flow3 = createExecutionAndAssign(Status.RUNNING, executor);
     flow3.setStartTime(currentTime + 1);
@@ -435,7 +435,7 @@ public class ExecutionFlowDaoTest {
     flow.setSubmitUser("testUser");
     flow.setSubmitTime(startTime - 1);
     flow.setStartTime(startTime);
-    flow.setStatus(Status.PREPARING);
+    flow.setStatus(Status.READY);
     this.executionFlowDao.uploadExecutableFlow(flow);
     flow.setStatus(status);
     this.executionFlowDao.updateExecutableFlow(flow);
@@ -514,7 +514,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testSelectAndUpdateExecution() throws Exception {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
-    flow.setStatus(Status.PREPARING);
+    flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
     this.executionFlowDao.uploadExecutableFlow(flow);
     final Executor executor = this.executorDao.addExecutor("localhost", 12345);
@@ -522,6 +522,19 @@ public class ExecutionFlowDaoTest {
         .isEqualTo(flow.getExecutionId());
     assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo
         (executor);
+  }
+
+  @Test
+  public void testSelectAndUpdateExecutionWithStatusUpdate() throws Exception {
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    flow.setStatus(Status.READY);
+    flow.setSubmitTime(System.currentTimeMillis());
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    final Executor executor = this.executorDao.addExecutor("localhost", 12345);
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true))
+        .isEqualTo(flow.getExecutionId());
+    assertThat(this.executionFlowDao
+        .fetchExecutableFlow(flow.getExecutionId()).getStatus()).isEqualTo(Status.PREPARING);
   }
 
   @Test
@@ -535,6 +548,8 @@ public class ExecutionFlowDaoTest {
     final Executor executor1 = this.executorDao.addExecutor("localhost", 12345);
     assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true))
         .isEqualTo(flow1.getExecutionId());
+    assertThat(this.executionFlowDao.fetchExecutableFlow(flow1.getExecutionId()).getStatus())
+        .isEqualTo(Status.PREPARING);
   }
 
   @Test
@@ -760,11 +775,11 @@ public class ExecutionFlowDaoTest {
   @Test
   public void fetchFlowStatusWithFlowHistoryByStartTime() throws Exception {
     final ExecutableFlow flow1 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), Status.READY);
     final ExecutableFlow flow2 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.READY);
     final ExecutableFlow flow3 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.READY);
     final ExecutableFlow flow4 = createExecution(
         TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"), Status.QUEUED);
 
@@ -846,15 +861,15 @@ public class ExecutionFlowDaoTest {
     this.executionFlowDao.updateExecutableFlow(flow1);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows1 =
-        this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
+        this.executionFlowDao.fetchQueuedFlows(Status.READY);
     assertThat(fetchedQueuedFlows1).isEmpty();
 
-    makeFlowStatusInconsistent(flow1.getExecutionId(), Status.PREPARING);
+    makeFlowStatusInconsistent(flow1.getExecutionId(), Status.READY);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows2 =
-        this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
+        this.executionFlowDao.fetchQueuedFlows(Status.READY);
     assertThat(fetchedQueuedFlows2).isNotEmpty();
-    assertThat(fetchedQueuedFlows2.get(0).getSecond().getStatus()).isEqualTo(Status.PREPARING);
+    assertThat(fetchedQueuedFlows2.get(0).getSecond().getStatus()).isEqualTo(Status.READY);
   }
 
   @Test
@@ -921,7 +936,7 @@ public class ExecutionFlowDaoTest {
   private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
       final long submitTime, final int flowPriority) throws IOException,
       ExecutorManagerException {
-    return submitNewFlow(projectName, flowName, submitTime, flowPriority, Status.PREPARING,
+    return submitNewFlow(projectName, flowName, submitTime, flowPriority, Status.READY,
         Optional.empty());
   }
 
