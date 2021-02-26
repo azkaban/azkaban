@@ -66,7 +66,7 @@ public class AzKubernetesV1PodBuilderTest {
         // Merge the podSpec created earlier with the pod from the template
         AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate.getInstance(
             this.getClass().getResource("v1PodTestTemplate1.yaml").getFile());
-        KubernetesContainerizedImpl.mergePodSpec(podSpec, podTemplate);
+        PodTemplateMergeUtils.mergePodSpec(podSpec, podTemplate);
         V1Pod pod2 = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
             .withPodLabels(labels)
             .withPodAnnotations(annotations)

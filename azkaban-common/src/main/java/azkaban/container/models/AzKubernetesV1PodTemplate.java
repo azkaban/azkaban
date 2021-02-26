@@ -19,6 +19,7 @@ package azkaban.container.models;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
+import io.kubernetes.client.openapi.models.V1Probe;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.util.Yaml;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  * Volumes and VolumeMounts for the application-container/flow-container will be extracted from the
  * POD created from this template file.
  * <p>
- * Extracted Items are later merged via {@link azkaban.executor.container.KubernetesContainerizedImpl#mergePodSpec(V1PodSpec,
+ * Extracted Items are later merged via {@link PodTemplateMergeUtils#mergePodSpec(V1PodSpec, AzKubernetesV1PodTemplate)} (V1PodSpec,
  * AzKubernetesV1PodTemplate)} with the pod-spec created using {@link AzKubernetesV1SpecBuilder}
  * <p>
  * Merging criteria is such that, if the item in the already created pod-spec has the same name as
@@ -165,5 +166,37 @@ public class AzKubernetesV1PodTemplate {
     List<V1Container> containers = spec == null ? Collections.emptyList() : spec.getContainers();
     return containers.isEmpty() ? Collections.emptyList() :
         containers.get(FLOW_CONTAINER_INDEX).getVolumeMounts();
+  }
+
+  /**
+   * @return The Liveliness probe for the appContainer derived form the POD specified in the
+   * template.
+   */
+  public V1Probe getContainerLivelinessProbe() {
+    V1PodSpec spec = this.podFromTemplate.getSpec();
+    List<V1Container> containers = spec == null ? Collections.emptyList() : spec.getContainers();
+    return containers.isEmpty() ? null :
+        containers.get(FLOW_CONTAINER_INDEX).getLivenessProbe();
+  }
+
+  /**
+   * @return The Readiness probe for the appContainer derived form the POD specified in the
+   * template.
+   */
+  public V1Probe getContainerReadinessProbe() {
+    V1PodSpec spec = this.podFromTemplate.getSpec();
+    List<V1Container> containers = spec == null ? Collections.emptyList() : spec.getContainers();
+    return containers.isEmpty() ? null :
+        containers.get(FLOW_CONTAINER_INDEX).getReadinessProbe();
+  }
+
+  /**
+   * @return The Startup probe for the appContainer derived form the POD specified in the template.
+   */
+  public V1Probe getContainerStartupProbe() {
+    V1PodSpec spec = this.podFromTemplate.getSpec();
+    List<V1Container> containers = spec == null ? Collections.emptyList() : spec.getContainers();
+    return containers.isEmpty() ? null :
+        containers.get(FLOW_CONTAINER_INDEX).getStartupProbe();
   }
 }

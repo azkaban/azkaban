@@ -21,6 +21,20 @@ spec:
     - image: "path/azkaban-base-image:0.0.5"
       imagePullPolicy: "IfNotPresent"
       name: "az-flow-container"
+      livenessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/liveProbe
+        initialDelaySeconds: 5
+        periodSeconds: 5
+      readinessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/readyProbe
+        initialDelaySeconds: 5
+        periodSeconds: 5
       volumeMounts:
         - name: kubelet
           mountPath: "/var/run/kubelet"

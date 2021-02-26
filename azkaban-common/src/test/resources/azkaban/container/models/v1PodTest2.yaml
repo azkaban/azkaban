@@ -18,7 +18,21 @@ spec:
       value: envValue
     image: path/azkaban-base-image:0.0.5
     imagePullPolicy: IfNotPresent
+    livenessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/liveProbe
+      initialDelaySeconds: 5
+      periodSeconds: 5
     name: az-flow-container
+    readinessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/readyProbe
+      initialDelaySeconds: 5
+      periodSeconds: 5
     resources:
       limits:
         cpu: 500m
