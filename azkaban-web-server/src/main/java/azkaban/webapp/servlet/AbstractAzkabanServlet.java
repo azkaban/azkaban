@@ -32,6 +32,7 @@ import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -429,4 +430,30 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     }
     return Optional.empty();
   }
+
+  protected void sendErrorResponse (HttpServletResponse httpServletResponse, int status,
+      String errorMessage) throws IOException {
+    final Map<String, Object> responseObj = new HashMap<>();
+    responseObj.put("error", status);
+    responseObj.put("message", errorMessage);
+    httpServletResponse.setStatus(status);
+    writeJSON(httpServletResponse, responseObj, true);
+  }
+
+  protected void sendResponse(HttpServletResponse httpServletResponse, int status,
+      Object responseObj) throws IOException {
+    httpServletResponse.setStatus(status);
+    writeJSON(httpServletResponse, responseObj, true);
+  }
+
+  protected void sendResponse (HttpServletResponse httpServletResponse, int status,
+      String errorMessage, Object response) throws IOException {
+    final Map<String, Object> responseObj = new LinkedHashMap<>();
+    responseObj.put("error", status);
+    responseObj.put("message", errorMessage);
+    responseObj.put("response", response);
+    httpServletResponse.setStatus(status);
+    writeJSON(httpServletResponse, responseObj, true);
+  }
+
 }

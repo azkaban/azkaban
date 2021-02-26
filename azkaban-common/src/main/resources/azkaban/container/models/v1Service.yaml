@@ -9,7 +9,7 @@ metadata:
       apiVersion: ${api_version}
       kind:  ${kind}
       name: fc-mapping-${exec_id}
-      prefix: /${exec_id}
+      prefix: /${exec_id}/
       service: ${service_name}:${port}
       rewrite: /
       timeout_ms: ${timeout_ms}
@@ -19,4 +19,4 @@ spec:
   ports:
     - name: flowport
       port: ${port}
-      targetPort: flowport
+      targetPort: ${port}

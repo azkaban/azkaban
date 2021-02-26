@@ -21,6 +21,7 @@ import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
 import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
 import static azkaban.Constants.UTF_8;
 
+import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
@@ -141,6 +142,43 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
 
       handleGet(req, resp, session);
+    } else {
+      if (hasParam(req, "ajax")) {
+        final Map<String, String> retVal = new HashMap<>();
+        retVal.put("error", "session");
+        this.writeJSON(resp, retVal);
+      } else {
+        handleLogin(req, resp);
+      }
+    }
+  }
+
+  @Override
+  protected void doDelete(final HttpServletRequest req, final HttpServletResponse resp)
+      throws ServletException, IOException {
+
+    getWebMetrics().markWebGetCall();
+    // Set session id
+    final Session session = getSessionFromRequest(req);
+    logRequest(req, session);
+    if (hasParam(req, "logout")) {
+      resp.sendRedirect(req.getContextPath());
+      if (session != null) {
+        getApplication().getSessionCache().removeSession(session.getSessionId());
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, session.getUser().getUserId(),
+            WebUtils.getRealClientIpAddr(req));
+      } else {
+        WebUtils.reportLoginEvent(EventType.USER_LOGOUT, null,
+            WebUtils.getRealClientIpAddr(req), false, "Not logged in");
+      }
+      return;
+    }
+
+    if (session != null) {
+      if (logger.isDebugEnabled()) {
+        logger.debug("Found session " + session.getUser());
+      }
+      handleDelete(req, resp, session);
     } else {
       if (hasParam(req, "ajax")) {
         final Map<String, String> retVal = new HashMap<>();
@@ -674,10 +712,45 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       IOException;
 
   /**
+   * The delete request is handed off to the implementor after the user is logged in.
+   */
+  protected void handleDelete(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException,
+      IOException {
+
+  }
+
+  /**
    * The post request is handed off to the implementor after the user is logged in.
    */
   protected void handleMultiformPost(final HttpServletRequest req,
       final HttpServletResponse resp, final Map<String, Object> multipart, final Session session)
       throws ServletException, IOException {
+  }
+
+  /**
+   * Method to check permission to access image management APIs.
+   *
+   * @param imageTypeName
+   * @param user
+   * @param type
+   * @return boolean
+   */
+  protected boolean hasImageManagementPermission(final String imageTypeName, final User user,
+      final Permission.Type type) {
+    final UserManager userManager = getApplication().getUserManager();
+    for (final String roleName : user.getRoles()) {
+      final Role role = userManager.getRole(roleName);
+      /**
+       * Azkaban ADMIN role must have full permission to access image management APIs. Hence, no
+       * further permission check is required.
+       */
+      if (role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+        return true;
+      }
+    }
+    // Check image management APIs access permission for other users.
+    final PermissionManager permissionManager = getApplication().getPermissionManager();
+    return permissionManager.hasPermission(imageTypeName, user.getUserId(), type);
   }
 }

@@ -31,6 +31,18 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
+import azkaban.imagemgmt.services.ImageMgmtCommonService;
+import azkaban.imagemgmt.services.ImageMgmtCommonServiceImpl;
+import azkaban.imagemgmt.services.ImageRampupService;
+import azkaban.imagemgmt.services.ImageRampupServiceImpl;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageTypeServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.services.ImageVersionServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionMetadataService;
+import azkaban.imagemgmt.services.ImageVersionMetadataServiceImpl;
+import azkaban.imagemgmt.version.JdbcVersionSetLoader;
+import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -90,6 +102,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
+    bindImageManagementDependencies();
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
@@ -118,6 +131,23 @@ public class AzkabanWebServerModule extends AbstractModule {
   private Class<? extends WebMetrics> resolveWebMetricsClass() {
     return this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false) ? WebMetricsImpl.class
         : DummyWebMetricsImpl.class;
+  }
+
+  private void bindImageManagementDependencies() {
+    if(isContainerizedDispatchMethodEnabled()) {
+      bind(ImageTypeService.class).to(ImageTypeServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageVersionService.class).to(ImageVersionServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageRampupService.class).to(ImageRampupServiceImpl.class).in(Scopes.SINGLETON);
+      bind(VersionSetLoader.class).to(JdbcVersionSetLoader.class).in(Scopes.SINGLETON);
+      bind(ImageVersionMetadataService.class).to(ImageVersionMetadataServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageMgmtCommonService.class).to(ImageMgmtCommonServiceImpl.class).in(Scopes.SINGLETON);
+    }
+  }
+
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   @Inject
