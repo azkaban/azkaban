@@ -117,6 +117,21 @@ public class ContainerizedDispatchManagerTest {
   }
 
   @Test
+  public void testRampUpDispatchMethod() throws Exception {
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.setRampUp(0);
+    for (int i = 0; i < 100; i++) {
+      DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
+      assertThat(dispatchMethod).isEqualTo(DispatchMethod.POLL);
+    }
+    this.containerizedDispatchManager.setRampUp(100);
+    for (int i = 0; i < 100; i++) {
+      DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
+      assertThat(dispatchMethod).isEqualTo(DispatchMethod.CONTAINERIZED);
+    }
+  }
+
+  @Test
   public void testFetchAllActiveFlows() throws Exception {
     initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();

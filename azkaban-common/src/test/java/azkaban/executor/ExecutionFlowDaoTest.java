@@ -22,6 +22,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
 import azkaban.project.JdbcProjectImpl;
@@ -120,6 +121,7 @@ public class ExecutionFlowDaoTest {
     flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setExecutionId(0);
+    flow.setDispatchMethod(DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow);
     assertThat(flow.getExecutionId()).isNotEqualTo(0);
 
@@ -238,9 +240,9 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testFetchQueuedFlows() throws Exception {
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", System.currentTimeMillis(),
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
     final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", System.currentTimeMillis(),
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
 
     final List<Pair<ExecutionReference, ExecutableFlow>> fetchedQueuedFlows =
         this.executionFlowDao.fetchQueuedFlows(Status.READY);
@@ -256,14 +258,16 @@ public class ExecutionFlowDaoTest {
   public void testFetchStaleFlows() throws Exception {
     long preThresholdTimeMs = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", preThresholdTimeMs,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(preThresholdTimeMs));
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(preThresholdTimeMs), DispatchMethod.CONTAINERIZED);
     final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", preThresholdTimeMs,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.SUCCEEDED, Optional.of(preThresholdTimeMs));
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.SUCCEEDED, Optional.of(preThresholdTimeMs)
+        , DispatchMethod.CONTAINERIZED);
 
     long thresholdTimeMs = preThresholdTimeMs + 1000L;
     long postThresholdTimeMs = thresholdTimeMs + 1000L;
     final ExecutableFlow flow3 = submitNewFlow("exectest1", "exec3", preThresholdTimeMs,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(postThresholdTimeMs));
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(postThresholdTimeMs),
+        DispatchMethod.CONTAINERIZED);
 
     // Only the first flow in the RUNNING state started before thresholdTime should be returned.
     final List<ExecutableFlow> fetchedStaleFlows =
@@ -516,9 +520,10 @@ public class ExecutionFlowDaoTest {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
+    flow.setDispatchMethod(DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow);
     final Executor executor = this.executorDao.addExecutor("localhost", 12345);
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true, DispatchMethod.POLL))
         .isEqualTo(flow.getExecutionId());
     assertThat(this.executorDao.fetchExecutorByExecutionId(flow.getExecutionId())).isEqualTo
         (executor);
@@ -529,9 +534,10 @@ public class ExecutionFlowDaoTest {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
+    flow.setDispatchMethod(DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow);
     final Executor executor = this.executorDao.addExecutor("localhost", 12345);
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(executor.getId(), true, DispatchMethod.POLL))
         .isEqualTo(flow.getExecutionId());
     assertThat(this.executionFlowDao
         .fetchExecutableFlow(flow.getExecutionId()).getStatus()).isEqualTo(Status.PREPARING);
@@ -544,9 +550,9 @@ public class ExecutionFlowDaoTest {
     when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
     final Executor executor1 = this.executorDao.addExecutor("localhost", 12345);
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true, DispatchMethod.POLL))
         .isEqualTo(flow1.getExecutionId());
     assertThat(this.executionFlowDao.fetchExecutableFlow(flow1.getExecutionId()).getStatus())
         .isEqualTo(Status.PREPARING);
@@ -558,9 +564,10 @@ public class ExecutionFlowDaoTest {
         .thenReturn(false);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
     final Executor executor1 = this.executorDao.addExecutor("localhost", 12345);
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true)).isEqualTo(-1);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(executor1.getId(), true, DispatchMethod.POLL
+        )).isEqualTo(-1);
   }
 
   /**
@@ -578,13 +585,15 @@ public class ExecutionFlowDaoTest {
         .thenReturn(true);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.CONTAINERIZED);
     assertThat(
-        this.executionFlowDao.selectAndUpdateExecutionWithLocking(false, 2, Status.READY).size())
+        this.executionFlowDao.selectAndUpdateExecutionWithLocking(false, 2, Status.READY,
+            DispatchMethod.CONTAINERIZED).size())
         .isEqualTo(1);
     Set<Integer> expectedSet = new HashSet<>();
     expectedSet.add(flow1.getExecutionId());
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false, 2, Status.READY))
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false, 2, Status.READY,
+        DispatchMethod.CONTAINERIZED))
         .isEqualTo(expectedSet);
   }
 
@@ -603,16 +612,16 @@ public class ExecutionFlowDaoTest {
         .thenReturn(true);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.CONTAINERIZED);
     final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.CONTAINERIZED);
     assertThat(
-        this.executionFlowDao.selectAndUpdateExecutionWithLocking(true, 2, Status.READY).size())
+        this.executionFlowDao.selectAndUpdateExecutionWithLocking(true, 2, Status.READY, DispatchMethod.CONTAINERIZED).size())
         .isEqualTo(2);
     Set<Integer> expectedSet = new HashSet<>();
     expectedSet.add(flow1.getExecutionId());
     expectedSet.add(flow2.getExecutionId());
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true, 2, Status.READY))
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true, 2, Status.READY, DispatchMethod.CONTAINERIZED))
         .isEqualTo(expectedSet);
   }
 
@@ -623,12 +632,14 @@ public class ExecutionFlowDaoTest {
     when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false,2, Status.READY).size())
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.CONTAINERIZED);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false,2, Status.READY,
+        DispatchMethod.CONTAINERIZED).size())
         .isEqualTo(1);
     Set<Integer> expectedSet = new HashSet<>();
     expectedSet.add(flow1.getExecutionId());
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false,2, Status.READY))
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(false,2, Status.READY,
+        DispatchMethod.CONTAINERIZED))
         .isEqualTo(expectedSet);
   }
 
@@ -639,49 +650,51 @@ public class ExecutionFlowDaoTest {
     when(mysqlNamedLock.releaseLock(any(DatabaseTransOperator.class), any(String.class))).thenReturn(true);
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.CONTAINERIZED);
     final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY);
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true,2, Status.READY).size())
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.CONTAINERIZED);
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true,2, Status.READY,
+        DispatchMethod.CONTAINERIZED).size())
         .isEqualTo(2);
     Set<Integer> expectedSet = new HashSet<>();
     expectedSet.add(flow1.getExecutionId());
     expectedSet.add(flow2.getExecutionId());
-    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true,2, Status.READY))
+    assertThat(this.executionFlowDao.selectAndUpdateExecutionWithLocking(true,2, Status.READY,
+        DispatchMethod.CONTAINERIZED))
         .isEqualTo(expectedSet);
   }
 
   @Test
   public void testSelectAndUpdateExecutionWithPriority() throws Exception {
     // Selecting executions when DB is empty
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected no execution selected")
         .isEqualTo(-1);
 
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow lowPriorityFlow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
 
     final ExecutableFlow highPriorityFlow = submitNewFlow("exectest1", "exec1", currentTime + 5,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 5);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 5, DispatchMethod.POLL);
 
     final ExecutableFlow lowPriorityFlow2 = submitNewFlow("exectest1", "exec1", currentTime + 10,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
 
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected flow with highest priority")
         .isEqualTo(highPriorityFlow.getExecutionId());
 
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected second flow with highest priority")
         .isEqualTo(lowPriorityFlow2.getExecutionId());
 
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected flow with lowest priority")
         .isEqualTo(lowPriorityFlow1.getExecutionId());
 
     // Selecting executions when there are no more submitted flows left
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected no execution selected")
         .isEqualTo(-1);
   }
@@ -689,34 +702,34 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testSelectAndUpdateExecutionWithSamePriority() throws Exception {
     // Selecting executions when DB is empty
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected no execution selected")
         .isEqualTo(-1);
 
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow submittedFlow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
 
     final ExecutableFlow submittedFlow2 = submitNewFlow("exectest1", "exec1", currentTime + 5,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
 
     final ExecutableFlow submittedFlow3 = submitNewFlow("exectest1", "exec1", currentTime + 10,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
 
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected first flow submitted")
         .isEqualTo(submittedFlow1.getExecutionId());
 
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected second flow submitted")
         .isEqualTo(submittedFlow2.getExecutionId());
 
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected last flow submitted")
         .isEqualTo(submittedFlow3.getExecutionId());
 
     // Selecting executions when there are no more submitted flows left
-    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true))
+    assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected no execution selected")
         .isEqualTo(-1);
   }
@@ -724,7 +737,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testFlowStatusWithFetchExecutableFlows() throws Exception {
     final ExecutableFlow flow = submitNewFlow("exectest1", "exec1",
-        System.currentTimeMillis(), ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        System.currentTimeMillis(), ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
     int execId = flow.getExecutionId();
     makeFlowStatusInconsistent(execId, Status.FAILED_FINISHING);
     final ExecutableFlow fetchedFlow = this.executionFlowDao.fetchExecutableFlow(execId);
@@ -734,7 +747,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testFlowStatusWithFetchFlowHistory() throws Exception {
     final ExecutableFlow flow = submitNewFlow("exectest1", "exec1",
-        System.currentTimeMillis(), ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        System.currentTimeMillis(), ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
     int execId = flow.getExecutionId();
     makeFlowStatusInconsistent(execId, Status.FAILED_FINISHING);
 
@@ -856,7 +869,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testFlowStatusWithFetchQueuedFlows() throws Exception {
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", System.currentTimeMillis(),
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
     flow1.setStatus(Status.RUNNING);
     this.executionFlowDao.updateExecutableFlow(flow1);
 
@@ -934,27 +947,28 @@ public class ExecutionFlowDaoTest {
   }
 
   private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
-      final long submitTime, final int flowPriority) throws IOException,
+      final long submitTime, final int flowPriority, DispatchMethod dispatchMethod) throws IOException,
       ExecutorManagerException {
     return submitNewFlow(projectName, flowName, submitTime, flowPriority, Status.READY,
-        Optional.empty());
+        Optional.empty(), dispatchMethod);
   }
 
   private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
-      final long submitTime, final int flowPriority, final Status status) throws IOException,
+      final long submitTime, final int flowPriority, final Status status, DispatchMethod dispatchMethod) throws IOException,
       ExecutorManagerException {
     return submitNewFlow(projectName, flowName, submitTime, flowPriority, status,
-        Optional.empty());
+        Optional.empty(), dispatchMethod);
   }
 
   private ExecutableFlow submitNewFlow(final String projectName, final String flowName,
       final long submitTime, final int flowPriority, final Status status,
-      Optional<Long> startTime) throws IOException,
+      Optional<Long> startTime, DispatchMethod dispatchMethod) throws IOException,
       ExecutorManagerException {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow(projectName, flowName);
     flow.setStatus(status);
     flow.setSubmitTime(submitTime);
     flow.setSubmitUser("testUser");
+    flow.setDispatchMethod(dispatchMethod);
     flow.getExecutionOptions().getFlowParameters().put(ExecutionOptions.FLOW_PRIORITY,
         String.valueOf(flowPriority));
     startTime.ifPresent(st -> flow.setStartTime(st));

@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryYamlFlowLoader;
@@ -53,7 +54,7 @@ public class TestUtils {
     flowMap.put(flow.getId(), flow);
     project.setFlows(flowMap);
     final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-
+    execFlow.setDispatchMethod(DispatchMethod.POLL);
     return execFlow;
   }
 

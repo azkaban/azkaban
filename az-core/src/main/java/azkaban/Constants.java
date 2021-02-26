@@ -524,6 +524,8 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
     public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
+    public static final String CONTAINERIZED_RAMPUP =
+        AZKABAN_CONTAINERIZED_PREFIX + "rampup";
 
     // Kubernetes related properties
     public static final String AZKABAN_KUBERNETES_PREFIX = "azkaban.kubernetes.";
