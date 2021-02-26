@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
@@ -486,13 +487,15 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     return 1;
   }
 
   @Override
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     return 1;
   }
@@ -500,7 +503,8 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
       final int limit,
-      final Status updatedStatus) throws ExecutorManagerException {
+      final Status updatedStatus,
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
     final Set<Integer> executions = new HashSet<>();
     executions.add(1);
     return executions;

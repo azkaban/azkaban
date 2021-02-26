@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -368,22 +369,24 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive);
+    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive, dispatchMethod);
   }
 
   @Override
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive);
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive, dispatchMethod);
   }
 
   @Override
   public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, int limit,
-      Status updatedStatus) throws ExecutorManagerException {
+      Status updatedStatus, final DispatchMethod dispatchMethod) throws ExecutorManagerException {
     return this.executionFlowDao.selectAndUpdateExecutionWithLocking(batchEnabled, limit,
-        updatedStatus);
+        updatedStatus, dispatchMethod);
   }
 
   @Override
