@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -309,10 +310,10 @@ public interface ExecutorLoader {
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
 
-  int selectAndUpdateExecution(final int executorId, boolean isActive)
+  int selectAndUpdateExecution(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
-  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
+  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
   /**
@@ -328,7 +329,7 @@ public interface ExecutorLoader {
    * @throws ExecutorManagerException
    */
   Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, final int limit,
-      Status updatedStatus) throws ExecutorManagerException;
+      Status updatedStatus, final DispatchMethod dispatchMethod) throws ExecutorManagerException;
 
   ExecutableRampMap fetchExecutableRampMap()
       throws ExecutorManagerException;

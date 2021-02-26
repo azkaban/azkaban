@@ -280,6 +280,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     exflow.setSubmitUser(userId);
     exflow.setStatus(getStartStatus());
     exflow.setSubmitTime(System.currentTimeMillis());
+    exflow.setDispatchMethod(getDispatchMethod());
 
     // Get collection of running flows given a project and a specific flow name
     final List<Integer> running = getRunningFlows(projectId, flowId);

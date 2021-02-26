@@ -22,10 +22,19 @@ import org.slf4j.LoggerFactory;
  * This enum contains list of dispatch types implemented in Azkaban.
  */
 public enum DispatchMethod {
-  PUSH,
-  POLL,
-  CONTAINERIZED;
+  PUSH(0),
+  POLL(1),
+  CONTAINERIZED(2);
   private static final Logger logger = LoggerFactory.getLogger(DispatchMethod.class);
+  private final int numVal;
+
+  DispatchMethod(final int numVal) {
+    this.numVal = numVal;
+  }
+
+  public int getNumVal() {
+    return this.numVal;
+  }
 
   public static DispatchMethod getDispatchMethod(String value) {
     try {
