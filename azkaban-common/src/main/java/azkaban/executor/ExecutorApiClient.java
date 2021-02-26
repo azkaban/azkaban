@@ -16,10 +16,9 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CONNECTION_TLS_ENABLED;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TLS_ENABLED;
 import static com.google.common.base.Preconditions.checkState;
 
-import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -40,7 +39,6 @@ import javax.net.ssl.SSLContext;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -60,8 +58,8 @@ import org.slf4j.LoggerFactory;
 public class ExecutorApiClient extends RestfulApiClient<String> {
 
   private final static Logger logger = LoggerFactory.getLogger(ExecutorApiClient.class);
-  private final static String DEFAULT_TRUSTSTORE_PATH = "keystore";
-  private final static String DEFAULT_TRUSTSTORE_PASSWORD = "changeit";
+  private final static String DEFAULT_CLIENT_TRUSTSTORE_PATH = "keystore";
+  private final static String DEFAULT_CLIENT_TRUSTSTORE_PASSWORD = "changeit";
 
   private final boolean isReverseProxyEnabled;
   private final Optional<String> reverseProxyHost;
@@ -102,11 +100,11 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     this.reverseProxyHost = Optional.ofNullable(reverseProxyHost);
     this.reverseProxyPort = Optional.ofNullable(reverseProxyPort);
 
-    this.isTlsEnabled = azkProps.getBoolean(EXECUTOR_CONNECTION_TLS_ENABLED, false);
+    this.isTlsEnabled = azkProps.getBoolean(EXECUTOR_CLIENT_TLS_ENABLED, false);
     this.truststorePath = azkProps
-        .getString(Constants.JETTY_TRUSTSTORE_PATH, this.DEFAULT_TRUSTSTORE_PATH);
-    this.truststorePassword = azkProps.getString(Constants.JETTY_TRUSTSTORE_PASSWORD,
-        this.DEFAULT_TRUSTSTORE_PASSWORD);
+        .getString(ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PATH, this.DEFAULT_CLIENT_TRUSTSTORE_PATH);
+    this.truststorePassword = azkProps.getString(ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD,
+        this.DEFAULT_CLIENT_TRUSTSTORE_PASSWORD);
     if (this.isTlsEnabled) {
       setupTlsSocketFactory();
     }
@@ -132,7 +130,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     checkState(reverseProxyHost.isPresent());
     checkState(reverseProxyPort.isPresent());
     return RestfulApiClient.buildUri(reverseProxyHost.get(), reverseProxyPort.get(), path,
-        isTlsEnabled, params);
+        !isTlsEnabled, params);
   }
 
   private void setupTlsSocketFactory() {

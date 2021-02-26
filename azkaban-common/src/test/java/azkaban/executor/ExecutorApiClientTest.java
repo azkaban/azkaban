@@ -18,9 +18,9 @@ package azkaban.executor;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_PORT;
-import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CONNECTION_TLS_ENABLED;
-import static azkaban.Constants.JETTY_TRUSTSTORE_PASSWORD;
-import static azkaban.Constants.JETTY_TRUSTSTORE_PATH;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TLS_ENABLED;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PATH;
 
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -103,10 +103,10 @@ public class ExecutorApiClientTest {
   @BeforeClass
   public static void setUp() throws Exception {
     tlsEnabledProps = new Props();
-    tlsEnabledProps.put(EXECUTOR_CONNECTION_TLS_ENABLED, "true");
+    tlsEnabledProps.put(EXECUTOR_CLIENT_TLS_ENABLED, "true");
     tlsEnabledProps
-        .put(JETTY_TRUSTSTORE_PATH, ExecutorApiClient.class.getResource("test-cacerts").getPath());
-    tlsEnabledProps.put(JETTY_TRUSTSTORE_PASSWORD, "changeit");
+        .put(EXECUTOR_CLIENT_TRUSTSTORE_PATH, ExecutorApiClient.class.getResource("test-cacerts").getPath());
+    tlsEnabledProps.put(EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD, "changeit");
     setupTlsEnabledServer();
 
     validReverseProxyProps = new Props();
@@ -164,7 +164,7 @@ public class ExecutorApiClientTest {
   @Test(expected = SSLHandshakeException.class)
   public void testFailureWithInvalidCerts() throws Exception {
     final Props tlsPropsWithInvalidCert = new Props(tlsEnabledProps);
-    tlsPropsWithInvalidCert.put(JETTY_TRUSTSTORE_PATH,
+    tlsPropsWithInvalidCert.put(EXECUTOR_CLIENT_TRUSTSTORE_PATH,
         ExecutorApiClient.class.getResource("invalid-cacerts").getPath());
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(tlsPropsWithInvalidCert);
 
@@ -227,7 +227,7 @@ public class ExecutorApiClientTest {
     final ExecutorApiClient client = new ExecutorApiClient(validReverseProxyProps);
     URI uri = client.buildExecutorUri(null, 0, "execid-101/container",false,
         (Pair<String,String>[])null);
-    Assert.assertEquals("https://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
+    Assert.assertEquals("http://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
             "/execid-101/container",
         uri.toString());
   }

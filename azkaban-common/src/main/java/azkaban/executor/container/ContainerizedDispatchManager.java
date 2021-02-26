@@ -20,7 +20,10 @@ import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
+import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
 import azkaban.executor.ExecutorLoader;
@@ -51,9 +54,9 @@ import org.slf4j.LoggerFactory;
  * When the flow will be executed or triggered by schedule, it will be added in a queue maintained
  * in database. The state of execution will be READY in case of Containerized dispatch. When the
  * flow will be picked up by @{@link QueueProcessorThread} to dispatch it to containerized
- * infrastructure, it will be marked as DISPATCHING. Once flow preparation will start on container,
- * it will be marked as PREPARING. When a flow will be ready to run on container, it will be marked
- * as RUNNING. In case of failure in dispatch, it will move back to READY state in queue.
+ * infrastructure, it will be marked as DISPATCHING. Once the container creation request is
+ * sent, it will be marked as PREPARING. When a flow will be ready to run on container, it will
+ * be marked as RUNNING. In case of failure in dispatch, it will move back to READY state in queue.
  */
 @Singleton
 public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter {
@@ -316,6 +319,27 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
         }
+      }
+    }
+  }
+
+  @Override
+  public void cancelFlow(ExecutableFlow exFlow, String userId)
+      throws ExecutorManagerException {
+    synchronized (exFlow) {
+      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+          .fetchUnfinishedFlows();
+      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
+        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
+            .get(exFlow.getExecutionId());
+        // Note that ExecutionReference may have the 'executor' as null. ApiGateway call is expected
+        // to handle this scenario.
+        this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
+      } else {
+        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
+        logger.warn("Exception while cancelling flow. ", eme);
+        throw eme;
       }
     }
   }

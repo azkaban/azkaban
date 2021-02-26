@@ -16,7 +16,7 @@
 
 package azkaban.imagemgmt.version;
 
-import java.io.IOException;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,33 +26,34 @@ import java.util.Optional;
 public interface VersionSetLoader {
 
   /**
-   * @return versionSetId after created post insert.
+   * @return versionSet after created post insert.
    */
-  int insertAndGetVersionSetId(String versionSetMd5Hex, String versionSetJsonString)
-      throws IOException;
+  Optional<VersionSet> insertAndGetVersionSet(String versionSetMd5Hex, String versionSetJsonString)
+      throws ImageMgmtException;
 
   /**
    * @return true if successful, otherwise false.
    */
-  boolean deleteVersionSet(String versionSetMd5Hex) throws IOException;
+  boolean deleteVersionSet(String versionSetMd5Hex) throws ImageMgmtException;
 
   /**
-   * @return versionSetId corresponding to versionSetJsonString and versionSetMd5Hex.
+   * @return versionSet corresponding to versionSetJsonString and versionSetMd5Hex.
    */
-  int getVersionSetId(String versionSetMd5Hex, String versionSetJsonString) throws IOException;
+  Optional<VersionSet> getVersionSet(String versionSetMd5Hex, String versionSetJsonString)
+      throws ImageMgmtException;
 
   /**
    * @return {@link VersionSet} corresponding to versionSetMd5Hex.
    */
-  Optional<VersionSet> getVersionSet(String versionSetMd5Hex) throws IOException;
+  Optional<VersionSet> getVersionSet(String versionSetMd5Hex) throws ImageMgmtException;
 
   /**
    * @return {@link VersionSet} corresponding to versionSetId.
    */
-  Optional<VersionSet> getVersionSetById(int versionSetId) throws IOException;
+  Optional<VersionSet> getVersionSetById(int versionSetId) throws ImageMgmtException;
 
   /**
    * @return List of all available {@link VersionSet}.
    */
-  List<VersionSet> fetchAllVersionSets() throws IOException;
+  List<VersionSet> fetchAllVersionSets() throws ImageMgmtException;
 }

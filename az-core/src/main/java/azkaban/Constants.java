@@ -134,8 +134,6 @@ public class Constants {
   public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
-  public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
-  public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
   public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
   public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
@@ -412,7 +410,10 @@ public class Constants {
     public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
         "executor.props.resolve.overrideExisting.enabled";
 
-    public static final String EXECUTOR_CONNECTION_TLS_ENABLED = "executor.connection.tls.enabled";
+    // Executor client TLS properties
+    public static final String EXECUTOR_CLIENT_TLS_ENABLED = "azkaban.executor.client.tls.enabled";
+    public static final String EXECUTOR_CLIENT_TRUSTSTORE_PATH = "azkaban.executor.client.truststore";
+    public static final String EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD = "azkaban.executor.client.trustpassword";
 
     public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED =
         "azkaban.executor.reverse.proxy.enabled";
@@ -533,6 +534,10 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH =
+        AZKABAN_KUBERNETES_PREFIX + "nscd.socket.volume.mount.path";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_HOST_PATH =
+        AZKABAN_KUBERNETES_PREFIX + "nscd.socket.host.path";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
@@ -557,6 +562,13 @@ public class Constants {
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.mountpath";
 
+    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
+    public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
+    public static final String KUBERNETES_POD_TEMPLATE_PATH =
+        KUBERNETES_POD_PREFIX + "template.path";
+
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
     public static final String KUBERNETES_SERVICE_REQUIRED = KUBERNETES_SERVICE_PREFIX +
@@ -573,5 +585,30 @@ public class Constants {
 
     public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
     public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
+    public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
+    public static final String ENV_ENABLE_DEV_POD = "ENABLE_DEV_POD";
+  }
+
+  public static class ImageMgmtConstants {
+
+    public static final String IMAGE_TYPE = "imageType";
+    public static final String IMAGE_VERSION = "imageVersion";
+    public static final String VERSION_STATE = "versionState";
+    public static final String ID_KEY = "id";
+    public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
+    public static final String AZKABAN_BASE_IMAGE = "azkaban-base";
+    public static final String AZKABAN_CONFIG = "azkaban-config";
+  }
+
+  public static class FlowParameters {
+
+    // Constants for Flow parameters
+    public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
+
+    // Constant to enable java remote debug for Flow Container
+    public static final String FLOW_PARAM_JAVA_ENABLE_DEBUG = "java.enable.debug";
+
+    //Constant to enable pod for developer testing
+    public static final String FLOW_PARAM_ENABLE_DEV_POD = "enable.dev.pod";
   }
 }
