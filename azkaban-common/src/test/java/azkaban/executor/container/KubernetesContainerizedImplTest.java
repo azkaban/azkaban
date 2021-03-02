@@ -18,10 +18,13 @@ package azkaban.executor.container;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.Constants.FlowParameters;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
@@ -30,29 +33,31 @@ import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
 import azkaban.imagemgmt.converters.ImageTypeConverter;
 import azkaban.imagemgmt.converters.ImageVersionConverter;
-import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
-import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
-import azkaban.imagemgmt.dto.ImageTypeDTO;
-import azkaban.imagemgmt.dto.ImageVersionDTO;
-import azkaban.imagemgmt.models.ImageRampupPlan;
-import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.dto.ImageRampupPlanRequestDTO;
+import azkaban.imagemgmt.dto.ImageRampupPlanResponseDTO;
+import azkaban.imagemgmt.dto.ImageTypeDTO;
+import azkaban.imagemgmt.dto.ImageVersionDTO;
+import azkaban.imagemgmt.models.ImageRampupPlan;
+import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.imagemgmt.version.JdbcVersionSetLoader;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
-import azkaban.imagemgmt.version.JdbcVersionSetLoader;
 import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.util.Yaml;
@@ -63,20 +68,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
-import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
-import java.util.TreeSet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-
-import static org.mockito.Mockito.*;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class covers unit tests for KubernetesContainerizedImpl class.
@@ -93,6 +94,8 @@ public class KubernetesContainerizedImplTest {
   private static ImageVersionDao imageVersionDao;
   private static ImageRampupDao imageRampupDao;
   private static final String TEST_JSON_DIR = "image_management/k8s_dispatch_test";
+  private static final String CPU_REQUESTED_IN_PROPS = "2";
+  private static final String MEMORY_REQUESTED_IN_PROPS = "4Gi";
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -124,10 +127,48 @@ public class KubernetesContainerizedImplTest {
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
         + "/resources/container/kubeconfig");
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_REQUIRED, "true");
+    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
+        CPU_REQUESTED_IN_PROPS);
+    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST
+        , MEMORY_REQUESTED_IN_PROPS);
     this.executorLoader = mock(ExecutorLoader.class);
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
         this.executorLoader, this.loader, this.imageRampupManager);
+  }
+
+  /**
+   * This test is used to verify that if cpu and memory for a flow container is requested from flow
+   * parameter then that is given more precedence over system configuration and default.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testCPUAndMemoryRequestedInFlowParam() throws Exception {
+    final Map<String, String> flowParam = new HashMap<>();
+    final String cpuRequestedInFlowParam = "3";
+    final String memoryRequestedInFlowParam = "3Gi";
+    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST, cpuRequestedInFlowParam);
+    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST, memoryRequestedInFlowParam);
+    assert (this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam))
+        .equals(cpuRequestedInFlowParam);
+    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
+        .equals(memoryRequestedInFlowParam);
+  }
+
+  /**
+   * This test is used to verify that if CPU and memory for a flow container is not requested in
+   * flow param but defined in system configuration then that is used.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testCPUAndMemoryRequestedFromProperties() throws Exception {
+    final Map<String, String> flowParam = new HashMap<>();
+    assert (this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam))
+        .equals(CPU_REQUESTED_IN_PROPS);
+    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
+        .equals(MEMORY_REQUESTED_IN_PROPS);
   }
 
   @Test
