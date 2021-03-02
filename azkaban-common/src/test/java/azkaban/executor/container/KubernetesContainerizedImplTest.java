@@ -139,7 +139,7 @@ public class KubernetesContainerizedImplTest {
 
   /**
    * This test is used to verify that if cpu and memory for a flow container is requested from flow
-   * parameter then that is given more precedence over system configuration and default.
+   * parameter then that is given more precedence over system configuration.
    *
    * @throws Exception
    */

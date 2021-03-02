@@ -444,8 +444,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // TODO: check if we need full path for config as well.
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
     // Get CPU and memory requested for a flow container
-    String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
-    String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
+    final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
+    final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
             .addFlowContainer(this.flowContainerName,
@@ -475,9 +475,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   /**
    * This method is used to get cpu request for a flow container. Precedence is defined below. a)
-   * Use CPU request set in flow parameter b) Use CPU request set in system properties c) Use
-   * default value for cpu request
-   *
+   * Use CPU request set in flow parameter b) Use CPU request set in system properties or default
+   * which is set in @cpuRequest.
    * @param flowParam
    * @return CPU request for a flow container
    */
@@ -492,8 +491,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   /**
    * This method is used to get memory request for a flow container. Precedence is defined below. a)
-   * Use memory request set in flow parameter b) Use memory request set in system properties c) Use
-   * default value for memory request
+   * Use memory request set in flow parameter b) Use memory request set in system properties or
+   * default which is set in @memoryRequest
    *
    * @param flowParam
    * @return Memory request for a flow container
