@@ -15,8 +15,8 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
@@ -40,8 +40,8 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
@@ -58,7 +58,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -444,12 +443,14 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     final String azkabanBaseImageFullPath = getAzkabanBaseImageFullPath(versionSet);
     // TODO: check if we need full path for config as well.
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
-
+    // Get CPU and memory requested for a flow container
+    final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
+    final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
             .addFlowContainer(this.flowContainerName,
                 azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
-            .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
+            .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit, flowContainerMemoryRequest);
 
     // Add volume for nscd-socket
     addNscdSocketInVolume(v1SpecBuilder);
@@ -470,6 +471,39 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Add volume with secrets mounted
     addSecretVolume(v1SpecBuilder);
     return v1SpecBuilder.build();
+  }
+
+  /**
+   * This method is used to get cpu request for a flow container. Precedence is defined below. a)
+   * Use CPU request set in flow parameter b) Use CPU request set in system properties or default
+   * which is set in @cpuRequest.
+   * @param flowParam
+   * @return CPU request for a flow container
+   */
+  @VisibleForTesting
+  String getFlowContainerCPURequest(final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
+      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+    }
+    return this.cpuRequest;
+  }
+
+  /**
+   * This method is used to get memory request for a flow container. Precedence is defined below. a)
+   * Use memory request set in flow parameter b) Use memory request set in system properties or
+   * default which is set in @memoryRequest
+   *
+   * @param flowParam
+   * @return Memory request for a flow container
+   */
+  @VisibleForTesting
+  String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
+      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+    }
+    return this.memoryRequest;
   }
 
   private void setupJavaRemoteDebug(Map<String, String> envVariables,
