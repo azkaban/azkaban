@@ -610,5 +610,12 @@ public class Constants {
 
     //Constant to enable pod for developer testing
     public static final String FLOW_PARAM_ENABLE_DEV_POD = "enable.dev.pod";
+
+    // Constant for cpu request for flow container
+    public static final String FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST = "flow.container.cpu.request";
+
+    // Constant for memory request for flow container
+    public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST = "flow.container.memory"
+        + ".request";
   }
 }
