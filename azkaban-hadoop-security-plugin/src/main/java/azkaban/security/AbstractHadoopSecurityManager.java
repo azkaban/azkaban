@@ -232,6 +232,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
         fs = FileSystem.get(this.conf);
       }
     } catch (final Exception e) {
+      logger.error("Failed to get FileSystem.", e);
       throw new HadoopSecurityManagerException("Failed to get FileSystem. ", e);
     }
     return fs;
