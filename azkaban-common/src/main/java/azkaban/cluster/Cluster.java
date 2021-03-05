@@ -106,7 +106,7 @@ public class Cluster {
           final List<URL> clusterUrls;
           try {
             clusterUrls = getClusterComponentURLs(hadoopSecurityManagerDependencyComponents);
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new IllegalArgumentException(
                 String.format("Invalid dependency components for " +
                     HadoopSecurityManagerClassLoader.class.getName() + " of cluster %s", clusterId));
@@ -184,6 +184,12 @@ public class Cluster {
       return resources;
     }
 
+    // The syntax of a library path follows the pattern allowed by java's -cp option
+    // (e.g. /export/apps/A/*:/export/apps/A/conf:/export/apps/B/x.jar). Paths to
+    // individual jar files (e.g. /export/apps/B/x.jar) are resolved if they are symlinks.
+    // Paths to directories (e.g. /export/apps/A/conf, /export/apps/A/*) are expanded
+    // to include every jars files directly underneath the directory (not recursively
+    // expanded) and resolved from symlinks.
     for (String path : clusterLibraryPath.split(PATH_DELIMITER)) {
       // strip the trailing * character from the path, if any
       path = path.replaceAll("\\*$", "");
