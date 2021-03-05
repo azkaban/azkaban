@@ -614,8 +614,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     String podSpecYaml = Yaml.dump(pod).trim();
     logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
 
-    // TODO: Add version set number and json in flow life cycle event so users can use this
-    //   information
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
       logger.info("ExecId: {}, Dispatched pod for execution.", executionId);
@@ -625,10 +623,12 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     }
     // Store version set id in execution_flows for execution_id
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
-
     // Marking flow as PREPARING from DISPATCHING as POD creation request is submitted
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
+    // TODO: Add version set number and json in flow life cycle event so users can use this
+    //   information
+
   }
 
   /**
