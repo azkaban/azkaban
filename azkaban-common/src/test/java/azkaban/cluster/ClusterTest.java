@@ -61,8 +61,8 @@ public class ClusterTest {
       clusterUrlFiles.add(url.getFile());
     }
 
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getPath()));
-    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getCanonicalPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getCanonicalPath()));
     Assert.assertTrue(clusterUrls.size() == 2);
   }
 
@@ -84,10 +84,10 @@ public class ClusterTest {
       clusterUrlFiles.add(url.getFile());
     }
 
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getParentFile().getPath() + "/"));
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getPath()));
-    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getParentFile().getPath() + "/"));
-    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getParentFile().getCanonicalPath() + "/"));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getCanonicalPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getParentFile().getCanonicalPath() + "/"));
+    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getCanonicalPath()));
     Assert.assertTrue(clusterUrls.size() == 4);
   }
 
@@ -111,10 +111,10 @@ public class ClusterTest {
       clusterUrlFiles.add(url.getFile());
     }
 
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getParentFile().getPath() + "/"));
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getPath()));
-    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getParentFile().getPath() + "/"));
-    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getParentFile().getCanonicalPath() + "/"));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getCanonicalPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getParentFile().getCanonicalPath() + "/"));
+    Assert.assertTrue(clusterUrlFiles.contains(hadoopJar.getCanonicalPath()));
     Assert.assertTrue(clusterUrls.size() == 4);
   }
 
@@ -139,8 +139,8 @@ public class ClusterTest {
       clusterUrlFiles.add(url.getFile());
     }
 
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getParentFile().getPath() + "/"));
-    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getPath()));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getParentFile().getCanonicalPath() + "/"));
+    Assert.assertTrue(clusterUrlFiles.contains(hiveJar.getCanonicalPath()));
     Assert.assertTrue(clusterUrls.size() == 2);
   }
   @Test (expected = IllegalArgumentException.class)

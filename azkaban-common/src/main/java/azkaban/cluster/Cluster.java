@@ -18,9 +18,10 @@ package azkaban.cluster;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -105,7 +106,7 @@ public class Cluster {
           final List<URL> clusterUrls;
           try {
             clusterUrls = getClusterComponentURLs(hadoopSecurityManagerDependencyComponents);
-          } catch (MalformedURLException e) {
+          } catch (IOException e) {
             throw new IllegalArgumentException(
                 String.format("Invalid dependency components for " +
                     HadoopSecurityManagerClassLoader.class.getName() + " of cluster %s", clusterId));
@@ -156,7 +157,7 @@ public class Cluster {
    * Get library URLs for a given set of components.
    */
   public List<URL> getClusterComponentURLs(final Collection<String> components)
-      throws MalformedURLException {
+      throws IOException {
     final List<URL> urls = new ArrayList<>();
     final Map<String, String> componentClasspath = this.properties.getMapByPrefix(
         Cluster.LIBRARY_PATH_PREFIX);
@@ -176,7 +177,7 @@ public class Cluster {
   }
 
   private List<URL> getResourcesFromClasspath(final String clusterLibraryPath)
-      throws MalformedURLException {
+      throws IOException {
     final List<URL> resources = new ArrayList<>();
 
     if (Strings.isNullOrEmpty(clusterLibraryPath)) {
@@ -184,15 +185,16 @@ public class Cluster {
     }
 
     for (String path : clusterLibraryPath.split(PATH_DELIMITER)) {
-      final File file = new File(path);
+      // strip the trailing * character from the path, if any
+      path = path.replaceAll("\\*$", "");
+      // remove any symbolic links on the path
+      final File file = Paths.get(path).toFile().getCanonicalFile();
       if (file.isFile()) {
         if (!shouldBeExcluded(file)) {
           resources.add(file.toURI().toURL());
         }
       } else {
-        // strip the trailing * character from the path
-        path = path.replaceAll("\\*$", "");
-        final File folder = new File(path);
+        final File folder = file;
         if (folder.exists()) {
           resources.add(folder.toURI().toURL());
           for (final File jar : folder.listFiles()) {
