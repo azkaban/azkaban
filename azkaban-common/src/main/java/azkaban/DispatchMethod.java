@@ -36,6 +36,15 @@ public enum DispatchMethod {
     return this.numVal;
   }
 
+  public static DispatchMethod fromNumVal(final int numVal) {
+    for (DispatchMethod dispatchMethod : DispatchMethod.values()) {
+      if (dispatchMethod.getNumVal() == numVal) {
+        return dispatchMethod;
+      }
+    }
+    throw new IllegalArgumentException("No Dispatch Method corresponding to num value " + numVal);
+  }
+
   public static DispatchMethod getDispatchMethod(String value) {
     try {
       logger.info("Value of dispatch method is : " + value);

@@ -103,7 +103,7 @@ public class ExecutionFlowDaoTest {
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
-    return TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    return TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
   }
 
   private void createTestProject() {
@@ -283,7 +283,7 @@ public class ExecutionFlowDaoTest {
     final String host = "localhost";
     final int port = 12345;
     final Executor executor = this.executorDao.addExecutor(host, port);
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow);
     this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
 
@@ -298,7 +298,7 @@ public class ExecutionFlowDaoTest {
   /* Test exception when assigning a non-existent executor to a flow */
   @Test
   public void testAssignExecutorInvalidExecutor() throws Exception {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow);
 
     // Since we haven't inserted any executors, 1 should be non-existent executor id.
@@ -435,7 +435,7 @@ public class ExecutionFlowDaoTest {
 
   private ExecutableFlow createExecution(final long startTime, final Status status)
       throws IOException, ExecutorManagerException {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow.setSubmitUser("testUser");
     flow.setSubmitTime(startTime - 1);
     flow.setStartTime(startTime);
@@ -448,7 +448,7 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFetchActiveFlowsStatusChanged() throws Exception {
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow1);
     final Executor executor = this.executorDao.addExecutor("test", 1);
     this.assignExecutor.assignExecutor(executor.getId(), flow1.getExecutionId());
@@ -478,7 +478,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testUploadAndFetchExecutableNode() throws Exception {
 
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow.setExecutionId(10);
 
     final File jobFile = ExecutionsTestUtil.getFlowFile("exectest1", "job10.job");
@@ -517,7 +517,7 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testSelectAndUpdateExecution() throws Exception {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setDispatchMethod(DispatchMethod.POLL);
@@ -531,7 +531,7 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testSelectAndUpdateExecutionWithStatusUpdate() throws Exception {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setDispatchMethod(DispatchMethod.POLL);
@@ -964,7 +964,7 @@ public class ExecutionFlowDaoTest {
       final long submitTime, final int flowPriority, final Status status,
       Optional<Long> startTime, DispatchMethod dispatchMethod) throws IOException,
       ExecutorManagerException {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow(projectName, flowName);
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow(projectName, flowName, DispatchMethod.POLL);
     flow.setStatus(status);
     flow.setSubmitTime(submitTime);
     flow.setSubmitUser("testUser");

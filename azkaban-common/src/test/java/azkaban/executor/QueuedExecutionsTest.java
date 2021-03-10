@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.utils.Pair;
 import azkaban.utils.TestUtils;
 import java.io.IOException;
@@ -32,9 +33,9 @@ public class QueuedExecutionsTest {
    */
   private Pair<ExecutionReference, ExecutableFlow> createExecutablePair(
       final String flowName, final int execId) throws IOException {
-    final ExecutableFlow execFlow = TestUtils.createTestExecutableFlow("exectest1", flowName);
+    final ExecutableFlow execFlow = TestUtils.createTestExecutableFlow("exectest1", flowName, DispatchMethod.PUSH);
     execFlow.setExecutionId(execId);
-    final ExecutionReference ref = new ExecutionReference(execId);
+    final ExecutionReference ref = new ExecutionReference(execId, DispatchMethod.PUSH);
     return new Pair<>(ref, execFlow);
   }
 

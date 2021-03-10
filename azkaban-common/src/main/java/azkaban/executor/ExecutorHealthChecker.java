@@ -138,7 +138,7 @@ public class ExecutorHealthChecker {
         // Todo jamiesjc: add metrics to monitor the http call return time
         results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
-                ConnectorParams.PING_ACTION, null, null);
+                ConnectorParams.PING_ACTION, null, null, null);
       } catch (final ExecutorManagerException e) {
         healthcheckException = Optional.of(e);
       } catch (final RuntimeException re) {
