@@ -379,11 +379,12 @@ public class JobTypeManager {
       }
 
       // inject cluster jars and native libraries into jobs through properties
-      jobProps.putAll(
-          getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps));
-      jobProps = PropsUtils.resolveProps(jobProps);
+      // User's job props should take precedence over cluster props
+      Props finalProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
+      finalProps.putAll(jobProps);
+      finalProps = PropsUtils.resolveProps(finalProps);
 
-      return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
+      return new JobParams(jobTypeClass, finalProps, pluginSet.getPluginPrivateProps(jobType),
           pluginLoadProps, jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId

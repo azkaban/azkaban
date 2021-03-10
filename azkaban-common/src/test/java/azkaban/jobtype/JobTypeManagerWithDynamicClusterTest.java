@@ -48,6 +48,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   private static final Logger LOG = Logger.getLogger(JobTypeManagerTest.class);
   private static final String HADOOP_SECURITY_MANAGER_CLASS =
       "azkaban.security.HadoopSecurityManager_H_2_0";
+  private static final String PIG_HOME = "pig.home";
 
   public File testDirectory;
   private final Cluster defaultCluster;
@@ -74,6 +75,7 @@ public class JobTypeManagerWithDynamicClusterTest {
     clusterProps.put(Cluster.LIBRARY_PATH_PREFIX + "hive", hiveJar.getParentFile().getPath());
     clusterProps.put(Cluster.NATIVE_LIBRARY_PATH_PREFIX + "hive", "hive-native-lib");
     clusterProps.put(Cluster.HADOOP_SECURITY_MANAGER_CLASS_PROP, HADOOP_SECURITY_MANAGER_CLASS);
+    clusterProps.put(PIG_HOME, "/cluster/pig/path");
 
     return new Cluster("default", clusterProps);
   }
@@ -224,5 +226,24 @@ public class JobTypeManagerWithDynamicClusterTest {
     jobProps = ((FakeJavaJob2) job).getJobProps();
     Assert.assertNull(jobProps.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH));
     Assert.assertNull(jobProps.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB));
+  }
+
+  @Test
+  public void testJobParamsPrecedenceOverClusterParams() {
+    final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
+        this.getClass().getClassLoader(), this.clusterRouter);
+
+    Props jobProps = new Props();
+    jobProps.put("type", "testjob");
+    jobProps.put(PIG_HOME, "/user/pig/path");
+    jobProps.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, "hadoop");
+
+    final JobParams jobParams = manager.createJobParams("testjob", jobProps, LOG);
+    Assert.assertTrue(
+        jobParams.contextClassLoader instanceof HadoopSecurityManagerClassLoader);
+
+    final Job job = JobTypeManager.createJob("testjob", jobParams, LOG);
+    jobProps = ((FakeJavaJob2) job).getJobProps();
+    Assert.assertEquals("/user/pig/path", jobProps.get(PIG_HOME));
   }
 }
