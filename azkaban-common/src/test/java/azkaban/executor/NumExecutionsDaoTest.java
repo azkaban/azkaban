@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.test.Utils;
 import azkaban.utils.TestUtils;
@@ -68,15 +69,15 @@ public class NumExecutionsDaoTest {
 
   @Test
   public void testFetchNumExecutableFlows() throws Exception {
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow1.setStatus(Status.READY);
     this.executionFlowDao.uploadExecutableFlow(flow1);
 
-    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
     flow2.setStatus(Status.RUNNING);
     this.executionFlowDao.uploadExecutableFlow(flow2);
 
-    final ExecutableFlow flow2b = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2b = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
     flow2b.setStatus(Status.FAILED);
     this.executionFlowDao.uploadExecutableFlow(flow2b);
 

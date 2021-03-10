@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
@@ -315,7 +316,7 @@ public class KubernetesContainerizedImplTest {
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
-    return TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    return TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
   }
 
   private ExecutableFlow createFlowWithMultipleJobtypes() throws Exception {

@@ -17,6 +17,7 @@ package azkaban.server;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
@@ -56,7 +57,7 @@ public final class HttpRequestUtilsTest {
 
   /* Helper method to get a test flow and add required properties */
   public static ExecutableFlow createExecutableFlow() throws IOException {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow.getExecutionOptions().getFlowParameters()
         .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()

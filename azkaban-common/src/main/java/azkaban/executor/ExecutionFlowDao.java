@@ -680,7 +680,7 @@ public class ExecutionFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlow(
                     GZIPUtils.transformBytesToObject(data, encType), status);
-            final ExecutionReference ref = new ExecutionReference(id);
+            final ExecutionReference ref = new ExecutionReference(id, exFlow.getDispatchMethod());
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);

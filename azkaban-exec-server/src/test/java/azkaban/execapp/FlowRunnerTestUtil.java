@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -192,6 +193,7 @@ public class FlowRunnerTestUtil {
       throws Exception {
     final ExecutableFlow exFlow = FlowRunnerTestUtil
         .prepareExecDir(this.workingDir, this.projectDir, flowName, 1);
+    exFlow.setDispatchMethod(DispatchMethod.POLL);
     if (watcher != null) {
       options.setPipelineLevel(pipeline);
       options.setPipelineExecutionId(watcher.getExecId());
