@@ -60,7 +60,7 @@ public class ExecutorApiGatewaySystemTest {
             JSONUtils.toJSON(updateTimesList));
 
     final Map<String, Object> results = this.apiGateway.callWithExecutionId("localhost", 12321,
-        ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
+        ConnectorParams.UPDATE_ACTION, null, null, null, executionIds, updateTimes);
 
     Assert.assertTrue(results != null);
     final List<Map<String, Object>> executionUpdates =
