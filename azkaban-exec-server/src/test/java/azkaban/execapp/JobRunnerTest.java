@@ -29,6 +29,7 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobExecutor.JobClassLoader;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
@@ -103,6 +104,9 @@ public class JobRunnerTest {
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
         && runner.getStatus() != Status.FAILED);
+    ExecutableFlow flow = node.getExecutableFlow();
+    Assert.assertTrue(flow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(),
+        null).getVersion().equals("value1"));
 
     runner.run();
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
@@ -436,9 +440,13 @@ public class JobRunnerTest {
     final ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(execId);
     flow.setSubmitUser(SUBMIT_USER);
+    // For version test
+    flow.setVersionSet(createVesionSet());
     final ExecutableNode node = new ExecutableNode();
     node.setId(name);
     node.setParentFlow(flow);
+    // For version test
+    node.setType("key1");
 
     final Props props = createProps(time, fail, jobProps);
     node.setInputProps(props);
@@ -472,5 +480,13 @@ public class JobRunnerTest {
     final Thread thread = new Thread(runner);
     thread.start();
     return thread;
+  }
+
+  private VersionSet createVesionSet(){
+    final String testJSON = "{\"key1\":{\"version\":\"value1\",\"path\":\"path1\","
+        + "\"state\":\"ACTIVE\"},\"key2\":{\"version\":\"value2\",\"path\":\"path2\","
+        + "\"state\":\"ACTIVE\"}}";
+    final String testMD5 = "43966138aebfdc4438520cc5cd2aefa8";
+    return new VersionSet(testJSON, testMD5, 1);
   }
 }
