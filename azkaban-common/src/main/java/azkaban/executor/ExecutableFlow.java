@@ -423,4 +423,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   @Override
   public void setModifiedBy(String id) { this.modifiedBy = id; }
+  
+  public VersionSet getVersionSet() {
+    return versionSet;
+  }
+
+  public void setVersionSet(VersionSet versionSet) {
+    this.versionSet = versionSet;
+  }
 }

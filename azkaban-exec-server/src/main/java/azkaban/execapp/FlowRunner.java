@@ -1637,6 +1637,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
       metaData.put("startTime", String.valueOf(node.getStartTime()));
       metaData.put("jobType", String.valueOf(node.getType()));
+//      metaData.put("version", )
       // Azkaban executor hostname
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
       // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
