@@ -28,6 +28,8 @@ import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
 import azkaban.container.models.PodTemplateMergeUtils;
+import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -39,6 +41,7 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -625,10 +628,12 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
     // Marking flow as PREPARING from DISPATCHING as POD creation request is submitted
     flow.setStatus(Status.PREPARING);
+    flow.setVersionSet(versionSet);
     this.executorLoader.updateExecutableFlow(flow);
-    // TODO: Add version set number and json in flow life cycle event so users can use this
-    //   information
-
+    // Emit preparing flow event with version set
+    PodEventListener podEventListener = new PodEventListener();
+    podEventListener.handleEvent(Event.create(flow, EventType.FLOW_STATUS_CHANGED,
+        new EventData(flow)));
   }
 
   /**

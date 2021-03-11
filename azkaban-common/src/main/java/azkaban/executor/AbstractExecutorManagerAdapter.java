@@ -18,11 +18,15 @@ package azkaban.executor;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.event.EventHandler;
+import azkaban.executor.container.PodEventListener;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
+import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -266,6 +270,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       logger.info("Submitting execution flow " + flowId + " by " + userId);
 
       String message = uploadExecutableFlow(exflow, userId, flowId, "");
+
+      // Emit dispatching flow event
+      PodEventListener podEventListener = new PodEventListener();
+      podEventListener.handleEvent(Event.create(exflow, EventType.FLOW_STATUS_CHANGED,
+          new EventData(exflow)));
 
       this.commonMetrics.markSubmitFlowSuccess();
       message += "Execution queued successfully with exec id " + exflow.getExecutionId();

@@ -18,6 +18,8 @@ package azkaban.executor.container;
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
@@ -30,6 +32,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.metrics.CommonMetrics;
+import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -330,6 +333,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           dsFlow.setStatus(Status.READY);
           dsFlow.setUpdateTime(System.currentTimeMillis());
           ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
+          // Emit ready flow event
+          PodEventListener podEventListener = new PodEventListener();
+          podEventListener.handleEvent(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
+              new EventData(dsFlow)));
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
         }
