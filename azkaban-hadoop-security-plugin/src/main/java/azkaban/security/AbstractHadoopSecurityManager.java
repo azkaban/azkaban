@@ -89,6 +89,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   protected final ConcurrentMap<String, UserGroupInformation> userUgiMap;
   protected boolean shouldProxy;
   protected boolean securityEnabled;
+  protected final Props props;
   public static final String CHOWN = "chown";
   public static final String CHMOD = "chmod";
 
@@ -97,6 +98,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
       .getLogger(AbstractHadoopSecurityManager.class);
 
   public AbstractHadoopSecurityManager(final Props props) {
+    this.props = props;
     this.executeAsUser = new ExecuteAsUser(props.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
     this.conf = new Configuration();
     // Disable yyFileSystem Cache for HadoopSecurityManager
@@ -231,6 +233,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
         fs = FileSystem.get(this.conf);
       }
     } catch (final Exception e) {
+      logger.error("Failed to get FileSystem.", e);
       throw new HadoopSecurityManagerException("Failed to get FileSystem. ", e);
     }
     return fs;
