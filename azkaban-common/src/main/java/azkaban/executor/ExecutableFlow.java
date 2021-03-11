@@ -17,6 +17,7 @@ package azkaban.executor;
 
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
@@ -78,6 +79,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   // For slaOption information
   private String slaOptionStr = "null";
+
+  // For Flows dispatched from a k8s pod
+  private VersionSet versionSet;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
