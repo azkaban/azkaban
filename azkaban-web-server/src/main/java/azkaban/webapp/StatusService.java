@@ -26,10 +26,13 @@ import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO;
 import azkaban.imagemgmt.services.ImageVersionMetadataService;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -64,7 +67,8 @@ public class StatusService {
     this.pidFilename = props.getString(ConfigurationKeys.AZKABAN_PID_FILENAME, "currentpid");
   }
 
-  private static String getInstallationPath() {
+  @VisibleForTesting
+  String getInstallationPath() {
     try {
       return PACKAGE_JAR.getCanonicalPath();
     } catch (final IOException e) {
@@ -75,10 +79,11 @@ public class StatusService {
 
   /**
    * Gets the status of the azkaban cluster.
+   *
    * @return Status
    */
   public Status getStatus() {
-    if(isContainerizedDispatchMethodEnabled()) {
+    if (isContainerizedDispatchMethodEnabled()) {
       return getContainerizedStatus();
     }
     return getClusterStatus();
@@ -87,19 +92,16 @@ public class StatusService {
   /**
    * This returns implementation instance for Status containing status information for Azkaban
    * cluster pertaining to web server, memory, active executors etc.
+   *
    * @return Status
    */
   private Status getClusterStatus() {
-    final String version = jarVersion == null ? "unknown" : jarVersion;
-    final Runtime runtime = Runtime.getRuntime();
-    final long usedMemory = runtime.totalMemory() - runtime.freeMemory();
-
     // Build the status object
-    return new ClusterStatus(version,
+    return new ClusterStatus(getVersion(),
         getPid(),
         getInstallationPath(),
-        usedMemory,
-        runtime.maxMemory(),
+        getUsedMemory(),
+        getMaxMemory(),
         getDbStatus(),
         getActiveExecutors());
   }
@@ -109,12 +111,37 @@ public class StatusService {
    * Azkaban containerization. It includes information pertaining to web server, memory and
    * containerization information such as image types and version for each image types selected
    * based on either random rampup or latest active image version.
+   *
    * @return Status
    */
   private Status getContainerizedStatus() {
-    final String version = jarVersion == null ? "unknown" : jarVersion;
+    // Build the status object
+    ContainerizedDispatchManager containerizedDispatchManager = getContainerizedDispatchManager();
+    return new ContainerizedClusterStatus(getVersion(),
+        getPid(),
+        getInstallationPath(),
+        getUsedMemory(),
+        getMaxMemory(),
+        getDbStatus(),
+        getStringImageVersionMetadataResponseDTOMap(),
+        getActiveExecutors(),
+        containerizedDispatchManager.getContainerRampUpCriteria().getRampUp(),
+        containerizedDispatchManager.getContainerJobTypeCriteria().getAllowListAsString());
+  }
+
+  @VisibleForTesting
+  long getUsedMemory() {
     final Runtime runtime = Runtime.getRuntime();
-    final long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+    return runtime.totalMemory() - runtime.freeMemory();
+  }
+
+  @VisibleForTesting
+  long getMaxMemory() {
+    final Runtime runtime = Runtime.getRuntime();
+    return runtime.maxMemory();
+  }
+
+  private Map<String, ImageVersionMetadataResponseDTO> getStringImageVersionMetadataResponseDTOMap() {
     Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap = new TreeMap<>();
     try {
       imageTypeVersionMap =
@@ -122,21 +149,25 @@ public class StatusService {
     } catch (final Exception ex) {
       log.error("Error while geting version metadata for all the image types", ex);
     }
-    // Build the status object
-    return new ContainerizedClusterStatus(version,
-        getPid(),
-        getInstallationPath(),
-        usedMemory,
-        runtime.maxMemory(),
-        getDbStatus(),
-        imageTypeVersionMap);
+    return imageTypeVersionMap;
+  }
+
+  @VisibleForTesting
+  String getVersion() {
+    return jarVersion == null ? "unknown" : jarVersion;
   }
 
   private ImageVersionMetadataService getImageVersionMetadataService() {
     return SERVICE_PROVIDER.getInstance(ImageVersionMetadataService.class);
   }
 
-  private String getPid() {
+  private ContainerizedDispatchManager getContainerizedDispatchManager() {
+    return (ContainerizedDispatchManager) SERVICE_PROVIDER
+        .getInstance(ExecutorManagerAdapter.class);
+  }
+
+  @VisibleForTesting
+  String getPid() {
     final File libDir = PACKAGE_JAR.getParentFile();
     final File installDir = libDir.getParentFile();
     final File pidFile = new File(installDir, this.pidFilename);

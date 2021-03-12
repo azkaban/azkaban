@@ -19,10 +19,12 @@ import azkaban.imagemgmt.models.ImageRampup.StabilityTag;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import java.util.List;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonPropertyOrder;
 
 /**
  * This DTO class represents API specific image version metadata response.
  */
+@JsonPropertyOrder({"version", "state", "path", "message", "rampups"})
 public class ImageVersionMetadataResponseDTO {
 
   // Represents version for an image type selected based on random rampup or current active version.
@@ -73,6 +75,7 @@ public class ImageVersionMetadataResponseDTO {
   /**
    * Represents rampup metadata for an image type.
    */
+  @JsonPropertyOrder({"version", "stabilityTag", "rampupPercentage"})
   public static class RampupMetadata {
 
     @JsonProperty("version")
