@@ -526,6 +526,8 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
     public static final String CONTAINERIZED_RAMPUP =
         AZKABAN_CONTAINERIZED_PREFIX + "rampup";
+    public static final String CONTAINERIZED_JOBTYPE_ALLOWLIST =
+        AZKABAN_CONTAINERIZED_PREFIX + "jobtype.allowlist";
 
     // Kubernetes related properties
     public static final String AZKABAN_KUBERNETES_PREFIX = "azkaban.kubernetes.";

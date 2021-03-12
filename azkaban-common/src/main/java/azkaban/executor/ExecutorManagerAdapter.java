@@ -46,6 +46,11 @@ public interface ExecutorManagerAdapter {
   public DispatchMethod getDispatchMethod();
 
   /**
+   * Compute {@link DispatchMethod} based on the {@link ExecutableFlow}
+   */
+  public DispatchMethod getDispatchMethod(ExecutableFlow flow);
+
+  /**
    * <pre>
    * Returns All running with executors and queued flows
    * Note, returns empty list if there isn't any running or queued flows

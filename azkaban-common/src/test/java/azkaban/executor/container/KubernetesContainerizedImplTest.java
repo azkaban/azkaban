@@ -179,7 +179,7 @@ public class KubernetesContainerizedImplTest {
     flow.setStatus(Status.PREPARING);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setExecutionId(0);
-    TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
+    TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     assertThat(jobTypes.size()).isEqualTo(1);
   }
 
@@ -189,7 +189,7 @@ public class KubernetesContainerizedImplTest {
     flow.setExecutionId(1);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
-    final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     assert(jobTypes.contains("command"));
     assert(jobTypes.contains("hadoopJava"));
     assert(jobTypes.contains("spark"));
@@ -221,7 +221,7 @@ public class KubernetesContainerizedImplTest {
     when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
     when(imageRampupManager.getVersionInfo(any(String.class), any(String.class)))
         .thenReturn(new VersionInfo("7.0.4", "path1", State.ACTIVE));
-    final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     // Add included job types
     jobTypes.add("hadoopJava");
     jobTypes.add("pig");
@@ -287,7 +287,7 @@ public class KubernetesContainerizedImplTest {
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
-    final TreeSet<String> jobTypes = this.kubernetesContainerizedImpl.getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     // Add included job types
     jobTypes.add("hadoopJava");
     jobTypes.add("pig");
