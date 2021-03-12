@@ -106,7 +106,7 @@ public class JobRunnerTest {
         && runner.getStatus() != Status.FAILED);
     ExecutableFlow flow = node.getExecutableFlow();
     Assert.assertTrue(flow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(),
-        null).getVersion().equals("value1"));
+        null).getVersion().equals("8.0"));
 
     runner.run();
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
@@ -441,12 +441,12 @@ public class JobRunnerTest {
     flow.setExecutionId(execId);
     flow.setSubmitUser(SUBMIT_USER);
     // For version test
-    flow.setVersionSet(createVesionSet());
+    flow.setVersionSet(createVersionSet());
     final ExecutableNode node = new ExecutableNode();
     node.setId(name);
     node.setParentFlow(flow);
     // For version test
-    node.setType("key1");
+    node.setType("spark");
 
     final Props props = createProps(time, fail, jobProps);
     node.setInputProps(props);
@@ -482,11 +482,13 @@ public class JobRunnerTest {
     return thread;
   }
 
-  private VersionSet createVesionSet(){
-    final String testJSON = "{\"key1\":{\"version\":\"value1\",\"path\":\"path1\","
-        + "\"state\":\"ACTIVE\"},\"key2\":{\"version\":\"value2\",\"path\":\"path2\","
+  private VersionSet createVersionSet(){
+    String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
+        + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
+        + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","
         + "\"state\":\"ACTIVE\"}}";
-    final String testMD5 = "43966138aebfdc4438520cc5cd2aefa8";
-    return new VersionSet(testJSON, testMD5, 1);
+    String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
+    VersionSet versionSet = new VersionSet(testJsonString1, testMd5Hex1, 1);
+    return versionSet;
   }
 }

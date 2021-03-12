@@ -271,7 +271,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
       String message = uploadExecutableFlow(exflow, userId, flowId, "");
 
-      // Emit dispatching flow event
+      // Emit ready flow event
       PodEventListener podEventListener = new PodEventListener();
       podEventListener.handleEvent(Event.create(exflow, EventType.FLOW_STATUS_CHANGED,
           new EventData(exflow)));

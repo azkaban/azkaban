@@ -11,6 +11,7 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.project.Project;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ public class PodEventListener implements EventListener<Event> {
   private AzkabanEventReporter azkabanEventReporter;
   private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
 
+  @VisibleForTesting
   private Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
     final Map<String, String> metaData = new HashMap<>();
     final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
@@ -44,6 +46,7 @@ public class PodEventListener implements EventListener<Event> {
     return metaData;
   }
 
+  @VisibleForTesting
   private Map<String, String> mapConvert(final VersionSet versionSet) {
     final Map<String, String> imageToVersionMap = new HashMap<>();
     for(String imageType: versionSet.getImageToVersionMap().keySet()) {

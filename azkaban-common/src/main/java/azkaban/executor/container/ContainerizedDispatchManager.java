@@ -275,6 +275,12 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         rateLimiter.acquire();
         logger.info("Starting dispatch for {} execution.", executionId);
         Runnable worker = new ExecutionDispatcher(executionId);
+        // Fetch an executable flow based on execution id and report an dispatching event
+        final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
+        PodEventListener podEventListener = new PodEventListener();
+        podEventListener.handleEvent(Event.create(flow, EventType.FLOW_STATUS_CHANGED,
+            new EventData(flow)));
+
         executorService.execute(worker);
       }
     }
