@@ -29,8 +29,6 @@ import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
 import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -582,7 +580,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Fetch execution flow from execution Id.
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
     // Step 1: Fetch set of jobTypes for a flow from executionId
-    final TreeSet<String> jobTypes = getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     logger.info("ExecId: {}, Jobtypes for flow {} are: {}", executionId, flow.getFlowId(), jobTypes);
 
     final Map<String, String> flowParam =
@@ -704,37 +702,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   private void addSecretVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
     v1SpecBuilder.addSecretVolume(secretVolume, secretName, secretMountpath);
-  }
-
-  /**
-   * This method is used to get jobTypes for a flow. This method is going to call
-   * populateJobTypeForFlow which has recursive method call to traverse the DAG for a flow.
-   *
-   * @param flow Executable flow object
-   * @return
-   * @throws ExecutorManagerException
-   */
-  public TreeSet<String> getJobTypesForFlow(final ExecutableFlow flow) {
-    final TreeSet<String> jobTypes = new TreeSet<>();
-    populateJobTypeForFlow(flow, jobTypes);
-    return jobTypes;
-  }
-
-  /**
-   * This method is used to populate jobTypes for ExecutableNode.
-   *
-   * @param node
-   * @param jobTypes
-   */
-  private void populateJobTypeForFlow(final ExecutableNode node, Set<String> jobTypes) {
-    if (node instanceof ExecutableFlowBase) {
-      final ExecutableFlowBase base = (ExecutableFlowBase) node;
-      for (ExecutableNode subNode : base.getExecutableNodes()) {
-        populateJobTypeForFlow(subNode, jobTypes);
-      }
-    } else {
-      jobTypes.add(node.getType());
-    }
   }
 
   /**

@@ -273,6 +273,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     }
   }
 
+  @Override
+  public DispatchMethod getDispatchMethod(final ExecutableFlow flow) {
+    return getDispatchMethod();
+  }
+
   protected String uploadExecutableFlow(
       final ExecutableFlow exflow, final String userId, final String flowId,
       String message) throws ExecutorManagerException {
@@ -280,7 +285,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     exflow.setSubmitUser(userId);
     exflow.setStatus(getStartStatus());
     exflow.setSubmitTime(System.currentTimeMillis());
-    exflow.setDispatchMethod(getDispatchMethod());
+    exflow.setDispatchMethod(getDispatchMethod(exflow));
 
     // Get collection of running flows given a project and a specific flow name
     final List<Integer> running = getRunningFlows(projectId, flowId);
