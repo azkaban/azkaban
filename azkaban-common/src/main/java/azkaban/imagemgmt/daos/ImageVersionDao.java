@@ -110,4 +110,15 @@ public interface ImageVersionDao {
    */
   public Optional<ImageVersion> getImageVersion(final String imageTypeName,
       final int versionId) throws ImageMgmtException;
+
+  /**
+   * Check if the image version for the given image type is invalid or not present.
+   *
+   * @param imageTypeName
+   * @param version
+   * @return boolean
+   * @throws ImageMgmtException
+   */
+  public boolean isInvalidVersion(final String imageTypeName, final String version)
+      throws ImageMgmtException;
 }

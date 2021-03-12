@@ -33,25 +33,24 @@ public class VersionSetBuilder {
       new TreeMap(String.CASE_INSENSITIVE_ORDER);
   private final VersionSetLoader loader;
 
-  public VersionSetBuilder(VersionSetLoader loader) {
+  public VersionSetBuilder(final VersionSetLoader loader) {
     this.loader = loader;
   }
 
-  public VersionSetBuilder addElement(String key, VersionInfo versionInfo) {
+  public VersionSetBuilder addElement(final String key, final VersionInfo versionInfo) {
     this.versionSetElements.put(key, versionInfo);
     return this;
   }
 
-  public VersionSetBuilder addElements(Map<String, VersionInfo> keyVals) {
+  public VersionSetBuilder addElements(final Map<String, VersionInfo> keyVals) {
     this.versionSetElements.putAll(keyVals);
     return this;
   }
 
   public VersionSet build() throws IOException {
-    ObjectMapper objectMapper = new ObjectMapper();
-    String versionSetJsonString = objectMapper.writeValueAsString(versionSetElements);
-    System.out.println("versionSetJsonString: "+versionSetJsonString);
-    String versionSetMd5Hex = DigestUtils.md5Hex(versionSetJsonString);
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final String versionSetJsonString = objectMapper.writeValueAsString(this.versionSetElements);
+    final String versionSetMd5Hex = DigestUtils.md5Hex(versionSetJsonString);
     return this.loader.getVersionSet(versionSetMd5Hex, versionSetJsonString)
         .orElse(null);  // null implies Exception was thrown by the Dao Layer
   }

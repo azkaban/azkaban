@@ -26,6 +26,7 @@ import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
+import azkaban.imagemgmt.version.VersionSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -132,6 +133,29 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       }
     }
     return imageTypeVersionMap;
+  }
+
+  @Override
+  public Map<String, VersionInfo> validateAndGetUpdatedVersionMap(final VersionSet versionSet)
+      throws ImageMgmtException {
+    // Find the image types for which version is either invalid or not exists
+    final Set<String> imageTypesWithInvalidVersion = versionSet.getImageToVersionMap().entrySet()
+        .stream()
+        .filter(map -> this.imageVersionDao.isInvalidVersion(
+            map.getKey(), map.getValue().getVersion()))
+        .map(map -> map.getKey())
+        .collect(Collectors.toSet());
+    final Map<String, VersionInfo> updatedVersionInfoMap = new TreeMap<>(
+        String.CASE_INSENSITIVE_ORDER);
+    if (!imageTypesWithInvalidVersion.isEmpty()) {
+      final Map<String, VersionInfo> versionInfoMap = this
+          .getVersionByImageTypes(imageTypesWithInvalidVersion);
+      // Update the correct version in versionSet
+      versionInfoMap.forEach((k, v) -> updatedVersionInfoMap.put(k, v));
+      versionSet.getImageToVersionMap().entrySet()
+          .forEach(map -> updatedVersionInfoMap.putIfAbsent(map.getKey(), map.getValue()));
+    }
+    return updatedVersionInfoMap;
   }
 
   @Override
