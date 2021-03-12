@@ -66,9 +66,9 @@ public class ExecutorApiGatewayTest {
     final ExecutorInfo exeInfo = new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89,
         10);
     final String json = JSONUtils.toJSON(exeInfo);
-    when(this.client.httpPost(any(), any())).thenReturn(json);
+    when(this.client.doPost(any(), any(), any())).thenReturn(json);
     final ExecutorInfo exeInfo2 = this.gateway
-        .callForJsonType("localhost", 1234, "executor", null, ExecutorInfo.class);
+        .callForJsonType("localhost", 1234, "executor", null, null, ExecutorInfo.class);
     Assert.assertTrue(exeInfo.equals(exeInfo2));
   }
 
@@ -76,7 +76,7 @@ public class ExecutorApiGatewayTest {
   public void updateExecutions() throws Exception {
     final ImmutableMap<String, String> map = ImmutableMap.of("test", "response");
     when(this.client
-        .httpPost(any(), this.params.capture()))
+        .doPost(any(), any(), this.params.capture()))
         .thenReturn(JSONUtils.toJSON(map));
     final Map<String, Object> response = this.gateway
         .updateExecutions(new Executor(2, "executor-2", 1234, true),
@@ -92,7 +92,7 @@ public class ExecutorApiGatewayTest {
   @Test
   public void testPathWithDefaultConfigs() throws Exception {
     final int executionId = 12345;
-    final String path = gateway.createExecutionPath(Optional.of(executionId));
+    final String path = gateway.createExecutionPath(Optional.of(executionId), null);
     Assert.assertEquals("/"+ExecutorApiGateway.DEFAULT_EXECUTION_RESOURCE, path);
   }
 
@@ -100,7 +100,7 @@ public class ExecutorApiGatewayTest {
   public void testPathWithContainerizedConfigs() throws Exception {
     final ExecutorApiGateway gateway = gatewayWithConfigs(this.client, containerizationEnabledProps());
     final int executionId = 12345;
-    final String path = gateway.createExecutionPath(Optional.of(executionId));
+    final String path = gateway.createExecutionPath(Optional.of(executionId), DispatchMethod.CONTAINERIZED);
     Assert.assertEquals("/" + executionId + "/" +
             ExecutorApiGateway.CONTAINERIZED_EXECUTION_RESOURCE,
         path);
@@ -130,7 +130,7 @@ public class ExecutorApiGatewayTest {
     final String apiHost = "host1";
     final int apiPort = 1234;
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
-        null, null);
+        null, null, null);
 
     final URI expectedUri = new URI("http://host1:1234/executor");
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
@@ -150,13 +150,13 @@ public class ExecutorApiGatewayTest {
     final String apiHost = "host1";
     final int apiPort = 1234;
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
-        null, null);
+        1, "bond", DispatchMethod.CONTAINERIZED);
 
-    final URI expectedUri = new URI("http://host1:1234/container");
+    final URI expectedUri = new URI("http://host1:1234/1/container");
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
         new Pair<>("action", "ping"),
-        new Pair<>("execid", "null"),
-        new Pair<>("user", null));
+        new Pair<>("execid", "1"),
+        new Pair<>("user", "bond"));
     Mockito.verify(clientSpy).httpPost(eq(expectedUri), eq(expectedParams));
   }
 
@@ -169,9 +169,9 @@ public class ExecutorApiGatewayTest {
     final String apiHost = "host1";
     final int apiPort = 1234;
 
-    // this should throw an exception as the properties have reverse-proxy enabled.
+    // this should throw an exception as the properties have reverse-proxy enabled and execution id is null
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
-        null, null);
+        null, null, DispatchMethod.CONTAINERIZED);
     Assert.fail();
   }
 

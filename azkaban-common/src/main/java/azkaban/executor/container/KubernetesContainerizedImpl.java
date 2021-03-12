@@ -463,12 +463,15 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     final String azkabanBaseImageFullPath = getAzkabanBaseImageFullPath(versionSet);
     // TODO: check if we need full path for config as well.
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
-
+    // Get CPU and memory requested for a flow container
+    final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
+    final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
             .addFlowContainer(this.flowContainerName,
                 azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
-            .withResources(this.cpuLimit, this.cpuRequest, this.memoryLimit, this.memoryRequest);
+            .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit,
+                flowContainerMemoryRequest);
 
     // Add volume for nscd-socket
     addNscdSocketInVolume(v1SpecBuilder);
@@ -489,6 +492,40 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Add volume with secrets mounted
     addSecretVolume(v1SpecBuilder);
     return v1SpecBuilder.build();
+  }
+
+  /**
+   * This method is used to get cpu request for a flow container. Precedence is defined below. a)
+   * Use CPU request set in flow parameter b) Use CPU request set in system properties or default
+   * which is set in @cpuRequest.
+   *
+   * @param flowParam
+   * @return CPU request for a flow container
+   */
+  @VisibleForTesting
+  String getFlowContainerCPURequest(final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
+      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+    }
+    return this.cpuRequest;
+  }
+
+  /**
+   * This method is used to get memory request for a flow container. Precedence is defined below. a)
+   * Use memory request set in flow parameter b) Use memory request set in system properties or
+   * default which is set in @memoryRequest
+   *
+   * @param flowParam
+   * @return Memory request for a flow container
+   */
+  @VisibleForTesting
+  String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
+      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+    }
+    return this.memoryRequest;
   }
 
   private void setupJavaRemoteDebug(final Map<String, String> envVariables,
@@ -599,8 +636,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     final String podSpecYaml = Yaml.dump(pod).trim();
     logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
 
-    // TODO: Add version set number and json in flow life cycle event so users can use this
-    //   information
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
       logger.info("ExecId: {}, Dispatched pod for execution.", executionId);
@@ -610,10 +645,12 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     }
     // Store version set id in execution_flows for execution_id
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
-
     // Marking flow as PREPARING from DISPATCHING as POD creation request is submitted
     flow.setStatus(Status.PREPARING);
     this.executorLoader.updateExecutableFlow(flow);
+    // TODO: Add version set number and json in flow life cycle event so users can use this
+    //   information
+
   }
 
   /**

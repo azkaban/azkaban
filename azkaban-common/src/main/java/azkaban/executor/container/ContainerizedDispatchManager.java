@@ -33,6 +33,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,7 +62,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter {
-
+  private int rampUp;
   private final ContainerizedImpl containerizedImpl;
   private QueueProcessorThread queueProcessor;
   private final RateLimiter rateLimiter;
@@ -76,6 +78,19 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
     this.containerizedImpl = containerizedImpl;
+    int rampUp = azkProps.getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_RAMPUP, 100);
+    if (rampUp > 100 || rampUp < 0) {
+      String errorMessage = "RampUp must be an integer between [0, 100]: " + rampUp;
+      logger.error(errorMessage);
+      throw new ExecutorManagerException(errorMessage);
+    } else {
+      this.rampUp = rampUp;
+    }
+  }
+
+  @VisibleForTesting
+  public void setRampUp(int rampUp) {
+    this.rampUp = rampUp;
   }
 
   /**
@@ -123,7 +138,18 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
    */
   @Override
   public DispatchMethod getDispatchMethod() {
-    return DispatchMethod.CONTAINERIZED;
+    if (this.rampUp == 0) {
+      return DispatchMethod.POLL;
+    } else if (this.rampUp == 100) {
+      return DispatchMethod.CONTAINERIZED;
+    }
+    Random rand = new Random();
+    int randomInt = rand.nextInt(100);
+    if (randomInt < this.rampUp) {
+      return DispatchMethod.CONTAINERIZED;
+    } else {
+      return DispatchMethod.POLL;
+    }
   }
 
   /**
@@ -240,7 +266,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final Set<Integer> executionIds =
           executorLoader.selectAndUpdateExecutionWithLocking(this.executionsBatchProcessingEnabled,
               this.executionsBatchSize,
-              Status.DISPATCHING);
+              Status.DISPATCHING, DispatchMethod.CONTAINERIZED);
 
       for (final int executionId : executionIds) {
         rateLimiter.acquire();

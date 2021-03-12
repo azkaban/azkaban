@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
@@ -51,6 +52,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String EXECUTION_SOURCE = "executionSource";
+  public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -72,6 +74,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   // For Flow_Status_Changed event
   private String failedJobId = "unknown";
   private String modifiedBy = "unknown";
+  private DispatchMethod dispatchMethod;
 
   // For slaOption information
   private String slaOptionStr = "null";
@@ -99,6 +102,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     // overwrite status from the flow data blob as that one should NOT be used
     exFlow.setStatus(status);
     return exFlow;
+  }
+
+  public DispatchMethod getDispatchMethod() {
+    return this.dispatchMethod;
+  }
+
+  public void setDispatchMethod(final DispatchMethod dispatchMethod) {
+    this.dispatchMethod = dispatchMethod;
   }
 
   @Override
@@ -296,6 +307,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
+    flowObj.put(FLOW_DISPATCH_METHOD, getDispatchMethod().getNumVal());
 
     return flowObj;
   }
@@ -349,6 +361,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
+    // Dispatch Method default is POLL
+    this.setDispatchMethod(DispatchMethod.fromNumVal(flowObj.getInt(FLOW_DISPATCH_METHOD,
+        DispatchMethod.POLL.getNumVal())));
   }
 
   @Override

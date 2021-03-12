@@ -197,7 +197,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
     final String[] hostPortSplit = hostPort.split(":");
     return this.apiGateway.callForJsonObjectMap(hostPortSplit[0],
-        Integer.valueOf(hostPortSplit[1]), "/jmx", paramList);
+        Integer.valueOf(hostPortSplit[1]), "/jmx", null, paramList);
   }
 
   /**
@@ -223,7 +223,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
 
     return this.apiGateway.callForJsonObjectMap(executor.getHost(), executor.getPort(),
-        "/stats", paramList);
+        "/stats", null, paramList);
   }
 
   @Override
@@ -280,6 +280,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     exflow.setSubmitUser(userId);
     exflow.setStatus(getStartStatus());
     exflow.setSubmitTime(System.currentTimeMillis());
+    exflow.setDispatchMethod(getDispatchMethod());
 
     // Get collection of running flows given a project and a specific flow name
     final List<Integer> running = getRunningFlows(projectId, flowId);

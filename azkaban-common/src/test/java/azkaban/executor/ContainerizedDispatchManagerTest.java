@@ -87,33 +87,48 @@ public class ContainerizedDispatchManagerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
         ContainerizedImplType.KUBERNETES.name());
-    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
-    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
-    this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
-    this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
+    this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
+    this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     this.flow3.setExecutionId(3);
     this.flow4.setExecutionId(4);
-    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null);
-    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), null);
-    this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), null);
+    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
+    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
+    this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
 
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
     when(this.loader.fetchActiveFlowByExecId(flow1.getExecutionId())).thenReturn(
-        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId()), flow1));
+        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), DispatchMethod.CONTAINERIZED), flow1));
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
     when(this.loader.fetchQueuedFlows(Status.READY)).thenReturn(this.queuedFlows);
 
     Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
         new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(
-            flow1.getExecutionId(), new Executor(1, "host", 2021, true)),
+            flow1.getExecutionId(), new Executor(1, "host", 2021, true), DispatchMethod.CONTAINERIZED),
             flow1);
     when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
         executionReferencePair));
+  }
+
+  @Test
+  public void testRampUpDispatchMethod() throws Exception {
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.setRampUp(0);
+    for (int i = 0; i < 100; i++) {
+      DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
+      assertThat(dispatchMethod).isEqualTo(DispatchMethod.POLL);
+    }
+    this.containerizedDispatchManager.setRampUp(100);
+    for (int i = 0; i < 100; i++) {
+      DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
+      assertThat(dispatchMethod).isEqualTo(DispatchMethod.CONTAINERIZED);
+    }
   }
 
   @Test
@@ -312,7 +327,7 @@ public class ContainerizedDispatchManagerTest {
   public void testCancelFlowWithMissingExecutor() throws Exception {
     // Return a null executor for the unfinished execution
     Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
-        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), null), flow1);
+        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), DispatchMethod.CONTAINERIZED), flow1);
     when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
         executionReferencePair));
 
@@ -371,13 +386,13 @@ public class ContainerizedDispatchManagerTest {
     }
 
     public URI getExpectedReverseProxyContainerizedURI() throws IOException {
-      return buildExecutorUri(null, 1, "container", false, (Pair<String, String>[]) null);
+      return buildExecutorUri(null, 1, "container", false, DispatchMethod.CONTAINERIZED, (Pair<String, String>[]) null);
     }
 
     @Override
     public URI buildExecutorUri(String host, int port, String path,
-        boolean isHttp, Pair<String, String>... params) throws IOException {
-      this.lastBuildExecutorUriRespone = super.buildExecutorUri(host, port, path, isHttp, params);
+        boolean isHttp, final DispatchMethod dispatchMethod, Pair<String, String>... params) throws IOException {
+      this.lastBuildExecutorUriRespone = super.buildExecutorUri(host, port, path, isHttp, dispatchMethod, params);
       return lastBuildExecutorUriRespone;
     }
 

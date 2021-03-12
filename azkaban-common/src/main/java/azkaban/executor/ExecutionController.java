@@ -45,7 +45,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
 
 
   @Inject
-  protected ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
+  public ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
   ExecutorHealthChecker executorHealthChecker) {

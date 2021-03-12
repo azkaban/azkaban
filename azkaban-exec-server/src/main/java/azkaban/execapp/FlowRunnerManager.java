@@ -1150,10 +1150,10 @@ public class FlowRunnerManager implements EventListener<Event>,
           if (FlowRunnerManager.this.azkabanProps
               .getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecutionWithLocking(
-                this.executorId, FlowRunnerManager.this.active);
+                this.executorId, FlowRunnerManager.this.active, DispatchMethod.POLL);
           } else {
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecution(this.executorId,
-                FlowRunnerManager.this.active);
+                FlowRunnerManager.this.active, DispatchMethod.POLL);
           }
           FlowRunnerManager.this.execMetrics.markOnePoll();
           if (execId == -1) {

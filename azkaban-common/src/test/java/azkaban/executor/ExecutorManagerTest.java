@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
@@ -231,9 +232,9 @@ public class ExecutorManagerTest {
   @Test
   public void testQueuedFlows() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     flow1.setExecutionId(1);
-    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.PUSH);
     flow2.setExecutionId(2);
 
     final User testUser = TestUtils.getTestUser();
@@ -265,7 +266,7 @@ public class ExecutorManagerTest {
   @Test(expected = ExecutorManagerException.class)
   public void testDuplicateQueuedFlows() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     flow1.getExecutionOptions().setConcurrentOption(
         ExecutionOptions.CONCURRENT_OPTION_SKIP);
 
@@ -281,7 +282,7 @@ public class ExecutorManagerTest {
   @Test
   public void testKillQueuedFlow() throws Exception {
     final ExecutorManager manager = createMultiExecutorManagerInstance();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     final User testUser = TestUtils.getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
 
@@ -298,7 +299,7 @@ public class ExecutorManagerTest {
   public void testNotFoundFlows() throws Exception {
     testSetUpForRunningFlows();
     this.manager.start();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
     mockFlowDoesNotExist();
     this.manager.submitExecutableFlow(flow1, this.user.getUserId());
@@ -314,7 +315,7 @@ public class ExecutorManagerTest {
   public void testDispatchException() throws Exception {
     testSetUpForRunningFlows();
     this.manager.start();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     doReturn(flow1).when(this.loader).fetchExecutableFlow(-1);
     mockFlowDoesNotExist();
     when(this.apiGateway.callWithExecutable(any(), any(), eq(ConnectorParams.EXECUTE_ACTION)))
@@ -338,7 +339,7 @@ public class ExecutorManagerTest {
   public void testDispatchFailed() throws Exception {
     testSetUpForRunningFlows();
     this.manager.start();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     flow1.getExecutionOptions().setFailureEmails(Arrays.asList("test@example.com"));
     when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
     when(this.apiGateway.callWithExecutable(any(), any(), eq(ConnectorParams.EXECUTE_ACTION)))
@@ -378,7 +379,7 @@ public class ExecutorManagerTest {
   @Test
   public void testSubmitFlows() throws Exception {
     testSetUpForRunningFlows();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     this.manager.submitExecutableFlow(flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(flow1);
     verify(this.loader).addActiveExecutableReference(any());
@@ -489,7 +490,7 @@ public class ExecutorManagerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_DISPATCHING_ERRORS_PERMITTED, 4);
     testSetUpForRunningFlows();
     this.manager.start();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     flow1.getExecutionOptions().setFailureEmails(Arrays.asList("test@example.com"));
     when(this.loader.fetchExecutableFlow(-1)).thenReturn(flow1);
 
@@ -521,7 +522,7 @@ public class ExecutorManagerTest {
   @Test
   public void testSetFlowLock() throws Exception {
     testSetUpForRunningFlows();
-    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
     flow1.setLocked(true);
     final String msg = this.manager.submitExecutableFlow(flow1, this.user.getUserId());
     assertThat(msg).isEqualTo("Flow derived-member-data for project flow is locked.");
@@ -616,12 +617,12 @@ public class ExecutorManagerTest {
     when(this.loader.fetchActiveExecutors()).thenReturn(executors);
     this.manager = createExecutorManager();
 
-    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
-    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.PUSH);
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.PUSH);
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
-    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), executor1);
-    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2);
+    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), executor1, DispatchMethod.PUSH);
+    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2, DispatchMethod.PUSH);
     this.activeFlows.put(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1));
     this.activeFlows.put(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2));
     when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);

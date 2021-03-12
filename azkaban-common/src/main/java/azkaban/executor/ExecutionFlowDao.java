@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
@@ -71,9 +72,11 @@ public class ExecutionFlowDao {
 
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
-        + "use_executor, flow_priority, execution_source) values (?,?,?,?,?,?,?,?,?,?)";
+        + "use_executor, flow_priority, execution_source, dispatch_method) values (?,?,?,?,?,?,?,"
+        + "?,?,?,?)";
     final long submitTime = flow.getSubmitTime();
     final String executionSource = flow.getExecutionSource();
+    final DispatchMethod dispatchMethod = flow.getDispatchMethod();
 
     /**
      * Why we need a transaction to get last insert ID?
@@ -84,7 +87,8 @@ public class ExecutionFlowDao {
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), flow.getStatus().getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority, executionSource);
+          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority, executionSource
+          , dispatchMethod.getNumVal());
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -380,7 +384,8 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
         + "where exec_id = ?";
@@ -392,7 +397,7 @@ public class ExecutionFlowDao {
       transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), Status.READY.getNumVal(), executorId);
+          new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
@@ -412,7 +417,8 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
         + "where exec_id = ?";
@@ -427,7 +433,8 @@ public class ExecutionFlowDao {
       if (hasLocked) {
         try {
           final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-              new SelectFromExecutionFlows(), Status.READY.getNumVal(), executorId);
+              new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(),
+              executorId);
           if (CollectionUtils.isNotEmpty(execIds)) {
             execId = execIds.get(0);
             transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(),
@@ -464,7 +471,8 @@ public class ExecutionFlowDao {
    */
   public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
       final int limit,
-      final Status updatedStatus)
+      final Status updatedStatus,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
         + "where exec_id = ?";
@@ -479,11 +487,11 @@ public class ExecutionFlowDao {
           if (batchEnabled) {
             execIds = transOperator.query(String
                     .format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal(), limit);
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), limit);
           } else {
             execIds = transOperator.query(
                 String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal());
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal());
           }
           if (CollectionUtils.isNotEmpty(execIds)) {
             executions.addAll(execIds);
@@ -544,14 +552,14 @@ public class ExecutionFlowDao {
 
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE exec_id = (SELECT exec_id from execution_flows"
-            + " WHERE status = ?"
+            + " WHERE status = ? and dispatch_method = ?"
             + " and executor_id is NULL and flow_data is NOT NULL %s"
             + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and "
             + "executor_id is NULL FOR UPDATE";
 
     private static final String SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE exec_id in (SELECT exec_id from execution_flows"
-            + " WHERE status = ?"
+            + " WHERE status = ? and dispatch_method = ?"
             + " and executor_id is NULL and flow_data is NOT NULL %s ) "
             + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC "
             + " LIMIT ? FOR UPDATE";
@@ -672,7 +680,7 @@ public class ExecutionFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlow(
                     GZIPUtils.transformBytesToObject(data, encType), status);
-            final ExecutionReference ref = new ExecutionReference(id);
+            final ExecutionReference ref = new ExecutionReference(id, exFlow.getDispatchMethod());
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
