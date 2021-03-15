@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Watch;
@@ -33,18 +34,35 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore("Enable once the events file has been sanitized") //todo
 public class KubernetesWatchTest {
 
   private static final Logger logger = LoggerFactory.getLogger(KubernetesWatchTest.class);
-  private static String KUBE_CONFIG_PATH = "/path/to/valid/kube-config";
-  private static String JSON_EVENTS_FILE_PATH =
-      KubernetesWatch.class.getResource("sample-events1.json").getPath();
+  private static String LOCAL_KUBE_CONFIG_PATH = "/path/to/valid/kube-config";
   private final int DEFAULT_MAX_INIT_COUNT = 3;
   private final int DEFAULT_WATCH_RESET_DELAY_MILLIS = 100;
   private final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 5000;
-  public static final String DEFAULT_NAMESPACE = "dev-namespace1";
+
+  /**
+   * File containing a mock sequence of events, this is expected to be reflective of actual events
+   * from a Kubernets ApiServer and will be used for providing events through a
+   * {@link FileBackedWatch}.
+   *
+   * Notes about the file format.
+   *  - {@code Watch<T>} and there by {@code FileBackedWatch} expect the response objects for
+   *  individual pods to be separated by newlines. Therefore the resource file is not
+   *  pretty-printed.
+   *  - A quick way of pretty-printing the file: {@code cat $filename| jq .}
+   */
+  private static String JSON_EVENTS_FILE_PATH =
+      KubernetesWatch.class.getResource("sample-events1.json").getPath();
+
+  /**
+   * These constants refer to kubernetes objects with the mock events file at
+   * {@code JSON_EVENTS_FILEP_PATH}.
+   */
+  private static final String DEFAULT_NAMESPACE = "dev-namespace1";
   private static String POD_WITH_LIFECYCLE_SUCCESS = "flow-pod-cluster1-280";
+
   private static final List<AzPodStatus> successfullFlowPodStateTransitionSequence = ImmutableList.of(
       AzPodStatus.AZ_POD_REQUESTED,
       AzPodStatus.AZ_POD_SCHEDULED,
@@ -53,21 +71,28 @@ public class KubernetesWatchTest {
       AzPodStatus.AZ_POD_READY,
       AzPodStatus.AZ_POD_COMPLETED);
 
-  private KubeConfig localKubeConfig;
+  private ApiClient defaultApiClient;
 
   @Before
   public void setUp() throws Exception {
-    this.localKubeConfig = KubeConfig.loadKubeConfig(
-        Files.newBufferedReader(Paths.get(KUBE_CONFIG_PATH), Charset.defaultCharset()));
+    this.defaultApiClient = Config.defaultClient();
   }
 
   private KubernetesWatch kubernetesWatchWithMockListener() {
-    return new KubernetesWatch(localKubeConfig, new AzPodStausExtractingListener(),
+    ApiClient localApiClient;
+    try {
+      localApiClient = ClientBuilder.kubeconfig(localKubeConfig()).build();
+    } catch (IOException e) {
+      final WatchException we = new WatchException("Unable to create client", e);
+      logger.error("Exception reported. ", we);
+      throw we;
+    }
+    return new KubernetesWatch(localApiClient, new AzPodStausExtractingListener(),
         new PodWatchParams(DEFAULT_NAMESPACE, null, DEFAULT_WATCH_RESET_DELAY_MILLIS));
   }
 
-  private KubeConfig defaultKubeConfig() throws  IOException {
-    return KubeConfig.loadKubeConfig(Files.newBufferedReader(Paths.get(KUBE_CONFIG_PATH), Charset.defaultCharset()));
+  private KubeConfig localKubeConfig() throws  IOException {
+    return KubeConfig.loadKubeConfig(Files.newBufferedReader(Paths.get(LOCAL_KUBE_CONFIG_PATH), Charset.defaultCharset()));
   }
 
   private StatusLoggingListener statusLoggingListener() {
@@ -92,7 +117,7 @@ public class KubernetesWatchTest {
   private PreInitializedWatch defaultPreInitializedWatch(RawPodWatchEventListener driver,
       Watch<V1Pod> podWatch,
       int maxInitCount) throws IOException {
-    return new PreInitializedWatch(defaultKubeConfig(),
+    return new PreInitializedWatch(defaultApiClient,
         driver,
         podWatch,
         new PodWatchParams(null, null, DEFAULT_WATCH_RESET_DELAY_MILLIS),
@@ -160,12 +185,12 @@ public class KubernetesWatchTest {
     private int initWatchCount = 0;
     private int startWatchCount = 0;
 
-    public PreInitializedWatch(KubeConfig kubeConfig,
+    public PreInitializedWatch(ApiClient apiClient,
         RawPodWatchEventListener podWatchEventListener,
         Watch<V1Pod> preInitPodWatch,
         PodWatchParams podWatchParams,
         int maxInitCount) {
-      super(kubeConfig, podWatchEventListener, podWatchParams);
+      super(apiClient, podWatchEventListener, podWatchParams);
       requireNonNull(preInitPodWatch, "pre init pod watch must not be null");
       this.preInitPodWatch = preInitPodWatch;
       this.maxInitCount = maxInitCount;

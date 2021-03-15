@@ -86,7 +86,6 @@ public class AzPodStatusMetadata {
 
     public static Optional<FlowPodMetadata> extract(AzPodStatusExtractor podStatusExtractor) {
       requireNonNull(podStatusExtractor.getV1Pod(), "pod must not be null");
-      requireNonNull(podStatusExtractor.getV1Pod().getSpec(), "pod spec must not be null");
       requireNonNull(podStatusExtractor.getV1Pod().getMetadata(), "pod metadata must not be null");
       requireNonNull(podStatusExtractor.getV1Pod().getMetadata().getName(), "pod name must not be null");
 

@@ -23,8 +23,6 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.util.ClientBuilder;
-import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watch.Response;
 import java.io.IOException;
@@ -45,7 +43,7 @@ import org.slf4j.LoggerFactory;
 public class KubernetesWatch {
   private static final Logger logger = LoggerFactory.getLogger(KubernetesWatch.class);
 
-  private final ApiClient client;
+  private final ApiClient apiClient;
   private final CoreV1Api coreV1Api;
   private final PodWatchParams podWatchParams;
   private final Thread watchRunner;
@@ -59,38 +57,27 @@ public class KubernetesWatch {
    *  configuration and registers the @{code podWatchEventListener} as the event processing
    *  implementation.
    *
-   * @param kubeConfig
+   * @param apiClient
    * @param podWatchEventListener
    * @param podWatchParams
    */
   @Inject
-  public KubernetesWatch(KubeConfig kubeConfig,
+  public KubernetesWatch(ApiClient apiClient,
       RawPodWatchEventListener podWatchEventListener,
       PodWatchParams podWatchParams) {
-    requireNonNull(kubeConfig);
+    requireNonNull(apiClient);
     requireNonNull(podWatchEventListener);
     requireNonNull(podWatchParams);
     this.podWatchEventListener = podWatchEventListener;
     this.podWatchParams = podWatchParams;
-    try {
-      this.client = ClientBuilder.kubeconfig(kubeConfig).build();
-    } catch (IOException e) {
-      final WatchException we = new WatchException("Unable to create client", e);
-      logger.error("Exception reported. ", we);
-      throw we;
-    }
+    this.apiClient = apiClient;
     // no timeout for request completion
     OkHttpClient httpClient =
-        client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
-    client.setHttpClient(httpClient);
-    this.coreV1Api = new CoreV1Api(this.client);
+        this.apiClient.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+    this.apiClient.setHttpClient(httpClient);
+    this.coreV1Api = new CoreV1Api(this.apiClient);
 
     watchRunner = new Thread(this::initializeAndStartPodWatch);
-  }
-
-  public KubernetesWatch(KubeConfig kubeConfig,
-      RawPodWatchEventListener podWatchEventListener) {
-    this(kubeConfig, podWatchEventListener, new PodWatchParams(null, null));
   }
 
   public int getPodWatchInitCount() {
@@ -113,7 +100,7 @@ public class KubernetesWatch {
    */
   protected void initializePodWatch() throws ApiException {
     try {
-      this.podWatch = Watch.createWatch(this.client,
+      this.podWatch = Watch.createWatch(this.apiClient,
           coreV1Api.listNamespacedPodCall(podWatchParams.getNamespace(),
               "true",
               false,
