@@ -385,9 +385,9 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           imageTypeName.toLowerCase(), version, State.NEW.getStateValue(),
           State.ACTIVE.getStateValue());
     } catch (final SQLException ex) {
-      log.error("Exception while fetching image version ", ex);
+      log.error("Exception while verifying whether image version is invalid or not. ", ex);
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Exception while "
-              + "checking if the image version: %s  for image type: %s is valid", version,
+              + "checking if the image version: %s  for image type: %s is valid or not", version,
           imageTypeName));
     }
   }
