@@ -117,7 +117,11 @@ public class FlowContainer {
   private static final int SHUTDOWN_TIMEOUT_IN_SECONDS = 10;
 
 
+  // Logging
   private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
+  private static final String logFileName = "logs/azkaban-execserver.log";
+  private static final File logFile =
+          new File(String.valueOf(ContainerizedFlowPreparer.getCurrentDir()), logFileName);
 
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
@@ -315,10 +319,8 @@ public class FlowContainer {
     final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
-    final AzkabanEventReporter eventReporter =
-        SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     this.flowRunner = new FlowRunner(flow, this.executorLoader,
-        this.projectLoader, this.jobTypeManager, this.azKabanProps, eventReporter,
+        this.projectLoader, this.jobTypeManager, this.azKabanProps, this.eventReporter,
         null, commonMetrics, execMetrics);
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
@@ -431,8 +433,8 @@ public class FlowContainer {
     }
 
     try {
-      final File logFile = this.flowRunner.getFlowLogFile();
-      if (logFile != null && logFile.exists()) {
+      final File logFile = FlowContainer.logFile;
+      if (logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
         logger.warn("Flow log file does not exist for flow execId: {}", execId);
@@ -636,18 +638,31 @@ public class FlowContainer {
   }
 
   /**
+   * Uploads the log file to the db for persistence.
+   * @param execId execution id of the flow.
+   */
+  private void uploadLogFile(final int execId) {
+    try {
+      this.executorLoader.uploadLogFile(execId, "", 0, FlowContainer.logFile);
+    } catch (final ExecutorManagerException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
    * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution as
    * well as JettyServer.
    */
   private void shutdown() {
     logger.info("Shutting down the pod");
+    final int execId = this.flowRunner.getExecutionId();
     while (!this.flowFuture.isDone()) {
       // This should not happen immediately as submitFlowRunner is a blocking call.
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
         logger.error("The sleep while waiting for execution : {} to finish was interrupted",
-            this.flowRunner.getExecutionId());
+            execId);
       }
     }
 
@@ -674,6 +689,7 @@ public class FlowContainer {
       logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
     }
     logger.info("Sayonara!");
+    uploadLogFile(execId);
     System.exit(0);
   }
 }
