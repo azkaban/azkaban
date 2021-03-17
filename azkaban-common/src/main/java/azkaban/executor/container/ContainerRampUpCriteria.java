@@ -17,9 +17,9 @@ package azkaban.executor.container;
 
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
+import azkaban.executor.ExecutableFlow;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class ContainerRampUpCriteria {
   }
 
   /**
-   * Return DispatchMethod based on the rampUp percentage.
+   * Return DispatchMethod based on the rampUp percentage and random selection
    */
   public DispatchMethod getDispatchMethod() {
     if (this.rampUp == 0) {
@@ -56,6 +56,25 @@ public class ContainerRampUpCriteria {
     ThreadLocalRandom rand = ThreadLocalRandom.current();
     int randomInt = rand.nextInt(100);
     if (randomInt < this.rampUp) {
+      return DispatchMethod.CONTAINERIZED;
+    } else {
+      return DispatchMethod.POLL;
+    }
+  }
+
+  /**
+   * Return DispatchMethod based on the rampUp percentage and deterministic selection
+   * based on the flow name
+   */
+  public DispatchMethod getDispatchMethod(final ExecutableFlow flow) {
+    if (this.rampUp == 0) {
+      return DispatchMethod.POLL;
+    } else if (this.rampUp == 100) {
+      return DispatchMethod.CONTAINERIZED;
+    }
+    int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(flow);
+
+    if (flowNameHashValMapping <= this.rampUp) {
       return DispatchMethod.CONTAINERIZED;
     } else {
       return DispatchMethod.POLL;

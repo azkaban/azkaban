@@ -19,8 +19,10 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.commons.codec.digest.MurmurHash3;
 
 /**
  * Utility class containing static methods to be used during Containerized Dispatch
@@ -60,5 +62,19 @@ public class ContainerImplUtils {
     } else {
       jobTypes.add(node.getType());
     }
+  }
+
+  /**
+   * Return the int mapping between 1 to 100 for a given flow name
+   * @param flow
+   * @return
+   */
+  public static int getFlowNameHashValMapping(ExecutableFlow flow) {
+    // Flow name is <projectName>.<flowId>
+    String flowName = flow.getFlowName();
+    byte[] flowNameBytes = flowName.getBytes(StandardCharsets.UTF_8);
+    // To be utilized for flow deterministic ramp-up
+    int flowNameHashVal = MurmurHash3.hash32x86(flowNameBytes);
+    return flowNameHashVal % 100 + 1;
   }
 }
