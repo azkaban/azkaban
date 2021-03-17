@@ -338,92 +338,93 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   @VisibleForTesting
   VersionSet fetchVersionSet(final int executionId, Map<String, String> flowParams,
-       Set<String> imageTypesUsedInFlow) throws ExecutorManagerException {
-     VersionSet versionSet = null;
+      Set<String> imageTypesUsedInFlow, final ExecutableFlow executableFlow)
+      throws ExecutorManagerException {
+    VersionSet versionSet = null;
 
-     try {
-       if (flowParams != null &&
-           flowParams.containsKey(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID)) {
-         int versionSetId = Integer.parseInt(flowParams
-             .get(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID));
-         try {
-            versionSet = this.versionSetLoader.getVersionSetById(versionSetId).get();
+    try {
+     if (flowParams != null &&
+         flowParams.containsKey(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID)) {
+       int versionSetId = Integer.parseInt(flowParams
+           .get(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID));
+       try {
+          versionSet = this.versionSetLoader.getVersionSetById(versionSetId).get();
 
-            /*
-             * Validate that all images part of the flow are included in the retrieved
-             * VersionSet. If there are images that were not part of the retrieved version
-             * set, then create a new VersionSet with a superset of all images.
-             */
-           Set<String> imageVersionsNotFound = new TreeSet<>();
-           Map<String, VersionInfo> overlayMap = new HashMap<>();
-           for (String imageType : imageTypesUsedInFlow) {
-             if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
-               // Fetches the user overridden version from the database and this will make sure if
-               // the overridden version exists/registered on Azkaban database. Hence, it follows a
-               // fail fast mechanism to throw exception if the version does not exist for the
-               // given image type.
-               overlayMap.put(imageType, this.imageRampupManager.getVersionInfo(imageType,
-                       flowParams.get(imageTypeOverrideParam(imageType))));
-             } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType).isPresent())) {
-               logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
-                   executionId, imageType, versionSetId);
-               imageVersionsNotFound.add(imageType);
-             }
-           }
-
-           if (!(imageVersionsNotFound.isEmpty() && overlayMap.isEmpty())) {
-             // Populate a new Version Set
-             logger.info("ExecId: {}, Flow had more imageTypes than specified in versionSet {}. "
-                 + "Constructing a new one", executionId, versionSetId);
-             VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
-             versionSetBuilder.addElements(versionSet.getImageToVersionMap());
-             // The following is a safety check. Just in case: getVersionByImageTypes fails below due to an
-             // exception, we will have an incomplete/incorrect versionSet. Setting it null ensures, it will
-             // be processed from scratch in the following code block
-             versionSet = null;
-             if (!imageVersionsNotFound.isEmpty()) {
-               versionSetBuilder.addElements(
-                   this.imageRampupManager.getVersionByImageTypes(imageVersionsNotFound));
-             }
-             if (!overlayMap.isEmpty()) {
-               versionSetBuilder.addElements(overlayMap);
-             }
-             versionSet = versionSetBuilder.build();
-           }
-         } catch (Exception e) {
-           logger.error("ExecId: {}, Could not find version set id: {} as specified by flow params. "
-               + "Will continue by creating a new one.", executionId, versionSetId);
-         }
-       }
-
-       if (versionSet == null) {
-         // Need to build a version set
-         // Filter all the job types available in azkaban base image from the input image types set
-         imageTypesUsedInFlow = this.filterIncludedJobTypes(imageTypesUsedInFlow);
-         Map<String, VersionInfo> versionMap =
-             imageRampupManager.getVersionByImageTypes(imageTypesUsedInFlow);
-         // Now we will check the flow params for any override versions provided and apply them
+          /*
+           * Validate that all images part of the flow are included in the retrieved
+           * VersionSet. If there are images that were not part of the retrieved version
+           * set, then create a new VersionSet with a superset of all images.
+           */
+         Set<String> imageVersionsNotFound = new TreeSet<>();
+         Map<String, VersionInfo> overlayMap = new HashMap<>();
          for (String imageType : imageTypesUsedInFlow) {
-           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
-           if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
+           if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
              // Fetches the user overridden version from the database and this will make sure if
              // the overridden version exists/registered on Azkaban database. Hence, it follows a
              // fail fast mechanism to throw exception if the version does not exist for the
              // given image type.
-             versionMap.put(imageType, this.imageRampupManager.getVersionInfo(imageType,
-                 flowParams.get(imageTypeVersionOverrideParam)));
+             overlayMap.put(imageType, this.imageRampupManager.getVersionInfo(imageType,
+                     flowParams.get(imageTypeOverrideParam(imageType))));
+           } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType).isPresent())) {
+             logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
+                 executionId, imageType, versionSetId);
+             imageVersionsNotFound.add(imageType);
            }
          }
 
-         VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
-         versionSet = versionSetBuilder.addElements(versionMap).build();
+         if (!(imageVersionsNotFound.isEmpty() && overlayMap.isEmpty())) {
+           // Populate a new Version Set
+           logger.info("ExecId: {}, Flow had more imageTypes than specified in versionSet {}. "
+               + "Constructing a new one", executionId, versionSetId);
+           VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
+           versionSetBuilder.addElements(versionSet.getImageToVersionMap());
+           // The following is a safety check. Just in case: getVersionByImageTypes fails below due to an
+           // exception, we will have an incomplete/incorrect versionSet. Setting it null ensures, it will
+           // be processed from scratch in the following code block
+           versionSet = null;
+           if (!imageVersionsNotFound.isEmpty()) {
+             versionSetBuilder.addElements(
+                 this.imageRampupManager.getVersionByImageTypes(executableFlow, imageVersionsNotFound));
+           }
+           if (!overlayMap.isEmpty()) {
+             versionSetBuilder.addElements(overlayMap);
+           }
+           versionSet = versionSetBuilder.build();
+         }
+       } catch (Exception e) {
+         logger.error("ExecId: {}, Could not find version set id: {} as specified by flow params. "
+             + "Will continue by creating a new one.", executionId, versionSetId);
        }
-     } catch (IOException e) {
-       logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
-           executionId, e.getMessage());
-       throw new ExecutorManagerException(e);
      }
-     return versionSet;
+
+     if (versionSet == null) {
+       // Need to build a version set
+       // Filter all the job types available in azkaban base image from the input image types set
+       imageTypesUsedInFlow = this.filterIncludedJobTypes(imageTypesUsedInFlow);
+       Map<String, VersionInfo> versionMap =
+           imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow);
+       // Now we will check the flow params for any override versions provided and apply them
+       for (String imageType : imageTypesUsedInFlow) {
+         final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
+         if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
+           // Fetches the user overridden version from the database and this will make sure if
+           // the overridden version exists/registered on Azkaban database. Hence, it follows a
+           // fail fast mechanism to throw exception if the version does not exist for the
+           // given image type.
+           versionMap.put(imageType, this.imageRampupManager.getVersionInfo(imageType,
+               flowParams.get(imageTypeVersionOverrideParam)));
+         }
+       }
+
+       VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
+       versionSet = versionSetBuilder.addElements(versionMap).build();
+     }
+    } catch (IOException e) {
+     logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
+         executionId, e.getMessage());
+     throw new ExecutorManagerException(e);
+    }
+    return versionSet;
   }
 
   /**
@@ -595,7 +596,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes);
+    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, flowParam);
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {
       try {

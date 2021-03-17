@@ -139,7 +139,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   @Override
   public DispatchMethod getDispatchMethod(final ExecutableFlow flow) {
-    DispatchMethod dispatchMethod = getDispatchMethod();
+    DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }

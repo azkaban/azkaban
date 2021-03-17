@@ -140,8 +140,13 @@ public class ContainerizedDispatchManagerTest {
   public void testAllowAndDenyList() throws Exception {
     // Flow 5 comprises of "command" and "noop" jobtypes
     initializeContainerizedDispatchImpl();
-    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(10);
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
     DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
+
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
     Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
 
     this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(100);
