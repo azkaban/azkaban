@@ -188,7 +188,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(1);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class))).thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     assert(jobTypes.contains("command"));
     assert(jobTypes.contains("hadoopJava"));
@@ -201,7 +201,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
         .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, flowParam);
 
@@ -218,7 +218,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class))).thenReturn(getVersionMap());
     when(imageRampupManager.getVersionInfo(any(String.class), any(String.class)))
         .thenReturn(new VersionInfo("7.0.4", "path1", State.ACTIVE));
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
@@ -243,7 +243,7 @@ public class KubernetesContainerizedImplTest {
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
         String.valueOf(presetVersionSet.getVersionSetId()));
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     assert(versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
@@ -271,7 +271,7 @@ public class KubernetesContainerizedImplTest {
         KubernetesContainerizedImpl.IMAGE, "azkaban-base", KubernetesContainerizedImpl.VERSION),
         "7.0.4");
     versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     assert(versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
@@ -286,7 +286,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(Set.class))).thenReturn(getVersionMap());
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class))).thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     // Add included job types
     jobTypes.add("hadoopJava");
@@ -302,7 +302,7 @@ public class KubernetesContainerizedImplTest {
     final Map<String, String> flowParam = new HashMap<>();
 
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     // Included jobs in the azkaban base image, so must not present in versionSet.
     Assert.assertEquals(false, versionSet.getVersion("hadoopJava").isPresent());

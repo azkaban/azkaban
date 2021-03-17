@@ -16,6 +16,8 @@
 package azkaban.imagemgmt.rampup;
 
 import azkaban.Constants.ImageMgmtConstants;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.container.ContainerImplUtils;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
@@ -32,7 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -87,7 +88,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   @Override
-  public Map<String, VersionInfo> getVersionForAllImageTypes() throws ImageMgmtException {
+  public Map<String, VersionInfo> getVersionForAllImageTypes(final ExecutableFlow flow)
+      throws ImageMgmtException {
     final Map<String, List<ImageRampup>> imageTypeRampups = this.imageRampupDao
         .getRampupForAllImageTypes();
     final List<ImageType> imageTypeList = this.imageTypeDao.getAllImageTypes();
@@ -97,7 +99,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     }
     final Set<String> remainingImageTypes = new TreeSet<>();
     final Map<String, ImageVersionMetadata> imageTypeVersionMap = this
-        .processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+        .processAndGetVersionForImageTypes(flow, imageTypes, imageTypeRampups, remainingImageTypes);
     // Throw exception if there are left over image types
     if (!remainingImageTypes.isEmpty()) {
       throw new ImageMgmtException("Could not fetch version for below image types. Reasons: "
@@ -119,7 +121,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     }
     final Set<String> remainingImageTypes = new TreeSet<>();
     final Map<String, ImageVersionMetadata> imageTypeVersionMap =
-        this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+        this.processAndGetVersionForImageTypes(null, imageTypes, imageTypeRampups,
+            remainingImageTypes);
     if (!remainingImageTypes.isEmpty()) {
       final Map<String, ImageVersion> imageTypeLatestNonActiveVersionMap =
           this.getLatestNonActiveImageVersion(remainingImageTypes);
@@ -135,13 +138,15 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   @Override
-  public Map<String, VersionInfo> getVersionByImageTypes(final Set<String> imageTypes)
+  public Map<String, VersionInfo> getVersionByImageTypes(final ExecutableFlow flow,
+      final Set<String> imageTypes)
       throws ImageMgmtException {
     final Map<String, List<ImageRampup>> imageTypeRampups = this.imageRampupDao
         .getRampupByImageTypes(imageTypes);
     final Set<String> remainingImageTypes = new TreeSet<>();
     final Map<String, ImageVersionMetadata> imageTypeVersionMap =
-        this.processAndGetVersionForImageTypes(imageTypes, imageTypeRampups, remainingImageTypes);
+        this.processAndGetVersionForImageTypes(flow, imageTypes, imageTypeRampups,
+            remainingImageTypes);
     // Throw exception if there are left over image types
     if (!remainingImageTypes.isEmpty()) {
       throw new ImageMgmtException("Could not fetch version for below image types. Reasons: "
@@ -188,6 +193,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
    * @return Map<String, VersionMetadata>
    */
   private Map<String, ImageVersionMetadata> processAndGetVersionForImageTypes(
+      final ExecutableFlow flow,
       final Set<String> imageTypes,
       final Map<String, List<ImageRampup>> imageTypeRampups,
       final Set<String> remainingImageTypes) {
@@ -196,7 +202,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     final Map<String, ImageVersionMetadata> imageTypeVersionMap = new TreeMap<>(
         String.CASE_INSENSITIVE_ORDER);
     final Map<String, ImageVersion> imageTypeRampupVersionMap =
-        this.processAndGetRandomRampupVersion(imageTypeRampups);
+        this.processAndGetRandomRampupVersion(flow, imageTypeRampups);
     imageTypeRampupVersionMap
         .forEach((k, v) -> imageTypeVersionMap.put(k, new ImageVersionMetadata(v,
             imageTypeRampups.get(k), MSG_RANDOM_RAMPUP_VERSION_SELECTION)));
@@ -240,6 +246,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
    * @return Map<String, ImageVersion>
    */
   private Map<String, ImageVersion> processAndGetRandomRampupVersion(
+      final ExecutableFlow flow,
       final Map<String, List<ImageRampup>> imageTypeRampups) {
     final Set<String> imageTypeSet = imageTypeRampups.keySet();
     log.info("Found active rampup for the image types {} ", imageTypeSet);
@@ -250,12 +257,23 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       final String imageTypeName = iterator.next();
       final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
       Collections.sort(imageRampupList, this.getRampupPercentageComparator());
+      if (imageRampupList.isEmpty()) {
+        continue;
+      }
+      if (null == flow) {
+        ImageRampup firstImageRampup = imageRampupList.get(0);
+        imageTypeRampupVersionMap.put(imageTypeName, this.fetchImageVersion(imageTypeName,
+            firstImageRampup.getImageVersion()).orElseThrow(() ->
+          new ImageMgmtException(String.format("Unable to fetch version %s from image "
+              + "versions table.", firstImageRampup.getImageVersion()))));
+        continue;
+      }
       int prevRampupPercentage = 0;
-      final int nextRandom = this.getRandomNumberInRange(1, 100);
+      final int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(flow);
       for (final ImageRampup imageRampup : imageRampupList) {
         final int rampupPercentage = imageRampup.getRampupPercentage();
-        if (nextRandom >= prevRampupPercentage + 1
-            && nextRandom <= prevRampupPercentage + rampupPercentage) {
+        if (flowNameHashValMapping >= prevRampupPercentage + 1
+            && flowNameHashValMapping <= prevRampupPercentage + rampupPercentage) {
           imageTypeRampupVersionMap.put(imageTypeName,
               this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion()).orElseThrow(() ->
                   new ImageMgmtException(String.format("Unable to fetch version %s from image "
@@ -336,7 +354,13 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     if (CollectionUtils.isEmpty(imageVersions)) {
       return Optional.empty();
     }
-    return Optional.of(imageVersions.get(0));
+    // Return only the imageVersion only when the image type/name matches
+    for (ImageVersion version: imageVersions) {
+      if (version.getName().equals(imageType) && version.getVersion().equals(imageVersion)) {
+        return Optional.of(version);
+      }
+    }
+    return Optional.empty();
   }
 
   /**
@@ -352,21 +376,6 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
         new VersionInfo(v.getImageVersion().getVersion(), v.getImageVersion().getPath(),
             v.getImageVersion().getState())));
     return versionInfoMap;
-  }
-
-  /**
-   * Generate random number between min and max both inclusive
-   *
-   * @param min
-   * @param max
-   * @return int
-   */
-  private int getRandomNumberInRange(final int min, final int max) {
-    if (min >= max) {
-      throw new IllegalArgumentException("Max must be greater than min");
-    }
-    final Random r = new Random();
-    return r.nextInt((max - min) + 1) + min;
   }
 
   /**
