@@ -641,6 +641,7 @@ public class Constants {
 
     // Kubernetes Watch related properties
     public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";
+    public static final String KUBERNETES_WATCH_ENABLED = KUBERNETES_WATCH_PREFIX + "enabled";
     public static final String KUBERNETES_WATCH_DRIVER_THREAD_POOL_SIZE =
         KUBERNETES_WATCH_PREFIX + "driver.threadpool.size";
 

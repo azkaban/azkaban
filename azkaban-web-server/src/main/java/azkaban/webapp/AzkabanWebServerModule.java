@@ -24,9 +24,14 @@ import azkaban.DispatchMethod;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.watch.AzPodStatusDrivingListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
+import azkaban.executor.container.watch.KubernetesWatch;
+import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
+import azkaban.executor.container.watch.RawPodWatchEventListener;
+import azkaban.executor.container.watch.WatchUtils;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
@@ -54,6 +59,7 @@ import azkaban.webapp.metrics.WebMetricsImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import io.kubernetes.client.openapi.ApiClient;
 import java.lang.reflect.Constructor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -102,7 +108,10 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
+
+    // Following bindings will be present if and only if containerized dispatch is enabled.
     bindImageManagementDependencies();
+    bindContainerWatchDependencies();
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
@@ -148,6 +157,30 @@ public class AzkabanWebServerModule extends AbstractModule {
     return DispatchMethod.isContainerizedMethodEnabled(props
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()));
+  }
+
+  private void bindContainerWatchDependencies() {
+    if(!isContainerizedDispatchMethodEnabled()) {
+      return;
+    }
+
+    log.info("Binding kubernetes watch dependencies");
+    bind(KubernetesWatch.class).in(Scopes.SINGLETON);
+    bind(RawPodWatchEventListener.class).to(AzPodStatusDrivingListener.class).in(Scopes.SINGLETON);
+  }
+
+  @Inject
+  @Singleton
+  @Provides
+  private ApiClient createContainerApiClient(final Props azkProps) {
+    return WatchUtils.createApiClient(azkProps);
+  }
+
+  @Inject
+  @Singleton
+  @Provides
+  private PodWatchParams createPodWatchParams(final Props azkProps) {
+    return WatchUtils.createPodWatchParams(azkProps);
   }
 
   @Inject

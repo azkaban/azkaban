@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Events received by this directly map the states in {@link AzPodStatus} and for every event all
  * the callbacks registered for the particular event type are 'invoked'
  *
- * Invocation of the callbacks is done via pool of threads different from the one invoking this
+ * Invocation of the callbacks is done via pool of threads different from the one invoking the
  * {@code onEvent} interface method of this class. This is done as a typical implementation of the
  * {@link AzPodStatusListener} interface can include several blocking calls, for example for
  * database status updates.
@@ -137,14 +137,14 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
       logPodWatchEvent(azPodStatusMetadata);
       deliverCallbacksForEvent(azPodStatusMetadata);
     } catch (Exception e) {
-      logger.error("Unexepcted exception while processing pod watch event.", e);
+      logger.error("Unexpected exception while processing pod watch event.", e);
     }
   }
 
   private static void logPodWatchEvent(AzPodStatusMetadata event) {
     // There could be value in logging the entire 'raw' event for post-mortem of any issues.
     // We should consider logging the event in a separate log file as a json object.
-    logger.info(String.format("Event for pod %s : %s", event.getPodName(),
+    logger.info(String.format("WatchEvent for pod %s : %s", event.getPodName(),
         event.getAzPodStatus()));
   }
 }

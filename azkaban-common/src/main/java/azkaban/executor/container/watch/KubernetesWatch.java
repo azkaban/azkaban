@@ -69,6 +69,8 @@ public class KubernetesWatch {
     requireNonNull(apiClient);
     requireNonNull(podWatchEventListener);
     requireNonNull(podWatchParams);
+
+    logger.info("Creating kubernetes resource watch");
     this.podWatchEventListener = podWatchEventListener;
     this.podWatchParams = podWatchParams;
     this.apiClient = apiClient;
@@ -118,6 +120,7 @@ public class KubernetesWatch {
       logger.error("ApiException while creating pod watch.", ae);
       throw ae;
     }
+    logger.info("Pod watch was initialized.");
   }
 
   /**
@@ -129,6 +132,7 @@ public class KubernetesWatch {
    */
   protected void startPodWatch() throws IOException {
     requireNonNull(this.podWatch, "watch must be initialized");
+    logger.info("Starting Pod watch loop.");
     for (Watch.Response<V1Pod> item : this.podWatch) {
       if (this.isShutdownRequested.get()) {
         logger.info("Exiting pod watch event loop as shutdown was requested");

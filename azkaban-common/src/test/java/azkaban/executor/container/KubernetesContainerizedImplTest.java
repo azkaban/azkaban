@@ -144,7 +144,7 @@ public class KubernetesContainerizedImplTest {
     this.executorLoader = mock(ExecutorLoader.class);
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
-        this.executorLoader, this.loader, this.imageRampupManager);
+        this.executorLoader, this.loader, this.imageRampupManager, null);
   }
 
   /**
