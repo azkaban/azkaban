@@ -28,6 +28,7 @@ import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
+import azkaban.imagemgmt.version.VersionSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -135,6 +136,30 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       }
     }
     return imageTypeVersionMap;
+  }
+
+  @Override
+  public Map<String, VersionInfo> validateAndGetUpdatedVersionMap(
+      final ExecutableFlow executableFlow, final VersionSet versionSet)
+      throws ImageMgmtException {
+    // Find the image types for which version is either invalid or not exists
+    final Set<String> imageTypesWithInvalidVersion = versionSet.getImageToVersionMap().entrySet()
+        .stream()
+        .filter(map -> this.imageVersionDao.isInvalidVersion(
+            map.getKey(), map.getValue().getVersion()))
+        .map(map -> map.getKey())
+        .collect(Collectors.toSet());
+    final Map<String, VersionInfo> updatedVersionInfoMap = new TreeMap<>(
+        String.CASE_INSENSITIVE_ORDER);
+    if (!imageTypesWithInvalidVersion.isEmpty()) {
+      final Map<String, VersionInfo> versionInfoMap = this
+          .getVersionByImageTypes(executableFlow, imageTypesWithInvalidVersion);
+      // Update the correct version in versionSet
+      versionInfoMap.forEach((k, v) -> updatedVersionInfoMap.put(k, v));
+      versionSet.getImageToVersionMap().entrySet()
+          .forEach(map -> updatedVersionInfoMap.putIfAbsent(map.getKey(), map.getValue()));
+    }
+    return updatedVersionInfoMap;
   }
 
   @Override
@@ -261,11 +286,11 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
         continue;
       }
       if (null == flow) {
-        ImageRampup firstImageRampup = imageRampupList.get(0);
+        final ImageRampup firstImageRampup = imageRampupList.get(0);
         imageTypeRampupVersionMap.put(imageTypeName, this.fetchImageVersion(imageTypeName,
             firstImageRampup.getImageVersion()).orElseThrow(() ->
-          new ImageMgmtException(String.format("Unable to fetch version %s from image "
-              + "versions table.", firstImageRampup.getImageVersion()))));
+            new ImageMgmtException(String.format("Unable to fetch version %s from image "
+                + "versions table.", firstImageRampup.getImageVersion()))));
         continue;
       }
       int prevRampupPercentage = 0;
@@ -355,7 +380,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       return Optional.empty();
     }
     // Return only the imageVersion only when the image type/name matches
-    for (ImageVersion version: imageVersions) {
+    for (final ImageVersion version : imageVersions) {
       if (version.getName().equals(imageType) && version.getVersion().equals(imageVersion)) {
         return Optional.of(version);
       }

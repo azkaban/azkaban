@@ -103,6 +103,10 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
           + "iv.created_by, iv.modified_on, iv.modified_by from image_versions iv, image_types it where "
           + "it.id = iv.type_id and lower(it.name) = ? and iv.id = ?";
 
+  private static final String SELECT_INVALID_IMAGE_VERSION_QUERY = "select not exists (select "
+      + "iv.version from image_versions iv inner join image_types it on it.id = iv.type_id "
+      + "where lower(it.name) = ? and iv.version = ? and iv.state in (?, ?)) is_invalid";
+
   @Inject
   public ImageVersionDaoImpl(final DatabaseOperator databaseOperator,
       final ImageTypeDao imageTypeDao) {
@@ -372,6 +376,22 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
     }
   }
 
+  @Override
+  public boolean isInvalidVersion(final String imageTypeName, final String version)
+      throws ImageMgmtException {
+    try {
+      return this.databaseOperator.query(
+          SELECT_INVALID_IMAGE_VERSION_QUERY, new CheckInvalidImageVersionHandler(),
+          imageTypeName.toLowerCase(), version, State.NEW.getStateValue(),
+          State.ACTIVE.getStateValue());
+    } catch (final SQLException ex) {
+      log.error("Exception while verifying whether image version is invalid or not. ", ex);
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, String.format("Exception while "
+              + "checking if the image version: %s  for image type: %s is valid or not", version,
+          imageTypeName));
+    }
+  }
+
   /**
    * ResultSetHandler implementation class for fetching image version
    */
@@ -410,6 +430,20 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
         imageVersions.add(imageVersion);
       } while (rs.next());
       return imageVersions;
+    }
+  }
+
+  /**
+   * ResultSetHandler implementation class for fetching image version
+   */
+  public static class CheckInvalidImageVersionHandler implements ResultSetHandler<Boolean> {
+
+    @Override
+    public Boolean handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return true;
+      }
+      return rs.getBoolean("is_invalid");
     }
   }
 }
