@@ -21,14 +21,12 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.3'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.14'
   }
 }
 
 plugins {
   id 'com.gradle.build-scan' version '1.9'
-  id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
