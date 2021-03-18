@@ -156,5 +156,22 @@ public class ImageVersion extends BaseModel {
     public static Set<String> getNonActiveStateValues() {
       return nonActiveStateValueSet;
     }
+
+    /**
+     * Create set of new and active state
+     */
+    private static final Set<State> newAndActiveState =
+        Arrays.stream(State.values())
+            .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)))
+            .collect(Collectors.toSet());
+
+    /**
+     * Gets a set with NEW and ACTIVE state
+     *
+     * @return Set<State>
+     */
+    public static Set<State> getNewAndActiveState() {
+      return newAndActiveState;
+    }
   }
 }
