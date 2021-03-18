@@ -54,6 +54,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String EXECUTION_SOURCE = "executionSource";
   public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
+  public static final String VERSIONSET_JSON_PARAM = "version set json";
+  public static final String VERSIONSET_MD5HEX_PARAM = "version set Md5Hex";
+  public static final String VERSIONSET_ID_PARAM = "version set id";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -313,6 +316,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
     flowObj.put(FLOW_DISPATCH_METHOD, getDispatchMethod().getNumVal());
 
+    if (this.getVersionSet() != null) {
+      flowObj.put(VERSIONSET_JSON_PARAM, this.getVersionSet().getVersionSetJsonString());
+      flowObj.put(VERSIONSET_MD5HEX_PARAM, this.getVersionSet().getVersionSetMd5Hex());
+      flowObj.put(VERSIONSET_ID_PARAM, this.getVersionSet().getVersionSetId());
+    }
+
     return flowObj;
   }
 
@@ -361,6 +370,15 @@ public class ExecutableFlow extends ExecutableFlowBase {
         slaBuilder.append(';');
       }
       this.slaOptionStr = slaBuilder.toString();
+    }
+
+    if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
+      final String versionSetJsonString = flowObj.getString(VERSIONSET_JSON_PARAM);
+      final String versionSetMd5Hex = flowObj.getString(VERSIONSET_MD5HEX_PARAM);
+      final int versionSetId = flowObj.getInt(VERSIONSET_ID_PARAM);
+      final VersionSet versionSet = new VersionSet(versionSetJsonString, versionSetMd5Hex,
+          versionSetId);
+      this.setVersionSet(versionSet);
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));

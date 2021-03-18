@@ -62,6 +62,7 @@ import azkaban.project.ProjectManagerException;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
+import azkaban.spi.ExecutorType;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
@@ -1557,6 +1558,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put("flowPreparationDuration", String.valueOf(flowRunner.flowCreateTime));
       // FLow SLA option string
       metaData.put("slaOptions", flow.getSlaOptionStr());
+      // Flow executor type by versionSet
+      if (flow.getVersionSet() != null) {
+        metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
+      } else {
+        metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
+      }
 
       // Project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
@@ -1639,9 +1646,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         VersionInfo versionInfo =
             executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
         if(versionInfo != null){
+          metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
           metaData.put("version", versionInfo.getVersion());
         }
-      }
+      } else metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
 
       // Azkaban executor hostname
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
