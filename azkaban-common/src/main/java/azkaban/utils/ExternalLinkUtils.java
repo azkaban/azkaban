@@ -177,18 +177,18 @@ public class ExternalLinkUtils {
         .setDefaultRequestConfig(config)
         .setSSLSocketFactory(null).disableRedirectHandling().build();
     try {
-      HttpResponse httpResponse = client.execute(new HttpGet(externalLinkUrl));
-      int responseCode = httpResponse.getStatusLine().getStatusCode();
-      if (responseCode >= HttpStatus.SC_BAD_REQUEST) {
-        logger.warn("validExternalLink url " + externalLinkUrl + " not reachable, response code " + responseCode);
-        return false;
+      try {
+        HttpResponse httpResponse = client.execute(new HttpGet(externalLinkUrl));
+        int responseCode = httpResponse.getStatusLine().getStatusCode();
+        if (responseCode >= HttpStatus.SC_BAD_REQUEST) {
+          logger.warn("validExternalLink url " + externalLinkUrl + " not reachable, response code " + responseCode);
+          return false;
+        }
+        logger.debug("validExternalLink url " + externalLinkUrl + " is reachable.");
+        return true;
+      } finally {
+        client.close();
       }
-      logger.debug("validExternalLink url " + externalLinkUrl + " is reachable.");
-      client.close();
-      return true;
-    } catch (IOException e) {
-      logger.error("validExternalLink url " + externalLinkUrl + " CONNECT IO ERROR " + e);
-      return false;
     } catch (Exception e) {
       logger.error("validExternalLink url " + externalLinkUrl + " CONNECT ERROR " + e);
       return false;
