@@ -20,10 +20,12 @@
       "version" : "0.0.7",
       "state" : "ACTIVE",
       "path" : "registry/myPath",
+      "releaseTag" : "0.0.7",
       "message" : "",
       "rampups" : [ {
         "version" : "0.0.7",
         "stabilityTag" : "STABLE",
+        "releaseTag" : "0.0.7",
         "rampupPercentage" : 100
       } ]
     }

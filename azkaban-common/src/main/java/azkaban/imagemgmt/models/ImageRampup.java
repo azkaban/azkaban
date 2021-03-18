@@ -31,6 +31,16 @@ public class ImageRampup extends BaseModel {
   private Integer rampupPercentage;
   // Stability tag of the version being ramped up
   private StabilityTag stabilityTag;
+  // Release tag of the version being ramped up
+  private String releaseTag;
+
+  public void setReleaseTag(String releaseTag) {
+    this.releaseTag = releaseTag;
+  }
+
+  public String getReleaseTag() {
+    return this.releaseTag;
+  }
 
   public int getPlanId() {
     return planId;

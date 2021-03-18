@@ -24,7 +24,7 @@ import org.codehaus.jackson.annotate.JsonPropertyOrder;
 /**
  * This DTO class represents API specific image version metadata response.
  */
-@JsonPropertyOrder({"version", "state", "path", "message", "rampups"})
+@JsonPropertyOrder({"version", "state", "path", "releaseTag", "message", "rampups"})
 public class ImageVersionMetadataResponseDTO {
 
   // Represents version for an image type selected based on random rampup or current active version.
@@ -42,14 +42,21 @@ public class ImageVersionMetadataResponseDTO {
   // either random rampup or based on latest available active version.
   @JsonProperty("message")
   private final String message;
+  @JsonProperty("releaseTag")
+  private final String releaseTag;
 
   public ImageVersionMetadataResponseDTO(final String version, final State state, final String path,
-      final List<RampupMetadata> rampups, final String message) {
+      final List<RampupMetadata> rampups, final String message, final String releaseTag) {
     this.version = version;
     this.state = state;
     this.path = path;
     this.rampups = rampups;
     this.message = message;
+    this.releaseTag = releaseTag;
+  }
+
+  public String getReleaseTag() {
+    return releaseTag;
   }
 
   public String getVersion() {
@@ -75,7 +82,7 @@ public class ImageVersionMetadataResponseDTO {
   /**
    * Represents rampup metadata for an image type.
    */
-  @JsonPropertyOrder({"version", "stabilityTag", "rampupPercentage"})
+  @JsonPropertyOrder({"version", "stabilityTag", "releaseTag", "rampupPercentage"})
   public static class RampupMetadata {
 
     @JsonProperty("version")
@@ -84,16 +91,23 @@ public class ImageVersionMetadataResponseDTO {
     private final Integer rampupPercentage;
     @JsonProperty("stabilityTag")
     private final StabilityTag stabilityTag;
+    @JsonProperty("releaseTag")
+    private final String releaseTag;
 
     public RampupMetadata(final String version, final Integer rampupPercentage,
-        final StabilityTag stabilityTag) {
+        final StabilityTag stabilityTag, final String releaseTag) {
       this.version = version;
       this.rampupPercentage = rampupPercentage;
       this.stabilityTag = stabilityTag;
+      this.releaseTag = releaseTag;
     }
 
     public String getVersion() {
       return this.version;
+    }
+
+    public String getReleaseTag() {
+      return this.releaseTag;
     }
 
     public Integer getRampupPercentage() {

@@ -69,14 +69,15 @@ public class ImageVersionMetadataServiceImpl implements ImageVersionMetadataServ
     if (!CollectionUtils.isEmpty(versionMetadata.getImageRampups())) {
       rampups = versionMetadata.getImageRampups().stream().map(
           imageRampup -> new RampupMetadata(imageRampup.getImageVersion(),
-              imageRampup.getRampupPercentage(), imageRampup.getStabilityTag()))
+              imageRampup.getRampupPercentage(), imageRampup.getStabilityTag(), imageRampup.getReleaseTag()))
           .collect(Collectors.toList());
     }
     final ImageVersion imageVersion = versionMetadata.getImageVersion();
     final String version = imageVersion != null ? imageVersion.getVersion() : null;
     final State state = imageVersion != null ? imageVersion.getState() : null;
     final String path = imageVersion != null ? imageVersion.getPath() : null;
+    final String releaseTag = imageVersion != null ? imageVersion.getReleaseTag() : null;
     return new ImageVersionMetadataResponseDTO(version, state, path, rampups,
-        versionMetadata.getMessage());
+        versionMetadata.getMessage(), releaseTag);
   }
 }
