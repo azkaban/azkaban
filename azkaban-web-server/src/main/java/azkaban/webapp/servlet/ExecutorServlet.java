@@ -447,11 +447,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void addExternalAnalyzers(final HttpServletRequest req, final Page page) {
     final Props props = getApplication().getServerProps();
     List<ExternalLink> externalLinks = ExternalLinkUtils.getExternalAnalyzers(props, req);
-
-    if (!externalLinks.isEmpty()) {
-      logger.debug("addExternalLinkLabels");
-      page.add("externalAnalyzers", externalLinks);
-    }
+    logger.debug("addExternalAnalyzers");
+    page.add("externalAnalyzers", externalLinks);
   }
 
   private void handleExecutionFlowPageByExecId(final HttpServletRequest req,
