@@ -1,15 +1,17 @@
 package azkaban.common;
 
 import static azkaban.Constants.ConfigurationKeys.EXECUTOR_PORT;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_SSL_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_HEADER_BUFFER_SIZE;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
 import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 
-import azkaban.Constants;
 import azkaban.container.ContainerServlet;
 import azkaban.execapp.ExecutorServlet;
 import azkaban.execapp.JMXHttpServlet;
 import azkaban.execapp.ServerStatisticsServlet;
 import azkaban.execapp.StatsServlet;
+import azkaban.server.JettyServerUtils;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -40,15 +42,25 @@ public class ExecJettyServerModule extends AbstractModule {
   @Provides
   @Named(EXEC_JETTY_SERVER)
   @Singleton
-  private Server createJettyServer(final Props props) {
-    final int maxThreads = props.getInt("executor.maxThreads", DEFAULT_THREAD_NUMBER);
-
+  public Server createJettyServer(final Props props) {
+    final boolean useSsl = props.getBoolean(JETTY_USE_SSL, false);
+    final int port;
+    final Server server = new Server();
     /*
      * Default to a port number 0 (zero)
      * The Jetty server automatically finds an unused port when the port number is set to zero
      * TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
      */
-    final Server server = new Server(props.getInt(EXECUTOR_PORT, 0));
+    if (useSsl) {
+      port = props.getInt(EXECUTOR_SSL_PORT, 0);
+      server.addConnector(JettyServerUtils.getSslSocketConnector(port, props));
+      logger.info("Added SslSocketConnector as Ssl is enabled");
+    } else {
+      port = props.getInt(EXECUTOR_PORT, 0);
+      server.addConnector(JettyServerUtils.getSocketConnector(port));
+      logger.info("Added SocketConnector as Ssl is disabled");
+    }
+    final int maxThreads = props.getInt("executor.maxThreads", DEFAULT_THREAD_NUMBER);
     final QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     server.setThreadPool(httpThreadPool);
 
