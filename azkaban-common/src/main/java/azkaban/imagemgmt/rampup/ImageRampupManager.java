@@ -15,9 +15,11 @@
  */
 package azkaban.imagemgmt.rampup;
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
+import azkaban.imagemgmt.version.VersionSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,15 +35,17 @@ public interface ImageRampupManager {
    * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, VersionInfo> getVersionForAllImageTypes() throws ImageMgmtException;
+  public Map<String, VersionInfo> getVersionForAllImageTypes(ExecutableFlow flow)
+      throws ImageMgmtException;
 
   /**
-   * Fetches the version of all the given image types based on rampup
+   * Fetches the version of all the given image types based on rampup and flow
    *
    * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, VersionInfo> getVersionByImageTypes(Set<String> imageTypes)
+  public Map<String, VersionInfo> getVersionByImageTypes(ExecutableFlow flow,
+      Set<String> imageTypes)
       throws ImageMgmtException;
 
   /**
@@ -55,13 +59,27 @@ public interface ImageRampupManager {
       throws ImageMgmtException;
 
   /**
-   * Gets VersionInfo for the given image type and image version.
+   * Gets VersionInfo for the given image type and image version having state as NEW and ACTIVE.
    *
    * @param imageType
    * @param imageVersion
    * @return VersionInfo
    * @throws ImageMgmtException
    */
-  public VersionInfo getVersionInfo(final String imageType, final String imageVersion)
+  public VersionInfo getVersionInfoWithNewAndActiveState(final String imageType,
+      final String imageVersion)
       throws ImageMgmtException;
+
+  /**
+   * Check if the version in the versionSet is valid or exists. If not fetch the correct version
+   * using rampup and active version information.
+   *
+   * @param versionSet
+   * @return Map<String, VersionInfo>
+   * @throws ImageMgmtException
+   */
+  public Map<String, VersionInfo> validateAndGetUpdatedVersionMap(
+      final ExecutableFlow executableFlow, final VersionSet versionSet)
+      throws ImageMgmtException;
+
 }

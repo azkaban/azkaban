@@ -27,6 +27,7 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.FlowTriggerService;
@@ -84,6 +85,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final String API_GET_RUNNING = "getRunning";
   private static final String API_EXECUTE_FLOW = "executeFlow";
   private static final String API_RAMP = "ramp";
+  private static final String API_UPDATE_PROP = "updateProp";
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
@@ -127,6 +129,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     apiEndpoints.add(new AzkabanAPI("ajax", API_GET_RUNNING));
     apiEndpoints.add(new AzkabanAPI("ajax", API_EXECUTE_FLOW));
     apiEndpoints.add(new AzkabanAPI("ajax", API_RAMP));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_UPDATE_PROP));
     return apiEndpoints;
   }
 
@@ -190,6 +193,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
+    } else if (API_UPDATE_PROP.equals(ajaxName)) {
+      ajaxUpdateProperty(req, resp, ret, session.getUser());
     } else if (API_RAMP.equals(ajaxName)) {
       ajaxRampActions(req, resp, ret, session.getUser());
     } else if (API_FETCH_SCHEDULED_FLOW_GRAPH.equals(ajaxName)) {
@@ -1011,6 +1016,67 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("execid", exflow.getExecutionId());
   }
 
+  /**
+   * This method is used to update the property. propType: Is the umbrella for properties for which
+   * values need to be updated subType: Actual property for which values need to be updated val:
+   * value to be updated
+   * <p>
+   * Example: propType=containerDispatch&subType=updateAllowList&val=spark,java
+   */
+  private void ajaxUpdateProperty(final HttpServletRequest req,
+      final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
+    try {
+      if (!HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
+        ret.put("error", String.format("User %s doesn't have ADMIN permission for updating "
+            + "property", user));
+      }
+      String propType = getParam(req, "propType");
+      if (propType.equals("containerDispatch")) {
+        if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+          updateContainerDispatchProps(req, ret);
+        } else {
+          ret.put("error",
+              "ExecutorManagerAdapter is not of type: " + ContainerizedDispatchManager.class
+                  .getName());
+        }
+      } else {
+        ret.put("error", "Unsupported propType: " + propType);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+      ret.put("error", "Error on update property. " + e.getMessage());
+    }
+  }
+
+  private void updateContainerDispatchProps(final HttpServletRequest req,
+      final HashMap<String, Object> ret)
+      throws ServletException {
+    ContainerizedDispatchManager containerizedDispatchManager = (ContainerizedDispatchManager) this.executorManagerAdapter;
+    String subType = getParam(req, "subType");
+    ContainerPropUpdate containerPropUpdate = ContainerPropUpdate.fromParam(subType);
+    String val = getParam(req, "val");
+    switch (containerPropUpdate) {
+      case UPDATE_ALLOW_LIST:
+        containerizedDispatchManager.getContainerJobTypeCriteria()
+            .updateAllowList(ServletUtils.getSetFromString(val));
+        break;
+      case APPEND_ALLOW_LIST:
+        containerizedDispatchManager.getContainerJobTypeCriteria()
+            .appendAllowList(ServletUtils.getSetFromString(val));
+        break;
+      case REMOVE_FROM_ALLOW_LIST:
+        containerizedDispatchManager.getContainerJobTypeCriteria()
+            .removeFromAllowList(ServletUtils.getSetFromString(val));
+        break;
+      case UPDATE_RAMP_UP:
+        containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(Integer.parseInt(val));
+        break;
+      default:
+        break;
+    }
+  }
+
   private void ajaxRampActions(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
       throws ServletException {
@@ -1035,5 +1101,31 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       e.printStackTrace();
       ret.put("error", "Error on update Ramp. " + e.getMessage());
     }
+  }
+}
+
+enum ContainerPropUpdate {
+  UPDATE_ALLOW_LIST("updateAllowList"),
+  APPEND_ALLOW_LIST("appendAllowList"),
+  REMOVE_FROM_ALLOW_LIST("removeFromAllowList"),
+  UPDATE_RAMP_UP("updateRampUp");
+  private final String param;
+
+  ContainerPropUpdate(String param) {
+    this.param = param;
+  }
+
+  public String getParam() {
+    return param;
+  }
+
+  public static ContainerPropUpdate fromParam(String param) {
+    for (ContainerPropUpdate value : ContainerPropUpdate.values()) {
+      if (value.getParam().equals(param)) {
+        return value;
+      }
+    }
+    throw new IllegalArgumentException(
+        "No ContainerPropUpdates corresponding to param value " + param);
   }
 }

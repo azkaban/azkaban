@@ -24,7 +24,6 @@ import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
@@ -33,10 +32,8 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.metrics.CommonMetrics;
 import azkaban.spi.EventType;
-import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -44,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,11 +61,12 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter {
-  private int rampUp;
   private final ContainerizedImpl containerizedImpl;
   private QueueProcessorThread queueProcessor;
   private final RateLimiter rateLimiter;
   private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchManager.class);
+  private final ContainerJobTypeCriteria containerJobTypeCriteria;
+  private final ContainerRampUpCriteria containerRampUpCriteria;
 
   @Inject
   public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -81,19 +78,16 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
     this.containerizedImpl = containerizedImpl;
-    int rampUp = azkProps.getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_RAMPUP, 100);
-    if (rampUp > 100 || rampUp < 0) {
-      String errorMessage = "RampUp must be an integer between [0, 100]: " + rampUp;
-      logger.error(errorMessage);
-      throw new ExecutorManagerException(errorMessage);
-    } else {
-      this.rampUp = rampUp;
-    }
+    this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
+    this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
   }
 
-  @VisibleForTesting
-  public void setRampUp(int rampUp) {
-    this.rampUp = rampUp;
+  public ContainerJobTypeCriteria getContainerJobTypeCriteria() {
+    return this.containerJobTypeCriteria;
+  }
+
+  public ContainerRampUpCriteria getContainerRampUpCriteria() {
+    return this.containerRampUpCriteria;
   }
 
   /**
@@ -141,18 +135,16 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
    */
   @Override
   public DispatchMethod getDispatchMethod() {
-    if (this.rampUp == 0) {
-      return DispatchMethod.POLL;
-    } else if (this.rampUp == 100) {
-      return DispatchMethod.CONTAINERIZED;
+    return this.containerRampUpCriteria.getDispatchMethod();
+  }
+
+  @Override
+  public DispatchMethod getDispatchMethod(final ExecutableFlow flow) {
+    DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
+    if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
+      return dispatchMethod;
     }
-    Random rand = new Random();
-    int randomInt = rand.nextInt(100);
-    if (randomInt < this.rampUp) {
-      return DispatchMethod.CONTAINERIZED;
-    } else {
-      return DispatchMethod.POLL;
-    }
+    return this.containerJobTypeCriteria.getDispatchMethod(flow);
   }
 
   /**

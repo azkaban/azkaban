@@ -361,6 +361,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
             DispatchMethod.PUSH.name()));
   }
 
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(azkabanProps
+            .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+                    DispatchMethod.PUSH.name()));
+  }
+
   private void reportFlowFinishedMetrics() {
     final Status status = this.flow.getStatus();
     switch (status) {
@@ -453,6 +459,14 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
    */
   private void createLogger(final String flowId) {
     // Create logger
+    // If this is a containerized execution then there is no need for a custom logger.
+    // The logs would be appended to server logs and persisted from FlowContainer.
+    if (isContainerizedDispatchMethodEnabled()) {
+      this.logger = Logger.getLogger(FlowRunner.class);
+      return;
+    }
+
+    // Not containerized execution, fallback to existing logic.
     final String loggerName = this.execId + "." + flowId;
     this.logger = Logger.getLogger(loggerName);
 
@@ -471,7 +485,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   private void closeLogger() {
-    if (this.logger != null) {
+    if (!isContainerizedDispatchMethodEnabled() && this.logger != null) {
       this.logger.removeAppender(this.flowAppender);
       this.flowAppender.close();
 

@@ -45,4 +45,6 @@ dependencies {
     compile deps.quartz
     compile deps.javaxValidation
     compile deps.hibernateValidator
+    compile deps.javaxElApi
+    compile deps.javaxEl
 }

@@ -98,7 +98,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
    * This query selects rampup records for all the active image types.
    */
   private static final String SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY = "select ir.id, ir.plan_id, "
-      + "iv.version image_version, ir.rampup_percentage, ir.stability_tag, it.name "
+      + "iv.version image_version, iv.release_tag, ir.rampup_percentage, ir.stability_tag, it.name "
       + "image_type_name, ir.created_on, ir.created_by, ir.modified_on, ir.modified_by from "
       + "image_types it, image_versions iv, image_rampup_plan irp, image_rampup ir where "
       + "irp.id = ir.plan_id and iv.id = ir.version_id and irp.type_id = it.id and irp.active = ? "
@@ -660,6 +660,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         final String createdBy = rs.getString("created_by");
         final String modifiedOn = rs.getString("modified_on");
         final String modifiedBy = rs.getString("modified_by");
+        final String releaseTag = rs.getString("release_tag");
         final ImageRampup imageRampup = new ImageRampup();
         imageRampup.setId(id);
         imageRampup.setImageVersion(imageVersion);
@@ -669,6 +670,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         imageRampup.setCreatedBy(createdBy);
         imageRampup.setModifiedBy(modifiedBy);
         imageRampup.setModifiedOn(modifiedOn);
+        imageRampup.setReleaseTag(releaseTag);
         if (imageRampupMap.containsKey(imageTypeName)) {
           imageRampupMap.get(imageTypeName).add(imageRampup);
         } else {
