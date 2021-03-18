@@ -165,6 +165,11 @@ public class ImageVersion extends BaseModel {
             .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)))
             .collect(Collectors.toSet());
 
+    /**
+     * Gets a set with NEW and ACTIVE state
+     *
+     * @return Set<State>
+     */
     public static Set<State> getNewAndActiveState() {
       return newAndActiveState;
     }
