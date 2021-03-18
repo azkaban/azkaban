@@ -78,7 +78,8 @@ public class StatusServiceTest {
         "50");
     ImageVersionMetadataResponseDTO imageVersionMetadataResponseDTO = new ImageVersionMetadataResponseDTO(
         "0.0.7", State.ACTIVE, "registry/myPath",
-        Collections.singletonList(new RampupMetadata("0.0.7", 100, StabilityTag.STABLE)), "");
+        Collections.singletonList(new RampupMetadata("0.0.7", 100, StabilityTag.STABLE, "0.0.7")),
+        "", "0.0.7");
 
     Mockito.when(this.dbOperator.query(Mockito.any(), Mockito.any())).thenReturn(true);
     Mockito.when(this.imageVersionMetadataService.getVersionMetadataForAllImageTypes())

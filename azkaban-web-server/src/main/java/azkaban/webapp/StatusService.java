@@ -145,7 +145,8 @@ public class StatusService {
     Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap = new TreeMap<>();
     try {
       imageTypeVersionMap =
-          this.getImageVersionMetadataService().getVersionMetadataForAllImageTypes();
+          this.getImageVersionMetadataService().
+              getVersionMetadataForAllImageTypes();
     } catch (final Exception ex) {
       log.error("Error while geting version metadata for all the image types", ex);
     }
