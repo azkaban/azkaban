@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.rampup;
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
@@ -34,15 +35,17 @@ public interface ImageRampupManager {
    * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, VersionInfo> getVersionForAllImageTypes() throws ImageMgmtException;
+  public Map<String, VersionInfo> getVersionForAllImageTypes(ExecutableFlow flow)
+      throws ImageMgmtException;
 
   /**
-   * Fetches the version of all the given image types based on rampup
+   * Fetches the version of all the given image types based on rampup and flow
    *
    * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, VersionInfo> getVersionByImageTypes(Set<String> imageTypes)
+  public Map<String, VersionInfo> getVersionByImageTypes(ExecutableFlow flow,
+      Set<String> imageTypes)
       throws ImageMgmtException;
 
   /**
@@ -74,6 +77,7 @@ public interface ImageRampupManager {
    * @return Map<String, VersionInfo>
    * @throws ImageMgmtException
    */
-  public Map<String, VersionInfo> validateAndGetUpdatedVersionMap(final VersionSet versionSet)
+  public Map<String, VersionInfo> validateAndGetUpdatedVersionMap(
+      final ExecutableFlow executableFlow, final VersionSet versionSet)
       throws ImageMgmtException;
 }

@@ -18,17 +18,24 @@ package azkaban.executor;
 
 import azkaban.utils.Utils;
 import java.util.Date;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonPropertyOrder;
 
 /**
  * Class to represent an AzkabanExecutorServer details for ExecutorManager
  *
  * @author gaggarwa
  */
+@JsonPropertyOrder({"id", "host", "port", "isActive"})
 public class Executor implements Comparable<Executor> {
 
+  @JsonProperty("id")
   private final int id;
+  @JsonProperty("host")
   private final String host;
+  @JsonProperty("port")
   private final int port;
+  @JsonProperty("isActive")
   private boolean isActive;
   // cached copy of the latest statistics from  the executor.
   private ExecutorInfo cachedExecutorStats;

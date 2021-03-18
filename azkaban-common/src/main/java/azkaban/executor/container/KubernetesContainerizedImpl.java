@@ -29,8 +29,6 @@ import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
 import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -347,7 +345,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   @VisibleForTesting
   VersionSet fetchVersionSet(final int executionId, final Map<String, String> flowParams,
-      Set<String> imageTypesUsedInFlow) throws ExecutorManagerException {
+      Set<String> imageTypesUsedInFlow, final ExecutableFlow executableFlow)
+      throws ExecutorManagerException {
     VersionSet versionSet = null;
 
     try {
@@ -360,7 +359,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
           // Validate if the versionSet contains valid version. If not update the correct
           // version using rampup and active image version information.
           final Map<String, VersionInfo> updatedVersionInfoMap =
-              this.imageRampupManager.validateAndGetUpdatedVersionMap(versionSet);
+              this.imageRampupManager.validateAndGetUpdatedVersionMap(executableFlow, versionSet);
           if (!updatedVersionInfoMap.isEmpty()) {
             // Rebuild version set with correct version
             final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(
@@ -405,7 +404,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
             versionSet = null;
             if (!imageVersionsNotFound.isEmpty()) {
               versionSetBuilder.addElements(
-                  this.imageRampupManager.getVersionByImageTypes(imageVersionsNotFound));
+                  this.imageRampupManager
+                      .getVersionByImageTypes(executableFlow, imageVersionsNotFound));
             }
             if (!overlayMap.isEmpty()) {
               versionSetBuilder.addElements(overlayMap);
@@ -423,7 +423,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         // Filter all the job types available in azkaban base image from the input image types set
         imageTypesUsedInFlow = this.filterIncludedJobTypes(imageTypesUsedInFlow);
         final Map<String, VersionInfo> versionMap =
-            this.imageRampupManager.getVersionByImageTypes(imageTypesUsedInFlow);
+            this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow);
         // Now we will check the flow params for any override versions provided and apply them
         for (final String imageType : imageTypesUsedInFlow) {
           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
@@ -603,7 +603,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     // Fetch execution flow from execution Id.
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
     // Step 1: Fetch set of jobTypes for a flow from executionId
-    final TreeSet<String> jobTypes = getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     logger
         .info("ExecId: {}, Jobtypes for flow {} are: {}", executionId, flow.getFlowId(), jobTypes);
 
@@ -619,7 +619,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes);
+    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, flowParam);
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {
       try {
@@ -726,37 +726,6 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
 
   private void addSecretVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
     v1SpecBuilder.addSecretVolume(this.secretVolume, this.secretName, this.secretMountpath);
-  }
-
-  /**
-   * This method is used to get jobTypes for a flow. This method is going to call
-   * populateJobTypeForFlow which has recursive method call to traverse the DAG for a flow.
-   *
-   * @param flow Executable flow object
-   * @return
-   * @throws ExecutorManagerException
-   */
-  public TreeSet<String> getJobTypesForFlow(final ExecutableFlow flow) {
-    final TreeSet<String> jobTypes = new TreeSet<>();
-    populateJobTypeForFlow(flow, jobTypes);
-    return jobTypes;
-  }
-
-  /**
-   * This method is used to populate jobTypes for ExecutableNode.
-   *
-   * @param node
-   * @param jobTypes
-   */
-  private void populateJobTypeForFlow(final ExecutableNode node, final Set<String> jobTypes) {
-    if (node instanceof ExecutableFlowBase) {
-      final ExecutableFlowBase base = (ExecutableFlowBase) node;
-      for (final ExecutableNode subNode : base.getExecutableNodes()) {
-        populateJobTypeForFlow(subNode, jobTypes);
-      }
-    } else {
-      jobTypes.add(node.getType());
-    }
   }
 
   /**

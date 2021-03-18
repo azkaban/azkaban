@@ -18,19 +18,23 @@ package azkaban.webapp.servlet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaType;
+import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import javax.servlet.ServletException;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
 
@@ -122,4 +126,43 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     assertEquals("Cannot find execution '123'", this.res.getResponseJson().path("error").asText());
   }
 
+  @Test
+  public void testPostAjaxUpdateProperty() throws Exception {
+    ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
+        new Props(), null, null, null, null, null);
+    Mockito.when(this.azkabanWebServer.getExecutorManager())
+        .thenReturn(containerizedDispatchManager);
+    this.executorServlet.init(this.servletConfig);
+
+    this.req.addParameter("ajax", "updateProp");
+    this.req.addParameter("propType", "containerDispatch");
+    this.req.addParameter("subType", "updateAllowList");
+    this.req.addParameter("val", "spark,java");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    Set<String> output = containerizedDispatchManager.getContainerJobTypeCriteria().getAllowList();
+    assertEquals(ImmutableSet.of("java", "spark"), output);
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "appendAllowList");
+    this.req.addParameter("val", "noop");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    output = containerizedDispatchManager.getContainerJobTypeCriteria().getAllowList();
+    assertEquals(ImmutableSet.of("java", "spark", "noop"), output);
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "removeFromAllowList");
+    this.req.addParameter("val", "spark");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    output = containerizedDispatchManager.getContainerJobTypeCriteria().getAllowList();
+    assertEquals(ImmutableSet.of("java", "noop"), output);
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "updateRampUp");
+    this.req.addParameter("val", "7");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertEquals(7, containerizedDispatchManager.getContainerRampUpCriteria().getRampUp());
+  }
 }

@@ -42,6 +42,7 @@ import azkaban.utils.TestUtils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -73,6 +74,7 @@ public class ContainerizedDispatchManagerTest {
   private ExecutableFlow flow2;
   private ExecutableFlow flow3;
   private ExecutableFlow flow4;
+  private ExecutableFlow flow5;
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
@@ -91,10 +93,13 @@ public class ContainerizedDispatchManagerTest {
     this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
+    this.flow5 = TestUtils.createTestExecutableFlowFromYaml("basicflowyamltest", "basic_flow");
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     this.flow3.setExecutionId(3);
     this.flow4.setExecutionId(4);
+    this.flow5.setExecutionId(5);
+    this.flow5.setDispatchMethod(DispatchMethod.CONTAINERIZED);
     this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
     this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
     this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
@@ -119,16 +124,44 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testRampUpDispatchMethod() throws Exception {
     initializeContainerizedDispatchImpl();
-    this.containerizedDispatchManager.setRampUp(0);
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
     for (int i = 0; i < 100; i++) {
       DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
       assertThat(dispatchMethod).isEqualTo(DispatchMethod.POLL);
     }
-    this.containerizedDispatchManager.setRampUp(100);
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(100);
     for (int i = 0; i < 100; i++) {
       DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
       assertThat(dispatchMethod).isEqualTo(DispatchMethod.CONTAINERIZED);
     }
+  }
+
+  @Test
+  public void testAllowAndDenyList() throws Exception {
+    // Flow 5 comprises of "command" and "noop" jobtypes
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(10);
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
+    DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
+
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
+
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(100);
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("java", "command",
+        "noop"));
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
+
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("java", "command"));
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
+
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of());
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
   }
 
   @Test

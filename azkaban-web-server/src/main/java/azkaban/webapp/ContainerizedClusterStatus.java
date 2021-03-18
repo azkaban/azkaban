@@ -17,8 +17,8 @@
 
 package azkaban.webapp;
 
+import azkaban.executor.Executor;
 import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO;
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.annotate.JsonPropertyOrder;
@@ -27,11 +27,19 @@ import org.codehaus.jackson.annotate.JsonPropertyOrder;
  * This POJO is used by GSON library to create a status JSON object. This class represents status
  * for containerized cluster.
  */
-@JsonPropertyOrder({"version", "pid", "installationPath", "usedMemory", "xmx", "isDatabaseUp", "imageTypeVersionMap"})
+@JsonPropertyOrder({"version", "pid", "installationPath", "usedMemory", "xmx", "isDatabaseUp",
+    "containerizationRampUp", "containerizationJobTypeFilter", "executorStatusMap",
+    "imageTypeVersionMap"})
 public class ContainerizedClusterStatus extends Status {
 
   @JsonProperty("imageTypeVersionMap")
   private final Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap;
+  @JsonProperty("executorStatusMap")
+  private final Map<Integer, Executor> executorStatusMap;
+  @JsonProperty("containerizationRampUp")
+  private final int containerizationRampUp;
+  @JsonProperty("containerizationJobTypeFilter")
+  private final String containerizationJobTypeFilter;
 
   public ContainerizedClusterStatus(final String version,
       final String pid,
@@ -39,9 +47,15 @@ public class ContainerizedClusterStatus extends Status {
       final long usedMemory,
       final long xmx,
       final boolean isDatabaseUp,
-      final Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap) {
+      final Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap,
+      final Map<Integer, Executor> executorStatusMap,
+      final int containerizationRampUp,
+      final String containerizationJobTypeFilter) {
     super(version, pid, installationPath, usedMemory, xmx, isDatabaseUp);
     this.imageTypeVersionMap = imageTypeVersionMap;
+    this.executorStatusMap = executorStatusMap;
+    this.containerizationRampUp = containerizationRampUp;
+    this.containerizationJobTypeFilter = containerizationJobTypeFilter;
   }
 
   public Map<String, ImageVersionMetadataResponseDTO> getImageTypeVersionMap() {
