@@ -1591,14 +1591,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     @Override
     public synchronized void handleEvent(final Event event) {
+      final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+      final ExecutableFlow flow = flowRunner.getExecutableFlow();
       if (event.getType() == EventType.FLOW_STARTED) {
-        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-        final ExecutableFlow flow = flowRunner.getExecutableFlow();
         FlowRunner.this.logger.info("Flow started: " + flow.getId());
         FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
       } else if (event.getType() == EventType.FLOW_STATUS_CHANGED) {
-        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-        final ExecutableFlow flow = flowRunner.getExecutableFlow();
         if (flow.getStatus() == Status.KILLING || flow.getStatus() == Status.KILLED) {
           FlowRunner.this.logger
               .info("Flow is killed by " + flow.getModifiedBy() + ": " + flow.getId());
@@ -1607,8 +1605,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         flowMetadata.put("flowStatus", flow.getStatus().name());
         FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
       } else if (event.getType() == EventType.FLOW_FINISHED) {
-        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-        final ExecutableFlow flow = flowRunner.getExecutableFlow();
         FlowRunner.this.logger.info("Flow ended: " + flow.getId());
         final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
         flowMetadata.put("endTime", String.valueOf(flow.getEndTime()));
