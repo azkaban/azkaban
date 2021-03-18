@@ -20,9 +20,9 @@ public class ExecutionFlowViewTest {
           + "title=\"Analyze execution in Label1\">Label1</a></li>";
   private static final String EXTERNAL_ANALYZER_ELEMENT2 =
       "<li><a id=\"analyzerButtontopic2\" href=\"http://topic2.linkedin.com/\" "
-          + "class=\"btn btn-info btn-sm btn-external\" type=\"button\" disabled target=\"_blank\" "
-          + "title=\"Execution is not analyzable in Label2 at the moment. If Label2"
-          + " is applicable for this execution, you can try again later.\">Label2</a></li>";
+          + "class=\"btn btn-info btn-sm btn-external disabled\" type=\"button\""
+          + "target=\"_blank\" "
+          + "title=\"Execution is not analyzable in Label2 at the moment.\">Label2</a></li>";
   /**
    * Test aims to check that the external analyzer button is displayed in the page.
    *

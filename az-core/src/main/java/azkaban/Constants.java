@@ -189,10 +189,9 @@ public class Constants {
     // external links defined here will be translated into buttons and rendered in the Flow Execution page
     public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS = "azkaban.server.external.analyzer.topics";
 
-    // Defines timeout in milliseconds for azkaban to validate exernal links
+    // Defines timeout in milliseconds for azkaban to validate external links
     // If this config is missing, azkaban will use default 3000 milliseconds as timeout.
     // If validation fails, buttons is disabled in Flow Execution page.
-    // external links defined here will be translated into buttons and rendered in the Flow Execution page
     public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = "azkaban.server.external.analyzer.timeout.ms";
 
     // Designates one of the external link topics to correspond to an execution analyzer

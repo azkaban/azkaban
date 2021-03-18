@@ -123,16 +123,16 @@
       <li id="statsViewLink"><a href="#stats">Stats</a></li>
       #foreach ($analyzer in $externalAnalyzers)
         #if (!${analyzer.isLinkUrlValid()})
-          #set($title = "Execution is not analyzable in ${analyzer.getLabel()} at the moment. "
-          + "If ${analyzer.getLabel()} is applicable for this execution, you can try again later.")
+          #set($title = "Execution is not analyzable in ${analyzer.getLabel()} at the moment.")
           #set($isDisabled = "disabled")
         #else
           #set($title = "Analyze execution in ${analyzer.getLabel()}")
           #set($isDisabled = "")
         #end
         #set($id = "analyzerButton${analyzer.getTopic()}")
-        <li><a id="${id}" href="${analyzer.getLinkUrl()}" class="btn btn-info btn-sm btn-external"
-               type="button" ${isDisabled} target="_blank"
+        <li><a id="${id}" href="${analyzer.getLinkUrl()}"
+               class="btn btn-info btn-sm btn-external ${isDisabled}"
+               type="button" target="_blank"
                title="${title}">${analyzer.getLabel()}</a>
         </li>
       #end

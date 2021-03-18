@@ -1,9 +1,11 @@
 package azkaban.utils;
 
 /**
- * This is Object for external analyzer.
- * It stores analyzer topic, label, linkUrl, isValid, used by web server to render external link.
- * It is used by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS right now, and it can be reuseed
+ * This is Object for external Link.
+ * It stores information about external link, includes:
+ * topic, label, linkUrl, isValid.
+ * The object is used by web server to render external link.
+ * It is used by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS right now, and it can be reused
  * by AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC later.
  */
 public class ExternalLink {
