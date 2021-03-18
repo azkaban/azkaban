@@ -381,8 +381,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
               // the overridden version exists/registered on Azkaban database. Hence, it follows a
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
-              overlayMap.put(imageType, this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeOverrideParam(imageType))));
+              overlayMap.put(imageType,
+                  this.imageRampupManager.getVersionInfoWithNewAndActiveState(imageType,
+                      flowParams.get(imageTypeOverrideParam(imageType))));
             } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType)
                 .isPresent())) {
               logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
@@ -432,8 +433,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
             // the overridden version exists/registered on Azkaban database. Hence, it follows a
             // fail fast mechanism to throw exception if the version does not exist for the
             // given image type.
-            versionMap.put(imageType, this.imageRampupManager.getVersionInfo(imageType,
-                flowParams.get(imageTypeVersionOverrideParam)));
+            versionMap.put(imageType,
+                this.imageRampupManager.getVersionInfoWithNewAndActiveState(imageType,
+                    flowParams.get(imageTypeVersionOverrideParam)));
           }
         }
 

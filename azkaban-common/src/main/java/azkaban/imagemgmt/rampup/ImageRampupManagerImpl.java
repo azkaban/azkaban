@@ -26,6 +26,7 @@ import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageVersion;
+import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
@@ -182,16 +183,18 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   @Override
-  public VersionInfo getVersionInfo(final String imageType, final String imageVersion)
+  public VersionInfo getVersionInfoWithNewAndActiveState(final String imageType,
+      final String imageVersion)
       throws ImageMgmtException {
     final Optional<ImageVersion> optionalImageVersion = this
         .fetchImageVersion(imageType, imageVersion);
-    if (optionalImageVersion.isPresent()) {
+    if (optionalImageVersion.isPresent() && State.getNewAndActiveState()
+        .contains(optionalImageVersion.get().getState())) {
       return new VersionInfo(optionalImageVersion.get().getVersion(),
           optionalImageVersion.get().getPath(), optionalImageVersion.get().getState());
     } else {
       throw new ImageMgmtException(String.format("Unable to get VersionInfo for image type: %s, "
-          + "image version: %s", imageType, imageVersion));
+          + "image version: %s with NEW or ACTIVE state.", imageType, imageVersion));
     }
   }
 

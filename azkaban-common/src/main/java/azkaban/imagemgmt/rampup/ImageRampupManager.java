@@ -59,14 +59,15 @@ public interface ImageRampupManager {
       throws ImageMgmtException;
 
   /**
-   * Gets VersionInfo for the given image type and image version.
+   * Gets VersionInfo for the given image type and image version having state as NEW and ACTIVE.
    *
    * @param imageType
    * @param imageVersion
    * @return VersionInfo
    * @throws ImageMgmtException
    */
-  public VersionInfo getVersionInfo(final String imageType, final String imageVersion)
+  public VersionInfo getVersionInfoWithNewAndActiveState(final String imageType,
+      final String imageVersion)
       throws ImageMgmtException;
 
   /**
@@ -80,4 +81,5 @@ public interface ImageRampupManager {
   public Map<String, VersionInfo> validateAndGetUpdatedVersionMap(
       final ExecutableFlow executableFlow, final VersionSet versionSet)
       throws ImageMgmtException;
+
 }

@@ -150,7 +150,8 @@ public class KubernetesContainerizedImplTest {
     final String cpuRequestedInFlowParam = "3";
     final String memoryRequestedInFlowParam = "3Gi";
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST, cpuRequestedInFlowParam);
-    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST, memoryRequestedInFlowParam);
+    flowParam
+        .put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST, memoryRequestedInFlowParam);
     assert (this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam))
         .equals(cpuRequestedInFlowParam);
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
@@ -179,7 +180,7 @@ public class KubernetesContainerizedImplTest {
     flow.setStatus(Status.PREPARING);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setExecutionId(0);
-    TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     assertThat(jobTypes.size()).isEqualTo(1);
   }
 
@@ -188,11 +189,12 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(1);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class))).thenReturn(getVersionMap());
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+        .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
-    assert(jobTypes.contains("command"));
-    assert(jobTypes.contains("hadoopJava"));
-    assert(jobTypes.contains("spark"));
+    assert (jobTypes.contains("command"));
+    assert (jobTypes.contains("hadoopJava"));
+    assert (jobTypes.contains("spark"));
     log.info("Jobtypes for flow {} are: {}", flow.getFlowId(), jobTypes);
 
     final Map<String, String> flowParam = new HashMap<>();  // empty map
@@ -200,16 +202,17 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    VersionSet versionSet = this.kubernetesContainerizedImpl
+    final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
         .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, flowParam);
 
-    assert(podSpec != null);
+    assert (podSpec != null);
 
-    final V1Pod pod = this.kubernetesContainerizedImpl.createPodFromSpec(flow.getExecutionId(), podSpec);
-    String podSpecYaml = Yaml.dump(pod).trim();
-    assert(!podSpecYaml.isEmpty());
+    final V1Pod pod = this.kubernetesContainerizedImpl
+        .createPodFromSpec(flow.getExecutionId(), podSpec);
+    final String podSpecYaml = Yaml.dump(pod).trim();
+    assert (!podSpecYaml.isEmpty());
     log.info("Pod spec for execution id {} is {}", flow.getExecutionId(), podSpecYaml);
   }
 
@@ -218,8 +221,10 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class))).thenReturn(getVersionMap());
-    when(imageRampupManager.getVersionInfo(any(String.class), any(String.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+        .thenReturn(getVersionMap());
+    when(imageRampupManager
+        .getVersionInfoWithNewAndActiveState(any(String.class), any(String.class)))
         .thenReturn(new VersionInfo("7.0.4", "path1", State.ACTIVE));
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     // Add included job types
@@ -231,8 +236,8 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
-    VersionSet presetVersionSet = versionSetBuilder
+    final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
+    final VersionSet presetVersionSet = versionSetBuilder
         .addElement("azkaban-base", new VersionInfo("7.0.4", "path1", State.ACTIVE))
         .addElement("azkaban-config", new VersionInfo("9.1.1", "path2", State.ACTIVE))
         .addElement("spark", new VersionInfo("8.0", "path3", State.ACTIVE))
@@ -245,13 +250,13 @@ public class KubernetesContainerizedImplTest {
     VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
-    assert(versionSet.getVersion("kafkaPush").get()
+    assert (versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
-    assert(versionSet.getVersion("spark").get()
+    assert (versionSet.getVersion("spark").get()
         .equals(presetVersionSet.getVersion("spark").get()));
-    assert(versionSet.getVersion("azkaban-base").get()
+    assert (versionSet.getVersion("azkaban-base").get()
         .equals(presetVersionSet.getVersion("azkaban-base").get()));
-    assert(versionSet.getVersion("azkaban-config").get()
+    assert (versionSet.getVersion("azkaban-config").get()
         .equals(presetVersionSet.getVersion("azkaban-config").get()));
     // Included jobs in the azkaban base image, so must not present in versionSet.
     Assert.assertEquals(false, versionSet.getVersion("hadoopJava").isPresent());
@@ -259,26 +264,26 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals(false, versionSet.getVersion("pigLi-0.11.1").isPresent());
 
     // Now let's try constructing an incomplete versionSet
-    VersionSetBuilder incompleteVersionSetBuilder = new VersionSetBuilder(this.loader);
-    VersionSet incompleteVersionSet = incompleteVersionSetBuilder
+    final VersionSetBuilder incompleteVersionSetBuilder = new VersionSetBuilder(this.loader);
+    final VersionSet incompleteVersionSet = incompleteVersionSetBuilder
         .addElement("kafkaPush", new VersionInfo("7.1", "path1", State.ACTIVE))
         .addElement("spark", new VersionInfo("8.0", "path2", State.ACTIVE))
         .build();
 
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
-       String.valueOf(incompleteVersionSet.getVersionSetId()));
+        String.valueOf(incompleteVersionSet.getVersionSetId()));
     flowParam.put(String.join(".",
         KubernetesContainerizedImpl.IMAGE, "azkaban-base", KubernetesContainerizedImpl.VERSION),
         "7.0.4");
     versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
-    assert(versionSet.getVersion("kafkaPush").get()
+    assert (versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
-    assert(versionSet.getVersion("spark").get()
+    assert (versionSet.getVersion("spark").get()
         .equals(presetVersionSet.getVersion("spark").get()));
-    assert(versionSet.getVersion("azkaban-base").get().getVersion().equals("7.0.4"));
-    assert(versionSet.getVersion("azkaban-config").get().getVersion().equals("9.1.1"));
+    assert (versionSet.getVersion("azkaban-base").get().getVersion().equals("7.0.4"));
+    assert (versionSet.getVersion("azkaban-config").get().getVersion().equals("9.1.1"));
   }
 
   @Test
@@ -286,7 +291,8 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class))).thenReturn(getVersionMap());
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+        .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     // Add included job types
     jobTypes.add("hadoopJava");
@@ -301,7 +307,7 @@ public class KubernetesContainerizedImplTest {
 
     final Map<String, String> flowParam = new HashMap<>();
 
-    VersionSet versionSet = this.kubernetesContainerizedImpl
+    final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     // Included jobs in the azkaban base image, so must not present in versionSet.
@@ -346,56 +352,59 @@ public class KubernetesContainerizedImplTest {
     addImageRampupEntries("create_image_rampup.json", objectMapper);*/
   }
 
-  private static void addImageTypeTableEntry(String jsonFile, ObjectMapper objectMapper) {
-    String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
+  private static void addImageTypeTableEntry(final String jsonFile, final ObjectMapper objectMapper) {
+    final String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
     try {
-      ImageTypeDTO imageType = objectMapper.readValue(jsonPayload, ImageTypeDTO.class);
+      final ImageTypeDTO imageType = objectMapper.readValue(jsonPayload, ImageTypeDTO.class);
       imageType.setCreatedBy("azkaban");
       imageType.setModifiedBy("azkaban");
       imageTypeDao.createImageType(imageTypeConverter.convertToDataModel(imageType));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Failed to read from json file: " + jsonPayload);
       assert (false);
     }
   }
 
-  private static void addImageVersions(String jsonFile, ObjectMapper objectMapper) {
-    String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
+  private static void addImageVersions(final String jsonFile, final ObjectMapper objectMapper) {
+    final String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
     List<ImageVersionDTO> imageVersions = null;
     try {
       imageVersions = objectMapper.readValue(jsonPayload,
-          new TypeReference<List<ImageVersionDTO>>() { });
+          new TypeReference<List<ImageVersionDTO>>() {
+          });
       log.info(String.valueOf(imageVersions));
-      for (ImageVersionDTO imageVersion : imageVersions) {
+      for (final ImageVersionDTO imageVersion : imageVersions) {
         imageVersion.setCreatedBy("azkaban");
         imageVersion.setModifiedBy("azkaban");
         imageVersionDao.createImageVersion(imageVersionConverter.convertToDataModel(imageVersion));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Exception while converting input json: ", e);
       assert (false);
     }
   }
 
-  private static void addImageRampupEntries(String jsonFile, ObjectMapper objectMapper) {
-    String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
+  private static void addImageRampupEntries(final String jsonFile, final ObjectMapper objectMapper) {
+    final String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
     List<ImageRampupPlanRequestDTO> imageRampupPlanRequests = null;
     try {
       imageRampupPlanRequests = objectMapper.readValue(jsonPayload,
-          new TypeReference<List<ImageRampupPlanRequestDTO>>() { });
-      for (ImageRampupPlanRequestDTO imageRampupPlanRequest : imageRampupPlanRequests) {
+          new TypeReference<List<ImageRampupPlanRequestDTO>>() {
+          });
+      for (final ImageRampupPlanRequestDTO imageRampupPlanRequest : imageRampupPlanRequests) {
         imageRampupPlanRequest.setCreatedBy("azkaban");
         imageRampupPlanRequest.setModifiedBy("azkaban");
-        imageRampupDao.createImageRampupPlan(imageRampupPlanConverter.convertToDataModel(imageRampupPlanRequest));
+        imageRampupDao.createImageRampupPlan(
+            imageRampupPlanConverter.convertToDataModel(imageRampupPlanRequest));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Exception while converting input json: ", e);
       assert (false);
     }
   }
 
   private Map<String, VersionInfo> getVersionMap() {
-    Map<String, VersionInfo> versionMap = new TreeMap<>();
+    final Map<String, VersionInfo> versionMap = new TreeMap<>();
     versionMap.put(AZKABAN_BASE_IMAGE, new VersionInfo("7.0.4", "path1", State.ACTIVE));
     versionMap.put(AZKABAN_CONFIG, new VersionInfo("9.1.1", "path2", State.ACTIVE));
     versionMap.put("spark", new VersionInfo("8.0", "path3", State.ACTIVE));
