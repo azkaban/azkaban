@@ -25,7 +25,6 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.EventType;
-import azkaban.spi.ExecutorType;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
