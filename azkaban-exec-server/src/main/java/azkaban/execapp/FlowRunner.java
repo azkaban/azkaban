@@ -51,6 +51,7 @@ import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.imagemgmt.version.VersionInfo;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
@@ -63,6 +64,7 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.spi.ExecutorType;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
@@ -1575,6 +1577,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // Flow executor type by versionSet
       if (flow.getVersionSet() != null) {
         metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
+        metaData.put("versionSet", getVersionSetJsonString(flow.getVersionSet()));
       } else {
         metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
       }
@@ -1608,6 +1611,16 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
 
       return metaData;
+    }
+
+    private String getVersionSetJsonString (final VersionSet versionSet){
+      final Map<String, String> imageToVersionStringMap = new HashMap<>();
+      for (final String imageType: versionSet.getImageToVersionMap().keySet()){
+        imageToVersionStringMap.put(imageType,
+            versionSet.getImageToVersionMap().get(imageType).getVersion());
+      }
+
+      return JSONUtils.toJSON(imageToVersionStringMap, true);
     }
 
     @Override
@@ -1663,7 +1676,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
           metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
           metaData.put("version", versionInfo.getVersion());
         }
-      } else metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
+      } else {
+        metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
+      }
 
       // Azkaban executor hostname
       metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));

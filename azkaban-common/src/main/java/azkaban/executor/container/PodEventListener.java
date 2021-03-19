@@ -7,17 +7,14 @@ import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.executor.ExecutableFlow;
-import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
-import azkaban.project.Project;
 import azkaban.spi.AzkabanEventReporter;
+import azkaban.spi.ExecutorType;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.SortedMap;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,12 +42,15 @@ public class PodEventListener implements EventListener<Event> {
     metaData.put("flowStatus", flow.getStatus().name());
     if (flow.getVersionSet() != null) {
       metaData.put("versionSet", getVersionSetJsonString(flow.getVersionSet()));
+      metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
+    } else {
+      metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
     }
 
     return metaData;
   }
 
-  private String getVersionSetJsonString (VersionSet versionSet){
+  private String getVersionSetJsonString (final VersionSet versionSet){
     final Map<String, String> imageToVersionStringMap = new HashMap<>();
     for (final String imageType: versionSet.getImageToVersionMap().keySet()){
       imageToVersionStringMap.put(imageType,
@@ -61,7 +61,7 @@ public class PodEventListener implements EventListener<Event> {
   }
 
   @Override
-  public void handleEvent(Event event) {
+  public void handleEvent(final Event event) {
     try {
       this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     } catch (final Exception e) {
