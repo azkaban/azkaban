@@ -163,11 +163,6 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
         new ThreadFactoryBuilder().setNameFormat("azk-refresher-pool-%d").build());
   }
 
-  @Override
-  public Status getStartStatus() {
-    return Status.PREPARING;
-  }
-
   /**
    * {@inheritDoc}
    *

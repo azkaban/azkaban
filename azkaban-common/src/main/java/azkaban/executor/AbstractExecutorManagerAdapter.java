@@ -244,7 +244,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
    */
   @Override
   public Status getStartStatus() {
-    return Status.READY;
+    return Status.PREPARING;
   }
 
   /**

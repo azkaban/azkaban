@@ -201,7 +201,7 @@ public class FetchActiveFlowDao {
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
             + "   ex.executor_id IS NULL"
-            + "   AND ex.status = " + Status.READY.getNumVal()
+            + "   AND ex.status = " + Status.PREPARING.getNumVal()
             + " )";
 
     @Override
@@ -282,7 +282,7 @@ public class FetchActiveFlowDao {
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
             + "   ex.executor_id IS NULL"
-            + "   AND ex.status = " + Status.READY.getNumVal()
+            + "   AND ex.status = " + Status.PREPARING.getNumVal()
             + " )";
 
     @Override
