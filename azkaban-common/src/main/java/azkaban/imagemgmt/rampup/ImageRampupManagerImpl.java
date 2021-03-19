@@ -227,7 +227,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     final Map<String, ImageVersionMetadata> imageTypeVersionMap = new TreeMap<>(
         String.CASE_INSENSITIVE_ORDER);
     final Map<String, ImageVersion> imageTypeRampupVersionMap =
-        this.processAndGetRandomRampupVersion(flow, imageTypeRampups);
+        this.processAndGetRampupVersion(flow, imageTypeRampups);
     imageTypeRampupVersionMap
         .forEach((k, v) -> imageTypeVersionMap.put(k, new ImageVersionMetadata(v,
             imageTypeRampups.get(k), MSG_RANDOM_RAMPUP_VERSION_SELECTION)));
@@ -270,7 +270,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
    * @param imageTypeRampups
    * @return Map<String, ImageVersion>
    */
-  private Map<String, ImageVersion> processAndGetRandomRampupVersion(
+  private Map<String, ImageVersion> processAndGetRampupVersion(
       final ExecutableFlow flow,
       final Map<String, List<ImageRampup>> imageTypeRampups) {
     final Set<String> imageTypeSet = imageTypeRampups.keySet();
@@ -381,7 +381,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     }
     // Return only the imageVersion only when the image type/name matches
     for (final ImageVersion version : imageVersions) {
-      if (version.getName().equals(imageType) && version.getVersion().equals(imageVersion)) {
+      if (version.getName().equalsIgnoreCase(imageType) && version.getVersion().equalsIgnoreCase(imageVersion)) {
         return Optional.of(version);
       }
     }
