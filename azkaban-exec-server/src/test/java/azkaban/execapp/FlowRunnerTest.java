@@ -23,7 +23,9 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.EventType;
+import azkaban.spi.ExecutorType;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
@@ -328,6 +330,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
         EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
     this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+    final VersionSet versionSet = this.runner.getExecutableFlow().getVersionSet();
 
     FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
     Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
@@ -351,6 +354,10 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
             flowMetadata.get("projectFileUploadTime"));
     Assert.assertEquals("Event metadata not created as expected.", "null",
         flowMetadata.get("slaOptions"));
+    Assert.assertEquals("Event metadata not created as expected", flowRunnerEventListener.getVersionSetJsonString(versionSet),
+        flowMetadata.get("versionSet"));
+    Assert.assertEquals("Event metadata not created as expected", "KUBERNETES",
+        flowMetadata.get("executorType"));
   }
 
   @Test

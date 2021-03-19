@@ -655,7 +655,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     flow.setVersionSet(versionSet);
     this.executorLoader.updateExecutableFlow(flow);
     // Emit preparing flow event with version set
-    PodEventListener podEventListener = new PodEventListener();
+    final PodEventListener podEventListener = new PodEventListener();
     podEventListener.handleEvent(Event.create(flow, EventType.FLOW_STATUS_CHANGED,
         new EventData(flow)));
   }

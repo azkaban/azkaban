@@ -74,7 +74,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -86,7 +85,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * This class covers unit tests for KubernetesContainerizedImpl class.
@@ -350,7 +348,7 @@ public class KubernetesContainerizedImplTest {
     flow.setStatus(Status.PREPARING);
     flow.setVersionSet(versionSet);
 
-    PodEventListener podEventListener = new PodEventListener();
+    final PodEventListener podEventListener = new PodEventListener();
 
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(getInjector(new Props()));

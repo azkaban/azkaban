@@ -35,6 +35,7 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.metrics.CommonMetrics;
@@ -198,6 +199,8 @@ public class FlowRunnerTestUtil {
       options.setPipelineLevel(pipeline);
       options.setPipelineExecutionId(watcher.getExecId());
     }
+    // Add version set to executable flow
+    exFlow.setVersionSet(createVersionSet());
     final FlowRunner runner = createFromExecutableFlow(eventCollector, exFlow, options,
         new HashMap<>(),
         new Props());
@@ -292,5 +295,14 @@ public class FlowRunnerTestUtil {
 
   public Project getProject() {
     return this.project;
+  }
+
+  public VersionSet createVersionSet(){
+    final String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
+        + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
+        + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","
+        + "\"state\":\"ACTIVE\"}}";
+    final String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
+    return new VersionSet(testJsonString1, testMd5Hex1, 1);
   }
 }

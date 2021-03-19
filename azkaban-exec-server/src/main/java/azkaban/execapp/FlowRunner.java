@@ -1613,7 +1613,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       return metaData;
     }
 
-    private String getVersionSetJsonString (final VersionSet versionSet){
+    @VisibleForTesting
+    protected String getVersionSetJsonString (final VersionSet versionSet){
       final Map<String, String> imageToVersionStringMap = new HashMap<>();
       for (final String imageType: versionSet.getImageToVersionMap().keySet()){
         imageToVersionStringMap.put(imageType,

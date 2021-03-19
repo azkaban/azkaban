@@ -104,7 +104,7 @@ public class JobRunnerTest {
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
         && runner.getStatus() != Status.FAILED);
-    ExecutableFlow flow = node.getExecutableFlow();
+    final ExecutableFlow flow = node.getExecutableFlow();
     Assert.assertTrue(flow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(),
         null).getVersion().equals("8.0"));
 
@@ -483,12 +483,11 @@ public class JobRunnerTest {
   }
 
   private VersionSet createVersionSet(){
-    String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
+    final String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
         + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
         + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","
         + "\"state\":\"ACTIVE\"}}";
-    String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
-    VersionSet versionSet = new VersionSet(testJsonString1, testMd5Hex1, 1);
-    return versionSet;
+    final String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
+    return new VersionSet(testJsonString1, testMd5Hex1, 1);
   }
 }
