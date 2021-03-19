@@ -428,7 +428,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
         .orElse(null);
   }
 
-  public void setFailedJobId(String id) {
+  public void setFailedJobId(final String id) {
      this.failedJobId = id;
   }
 
@@ -440,13 +440,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public String getModifiedBy() { return modifiedBy; }
 
   @Override
-  public void setModifiedBy(String id) { this.modifiedBy = id; }
+  public void setModifiedBy(final String id) { this.modifiedBy = id; }
 
   public VersionSet getVersionSet() {
     return versionSet;
   }
 
-  public void setVersionSet(VersionSet versionSet) {
+  public void setVersionSet(final VersionSet versionSet) {
     this.versionSet = versionSet;
   }
 }
