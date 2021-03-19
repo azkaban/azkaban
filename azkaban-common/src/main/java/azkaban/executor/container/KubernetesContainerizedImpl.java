@@ -485,6 +485,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
         String.valueOf(executionId));
     setupJavaRemoteDebug(envVariables, flowParam);
     setupDevPod(envVariables, flowParam);
+    setupPodEnvVariables(envVariables, flowParam);
     // Add env variables to spec builder
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
@@ -530,6 +531,13 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     return this.memoryRequest;
   }
 
+  /**
+   * This method is used to setup environment variable to enable remote debug on kubernetes flow
+   * container. Based on this environment variable, you can decide to enable or disable remote
+   * debug.
+   * @param envVariables
+   * @param flowParam
+   */
   private void setupJavaRemoteDebug(final Map<String, String> envVariables,
       final Map<String, String> flowParam) {
     if (flowParam != null && !flowParam.isEmpty() && flowParam
@@ -539,12 +547,37 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     }
   }
 
+  /**
+   * This method is used to setup environment variable to enable pod as dev pod which can be
+   * helpful for testing. Based on this environment variable, you can decide to start the flow
+   * container or not.
+   * @param envVariables
+   * @param flowParam
+   */
   private void setupDevPod(final Map<String, String> envVariables,
       final Map<String, String> flowParam) {
     if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
       envVariables.put(ContainerizedDispatchManagerProperties.ENV_ENABLE_DEV_POD,
           flowParam.get(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD));
+    }
+  }
+
+  /**
+   * This method is used to setup any environment variable for a pod which can be passed from
+   * flow parameter. To provide the generic solution, it is adding all the flow parameters
+   * starting with @FlowParameters.FLOW_PARAM_POD_ENV_VAR
+   * @param envVariables
+   * @param flowParam
+   */
+  void setupPodEnvVariables(final Map<String, String> envVariables,
+      final Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty()) {
+      flowParam.forEach((k, v) -> {
+        if (k.startsWith(FlowParameters.FLOW_PARAM_POD_ENV_VAR)) {
+          envVariables.put(StringUtils.removeStart(k, FlowParameters.FLOW_PARAM_POD_ENV_VAR), v);
+        }
+      });
     }
   }
 

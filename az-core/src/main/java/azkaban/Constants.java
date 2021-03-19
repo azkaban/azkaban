@@ -621,5 +621,7 @@ public class Constants {
     // Constant for memory request for flow container
     public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST = "flow.container.memory"
         + ".request";
+
+    public static final String FLOW_PARAM_POD_ENV_VAR = "pod.env.var.";
   }
 }
