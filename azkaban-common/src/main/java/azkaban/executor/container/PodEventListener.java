@@ -22,6 +22,9 @@ public class PodEventListener implements EventListener<Event> {
   private AzkabanEventReporter azkabanEventReporter;
   private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
 
+  public PodEventListener() {
+  }
+
   @VisibleForTesting
   synchronized Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
     final Map<String, String> metaData = new HashMap<>();
