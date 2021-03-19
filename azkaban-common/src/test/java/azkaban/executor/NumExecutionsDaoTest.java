@@ -70,7 +70,7 @@ public class NumExecutionsDaoTest {
   @Test
   public void testFetchNumExecutableFlows() throws Exception {
     final ExecutableFlow flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
-    flow1.setStatus(Status.READY);
+    flow1.setStatus(Status.PREPARING);
     this.executionFlowDao.uploadExecutableFlow(flow1);
 
     final ExecutableFlow flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);

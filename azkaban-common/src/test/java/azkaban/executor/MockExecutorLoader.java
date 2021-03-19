@@ -432,7 +432,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return fetchQueuedFlows(Status.READY);
+    return fetchQueuedFlows(Status.PREPARING);
   }
 
   @Override
