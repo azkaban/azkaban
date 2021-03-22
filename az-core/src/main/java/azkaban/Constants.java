@@ -436,6 +436,10 @@ public class Constants {
         "azkaban.executor.reverse.proxy.hostname";
     public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_PORT =
         "azkaban.executor.reverse.proxy.port";
+
+    // Job callback
+    public static final String AZKABAN_EXECUTOR_JOBCALLBACK_ENABLED =
+            "azkaban.executor.jobcallback.enabled";
   }
 
   public static class FlowProperties {

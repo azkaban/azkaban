@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
+import azkaban.common.ServerUtils;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRampManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
@@ -239,7 +240,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     JmxJobMBeanManager.getInstance().initialize(this.props);
 
     // make sure this happens before
-    configureJobCallback(this.props);
+    ServerUtils.configureJobCallback(logger, this.props);
 
     configureMBeanServer();
     configureMetricReports();
@@ -325,16 +326,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     FileIOUtils.dumpNumberToFile(Paths.get(portFileName), getPort());
   }
 
-  private void configureJobCallback(final Props props) {
-    final boolean jobCallbackEnabled =
-        props.getBoolean("azkaban.executor.jobcallback.enabled", true);
-
-    logger.info("Job callback enabled? " + jobCallbackEnabled);
-
-    if (jobCallbackEnabled) {
-      JobCallbackManager.initialize(props);
-    }
-  }
 
   /**
    * Configure Metric Reporting as per azkaban.properties settings

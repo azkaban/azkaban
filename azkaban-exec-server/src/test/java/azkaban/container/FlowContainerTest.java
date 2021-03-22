@@ -114,7 +114,7 @@ public class FlowContainerTest {
     when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
 
     final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
-    flowContainer.start();
+    flowContainer.start(props);
     FlowContainer.launchCtrlMsgListener(flowContainer);
   }
 
