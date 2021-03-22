@@ -24,6 +24,7 @@ import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
@@ -67,6 +68,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchManager.class);
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
+  private final PodEventListener podEventListener;
 
   @Inject
   public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -80,6 +82,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerizedImpl = containerizedImpl;
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
+    this.podEventListener =  new PodEventListener();
+    this.addListener(this.podEventListener);
   }
 
   public ContainerJobTypeCriteria getContainerJobTypeCriteria() {
@@ -280,10 +284,9 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         logger.info("Starting dispatch for {} execution.", executionId);
         Runnable worker = new ExecutionDispatcher(executionId);
         // Fetch an executable flow based on execution id and report an dispatching event
-        final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
-        final PodEventListener podEventListener = new PodEventListener();
-        podEventListener.handleEvent(Event.create(flow, EventType.FLOW_STATUS_CHANGED,
-            new EventData(flow)));
+        ContainerizedDispatchManager.this.fireEventListeners(Event.create(fetchFlow(executionId),
+            EventType.FLOW_STATUS_CHANGED,
+            new EventData(fetchFlow(executionId))));
 
         executorService.execute(worker);
       }
@@ -307,6 +310,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       this.executorService.shutdown();
       this.interrupt();
     }
+  }
+
+  private ExecutableNode fetchFlow(int executionId) throws ExecutorManagerException {
+    return this.executorLoader.fetchExecutableFlow(executionId);
   }
 
   /**

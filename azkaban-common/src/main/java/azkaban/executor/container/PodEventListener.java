@@ -1,7 +1,23 @@
+/*
+ * Copyright 2013 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
+import static azkaban.Constants.EXECUTOR_TYPE;
 
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
@@ -23,6 +39,11 @@ public class PodEventListener implements EventListener<Event> {
   private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
 
   public PodEventListener() {
+    try {
+      this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
+    } catch (final Exception e) {
+      logger.info("AzkabanEventReporter is not configured");
+    }
   }
 
   @VisibleForTesting
@@ -45,9 +66,9 @@ public class PodEventListener implements EventListener<Event> {
     metaData.put("flowStatus", flow.getStatus().name());
     if (flow.getVersionSet() != null) {
       metaData.put("versionSet", getVersionSetJsonString(flow.getVersionSet()));
-      metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
+      metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
     } else {
-      metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
+      metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
     }
 
     return metaData;
@@ -65,11 +86,7 @@ public class PodEventListener implements EventListener<Event> {
 
   @Override
   public void handleEvent(final Event event) {
-    try {
-      this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
-    } catch (final Exception e) {
-      logger.info("AzkabanEventReporter is not configured");
-    } finally {
+    if (this.azkabanEventReporter != null) {
       final ExecutableFlow flow = (ExecutableFlow) event.getRunner();
       this.azkabanEventReporter.report(event.getType(), getFlowMetaData(flow));
     }

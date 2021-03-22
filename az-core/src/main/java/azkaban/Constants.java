@@ -144,6 +144,9 @@ public class Constants {
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
 
+  // Executor type
+  public static final String EXECUTOR_TYPE = "executorType";
+
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";

@@ -18,6 +18,7 @@ package azkaban.execapp;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
+import static azkaban.Constants.EXECUTOR_TYPE;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -1576,10 +1577,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put("slaOptions", flow.getSlaOptionStr());
       // Flow executor type by versionSet
       if (flow.getVersionSet() != null) {
-        metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
+        metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
         metaData.put("versionSet", getVersionSetJsonString(flow.getVersionSet()));
       } else {
-        metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
+        metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
       }
 
       // Project upload info
@@ -1674,11 +1675,11 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         VersionInfo versionInfo =
             executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
         if(versionInfo != null){
-          metaData.put("executorType", String.valueOf(ExecutorType.KUBERNETES));
+          metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
           metaData.put("version", versionInfo.getVersion());
         }
       } else {
-        metaData.put("executorType", String.valueOf(ExecutorType.BAREMETAL));
+        metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
       }
 
       // Azkaban executor hostname

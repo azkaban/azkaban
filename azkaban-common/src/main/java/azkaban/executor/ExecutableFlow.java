@@ -54,9 +54,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String EXECUTION_SOURCE = "executionSource";
   public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
-  public static final String VERSIONSET_JSON_PARAM = "version set json";
-  public static final String VERSIONSET_MD5HEX_PARAM = "version set Md5Hex";
-  public static final String VERSIONSET_ID_PARAM = "version set id";
+  public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
+  public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
+  public static final String VERSIONSET_ID_PARAM = "versionSetId";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -443,7 +443,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public void setModifiedBy(final String id) { this.modifiedBy = id; }
 
   public VersionSet getVersionSet() {
-    return versionSet;
+    return this.versionSet;
   }
 
   public void setVersionSet(final VersionSet versionSet) {

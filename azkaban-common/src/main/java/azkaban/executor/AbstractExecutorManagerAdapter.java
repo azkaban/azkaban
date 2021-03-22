@@ -63,6 +63,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
+  private final PodEventListener podEventListener;
 
   protected AbstractExecutorManagerAdapter(final Props azkProps,
       final ExecutorLoader executorLoader,
@@ -76,6 +77,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
+    this.podEventListener = new PodEventListener();
+    this.addListener(podEventListener);
   }
 
   /**
@@ -272,9 +275,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       String message = uploadExecutableFlow(exflow, userId, flowId, "");
 
       // Emit ready flow event
-      PodEventListener podEventListener = new PodEventListener();
-      podEventListener.handleEvent(Event.create(exflow, EventType.FLOW_STATUS_CHANGED,
-          new EventData(exflow)));
+      this.fireEventListeners(Event.create(exflow,
+          EventType.FLOW_STATUS_CHANGED, new EventData(exflow)));
 
       this.commonMetrics.markSubmitFlowSuccess();
       message += "Execution queued successfully with exec id " + exflow.getExecutionId();
