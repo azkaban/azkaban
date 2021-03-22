@@ -284,9 +284,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         logger.info("Starting dispatch for {} execution.", executionId);
         Runnable worker = new ExecutionDispatcher(executionId);
         // Fetch an executable flow based on execution id and report an dispatching event
-        ContainerizedDispatchManager.this.fireEventListeners(Event.create(fetchFlow(executionId),
+        final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
+        ContainerizedDispatchManager.this.fireEventListeners(Event.create(flow,
             EventType.FLOW_STATUS_CHANGED,
-            new EventData(fetchFlow(executionId))));
+            new EventData(flow)));
 
         executorService.execute(worker);
       }
@@ -310,10 +311,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       this.executorService.shutdown();
       this.interrupt();
     }
-  }
-
-  private ExecutableNode fetchFlow(int executionId) throws ExecutorManagerException {
-    return this.executorLoader.fetchExecutableFlow(executionId);
   }
 
   /**
@@ -351,8 +348,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           dsFlow.setUpdateTime(System.currentTimeMillis());
           ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
           // Emit ready flow event
-          PodEventListener podEventListener = new PodEventListener();
-          podEventListener.handleEvent(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
+          ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
               new EventData(dsFlow)));
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
