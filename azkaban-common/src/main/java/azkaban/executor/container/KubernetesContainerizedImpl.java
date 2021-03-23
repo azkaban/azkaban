@@ -582,7 +582,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (flowParam != null && !flowParam.isEmpty()) {
       flowParam.forEach((k, v) -> {
         if (k.startsWith(FlowParameters.FLOW_PARAM_POD_ENV_VAR)) {
-          envVariables.put(StringUtils.removeStart(k, FlowParameters.FLOW_PARAM_POD_ENV_VAR), v);
+          envVariables
+              .put(StringUtils.removeStart(k, FlowParameters.FLOW_PARAM_POD_ENV_VAR).toUpperCase(),
+                  v);
         }
       });
     }

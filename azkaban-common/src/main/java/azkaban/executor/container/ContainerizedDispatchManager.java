@@ -333,7 +333,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         //is not able read template files, unable to parse files, unable to replace dynamic
         //variables etc.
         ContainerizedDispatchManager.this.containerizedImpl.createContainer(executionId);
-        logger.info("Time taken to dispatch a container for {} is {}", executionId,
+        logger.info("Time taken to dispatch a container for {} is {} seconds", executionId,
             (System.currentTimeMillis() - startTime) / 1000);
       } catch (ExecutorManagerException e) {
         logger.info("Unable to dispatch container in Kubernetes for : {}", executionId);
