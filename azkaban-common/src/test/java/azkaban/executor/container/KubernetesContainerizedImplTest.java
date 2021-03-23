@@ -180,13 +180,17 @@ public class KubernetesContainerizedImplTest {
    */
   @Test
   public void testPodEnvVariablesFromFlowParam() throws Exception {
+    String azkabanBaseVersion = "azkaban-base.version";
+    String azkabanConfigVersion = "azkaban-config.version";
     final Map<String, String> flowParam = new HashMap<>();
-    flowParam.put(FlowParameters.FLOW_PARAM_POD_ENV_VAR + "azkaban-bas.version", "1.0.0");
-    flowParam.put(FlowParameters.FLOW_PARAM_POD_ENV_VAR + "azkaban-config.version", "0.1.0");
+    flowParam.put(FlowParameters.FLOW_PARAM_POD_ENV_VAR + azkabanBaseVersion, "1.0.0");
+    flowParam.put(FlowParameters.FLOW_PARAM_POD_ENV_VAR + azkabanConfigVersion, "0.1.0");
     flowParam.put("any.other.param", "test");
     Map<String,String> envVariables = new HashMap<>();
     this.kubernetesContainerizedImpl.setupPodEnvVariables(envVariables, flowParam);
     assert (envVariables.size() == 2);
+    assert(envVariables.get(azkabanBaseVersion.toUpperCase()).equals("1.0.0"));
+    assert(envVariables.get(azkabanConfigVersion.toUpperCase()).equals("0.1.0"));
   }
 
   /**
@@ -198,7 +202,7 @@ public class KubernetesContainerizedImplTest {
   @Test
   public void testNoPodEnvVariablesFromFlowParam() throws Exception {
     final Map<String, String> flowParam = new HashMap<>();
-    flowParam.put("azkaban-bas.version", "1.0.0");
+    flowParam.put("azkaban-base.version", "1.0.0");
     flowParam.put("azkaban-config.version", "0.1.0");
     flowParam.put("any.other.param", "test");
     Map<String,String> envVariables = new HashMap<>();
