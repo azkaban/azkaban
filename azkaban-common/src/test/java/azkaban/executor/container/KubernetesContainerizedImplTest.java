@@ -17,11 +17,11 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
-import static azkaban.Constants.EXECUTION_ID;
-import static azkaban.Constants.FLOW_STATUS;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
-import static azkaban.Constants.VERSION_SET;
+import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;

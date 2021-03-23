@@ -17,13 +17,12 @@ package azkaban.project;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
-import static azkaban.Constants.FLOW_NAME;
-import static azkaban.Constants.MODIFIED_BY;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static azkaban.Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME;

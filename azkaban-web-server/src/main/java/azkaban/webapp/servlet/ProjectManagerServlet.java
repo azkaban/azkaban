@@ -16,10 +16,10 @@
 
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.END_TIME;
-import static azkaban.Constants.START_TIME;
-import static azkaban.Constants.SUBMIT_TIME;
-import static azkaban.Constants.SUBMIT_USER;
+import static azkaban.Constants.EventReporterConstants.END_TIME;
+import static azkaban.Constants.EventReporterConstants.START_TIME;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_TIME;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;

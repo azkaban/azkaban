@@ -16,7 +16,7 @@
 
 package azkaban.viewer.reportal;
 
-import static azkaban.Constants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
 
 import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;

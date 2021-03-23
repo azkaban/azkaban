@@ -7,7 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
 
-import static azkaban.Constants.AZ_WEBSERVER;
+import static azkaban.Constants.EventReporterConstants.AZ_WEBSERVER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 
 public class ProjectEventListener implements EventListener<ProjectEvent> {

@@ -16,9 +16,9 @@
 
 package azkaban.project;
 
-import static azkaban.Constants.FLOW_NAME;
-import static azkaban.Constants.MODIFIED_BY;
-import static azkaban.Constants.PROJECT_NAME;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
+import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;

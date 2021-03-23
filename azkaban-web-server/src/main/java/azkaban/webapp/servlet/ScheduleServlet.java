@@ -15,8 +15,8 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.FLOW_NAME;
-import static azkaban.Constants.PROJECT_NAME;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 
 import azkaban.Constants;
 import azkaban.executor.ExecutionOptions;

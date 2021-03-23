@@ -16,18 +16,18 @@
 
 package azkaban.execapp;
 
-import static azkaban.Constants.AZ_HOST;
-import static azkaban.Constants.AZ_WEBSERVER;
-import static azkaban.Constants.EXECUTOR_TYPE;
-import static azkaban.Constants.FLOW_NAME;
-import static azkaban.Constants.PROJECT_FILE_NAME;
-import static azkaban.Constants.PROJECT_FILE_UPLOADER_IP_ADDR;
-import static azkaban.Constants.PROJECT_FILE_UPLOAD_TIME;
-import static azkaban.Constants.PROJECT_FILE_UPLOAD_USER;
-import static azkaban.Constants.PROJECT_NAME;
-import static azkaban.Constants.SLA_OPTIONS;
-import static azkaban.Constants.SUBMIT_USER;
-import static azkaban.Constants.VERSION_SET;
+import static azkaban.Constants.EventReporterConstants.AZ_HOST;
+import static azkaban.Constants.EventReporterConstants.AZ_WEBSERVER;
+import static azkaban.Constants.EventReporterConstants.EXECUTOR_TYPE;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_NAME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOADER_IP_ADDR;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_TIME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_USER;
+import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
+import static azkaban.Constants.EventReporterConstants.SLA_OPTIONS;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
+import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 
 import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;

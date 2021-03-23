@@ -15,8 +15,8 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.SUBMIT_TIME;
-import static azkaban.Constants.SUBMIT_USER;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_TIME;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
 
 import azkaban.Constants;
 import azkaban.executor.ClusterInfo;

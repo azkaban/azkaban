@@ -16,7 +16,7 @@
 
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.AZ_HOST;
+import static azkaban.Constants.EventReporterConstants.AZ_HOST;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 
 import azkaban.ServiceProvider;

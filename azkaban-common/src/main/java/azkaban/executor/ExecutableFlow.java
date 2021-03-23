@@ -15,12 +15,12 @@
  */
 package azkaban.executor;
 
-import static azkaban.Constants.EXECUTION_ID;
-import static azkaban.Constants.PROJECT_NAME;
-import static azkaban.Constants.SLA_OPTIONS;
-import static azkaban.Constants.SUBMIT_TIME;
-import static azkaban.Constants.SUBMIT_USER;
-import static azkaban.Constants.VERSION;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
+import static azkaban.Constants.EventReporterConstants.SLA_OPTIONS;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_TIME;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
+import static azkaban.Constants.EventReporterConstants.VERSION;
 
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;

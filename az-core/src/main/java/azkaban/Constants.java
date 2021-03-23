@@ -145,38 +145,40 @@ public class Constants {
   public static final String AZ_HOME = "AZ_HOME";
 
   // Azkaban event reporter constants
-  public static final String FLOW_NAME = "flowName";
-  public static final String AZ_HOST = "azkabanHost";
-  public static final String AZ_WEBSERVER = "azkabanWebserver";
-  public static final String PROJECT_NAME = "projectName";
-  public static final String SUBMIT_USER = "submitUser";
-  public static final String START_TIME = "startTime";
-  public static final String END_TIME = "endTime";
-  public static final String FLOW_STATUS = "flowStatus";
-  public static final String EXECUTION_ID = "executionId";
-  public static final String SUBMIT_TIME = "submitTime";
-  public static final String FLOW_VERSION = "flowVersion";
-  public static final String FAILED_JOB_ID = "failedJobId";
-  public static final String MODIFIED_BY = "modifiedBy";
-  public static final String FLOW_KILL_DURATION = "flowKillDuration";
-  public static final String FLOW_PAUSE_DURATION = "flowPauseDuration";
-  public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
-  public static final String SLA_OPTIONS = "slaOptions";
-  public static final String VERSION_SET = "versionSet";
-  public static final String EXECUTOR_TYPE = "executorType";
-  public static final String PROJECT_FILE_UPLOAD_USER = "projectFileUploadUser";
-  public static final String PROJECT_FILE_UPLOADER_IP_ADDR= "projectFileUploaderIpAddr";
-  public static final String PROJECT_FILE_NAME = "projectFileName";
-  public static final String PROJECT_FILE_UPLOAD_TIME = "projectFileUploadTime";
-  public static final String JOB_ID = "jobId";
-  public static final String JOB_TYPE = "jobType";
-  public static final String VERSION = "version";
-  public static final String JOB_PROXY_USER = "jobProxyUser";
-  public static final String ATTEMPT_ID = "attemptId";
-  public static final String JOB_KILL_DURATION = "jobKillDuration";
-  public static final String QUEUE_DURATION = "queueDuration";
-  public static final String FAILURE_MESSAGE = "failureMessage";
-  public static final String JOB_STATUS = "jobStatus";
+  public static class EventReporterConstants{
+    public static final String FLOW_NAME = "flowName";
+    public sttic final String AZ_HOST = "azkabanHost";
+    public static final String AZ_WEBSERVER = "azkabanWebserver";
+    public static final String PROJECT_NAME = "projectName";
+    public static final String SUBMIT_USER = "submitUser";
+    public static final String START_TIME = "startTime";
+    public static final String END_TIME = "endTime";
+    public static final String FLOW_STATUS = "flowStatus";
+    public static final String EXECUTION_ID = "executionId";
+    public static final String SUBMIT_TIME = "submitTime";
+    public static final String FLOW_VERSION = "flowVersion";
+    public static final String FAILED_JOB_ID = "failedJobId";
+    public static final String MODIFIED_BY = "modifiedBy";
+    public static final String FLOW_KILL_DURATION = "flowKillDuration";
+    public static final String FLOW_PAUSE_DURATION = "flowPauseDuration";
+    public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
+    public static final String SLA_OPTIONS = "slaOptions";
+    public static final String VERSION_SET = "versionSet";
+    public static final String EXECUTOR_TYPE = "executorType";
+    public static final String PROJECT_FILE_UPLOAD_USER = "projectFileUploadUser";
+    public static final String PROJECT_FILE_UPLOADER_IP_ADDR= "projectFileUploaderIpAddr";
+    public static final String PROJECT_FILE_NAME = "projectFileName";
+    public static final String PROJECT_FILE_UPLOAD_TIME = "projectFileUploadTime";
+    public static final String JOB_ID = "jobId";
+    public static final String JOB_TYPE = "jobType";
+    public static final String VERSION = "version";
+    public static final String JOB_PROXY_USER = "jobProxyUser";
+    public static final String ATTEMPT_ID = "attemptId";
+    public static final String JOB_KILL_DURATION = "jobKillDuration";
+    public static final String QUEUE_DURATION = "queueDuration";
+    public static final String FAILURE_MESSAGE = "failureMessage";
+    public static final String JOB_STATUS = "jobStatus";
+  }
 
   public static class ConfigurationKeys {
 

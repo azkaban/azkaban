@@ -15,17 +15,17 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.AZ_HOST;
-import static azkaban.Constants.AZ_WEBSERVER;
-import static azkaban.Constants.EXECUTION_ID;
-import static azkaban.Constants.EXECUTOR_TYPE;
-import static azkaban.Constants.FLOW_NAME;
-import static azkaban.Constants.FLOW_STATUS;
-import static azkaban.Constants.FLOW_VERSION;
-import static azkaban.Constants.PROJECT_NAME;
-import static azkaban.Constants.SUBMIT_TIME;
-import static azkaban.Constants.SUBMIT_USER;
-import static azkaban.Constants.VERSION_SET;
+import static azkaban.Constants.EventReporterConstants.AZ_HOST;
+import static azkaban.Constants.EventReporterConstants.AZ_WEBSERVER;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.EXECUTOR_TYPE;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
+import static azkaban.Constants.EventReporterConstants.FLOW_VERSION;
+import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_TIME;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
+import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
@@ -56,7 +56,7 @@ public class PodEventListener implements EventListener<Event> {
     try {
       this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     } catch (final Exception e) {
-      logger.info("AzkabanEventReporter is not configured");
+      logger.error("AzkabanEventReporter is not configured");
     }
   }
 
