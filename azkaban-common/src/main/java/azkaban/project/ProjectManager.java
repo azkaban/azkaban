@@ -16,6 +16,9 @@
 
 package azkaban.project;
 
+import static azkaban.Constants.FLOW_NAME;
+import static azkaban.Constants.MODIFIED_BY;
+import static azkaban.Constants.PROJECT_NAME;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -362,8 +365,8 @@ public class ProjectManager {
     }
 
     // Fill eventData with job property overridden event data
-    eventData.put("modifiedBy", modifier.getUserId());
-    eventData.put("flowName", flow.getId());
+    eventData.put(MODIFIED_BY, modifier.getUserId());
+    eventData.put(FLOW_NAME, flow.getId());
     eventData.put("jobOverridden", jobName);
     final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
     eventData.put("diffMessage", diffMessage);
@@ -541,8 +544,8 @@ public class ProjectManager {
     final Map<String, Object> eventData = new HashMap<>();
     addEventDataFromProject(project, eventData);
     // Fill eventData with schedule event data
-    eventData.put("modifiedBy", user.getUserId());
-    eventData.put("flowName", schedule.getFlowName());
+    eventData.put(MODIFIED_BY, user.getUserId());
+    eventData.put(FLOW_NAME, schedule.getFlowName());
     eventData.put("firstScheduledExecutionTime", schedule.getFirstSchedTime());
     eventData.put("lastScheduledExecutionTime", schedule.getEndSchedTime());
     eventData.put("timezone", schedule.getTimezone().toString());
@@ -555,7 +558,7 @@ public class ProjectManager {
 
   private void addEventDataFromProject(final Project project, final Map<String, Object> eventData){
     eventData.put("projectId", project.getId());
-    eventData.put("projectName", project.getName());
+    eventData.put(PROJECT_NAME, project.getName());
     eventData.put("projectVersion", project.getVersion());
   }
 }

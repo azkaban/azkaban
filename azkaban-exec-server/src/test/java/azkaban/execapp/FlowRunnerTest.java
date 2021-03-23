@@ -16,6 +16,19 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.AZ_HOST;
+import static azkaban.Constants.AZ_WEBSERVER;
+import static azkaban.Constants.EXECUTOR_TYPE;
+import static azkaban.Constants.FLOW_NAME;
+import static azkaban.Constants.PROJECT_FILE_NAME;
+import static azkaban.Constants.PROJECT_FILE_UPLOADER_IP_ADDR;
+import static azkaban.Constants.PROJECT_FILE_UPLOAD_TIME;
+import static azkaban.Constants.PROJECT_FILE_UPLOAD_USER;
+import static azkaban.Constants.PROJECT_NAME;
+import static azkaban.Constants.SLA_OPTIONS;
+import static azkaban.Constants.SUBMIT_USER;
+import static azkaban.Constants.VERSION_SET;
+
 import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -335,28 +348,28 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
 
     Assert.assertEquals("Event metadata not created as expected.", "localhost",
-            flowMetadata.get("azkabanWebserver"));
+            flowMetadata.get(AZ_WEBSERVER));
     Assert.assertEquals("Event metadata not created as expected.", "unknown",
-            flowMetadata.get("azkabanHost"));
-    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get("submitUser"));
+            flowMetadata.get(AZ_HOST));
+    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get(SUBMIT_USER));
     Assert.assertEquals("Event metadata not created as expected.", "test",
-            flowMetadata.get("projectName"));
+            flowMetadata.get(PROJECT_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "derived-member-data",
-            flowMetadata.get("flowName"));
+            flowMetadata.get(FLOW_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "testUser",
-            flowMetadata.get("projectFileUploadUser"));
+            flowMetadata.get(PROJECT_FILE_UPLOAD_USER));
     Assert.assertEquals("Event metadata not created as expected.", "111.111.111.111",
-            flowMetadata.get("projectFileUploaderIpAddr"));
+            flowMetadata.get(PROJECT_FILE_UPLOADER_IP_ADDR));
     Assert.assertEquals("Event metadata not created as expected.", "test.zip",
-            flowMetadata.get("projectFileName"));
+            flowMetadata.get(PROJECT_FILE_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "1",
-            flowMetadata.get("projectFileUploadTime"));
+            flowMetadata.get(PROJECT_FILE_UPLOAD_TIME));
     Assert.assertEquals("Event metadata not created as expected.", "null",
-        flowMetadata.get("slaOptions"));
+        flowMetadata.get(SLA_OPTIONS));
     Assert.assertEquals("Event metadata not created as expected", flowRunnerEventListener.getVersionSetJsonString(versionSet),
-        flowMetadata.get("versionSet"));
+        flowMetadata.get(VERSION_SET));
     Assert.assertEquals("Event metadata not created as expected", "KUBERNETES",
-        flowMetadata.get("executorType"));
+        flowMetadata.get(EXECUTOR_TYPE));
   }
 
   @Test

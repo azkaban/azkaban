@@ -17,6 +17,8 @@ package azkaban.project;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.FLOW_NAME;
+import static azkaban.Constants.MODIFIED_BY;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -192,8 +194,10 @@ public class ProjectManagerTest {
     project.addListener((event) -> {
       ProjectEvent projectEvent = (ProjectEvent) event;
       // Check schedule event metadata
-      Assert.assertEquals("Event metadata not created as expected.", "testUser2", projectEvent.getEventData().get("modifiedBy"));
-      Assert.assertEquals("Event metadata not created as expected.", flowName, projectEvent.getEventData().get("flowName"));
+      Assert.assertEquals("Event metadata not created as expected.", "testUser2",
+          projectEvent.getEventData().get(MODIFIED_BY));
+      Assert.assertEquals("Event metadata not created as expected.", flowName,
+          projectEvent.getEventData().get(FLOW_NAME));
       Assert.assertEquals("Event metadata not created as expected.", firstSchedTime.getMillis(), projectEvent.getEventData().get("firstScheduledExecutionTime"));
       Assert.assertEquals("Event metadata not created as expected.", endSchedTime, projectEvent.getEventData().get("lastScheduledExecutionTime"));
       Assert.assertEquals("Event metadata not created as expected.", timezone.toString(), projectEvent.getEventData().get("timezone"));
@@ -222,7 +226,8 @@ public class ProjectManagerTest {
     // Add customized event listener
     EventListener<ProjectEvent> listener1 = ((event) -> {
       ProjectEvent projectEvent = (ProjectEvent) event;
-      Assert.assertEquals("Event metadata not created as expected.",  "Dementor1", projectEvent.getEventData().get("modifiedBy"));
+      Assert.assertEquals("Event metadata not created as expected.",  "Dementor1",
+          projectEvent.getEventData().get(MODIFIED_BY));
       Assert.assertEquals("Event metadata not created as expected.", "testUser4", projectEvent.getEventData().get("updatedUser"));
       Assert.assertEquals("Event metadata not created as expected.",  "null", projectEvent.getEventData().get("updatedGroup"));
       Assert.assertEquals("Event metadata not created as expected.", "ADMIN", projectEvent.getEventData().get("permission"));
@@ -236,7 +241,8 @@ public class ProjectManagerTest {
     project.removeListener(listener1);
     EventListener<ProjectEvent> listener2 = ((event) -> {
       ProjectEvent projectEvent = (ProjectEvent) event;
-      Assert.assertEquals("Event metadata not created as expected.",  "Dementor1", projectEvent.getEventData().get("modifiedBy"));
+      Assert.assertEquals("Event metadata not created as expected.",  "Dementor1",
+          projectEvent.getEventData().get(MODIFIED_BY));
       Assert.assertEquals("Event metadata not created as expected.", "null", projectEvent.getEventData().get("updatedUser"));
       Assert.assertEquals("Event metadata not created as expected.",  "group1", projectEvent.getEventData().get("updatedGroup"));
       Assert.assertEquals("Event metadata not created as expected.", "remove", projectEvent.getEventData().get("permission"));
@@ -265,7 +271,8 @@ public class ProjectManagerTest {
     // Add customized event listener
     project.addListener((event) -> {
       ProjectEvent projectEvent = (ProjectEvent) event;
-      Assert.assertEquals("Event metadata not created as expected.", flowName, projectEvent.getEventData().get("flowName"));
+      Assert.assertEquals("Event metadata not created as expected.", flowName,
+          projectEvent.getEventData().get(FLOW_NAME));
       Assert.assertEquals("Event metadata not created as expected.", jobName, projectEvent.getEventData().get("jobOverridden"));
       Assert.assertEquals("Event metadata not created as expected.", diffMsg, projectEvent.getEventData().get("diffMessage"));
       Assert.assertEquals("Event metadata not created as expected.", "SUCCESS", projectEvent.getEventData().get("projectEventStatus"));

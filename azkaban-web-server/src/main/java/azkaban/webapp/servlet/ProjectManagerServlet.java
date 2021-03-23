@@ -16,6 +16,11 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.Constants.END_TIME;
+import static azkaban.Constants.START_TIME;
+import static azkaban.Constants.SUBMIT_TIME;
+import static azkaban.Constants.SUBMIT_USER;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutableFlow;
@@ -541,10 +546,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       flowInfo.put(FLOW_ID_PARAM, flow.getFlowId());
       flowInfo.put("projectId", flow.getProjectId());
       flowInfo.put("status", flow.getStatus().toString());
-      flowInfo.put("submitTime", flow.getSubmitTime());
-      flowInfo.put("startTime", flow.getStartTime());
-      flowInfo.put("endTime", flow.getEndTime());
-      flowInfo.put("submitUser", flow.getSubmitUser());
+      flowInfo.put(SUBMIT_TIME, flow.getSubmitTime());
+      flowInfo.put(START_TIME, flow.getStartTime());
+      flowInfo.put(END_TIME, flow.getEndTime());
+      flowInfo.put(SUBMIT_USER, flow.getSubmitUser());
 
       history.add(flowInfo);
     }

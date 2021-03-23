@@ -15,9 +15,17 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
+import static azkaban.Constants.AZ_HOST;
+import static azkaban.Constants.AZ_WEBSERVER;
+import static azkaban.Constants.EXECUTION_ID;
 import static azkaban.Constants.EXECUTOR_TYPE;
+import static azkaban.Constants.FLOW_NAME;
+import static azkaban.Constants.FLOW_STATUS;
+import static azkaban.Constants.FLOW_VERSION;
+import static azkaban.Constants.PROJECT_NAME;
+import static azkaban.Constants.SUBMIT_TIME;
+import static azkaban.Constants.SUBMIT_USER;
+import static azkaban.Constants.VERSION_SET;
 
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
@@ -34,11 +42,17 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is the event listener for flow executed in a Kubernetes pod
+ * It handles event, get event meta data, and sent meta data to event reporter plugin
+ */
 public class PodEventListener implements EventListener<Event> {
   private AzkabanEventReporter azkabanEventReporter;
+  private Props props;
   private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
 
   public PodEventListener() {
+    this.props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
     try {
       this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     } catch (final Exception e) {
@@ -47,25 +61,24 @@ public class PodEventListener implements EventListener<Event> {
   }
 
   @VisibleForTesting
-  synchronized Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
+  protected Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
     final Map<String, String> metaData = new HashMap<>();
-    final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
 
     // Set up properties not in eventData
-    metaData.put("flowName", flow.getId());
-    metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
+    metaData.put(FLOW_NAME, flow.getId());
+    metaData.put(AZ_HOST, props.getString(AZ_HOST, "unknown"));
     // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
     // or else use jetty.hostname
-    metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+    metaData.put(AZ_WEBSERVER, props.getString(AZ_WEBSERVER,
         props.getString("jetty.hostname", "localhost")));
-    metaData.put("projectName", flow.getProjectName());
-    metaData.put("submitUser", flow.getSubmitUser());
-    metaData.put("executionId", String.valueOf(flow.getExecutionId()));
-    metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
-    metaData.put("flowVersion", String.valueOf(flow.getAzkabanFlowVersion()));
-    metaData.put("flowStatus", flow.getStatus().name());
+    metaData.put(PROJECT_NAME, flow.getProjectName());
+    metaData.put(SUBMIT_USER, flow.getSubmitUser());
+    metaData.put(EXECUTION_ID, String.valueOf(flow.getExecutionId()));
+    metaData.put(SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
+    metaData.put(FLOW_VERSION, String.valueOf(flow.getAzkabanFlowVersion()));
+    metaData.put(FLOW_STATUS, flow.getStatus().name());
     if (flow.getVersionSet() != null) {
-      metaData.put("versionSet", getVersionSetJsonString(flow.getVersionSet()));
+      metaData.put(VERSION_SET, getVersionSetJsonString(flow.getVersionSet()));
       metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
     } else {
       metaData.put(EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));

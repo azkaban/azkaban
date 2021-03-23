@@ -17,8 +17,11 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.EXECUTION_ID;
+import static azkaban.Constants.FLOW_STATUS;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
+import static azkaban.Constants.VERSION_SET;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
@@ -387,9 +390,9 @@ public class KubernetesContainerizedImplTest {
     SERVICE_PROVIDER.setInjector(getInjector(new Props()));
     final Map<String, String> metaData = podEventListener.getFlowMetaData(flow);
 
-    Assert.assertTrue(metaData.get("executionId").equals("2"));
-    Assert.assertTrue(metaData.get("flowStatus").equals("PREPARING"));
-    final String versionSetJsonString = metaData.get("versionSet");
+    Assert.assertTrue(metaData.get(EXECUTION_ID).equals("2"));
+    Assert.assertTrue(metaData.get(FLOW_STATUS).equals("PREPARING"));
+    final String versionSetJsonString = metaData.get(VERSION_SET);
     final Map<String, String> imageToVersionMap =
         new ObjectMapper().readValue(versionSetJsonString,
         new TypeReference<HashMap<String, String>>() {

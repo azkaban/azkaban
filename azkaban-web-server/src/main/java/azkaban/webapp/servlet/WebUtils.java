@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.Constants.AZ_HOST;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 
 import azkaban.ServiceProvider;
@@ -184,7 +185,7 @@ public class WebUtils {
 
     if (azkabanEventReporter != null) {
       final Map<String, String> metadata = new HashMap<>();
-      metadata.put("azkabanHost",
+      metadata.put(AZ_HOST,
           AzkabanWebServer.getAzkabanProperties().getString(AZKABAN_SERVER_HOST_NAME, hostName));
       metadata.put("sessionUser", Strings.isNullOrEmpty(username) ? "unknown" : username);
       metadata.put("sessionIP", ip);

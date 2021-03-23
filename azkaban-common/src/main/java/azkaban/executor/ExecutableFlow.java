@@ -15,6 +15,13 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.EXECUTION_ID;
+import static azkaban.Constants.PROJECT_NAME;
+import static azkaban.Constants.SLA_OPTIONS;
+import static azkaban.Constants.SUBMIT_TIME;
+import static azkaban.Constants.SUBMIT_USER;
+import static azkaban.Constants.VERSION;
+
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
@@ -36,19 +43,19 @@ import java.util.stream.Collectors;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 
-  public static final String EXECUTIONID_PARAM = "executionId";
+  public static final String EXECUTIONID_PARAM = EXECUTION_ID;
   public static final String EXECUTIONPATH_PARAM = "executionPath";
   public static final String EXECUTIONOPTIONS_PARAM = "executionOptions";
   public static final String PROJECTID_PARAM = "projectId";
   public static final String SCHEDULEID_PARAM = "scheduleId";
-  public static final String SUBMITUSER_PARAM = "submitUser";
-  public static final String SUBMITTIME_PARAM = "submitTime";
-  public static final String VERSION_PARAM = "version";
+  public static final String SUBMITUSER_PARAM = SUBMIT_USER;
+  public static final String SUBMITTIME_PARAM = SUBMIT_TIME;
+  public static final String VERSION_PARAM = VERSION;
   public static final String PROXYUSERS_PARAM = "proxyUsers";
-  public static final String PROJECTNAME_PARAM = "projectName";
+  public static final String PROJECTNAME_PARAM = PROJECT_NAME;
   public static final String LASTMODIFIEDTIME_PARAM = "lastModfiedTime";
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
-  public static final String SLAOPTIONS_PARAM = "slaOptions";
+  public static final String SLAOPTIONS_PARAM = SLA_OPTIONS;
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";

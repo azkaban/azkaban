@@ -7,6 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
 
+import static azkaban.Constants.AZ_WEBSERVER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 
 public class ProjectEventListener implements EventListener<ProjectEvent> {
@@ -16,7 +17,7 @@ public class ProjectEventListener implements EventListener<ProjectEvent> {
         final Map<String, Object> projectMetaData = event.getEventData();
         final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
         // Set up properties not in eventData
-        metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+        metaData.put(AZ_WEBSERVER, props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
                 props.getString("jetty.hostname", "localhost")));
         metaData.put("projectLogEventType", event.getType().toString());
 
