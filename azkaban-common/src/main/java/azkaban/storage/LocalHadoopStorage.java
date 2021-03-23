@@ -1,5 +1,8 @@
 package azkaban.storage;
 
+import static azkaban.HadoopModule.LOCAL_CACHED_HTTP_FS;
+import static azkaban.utils.StorageUtils.getTargetDependencyPath;
+
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Dependency;
 import java.io.IOException;
@@ -10,24 +13,25 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
-
-import static azkaban.utils.StorageUtils.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
- * LocalHadoopStorage is an extension of LocalStorage that adds support for dependency fetching. LocalHadoopStorage
- * depends on hadoop-common and can only be injected when hadoop-common is on the classpath.
+ * LocalHadoopStorage is an extension of LocalStorage that adds support for dependency fetching.
+ * LocalHadoopStorage depends on hadoop-common and can only be injected when hadoop-common is on the
+ * classpath.
  */
 public class LocalHadoopStorage extends LocalStorage {
-  private static final Logger log = Logger.getLogger(LocalHadoopStorage.class);
+
+  private static final Logger log = LoggerFactory.getLogger(LocalHadoopStorage.class);
 
   final FileSystem http;
   final URI dependencyRootUri;
 
   @Inject
   public LocalHadoopStorage(final AzkabanCommonModuleConfig config,
-      @Named("local_cached_httpFS") @Nullable final FileSystem http) {
+      @Named(LOCAL_CACHED_HTTP_FS) @Nullable final FileSystem http) {
     super(config);
 
     this.http = http; // May be null if thin archives is not enabled
@@ -53,7 +57,7 @@ public class LocalHadoopStorage extends LocalStorage {
     return dependencyFetchingEnabled() ? this.dependencyRootUri.toString() : null;
   }
 
-  private Path resolveAbsoluteDependencyURI(Dependency dep) {
+  private Path resolveAbsoluteDependencyURI(final Dependency dep) {
     return new Path(this.dependencyRootUri.toString(), getTargetDependencyPath(dep));
   }
 }
