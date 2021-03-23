@@ -147,7 +147,7 @@ public class Constants {
   // Azkaban event reporter constants
   public static class EventReporterConstants{
     public static final String FLOW_NAME = "flowName";
-    public sttic final String AZ_HOST = "azkabanHost";
+    public static final String AZ_HOST = "azkabanHost";
     public static final String AZ_WEBSERVER = "azkabanWebserver";
     public static final String PROJECT_NAME = "projectName";
     public static final String SUBMIT_USER = "submitUser";
