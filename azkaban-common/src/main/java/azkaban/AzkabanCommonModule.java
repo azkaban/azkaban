@@ -16,6 +16,12 @@
  */
 package azkaban;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
+
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.H2FileDataSource;
@@ -36,8 +42,8 @@ import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
-import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
+import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
 import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectCache;
@@ -54,20 +60,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.dbutils.QueryRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
-import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
 
 
 /**
@@ -112,7 +111,7 @@ public class AzkabanCommonModule extends AbstractModule {
     final StorageImplementationType type = StorageImplementationType
         .from(this.config.getStorageImplementation());
     if (type == StorageImplementationType.HDFS || type == StorageImplementationType.LOCAL_HADOOP) {
-      install(new HadoopModule(this.props));
+      install(new HadoopModule());
     }
     if (type != null) {
       return type.getImplementationClass();
@@ -149,7 +148,7 @@ public class AzkabanCommonModule extends AbstractModule {
   @Singleton
   public AzkabanEventReporter createAzkabanEventReporter() {
     final boolean eventReporterEnabled =
-            props.getBoolean(AZKABAN_EVENT_REPORTING_ENABLED, false);
+        this.props.getBoolean(AZKABAN_EVENT_REPORTING_ENABLED, false);
 
     if (!eventReporterEnabled) {
       logger.info("Event reporter is not enabled");
@@ -157,13 +156,13 @@ public class AzkabanCommonModule extends AbstractModule {
     }
 
     final Class<?> eventReporterClass =
-            props.getClass(AZKABAN_EVENT_REPORTING_CLASS_PARAM, null);
+        this.props.getClass(AZKABAN_EVENT_REPORTING_CLASS_PARAM, null);
     if (eventReporterClass != null && eventReporterClass.getConstructors().length > 0) {
       this.logger.info("Loading event reporter class " + eventReporterClass.getName());
       try {
         final Constructor<?> eventReporterClassConstructor =
-                eventReporterClass.getConstructor(Props.class);
-        return (AzkabanEventReporter) eventReporterClassConstructor.newInstance(props);
+            eventReporterClass.getConstructor(Props.class);
+        return (AzkabanEventReporter) eventReporterClassConstructor.newInstance(this.props);
       } catch (final InvocationTargetException e) {
         this.logger.error(e.getTargetException().getMessage());
         if (e.getTargetException() instanceof IllegalArgumentException) {
@@ -180,7 +179,7 @@ public class AzkabanCommonModule extends AbstractModule {
   }
 
   private void bindImageManagementDependencies() {
-    if(isContainerizedDispatchMethodEnabled()) {
+    if (isContainerizedDispatchMethodEnabled()) {
       bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class).in(Scopes.SINGLETON);
@@ -188,7 +187,7 @@ public class AzkabanCommonModule extends AbstractModule {
       bind(ImageMgmtCommonDao.class).to(ImageMgmtCommonDaoImpl.class).in(Scopes.SINGLETON);
       bind(PermissionManager.class).to(PermissionManagerImpl.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
-          .to(ImageTypeConverter.class).in(Scopes.SINGLETON);;
+          .to(ImageTypeConverter.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_VERSION))
           .to(ImageVersionConverter.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_RAMPUP_PLAN))
@@ -197,7 +196,7 @@ public class AzkabanCommonModule extends AbstractModule {
   }
 
   private boolean isContainerizedDispatchMethodEnabled() {
-    return DispatchMethod.isContainerizedMethodEnabled(props
+    return DispatchMethod.isContainerizedMethodEnabled(this.props
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()));
   }
