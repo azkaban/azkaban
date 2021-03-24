@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 import azkaban.cachedhttpfilesystem.CachedHttpFileSystem;
 import azkaban.spi.AzkabanException;
 import azkaban.storage.AbstractHdfsAuth;
-import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -47,34 +46,34 @@ import org.slf4j.LoggerFactory;
  * needed.
  */
 public class HadoopModule extends AbstractModule {
+
+  public static final String HADOOP_CONF = "hadoopConf";
+  public static final String HADOOP_FS_AUTH = "hadoopFSAuth";
+  public static final String HADOOP_FILE_CONTEXT = "hadoopFileContext";
+
+  public static final String HTTP_CONF = "httpConf";
+  public static final String LOCAL_CONF = "localConf";
+  public static final String LOCAL_CACHED_HTTP_FS = "local_cached_httpFS";
+  public static final String HDFS_CACHED_HTTP_FS = "hdfs_cached_httpFS";
+
+  private static final String HADOOP_DEFAULT_FS_CONFIG_PROP = "fs.defaultFS";
+  private static final String AZKABAN_HDFS_AUTH_IMPL_CLASS = "azkaban.hdfs.auth.impl.class";
+  private static final String DEFAULT_AZKABAN_HDFS_AUTH_IMPL_CLASS =
+      azkaban.storage.HdfsAuth.class.getName();
+
   private static final String CHTTP_SCHEME = "chttp";
   private static final String LOCAL_SCHEME = "file";
   private static final String HDFS_SCHEME = "hdfs";
 
-  private static final String HDFS_FS_IMPL_CONFIG = "fs.hdfs.impl";
-  private static final String ABSTRACT_FS_IMPL_CONFIG = "fs.AbstractFileSystem.hdfs.impl";
-  private static final String AZKABAN_HDFS_AUTH_IMPL_CLASS = "azkaban.hdfs.auth.impl.class";
-  private static final String DEFAULT_AZKABAN_HDFS_AUTH_IMPL_CLASS = "azkaban.storage.HdfsAuth";
-
-  // These classes will be used in case a value is not already provided the resource files
-  private static final String FALLBACK_HDFS_IMPL_CLASSS =
-      org.apache.hadoop.hdfs.DistributedFileSystem.class.getName();
-  private static final String FALLBACK_ABSTRACT_FS_IMPL_CLASS =
-      org.apache.hadoop.fs.Hdfs.class.getName();
-
   private static final Logger log = LoggerFactory.getLogger(HadoopModule.class);
-  private final Props props;
-
-  HadoopModule(final Props props) {
-    this.props = props;
-  }
 
   @Inject
   @Provides
   @Singleton
-  @Named("hdfsConf")
-  public Configuration createHDFSConfiguration() {
-    final String hadoopConfDirPath = requireNonNull(this.props.get(HADOOP_CONF_DIR_PATH));
+  @Named(HADOOP_CONF)
+  public Configuration createHadoopConfiguration(final AzkabanCommonModuleConfig azConfig) {
+    final String hadoopConfDirPath = requireNonNull(
+        azConfig.getProps().getString(HADOOP_CONF_DIR_PATH));
 
     final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
     checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
@@ -82,36 +81,29 @@ public class HadoopModule extends AbstractModule {
     final Configuration conf = new Configuration(false);
     conf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "core-site.xml"));
     conf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "hdfs-site.xml"));
-    if (conf.get(HDFS_FS_IMPL_CONFIG) == null) {
-      conf.set(HDFS_FS_IMPL_CONFIG, FALLBACK_HDFS_IMPL_CLASSS);
-    }
-    if (conf.get(ABSTRACT_FS_IMPL_CONFIG) == null) {
-      conf.set( ABSTRACT_FS_IMPL_CONFIG, FALLBACK_ABSTRACT_FS_IMPL_CLASS);
-    }
 
-    // These won't result in excessive logging as we are in a singleton context
-    log.info("Implementation of {} is {}", HDFS_FS_IMPL_CONFIG, conf.get(HDFS_FS_IMPL_CONFIG));
-    log.info("Implementation of {} is {}", ABSTRACT_FS_IMPL_CONFIG, conf.get(ABSTRACT_FS_IMPL_CONFIG));
+    log.info("Hadoop default file system is {}", conf.get(HADOOP_DEFAULT_FS_CONFIG_PROP));
 
     return conf;
   }
 
   /**
-   * This method is used to create object of impl of @{@link AbstractHdfsAuth} abstract class. It expects
-   * impl class from
-   * AZKABAN_HDFS_AUTH_IMPL_CLASS. If this property is not set then if will use
-   * @{@link azkaban.storage.HdfsAuth} as default implementation class.
+   * This method is used to instantiate the class that performs authentication and authorization
+   * with the Hadoop file system. To provide a custom class the property {@link
+   * #AZKABAN_HDFS_AUTH_IMPL_CLASS} should be set. If this property is not configured then {@link
+   * azkaban.storage.HdfsAuth} will be used as the default.
+   *
    * @param azConfig
    * @param conf
-   * @return object of implementation of @{@link AbstractHdfsAuth}
+   * @return instance of {@link AbstractHdfsAuth}
    */
   @Inject
   @Provides
   @Singleton
-  @Named("hdfsAuth")
+  @Named(HADOOP_FS_AUTH)
   public AbstractHdfsAuth createHdfsAuth(final AzkabanCommonModuleConfig azConfig,
-      @Named("hdfsConf") final Configuration conf) {
-    String hdfsAuthImplClass = azConfig.getProps()
+      @Named(HADOOP_CONF) final Configuration conf) {
+    final String hdfsAuthImplClass = azConfig.getProps()
         .getString(AZKABAN_HDFS_AUTH_IMPL_CLASS, DEFAULT_AZKABAN_HDFS_AUTH_IMPL_CLASS);
     try {
       final Class<?> hdfsAuthClass =
@@ -119,7 +111,7 @@ public class HadoopModule extends AbstractModule {
       log.info("Loading hdfs auth " + hdfsAuthClass.getName());
       return (AbstractHdfsAuth)
           Utils.callConstructor(hdfsAuthClass, azConfig.getProps(), conf);
-    } catch (ClassNotFoundException e) {
+    } catch (final ClassNotFoundException e) {
       log.error("Could not instantiate hdfsAuth: ", e);
       throw new AzkabanException("Failed to create object of hdfsAuth!"
           + e.getCause(), e);
@@ -129,7 +121,7 @@ public class HadoopModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  @Named("httpConf")
+  @Named(HTTP_CONF)
   public Configuration createHTTPConfiguration(final AzkabanCommonModuleConfig azConfig) {
     // NOTE (for the future): If we want to permanently remove the caching layer and simply pull dependencies
     // directly from the HTTP origin, swap out CachedHttpFileSystem for Hadoop's native HttpFileSystem
@@ -141,7 +133,7 @@ public class HadoopModule extends AbstractModule {
     // for HdfsStorage.
     final Configuration conf = new Configuration(false);
     conf.set("fs.chttp.impl", azkaban.cachedhttpfilesystem.CachedHttpFileSystem.class.getName());
-    boolean cachingEnabled = azConfig.getDependencyCachingEnabled();
+    final boolean cachingEnabled = azConfig.getDependencyCachingEnabled();
     if (cachingEnabled) {
       // If caching is not disabled BUT the cache dependency root URI is not specified, return null
       // for this configuration (indicating this configuration cannot be generated - thin archives
@@ -150,7 +142,8 @@ public class HadoopModule extends AbstractModule {
         return null;
       }
       // If caching is enabled, tell the CachedHttpFileSystem where to cache its files
-      conf.set(CachedHttpFileSystem.CACHE_ROOT_URI, azConfig.getCacheDependencyRootUri().toString());
+      conf.set(CachedHttpFileSystem.CACHE_ROOT_URI,
+          azConfig.getCacheDependencyRootUri().toString());
     } else {
       // If caching is disabled, tell the CachedHttpFileSystem to disable caching
       conf.set(CachedHttpFileSystem.CACHE_ENABLED_FLAG, "false");
@@ -161,7 +154,7 @@ public class HadoopModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  @Named("localConf")
+  @Named(LOCAL_CONF)
   public Configuration createLocalConfiguration() {
     final Configuration conf = new Configuration(false);
     conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
@@ -171,14 +164,15 @@ public class HadoopModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  @Named("hdfsFileContext")
-  public FileContext createHDFSFileContext(@Named("hdfsConf") final Configuration hdfsConf,
-      @Named("hdfsAuth") final AbstractHdfsAuth auth) {
+  @Named(HADOOP_FILE_CONTEXT)
+  public FileContext createHadoopFileContext(
+      @Named(HADOOP_CONF) final Configuration conf,
+      @Named(HADOOP_FS_AUTH) final AbstractHdfsAuth auth) {
     try {
       auth.authorize();
-      return FileContext.getFileContext(hdfsConf);
+      return FileContext.getFileContext(conf);
     } catch (final IOException e) {
-      log.error("Unable to initialize HDFS FileContext.", e);
+      log.error("Unable to initialize Hadoop FileContext.", e);
       throw new AzkabanException(e);
     }
   }
@@ -186,10 +180,11 @@ public class HadoopModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  @Named("hdfs_cached_httpFS")
-  public FileSystem createHDFSCachedHttpFileSystem(@Named("hdfsConf") final Configuration hdfsConf,
-      @Named("httpConf") @Nullable final Configuration httpConf,
-      @Named("hdfsAuth") final AbstractHdfsAuth auth,
+  @Named(HDFS_CACHED_HTTP_FS)
+  public FileSystem createHDFSCachedHttpFileSystem(
+      @Named(HADOOP_CONF) final Configuration conf,
+      @Named(HTTP_CONF) @Nullable final Configuration httpConf,
+      @Named(HADOOP_FS_AUTH) final AbstractHdfsAuth auth,
       final AzkabanCommonModuleConfig azConfig) {
     if (httpConf == null) {
       return null;
@@ -202,7 +197,7 @@ public class HadoopModule extends AbstractModule {
     }
 
     final Configuration finalConf = new Configuration(false);
-    finalConf.addResource(hdfsConf);
+    finalConf.addResource(conf);
     finalConf.addResource(httpConf);
 
     auth.authorize();
@@ -212,9 +207,11 @@ public class HadoopModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  @Named("local_cached_httpFS")
-  public FileSystem createLocalCachedHttpFileSystem(@Named("localConf") final Configuration localConf,
-      @Named("httpConf") @Nullable final Configuration httpConf, final AzkabanCommonModuleConfig azConfig) {
+  @Named(LOCAL_CACHED_HTTP_FS)
+  public FileSystem createLocalCachedHttpFileSystem(
+      @Named(LOCAL_CONF) final Configuration localConf,
+      @Named(HTTP_CONF) @Nullable final Configuration httpConf,
+      final AzkabanCommonModuleConfig azConfig) {
     if (httpConf == null) {
       return null;
     }
@@ -231,7 +228,8 @@ public class HadoopModule extends AbstractModule {
     return getCachedHttpFileSystem(finalConf, azConfig);
   }
 
-  private static FileSystem getCachedHttpFileSystem(final Configuration conf, final AzkabanCommonModuleConfig azConfig) {
+  private static FileSystem getCachedHttpFileSystem(final Configuration conf,
+      final AzkabanCommonModuleConfig azConfig) {
     // Ensure the necessary props are not specified to enable CachedHttpFileSystem
     if (azConfig.getOriginDependencyRootUri() == null) {
       return null;
@@ -251,7 +249,8 @@ public class HadoopModule extends AbstractModule {
   /**
    * Ensure a URI is valid for a given scheme and contains an authority (if required).
    */
-  private static void validateURI(final URI uri, final String scheme, final boolean mustHaveAuthority) {
+  private static void validateURI(final URI uri, final String scheme,
+      final boolean mustHaveAuthority) {
     if (mustHaveAuthority) {
       requireNonNull(uri.getAuthority(), "URI must have host:port mentioned.");
     }
