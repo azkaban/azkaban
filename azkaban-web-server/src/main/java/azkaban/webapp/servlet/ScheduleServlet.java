@@ -175,8 +175,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     final HashMap<String, Object> data = new HashMap<>();
     data.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
-    data.put("flowName", schedule.getFlowName());
-    data.put("projectName", schedule.getProjectName());
+    data.put("flowname", schedule.getFlowName());
+    data.put("projectname", schedule.getProjectName());
     data.put("time", schedule.getFirstSchedTime());
     data.put("cron", schedule.getCronExpression());
 
