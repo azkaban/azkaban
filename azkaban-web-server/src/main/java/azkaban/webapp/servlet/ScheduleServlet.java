@@ -233,7 +233,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
   }
-
+  
   private void ajaxFetchSchedule(final HttpServletRequest req,
       final HashMap<String, Object> ret, final User user) throws ServletException {
 
