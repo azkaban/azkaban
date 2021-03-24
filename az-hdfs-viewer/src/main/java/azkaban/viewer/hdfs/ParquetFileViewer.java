@@ -32,12 +32,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AccessControlException;
 import org.apache.log4j.Logger;
 
-import org.codehaus.jackson.JsonEncoding;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-
-import parquet.avro.AvroParquetReader;
-import parquet.avro.AvroSchemaConverter;
+import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.parquet.avro.AvroSchemaConverter;
 
 /**
  * This class implements a viewer for Parquet files.
@@ -93,16 +89,9 @@ public class ParquetFileViewer extends HdfsFileViewer {
       logger.debug("Display Parquet file: " + path.toUri().getPath());
     }
 
-    JsonGenerator json = null;
     AvroParquetReader<GenericRecord> parquetReader = null;
     try {
       parquetReader = new AvroParquetReader<GenericRecord>(path);
-
-      // Initialize JsonGenerator.
-      json =
-          new JsonFactory()
-              .createJsonGenerator(outputStream, JsonEncoding.UTF8);
-      json.useDefaultPrettyPrinter();
 
       // Declare the avroWriter encoder that will be used to output the records
       // as JSON but don't construct them yet because we need the first record
@@ -121,7 +110,7 @@ public class ParquetFileViewer extends HdfsFileViewer {
         if (avroWriter == null) {
           Schema schema = record.getSchema();
           avroWriter = new GenericDatumWriter<GenericRecord>(schema);
-          encoder = EncoderFactory.get().jsonEncoder(schema, json);
+          encoder = EncoderFactory.get().jsonEncoder(schema, outputStream, true);
         }
 
         if (line >= startLine) {
@@ -140,9 +129,6 @@ public class ParquetFileViewer extends HdfsFileViewer {
       logger.error(t.getMessage());
       return;
     } finally {
-      if (json != null) {
-        json.close();
-      }
       parquetReader.close();
     }
   }

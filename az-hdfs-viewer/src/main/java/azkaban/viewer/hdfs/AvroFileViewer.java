@@ -34,10 +34,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AccessControlException;
 import org.apache.log4j.Logger;
 
-import org.codehaus.jackson.JsonEncoding;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-
 /**
  * This class implements a viewer of avro files
  *
@@ -156,17 +152,13 @@ public class AvroFileViewer extends HdfsFileViewer {
     }
 
     DataFileStream<Object> avroDatastream = null;
-    JsonGenerator g = null;
 
     try {
       avroDatastream = getAvroDataStream(fs, path);
       Schema schema = avroDatastream.getSchema();
       DatumWriter<Object> avroWriter = new GenericDatumWriter<Object>(schema);
 
-      g = new JsonFactory().createJsonGenerator(
-          outputStream, JsonEncoding.UTF8);
-      g.useDefaultPrettyPrinter();
-      Encoder encoder = EncoderFactory.get().jsonEncoder(schema, g);
+      Encoder encoder = EncoderFactory.get().jsonEncoder(schema, outputStream, true);
 
       long endTime = System.currentTimeMillis() + STOP_TIME;
       int lineno = 1; // line number starts from 1
@@ -186,9 +178,6 @@ public class AvroFileViewer extends HdfsFileViewer {
           .getLocalizedMessage()).getBytes("UTF-8"));
       throw e;
     } finally {
-      if (g != null) {
-        g.close();
-      }
       avroDatastream.close();
     }
   }
