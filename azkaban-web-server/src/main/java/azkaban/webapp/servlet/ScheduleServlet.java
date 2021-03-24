@@ -15,9 +15,6 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
-import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
-
 import azkaban.Constants;
 import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
@@ -178,8 +175,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     final HashMap<String, Object> data = new HashMap<>();
     data.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
-    data.put(FLOW_NAME, schedule.getFlowName());
-    data.put(PROJECT_NAME, schedule.getProjectName());
+    data.put("flowName", schedule.getFlowName());
+    data.put("projectName", schedule.getProjectName());
     data.put("time", schedule.getFirstSchedTime());
     data.put("cron", schedule.getCronExpression());
 

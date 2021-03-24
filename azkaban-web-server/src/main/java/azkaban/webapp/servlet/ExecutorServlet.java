@@ -15,9 +15,6 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.EventReporterConstants.SUBMIT_TIME;
-import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
-
 import azkaban.Constants;
 import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
@@ -284,8 +281,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       }
       final ExecutableFlow exFlow = new ExecutableFlow(project, flow);
       exFlow.setExecutionOptions(executionOptions);
-      ret.put(SUBMIT_TIME, exFlow.getSubmitTime());
-      ret.put(SUBMIT_USER, exFlow.getSubmitUser());
+      ret.put("submitTime", exFlow.getSubmitTime());
+      ret.put("submitUser", exFlow.getSubmitUser());
       ret.put("execid", exFlow.getExecutionId());
       ret.put("projectId", exFlow.getProjectId());
       ret.put("project", project.getName());
@@ -945,8 +942,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    ret.put(SUBMIT_TIME, exFlow.getSubmitTime());
-    ret.put(SUBMIT_USER, exFlow.getSubmitUser());
+    ret.put("submitTime", exFlow.getSubmitTime());
+    ret.put("submitUser", exFlow.getSubmitUser());
     ret.put("execid", exFlow.getExecutionId());
     ret.put("projectId", exFlow.getProjectId());
     ret.put("project", project.getName());

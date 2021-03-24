@@ -16,8 +16,6 @@
 
 package azkaban.viewer.reportal;
 
-import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
-
 import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -1062,7 +1060,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
 
     // Prepare flow
     final Flow flow = project.getFlows().get(0);
-    project.getMetadata().put(FLOW_NAME, flow.getId());
+    project.getMetadata().put("flowName", flow.getId());
 
     // Set Reportal mailer
     flow.setMailCreator(ReportalMailCreator.REPORTAL_MAIL_CREATOR);
