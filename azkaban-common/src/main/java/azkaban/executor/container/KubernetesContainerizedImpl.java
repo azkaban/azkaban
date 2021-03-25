@@ -644,9 +644,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     logger
         .info("ExecId: {}, Jobtypes for flow {} are: {}", executionId, flow.getFlowId(), jobTypes);
 
-    final Map<String, String> flowParam =
-        flow.getExecutionOptions().getFlowParameters();
-
+    Map<String, String> flowParam = null;
+    if(flow.getExecutionOptions() != null) {
+      flowParam = flow.getExecutionOptions().getFlowParameters();
+    }
     if (flowParam != null && !flowParam.isEmpty()) {
       logger.info("ExecId: {}, Flow Parameters are: {}", executionId, flowParam);
     }

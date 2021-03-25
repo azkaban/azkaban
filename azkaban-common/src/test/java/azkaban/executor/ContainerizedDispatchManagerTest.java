@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
@@ -75,6 +76,8 @@ public class ContainerizedDispatchManagerTest {
   private ExecutableFlow flow3;
   private ExecutableFlow flow4;
   private ExecutableFlow flow5;
+  private ExecutableFlow flow6;
+  private ExecutableFlow flow7;
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
@@ -94,12 +97,23 @@ public class ContainerizedDispatchManagerTest {
     this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow5 = TestUtils.createTestExecutableFlowFromYaml("basicflowyamltest", "basic_flow");
+    this.flow6 = TestUtils.createTestExecutableFlow("exectest1", "exec2"
+        , DispatchMethod.POLL);
+    this.flow7 = TestUtils.createTestExecutableFlow("exectest1", "exec2"
+        , DispatchMethod.POLL);
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     this.flow3.setExecutionId(3);
     this.flow4.setExecutionId(4);
     this.flow5.setExecutionId(5);
     this.flow5.setDispatchMethod(DispatchMethod.CONTAINERIZED);
+    this.flow6.setExecutionId(6);
+    final ExecutionOptions options = new ExecutionOptions();
+    final Map<String, String> flowParam = new HashMap<>();
+    flowParam.put(FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER, "true");
+    options.addAllFlowParameters(flowParam);
+    this.flow6.setExecutionOptions(options);
+    this.flow7.setExecutionId(7);
     this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
     this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
     this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
@@ -134,6 +148,24 @@ public class ContainerizedDispatchManagerTest {
       DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
       assertThat(dispatchMethod).isEqualTo(DispatchMethod.CONTAINERIZED);
     }
+  }
+
+  /**
+   * This test case is verifying that if dispatch method is marked for containerization in flow
+   * parameter then it should be respected first. If not then it should follow rest of the
+   * criteria.
+   * @throws Exception
+   */
+  @Test
+  public void testFlowParamForDispatchMethod() throws Exception {
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
+    DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow6);
+    Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
+    DispatchMethod dispatchMethodFor7 =
+        this.containerizedDispatchManager.getDispatchMethod(this.flow7);
+    Assert.assertEquals(DispatchMethod.POLL, dispatchMethodFor7);
   }
 
   @Test
