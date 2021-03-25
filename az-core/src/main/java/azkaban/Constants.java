@@ -663,8 +663,12 @@ public class Constants {
     // Constant to enable java remote debug for Flow Container
     public static final String FLOW_PARAM_JAVA_ENABLE_DEBUG = "java.enable.debug";
 
-    //Constant to enable pod for developer testing
+    // Constant to enable pod for developer testing
     public static final String FLOW_PARAM_ENABLE_DEV_POD = "enable.dev.pod";
+
+    // Constant to dispatch execution to Containerization
+    public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER = "dispatch.execution.to"
+        + ".container";
 
     // Constant for cpu request for flow container
     public static final String FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST = "flow.container.cpu.request";

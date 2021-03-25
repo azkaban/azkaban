@@ -24,7 +24,7 @@ import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
@@ -142,8 +142,30 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     return this.containerRampUpCriteria.getDispatchMethod();
   }
 
+  /**
+   * This method is used to get dispatch method for a flow based on multiple criteria mentioned
+   * below. a) If @Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER is set to
+   * true then dispatch method should be containerized b) If based on deterministic ramp up,
+   * dispatch method is anything other than containerized then that should be returned. c) If
+   * deterministic ramp up chooses dispatch method as containerized then validate all the jobtypes
+   * in a flow are in allow list of job criteria. Return containerized if all the jobtypes for a
+   * flow are allowed. Else, return POLL.
+   *
+   * @param flow
+   * @return
+   */
   @Override
   public DispatchMethod getDispatchMethod(final ExecutableFlow flow) {
+    ExecutionOptions executionOptions = flow.getExecutionOptions();
+    if (executionOptions != null) {
+      final Map<String, String> flowParam = executionOptions.getFlowParameters();
+      if (flowParam != null && !flowParam.isEmpty() && Boolean.valueOf(flowParam
+          .getOrDefault(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER,
+              "false"))) {
+        return DispatchMethod.CONTAINERIZED;
+      }
+    }
+
     DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
