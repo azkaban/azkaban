@@ -28,6 +28,9 @@ import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
 import azkaban.container.models.PodTemplateMergeUtils;
+import azkaban.event.Event;
+import azkaban.event.EventData;
+import azkaban.event.EventHandler;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -37,6 +40,7 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -74,7 +78,7 @@ import org.slf4j.LoggerFactory;
  * a pod for all the valid jobTypes of a flow.
  */
 @Singleton
-public class KubernetesContainerizedImpl implements ContainerizedImpl {
+public class KubernetesContainerizedImpl extends EventHandler implements ContainerizedImpl {
 
   public static final String DEFAULT_FLOW_CONTAINER_NAME_PREFIX = "az-flow-container";
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
@@ -129,6 +133,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private final String secretVolume;
   private final String secretMountpath;
   private final String podTemplatePath;
+  private final PodEventListener podEventListener;
 
 
   private static final Logger logger = LoggerFactory
@@ -207,6 +212,8 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.podTemplatePath = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_TEMPLATE_PATH,
             StringUtils.EMPTY);
+    this.podEventListener = new PodEventListener();
+    this.addListener(this.podEventListener);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about
@@ -684,10 +691,10 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
     this.executorLoader.updateVersionSetId(executionId, versionSet.getVersionSetId());
     // Marking flow as PREPARING from DISPATCHING as POD creation request is submitted
     flow.setStatus(Status.PREPARING);
+    flow.setVersionSet(versionSet);
     this.executorLoader.updateExecutableFlow(flow);
-    // TODO: Add version set number and json in flow life cycle event so users can use this
-    //   information
-
+    // Emit preparing flow event with version set
+    this.fireEventListeners(Event.create(flow, EventType.FLOW_STATUS_CHANGED, new EventData(flow)));
   }
 
   /**

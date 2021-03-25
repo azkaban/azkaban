@@ -15,13 +15,20 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
+import static azkaban.Constants.EventReporterConstants.VERSION_SET;
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
@@ -59,6 +66,8 @@ import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.util.Yaml;
@@ -358,6 +367,51 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals("7.1", versionSet.getVersion("kafkaPush").get().getVersion());
   }
 
+  /**
+   * Test a preparing flow to be executed in a container, whether the information of execution
+   * id, version set, flow status, can be processed by a PodEventListener
+   * @throws Exception
+   */
+  @Test
+  public void testPreparingFlowEvent() throws Exception {
+    final ExecutableFlow flow = createFlowWithMultipleJobtypes();
+    flow.setExecutionId(2);
+    when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+        .thenReturn(getVersionMap());
+
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
+
+    final Map<String, String> flowParam = new HashMap<>();  // empty map
+    final Set<String> allImageTypes = new TreeSet<>();
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.addAll(jobTypes);
+    final VersionSet versionSet = this.kubernetesContainerizedImpl
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
+
+    flow.setStatus(Status.PREPARING);
+    flow.setVersionSet(versionSet);
+
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(getInjector(new Props()));
+    final PodEventListener podEventListener = new PodEventListener();
+    final Map<String, String> metaData = podEventListener.getFlowMetaData(flow);
+
+    Assert.assertTrue(metaData.get(EXECUTION_ID).equals("2"));
+    Assert.assertTrue(metaData.get(FLOW_STATUS).equals("PREPARING"));
+    final String versionSetJsonString = metaData.get(VERSION_SET);
+    final Map<String, String> imageToVersionMap =
+        new ObjectMapper().readValue(versionSetJsonString,
+        new TypeReference<HashMap<String, String>>() {
+        });
+    assertThat(imageToVersionMap.keySet()).isEqualTo(versionSet.getImageToVersionMap().keySet());
+    assertThat(imageToVersionMap.get("spark")).isEqualTo(versionSet.getImageToVersionMap()
+        .get("spark").getVersion());
+    assertThat(imageToVersionMap.get(AZKABAN_BASE_IMAGE)).isEqualTo(versionSet.getImageToVersionMap()
+        .get(AZKABAN_BASE_IMAGE).getVersion());
+  }
+
   private ExecutableFlow createTestFlow() throws Exception {
     return TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
   }
@@ -440,6 +494,11 @@ public class KubernetesContainerizedImplTest {
     }
   }
 
+  /**
+   * Creates a version map, which contains key value pairs of image name and corresponding
+   * version number
+   * @return a version set map
+   */
   private Map<String, VersionInfo> getVersionMap() {
     final Map<String, VersionInfo> versionMap = new TreeMap<>();
     versionMap.put(AZKABAN_BASE_IMAGE, new VersionInfo("7.0.4", "path1", State.ACTIVE));
@@ -447,5 +506,19 @@ public class KubernetesContainerizedImplTest {
     versionMap.put("spark", new VersionInfo("8.0", "path3", State.ACTIVE));
     versionMap.put("kafkaPush", new VersionInfo("7.1", "path4", State.ACTIVE));
     return versionMap;
+  }
+
+  /**
+   * Creates a Guice injector for Azkaban event reporter instantiation
+   * @param props
+   * @return
+   */
+  private Injector getInjector(final Props props){
+    props.put(AZKABAN_EVENT_REPORTING_ENABLED, "true");
+    props.put(AZKABAN_EVENT_REPORTING_CLASS_PARAM,
+        "azkaban.project.AzkabanEventReporterTest");
+    props.put("database.type", "h2");
+    props.put("h2.path", "h2");
+    return Guice.createInjector(new AzkabanCommonModule(props));
   }
 }

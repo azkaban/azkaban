@@ -18,10 +18,13 @@ package azkaban.executor.container;
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
@@ -29,9 +32,9 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.metrics.CommonMetrics;
+import azkaban.spi.EventType;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -39,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -66,6 +68,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchManager.class);
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
+  private final PodEventListener podEventListener;
 
   @Inject
   public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -79,6 +82,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerizedImpl = containerizedImpl;
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
+    this.podEventListener =  new PodEventListener();
+    this.addListener(this.podEventListener);
   }
 
   public ContainerJobTypeCriteria getContainerJobTypeCriteria() {
@@ -278,6 +283,12 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         rateLimiter.acquire();
         logger.info("Starting dispatch for {} execution.", executionId);
         Runnable worker = new ExecutionDispatcher(executionId);
+        // Fetch an executable flow based on execution id and report an dispatching event
+        final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
+        ContainerizedDispatchManager.this.fireEventListeners(Event.create(flow,
+            EventType.FLOW_STATUS_CHANGED,
+            new EventData(flow)));
+
         executorService.execute(worker);
       }
     }
@@ -336,6 +347,9 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           dsFlow.setStatus(Status.READY);
           dsFlow.setUpdateTime(System.currentTimeMillis());
           ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
+          // Emit ready flow event
+          ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
+              new EventData(dsFlow)));
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to READY for : {}", executionId);
         }
