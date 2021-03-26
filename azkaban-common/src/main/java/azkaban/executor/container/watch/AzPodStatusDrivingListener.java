@@ -78,7 +78,7 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
         .put(AzPodStatus.AZ_POD_INIT_FAILURE, new ArrayList<>())
         .put(AzPodStatus.AZ_POD_APP_FAILURE, new ArrayList<>())
         .put(AzPodStatus.AZ_POD_UNEXPECTED, new ArrayList<>());
-    listenerMap = listenerMapBuilder.build();
+    this.listenerMap = listenerMapBuilder.build();
   }
 
   /**
@@ -91,15 +91,15 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
    */
   public void registerAzPodStatusListener(AzPodStatusListener listener) {
     requireNonNull(listener, "listener must not be null");
-    listenerMap.get(AzPodStatus.AZ_POD_REQUESTED).add(listener::onPodRequested);
-    listenerMap.get(AzPodStatus.AZ_POD_SCHEDULED).add(listener::onPodScheduled);
-    listenerMap.get(AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING).add(listener::onPodInitContainersRunning);
-    listenerMap.get(AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING).add(listener::onPodAppContainersStarting);
-    listenerMap.get(AzPodStatus.AZ_POD_READY).add(listener::onPodReady);
-    listenerMap.get(AzPodStatus.AZ_POD_COMPLETED).add(listener::onPodCompleted);
-    listenerMap.get(AzPodStatus.AZ_POD_INIT_FAILURE).add(listener::onPodInitFailure);
-    listenerMap.get(AzPodStatus.AZ_POD_APP_FAILURE).add(listener::onPodAppFailure);
-    listenerMap.get(AzPodStatus.AZ_POD_UNEXPECTED).add(listener::onPodUnexpected);
+    this.listenerMap.get(AzPodStatus.AZ_POD_REQUESTED).add(listener::onPodRequested);
+    this.listenerMap.get(AzPodStatus.AZ_POD_SCHEDULED).add(listener::onPodScheduled);
+    this.listenerMap.get(AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING).add(listener::onPodInitContainersRunning);
+    this.listenerMap.get(AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING).add(listener::onPodAppContainersStarting);
+    this.listenerMap.get(AzPodStatus.AZ_POD_READY).add(listener::onPodReady);
+    this.listenerMap.get(AzPodStatus.AZ_POD_COMPLETED).add(listener::onPodCompleted);
+    this.listenerMap.get(AzPodStatus.AZ_POD_INIT_FAILURE).add(listener::onPodInitFailure);
+    this.listenerMap.get(AzPodStatus.AZ_POD_APP_FAILURE).add(listener::onPodAppFailure);
+    this.listenerMap.get(AzPodStatus.AZ_POD_UNEXPECTED).add(listener::onPodUnexpected);
 
   }
 
@@ -107,9 +107,9 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
    * Shutdown the driver, including the {@link ExecutorService} with a timeout.
    */
   public void shutdown() {
-    executor.shutdown();
+    this.executor.shutdown();
     try {
-      executor.awaitTermination(SHUTDOWN_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      this.executor.awaitTermination(SHUTDOWN_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       logger.warn("Executor service shutdown was interrupted.", e);
     }
@@ -123,8 +123,8 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
    * @param podStatusMetadata
    */
   private void deliverCallbacksForEvent(AzPodStatusMetadata podStatusMetadata) {
-    listenerMap.get(podStatusMetadata.getAzPodStatus()).stream()
-        .forEach(callback -> executor.execute(() -> callback.accept(podStatusMetadata)));
+    this.listenerMap.get(podStatusMetadata.getAzPodStatus()).stream()
+        .forEach(callback -> this.executor.execute(() -> callback.accept(podStatusMetadata)));
   }
 
   @Override

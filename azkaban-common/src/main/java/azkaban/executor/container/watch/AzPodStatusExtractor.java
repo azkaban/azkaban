@@ -96,12 +96,12 @@ public class AzPodStatusExtractor {
     this.v1Pod = podWatchEvent.object;
     this.podName = this.v1Pod.getMetadata().getName();
 
-    requireNonNull(v1Pod.getStatus(), "pod status must not be null");
-    requireNonNull(v1Pod.getStatus().getPhase(), "pod phase must not be null");
-    this.v1PodStatus = v1Pod.getStatus();
-    this.podConditions = v1Pod.getStatus().getConditions();
+    requireNonNull(this.v1Pod.getStatus(), "pod status must not be null");
+    requireNonNull(this.v1Pod.getStatus().getPhase(), "pod phase must not be null");
+    this.v1PodStatus = this.v1Pod.getStatus();
+    this.podConditions = this.v1Pod.getStatus().getConditions();
 
-    if (podConditions != null) {
+    if (this.podConditions != null) {
       extractConditions();
       extractConditionStatuses();
     }
@@ -109,59 +109,59 @@ public class AzPodStatusExtractor {
   }
 
   public Response<V1Pod> getPodWatchEvent() {
-    return podWatchEvent;
+    return this.podWatchEvent;
   }
 
   public V1Pod getV1Pod() {
-    return v1Pod;
+    return this.v1Pod;
   }
 
   public V1PodStatus getV1PodStatus() {
-    return v1PodStatus;
+    return this.v1PodStatus;
   }
 
   public String getPodName() {
-    return podName;
+    return this.podName;
   }
 
   public List<V1PodCondition> getPodConditions() {
-    return podConditions;
+    return this.podConditions;
   }
 
   public Optional<V1PodCondition> getScheduledCondition() {
-    return scheduledCondition;
+    return this.scheduledCondition;
   }
 
   public Optional<V1PodCondition> getContainersReadyCondition() {
-    return containersReadyCondition;
+    return this.containersReadyCondition;
   }
 
   public Optional<V1PodCondition> getInitializedCondition() {
-    return initializedCondition;
+    return this.initializedCondition;
   }
 
   public Optional<V1PodCondition> getReadyCondition() {
-    return readyCondition;
+    return this.readyCondition;
   }
 
   public Optional<PodConditionStatus> getScheduledConditionStatus() {
-    return scheduledConditionStatus;
+    return this.scheduledConditionStatus;
   }
 
   public Optional<PodConditionStatus> getContainersReadyConditionStatus() {
-    return containersReadyConditionStatus;
+    return this.containersReadyConditionStatus;
   }
 
   public Optional<PodConditionStatus> getInitializedConditionStatus() {
-    return initializedConditionStatus;
+    return this.initializedConditionStatus;
   }
 
   public Optional<PodConditionStatus> getReadyConditionStatus() {
-    return readyConditionStatus;
+    return this.readyConditionStatus;
   }
 
   public PodPhase getPodPhase() {
-    return podPhase;
+    return this.podPhase;
   }
 
   /**
@@ -171,7 +171,7 @@ public class AzPodStatusExtractor {
    * <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/">Pod Lifecycle</a>
    */
   private void extractConditions() {
-    requireNonNull(podConditions, "pod status conditions must not be null");
+    requireNonNull(this.podConditions, "pod status conditions must not be null");
     Map<String, V1PodCondition> conditionMap = new HashMap<>();
     this.podConditions.stream().forEach(
         condition ->
@@ -220,7 +220,7 @@ public class AzPodStatusExtractor {
   private void extractPhase() {
     requireNonNull(this.v1PodStatus.getPhase(), "pod status phase must not be null");
     // This will throw an IllegalArgumentException in case of an unexpected phase name.
-    this.podPhase = PodPhase.valueOf(v1PodStatus.getPhase());
+    this.podPhase = PodPhase.valueOf(this.v1PodStatus.getPhase());
   }
 
   /**
@@ -229,8 +229,8 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodRequested() {
     // Scheduled conditions should either not be present or be false
-    if (scheduledConditionStatus.isPresent() &&
-        scheduledConditionStatus.get() == PodConditionStatus.True) {
+    if (this.scheduledConditionStatus.isPresent() &&
+        this.scheduledConditionStatus.get() == PodConditionStatus.True) {
       logger.debug("PodRequested is false as scheduled conditions is true");
       return false;
     }
@@ -244,26 +244,26 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodScheduled() {
     // Pod must have been scheduled
-    if (!scheduledConditionStatus.isPresent()) {
+    if (!this.scheduledConditionStatus.isPresent()) {
       logger.debug("PodScheduled false as scheduled condition is not present");
       return false;
     }
-    if (scheduledConditionStatus.get() != PodConditionStatus.True) {
+    if (this.scheduledConditionStatus.get() != PodConditionStatus.True) {
       logger.debug("PodScheduled false as scheduled condition is not true");
       return false;
     }
     // Initialized condition is not present
-    if (!initializedCondition.isPresent()) {
+    if (!this.initializedCondition.isPresent()) {
       logger.debug("PodScheduled true as initialized condition is not present");
       return true;
     }
     // Initialized condition is not true
-    if (initializedConditionStatus.get() == PodConditionStatus.True) {
+    if (this.initializedConditionStatus.get() == PodConditionStatus.True) {
       logger.debug("PodScheduled false as initialized condition is true");
       return false;
     }
     // No init-containers should be running
-    List<V1ContainerStatus> initContainerStatuses = v1PodStatus.getInitContainerStatuses();
+    List<V1ContainerStatus> initContainerStatuses = this.v1PodStatus.getInitContainerStatuses();
     if (initContainerStatuses == null || initContainerStatuses.isEmpty()) {
       logger.debug("PodScheduled is true as init container status is null or empty");
       return true;
@@ -288,18 +288,18 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodInitContainersRunning() {
     // Pod must have scheduled
-    if (!scheduledConditionStatus.isPresent() ||
-        scheduledConditionStatus.get() != PodConditionStatus.True) {
+    if (!this.scheduledConditionStatus.isPresent() ||
+        this.scheduledConditionStatus.get() != PodConditionStatus.True) {
       logger.debug("InitRunning false as scheduled condition is not present or not true");
       return false;
     }
     // Initialization must have started, i.e condition should exist
-    if (!initializedConditionStatus.isPresent()) {
+    if (!this.initializedConditionStatus.isPresent()) {
       logger.debug("InitRunning false as initialized conditions is not present");
       return false;
     }
     // Initialization must not be complete
-    if (initializedConditionStatus.get() == PodConditionStatus.True) {
+    if (this.initializedConditionStatus.get() == PodConditionStatus.True) {
       logger.debug("InitRunning false as initialized condition is true");
       return false;
     }
@@ -314,13 +314,13 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodAppContainerStarting() {
     // Pod must have been initialized
-    if (!initializedConditionStatus.isPresent() ||
-        initializedConditionStatus.get() != PodConditionStatus.True) {
+    if (!this.initializedConditionStatus.isPresent() ||
+        this.initializedConditionStatus.get() != PodConditionStatus.True) {
       logger.debug("ContainerStarting false as initialized condition is not present or not true");
       return false;
     }
     // ContainersReady condition will not be True and all application containers should be waiting
-    List<V1ContainerStatus> containerStatuses = v1PodStatus.getContainerStatuses();
+    List<V1ContainerStatus> containerStatuses = this.v1PodStatus.getContainerStatuses();
     if (containerStatuses == null || containerStatuses.isEmpty()) {
       logger.debug("ContainerStarting false as container status is null or empty");
       return false;
@@ -341,13 +341,13 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodReady() {
     // ContainersReady condition must be True
-    if (!containersReadyConditionStatus.isPresent() ||
-        containersReadyConditionStatus.get() != PodConditionStatus.True) {
+    if (!this.containersReadyConditionStatus.isPresent() ||
+        this.containersReadyConditionStatus.get() != PodConditionStatus.True) {
       logger.debug("PodReady false as container-ready condition is not present or not true");
       return false;
     }
     // All application containers should be running
-    List<V1ContainerStatus> containerStatuses = v1PodStatus.getContainerStatuses();
+    List<V1ContainerStatus> containerStatuses = this.v1PodStatus.getContainerStatuses();
     if (containerStatuses == null || containerStatuses.isEmpty()) {
       logger.debug("PodReady false as container status is null or empty");
       return false;
@@ -369,7 +369,7 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodCompleted() {
     // Phase should be succeeded
-    if(podPhase != PodPhase.Succeeded) {
+    if(this.podPhase != PodPhase.Succeeded) {
       logger.debug("PodCompleted is false as phase is not succeeded");
       return false;
     }
@@ -383,19 +383,19 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodInitFailure() {
     // Phase must be failed.
-      if (podPhase != PodPhase.Failed) {
+      if (this.podPhase != PodPhase.Failed) {
         logger.debug("InitFailed is false and phase is not failed");
         return false;
     }
     // Initalized conditions should not be true
-    if (initializedConditionStatus.isPresent() &&
-        initializedConditionStatus.get() == PodConditionStatus.True) {
+    if (this.initializedConditionStatus.isPresent() &&
+        this.initializedConditionStatus.get() == PodConditionStatus.True) {
       logger.debug("InitFailed is failed as initialized conditions is not present or true");
       return false;
     }
 
     // There must be at least 1 failed init container
-    List<V1ContainerStatus> initContainerStatuses = v1PodStatus.getInitContainerStatuses();
+    List<V1ContainerStatus> initContainerStatuses = this.v1PodStatus.getInitContainerStatuses();
     if (initContainerStatuses == null || initContainerStatuses.isEmpty()) {
       logger.debug("InitFailed is false as init container status is null or empty");
       return false;
@@ -418,18 +418,18 @@ public class AzPodStatusExtractor {
    */
   private boolean checkForAzPodAppFailure() {
     // Phase must be failed.
-    if (podPhase != PodPhase.Failed) {
+    if (this.podPhase != PodPhase.Failed) {
       logger.debug("AppFailed is false and phase is not failed");
       return false;
     }
     // Initialized condition should  be true
-    if (!initializedConditionStatus.isPresent() ||
-        initializedConditionStatus.get() != PodConditionStatus.True) {
+    if (!this.initializedConditionStatus.isPresent() ||
+        this.initializedConditionStatus.get() != PodConditionStatus.True) {
       logger.debug("AppFailed is failed as initialized conditions is not present or not true");
       return false;
     }
     // There must be at least 1 failed app container
-    List<V1ContainerStatus> containerStatuses = v1PodStatus.getInitContainerStatuses();
+    List<V1ContainerStatus> containerStatuses = this.v1PodStatus.getInitContainerStatuses();
     if (containerStatuses == null || containerStatuses.isEmpty()) {
       logger.debug("AppFailed is false as container status is null or empty");
       return false;

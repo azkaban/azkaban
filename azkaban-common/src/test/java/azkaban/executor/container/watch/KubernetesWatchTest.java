@@ -54,9 +54,9 @@ public class KubernetesWatchTest {
 
   private static final Logger logger = LoggerFactory.getLogger(KubernetesWatchTest.class);
   private static String LOCAL_KUBE_CONFIG_PATH = "/path/to/valid/kube-config";
-  private final int DEFAULT_MAX_INIT_COUNT = 3;
-  private final int DEFAULT_WATCH_RESET_DELAY_MILLIS = 100;
-  private final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 5000;
+  private static final int DEFAULT_MAX_INIT_COUNT = 3;
+  private static final int DEFAULT_WATCH_RESET_DELAY_MILLIS = 100;
+  private static final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 5000;
 
   /**
    * File containing a mock sequence of events, this is expected to be reflective of actual events
@@ -133,7 +133,7 @@ public class KubernetesWatchTest {
   private PreInitializedWatch defaultPreInitializedWatch(RawPodWatchEventListener driver,
       Watch<V1Pod> podWatch,
       int maxInitCount) throws IOException {
-    return new PreInitializedWatch(defaultApiClient,
+    return new PreInitializedWatch(this.defaultApiClient,
         driver,
         podWatch,
         new PodWatchParams(null, null, DEFAULT_WATCH_RESET_DELAY_MILLIS),
@@ -214,30 +214,30 @@ public class KubernetesWatchTest {
 
     @Override
     protected void initializePodWatch() {
-      this.setPodWatch(preInitPodWatch);
-      if (initWatchCount >= maxInitCount) {
-        logger.debug("Requesting shutdowns as max init count was reached, init-count: " + initWatchCount);
+      this.setPodWatch(this.preInitPodWatch);
+      if (this.initWatchCount >= this.maxInitCount) {
+        logger.debug("Requesting shutdowns as max init count was reached, init-count: " + this.initWatchCount);
         this.requestShutdown();
       }
-      initWatchCount++;
+      this.initWatchCount++;
     }
 
     @Override
     protected void startPodWatch() throws IOException {
-      startWatchCount++;
+      this.startWatchCount++;
       super.startPodWatch();
     }
 
     public int getMaxInitCount() {
-      return maxInitCount;
+      return this.maxInitCount;
     }
 
     public int getInitWatchCount() {
-      return initWatchCount;
+      return this.initWatchCount;
     }
 
     public int getStartWatchCount() {
-      return startWatchCount;
+      return this.startWatchCount;
     }
   }
 
@@ -256,13 +256,13 @@ public class KubernetesWatchTest {
     public FileBackedWatch(JSON json, Type watchType, Path jsonEventsFile) throws IOException {
       super(json, null, watchType, null);
       requireNonNull(jsonEventsFile);
-      reader = Files.newBufferedReader(jsonEventsFile, StandardCharsets.UTF_8);
+      this.reader = Files.newBufferedReader(jsonEventsFile, StandardCharsets.UTF_8);
     }
 
     @Override
     public Response<T> next() {
       try {
-        String line = reader.readLine();
+        String line = this.reader.readLine();
         if (line == null) {
           throw new RuntimeException("Line is null");
         }
@@ -275,7 +275,7 @@ public class KubernetesWatchTest {
     @Override
     public boolean hasNext() {
       try {
-        return reader.ready();
+        return this.reader.ready();
       } catch (IOException e) {
         throw new RuntimeException("Exception in hasNext.", e);
       }
@@ -283,8 +283,8 @@ public class KubernetesWatchTest {
 
     @Override
     public void close() throws IOException {
-      if (reader != null) {
-        reader.close();
+      if (this.reader != null) {
+        this.reader.close();
       }
     }
   }
@@ -317,13 +317,13 @@ public class KubernetesWatchTest {
     private void logStatusForPod(AzPodStatusMetadata event) {
       AzPodStatus podStatus = event.getAzPodStatus();
       String podName = event.getPodName();
-      Queue<AzPodStatus> statusLog = statusLogMap.computeIfAbsent(
+      Queue<AzPodStatus> statusLog = this.statusLogMap.computeIfAbsent(
           podName, k -> new ConcurrentLinkedQueue<>());
       statusLog.add(podStatus);
     }
 
     public ConcurrentMap<String, Queue<AzPodStatus>> getStatusLogMap() {
-      return statusLogMap;
+      return this.statusLogMap;
     }
 
     @Override

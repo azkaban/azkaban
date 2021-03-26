@@ -78,11 +78,11 @@ public class KubernetesWatch {
     this.apiClient.setHttpClient(httpClient);
     this.coreV1Api = new CoreV1Api(this.apiClient);
 
-    watchRunner = new Thread(this::initializeAndStartPodWatch);
+    this.watchRunner = new Thread(this::initializeAndStartPodWatch);
   }
 
   public int getPodWatchInitCount() {
-    return podWatchInitCount;
+    return this.podWatchInitCount;
   }
 
   @VisibleForTesting
@@ -102,12 +102,12 @@ public class KubernetesWatch {
   protected void initializePodWatch() throws ApiException {
     try {
       this.podWatch = Watch.createWatch(this.apiClient,
-          coreV1Api.listNamespacedPodCall(podWatchParams.getNamespace(),
+          this.coreV1Api.listNamespacedPodCall(this.podWatchParams.getNamespace(),
               "true",
               false,
               null,
               null,
-              podWatchParams.getLabelSelector(),
+              this.podWatchParams.getLabelSelector(),
               null,
               null,
               null,
@@ -128,9 +128,9 @@ public class KubernetesWatch {
    * @throws IOException
    */
   protected void startPodWatch() throws IOException {
-    requireNonNull(podWatch, "watch must be initialized");
-    for (Watch.Response<V1Pod> item : podWatch) {
-      if (isShutdownRequested.get()) {
+    requireNonNull(this.podWatch, "watch must be initialized");
+    for (Watch.Response<V1Pod> item : this.podWatch) {
+      if (this.isShutdownRequested.get()) {
         logger.info("Exiting pod watch event loop as shutdown was requested");
         return;
       }
@@ -139,12 +139,12 @@ public class KubernetesWatch {
   }
 
   private void closePodWatchQuietly() {
-    if (podWatch == null) {
+    if (this.podWatch == null) {
       logger.debug("Pod watch is null");
       return;
     }
     try {
-      podWatch.close();
+      this.podWatch.close();
     } catch (IOException e) {
       logger.error("IOException while closing pod watch.", e);
     }
@@ -157,10 +157,10 @@ public class KubernetesWatch {
    * This also includes re-initialization of the watch using Kuberentes watch API, as needed.
    */
   private void initializeAndStartPodWatch() {
-    while(!isShutdownRequested.get()) {
+    while(!this.isShutdownRequested.get()) {
       try {
-        podWatchInitCount++;
-        logger.info("Initializing pod watch, initialization count: " + podWatchInitCount);
+        this.podWatchInitCount++;
+        logger.info("Initializing pod watch, initialization count: " + this.podWatchInitCount);
         initializePodWatch();
         startPodWatch();
       } catch (Exception e) {
@@ -170,10 +170,10 @@ public class KubernetesWatch {
         closePodWatchQuietly();
       }
       logger.info("Pod watch was terminated, will be reset with delay if shutdown was not "
-          + "requested. Shutdown Requested is: " + isShutdownRequested.get());
+          + "requested. Shutdown Requested is: " + this.isShutdownRequested.get());
 
       try {
-        Thread.sleep(podWatchParams.getResetDelayMillis());
+        Thread.sleep(this.podWatchParams.getResetDelayMillis());
       } catch (InterruptedException e) {
         if (Thread.currentThread().isInterrupted()) {
           logger.info("Pod watch reset delay was interrupted.");
@@ -188,21 +188,21 @@ public class KubernetesWatch {
    * @return
    */
   public synchronized Thread launchPodWatch() {
-    if (isLaunched) {
+    if (this.isLaunched) {
       AzkabanWatchException awe = new AzkabanWatchException("Pod watch has already been launched");
       logger.error("Pod watch launch failure", awe);
       throw awe;
     }
-    if (isShutdownRequested.get()) {
+    if (this.isShutdownRequested.get()) {
       AzkabanWatchException awe = new AzkabanWatchException(
           "Pod watch was launched when shutdown already in progress");
       logger.error("Pod watch launch failure", awe);
       throw awe;
     }
     logger.info("Starting the pod watch thread");
-    watchRunner.start();
-    isLaunched = true;
-    return watchRunner;
+    this.watchRunner.start();
+    this.isLaunched = true;
+    return this.watchRunner;
   }
 
   /**
@@ -212,13 +212,13 @@ public class KubernetesWatch {
    * @return 'true' if the shutdown was not already requested, 'false' otherwise.
    */
   public boolean requestShutdown() {
-    boolean notAlreadyRequested = isShutdownRequested.compareAndSet(false, true);
+    boolean notAlreadyRequested = this.isShutdownRequested.compareAndSet(false, true);
     if (!notAlreadyRequested) {
       logger.warn("Shutdown of kubernetes watch was already requested");
       return notAlreadyRequested;
     }
     logger.info("Requesting shutdown for kubernetes watch");
-    watchRunner.interrupt();
+    this.watchRunner.interrupt();
     return notAlreadyRequested;
   }
 
@@ -242,15 +242,15 @@ public class KubernetesWatch {
     }
 
     public String getNamespace() {
-      return namespace;
+      return this.namespace;
     }
 
     public String getLabelSelector() {
-      return labelSelector;
+      return this.labelSelector;
     }
 
     public int getResetDelayMillis() {
-      return resetDelayMillis;
+      return this.resetDelayMillis;
     }
   }
 }

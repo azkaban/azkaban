@@ -47,19 +47,19 @@ public class AzPodStatusMetadata {
   }
 
   public AzPodStatus getAzPodStatus() {
-    return azPodStatus;
+    return this.azPodStatus;
   }
 
   public String getPodName() {
-    return podName;
+    return this.podName;
   }
 
   public Watch.Response<V1Pod> getPodWatchEvent() {
-    return podWatchEvent;
+    return this.podWatchEvent;
   }
 
   public Optional<FlowPodMetadata> getFlowPodMetadata() {
-    return flowPodMetadata;
+    return this.flowPodMetadata;
   }
 
   /**
@@ -77,11 +77,11 @@ public class AzPodStatusMetadata {
     }
 
     public String getExecutionId() {
-      return executionId;
+      return this.executionId;
     }
 
     public String getClusterName() {
-      return clusterName;
+      return this.clusterName;
     }
 
     public static Optional<FlowPodMetadata> extract(AzPodStatusExtractor podStatusExtractor) {
