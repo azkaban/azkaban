@@ -1,5 +1,5 @@
 /*
-` * Copyright 2021 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,7 +25,7 @@ package azkaban.executor.container.watch;
  * For example, a Pod Phase is very coarse and doesn't convey information regarding
  * pod-scheduling and init-container completions.
  * On the other hand Pod Conditions array along with the container statuses provides detailed
- * information down the states and timestamps on individual containers but there is no direct
+ * information down to the states and timestamps on individual containers but there is no direct
  * mechanism provided for distilling this information to a 'state' of generic pod (irrespective of
  * what or how many containers are included in the pod)
  *

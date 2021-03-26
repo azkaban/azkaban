@@ -17,6 +17,8 @@ package azkaban.executor.container.watch;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -44,21 +46,26 @@ import org.slf4j.LoggerFactory;
  * database status updates.
  */
 @Singleton
-public class AzPodStatusDriver implements RawPodWatchEventListener {
-  private static final Logger logger = LoggerFactory.getLogger(AzPodStatusDriver.class);
+public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
+  private static final Logger logger = LoggerFactory.getLogger(AzPodStatusDrivingListener.class);
 
-  private static final int THREAD_POOL_SIZE = 4;
-  public static final int SHUTDOW_TERMINATION_TIMEOUT_SECONDS = 5;
+  private static final int DEFAULT_THREAD_POOL_SIZE = 4;
+  public static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
+  private final int threadPoolSize;
   private final ExecutorService executor;
   private final ImmutableMap<AzPodStatus, List<Consumer<AzPodStatusMetadata>>> listenerMap;
 
   /**
-   * Create a new instance of {@link AzPodStatusDriver}.
+   * Create a new instance of {@link AzPodStatusDrivingListener}.
    */
   @Inject
-  public AzPodStatusDriver() {
-    // Worth considering if we should get the thread-pool size from a config property instead.
-    executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE,
+  public AzPodStatusDrivingListener(Props azkProps) {
+    requireNonNull(azkProps, "azkaban properties must not be null");
+    this.threadPoolSize = azkProps.getInt(
+        ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_DRIVER_THREAD_POOL_SIZE,
+        DEFAULT_THREAD_POOL_SIZE);
+
+    this.executor = Executors.newFixedThreadPool(this.threadPoolSize,
         new ThreadFactoryBuilder().setNameFormat("azk-watch-pool-%d").build());
 
     ImmutableMap.Builder listenerMapBuilder = ImmutableMap.builder()
@@ -102,7 +109,7 @@ public class AzPodStatusDriver implements RawPodWatchEventListener {
   public void shutdown() {
     executor.shutdown();
     try {
-      executor.awaitTermination(SHUTDOW_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      executor.awaitTermination(SHUTDOWN_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       logger.warn("Executor service shutdown was interrupted.", e);
     }
@@ -126,7 +133,7 @@ public class AzPodStatusDriver implements RawPodWatchEventListener {
     // For now the logging is inline to ensure the the event is logged before any corresponding
     // callbacks and are invoked.
     try {
-      AzPodStatusMetadata azPodStatusMetadata = AzPodStatusExtractor.azPodStatusFromEvent(watchEvent);
+      AzPodStatusMetadata azPodStatusMetadata = AzPodStatusExtractor.getAzPodStatusFromEvent(watchEvent);
       logPodWatchEvent(azPodStatusMetadata);
       deliverCallbacksForEvent(azPodStatusMetadata);
     } catch (Exception e) {
@@ -135,9 +142,9 @@ public class AzPodStatusDriver implements RawPodWatchEventListener {
   }
 
   private static void logPodWatchEvent(AzPodStatusMetadata event) {
-    // There could be value logging the entire 'raw' event for post-mortem of any issues.
+    // There could be value in logging the entire 'raw' event for post-mortem of any issues.
     // We should consider logging the event in a separate log file as a json object.
-    logger.debug(String.format("Event for pod %s : %s", event.getPodName(),
+    logger.info(String.format("Event for pod %s : %s", event.getPodName(),
         event.getAzPodStatus()));
   }
 }

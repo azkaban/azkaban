@@ -484,7 +484,7 @@ public class AzPodStatusExtractor {
    * @param event
    * @return
    */
-  public static AzPodStatusMetadata azPodStatusFromEvent(Watch.Response<V1Pod> event) {
+  public static AzPodStatusMetadata getAzPodStatusFromEvent(Watch.Response<V1Pod> event) {
     return new AzPodStatusMetadata(new AzPodStatusExtractor(event));
   }
 

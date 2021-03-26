@@ -21,20 +21,20 @@ package azkaban.executor.container.watch;
  * This can be used for 'wrapping' any checked exceptions used by the Watch listeners and is
  * open for extension in case there is a need for a more specific exceptions.
  */
-public class WatchException extends RuntimeException {
+public class AzkabanWatchException extends RuntimeException {
 
-  public WatchException() {
+  public AzkabanWatchException() {
   }
 
-  public WatchException(String message) {
+  public AzkabanWatchException(String message) {
     super(message);
   }
 
-  public WatchException(String message, Throwable cause) {
+  public AzkabanWatchException(String message, Throwable cause) {
     super(message, cause);
   }
 
-  public WatchException(Throwable cause) {
+  public AzkabanWatchException(Throwable cause) {
     super(cause);
   }
 }

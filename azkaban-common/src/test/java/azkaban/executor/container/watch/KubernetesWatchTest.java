@@ -18,6 +18,7 @@ package azkaban.executor.container.watch;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
+import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
@@ -98,7 +99,7 @@ public class KubernetesWatchTest {
     try {
       localApiClient = ClientBuilder.kubeconfig(localKubeConfig()).build();
     } catch (IOException e) {
-      final WatchException we = new WatchException("Unable to create client", e);
+      final AzkabanWatchException we = new AzkabanWatchException("Unable to create client", e);
       logger.error("Exception reported. ", we);
       throw we;
     }
@@ -114,8 +115,8 @@ public class KubernetesWatchTest {
     return new StatusLoggingListener();
   }
 
-  private AzPodStatusDriver statusDriverWithListener(AzPodStatusListener listener) {
-    AzPodStatusDriver azPodStatusDriver = new AzPodStatusDriver();
+  private AzPodStatusDrivingListener statusDriverWithListener(AzPodStatusListener listener) {
+    AzPodStatusDrivingListener azPodStatusDriver = new AzPodStatusDrivingListener(new Props());
     azPodStatusDriver.registerAzPodStatusListener(listener);
     return azPodStatusDriver;
   }
@@ -141,7 +142,7 @@ public class KubernetesWatchTest {
 
   @Test
   public void testWatchShutdownAndResetAfterFailure() throws Exception {
-    AzPodStatusDriver statusDriver = statusDriverWithListener(statusLoggingListener());
+    AzPodStatusDrivingListener statusDriver = statusDriverWithListener(statusLoggingListener());
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
         DEFAULT_MAX_INIT_COUNT);
@@ -161,7 +162,7 @@ public class KubernetesWatchTest {
   @Test
   public void testFlowPodCompleteTransition() throws Exception {
     StatusLoggingListener loggingListener = statusLoggingListener();
-    AzPodStatusDriver statusDriver = statusDriverWithListener(loggingListener);
+    AzPodStatusDrivingListener statusDriver = statusDriverWithListener(loggingListener);
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
         1);
@@ -380,7 +381,7 @@ public class KubernetesWatchTest {
     public void onEvent(Response<V1Pod> watchEvent) {
       logger.debug(String.format("%s : %s, %s, %s", watchEvent.type, watchEvent.object.getMetadata().getName(),
           watchEvent.object.getStatus().getMessage(), watchEvent.object.getStatus().getPhase()));
-      AzPodStatus azPodStatus = AzPodStatusExtractor.azPodStatusFromEvent(watchEvent).getAzPodStatus();
+      AzPodStatus azPodStatus = AzPodStatusExtractor.getAzPodStatusFromEvent(watchEvent).getAzPodStatus();
       logger.debug("AZ_POD_STATUS: " + azPodStatus);
     }
   }

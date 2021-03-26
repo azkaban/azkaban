@@ -50,6 +50,7 @@ public class KubernetesWatch {
   private Watch<V1Pod> podWatch;
   private RawPodWatchEventListener podWatchEventListener;
   private int podWatchInitCount = 0;
+  private volatile boolean isLaunched = false;
   private AtomicBoolean isShutdownRequested = new AtomicBoolean(false);
 
   /**
@@ -155,7 +156,7 @@ public class KubernetesWatch {
    * the execution of kubernetes API calls (2) processing of events received by the watch.
    * This also includes re-initialization of the watch using Kuberentes watch API, as needed.
    */
-  public void initializeAndStartPodWatch() {
+  private void initializeAndStartPodWatch() {
     while(!isShutdownRequested.get()) {
       try {
         podWatchInitCount++;
@@ -186,13 +187,21 @@ public class KubernetesWatch {
    *
    * @return
    */
-  public Thread launchPodWatch() {
+  public synchronized Thread launchPodWatch() {
+    if (isLaunched) {
+      AzkabanWatchException awe = new AzkabanWatchException("Pod watch has already been launched");
+      logger.error("Pod watch launch failure", awe);
+      throw awe;
+    }
     if (isShutdownRequested.get()) {
-      logger.error("Pod watch was launched when shutdown already in progress");
-      return null;
+      AzkabanWatchException awe = new AzkabanWatchException(
+          "Pod watch was launched when shutdown already in progress");
+      logger.error("Pod watch launch failure", awe);
+      throw awe;
     }
     logger.info("Starting the pod watch thread");
     watchRunner.start();
+    isLaunched = true;
     return watchRunner;
   }
 
@@ -217,7 +226,7 @@ public class KubernetesWatch {
    * Parameters used for setting up the Pod watch.
    */
   public static class PodWatchParams {
-    private final static int DEFAULT_RESET_DELAY_MILLIS = 10 * 1000; //30 seconds
+    private final static int DEFAULT_RESET_DELAY_MILLIS = 10 * 1000;
     private final String namespace;
     private final String labelSelector;
     private final int resetDelayMillis;
