@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class is the event listener for flow executed in a Kubernetes pod
- * It handles event, gets event meta data, and sends meta data to event reporter plugin
+ * It handles event, gets event metadata, and sends metadata to event reporter plugin
  */
 public class PodEventListener implements EventListener<Event> {
   private AzkabanEventReporter azkabanEventReporter;
@@ -51,9 +51,9 @@ public class PodEventListener implements EventListener<Event> {
   }
 
   /**
-   * Extracts flow meta data from an executable flow, and save the data to a map
+   * Extracts flow metadata from an executable flow, and save the data to a map
    * @param flow
-   * @return flow mate data
+   * @return flow metadata
    */
   @VisibleForTesting
   protected Map<String, String> getFlowMetaData(final ExecutableFlow flow) {

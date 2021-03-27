@@ -318,9 +318,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     if (this.versionSet != null) { //flow has version set information when the flow is executed
       // in a container
-      flowObj.put(VERSIONSET_JSON_PARAM, this.getVersionSet().getVersionSetJsonString());
-      flowObj.put(VERSIONSET_MD5HEX_PARAM, this.getVersionSet().getVersionSetMd5Hex());
-      flowObj.put(VERSIONSET_ID_PARAM, this.getVersionSet().getVersionSetId());
+      flowObj.put(VERSIONSET_JSON_PARAM, this.versionSet.getVersionSetJsonString());
+      flowObj.put(VERSIONSET_MD5HEX_PARAM, this.versionSet.getVersionSetMd5Hex());
+      flowObj.put(VERSIONSET_ID_PARAM, this.versionSet.getVersionSetId());
     }
 
     return flowObj;
