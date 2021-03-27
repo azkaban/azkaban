@@ -296,6 +296,7 @@ public class Constants {
     public static final String EXECUTOR_PORT_FILE = "executor.portfile";
     // To set a fixed port for executor-server. Otherwise some available port is used.
     public static final String EXECUTOR_PORT = "executor.port";
+    public static final String EXECUTOR_SSL_PORT = "executor.ssl.port";
 
     public static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
 

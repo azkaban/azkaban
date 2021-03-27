@@ -60,12 +60,13 @@ import org.mortbay.thread.QueuedThreadPool;
  */
 public class ExecutorApiClientTest {
 
-  private static final int JETTY_TLS_PORT = 31311;
-  private static final String TRUSTSTORE_PATH =
+  public static final int JETTY_TLS_PORT = 31311;
+  public static final int JETTY_PORT = 54321;
+  public static final String TRUSTSTORE_PATH =
       ExecutorApiClient.class.getResource("test-cacerts").getPath();
-  private static final String KEYSTORE_PATH =
+  public static final String KEYSTORE_PATH =
       ExecutorApiClient.class.getResource("test-keystore").getPath();
-  private static final String DEFAULT_PASSWORD = "changeit"; //for key, keystore and truststore
+  public static final String DEFAULT_PASSWORD = "changeit"; //for key, keystore and truststore
 
   public static final String REVERSE_PROXY_HOST = "reversehost";
   public static final int REVERSE_PROXY_PORT = 31234;
@@ -245,11 +246,13 @@ public class ExecutorApiClientTest {
         uri.toString());
   }
 
-  private static class SimpleServlet extends HttpServlet {
+  public static class SimpleServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1520347403053074355L;
     public static final String TLS_ENABLED_URI =
         "https://localhost:" + ExecutorApiClientTest.JETTY_TLS_PORT + "/simple";
+    public static final String TLS_DISABLED_URI =
+        "http://localhost:" + ExecutorApiClientTest.JETTY_PORT + "/simple";
     public static final String GET_RESPONSE_STRING = "{type: 'GET'}";
     public static final String POST_RESPONSE_STRING = "{type: 'POST'}";
 

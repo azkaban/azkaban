@@ -25,15 +25,13 @@ import static azkaban.Constants.DEFAULT_PORT_NUMBER;
 import static azkaban.Constants.DEFAULT_SSL_PORT_NUMBER;
 import static java.util.Objects.requireNonNull;
 
+import azkaban.server.JettyServerUtils;
 import azkaban.utils.Props;
 import com.google.inject.Provider;
-import java.util.List;
 import javax.inject.Inject;
 import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.thread.QueuedThreadPool;
 
 
@@ -53,13 +51,14 @@ public class WebServerProvider implements Provider<Server> {
     final int port;
     final Server server = new Server();
     if (useSsl) {
-      final int sslPortNumber = this.props
+      port = this.props
           .getInt(JETTY_SSL_PORT, DEFAULT_SSL_PORT_NUMBER);
-      port = sslPortNumber;
-      server.addConnector(getSslSocketConnector(sslPortNumber));
+      server.addConnector(JettyServerUtils.getSslSocketConnector(port, this.props));
+      logger.info("Added SslSocketConnector as Ssl is enabled");
     } else {
       port = this.props.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER);
-      server.addConnector(getSocketConnector(port));
+      server.addConnector(JettyServerUtils.getSocketConnector(port));
+      logger.info("Added SocketConnector as Ssl is disabled");
     }
 
     // Configure the ThreadPool
@@ -74,33 +73,6 @@ public class WebServerProvider implements Provider<Server> {
     logger.info(String.format(
         "Starting %sserver on port: %d # Max threads: %d", useSsl ? "SSL " : "", port, maxThreads));
     return server;
-  }
-
-  private SocketConnector getSocketConnector(final int port) {
-    final SocketConnector connector = new SocketConnector();
-    connector.setPort(port);
-    connector.setHeaderBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
-    return connector;
-  }
-
-  private SslSocketConnector getSslSocketConnector(final int sslPortNumber) {
-    final SslSocketConnector secureConnector = new SslSocketConnector();
-    secureConnector.setPort(sslPortNumber);
-    secureConnector.setKeystore(this.props.getString("jetty.keystore"));
-    secureConnector.setPassword(this.props.getString("jetty.password"));
-    secureConnector.setKeyPassword(this.props.getString("jetty.keypassword"));
-    secureConnector.setTruststore(this.props.getString("jetty.truststore"));
-    secureConnector.setTrustPassword(this.props.getString("jetty.trustpassword"));
-    secureConnector.setHeaderBufferSize(DEFAULT_HEADER_BUFFER_SIZE);
-
-    // set up vulnerable cipher suites to exclude
-    final List<String> cipherSuitesToExclude = this.props
-        .getStringList("jetty.excludeCipherSuites");
-    logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
-    if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
-      secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
-    }
-    return secureConnector;
   }
 
   private void setStatsOnConnectors(final Server server) {
