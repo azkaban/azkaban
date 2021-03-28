@@ -455,7 +455,7 @@ public class FlowContainer implements IMBeanRegistrable {
         throw new ExecutorManagerException("Flow log file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn(String.format("IOException while trying to read flow log file for flow execId: %d",
+      logger.error(String.format("IOException while trying to read flow log file for flow execId: %d",
           execId));
       throw new ExecutorManagerException(e);
     }
@@ -500,7 +500,7 @@ public class FlowContainer implements IMBeanRegistrable {
         throw new ExecutorManagerException("Job log file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn(String.format("IOException while trying to read Job logs. execId: %d, jobId: %s",
+      logger.error(String.format("IOException while trying to read Job logs. execId: %d, jobId: %s",
           execId, jobId));
       throw new ExecutorManagerException(e);
     }
@@ -543,7 +543,7 @@ public class FlowContainer implements IMBeanRegistrable {
         throw new ExecutorManagerException("Job metadata file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn(String.format("IOException while trying to read metadata file. execId: %d, jobId: %s",
+      logger.error(String.format("IOException while trying to read metadata file. execId: %d, jobId: %s",
           execId, jobId));
       throw new ExecutorManagerException(e);
     }
@@ -609,14 +609,14 @@ public class FlowContainer implements IMBeanRegistrable {
     try {
       versionSetId = Integer.parseInt(versionSetIdStr);
     } catch (final NumberFormatException ne) {
-      logger.warn(String.format("VersionSet ID set in environment is invalid %s", versionSetIdStr));
+      logger.error(String.format("VersionSet ID set in environment is invalid %s", versionSetIdStr));
       return;
     }
     final VersionSet versionSet;
     try {
       versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
     } catch (final ImageMgmtException ex) {
-      logger.warn(String.format("Failed to fetch versionSet using versionSet ID : %d", versionSetId));
+      logger.error(String.format("Failed to fetch versionSet using versionSet ID : %d", versionSetId));
       return;
     }
     logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
