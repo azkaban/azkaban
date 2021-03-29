@@ -185,7 +185,8 @@ public class KubernetesWatch {
   /**
    * Launch the pod watch processing in a separate thread and return its reference.
    *
-   * @return
+   * @return reference to watch processing thread
+   * @throws AzkabanWatchException if watch can't be launched.
    */
   public synchronized Thread launchPodWatch() {
     if (this.isLaunched) {
