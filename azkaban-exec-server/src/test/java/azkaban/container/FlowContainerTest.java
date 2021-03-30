@@ -19,10 +19,9 @@ package azkaban.container;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.common.ExecJettyServerModule;
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
 import azkaban.execapp.AzkabanExecutorServerTest;
+import azkaban.execapp.event.JobCallbackManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.project.ProjectFileHandler;
@@ -30,20 +29,21 @@ import azkaban.project.ProjectLoader;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.test.Utils;
 import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Optional;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.mortbay.jetty.servlet.Context;
+import org.junit.runners.MethodSorters;
+import org.mortbay.jetty.Server;
+import org.springframework.core.annotation.Order;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.ServiceProvider.*;
@@ -52,7 +52,7 @@ import static azkaban.utils.TestUtils.*;
 import static java.util.Objects.*;
 import static org.mockito.Mockito.*;
 
-
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FlowContainerTest {
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
@@ -66,6 +66,7 @@ public class FlowContainerTest {
   private AzkabanEventReporter eventReporter;
   private ExecJettyServerModule jettyServer;
   private AzkabanCommonModule commonModule;
+  private FlowContainer flowContainer;
 
   private static Path azkabanRoot;
 
@@ -99,23 +100,47 @@ public class FlowContainerTest {
     this.projectLoader = mock(ProjectLoader.class);
   }
 
-  /**
-   * FIXME: This test is incomplete for now as there is an expected merge conflict which will
-   * change interface with submitFlow. Once new code is merged in FlowContainer,
-   * this test will need to be completed by invoking a flow.
-   * @throws Exception
-   */
-  @Test
-  public void testExecSimple() throws Exception {
+  @After
+  public void destroy() {
+    if (this.flowContainer == null) {
+      return;
+    }
+    try {
+      this.flowContainer.closeMBeans();
+      this.flowContainer = null;
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void startFlowContainer() throws IOException {
     final ExecutableFlow execFlow = createTestExecutableFlowFromYaml("basicflowyamltest", "basic_flow");
     execFlow.setExecutionId(1);
     final ProjectFileHandler handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
         1, null, null, null, "111.111.111.111");
     when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
 
-    final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
-    flowContainer.start(props);
-    FlowContainer.launchCtrlMsgListener(flowContainer);
+    this.flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
+    this.flowContainer.start(props);
+  }
+
+  /**
+   * Don't like the name? Me neither - DJ
+   * Test if Callback Manager is not created if not enabled.
+   * This test must be the first as Callback Manager is a static object which once created
+   * remains there for the remainder of the test suite. The name and ordering ensures that
+   * this test always runs first.
+   */
+  @Test(expected = IllegalStateException.class)
+  public void aaa() throws Exception {
+    // Explicitly disable jobcallback
+    props.put("azkaban.executor.jobcallback.enabled", "false");
+    startFlowContainer();
+    // The callback manager is not initialized.
+    assert !JobCallbackManager.isInitialized();
+
+    // Get the instance, throws IllegalStateException
+    final JobCallbackManager jobCallbackManager = JobCallbackManager.getInstance();
   }
 
   @Test
@@ -134,5 +159,32 @@ public class FlowContainerTest {
     deleteSymlinkedFile(symLink2);
     // Make sure none of the symlinks or files exist.
     assert(!(Files.exists(symLink2) || Files.exists(symLink1) || Files.exists(filePath)));
+  }
+
+  /**
+   * Test if Callback Manager is created when Flow Container starts
+   */
+  @Test
+  public void testCallBackManager() throws Exception {
+    // Enable jobcallback
+    props.put("azkaban.executor.jobcallback.enabled", "true");
+    startFlowContainer();
+    // The callback manager must be set.
+    assert JobCallbackManager.isInitialized();
+
+    // Get the instance
+    final JobCallbackManager jobCallbackManager = JobCallbackManager.getInstance();
+    assert jobCallbackManager != null;
+  }
+
+  /**
+   * FIXME: This test is incomplete for now as there is an expected merge conflict which will
+   * change interface with submitFlow. Once new code is merged in FlowContainer,
+   * this test will need to be completed by invoking a flow.
+   * @throws Exception
+   */
+  @Test
+  public void testExecSimple() throws Exception {
+    startFlowContainer();
   }
 }

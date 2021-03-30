@@ -17,9 +17,12 @@
 
 package azkaban.common;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.utils.Props;
+import javax.annotation.Nonnull;
 import org.apache.log4j.Logger;
 
 /**
@@ -32,7 +35,9 @@ public class ServerUtils {
    * @param logger : the logger object of calling class.
    * @param props : Azkaban properties
    */
-  public static void configureJobCallback(final Logger logger, final Props props) {
+  public static void configureJobCallback(@Nonnull final Logger logger, @Nonnull final Props props) {
+    requireNonNull(logger, "Logger must not be null");
+    requireNonNull(props, "Properties can't be null");
     final boolean jobCallbackEnabled =
             props.getBoolean(Constants.ConfigurationKeys.AZKABAN_EXECUTOR_JOBCALLBACK_ENABLED, true);
 

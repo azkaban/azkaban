@@ -690,10 +690,19 @@ public class FlowContainer implements IMBeanRegistrable {
   }
 
   /**
+   * Close the MBeans
+   */
+  @VisibleForTesting
+  void closeMBeans() {
+    this.mBeanRegistrationManager.closeMBeans();
+  }
+
+  /**
    * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution as
    * well as JettyServer.
    */
-  private void shutdown() {
+  @VisibleForTesting
+  void shutdown() {
     logger.info("Shutting down the pod");
     final int execId = this.flowRunner.getExecutionId();
     while (!this.flowFuture.isDone()) {
