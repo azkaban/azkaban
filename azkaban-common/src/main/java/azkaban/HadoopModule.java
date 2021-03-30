@@ -63,7 +63,6 @@ public class HadoopModule extends AbstractModule {
 
   private static final String CHTTP_SCHEME = "chttp";
   private static final String LOCAL_SCHEME = "file";
-  private static final String HDFS_SCHEME = "hdfs";
 
   private static final Logger log = LoggerFactory.getLogger(HadoopModule.class);
 
@@ -81,9 +80,6 @@ public class HadoopModule extends AbstractModule {
     final Configuration conf = new Configuration(false);
     conf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "core-site.xml"));
     conf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "hdfs-site.xml"));
-
-    log.info("Hadoop default file system is {}", conf.get(HADOOP_DEFAULT_FS_CONFIG_PROP));
-
     return conf;
   }
 
@@ -170,7 +166,12 @@ public class HadoopModule extends AbstractModule {
       @Named(HADOOP_FS_AUTH) final AbstractHdfsAuth auth) {
     try {
       auth.authorize();
-      return FileContext.getFileContext(conf);
+      final FileContext fileContext = FileContext.getFileContext(conf);
+      log.info("The Hadoop default file system URI is {}.",
+          conf.get(HADOOP_DEFAULT_FS_CONFIG_PROP));
+      log.info("The Hadoop file system implementation class is {}.",
+          fileContext.getDefaultFileSystem().getClass());
+      return fileContext;
     } catch (final IOException e) {
       log.error("Unable to initialize Hadoop FileContext.", e);
       throw new AzkabanException(e);
@@ -183,8 +184,9 @@ public class HadoopModule extends AbstractModule {
   @Named(HDFS_CACHED_HTTP_FS)
   public FileSystem createHDFSCachedHttpFileSystem(
       @Named(HADOOP_CONF) final Configuration conf,
-      @Named(HTTP_CONF) @Nullable final Configuration httpConf,
       @Named(HADOOP_FS_AUTH) final AbstractHdfsAuth auth,
+      @Named(HADOOP_FILE_CONTEXT) final FileContext fileContext,
+      @Named(HTTP_CONF) @Nullable final Configuration httpConf,
       final AzkabanCommonModuleConfig azConfig) {
     if (httpConf == null) {
       return null;
@@ -193,7 +195,8 @@ public class HadoopModule extends AbstractModule {
     // If caching is enabled, ensure the URI where cached files will be stored has the correct scheme
     // and has an authority.
     if (azConfig.getDependencyCachingEnabled()) {
-      validateURI(azConfig.getCacheDependencyRootUri(), HDFS_SCHEME, true);
+      validateURI(azConfig.getCacheDependencyRootUri(),
+          fileContext.getDefaultFileSystem().getUri().getScheme(), true);
     }
 
     final Configuration finalConf = new Configuration(false);
