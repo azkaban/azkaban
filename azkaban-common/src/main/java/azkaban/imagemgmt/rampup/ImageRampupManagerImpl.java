@@ -286,9 +286,11 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
       Collections.sort(imageRampupList, this.getRampupPercentageComparator());
       if (imageRampupList.isEmpty()) {
+        log.info("ImageRampupList was empty, so continue");
         continue;
       }
       if (null == flow) {
+        log.info("Flow object is null, so continue");
         final ImageRampup firstImageRampup = imageRampupList.get(0);
         imageTypeRampupVersionMap.put(imageTypeName, this.fetchImageVersion(imageTypeName,
             firstImageRampup.getImageVersion()).orElseThrow(() ->
@@ -298,6 +300,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       }
       int prevRampupPercentage = 0;
       final int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(flow);
+      log.info("HashValMapping: " + flowNameHashValMapping);
       for (final ImageRampup imageRampup : imageRampupList) {
         final int rampupPercentage = imageRampup.getRampupPercentage();
         if (flowNameHashValMapping >= prevRampupPercentage + 1
@@ -310,6 +313,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
               imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
           break;
         }
+        log.info("ImageTypeRampupVersionMap: " + imageTypeRampupVersionMap);
         prevRampupPercentage += rampupPercentage;
       }
     }
