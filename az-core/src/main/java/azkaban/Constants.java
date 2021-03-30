@@ -599,6 +599,11 @@ public class Constants {
     public static final String KUBERNETES_SERVICE_CREATION_TIMEOUT_MS = KUBERNETES_SERVICE_PREFIX +
         "creation.timeout.ms";
 
+    // Kubernetes Watch related properties
+    public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";
+    public static final String KUBERNETES_WATCH_DRIVER_THREAD_POOL_SIZE =
+        KUBERNETES_WATCH_PREFIX + "driver.threadpool.size";
+
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
