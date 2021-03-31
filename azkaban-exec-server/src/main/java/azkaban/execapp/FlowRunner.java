@@ -18,6 +18,7 @@ package azkaban.execapp;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
+import static azkaban.Constants.EventReporterConstants;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -50,6 +51,8 @@ import azkaban.executor.Status;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
+import azkaban.imagemgmt.version.VersionInfo;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
@@ -61,6 +64,8 @@ import azkaban.project.ProjectManagerException;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
+import azkaban.spi.ExecutorType;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
@@ -1548,35 +1553,52 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
-      metaData.put("flowName", flow.getId());
+      metaData.put(EventReporterConstants.FLOW_NAME, flow.getId());
       // Azkaban executor hostname
-      metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
+      metaData.put(EventReporterConstants.AZ_HOST, props.getString(AZKABAN_SERVER_HOST_NAME,
+          "unknown"));
       // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
       // or else use jetty.hostname
-      metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+      metaData.put(EventReporterConstants.AZ_WEBSERVER,
+          props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
           props.getString("jetty.hostname", "localhost")));
-      metaData.put("projectName", flow.getProjectName());
-      metaData.put("submitUser", flow.getSubmitUser());
-      metaData.put("executionId", String.valueOf(flow.getExecutionId()));
-      metaData.put("startTime", String.valueOf(flow.getStartTime()));
-      metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
+      metaData.put(EventReporterConstants.PROJECT_NAME, flow.getProjectName());
+      metaData.put(EventReporterConstants.SUBMIT_USER, flow.getSubmitUser());
+      metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(flow.getExecutionId()));
+      metaData.put(EventReporterConstants.START_TIME, String.valueOf(flow.getStartTime()));
+      metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
       // Flow_Status_Changed event attributes: flowVersion, failedJobId, modifiedBy
-      metaData.put("flowVersion", String.valueOf(flow.getAzkabanFlowVersion()));
-      metaData.put("failedJobId", flow.getFailedJobId());
-      metaData.put("modifiedBy", flow.getModifiedBy());
+      metaData.put(EventReporterConstants.FLOW_VERSION,
+          String.valueOf(flow.getAzkabanFlowVersion()));
+      metaData.put(EventReporterConstants.FAILED_JOB_ID, flow.getFailedJobId());
+      metaData.put(EventReporterConstants.MODIFIED_BY, flow.getModifiedBy());
       // Flow_Status_Changed event elapsed time
-      metaData.put("flowKillDuration", String.valueOf(flowRunner.getFlowKillDuration()));
-      metaData.put("flowPauseDuration", String.valueOf(flowRunner.getFlowPauseDuration()));
-      metaData.put("flowPreparationDuration", String.valueOf(flowRunner.flowCreateTime));
+      metaData.put(EventReporterConstants.FLOW_KILL_DURATION,
+          String.valueOf(flowRunner.getFlowKillDuration()));
+      metaData.put(EventReporterConstants.FLOW_PAUSE_DURATION,
+          String.valueOf(flowRunner.getFlowPauseDuration()));
+      metaData.put(EventReporterConstants.FLOW_PREPARATION_DURATION,
+          String.valueOf(flowRunner.flowCreateTime));
       // FLow SLA option string
-      metaData.put("slaOptions", flow.getSlaOptionStr());
+      metaData.put(EventReporterConstants.SLA_OPTIONS, flow.getSlaOptionStr());
+      // Flow executor type by versionSet
+      if (flow.getVersionSet() != null) { // Flow version set is set when flow is
+        // executed in a container, which also indicates executor type is Kubernetes.
+        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
+        metaData.put(EventReporterConstants.VERSION_SET,
+            getVersionSetJsonString(flow.getVersionSet()));
+      } else {
+        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
+      }
 
       // Project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
-      metaData.put("projectFileUploadUser", handler.getUploader());
-      metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
-      metaData.put("projectFileName", handler.getFileName());
-      metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
+      metaData.put(EventReporterConstants.PROJECT_FILE_UPLOAD_USER, handler.getUploader());
+      metaData.put(EventReporterConstants.PROJECT_FILE_UPLOADER_IP_ADDR,
+          handler.getUploaderIpAddr());
+      metaData.put(EventReporterConstants.PROJECT_FILE_NAME, handler.getFileName());
+      metaData.put(EventReporterConstants.PROJECT_FILE_UPLOAD_TIME,
+          String.valueOf(handler.getUploadTime()));
 
       // Propagate flow properties to Event Reporter
       if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
@@ -1602,30 +1624,37 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       return metaData;
     }
 
+    @VisibleForTesting
+    protected String getVersionSetJsonString (final VersionSet versionSet){
+      final Map<String, String> imageToVersionStringMap = new HashMap<>();
+      for (final String imageType: versionSet.getImageToVersionMap().keySet()){
+        imageToVersionStringMap.put(imageType,
+            versionSet.getImageToVersionMap().get(imageType).getVersion());
+      }
+
+      return JSONUtils.toJSON(imageToVersionStringMap, true);
+    }
+
     @Override
     public synchronized void handleEvent(final Event event) {
+      final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+      final ExecutableFlow flow = flowRunner.getExecutableFlow();
       if (event.getType() == EventType.FLOW_STARTED) {
-        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-        final ExecutableFlow flow = flowRunner.getExecutableFlow();
         FlowRunner.this.logger.info("Flow started: " + flow.getId());
         FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
       } else if (event.getType() == EventType.FLOW_STATUS_CHANGED) {
-        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-        final ExecutableFlow flow = flowRunner.getExecutableFlow();
         if (flow.getStatus() == Status.KILLING || flow.getStatus() == Status.KILLED) {
           FlowRunner.this.logger
               .info("Flow is killed by " + flow.getModifiedBy() + ": " + flow.getId());
         }
         final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
-        flowMetadata.put("flowStatus", flow.getStatus().name());
+        flowMetadata.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
         FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
       } else if (event.getType() == EventType.FLOW_FINISHED) {
-        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-        final ExecutableFlow flow = flowRunner.getExecutableFlow();
         FlowRunner.this.logger.info("Flow ended: " + flow.getId());
         final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
-        flowMetadata.put("endTime", String.valueOf(flow.getEndTime()));
-        flowMetadata.put("flowStatus", flow.getStatus().name());
+        flowMetadata.put(EventReporterConstants.END_TIME, String.valueOf(flow.getEndTime()));
+        flowMetadata.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
         FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
       }
     }
@@ -1642,29 +1671,49 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       final ExecutableNode node = jobRunner.getNode();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
-      metaData.put("jobId", node.getId());
+      metaData.put(EventReporterConstants.JOB_ID, node.getId());
       // Flow specific properties
       final ExecutableFlow executableFlow = node.getExecutableFlow();
-      metaData.put("executionId", String.valueOf(executableFlow.getExecutionId()));
-      metaData.put("flowName", executableFlow.getId());
-      metaData.put("projectName", executableFlow.getProjectName());
+      metaData.put(EventReporterConstants.EXECUTION_ID,
+          String.valueOf(executableFlow.getExecutionId()));
+      metaData.put(EventReporterConstants.FLOW_NAME, executableFlow.getId());
+      metaData.put(EventReporterConstants.PROJECT_NAME, executableFlow.getProjectName());
 
-      metaData.put("startTime", String.valueOf(node.getStartTime()));
-      metaData.put("jobType", String.valueOf(node.getType()));
+      metaData.put(EventReporterConstants.START_TIME, String.valueOf(node.getStartTime()));
+      metaData.put(EventReporterConstants.JOB_TYPE, String.valueOf(node.getType()));
+      // Add version of the job type
+      if(executableFlow.getVersionSet() != null){ // Flow version set is set when flow is
+        // executed in a container, which also indicates executor type is Kubernetes.
+        VersionInfo versionInfo =
+            executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
+        if(versionInfo != null){
+          metaData.put(EventReporterConstants.EXECUTOR_TYPE,
+              String.valueOf(ExecutorType.KUBERNETES));
+          // Add job type image version number
+          metaData.put(EventReporterConstants.VERSION, versionInfo.getVersion());
+        }
+      } else {
+        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
+      }
+
       // Azkaban executor hostname
-      metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
+      metaData.put(EventReporterConstants.AZ_HOST, props.getString(AZKABAN_SERVER_HOST_NAME,
+          "unknown"));
       // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
       // or else use jetty.hostname
-      metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+      metaData.put(EventReporterConstants.AZ_WEBSERVER,
+          props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
           props.getString("jetty.hostname", "localhost")));
-      metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
+      metaData.put(EventReporterConstants.JOB_PROXY_USER, jobRunner.getEffectiveUser());
       // attempt id
-      metaData.put("attemptId", String.valueOf(node.getAttempt()));
+      metaData.put(EventReporterConstants.ATTEMPT_ID, String.valueOf(node.getAttempt()));
       // Job time in queue, kill time, killed by, and failure Message
-      metaData.put("modifiedBy", node.getModifiedBy());
-      metaData.put("jobKillDuration", String.valueOf(jobRunner.getKillDuration()));
-      metaData.put("queueDuration", String.valueOf(jobRunner.getQueueDuration()));
-      metaData.put("failureMessage", node.getFailureMessage());
+      metaData.put(EventReporterConstants.MODIFIED_BY, node.getModifiedBy());
+      metaData.put(EventReporterConstants.JOB_KILL_DURATION,
+          String.valueOf(jobRunner.getKillDuration()));
+      metaData.put(EventReporterConstants.QUEUE_DURATION,
+          String.valueOf(jobRunner.getQueueDuration()));
+      metaData.put(EventReporterConstants.FAILURE_MESSAGE, node.getFailureMessage());
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
@@ -1686,8 +1735,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
         if (FlowRunner.this.azkabanEventReporter != null) {
           final Map<String, String> jobMetadata = getJobMetadata(jobRunner);
-          jobMetadata.put("jobStatus", node.getStatus().name());
-          jobMetadata.put("endTime", String.valueOf(node.getEndTime()));
+          jobMetadata.put(EventReporterConstants.JOB_STATUS, node.getStatus().name());
+          jobMetadata.put(EventReporterConstants.END_TIME, String.valueOf(node.getEndTime()));
           FlowRunner.this.azkabanEventReporter.report(event.getType(), jobMetadata);
         }
         final long seconds = (node.getEndTime() - node.getStartTime()) / 1000;

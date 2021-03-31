@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseTransOperator;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
@@ -47,6 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -917,6 +919,26 @@ public class ExecutionFlowDaoTest {
     assertThat(readyFlow.getStatus()).isEqualTo(Status.READY);
   }
 
+  /**
+   * Test when an executable flow sets its version set field, the information can be retrieved
+   * after updateExecutableFlow and fetchExecutableFlow
+   * @throws Exception
+   */
+  @Test
+  public void testUpdateExecutionFlowVersionSet() throws Exception {
+
+    final ExecutableFlow flow = createTestFlow();
+    this.executionFlowDao.uploadExecutableFlow(flow);
+    flow.setVersionSet(createVersionSet());
+    this.executionFlowDao.updateExecutableFlow(flow);
+
+    final ExecutableFlow fetchFlow =
+        this.executionFlowDao.fetchExecutableFlow(flow.getExecutionId());
+
+    Assert.assertTrue(fetchFlow.getVersionSet() != null);
+    assertThat(flow.getVersionSet().getImageToVersionMap()).isEqualTo(fetchFlow.getVersionSet().getImageToVersionMap());
+  }
+
   /*
    * Updates flow execution status in the DB. After this the value of the status column will be
    * different from the status property in the flow data blob.
@@ -980,6 +1002,19 @@ public class ExecutionFlowDaoTest {
           .isEqualTo(flow2.getExecutionOptions().getFailureAction());
       assertThat(new HashSet<>(flow1.getEndNodes())).isEqualTo(new HashSet<>(flow2.getEndNodes()));
     }
+  }
+
+  /**
+   * Create a version set from scratch
+   * @return a new version set
+   */
+  private VersionSet createVersionSet(){
+    final String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
+        + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
+        + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","
+        + "\"state\":\"ACTIVE\"}}";
+    final String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
+    return new VersionSet(testJsonString1, testMd5Hex1, 1);
   }
 
 }
