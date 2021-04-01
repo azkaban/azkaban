@@ -16,6 +16,19 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.EventReporterConstants.AZ_HOST;
+import static azkaban.Constants.EventReporterConstants.AZ_WEBSERVER;
+import static azkaban.Constants.EventReporterConstants.EXECUTOR_TYPE;
+import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_NAME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOADER_IP_ADDR;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_TIME;
+import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_USER;
+import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
+import static azkaban.Constants.EventReporterConstants.SLA_OPTIONS;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
+import static azkaban.Constants.EventReporterConstants.VERSION_SET;
+
 import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -23,6 +36,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
+import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
@@ -328,29 +342,34 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
         EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
     this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+    final VersionSet versionSet = this.runner.getExecutableFlow().getVersionSet();
 
     FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
     Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
 
     Assert.assertEquals("Event metadata not created as expected.", "localhost",
-            flowMetadata.get("azkabanWebserver"));
+            flowMetadata.get(AZ_WEBSERVER));
     Assert.assertEquals("Event metadata not created as expected.", "unknown",
-            flowMetadata.get("azkabanHost"));
-    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get("submitUser"));
+            flowMetadata.get(AZ_HOST));
+    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get(SUBMIT_USER));
     Assert.assertEquals("Event metadata not created as expected.", "test",
-            flowMetadata.get("projectName"));
+            flowMetadata.get(PROJECT_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "derived-member-data",
-            flowMetadata.get("flowName"));
+            flowMetadata.get(FLOW_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "testUser",
-            flowMetadata.get("projectFileUploadUser"));
+            flowMetadata.get(PROJECT_FILE_UPLOAD_USER));
     Assert.assertEquals("Event metadata not created as expected.", "111.111.111.111",
-            flowMetadata.get("projectFileUploaderIpAddr"));
+            flowMetadata.get(PROJECT_FILE_UPLOADER_IP_ADDR));
     Assert.assertEquals("Event metadata not created as expected.", "test.zip",
-            flowMetadata.get("projectFileName"));
+            flowMetadata.get(PROJECT_FILE_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "1",
-            flowMetadata.get("projectFileUploadTime"));
+            flowMetadata.get(PROJECT_FILE_UPLOAD_TIME));
     Assert.assertEquals("Event metadata not created as expected.", "null",
-        flowMetadata.get("slaOptions"));
+        flowMetadata.get(SLA_OPTIONS));
+    Assert.assertEquals("Event metadata not created as expected", flowRunnerEventListener.getVersionSetJsonString(versionSet),
+        flowMetadata.get(VERSION_SET)); // Checks version set
+    Assert.assertEquals("Event metadata not created as expected", "KUBERNETES",
+        flowMetadata.get(EXECUTOR_TYPE)); // Checks executor type
   }
 
   @Test

@@ -18,11 +18,15 @@ package azkaban.executor;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.event.EventHandler;
+import azkaban.executor.container.PodEventListener;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
+import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -59,6 +63,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
+  private final PodEventListener podEventListener;
 
   protected AbstractExecutorManagerAdapter(final Props azkProps,
       final ExecutorLoader executorLoader,
@@ -72,6 +77,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
+    this.podEventListener = new PodEventListener();
+    this.addListener(podEventListener);
   }
 
   /**
@@ -267,6 +274,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
       String message = uploadExecutableFlow(exflow, userId, flowId, "");
 
+      // Emit ready flow event
+      this.fireEventListeners(Event.create(exflow,
+          EventType.FLOW_STATUS_CHANGED, new EventData(exflow)));
+
       this.commonMetrics.markSubmitFlowSuccess();
       message += "Execution queued successfully with exec id " + exflow.getExecutionId();
       return message;
@@ -341,6 +352,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     // The exflow id is set by the loader. So it's unavailable until after
     // this call.
     this.executorLoader.uploadExecutableFlow(exflow);
+    // Emit dispatching flow event
+    this.fireEventListeners(Event.create(exflow, EventType.FLOW_STATUS_CHANGED,
+        new EventData(exflow)));
+
     return message;
   }
 
