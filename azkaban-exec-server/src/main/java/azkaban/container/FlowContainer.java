@@ -24,6 +24,8 @@ import static com.google.common.base.Preconditions.checkState;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
+import azkaban.cluster.ClusterModule;
+import azkaban.cluster.ClusterRouter;
 import azkaban.common.ExecJettyServerModule;
 import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
@@ -127,6 +129,7 @@ public class FlowContainer {
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobTypeManager;
+  private final ClusterRouter clusterRouter;
   private final AbstractFlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
@@ -149,6 +152,7 @@ public class FlowContainer {
    * Constructor of FlowContainer. It sets up all the DAO, all the loaders and Azkaban KeyStore.
    *
    * @param props Azkaban properties.
+   * @param clusterRouter the router that decides which cluster a job should be submitted to
    * @throws IOException
    */
   @Inject
@@ -156,6 +160,7 @@ public class FlowContainer {
   public FlowContainer(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
+      final ClusterRouter clusterRouter,
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
@@ -193,11 +198,12 @@ public class FlowContainer {
     this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
         DEFAULT_VALIDATE_PROXY_USER);
+    this.clusterRouter = clusterRouter;
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
-            this.globalProps, getClass().getClassLoader());
+            this.globalProps, getClass().getClassLoader(), clusterRouter);
 
     this.numJobThreadPerFlow = props.getInt(JOB_THREAD_COUNT, DEFAULT_JOB_TREAD_COUNT);
     if (this.azKabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
@@ -270,6 +276,7 @@ public class FlowContainer {
     // Inject AzkabanCommonModule
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(azkabanProps),
+        new ClusterModule(),
         new ExecJettyServerModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
