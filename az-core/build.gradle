@@ -40,6 +40,7 @@ dependencies {
     compile deps.io
     compile deps.jacksonCoreAsl
     compile deps.jacksonMapperAsl
+    compile deps.jacksonDatabind
     compile deps.metricsCore
     compile deps.metricsJvm
     compile deps.quartz

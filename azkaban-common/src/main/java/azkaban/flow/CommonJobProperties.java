@@ -149,6 +149,17 @@ public class CommonJobProperties {
    * Represents the source of execution - adhoc, schedule or event
    */
   public static final String EXECUTION_SOURCE = "azkaban.flow.executionsource";
+
+  /**
+   * Semicolon separated list of input dataset objects
+   */
+  public static final String INPUT_DATASET = "azkaban.input.dataset";
+
+  /**
+   * Semicolon separated list of output dataset objects
+   */
+  public static final String OUTPUT_DATASET = "azkaban.output.dataset";
+
   /**
    * A uuid assigned to every execution
    */

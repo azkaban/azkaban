@@ -29,8 +29,8 @@ import java.util.List;
 public class AzkabanJob extends AzkabanNode {
 
   private AzkabanJob(final String name, final String type, final Props props,
-      final String condition, final List<String> dependsOn) {
-    super(name, type, props, condition, dependsOn);
+      final String condition, final List<String> dependsOn, List<Dataset> inputDataset, List<Dataset> outputDataset) {
+    super(name, type, props, condition, dependsOn, inputDataset, outputDataset);
   }
 
   public static class AzkabanJobBuilder {
@@ -40,6 +40,8 @@ public class AzkabanJob extends AzkabanNode {
     private Props props;
     private String condition;
     private List<String> dependsOn;
+    private List<Dataset> inputDataset;
+    private List<Dataset> outputDataset;
 
     public AzkabanJobBuilder name(final String name) {
       this.name = name;
@@ -61,6 +63,16 @@ public class AzkabanJob extends AzkabanNode {
       return this;
     }
 
+    public AzkabanJobBuilder inputDataset(final List<Dataset> inputDataset) {
+      this.inputDataset = inputDataset;
+      return this;
+    }
+
+    public AzkabanJobBuilder outputDataset(final List<Dataset> outputDataset) {
+      this.outputDataset = outputDataset;
+      return this;
+    }
+
     public AzkabanJobBuilder dependsOn(final List<String> dependsOn) {
       // A node may or may not have dependencies.
       this.dependsOn = dependsOn == null
@@ -70,7 +82,8 @@ public class AzkabanJob extends AzkabanNode {
     }
 
     public AzkabanJob build() {
-      return new AzkabanJob(this.name, this.type, this.props, this.condition, this.dependsOn);
+      return new AzkabanJob(this.name, this.type, this.props, this.condition, this.dependsOn,
+          this.inputDataset, this.outputDataset);
     }
   }
 }

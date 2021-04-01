@@ -18,6 +18,7 @@ package azkaban.flow;
 
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.project.Dataset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,6 +47,8 @@ public class Flow {
   private static final String ERRORS_PROPERTY = "errors";
   private static final String IS_LOCKED_PROPERTY = "isLocked";
   private static final String FLOW_LOCK_ERROR_MESSAGE_PROPERTY = "flowLockErrorMessage";
+  private static final String INPUT_DATASET_PROPERTY = "inputDataset";
+  private static final String OUTPUT_DATASET_PROPERTY = "outputDataset";
 
   private final String id;  // This is actually the flow name
   private int projectId;
@@ -68,6 +71,10 @@ public class Flow {
   private boolean isEmbeddedFlow = false;
   private double azkabanFlowVersion = Constants.DEFAULT_AZKABAN_FLOW_VERSION;
   private String condition = null;
+
+  private List<Dataset> inputDataset;
+  private List<Dataset> outputDataset;
+
   private boolean isLocked = false;
   private String flowLockErrorMessage = null;
 
@@ -92,6 +99,10 @@ public class Flow {
     final Boolean isLocked = (Boolean) flowObject.getOrDefault(IS_LOCKED_PROPERTY, flow.isLocked());
     final String flowLockErrorMessage = (String) flowObject
         .getOrDefault(FLOW_LOCK_ERROR_MESSAGE_PROPERTY, flow.getFlowLockErrorMessage());
+    final List<Dataset> inputDataset = (List<Dataset>) flowObject
+        .getOrDefault(INPUT_DATASET_PROPERTY, flow.getInputDataset());
+    final List<Dataset> outputDataset = (List<Dataset>) flowObject
+        .getOrDefault(OUTPUT_DATASET_PROPERTY, flow.getOutputDataset());
     final int projectId = (Integer) flowObject
         .getOrDefault(PROJECT_ID_PROPERTY, flow.getProjectId());
     final int projectVersion = (Integer) flowObject
@@ -117,6 +128,8 @@ public class Flow {
     flow.setCondition(condition);
     flow.setLocked(isLocked);
     flow.setFlowLockErrorMessage(flowLockErrorMessage);
+    flow.setInputDataset(inputDataset);
+    flow.setOutputDataset(outputDataset);
     flow.setProjectId(projectId);
     flow.setVersion(projectVersion);
     flow.setMetadata(metadata);
@@ -495,5 +508,21 @@ public class Flow {
 
   public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
     this.flowLockErrorMessage = flowLockErrorMessage;
+  }
+
+  public List<Dataset> getInputDataset() {
+    return inputDataset;
+  }
+
+  public void setInputDataset(List<Dataset> inputDataset) {
+    this.inputDataset = inputDataset;
+  }
+
+  public List<Dataset> getOutputDataset() {
+    return outputDataset;
+  }
+
+  public void setOutputDataset(List<Dataset> outputDataset) {
+    this.outputDataset = outputDataset;
   }
 }

@@ -35,6 +35,8 @@ public class NodeBean implements Serializable {
   private String condition;
   private List<NodeBean> nodes;
   private FlowTriggerBean trigger;
+  private List<NodeDataset> inputs;
+  private List<NodeDataset> outputs;
 
   public String getName() {
     return this.name;
@@ -84,6 +86,22 @@ public class NodeBean implements Serializable {
     this.nodes = nodes;
   }
 
+  public List<NodeDataset> getInputs() {
+    return inputs;
+  }
+
+  public void setInputs(List<NodeDataset> inputs) {
+    this.inputs = inputs;
+  }
+
+  public List<NodeDataset> getOutputs() {
+    return outputs;
+  }
+
+  public void setOutputs(List<NodeDataset> outputs) {
+    this.outputs = outputs;
+  }
+
   public Props getProps() {
     final Props props = new Props(null, this.getConfig());
     props.put(Constants.NODE_TYPE, this.getType());
@@ -108,6 +126,8 @@ public class NodeBean implements Serializable {
         ", condition='" + this.condition + '\'' +
         ", nodes=" + this.nodes +
         ", trigger=" + this.trigger +
+        ", input=" + inputs +
+        ", output=" + outputs +
         '}';
   }
 }

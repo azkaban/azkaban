@@ -18,6 +18,8 @@ package azkaban.executor;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Node;
+import azkaban.project.Dataset;
+import azkaban.project.DatasetUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.TypedMapWrapper;
@@ -28,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -53,6 +56,8 @@ public class ExecutableNode {
   public static final String ATTEMPT_PARAM = "attempt";
   public static final String PAST_ATTEMPTS_PARAM = "pastAttempts";
   public static final String CLUSTER_PARAM = "cluster";
+  public static final String INPUT_DATASET_PARAM = "inputDataset";
+  public static final String OUTPUT_DATASET_PARAM = "outputDataset";
 
   private ClusterInfo clusterInfo;
   private final AtomicInteger attempt = new AtomicInteger(0);
@@ -77,6 +82,9 @@ public class ExecutableNode {
   private String condition;
   private ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus.ALL_SUCCESS;
 
+  private List<Dataset> inputDataset;
+  private List<Dataset> outputDataset;
+
   private String modifiedBy = "unknown";
   private String failureMessage = "null";
 
@@ -91,18 +99,21 @@ public class ExecutableNode {
 
   public ExecutableNode(final Node node, final ExecutableFlowBase parent) {
     this(node.getId(), node.getType(), node.getCondition(), node.getConditionOnJobStatus(),
-        node.getJobSource(), node.getPropsSource(), parent);
+        node.getJobSource(), node.getPropsSource(), node.getInputDataset(), node.getOutputDataset(), parent);
   }
 
   public ExecutableNode(final String id, final String type, final String condition,
       final ConditionOnJobStatus conditionOnJobStatus, final String jobSource,
-      final String propsSource, final ExecutableFlowBase parent) {
+      final String propsSource, final List<Dataset> inputDataset, final List<Dataset> outputDataset,
+      final ExecutableFlowBase parent) {
     this.id = id;
     this.jobSource = jobSource;
     this.propsSource = propsSource;
     this.type = type;
     this.condition = condition;
     this.conditionOnJobStatus = conditionOnJobStatus;
+    this.inputDataset = inputDataset;
+    this.outputDataset = outputDataset;
     setParentFlow(parent);
   }
 
@@ -269,6 +280,22 @@ public class ExecutableNode {
     this.failureMessage = failureMessage;
   }
 
+  public List<Dataset> getInputDataset() {
+    return inputDataset;
+  }
+
+  public void setInputDataset(List<Dataset> inputDataset) {
+    this.inputDataset = inputDataset;
+  }
+
+  public List<Dataset> getOutputDataset() {
+    return outputDataset;
+  }
+
+  public void setOutputDataset(List<Dataset> outputDataset) {
+    this.outputDataset = outputDataset;
+  }
+
   public void resetForRetry() {
     final ExecutionAttempt pastAttempt = new ExecutionAttempt(this.attempt.get(), this);
     this.attempt.incrementAndGet();
@@ -354,6 +381,12 @@ public class ExecutableNode {
       }
       objMap.put(PAST_ATTEMPTS_PARAM, attemptsList);
     }
+    if (Objects.nonNull(this.inputDataset)) {
+      objMap.put(INPUT_DATASET_PARAM, this.inputDataset);
+    }
+    if (Objects.nonNull(this.outputDataset)) {
+      objMap.put(OUTPUT_DATASET_PARAM, this.outputDataset);
+    }
   }
 
   public void fillExecutableFromMapObject(final TypedMapWrapper<String, Object> wrappedMap) {
@@ -382,6 +415,16 @@ public class ExecutableNode {
     final Object clusterObj = wrappedMap.getObject(CLUSTER_PARAM);
     if (clusterObj != null) {
       this.clusterInfo = ClusterInfo.fromObject(clusterObj);
+    }
+
+    final List<HashMap<String, String>> inputDatasetMap = wrappedMap.getList(INPUT_DATASET_PARAM);
+    if (Objects.nonNull(inputDatasetMap)) {
+      this.inputDataset = DatasetUtils.convertMapToDataset(inputDatasetMap);
+    }
+
+    final List<HashMap<String, String>> outputDatasetMap = wrappedMap.getList(OUTPUT_DATASET_PARAM);
+    if (Objects.nonNull(outputDatasetMap)) {
+      this.outputDataset = DatasetUtils.convertMapToDataset(outputDatasetMap);
     }
 
     final Map<String, String> outputProps = wrappedMap.<String, String>getMap(OUTPUT_PROPS_PARAM);

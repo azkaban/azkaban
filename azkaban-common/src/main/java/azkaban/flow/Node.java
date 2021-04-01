@@ -16,10 +16,15 @@
 
 package azkaban.flow;
 
+import azkaban.project.Dataset;
+import azkaban.project.DatasetUtils;
 import azkaban.utils.Utils;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 
 public class Node {
 
@@ -35,6 +40,8 @@ public class Node {
   private String embeddedFlowId;
 
   private String condition = null;
+  private List<Dataset> inputDataset;
+  private List<Dataset> outputDataset;
 
   private ConditionOnJobStatus conditionOnJobStatus = ConditionOnJobStatus.ALL_SUCCESS;
 
@@ -71,6 +78,16 @@ public class Node {
     node.setEmbeddedFlowId(embeddedFlowId);
     node.setCondition(condition);
     node.setConditionOnJobStatus(conditionOnJobStatus);
+
+    if (Objects.nonNull(mapObj.get("inputDataset"))) {
+      List<HashMap<String, String>> inputDatasetMap = (List<HashMap<String, String>>) mapObj.get("inputDataset");
+      node.setOutputDataset(DatasetUtils.convertMapToDataset(inputDatasetMap));
+    }
+
+    if (Objects.nonNull(mapObj.get("outputDataset"))) {
+      List<HashMap<String, String>> outputDatasetMap = (List<HashMap<String, String>>) mapObj.get("outputDataset");
+      node.setOutputDataset(DatasetUtils.convertMapToDataset(outputDatasetMap));
+    }
 
     final Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
     if (expectedRuntime != null) {
@@ -166,6 +183,22 @@ public class Node {
     this.embeddedFlowId = flowId;
   }
 
+  public List<Dataset> getInputDataset() {
+    return inputDataset;
+  }
+
+  public void setInputDataset(List<Dataset> inputDataset) {
+    this.inputDataset = inputDataset;
+  }
+
+  public List<Dataset> getOutputDataset() {
+    return outputDataset;
+  }
+
+  public void setOutputDataset(List<Dataset> outputDataset) {
+    this.outputDataset = outputDataset;
+  }
+
   public Object toObject() {
     final HashMap<String, Object> objMap = new HashMap<>();
     objMap.put("id", this.id);
@@ -186,6 +219,8 @@ public class Node {
     objMap.put("layout", layoutInfo);
     objMap.put("condition", this.condition);
     objMap.put("conditionOnJobStatus", this.conditionOnJobStatus);
+    objMap.put("inputDataset", this.inputDataset);
+    objMap.put("outputDataset", this.outputDataset);
 
     return objMap;
   }

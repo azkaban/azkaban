@@ -41,6 +41,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   private final AssignExecutorDao assignExecutorDao;
   private final NumExecutionsDao numExecutionsDao;
   private final ExecutionRampDao executionRampDao;
+  private final ExecutionJobDatasetDao executionJobDatasetDao;
 
   @Inject
   public JdbcExecutorLoader(final ExecutionFlowDao executionFlowDao,
@@ -52,7 +53,8 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       final FetchActiveFlowDao fetchActiveFlowDao,
       final AssignExecutorDao assignExecutorDao,
       final NumExecutionsDao numExecutionsDao,
-      final ExecutionRampDao executionRampDao) {
+      final ExecutionRampDao executionRampDao,
+      final ExecutionJobDatasetDao executionJobDatasetDao) {
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
@@ -63,6 +65,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.numExecutionsDao = numExecutionsDao;
     this.assignExecutorDao = assignExecutorDao;
     this.executionRampDao = executionRampDao;
+    this.executionJobDatasetDao = executionJobDatasetDao;
   }
 
   @Override
@@ -439,5 +442,27 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public int updateVersionSetId(final int executionId, final int versionSetId)
       throws ExecutorManagerException {
     return this.executionFlowDao.updateVersionSetId(executionId, versionSetId);
+  }
+
+  @Override
+  public void addExecutionJobDataset(final Map<String, String> rawToResolvedDatasetMap, final String datasetType,
+      final ExecutableNode node) throws ExecutorManagerException {
+    this.executionJobDatasetDao.addExecutionJobDataset(rawToResolvedDatasetMap, datasetType, node);
+  }
+
+  @Override
+  public Map<String, String> fetchAllOutputDatasets(final int execId) throws ExecutorManagerException {
+    return this.executionJobDatasetDao.fetchAllOutputDatasets(execId);
+  }
+
+  @Override
+  public List<ExecutionJobDataset> fetchAllDatasets(final int execId) throws ExecutorManagerException {
+    return this.executionJobDatasetDao.fetchAllDatasets(execId);
+  }
+
+  @Override
+  public void persistDatasetForExecId(final List<ExecutionJobDataset> jobDatasetList, final int execId)
+      throws ExecutorManagerException {
+    this.executionJobDatasetDao.persistDatasetForExecId(jobDatasetList, execId);
   }
 }

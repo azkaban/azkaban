@@ -32,15 +32,18 @@ public abstract class AzkabanNode {
   protected final Props props;
   protected final String condition;
   protected final List<String> dependsOn;
+  protected final List<Dataset> inputDataset;
+  protected final List<Dataset> outputDataset;
 
-  public AzkabanNode(final String name, final String type, final Props props, final String
-      condition, final List<String>
-      dependsOn) {
+  public AzkabanNode(final String name, final String type, final Props props, final String condition,
+      final List<String> dependsOn, List<Dataset> inputDataset, List<Dataset> outputDataset) {
     this.name = requireNonNull(name);
     this.type = requireNonNull(type);
     this.props = requireNonNull(props);
     this.condition = condition;
     this.dependsOn = dependsOn;
+    this.inputDataset = inputDataset;
+    this.outputDataset = outputDataset;
   }
 
   public String getName() {
@@ -61,5 +64,13 @@ public abstract class AzkabanNode {
 
   public List<String> getDependsOn() {
     return this.dependsOn;
+  }
+
+  public List<Dataset> getInputDataset() {
+    return inputDataset;
+  }
+
+  public List<Dataset> getOutputDataset() {
+    return outputDataset;
   }
 }
