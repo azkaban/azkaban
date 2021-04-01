@@ -152,6 +152,7 @@ public class FlowContainer {
    * Constructor of FlowContainer. It sets up all the DAO, all the loaders and Azkaban KeyStore.
    *
    * @param props Azkaban properties.
+   * @param clusterRouter the router that decides which cluster a job should be submitted to
    * @throws IOException
    */
   @Inject
