@@ -100,7 +100,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
   public static final String SERVICE_SELECTOR_PREFIX = "flow";
   public static final String POD_APPLICATION_TAG = "azkaban-exec-server";
-
+  public static final String CLUSTER_LABEL_NAME = "cluster";
+  public static final String APP_LABEL_NAME = "app";
+  public static final String EXECUTION_ID_LABEL_NAME = "execution-id";
 
   private final String namespace;
   private final ApiClient client;
@@ -711,8 +713,9 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
    */
   private ImmutableMap getLabelsForPod(final int executionId) {
     final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
-    mapBuilder.put("cluster", this.clusterName);
-    mapBuilder.put("app", POD_APPLICATION_TAG);
+    mapBuilder.put(CLUSTER_LABEL_NAME, this.clusterName);
+    mapBuilder.put(EXECUTION_ID_LABEL_NAME, executionId);
+    mapBuilder.put(APP_LABEL_NAME, POD_APPLICATION_TAG);
 
     // Note that the service label must match the selector used for the corresponding service
     if (isServiceRequired()) {
