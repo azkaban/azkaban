@@ -273,7 +273,13 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private void initActive() throws ExecutorManagerException {
     final Executor executor;
-    final int port = this.props.getInt(ConfigurationKeys.EXECUTOR_PORT, -1);
+    final int port;
+    final boolean useSsl = props.getBoolean(ConfigurationKeys.JETTY_USE_SSL, true);
+    if (useSsl) {
+      port = this.props.getInt(ConfigurationKeys.EXECUTOR_SSL_PORT, -1);
+    } else {
+      port = this.props.getInt(ConfigurationKeys.EXECUTOR_PORT, -1);
+    }
     if (port != -1) {
       final String host = requireNonNull(getHost());
       // Check if this executor exists previously in the DB
