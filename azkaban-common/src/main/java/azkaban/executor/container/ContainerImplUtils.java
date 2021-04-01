@@ -74,7 +74,7 @@ public class ContainerImplUtils {
     String flowName = flow.getFlowName();
     byte[] flowNameBytes = flowName.getBytes(StandardCharsets.UTF_8);
     // To be utilized for flow deterministic ramp-up
-    int flowNameHashVal = MurmurHash3.hash32x86(flowNameBytes);
+    int flowNameHashVal = Math.abs(MurmurHash3.hash32x86(flowNameBytes));
     return flowNameHashVal % 100 + 1;
   }
 }
