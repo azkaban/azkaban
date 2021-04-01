@@ -103,6 +103,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   public static final String CLUSTER_LABEL_NAME = "cluster";
   public static final String APP_LABEL_NAME = "app";
   public static final String EXECUTION_ID_LABEL_NAME = "execution-id";
+  public static final String EXECUTION_ID_LABEL_PREFIX = "execid-";
 
   private final String namespace;
   private final ApiClient client;
@@ -714,7 +715,7 @@ public class KubernetesContainerizedImpl implements ContainerizedImpl {
   private ImmutableMap getLabelsForPod(final int executionId) {
     final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
     mapBuilder.put(CLUSTER_LABEL_NAME, this.clusterName);
-    mapBuilder.put(EXECUTION_ID_LABEL_NAME, executionId);
+    mapBuilder.put(EXECUTION_ID_LABEL_NAME, EXECUTION_ID_LABEL_PREFIX + executionId);
     mapBuilder.put(APP_LABEL_NAME, POD_APPLICATION_TAG);
 
     // Note that the service label must match the selector used for the corresponding service
