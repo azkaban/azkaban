@@ -251,6 +251,14 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   /**
+   * @param execFlow {@link ExecutableFlow} containing all the information for a flow execution.
+   * @return Return the start status based on the {@link ExecutableFlow}.
+   */
+  public Status getStartStatus(ExecutableFlow execFlow) {
+    return getStartStatus();
+  }
+
+  /**
    * When a flow is submitted, insert a new execution into the database queue. {@inheritDoc}
    */
   @Override
@@ -294,9 +302,9 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       String message) throws ExecutorManagerException {
     final int projectId = exflow.getProjectId();
     exflow.setSubmitUser(userId);
-    exflow.setStatus(getStartStatus());
-    exflow.setSubmitTime(System.currentTimeMillis());
     exflow.setDispatchMethod(getDispatchMethod(exflow));
+    exflow.setStatus(getStartStatus(exflow));
+    exflow.setSubmitTime(System.currentTimeMillis());
 
     // Get collection of running flows given a project and a specific flow name
     final List<Integer> running = getRunningFlows(projectId, flowId);

@@ -201,6 +201,20 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
+   * @param execFlow {@link ExecutableFlow} containing all the information for a flow execution
+   *                                       including dispatch method which will be utilized here.
+   * @return READY if the dispatchMethod is CONTAINERIZED otherwise PREPARING.
+   */
+  @Override
+  public Status getStartStatus(ExecutableFlow execFlow) {
+    if (execFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) {
+      return Status.READY;
+    } else {
+      return Status.PREPARING;
+    }
+  }
+
+  /**
    * This method will shutdown the queue processor thread. It won't pick up executions from queue
    * for dispatch after this. This method will be called when webserver will shutdown.
    */
