@@ -29,6 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
@@ -64,7 +65,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -167,6 +170,45 @@ public class AzkabanWebServerTest {
 
     assertSingleton(QuartzScheduler.class, injector);
 
+    SERVICE_PROVIDER.unsetInjector();
+  }
+
+  @Test
+  public void testRoutingMapFor() {
+    Injector injector = Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule(props)
+    );
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(injector);
+    AzkabanWebServer webServer = injector.getInstance(AzkabanWebServer.class);
+    Set<String> routingPaths = webServer.getRoutesMap().keySet();
+    Assert.assertFalse(routingPaths.contains("/imageTypes/*"));
+    Assert.assertFalse(routingPaths.contains("/imageVersions/*"));
+    Assert.assertFalse(routingPaths.contains("/imageRampup/*"));
+    SERVICE_PROVIDER.unsetInjector();
+
+    Props containerizedProps = new Props(props);
+    containerizedProps.put(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+        DispatchMethod.CONTAINERIZED.name());
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
+        + "/resources/container/kubeconfig");
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_REQUIRED, "true");
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
+        "2");
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST
+        , "4Gi");
+    injector = Guice.createInjector(
+        new AzkabanCommonModule(containerizedProps),
+        new AzkabanWebServerModule(containerizedProps)
+    );
+    SERVICE_PROVIDER.setInjector(injector);
+    webServer = injector.getInstance(AzkabanWebServer.class);
+    routingPaths = webServer.getRoutesMap().keySet();
+    Assert.assertTrue(routingPaths.contains("/imageTypes/*"));
+    Assert.assertTrue(routingPaths.contains("/imageVersions/*"));
+    Assert.assertTrue(routingPaths.contains("/imageRampup/*"));
     SERVICE_PROVIDER.unsetInjector();
   }
 
