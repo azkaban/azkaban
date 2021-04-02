@@ -122,7 +122,7 @@ public class AzKubernetesV1SpecBuilder {
      */
     public AzKubernetesV1SpecBuilder addJobType(String name, String image, ImagePullPolicy imagePullPolicy, String initMountPath, String appMountPath) {
         LOGGER.info("Creating spec objects for jobType " + name);
-        String jobTypeVolumeName = JOBTYPE_VOLUME_PREFIX + name;
+        String jobTypeVolumeName = JOBTYPE_VOLUME_PREFIX + name.toLowerCase();
         V1Volume jobTypeVolume = new V1VolumeBuilder()
                 .withName(jobTypeVolumeName)
                 .withNewEmptyDir()
@@ -144,7 +144,7 @@ public class AzKubernetesV1SpecBuilder {
                 .build();
         LOGGER.debug("Created volume mount object to app container " + appMountPath);
         V1Container initContainer = new V1ContainerBuilder()
-                .withName(JOBTYPE_INIT_PREFIX + name)
+                .withName(JOBTYPE_INIT_PREFIX + name.toLowerCase())
                 .addToEnv(this.azClusterName, jobTypeMountPath)
                 .withImagePullPolicy(imagePullPolicy.getPolicyVal())
                 .withImage(image)
