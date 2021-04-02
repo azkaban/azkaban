@@ -19,10 +19,9 @@ package azkaban.container;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.common.ExecJettyServerModule;
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
 import azkaban.execapp.AzkabanExecutorServerTest;
+import azkaban.execapp.event.JobCallbackManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.project.ProjectFileHandler;
@@ -30,20 +29,18 @@ import azkaban.project.ProjectLoader;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.test.Utils;
 import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Optional;
+import org.apache.log4j.Logger;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mortbay.jetty.servlet.Context;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.ServiceProvider.*;
@@ -52,8 +49,9 @@ import static azkaban.utils.TestUtils.*;
 import static java.util.Objects.*;
 import static org.mockito.Mockito.*;
 
-
 public class FlowContainerTest {
+
+  private static final Logger logger = Logger.getLogger(FlowContainerTest.class);
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
@@ -66,6 +64,7 @@ public class FlowContainerTest {
   private AzkabanEventReporter eventReporter;
   private ExecJettyServerModule jettyServer;
   private AzkabanCommonModule commonModule;
+  private FlowContainer flowContainer;
 
   private static Path azkabanRoot;
 
@@ -89,7 +88,7 @@ public class FlowContainerTest {
       dbOperator.update("DROP ALL OBJECTS");
       dbOperator.update("SHUTDOWN");
     } catch (final SQLException e) {
-      e.printStackTrace();
+      logger.error("destroy DB failed at the end of test suite: ", e);
     }
   }
 
@@ -97,6 +96,30 @@ public class FlowContainerTest {
   public void setup() throws Exception {
     this.executorLoader = mock(ExecutorLoader.class);
     this.projectLoader = mock(ProjectLoader.class);
+  }
+
+  @After
+  public void destroy() {
+    if (this.flowContainer == null) {
+      return;
+    }
+    try {
+      this.flowContainer.closeMBeans();
+      this.flowContainer = null;
+    } catch (final Exception e) {
+      logger.error("destroy failed: ", e);
+    }
+  }
+
+  private void startFlowContainer() throws IOException {
+    final ExecutableFlow execFlow = createTestExecutableFlowFromYaml("basicflowyamltest", "basic_flow");
+    execFlow.setExecutionId(1);
+    final ProjectFileHandler handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
+        1, null, null, null, "111.111.111.111");
+    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
+
+    this.flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
+    this.flowContainer.start(props);
   }
 
   /**
@@ -107,15 +130,7 @@ public class FlowContainerTest {
    */
   @Test
   public void testExecSimple() throws Exception {
-    final ExecutableFlow execFlow = createTestExecutableFlowFromYaml("basicflowyamltest", "basic_flow");
-    execFlow.setExecutionId(1);
-    final ProjectFileHandler handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
-        1, null, null, null, "111.111.111.111");
-    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
-
-    final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
-    flowContainer.start();
-    FlowContainer.launchCtrlMsgListener(flowContainer);
+    startFlowContainer();
   }
 
   @Test
@@ -134,5 +149,21 @@ public class FlowContainerTest {
     deleteSymlinkedFile(symLink2);
     // Make sure none of the symlinks or files exist.
     assert(!(Files.exists(symLink2) || Files.exists(symLink1) || Files.exists(filePath)));
+  }
+
+  /**
+   * Test if Callback Manager is created when Flow Container starts
+   */
+  @Test
+  public void testCallBackManager() throws Exception {
+    // Enable jobcallback explicitly.
+    props.put("azkaban.executor.jobcallback.enabled", "true");
+    startFlowContainer();
+    // The callback manager must be set.
+    assert JobCallbackManager.isInitialized();
+
+    // Get the instance
+    final JobCallbackManager jobCallbackManager = JobCallbackManager.getInstance();
+    assert jobCallbackManager != null;
   }
 }
