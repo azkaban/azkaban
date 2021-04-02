@@ -141,12 +141,18 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
     for (int i = 0; i < 100; i++) {
       DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
+      this.flow5.setDispatchMethod(dispatchMethod);
+      Status startStatus = this.containerizedDispatchManager.getStartStatus(this.flow5);
       assertThat(dispatchMethod).isEqualTo(DispatchMethod.POLL);
+      assertThat(startStatus).isEqualTo(Status.PREPARING);
     }
     this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(100);
     for (int i = 0; i < 100; i++) {
       DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod();
+      this.flow5.setDispatchMethod(dispatchMethod);
+      Status startStatus = this.containerizedDispatchManager.getStartStatus(this.flow5);
       assertThat(dispatchMethod).isEqualTo(DispatchMethod.CONTAINERIZED);
+      assertThat(startStatus).isEqualTo(Status.READY);
     }
   }
 
@@ -175,11 +181,17 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(10);
     this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
     DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    this.flow5.setDispatchMethod(dispatchMethod);
+    Status startStatus = this.containerizedDispatchManager.getStartStatus(this.flow5);
     Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
+    Assert.assertEquals(Status.READY, startStatus);
 
     this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
     dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    this.flow5.setDispatchMethod(dispatchMethod);
+    startStatus = this.containerizedDispatchManager.getStartStatus(this.flow5);
     Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
+    Assert.assertEquals(Status.PREPARING, startStatus);
 
     this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(100);
     this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("java", "command",
