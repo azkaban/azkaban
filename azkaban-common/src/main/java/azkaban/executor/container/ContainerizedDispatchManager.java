@@ -374,20 +374,19 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       } catch (ExecutorManagerException e) {
         logger.info("Unable to dispatch container in Kubernetes for : {}", executionId);
         logger.info("Reason for dispatch failure: {}", e.getMessage());
-        // Reset the status of an execution to READY if dispatched failed. It will be picked up
-        // again from queue.
+        // Set the status of an execution to FAILED if dispatched failed.
         final ExecutableFlow dsFlow;
         try {
           dsFlow =
               ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
-          dsFlow.setStatus(Status.READY);
+          dsFlow.setStatus(Status.FAILED);
           dsFlow.setUpdateTime(System.currentTimeMillis());
           ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
-          // Emit ready flow event
+          // Emit failed flow event
           ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
               new EventData(dsFlow)));
         } catch (ExecutorManagerException executorManagerException) {
-          logger.error("Unable to update execution status to READY for : {}", executionId);
+          logger.error("Unable to update execution status to FAILED for : {}", executionId);
         }
       }
     }
