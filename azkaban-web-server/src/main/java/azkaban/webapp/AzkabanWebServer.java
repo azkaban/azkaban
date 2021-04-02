@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
@@ -89,6 +90,7 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
@@ -439,28 +441,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.addServlet(staticServlet, "/fonts/*");
     root.addServlet(staticServlet, "/favicon.ico");
 
-    final String defaultServletPath =
-        this.props.getString("azkaban.default.servlet.path", "/index");
-
-    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
-    routesMap.put("/index", new ProjectServlet());
-    routesMap.put("/manager", new ProjectManagerServlet());
-    routesMap.put("/executor", new ExecutorServlet());
-    routesMap.put("/schedule", new ScheduleServlet());
-    routesMap.put("/triggers", new TriggerManagerServlet());
-    routesMap.put("/flowtrigger", new FlowTriggerServlet());
-    routesMap.put("/flowtriggerinstance", new FlowTriggerInstanceServlet());
-    routesMap.put("/history", new HistoryServlet());
-    routesMap.put("/jmx", new JMXHttpServlet());
-    routesMap.put("/stats", new StatsServlet());
-    routesMap.put("/notes", new NoteServlet());
-    routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
-
-    routesMap.put("/status", new StatusServlet(this.statusService));
-
-    routesMap.put("/imageTypes/*", new ImageTypeServlet());
-    routesMap.put("/imageVersions/*", new ImageVersionServlet());
-    routesMap.put("/imageRampup/*", new ImageRampupServlet());
+    final Map<String, AbstractAzkabanServlet> routesMap = getRoutesMap();
 
     // Configure core routes
     for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
@@ -508,6 +489,47 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     metricsFilterMapping.setPathSpecs(servletPaths);
     metricsFilterMapping.setDispatches(Handler.REQUEST);
     root.getServletHandler().addFilter(metricsFilter, metricsFilterMapping);
+  }
+
+  /**
+   * @return The routing map of path to servlets.
+   */
+  @VisibleForTesting
+  protected Map<String, AbstractAzkabanServlet> getRoutesMap() {
+    final String defaultServletPath =
+        this.props.getString("azkaban.default.servlet.path", "/index");
+
+    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
+    routesMap.put("/index", new ProjectServlet());
+    routesMap.put("/manager", new ProjectManagerServlet());
+    routesMap.put("/executor", new ExecutorServlet());
+    routesMap.put("/schedule", new ScheduleServlet());
+    routesMap.put("/triggers", new TriggerManagerServlet());
+    routesMap.put("/flowtrigger", new FlowTriggerServlet());
+    routesMap.put("/flowtriggerinstance", new FlowTriggerInstanceServlet());
+    routesMap.put("/history", new HistoryServlet());
+    routesMap.put("/jmx", new JMXHttpServlet());
+    routesMap.put("/stats", new StatsServlet());
+    routesMap.put("/notes", new NoteServlet());
+    routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
+
+    routesMap.put("/status", new StatusServlet(this.statusService));
+
+    if (isContainerizedDispatchMethodEnabled()) {
+      routesMap.put("/imageTypes/*", new ImageTypeServlet());
+      routesMap.put("/imageVersions/*", new ImageVersionServlet());
+      routesMap.put("/imageRampup/*", new ImageRampupServlet());
+    }
+    return routesMap;
+  }
+
+  /**
+   * @return True if the Containerization is enabled, otherwise false.
+   */
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(this.props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   private void prepareAndStartServer() throws Exception {
