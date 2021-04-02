@@ -27,11 +27,13 @@ import azkaban.Constants.PluginManager;
 import azkaban.cluster.ClusterModule;
 import azkaban.cluster.ClusterRouter;
 import azkaban.common.ExecJettyServerModule;
+import azkaban.common.ServerUtils;
 import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.event.FlowWatcher;
+import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.executor.ExecutableFlow;
@@ -42,6 +44,7 @@ import azkaban.executor.Status;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetLoader;
+import azkaban.jmx.JmxJettyServer;
 import azkaban.jobtype.HadoopJobUtils;
 import azkaban.jobtype.HadoopProxy;
 import azkaban.jobtype.JobTypeManager;
@@ -50,6 +53,8 @@ import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectLoader;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
+import azkaban.server.IMBeanRegistrable;
+import azkaban.server.MBeanRegistrationManager;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferManager;
@@ -81,11 +86,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *  This class is the entrypoint for launching a flow execution in a container.
@@ -101,7 +105,7 @@ import org.slf4j.LoggerFactory;
  *  The flow execution's status is PREPARING when FlowContainer is called. It's status is set to
  *  RUNNING from FlowRunner. The rest of the state machine is handled by FlowRunner.
  */
-public class FlowContainer {
+public class FlowContainer implements IMBeanRegistrable {
 
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
@@ -120,7 +124,7 @@ public class FlowContainer {
 
 
   // Logging
-  private static final Logger logger = LoggerFactory.getLogger(FlowContainer.class);
+  private static final Logger logger = Logger.getLogger(FlowContainer.class);
   private static final String logFileName = "logs/azkaban-execserver.log";
   private static final File logFile =
           new File(String.valueOf(ContainerizedFlowPreparer.getCurrentDir()), logFileName);
@@ -147,6 +151,7 @@ public class FlowContainer {
   private final int jobLogNumFiles;
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private final boolean validateProxyUser;
+  private final MBeanRegistrationManager mBeanRegistrationManager = new MBeanRegistrationManager();
 
   /**
    * Constructor of FlowContainer. It sets up all the DAO, all the loaders and Azkaban KeyStore.
@@ -242,11 +247,10 @@ public class FlowContainer {
 
     // Constructor
     final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
-    flowContainer.start();
-    launchCtrlMsgListener(flowContainer);
 
-    // TODO : Revisit this logic with full implementation for JMXBEanManager and other callback mechanisms
-    JmxJobMBeanManager.getInstance().initialize(azkabanProps);
+    // Setup the callback mechanism and start the jetty server.
+    flowContainer.start(azkabanProps);
+
     // execute the flow, this is a blocking call until flow finishes
     flowContainer.submitFlow(execId);
     // Shutdown the container
@@ -390,9 +394,19 @@ public class FlowContainer {
     }
   }
 
+  /**
+   * Starts the Jetty Server and sets up callback mechanisms
+   * @param azkabanProps Azkaban properties.
+   */
   @VisibleForTesting
-  void start() {
+  void start(final Props azkabanProps) {
     this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
+    JmxJobMBeanManager.getInstance().initialize(azkabanProps);
+
+    ServerUtils.configureJobCallback(FlowContainer.logger, azkabanProps);
+    configureMBeanServer();
+    // Start the Jetty Server
+    launchCtrlMsgListener(this);
   }
 
   public void cancelFlow(final int execId, final String user)
@@ -400,8 +414,8 @@ public class FlowContainer {
 
     logger.info("Cancel Flow called");
     if (this.flowRunner == null) {
-      logger.warn("Attempt to cancel flow execId: {} before flow got a chance to start.",
-          execId);
+      logger.warn(String.format("Attempt to cancel flow execId: %d before flow got a chance to start.",
+          execId));
       throw new ExecutorManagerException("Flow has not launched yet.");
     }
 
@@ -427,15 +441,15 @@ public class FlowContainer {
       throws ExecutorManagerException {
     logger.info("readFlowLogs called");
     if (this.flowRunner == null) {
-      logger.warn("Attempt to read flow logs before flow execId: {} got a chance to start",
-          execId);
+      logger.warn(String.format("Attempt to read flow logs before flow execId: %d got a chance to start",
+          execId));
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Error reading file. Execution directory does not exist for flow execId: {}",
-          execId);
+      logger.warn(String.format("Error reading file. Execution directory does not exist for flow execId: %d",
+          execId));
       throw new ExecutorManagerException("Error reading file. Execution directory does not exist");
     }
 
@@ -444,12 +458,12 @@ public class FlowContainer {
       if (logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
-        logger.warn("Flow log file does not exist for flow execId: {}", execId);
+        logger.warn(String.format("Flow log file does not exist for flow execId: %d", execId));
         throw new ExecutorManagerException("Flow log file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn("IOException while trying to read flow log file for flow execId: {}",
-          execId);
+      logger.error(String.format("IOException while trying to read flow log file for flow execId: %d",
+          execId));
       throw new ExecutorManagerException(e);
     }
   }
@@ -470,15 +484,15 @@ public class FlowContainer {
 
     logger.info("readJobLogs called");
     if (this.flowRunner == null) {
-      logger.warn("Attempt to read job logs before flow got a chance to start. " +
-          "Flow execId: {}, jobId: {}", execId, jobId);
+      logger.warn(String.format("Attempt to read job logs before flow got a chance to start. " +
+          "Flow execId: %d, jobId: %s", execId, jobId));
       throw new ExecutorManagerException("The flow has not launched yet!");
     }
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Error reading jobLogs. Execution dir does not exist. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("Error reading jobLogs. Execution dir does not exist. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(
           "Error reading file. Execution directory does not exist.");
     }
@@ -488,13 +502,13 @@ public class FlowContainer {
       if (logFile != null && logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
-        logger.warn("Job log file does not exist. Flow execId: {}, jobId: {}",
-            execId, jobId);
+        logger.warn(String.format("Job log file does not exist. Flow execId: %d, jobId: %s",
+            execId, jobId));
         throw new ExecutorManagerException("Job log file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn("IOException while trying to read Job logs. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.error(String.format("IOException while trying to read Job logs. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(e);
     }
   }
@@ -513,15 +527,15 @@ public class FlowContainer {
 
     logger.info("readJobMetaData called");
     if (this.flowRunner == null) {
-      logger.warn("Metadata cannot be read as flow has not started. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("Metadata cannot be read as flow has not started. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException("The flow has not launched yet.");
     }
 
     final File dir = this.flowRunner.getExecutionDir();
     if (dir == null || !dir.exists()) {
-      logger.warn("Execution directory does not exist. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.warn(String.format("Execution directory does not exist. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(
           "Error reading file. Execution directory does not exist.");
     }
@@ -531,13 +545,13 @@ public class FlowContainer {
       if (metaDataFile != null && metaDataFile.exists()) {
         return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
       } else {
-        logger.warn("Job metadata file does not exist. execId: {}, jobId: {}",
-            execId, jobId);
+        logger.warn(String.format("Job metadata file does not exist. execId: %d, jobId: %s",
+            execId, jobId));
         throw new ExecutorManagerException("Job metadata file does not exist.");
       }
     } catch (final IOException e) {
-      logger.warn("IOException while trying to read metadata file. execId: {}, jobId: {}",
-          execId, jobId);
+      logger.error(String.format("IOException while trying to read metadata file. execId: %d, jobId: %s",
+          execId, jobId));
       throw new ExecutorManagerException(e);
     }
   }
@@ -549,14 +563,13 @@ public class FlowContainer {
     } catch (final Exception e) {
       logger.error(e.getMessage());
     }
-    // TODO Add hook for JobCallback
 
     final Connector[] connectors = flowContainer.jettyServer.getConnectors();
     checkState(connectors.length >= 1, "Server must have at least 1 connector");
 
     // The first connector is created upon initializing the server. That's the one that has the port.
     flowContainer.port = connectors[0].getLocalPort();
-    logger.info("Listening on port {} for control messages.", flowContainer.port);
+    logger.info(String.format("Listening on port %d for control messages.", flowContainer.port));
   }
 
   private static int getExecutionId() throws ExecutorManagerException {
@@ -571,9 +584,9 @@ public class FlowContainer {
     int execId = -1;
     try {
       execId = Integer.parseInt(execIdStr);
-      logger.info("Execution ID : {}", execId);
+      logger.info(String.format("Execution ID : %d", execId));
     } catch (final NumberFormatException ne) {
-      logger.error("Execution ID set in environment is invalid {}", execIdStr);
+      logger.error(String.format("Execution ID set in environment is invalid %s", execIdStr));
       throw new ExecutorManagerException(ne);
     }
     if (execId < 1) {
@@ -603,17 +616,44 @@ public class FlowContainer {
     try {
       versionSetId = Integer.parseInt(versionSetIdStr);
     } catch (final NumberFormatException ne) {
-      logger.warn("VersionSet ID set in environment is invalid {}", versionSetIdStr);
+      logger.error(String.format("VersionSet ID set in environment is invalid %s", versionSetIdStr));
       return;
     }
     final VersionSet versionSet;
     try {
       versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
     } catch (final ImageMgmtException ex) {
-      logger.warn("Failed to fetch versionSet using versionSet ID : {}", versionSetId);
+      logger.error(String.format("Failed to fetch versionSet using versionSet ID : %d", versionSetId));
       return;
     }
-    logger.info("VersionSet: {}", versionSet.getVersionSetJsonString());
+    logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
+  }
+
+  /**
+   * This method configures the MBeanServer.
+   */
+  @Override
+  public void configureMBeanServer() {
+    logger.info("Registering MBeans...");
+
+    this.mBeanRegistrationManager.registerMBean("executorJetty",
+            new JmxJettyServer(this.jettyServer));
+    this.mBeanRegistrationManager.registerMBean("jobJMXMBean", JmxJobMBeanManager.getInstance());
+
+    if (JobCallbackManager.isInitialized()) {
+      final JobCallbackManager jobCallbackMgr = JobCallbackManager.getInstance();
+      this.mBeanRegistrationManager
+              .registerMBean("jobCallbackJMXMBean", jobCallbackMgr.getJmxJobCallbackMBean());
+    }
+  }
+
+  /**
+   * Getter for MBeanRegistrationManager.
+   * @return
+   */
+  @Override
+  public MBeanRegistrationManager getMBeanRegistrationManager() {
+    return this.mBeanRegistrationManager;
   }
 
   /**
@@ -629,7 +669,7 @@ public class FlowContainer {
       try {
         filePath = Files.readSymbolicLink(symlinkedFilePath);
       } catch (final IOException e) {
-        logger.error("Error reading symlink {}", symlinkedFilePath, e);
+        logger.error(String.format("Error reading symlink %s", symlinkedFilePath), e);
         throw new ExecutorManagerException(e);
       }
       // Delete the symlink and then delete the symlinked file
@@ -639,7 +679,7 @@ public class FlowContainer {
     try {
       Files.delete(symlinkedFilePath);
     } catch (final IOException e) {
-      logger.error("Error deleting : {}", symlinkedFilePath, e);
+      logger.error(String.format("Error deleting : %s", symlinkedFilePath), e);
       throw new ExecutorManagerException(e);
     }
   }
@@ -657,10 +697,19 @@ public class FlowContainer {
   }
 
   /**
+   * Close the MBeans
+   */
+  @VisibleForTesting
+  void closeMBeans() {
+    this.mBeanRegistrationManager.closeMBeans();
+  }
+
+  /**
    * Shutdown the Container. This shuts down the ExecutorService which runs the flow execution as
    * well as JettyServer.
    */
-  private void shutdown() {
+  @VisibleForTesting
+  void shutdown() {
     logger.info("Shutting down the pod");
     final int execId = this.flowRunner.getExecutionId();
     while (!this.flowFuture.isDone()) {
@@ -668,8 +717,8 @@ public class FlowContainer {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
-        logger.error("The sleep while waiting for execution : {} to finish was interrupted",
-            execId);
+        logger.error(String.format("The sleep while waiting for execution : %d to finish was interrupted",
+            execId));
       }
     }
 
