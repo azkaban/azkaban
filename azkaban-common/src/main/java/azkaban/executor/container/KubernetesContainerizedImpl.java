@@ -681,8 +681,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       }
     }
     final V1Pod pod = createPodFromSpec(executionId, podSpec);
-    final String podSpecYaml = Yaml.dump(pod).trim();
-    logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
+    logPodSpecYaml(executionId, pod, flowParam);
 
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
@@ -699,6 +698,25 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.executorLoader.updateExecutableFlow(flow);
     // Emit preparing flow event with version set
     this.fireEventListeners(Event.create(flow, EventType.FLOW_STATUS_CHANGED, new EventData(flow)));
+  }
+
+  /**
+   * This method is used to log pod spec yaml for debugging purpose. If Pod is marked as dev pod
+   * then pod spec yaml will be printed in logs for INFO level else it will be logged for DEBUG
+   * level.
+   * @param executionId
+   * @param pod
+   * @param flowParam
+   */
+  private void logPodSpecYaml(final int executionId, final V1Pod pod,
+      final Map<String, String> flowParam) {
+    final String podSpecYaml = Yaml.dump(pod).trim();
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
+      logger.info("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
+    } else {
+      logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
+    }
   }
 
   /**
