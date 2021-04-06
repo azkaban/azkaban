@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -728,8 +729,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", options.getSuccessEmails());
     ret.put("failureEmails", options.getFailureEmails());
+    ret.put("runtimeProperties", mergeRuntimeProperties(options));
+    // For legacy support. This is not used by the Azkaban UI any more.
     ret.put("flowParam", options.getFlowParameters());
-    ret.put("nodeParams", options.getNodeParameters());
 
     final FailureAction action = options.getFailureAction();
     String failureAction = null;
@@ -763,6 +765,23 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     ret.put("nodeStatus", nodeStatus);
     ret.put("disabled", options.getDisabledJobs());
+  }
+
+  /**
+   * Copies flowOverrides under the key "ROOT".
+   */
+  private static Map<String, Map<String, String>> mergeRuntimeProperties(
+      final ExecutionOptions options) {
+    final Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
+    if (!options.getFlowParameters().isEmpty()) {
+      runtimeProperties
+          .put(Constants.ROOT_RUNTIME_PROPERTY, new HashMap<>(options.getFlowParameters()));
+    }
+    for (final Entry<String, Map<String, String>> runtimeProp :
+        options.getRuntimeProperties().entrySet()) {
+      runtimeProperties.put(runtimeProp.getKey(), new HashMap<>(runtimeProp.getValue()));
+    }
+    return runtimeProperties;
   }
 
   private void ajaxCancelFlow(final HttpServletRequest req, final HttpServletResponse resp,

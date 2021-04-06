@@ -75,7 +75,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
   }
 
   @Test
-  public void testNodeOverrides() throws Exception {
+  public void testRuntimeOverrides() throws Exception {
     this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
 
     final HashMap<String, String> flowProps = new HashMap<>();
@@ -85,7 +85,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
 
     // Set some node-specific overrides
     final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
-    runner.getExecutableFlow().getExecutionOptions().addAllNodeParameters(ImmutableMap.of(
+    runner.getExecutableFlow().getExecutionOptions().addAllRuntimeProperties(ImmutableMap.of(
         "job2", ImmutableMap.of("job-prop-2", "job2-val-2", "props6", "job2-val-6"),
         "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
         // overrides by nested job id: this is the most specific, so always wins
@@ -108,7 +108,8 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("moo3", job2Props.get("props3"));
     Assert.assertEquals("job7", job2Props.get("props7"));
     Assert.assertEquals("execflow5", job2Props.get("props5"));
-    // should've been overridden by nodeOverride
+    // should've been overridden by the most specific runtime property
+    // props6=execflow6 is a flow override, but it's not the most specific one
     Assert.assertEquals("job2-val-6", job2Props.get("props6"));
     Assert.assertEquals("shared4", job2Props.get("props4"));
     Assert.assertEquals("shared8", job2Props.get("props8"));
@@ -141,7 +142,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
   }
 
   @Test
-  public void testNodeOverridesWithFlowOverridesExisting() throws Exception {
+  public void testRuntimeOverridesWithFlowOverridesExisting() throws Exception {
     this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
 
     final HashMap<String, String> flowProps = new HashMap<>();
@@ -153,7 +154,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, null, flowProps,
         Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, "true"));
     // Set some node-specific overrides
-    runner.getExecutableFlow().getExecutionOptions().addAllNodeParameters(ImmutableMap.of(
+    runner.getExecutableFlow().getExecutionOptions().addAllRuntimeProperties(ImmutableMap.of(
         "job2", ImmutableMap.of("job-prop-2", "job2-val-2", "props6", "job2-val-6"),
         "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
         // overrides by nested job id: this is the most specific, so always wins

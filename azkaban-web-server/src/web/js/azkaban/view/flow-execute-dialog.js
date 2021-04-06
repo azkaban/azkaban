@@ -55,22 +55,19 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var failureEmailsOverride = $("#override-failure-emails").is(':checked');
     var successEmailsOverride = $("#override-success-emails").is(':checked');
 
-    var flowOverride = {};
-    var nodeOverride = {};
+    var runtimeProperty = {};
     var editRows = $(".editRow");
     for (var i = 0; i < editRows.length; ++i) {
       var row = editRows[i];
-      var jobOrFlow = row.cells[0].firstChild.value;
+      var node = row.cells[0].firstChild.value;
       var td = $(row).find('span');
       var key = $(td[0]).text();
       var val = $(td[1]).text();
 
       if (key && key.length > 0) {
-        if (jobOrFlow && jobOrFlow.length > 0) {
-          nodeOverride[jobOrFlow] = nodeOverride[jobOrFlow] || {}
-          nodeOverride[jobOrFlow][key] = val;
-        } else {
-          flowOverride[key] = val;
+        if (node && node.length > 0) {
+          runtimeProperty[node] = runtimeProperty[node] || {}
+          runtimeProperty[node][key] = val;
         }
       }
     }
@@ -91,8 +88,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       successEmails: successEmails,
       notifyFailureFirst: notifyFailureFirst,
       notifyFailureLast: notifyFailureLast,
-      flowOverride: flowOverride,
-      nodeOverride: nodeOverride,
+      runtimeProperty: runtimeProperty,
     };
 
     // Set concurrency option, default is skip
@@ -114,8 +110,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var failureEmails = this.model.get("failureEmails");
     var failureActions = this.model.get("failureAction");
     var notifyFailure = this.model.get("notifyFailure");
-    var flowParams = this.model.get("flowParams");
-    var nodeParams = this.model.get("nodeParams");
+    var runtimeProperties = this.model.get("runtimeProperties");
     var isRunning = this.model.get("isRunning");
     var concurrentOption = this.model.get("concurrentOption");
     var pipelineLevel = this.model.get("pipelineLevel");
@@ -167,22 +162,13 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     }
 
     if ($(".editRow").length == 0) {
-      if (flowParams) {
-        for (var key in flowParams) {
-          editTableView.handleAddRow({
-            paramJobOrFlow: '',
-            paramkey: key,
-            paramvalue: flowParams[key]
-          });
-        }
-      }
-      if (nodeParams) {
-        for (var jobOrFlow in nodeParams) {
-          for (var key in nodeParams[jobOrFlow]) {
+      if (runtimeProperties) {
+        for (var jobOrFlow in runtimeProperties) {
+          for (var key in runtimeProperties[jobOrFlow]) {
             editTableView.handleAddRow({
               paramJobOrFlow: jobOrFlow,
               paramkey: key,
-              paramvalue: nodeParams[jobOrFlow][key]
+              paramvalue: runtimeProperties[jobOrFlow][key]
             });
           }
         }
@@ -381,14 +367,13 @@ azkaban.EditTableView = Backbone.View.extend({
     var idSelect = document.createElement("select");
     idSelect.setAttribute("class", "form-control");
 
-    // global option (flowOverride)
-    idSelect.options[0] = new Option("", "");
+    idSelect.options[0] = new Option("ROOT", "ROOT");
 
-    // node-specific options (nodeOverride)
+    // runtime properties
     for (var i = 0; i < nestedIds.length; ++i) {
       var nestedId = nestedIds[i];
       idSelect.options[i + 1] = new Option(nestedId, nestedId);
-      if (jobOrFlow == nestedId) {
+      if (jobOrFlow === nestedId) {
         idSelect.options[i + 1].selected = true;
       }
     }

@@ -424,11 +424,11 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     }
     this.flow.setInputProps(commonFlowProps);
 
-    // If there are node overrides, we log them now.
-    final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
-        .getNodeParameters();
-    if (nodeParams != null && !nodeParams.isEmpty()) {
-      this.logger.info("NodeOverride Props: " + nodeParams);
+    // If there are runtime properties, we log them now.
+    final Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
+        .getRuntimeProperties();
+    if (runtimeProperties != null && !runtimeProperties.isEmpty()) {
+      this.logger.info("Runtime Props: " + runtimeProperties);
     }
 
     if (this.watcher != null) {
@@ -883,6 +883,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       return;
     }
 
+    Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
+        .getRuntimeProperties();
+    if (runtimeProperties == null) {
+      runtimeProperties = new HashMap<>();
+    }
+
     Props props = null;
 
     if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
@@ -901,7 +907,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     // 2. Parent Flow Properties
     final ExecutableFlowBase parentFlow = node.getParentFlow();
     if (parentFlow != null) {
-      final Props flowProps = Props.clone(parentFlow.getInputProps());
+      // flow level runtime props have been already applied on parent input props
+      Props flowProps = Props.clone(parentFlow.getInputProps());
+      if (!isOverrideExistingEnabled()) {
+        // if there are more specific runtime props, those override the flow level props
+        flowProps = applyRuntimeProperties(node, runtimeProperties, flowProps);
+      }
       flowProps.setEarliestAncestor(props);
       props = flowProps;
     }
@@ -920,37 +931,36 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       props = jobSource;
     }
 
-    if (this.azkabanProps.getBoolean(
-        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false)) {
-      // Flow override props are configured to also override existing job props
-      // =>
-      // 5. If there are any runtime flow overrides, we apply them now.
+    // 5. If configured, runtime properties override also existing .job props & output props
+    if (isOverrideExistingEnabled()) {
+      // 5.1. apply flow level runtime props
       final Map<String, String> flowParam =
           this.flow.getExecutionOptions().getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
         props = new Props(props, flowParam);
       }
-    }
-
-    // 6. If there are any node-specific flow overrides, we also apply them
-    final Map<String, Map<String, String>> nodeParams = this.flow.getExecutionOptions()
-        .getNodeParameters();
-    if (nodeParams != null && !nodeParams.isEmpty()) {
-      props = applyNodeOverrides(node, nodeParams, props);
+      // 5.2. apply node-specific runtime props
+      props = applyRuntimeProperties(node, runtimeProperties, props);
     }
 
     node.setInputProps(props);
   }
 
-  private Props applyNodeOverrides(final ExecutableNode node,
-      final Map<String, Map<String, String>> nodeParams, final Props props) {
+  private boolean isOverrideExistingEnabled() {
+    return this.azkabanProps.getBoolean(
+        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false);
+  }
+
+  private Props applyRuntimeProperties(final ExecutableNode node,
+      final Map<String, Map<String, String>> runtimeProperties, final Props props) {
     Props propsWithOverides = props;
     if (node.getParentFlow() != null) {
       // apply recursively top->down
-      propsWithOverides = applyNodeOverrides(node.getParentFlow(), nodeParams, props);
+      propsWithOverides = applyRuntimeProperties(node.getParentFlow(), runtimeProperties, props);
     }
-    if (nodeParams.containsKey(node.getNestedId())) {
-      propsWithOverides = new Props(propsWithOverides, nodeParams.get(node.getNestedId()));
+    if (runtimeProperties.containsKey(node.getNestedId())) {
+      // runtime props override any existing props
+      propsWithOverides = new Props(propsWithOverides, runtimeProperties.get(node.getNestedId()));
     }
     return propsWithOverides;
   }

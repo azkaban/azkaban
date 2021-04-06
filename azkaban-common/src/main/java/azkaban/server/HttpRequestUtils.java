@@ -17,6 +17,7 @@ package azkaban.server;
 
 import static azkaban.executor.ExecutionOptions.FAILURE_ACTION_OVERRIDE;
 
+import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
@@ -124,11 +125,32 @@ public class HttpRequestUtils {
       execOptions.setSlaOptions(slaOptions);
     }
 
-    final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
-    execOptions.addAllFlowParameters(flowParamGroup);
+    final Map<String, Map<String, String>> runtimePropertiesGroup = getMapParamGroup(req,
+        "runtimeProperty");
 
-    final Map<String, Map<String, String>> nodeParamGroup = getMapParamGroup(req, "nodeOverride");
-    execOptions.addAllNodeParameters(nodeParamGroup);
+    // legacy support
+    final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
+
+    // Don't allow combining old & new in the same request:
+    // This ensures that there's no need to handle possible conflicts between flowOverride &
+    // runtimeProperty[ROOT]
+    if (!flowParamGroup.isEmpty() && !runtimePropertiesGroup.isEmpty()) {
+      throw new ServletException("The legacy param group flowOverride is not allowed in "
+          + "combination with the runtimeProperty param group. "
+          + "Migrate flowOverride to runtimeProperty[ROOT].");
+    }
+
+    // Add all flow-level props – they are accessed via ExecutionOptions#getFlowParameters.
+    final Map<String, String> rootProps = runtimePropertiesGroup
+        .remove(Constants.ROOT_RUNTIME_PROPERTY);
+    if (rootProps != null) {
+      flowParamGroup.putAll(rootProps);
+    }
+
+    // The ROOT runtime properties
+    execOptions.addAllFlowParameters(flowParamGroup);
+    // Any other runtime properties
+    execOptions.addAllRuntimeProperties(runtimePropertiesGroup);
 
     if (hasParam(req, "disabled")) {
       final String disabled = getParam(req, "disabled");

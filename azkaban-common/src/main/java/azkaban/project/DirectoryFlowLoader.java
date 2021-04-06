@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import azkaban.Constants;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
@@ -114,7 +115,7 @@ public class DirectoryFlowLoader implements FlowLoader {
   /**
    * Loads all project flows from the directory.
    *
-   * @param project The project.
+   * @param project    The project.
    * @param projectDir The directory to load flows from.
    * @return the validation report.
    */
@@ -191,7 +192,7 @@ public class DirectoryFlowLoader implements FlowLoader {
             }
             node.setType(type);
 
-            String condition = prop.getString("condition", null);
+            final String condition = prop.getString("condition", null);
             if (null != condition && !condition.isEmpty()) {
               logger.info(String.format("Setting condition %s for job %s", condition, jobName));
               node.setCondition(condition);
@@ -258,6 +259,10 @@ public class DirectoryFlowLoader implements FlowLoader {
     // Add all the in edges and out edges. Catch bad dependencies and self
     // referrals. Also collect list of nodes who are parents.
     for (final Node node : this.nodeMap.values()) {
+      if (Constants.ROOT_RUNTIME_PROPERTY.equals(node.getId())) {
+        this.errors.add(node.getId() + " is not allowed as a name. Pick some other name.");
+      }
+
       final Props props = this.jobPropsMap.get(node.getId());
 
       if (props == null) {
@@ -404,8 +409,8 @@ public class DirectoryFlowLoader implements FlowLoader {
 
 
   private void validateConditions() {
-    nodeMap.forEach((name, node) -> {
-      String condition = node.getCondition();
+    this.nodeMap.forEach((name, node) -> {
+      final String condition = node.getCondition();
       boolean foundConditionOnJobStatus = false;
       if (condition == null) {
         return;
@@ -445,12 +450,12 @@ public class DirectoryFlowLoader implements FlowLoader {
     });
   }
 
-  private void validateVariableSubstitution(final String operand, String name) {
+  private void validateVariableSubstitution(final String operand, final String name) {
     final Matcher matcher = DirectoryYamlFlowLoader.CONDITION_VARIABLE_REPLACEMENT_PATTERN
         .matcher(operand);
     if (matcher.matches()) {
       final String jobName = matcher.group(1);
-      final Node conditionNode = nodeMap.get(jobName);
+      final Node conditionNode = this.nodeMap.get(jobName);
       if (conditionNode == null) {
         this.errors.add("Invalid condition for " + name + ": " + jobName
             + " doesn't exist in the flow.");
