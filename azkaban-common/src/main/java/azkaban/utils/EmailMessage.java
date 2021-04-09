@@ -33,6 +33,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMultipart;
 import org.apache.log4j.Logger;
+import java.security.Security;
 
 public class EmailMessage {
 
@@ -178,6 +179,13 @@ public class EmailMessage {
     props.put("mail.smtp.connectiontimeout", _connectionTimeout);
     props.put("mail.smtp.starttls.enable", this._tls);
     props.put("mail.smtp.ssl.trust", this._mailHost);
+
+    //      begin of the tls workaround
+    final String SSL_FACTORY = "javax.net.ssl.SSLSocketFactory";
+    props.setProperty("mail.smtp.socketFactory.class", SSL_FACTORY);
+    props.setProperty("mail.smtp.socketFactory.fallback", "false");
+    props.setProperty("mail.smtp.socketFactory.port", "465");
+//      end of the tls workaround
 
     final JavaxMailSender sender = this.creator.createSender(props);
     final Message message = sender.createMessage();
