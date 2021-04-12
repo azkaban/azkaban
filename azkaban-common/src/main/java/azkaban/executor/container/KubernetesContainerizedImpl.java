@@ -591,11 +591,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * This method is used to setup any environment variable for a pod which can be passed from flow
    * parameter. To provide the generic solution, it is adding all the flow parameters starting with
+   * (@FlowParameters.FLOW_PARAM_POD_ENV_VAR)
    *
    * @param envVariables
    * @param flowParam
-   * @FlowParameters.FLOW_PARAM_POD_ENV_VAR
-   * @FlowParameters.FLOW_PARAM_POD_ENV_VAR
    */
   void setupPodEnvVariables(final Map<String, String> envVariables,
       final Map<String, String> flowParam) {
