@@ -19,9 +19,9 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
 import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
+import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
-import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
@@ -185,27 +185,28 @@ public class KubernetesContainerizedImplTest {
   /**
    * This test is used to verify that if env variables are set correctly for pod which are set from
    * flow param.
+   *
    * @throws Exception
    */
   @Test
   public void testPodEnvVariablesFromFlowParam() throws Exception {
-    String azkabanBaseVersion = "azkaban-base.version";
-    String azkabanConfigVersion = "azkaban-config.version";
+    final String azkabanBaseVersion = "azkaban-base.version";
+    final String azkabanConfigVersion = "azkaban-config.version";
     final Map<String, String> flowParam = new HashMap<>();
     flowParam.put(FlowParameters.FLOW_PARAM_POD_ENV_VAR + azkabanBaseVersion, "1.0.0");
     flowParam.put(FlowParameters.FLOW_PARAM_POD_ENV_VAR + azkabanConfigVersion, "0.1.0");
     flowParam.put("any.other.param", "test");
-    Map<String,String> envVariables = new HashMap<>();
+    final Map<String, String> envVariables = new HashMap<>();
     this.kubernetesContainerizedImpl.setupPodEnvVariables(envVariables, flowParam);
     assert (envVariables.size() == 2);
-    assert(envVariables.get(azkabanBaseVersion.toUpperCase()).equals("1.0.0"));
-    assert(envVariables.get(azkabanConfigVersion.toUpperCase()).equals("0.1.0"));
+    assert (envVariables.get(azkabanBaseVersion.toUpperCase()).equals("1.0.0"));
+    assert (envVariables.get(azkabanConfigVersion.toUpperCase()).equals("0.1.0"));
   }
 
   /**
    * This test is used to verify that if no env variables is set correctly for pod which are set
-   * from
-   * flow param.
+   * from flow param.
+   *
    * @throws Exception
    */
   @Test
@@ -214,7 +215,7 @@ public class KubernetesContainerizedImplTest {
     flowParam.put("azkaban-base.version", "1.0.0");
     flowParam.put("azkaban-config.version", "0.1.0");
     flowParam.put("any.other.param", "test");
-    Map<String,String> envVariables = new HashMap<>();
+    final Map<String, String> envVariables = new HashMap<>();
     this.kubernetesContainerizedImpl.setupPodEnvVariables(envVariables, flowParam);
     assert (envVariables.size() == 0);
   }
@@ -270,7 +271,7 @@ public class KubernetesContainerizedImplTest {
     when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
     when(imageRampupManager
-        .getVersionInfoWithNewAndActiveState(any(String.class), any(String.class)))
+        .getVersionInfo(any(String.class), any(String.class), any(Set.class)))
         .thenReturn(new VersionInfo("7.0.4", "path1", State.ACTIVE));
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     // Add included job types
@@ -368,8 +369,9 @@ public class KubernetesContainerizedImplTest {
   }
 
   /**
-   * Test a preparing flow to be executed in a container, whether the information of execution
-   * id, version set, flow status, can be processed by a PodEventListener
+   * Test a preparing flow to be executed in a container, whether the information of execution id,
+   * version set, flow status, can be processed by a PodEventListener
+   *
    * @throws Exception
    */
   @Test
@@ -403,13 +405,14 @@ public class KubernetesContainerizedImplTest {
     final String versionSetJsonString = metaData.get(VERSION_SET);
     final Map<String, String> imageToVersionMap =
         new ObjectMapper().readValue(versionSetJsonString,
-        new TypeReference<HashMap<String, String>>() {
-        });
+            new TypeReference<HashMap<String, String>>() {
+            });
     assertThat(imageToVersionMap.keySet()).isEqualTo(versionSet.getImageToVersionMap().keySet());
     assertThat(imageToVersionMap.get("spark")).isEqualTo(versionSet.getImageToVersionMap()
         .get("spark").getVersion());
-    assertThat(imageToVersionMap.get(AZKABAN_BASE_IMAGE)).isEqualTo(versionSet.getImageToVersionMap()
-        .get(AZKABAN_BASE_IMAGE).getVersion());
+    assertThat(imageToVersionMap.get(AZKABAN_BASE_IMAGE))
+        .isEqualTo(versionSet.getImageToVersionMap()
+            .get(AZKABAN_BASE_IMAGE).getVersion());
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
@@ -443,7 +446,8 @@ public class KubernetesContainerizedImplTest {
     addImageRampupEntries("create_image_rampup.json", objectMapper);*/
   }
 
-  private static void addImageTypeTableEntry(final String jsonFile, final ObjectMapper objectMapper) {
+  private static void addImageTypeTableEntry(final String jsonFile,
+      final ObjectMapper objectMapper) {
     final String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
     try {
       final ImageTypeDTO imageType = objectMapper.readValue(jsonPayload, ImageTypeDTO.class);
@@ -475,7 +479,8 @@ public class KubernetesContainerizedImplTest {
     }
   }
 
-  private static void addImageRampupEntries(final String jsonFile, final ObjectMapper objectMapper) {
+  private static void addImageRampupEntries(final String jsonFile,
+      final ObjectMapper objectMapper) {
     final String jsonPayload = JSONUtils.readJsonFileAsString(TEST_JSON_DIR + "/" + jsonFile);
     List<ImageRampupPlanRequestDTO> imageRampupPlanRequests = null;
     try {
@@ -495,8 +500,9 @@ public class KubernetesContainerizedImplTest {
   }
 
   /**
-   * Creates a version map, which contains key value pairs of image name and corresponding
-   * version number
+   * Creates a version map, which contains key value pairs of image name and corresponding version
+   * number
+   *
    * @return a version set map
    */
   private Map<String, VersionInfo> getVersionMap() {
@@ -510,10 +516,11 @@ public class KubernetesContainerizedImplTest {
 
   /**
    * Creates a Guice injector for Azkaban event reporter instantiation
+   *
    * @param props
    * @return
    */
-  private Injector getInjector(final Props props){
+  private Injector getInjector(final Props props) {
     props.put(AZKABAN_EVENT_REPORTING_ENABLED, "true");
     props.put(AZKABAN_EVENT_REPORTING_CLASS_PARAM,
         "azkaban.project.AzkabanEventReporterTest");

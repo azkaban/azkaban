@@ -60,8 +60,10 @@ public class ImageVersionServiceImpl implements ImageVersionService {
 
   @Override
   public int createImageVersion(final ImageVersionDTO imageVersion) throws ImageMgmtException {
-    // Override the state to NEW during creation of new image version
-    imageVersion.setState(State.NEW);
+    // Override the state to NEW during creation of new image version for all the state except TEST
+    if (!State.TEST.equals(imageVersion.getState())) {
+      imageVersion.setState(State.NEW);
+    }
     // Input validation for image version create request
     final List<String> validationErrors = new ArrayList<>();
     if (!ValidatorUtils

@@ -17,6 +17,7 @@ package azkaban.imagemgmt.rampup;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
@@ -59,15 +60,19 @@ public interface ImageRampupManager {
       throws ImageMgmtException;
 
   /**
-   * Gets VersionInfo for the given image type and image version having state as NEW and ACTIVE.
+   * Gets VersionInfo for the given image type and filter the version based on version state filter.
+   * Filters are added as part of ImageVersion.State. These filters are used to filter version with
+   * state such as NEW, ACTIVE, TEST etc. If state filter is empty or null return the version info
+   * directly.
    *
    * @param imageType
    * @param imageVersion
+   * @param stateFilter
    * @return VersionInfo
    * @throws ImageMgmtException
    */
-  public VersionInfo getVersionInfoWithNewAndActiveState(final String imageType,
-      final String imageVersion)
+  public VersionInfo getVersionInfo(final String imageType, final String imageVersion,
+      final Set<State> stateFilter)
       throws ImageMgmtException;
 
   /**
