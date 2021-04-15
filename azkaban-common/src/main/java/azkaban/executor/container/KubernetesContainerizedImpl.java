@@ -446,9 +446,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             // fail fast mechanism to throw exception if the version does not exist for the
             // given image type.
             // Allow test version override if allow.test.version flow parameter is set to true
-            if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_TEST_VERSION) &&
+            if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
                 Boolean.TRUE.equals(Boolean
-                    .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_TEST_VERSION)))) {
+                    .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
               versionMap.put(imageType,
                   this.imageRampupManager.getVersionInfo(imageType,
                       flowParams.get(imageTypeVersionOverrideParam),
