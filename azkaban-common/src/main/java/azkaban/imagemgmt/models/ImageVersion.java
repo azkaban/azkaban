@@ -115,12 +115,15 @@ public class ImageVersion extends BaseModel {
    * UNSTABLE - An image type version goes through the ramp up process and once the version is
    * identified as faulty or unstable, the version is marked as UNSTABLE in the image_versions
    * table. DEPRECATED - An image type version which is no longer in use is marked as DEPRECATED
+   * TEST - This is to represent a TEST version of the image and once the version is tested it can
+   * be marked as NEW.
    */
   public enum State {
     NEW("new"),
     ACTIVE("active"),
     UNSTABLE("unstable"),
-    DEPRECATED("deprecated");
+    DEPRECATED("deprecated"),
+    TEST("test");
     private final String stateValue;
 
     private State(final String stateValue) {
@@ -166,12 +169,30 @@ public class ImageVersion extends BaseModel {
             .collect(Collectors.toSet());
 
     /**
+     * Create set of new, active and test state
+     */
+    private static final Set<State> newActiveAndTestState =
+        Arrays.stream(State.values())
+            .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)
+                || state.equals(State.TEST)))
+            .collect(Collectors.toSet());
+
+    /**
      * Gets a set with NEW and ACTIVE state
      *
      * @return Set<State>
      */
-    public static Set<State> getNewAndActiveState() {
+    public static Set<State> getNewAndActiveStateFilter() {
       return newAndActiveState;
+    }
+
+    /**
+     * Gets a set with NEW, ACTIVE and TEST state
+     *
+     * @return Set<State>
+     */
+    public static Set<State> getNewActiveAndTestStateFilter() {
+      return newActiveAndTestState;
     }
   }
 }
