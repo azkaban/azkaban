@@ -240,16 +240,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
+    this.startWatch();
+  }
 
-    // Start the kubernetes watch if configured
-    // todo: this could benefit from a small api change in {@link ContainerizedDispatchManager}
-    //   which will also provide a suitable place for terminating the watch during server shutdown.
-    //   Will be discussed and included in a subsequent commit.
-    if (azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
+  // Starts the kubernetes watch if configured.
+  // todo: this could benefit from a small api change in {@link ContainerizedDispatchManager}
+  //   which will also provide a suitable place for terminating the watch during server shutdown.
+  //   Will be discussed and included in a subsequent commit.
+  private void startWatch() {
+    if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
         false) == true) {
       requireNonNull(this.kubernetesWatch, "kubernetes watch must not be null");
       logger.info("Starting kubernetes watch.");
-      kubernetesWatch.launchPodWatch();
+      this.kubernetesWatch.launchPodWatch();
     } else {
       logger.info("Kubernetes watch was not started as the config {} is not true.",
           ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED);
@@ -776,11 +779,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    *
    * @return label selector
    */
-  public static String getLabelSelector(Props azkProps) {
+  public static String getLabelSelector(final Props azkProps) {
     requireNonNull(azkProps, "azkaban properties must not be null");
-    String clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
+    final String clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
-    StringBuilder selectorBuilder = new StringBuilder();
+    final StringBuilder selectorBuilder = new StringBuilder();
     selectorBuilder.append(CLUSTER_LABEL_NAME + "=" + clusterName).append(",")
         .append(APP_LABEL_NAME + "=" + POD_APPLICATION_TAG);
     return selectorBuilder.toString();

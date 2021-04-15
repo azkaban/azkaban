@@ -38,10 +38,10 @@ public class WatchUtils {
    * @param azkProps
    * @return api client
    */
-  public static ApiClient createApiClient(Props azkProps) {
-    String kubeConfigPath;
-    KubeConfig kubeConfig;
-    ApiClient apiClient;
+  public static ApiClient createApiClient(final Props azkProps) {
+    final String kubeConfigPath;
+    final KubeConfig kubeConfig;
+    final ApiClient apiClient;
     try {
       kubeConfigPath = azkProps
           .getString(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH);
@@ -50,9 +50,9 @@ public class WatchUtils {
           Charset.defaultCharset()));
       apiClient = ClientBuilder.kubeconfig(kubeConfig).build();
     } catch (IOException ioe) {
-      RuntimeException re = new RuntimeException("IOException while creating Api client", ioe);
-      logger.error("Could not create container Api client", re);
-      throw re;
+      AzkabanWatchException awe = new AzkabanWatchException("IOException while creating Api client", ioe);
+      logger.error("Could not create container Api client", awe);
+      throw awe;
     }
     logger.debug("Created ApiClient with kubeconfig: " + kubeConfigPath);
     return apiClient;
@@ -65,10 +65,10 @@ public class WatchUtils {
    * @param azkProps
    * @return
    */
-  public static PodWatchParams createPodWatchParams(Props azkProps) {
-    String namespace =
+  public static PodWatchParams createPodWatchParams(final Props azkProps) {
+    final String namespace =
         azkProps.getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
-    String labelSelector = KubernetesContainerizedImpl.getLabelSelector(azkProps);
+    final String labelSelector = KubernetesContainerizedImpl.getLabelSelector(azkProps);
     return new PodWatchParams(namespace, labelSelector);
   }
 }
