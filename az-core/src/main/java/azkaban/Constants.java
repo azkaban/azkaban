@@ -145,7 +145,8 @@ public class Constants {
   public static final String AZ_HOME = "AZ_HOME";
 
   // Azkaban event reporter constants
-  public static class EventReporterConstants{
+  public static class EventReporterConstants {
+
     public static final String FLOW_NAME = "flowName";
     public static final String AZ_HOST = "azkabanHost";
     public static final String AZ_WEBSERVER = "azkabanWebserver";
@@ -166,7 +167,7 @@ public class Constants {
     public static final String VERSION_SET = "versionSet";
     public static final String EXECUTOR_TYPE = "executorType";
     public static final String PROJECT_FILE_UPLOAD_USER = "projectFileUploadUser";
-    public static final String PROJECT_FILE_UPLOADER_IP_ADDR= "projectFileUploaderIpAddr";
+    public static final String PROJECT_FILE_UPLOADER_IP_ADDR = "projectFileUploaderIpAddr";
     public static final String PROJECT_FILE_NAME = "projectFileName";
     public static final String PROJECT_FILE_UPLOAD_TIME = "projectFileUploadTime";
     public static final String JOB_ID = "jobId";
@@ -476,7 +477,7 @@ public class Constants {
 
     // Job callback
     public static final String AZKABAN_EXECUTOR_JOBCALLBACK_ENABLED =
-            "azkaban.executor.jobcallback.enabled";
+        "azkaban.executor.jobcallback.enabled";
   }
 
   public static class FlowProperties {
@@ -570,6 +571,7 @@ public class Constants {
   }
 
   public static class ContainerizedDispatchManagerProperties {
+
     public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
     public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
     public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
@@ -689,5 +691,9 @@ public class Constants {
         + ".request";
 
     public static final String FLOW_PARAM_POD_ENV_VAR = "pod.env.var.";
+
+    // Constant to allow test version to be passed as flow parameter. Passing test version will be
+    // allowed for Azkaban ADMIN role only
+    public static final String FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION = "allow.image.test.version";
   }
 }

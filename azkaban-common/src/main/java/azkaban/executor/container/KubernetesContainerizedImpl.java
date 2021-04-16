@@ -37,6 +37,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.watch.KubernetesWatch;
+import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
@@ -414,8 +415,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
               overlayMap.put(imageType,
-                  this.imageRampupManager.getVersionInfoWithNewAndActiveState(imageType,
-                      flowParams.get(imageTypeOverrideParam(imageType))));
+                  this.imageRampupManager.getVersionInfo(imageType,
+                      flowParams.get(imageTypeOverrideParam(imageType)),
+                      State.getNewAndActiveStateFilter()));
             } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType)
                 .isPresent())) {
               logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
@@ -465,9 +467,20 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             // the overridden version exists/registered on Azkaban database. Hence, it follows a
             // fail fast mechanism to throw exception if the version does not exist for the
             // given image type.
-            versionMap.put(imageType,
-                this.imageRampupManager.getVersionInfoWithNewAndActiveState(imageType,
-                    flowParams.get(imageTypeVersionOverrideParam)));
+            // Allow test version override if allow.test.version flow parameter is set to true
+            if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
+                Boolean.TRUE.equals(Boolean
+                    .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
+              versionMap.put(imageType,
+                  this.imageRampupManager.getVersionInfo(imageType,
+                      flowParams.get(imageTypeVersionOverrideParam),
+                      State.getNewActiveAndTestStateFilter()));
+            } else {
+              versionMap.put(imageType,
+                  this.imageRampupManager.getVersionInfo(imageType,
+                      flowParams.get(imageTypeVersionOverrideParam),
+                      State.getNewAndActiveStateFilter()));
+            }
           }
         }
 
@@ -567,6 +580,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * This method is used to setup environment variable to enable remote debug on kubernetes flow
    * container. Based on this environment variable, you can decide to enable or disable remote
    * debug.
+   *
    * @param envVariables
    * @param flowParam
    */
@@ -580,9 +594,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * This method is used to setup environment variable to enable pod as dev pod which can be
-   * helpful for testing. Based on this environment variable, you can decide to start the flow
-   * container or not.
+   * This method is used to setup environment variable to enable pod as dev pod which can be helpful
+   * for testing. Based on this environment variable, you can decide to start the flow container or
+   * not.
+   *
    * @param envVariables
    * @param flowParam
    */
@@ -596,9 +611,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * This method is used to setup any environment variable for a pod which can be passed from
-   * flow parameter. To provide the generic solution, it is adding all the flow parameters
-   * starting with @FlowParameters.FLOW_PARAM_POD_ENV_VAR
+   * This method is used to setup any environment variable for a pod which can be passed from flow
+   * parameter. To provide the generic solution, it is adding all the flow parameters starting with
+   * (@FlowParameters.FLOW_PARAM_POD_ENV_VAR)
+   *
    * @param envVariables
    * @param flowParam
    */
@@ -677,7 +693,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .info("ExecId: {}, Jobtypes for flow {} are: {}", executionId, flow.getFlowId(), jobTypes);
 
     Map<String, String> flowParam = null;
-    if(flow.getExecutionOptions() != null) {
+    if (flow.getExecutionOptions() != null) {
       flowParam = flow.getExecutionOptions().getFlowParameters();
     }
     if (flowParam != null && !flowParam.isEmpty()) {

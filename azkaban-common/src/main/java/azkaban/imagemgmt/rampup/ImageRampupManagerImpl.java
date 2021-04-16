@@ -183,13 +183,15 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   @Override
-  public VersionInfo getVersionInfoWithNewAndActiveState(final String imageType,
-      final String imageVersion)
-      throws ImageMgmtException {
+  public VersionInfo getVersionInfo(final String imageType, final String imageVersion,
+      final Set<State> stateFilter) throws ImageMgmtException {
     final Optional<ImageVersion> optionalImageVersion = this
         .fetchImageVersion(imageType, imageVersion);
-    if (optionalImageVersion.isPresent() && State.getNewAndActiveState()
-        .contains(optionalImageVersion.get().getState())) {
+    // If state filter is null or empty return the version info directly.
+    // If state filter is present, apply the filter and return version info
+    if (optionalImageVersion.isPresent() &&
+        ((stateFilter.isEmpty() || stateFilter == null) ||
+            stateFilter.contains(optionalImageVersion.get().getState()))) {
       return new VersionInfo(optionalImageVersion.get().getVersion(),
           optionalImageVersion.get().getPath(), optionalImageVersion.get().getState());
     } else {
@@ -388,7 +390,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     }
     // Return only the imageVersion only when the image type/name matches
     for (final ImageVersion version : imageVersions) {
-      if (version.getName().equalsIgnoreCase(imageType) && version.getVersion().equalsIgnoreCase(imageVersion)) {
+      if (version.getName().equalsIgnoreCase(imageType) && version.getVersion()
+          .equalsIgnoreCase(imageVersion)) {
         return Optional.of(version);
       }
     }
