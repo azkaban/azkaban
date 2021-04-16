@@ -17,6 +17,7 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
+import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
@@ -35,6 +36,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
@@ -129,6 +131,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String nscdSocketVolumeMountPath;
   private final VersionSetLoader versionSetLoader;
   private final ImageRampupManager imageRampupManager;
+  private final KubernetesWatch kubernetesWatch;
   private final String initMountPathPrefixForJobtypes;
   private final String appMountPathPrefixForJobtypes;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
@@ -147,12 +150,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public KubernetesContainerizedImpl(final Props azkProps,
       final ExecutorLoader executorLoader,
       final VersionSetLoader versionSetLoader,
-      final ImageRampupManager imageRampupManager)
+      final ImageRampupManager imageRampupManager,
+      final KubernetesWatch kubernetesWatch)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.versionSetLoader = versionSetLoader;
     this.imageRampupManager = imageRampupManager;
+    this.kubernetesWatch = kubernetesWatch;
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
     this.flowContainerName =
@@ -236,6 +241,23 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
+    this.startWatch();
+  }
+
+  // Starts the kubernetes watch if configured.
+  // todo: this could benefit from a small api change in {@link ContainerizedDispatchManager}
+  //   which will also provide a suitable place for terminating the watch during server shutdown.
+  //   Will be discussed and included in a subsequent commit.
+  private void startWatch() {
+    if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
+        false) == true) {
+      requireNonNull(this.kubernetesWatch, "kubernetes watch must not be null");
+      logger.info("Starting kubernetes watch.");
+      this.kubernetesWatch.launchPodWatch();
+    } else {
+      logger.info("Kubernetes watch was not started as the config {} is not true.",
+          ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED);
+    }
   }
 
   /**
@@ -765,6 +787,26 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           Integer.toString(executionId)));
     }
     return mapBuilder.build();
+  }
+
+  /**
+   * Get a {@code lableSelector} that can be used to list all the flow-container-pods for the
+   * current namespace.
+   *
+   * @return label selector
+   */
+  public static String getLabelSelector(final Props azkProps) {
+    requireNonNull(azkProps, "azkaban properties must not be null");
+    final String clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
+        DEFAULT_CLUSTER_NAME);
+    final StringBuilder selectorBuilder = new StringBuilder();
+    selectorBuilder.append(CLUSTER_LABEL_NAME + "=" + clusterName).append(",")
+        .append(APP_LABEL_NAME + "=" + POD_APPLICATION_TAG);
+    return selectorBuilder.toString();
+  }
+
+  public String getNamespace() {
+    return this.namespace;
   }
 
   /**
