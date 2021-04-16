@@ -16,11 +16,22 @@
 package azkaban.executor.container.watch;
 
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.DispatchMethod;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.Status;
+import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
@@ -77,9 +88,13 @@ public class KubernetesWatchTest {
    */
   private static final String DEFAULT_NAMESPACE = "dev-namespace1";
   private static final String DEFAULT_CLUSTER = "cluster1";
-  private static String POD_WITH_LIFECYCLE_SUCCESS = "flow-pod-cluster1-280";
+  private static String PODNAME_WITH_SUCCESS = "flow-pod-cluster1-280";
+  private static int EXECUTION_ID_WITH_SUCCEESS = 280;
 
-  private static final List<AzPodStatus> successfulFlowPodStateTransitionSequence = ImmutableList.of(
+  private static final String DEFAULT_PROJECT_NAME = "exectest1";
+  private static final String DEFAULT_FLOW_NAME = "exec1";
+
+  private static final ImmutableList<AzPodStatus> TRANSITION_SEQUENCE_WITH_SUCCESS = ImmutableList.of(
       AzPodStatus.AZ_POD_REQUESTED,
       AzPodStatus.AZ_POD_SCHEDULED,
       AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING,
@@ -113,6 +128,35 @@ public class KubernetesWatchTest {
 
   private StatusLoggingListener statusLoggingListener() {
     return new StatusLoggingListener();
+  }
+
+  private ExecutorLoader mockedExecutorLoader() {
+    return mock(ExecutorLoader.class);
+  }
+
+  private ContainerizedImpl mockedContainerizedImpl() {
+    return mock(ContainerizedImpl.class);
+  }
+
+  private ExecutableFlow createExecutableFlow(int executionId,
+      azkaban.executor.Status flowStatus,
+      String flowName,
+      String projectName) throws Exception {
+    ExecutableFlow flow = TestUtils.createTestExecutableFlow(projectName, flowName,
+        DispatchMethod.CONTAINERIZED);
+    flow.setExecutionId(executionId);
+    flow.setStatus(flowStatus);
+    return flow;
+  }
+
+  private ExecutableFlow createExecutableFlow(int executionId,
+      azkaban.executor.Status flowStatus) throws Exception {
+    return createExecutableFlow(executionId, flowStatus, DEFAULT_FLOW_NAME, DEFAULT_PROJECT_NAME);
+  }
+
+  private FlowStatusUpdatingListener flowStatusUpdatingListener(Props azkProps) {
+    return new FlowStatusUpdatingListener(azkProps, mockedContainerizedImpl(),
+        mockedExecutorLoader(), mock(AlerterHolder.class));
   }
 
   private AzPodStatusDrivingListener statusDriverWithListener(AzPodStatusListener listener) {
@@ -159,15 +203,9 @@ public class KubernetesWatchTest {
     statusDriver.shutdown();
   }
 
-  @Test
-  public void testFlowPodCompleteTransition() throws Exception {
-    StatusLoggingListener loggingListener = statusLoggingListener();
-    AzPodStatusDrivingListener statusDriver = statusDriverWithListener(loggingListener);
-    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
-    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
-    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
-
+  private void assertPodEventSequence(String podName,
+      StatusLoggingListener loggingListener,
+      List<AzPodStatus> transitionSequence) {
     // Record any information from the in-memory log of events.
     ConcurrentMap<String, Queue<AzPodStatus>> statusLogMap = loggingListener.getStatusLogMap();
     StatusLoggingListener.logDebugStatusMap(statusLogMap);
@@ -175,10 +213,60 @@ public class KubernetesWatchTest {
     // Verify the sequence of events received for the flow-pod {@link POD_WITH_LIFECYCLE_SUCCESS}
     // matches the expected sequence of statuses.
     List<AzPodStatus> actualLifecycleStates =
-        statusLogMap.get(POD_WITH_LIFECYCLE_SUCCESS).stream()
-        .distinct().collect(Collectors.toList());
-    Assert.assertEquals(successfulFlowPodStateTransitionSequence, actualLifecycleStates);
+        statusLogMap.get(podName).stream()
+            .distinct().collect(Collectors.toList());
+    Assert.assertEquals(transitionSequence, actualLifecycleStates);
+  }
+
+  @Test
+  public void testPodEventSequenceSuccess() throws Exception {
+    StatusLoggingListener loggingListener = statusLoggingListener();
+    AzPodStatusDrivingListener statusDriver = statusDriverWithListener(loggingListener);
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        1);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
     statusDriver.shutdown();
+  }
+
+  // Validates that the FlowUpdatingListener can:
+  //   1. Delete the PODs in completed state.
+  //   2. Finalize the corresponding flow execution (in case not already in a final state)
+  @Test
+  public void testUpdatingListenerTransitionCompleted() throws Exception {
+    // Setup a FlowUpdatingListener
+    Props azkProps = new Props();
+    FlowStatusUpdatingListener updatingListener = flowStatusUpdatingListener(azkProps);
+
+    // Add a StatusLoggingListener for sanity check the events sequence. This also validates
+    // support for registering multiple listeners.
+    StatusLoggingListener loggingListener = statusLoggingListener();
+    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    statusDriver.registerAzPodStatusListener(loggingListener);
+    statusDriver.registerAzPodStatusListener(updatingListener);
+
+    // Mocked flow in RUNNING state. Pod completion event will be processed for this execution.
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_SUCCEESS, Status.RUNNING);
+    when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_SUCCEESS))
+        .thenReturn(flow1);
+
+    // Run all the events through the registered listeners.
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        1);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    // Verify that the previously RUNNING flow has been finalized to a failure state.
+    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
+    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+
+    // Verify the Pod deletion API is invoked.
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
+
+    // Sanity check for asserting the sequence in which events were received.
+    assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
   }
 
   @Test
@@ -303,6 +391,7 @@ public class KubernetesWatchTest {
      * @param statusLogMap
      */
     public static void logDebugStatusMap(ConcurrentMap<String, Queue<AzPodStatus>> statusLogMap) {
+      requireNonNull(statusLogMap, "status log map must not be null");
       statusLogMap.forEach((podname, queue) -> {
         StringBuilder sb = new StringBuilder(podname + ": ");
         queue.forEach(status -> sb.append(status.toString() + ", "));
@@ -315,6 +404,7 @@ public class KubernetesWatchTest {
      * @param event
      */
     private void logStatusForPod(AzPodStatusMetadata event) {
+      requireNonNull(event, "event must not be null");
       AzPodStatus podStatus = event.getAzPodStatus();
       String podName = event.getPodName();
       Queue<AzPodStatus> statusLog = this.statusLogMap.computeIfAbsent(

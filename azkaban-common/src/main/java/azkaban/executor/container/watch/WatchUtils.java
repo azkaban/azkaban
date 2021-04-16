@@ -15,6 +15,8 @@
  */
 package azkaban.executor.container.watch;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.executor.container.KubernetesContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
@@ -42,6 +44,7 @@ public class WatchUtils {
     final String kubeConfigPath;
     final KubeConfig kubeConfig;
     final ApiClient apiClient;
+    requireNonNull(azkProps, "azkaban properties must not be null");
     try {
       kubeConfigPath = azkProps
           .getString(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH);
@@ -66,6 +69,7 @@ public class WatchUtils {
    * @return
    */
   public static PodWatchParams createPodWatchParams(final Props azkProps) {
+    requireNonNull(azkProps, "azkaban properties must not be null");
     final String namespace =
         azkProps.getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
     final String labelSelector = KubernetesContainerizedImpl.getLabelSelector(azkProps);
