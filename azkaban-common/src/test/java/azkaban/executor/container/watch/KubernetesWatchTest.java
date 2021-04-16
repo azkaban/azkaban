@@ -17,6 +17,8 @@ package azkaban.executor.container.watch;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
@@ -24,15 +26,12 @@ import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watch.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,9 +76,10 @@ public class KubernetesWatchTest {
    * {@code JSON_EVENTS_FILEP_PATH}.
    */
   private static final String DEFAULT_NAMESPACE = "dev-namespace1";
+  private static final String DEFAULT_CLUSTER = "cluster1";
   private static String POD_WITH_LIFECYCLE_SUCCESS = "flow-pod-cluster1-280";
 
-  private static final List<AzPodStatus> successfullFlowPodStateTransitionSequence = ImmutableList.of(
+  private static final List<AzPodStatus> successfulFlowPodStateTransitionSequence = ImmutableList.of(
       AzPodStatus.AZ_POD_REQUESTED,
       AzPodStatus.AZ_POD_SCHEDULED,
       AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING,
@@ -95,20 +95,20 @@ public class KubernetesWatchTest {
   }
 
   private KubernetesWatch kubernetesWatchWithMockListener() {
-    ApiClient localApiClient;
-    try {
-      localApiClient = ClientBuilder.kubeconfig(localKubeConfig()).build();
-    } catch (IOException e) {
-      final AzkabanWatchException we = new AzkabanWatchException("Unable to create client", e);
-      logger.error("Exception reported. ", we);
-      throw we;
-    }
+    Props azkProps = localProperties();
+    ApiClient localApiClient = WatchUtils.createApiClient(azkProps);
     return new KubernetesWatch(localApiClient, new AzPodStausExtractingListener(),
-        new PodWatchParams(DEFAULT_NAMESPACE, null, DEFAULT_WATCH_RESET_DELAY_MILLIS));
+        WatchUtils.createPodWatchParams(azkProps)
+    );
   }
 
-  private KubeConfig localKubeConfig() throws  IOException {
-    return KubeConfig.loadKubeConfig(Files.newBufferedReader(Paths.get(LOCAL_KUBE_CONFIG_PATH), Charset.defaultCharset()));
+  private Props localProperties() {
+    Props props = new Props();
+    props.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, DEFAULT_NAMESPACE);
+    props.put(ConfigurationKeys.AZKABAN_CLUSTER_NAME, DEFAULT_CLUSTER);
+    props.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH,
+        LOCAL_KUBE_CONFIG_PATH);
+    return props;
   }
 
   private StatusLoggingListener statusLoggingListener() {
@@ -177,7 +177,7 @@ public class KubernetesWatchTest {
     List<AzPodStatus> actualLifecycleStates =
         statusLogMap.get(POD_WITH_LIFECYCLE_SUCCESS).stream()
         .distinct().collect(Collectors.toList());
-    Assert.assertEquals(successfullFlowPodStateTransitionSequence, actualLifecycleStates);
+    Assert.assertEquals(successfulFlowPodStateTransitionSequence, actualLifecycleStates);
     statusDriver.shutdown();
   }
 
