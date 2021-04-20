@@ -115,7 +115,7 @@ public class DataSourceUtils {
       this.url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
       addConnectionProperty("useUnicode", "yes");
       addConnectionProperty("characterEncoding", "UTF-8");
-      setDriverClassName("com.mysql.jdbc.Driver");
+      setDriverClassName("com.mysql.cj.jdbc.Driver");
       setUsername(user);
       setPassword(password);
       setUrl(this.url);
