@@ -37,6 +37,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -267,5 +268,15 @@ public class ExecutorApiClientTest {
         throws ServletException, IOException {
       resp.getWriter().print(this.POST_RESPONSE_STRING);
     }
+  }
+
+  /**
+   * This method is used to stop tls enabled jetty server.
+   *
+   * @throws Exception
+   */
+  @AfterClass
+  public static void stop() throws Exception {
+    tlsEnabledServer.stop();
   }
 }
