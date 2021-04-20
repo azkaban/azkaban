@@ -298,13 +298,7 @@ public class FlowContainer implements IMBeanRegistrable {
     }
 
     // Log the versionSet for this flow execution
-    final VersionSet versionSet = flow.getVersionSet();
-    if (versionSet == null) {
-      // Should not happen.
-      logger.error("VersionSet is not set for the flow");
-    } else {
-      logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
-    }
+    logVersionSet(flow);
 
     createFlowRunner(flow);
     submitFlowRunner();
@@ -601,6 +595,19 @@ public class FlowContainer implements IMBeanRegistrable {
     return execId;
   }
 
+  /**
+   * Log the versionSet for this flow execution
+   * @param flow Executable flow.
+   */
+  private void logVersionSet(final ExecutableFlow flow) {
+    final VersionSet versionSet = flow.getVersionSet();
+    if (versionSet == null) {
+      // Should not happen.
+      logger.error("VersionSet is not set for the flow");
+    } else {
+      logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
+    }
+  }
 
   /**
    * This method configures the MBeanServer.
