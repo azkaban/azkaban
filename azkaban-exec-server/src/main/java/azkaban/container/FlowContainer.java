@@ -41,9 +41,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
-import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.version.VersionSet;
-import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jobtype.HadoopJobUtils;
 import azkaban.jobtype.HadoopProxy;
@@ -169,9 +167,6 @@ public class FlowContainer implements IMBeanRegistrable {
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
-
-    // TODO : Figure out how to get VersionSetLoader and enable
-    //logVersionSet(versionSetLoader);
 
     // Create Azkaban Props Map
     this.azKabanProps = props;
@@ -300,6 +295,15 @@ public class FlowContainer implements IMBeanRegistrable {
       logger.error("Error loading flow with execution Id " + execId);
       throw new ExecutorManagerException("Error loading flow for exec: " + execId +
           ". Terminating flow container launch");
+    }
+
+    // Log the versionSet for this flow execution
+    final VersionSet versionSet = flow.getVersionSet();
+    if (versionSet == null) {
+      // Should not happen.
+      logger.error("VersionSet is not set for the flow");
+    } else {
+      logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
     }
 
     createFlowRunner(flow);
@@ -597,37 +601,6 @@ public class FlowContainer implements IMBeanRegistrable {
     return execId;
   }
 
-
-  /**
-   * Log the VersionSet for the flow.
-   *
-   * @param versionSetLoader
-   */
-  private void logVersionSet(final VersionSetLoader versionSetLoader) {
-    // Get the version set id.
-    final String versionSetIdStr = System.getenv(
-        Constants.ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID);
-    if (versionSetIdStr == null) {
-      // Should not happen
-      logger.warn("VersionSet ID is not set!");
-      return;
-    }
-    int versionSetId = -1;
-    try {
-      versionSetId = Integer.parseInt(versionSetIdStr);
-    } catch (final NumberFormatException ne) {
-      logger.error(String.format("VersionSet ID set in environment is invalid %s", versionSetIdStr));
-      return;
-    }
-    final VersionSet versionSet;
-    try {
-      versionSet = versionSetLoader.getVersionSetById(versionSetId).get();
-    } catch (final ImageMgmtException ex) {
-      logger.error(String.format("Failed to fetch versionSet using versionSet ID : %d", versionSetId));
-      return;
-    }
-    logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
-  }
 
   /**
    * This method configures the MBeanServer.
