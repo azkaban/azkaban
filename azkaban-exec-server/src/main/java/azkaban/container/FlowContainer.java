@@ -24,14 +24,18 @@ import static com.google.common.base.Preconditions.checkState;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
+import azkaban.DispatchMethod;
 import azkaban.cluster.ClusterModule;
 import azkaban.cluster.ClusterRouter;
 import azkaban.common.ExecJettyServerModule;
 import azkaban.common.ServerUtils;
+import azkaban.event.Event;
+import azkaban.event.EventListener;
 import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
+import azkaban.execapp.TriggerManager;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.event.RemoteFlowWatcher;
@@ -53,6 +57,7 @@ import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.IMBeanRegistrable;
 import azkaban.server.MBeanRegistrationManager;
+import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferManager;
@@ -103,7 +108,8 @@ import org.mortbay.jetty.servlet.Context;
  *  The flow execution's status is PREPARING when FlowContainer is called. It's status is set to
  *  RUNNING from FlowRunner. The rest of the state machine is handled by FlowRunner.
  */
-public class FlowContainer implements IMBeanRegistrable {
+@Singleton
+public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
 
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
@@ -130,6 +136,7 @@ public class FlowContainer implements IMBeanRegistrable {
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
+  private final TriggerManager triggerManager;
   private final JobTypeManager jobTypeManager;
   private final ClusterRouter clusterRouter;
   private final AbstractFlowPreparer flowPreparer;
@@ -159,11 +166,11 @@ public class FlowContainer implements IMBeanRegistrable {
    * @throws IOException
    */
   @Inject
-  @Singleton
   public FlowContainer(final Props props,
       final ExecutorLoader executorLoader,
       final ProjectLoader projectLoader,
       final ClusterRouter clusterRouter,
+      final TriggerManager triggerManager,
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
@@ -199,6 +206,8 @@ public class FlowContainer implements IMBeanRegistrable {
     this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
         DEFAULT_VALIDATE_PROXY_USER);
     this.clusterRouter = clusterRouter;
+    this.triggerManager = triggerManager;
+    this.triggerManager.setDispatchMethod(DispatchMethod.CONTAINERIZED);
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
@@ -246,10 +255,17 @@ public class FlowContainer implements IMBeanRegistrable {
     // Setup the callback mechanism and start the jetty server.
     flowContainer.start(azkabanProps);
 
-    // execute the flow, this is a blocking call until flow finishes
-    flowContainer.submitFlow(execId);
-    // Shutdown the container
-    flowContainer.shutdown();
+    // Once submitFlow is called, the shutdown must happen for clean exit.
+    try {
+      // execute the flow, this is a blocking call until flow finishes
+      flowContainer.submitFlow(execId);
+    } catch (final ExecutorManagerException e) {
+      // Log the cause
+      logger.error("Flow execution failed due to ", e);
+    } finally {
+      // Shutdown the container
+      flowContainer.shutdown();
+    }
   }
 
   /**
@@ -334,7 +350,8 @@ public class FlowContainer implements IMBeanRegistrable {
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(this.numJobThreadPerFlow);
+        .setNumJobThreads(this.numJobThreadPerFlow)
+        .addListener(this);
   }
 
   /**
@@ -674,6 +691,20 @@ public class FlowContainer implements IMBeanRegistrable {
     } catch (final ExecutorManagerException e) {
       e.printStackTrace();
     }
+  }
+
+  /**
+   * handleEvent : handles events related to flow state machine
+   * @param : event emitted by FlowRunner
+   */
+  @Override
+  public void handleEvent(final Event event) {
+    final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+    final ExecutableFlow flow = flowRunner.getExecutableFlow();
+    // Set Flow level SLA options for containerized executions
+    this.triggerManager
+        .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
+            .getExecutionOptions().getSlaOptions()));
   }
 
   /**

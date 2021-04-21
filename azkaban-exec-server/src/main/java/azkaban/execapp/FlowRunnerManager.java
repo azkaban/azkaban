@@ -280,6 +280,9 @@ public class FlowRunnerManager implements EventListener<Event>,
       this.pollingService = new PollingService(pollingIntervalMillis,
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
+      this.triggerManager.setDispatchMethod(DispatchMethod.POLL);
+    } else {
+      this.triggerManager.setDispatchMethod(DispatchMethod.PUSH);
     }
   }
 
