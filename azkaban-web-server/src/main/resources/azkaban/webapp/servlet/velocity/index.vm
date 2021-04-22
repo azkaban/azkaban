@@ -22,7 +22,7 @@
   #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
   <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/main.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/main.js?v=1619118833"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
     var currentTime = ${currentTime};
