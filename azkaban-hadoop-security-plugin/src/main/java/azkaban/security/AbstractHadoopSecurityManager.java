@@ -369,9 +369,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   protected void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
     // Create suffix to be added to kerberos principal
-    final String suffix =
-        (null != props.getString(HadoopSecurityManager.DOMAIN_NAME, null)) ?
-            "/" + kerberosSuffix(props) : "";
+    final String suffix = getFQNSuffix(props);
 
     final String userToProxyFQN = userToProxy + suffix;
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
@@ -398,6 +396,16 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
       throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
           + t.getMessage() + t.getCause(), t);
     }
+  }
+
+  /**
+   * This method is used to get FQN suffix which will be added to proxy user.
+   * @param props
+   * @return
+   */
+  protected String getFQNSuffix(Props props) {
+    return (null != props.getString(HadoopSecurityManager.DOMAIN_NAME, null)) ?
+        "/" + kerberosSuffix(props) : "";
   }
 
   /**
