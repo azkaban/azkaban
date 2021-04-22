@@ -133,6 +133,7 @@ azkaban.ProjectHeaderView = Backbone.View.extend({
 
   handleCreateProjectJob: function (evt) {
     $('#create-project-modal').modal();
+    $('#path').focus();
   },
 
   render: function () {
