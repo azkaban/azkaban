@@ -142,7 +142,7 @@ public class HttpRequestUtils {
 
     // Add all flow-level props – they are accessed via ExecutionOptions#getFlowParameters.
     final Map<String, String> rootProps = runtimePropertiesGroup
-        .remove(Constants.ROOT_RUNTIME_PROPERTY);
+        .remove(Constants.ROOT_NODE_IDENTIFIER);
     if (rootProps != null) {
       flowParamGroup.putAll(rootProps);
     }

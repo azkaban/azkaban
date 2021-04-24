@@ -69,7 +69,7 @@ public class NodeBeanLoader {
       }
     }
 
-    if (nodeNames.contains(Constants.ROOT_RUNTIME_PROPERTY)) {
+    if (nodeNames.contains(Constants.ROOT_NODE_IDENTIFIER)) {
       // ROOT is reserved as a special value in runtimeProperties
       return false;
     }

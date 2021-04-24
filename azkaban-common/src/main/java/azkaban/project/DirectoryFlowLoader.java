@@ -259,7 +259,7 @@ public class DirectoryFlowLoader implements FlowLoader {
     // Add all the in edges and out edges. Catch bad dependencies and self
     // referrals. Also collect list of nodes who are parents.
     for (final Node node : this.nodeMap.values()) {
-      if (Constants.ROOT_RUNTIME_PROPERTY.equals(node.getId())) {
+      if (Constants.ROOT_NODE_IDENTIFIER.equals(node.getId())) {
         this.errors.add(node.getId() + " is not allowed as a name. Pick some other name.");
       }
 

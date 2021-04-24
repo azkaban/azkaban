@@ -775,7 +775,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
     if (!options.getFlowParameters().isEmpty()) {
       runtimeProperties
-          .put(Constants.ROOT_RUNTIME_PROPERTY, new HashMap<>(options.getFlowParameters()));
+          .put(Constants.ROOT_NODE_IDENTIFIER, new HashMap<>(options.getFlowParameters()));
     }
     for (final Entry<String, Map<String, String>> runtimeProp :
         options.getRuntimeProperties().entrySet()) {
