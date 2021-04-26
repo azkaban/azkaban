@@ -136,6 +136,10 @@ public class FlowTriggerScheduler {
   public List<ScheduledFlowTrigger> getScheduledFlowTriggerJobs() {
     try {
       final Scheduler quartzScheduler = this.scheduler.getScheduler();
+      if(quartzScheduler == null) {
+        logger.warn("Unable to get scheduled flow triggers - Quartz scheduler has not been initialized");
+        return new ArrayList<>();
+      }
       final List<String> groupNames = quartzScheduler.getJobGroupNames();
 
       final List<ScheduledFlowTrigger> flowTriggerJobDetails = new ArrayList<>();
