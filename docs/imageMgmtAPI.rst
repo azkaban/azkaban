@@ -78,7 +78,7 @@ owner (these APIs will be provided later). ``GUEST`` role can have only read/get
 
 **Response:**
 
-.. code-block::
+.. code-block:: guess
 
   Status: 201 Created
   Header -> Location: /imageTypes/{id}
@@ -134,7 +134,7 @@ Following is the description of the versionState fields:
 
 **Response:**
 
-.. code-block::
+.. code-block:: guess
 
      Status: 201 Created
      Header -> Location: /imageVersions/{id}
@@ -179,13 +179,13 @@ should populate the optional parameter: **versionState**.
 
 **Example:**
 
-.. code-block::
+.. code-block:: guess
 
      GET /imageVersions?imageType=spark_job&imageVersion=1.1.0
 
 **Response:**
 
-.. code-block::
+.. code-block:: guess
 
      Status: 200 OK
      Returns the matching records
@@ -294,7 +294,7 @@ Create new Ramp-Up Plan
 
 .. _rampup-definition:
 
-.. code-block::
+.. code-block:: guess
 
    {
       "imageVersion": <major>.<minor>.<patch>,
@@ -338,7 +338,7 @@ Returns an active ramp-up plan for the specified image type if there is one.
 
 **Example:**
 
-.. code-block::
+.. code-block:: guess
 
      GET /imageRampup?imageType=spark
 
@@ -431,7 +431,7 @@ The rules defined in `Create Ramp-up plan use case <#use-case-image-rammpup>`_ s
 **Example:** The following API call will change the ramp-up plan so that Azkaban will pick version: ``1.3``, 40%
 of the times and ``1.2.1``, 60% of the times.
 
-.. code-block::
+.. code-block:: guess
 
   PATCH /image_rampup/SparkJobRampupPlan --body
     {
