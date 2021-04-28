@@ -65,12 +65,25 @@
   <div class="page-breadcrumb">
     <div class="container-full">
       <ol class="breadcrumb">
-        <li><a
-            href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
-        </a></li>
-        <li><a
-            href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid
-        </a></li>
+        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+
+        #set($ref = "${context}/manager?project=${project.name}&flow=")
+        #foreach( $flow in ${flowlist} )
+          #set($ref = $ref + $flow)
+
+          #if( $foreach.first )
+            #set($flowlabel = "Flow")
+            #set($linkclass = "")
+          #else
+            #set($flowlabel = "")
+            #set($linkclass = "flowlink")
+          #end
+
+          <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
+
+          #set($ref = $ref + ":")
+        #end
+
         <li class="active"><strong>Job</strong> $jobid</li>
       </ol>
     </div>
