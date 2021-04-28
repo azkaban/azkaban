@@ -774,6 +774,25 @@ var expanelGraphClickCallback = function (event, model) {
     },
     {break: 1},
     {
+      title: "Expand Flows 1 Level...", callback: function () {
+        executableGraphModel.trigger("expandFlows1");
+        executableGraphModel.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Expand Flows 2 Levels...", callback: function () {
+        executableGraphModel.trigger("expandFlows2");
+        executableGraphModel.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Expand Flows 3 Levels...", callback: function () {
+        executableGraphModel.trigger("expandFlows3");
+        executableGraphModel.trigger("resetPanZoom");
+      }
+    },
+    {break: 1},
+    {
       title: "Enable All", callback: function () {
         enableAll();
       }

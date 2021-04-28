@@ -43,13 +43,12 @@ var openJobDisplayCallback = function (nodeId, flowId, evt) {
       "json"
     );
     */
-}
+};
 
 var createNewPanel = function (node, model, evt) {
   var parentPath = node.parentPath;
 
-  var nodeInfoPanelID = parentPath ? parentPath + ":" + node.id + "-info"
-      : node.id + "-info";
+  var nodeInfoPanelID = parentPath ? parentPath + ":" + node.id + "-info" : node.id + "-info";
   var cloneStuff = $("#flowInfoBase").clone();
   cloneStuff.data = node;
   $(cloneStuff).attr("id", nodeInfoPanelID);
@@ -59,22 +58,19 @@ var createNewPanel = function (node, model, evt) {
       {el: cloneStuff, model: model});
   node.panel = backboneView;
   backboneView.showExtendedView(evt);
-}
+};
 
 var closeAllSubDisplays = function () {
   $(".flowExtendedView").hide();
-}
+};
 
 var nodeClickCallback = function (event, model, node) {
-  var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
   var jobId = node.id;
 
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
-      + flowId + "&job=" + jobId;
-  var logURL = contextURL + "/executor?execid=" + execId + "&job="
-      + node.nestedId + "&attempt=" + node.attempt;
+  var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+  var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.nestedId + "&attempt=" + node.attempt;
   var menu = [];
 
   if (type == "flow") {
@@ -162,7 +158,7 @@ var nodeClickCallback = function (event, model, node) {
       {break: 1},
       {
         title: "Center Job", callback: function () {
-          model.trigger("centerNode", node)
+          model.trigger("centerNode", node);
         }
       }
     ]);
@@ -188,21 +184,19 @@ var nodeClickCallback = function (event, model, node) {
     }
   }
   contextMenuView.show(event, menu);
-}
+};
 
 var jobClickCallback = function (event, model, node) {
-  var target = event.currentTarget;
   var type = node.type;
   var flowId = node.parent.flow;
-  var jobId = node.id;
-
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
-      + flowId + "&job=" + node.id;
-
+  // var jobId = node.id;
+  
+  var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + node.id;
   var menu;
+
   if (type == "flow") {
-    var flowRequestURL = contextURL + "/manager?project=" + projectName
-        + "&flow=" + node.flowId;
+    var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
+
     menu = [
       //  {title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
       //  {break: 1},
@@ -230,7 +224,7 @@ var jobClickCallback = function (event, model, node) {
       {break: 1},
       {
         title: "Center Flow", callback: function () {
-          model.trigger("centerNode", node)
+          model.trigger("centerNode", node);
         }
       }
     ];
@@ -252,21 +246,20 @@ var jobClickCallback = function (event, model, node) {
       {break: 1},
       {
         title: "Center Job", callback: function () {
-          graphModel.trigger("centerNode", node)
+          graphModel.trigger("centerNode", node);
         }
       }
     ];
   }
   contextMenuView.show(event, menu);
-}
+};
 
 var edgeClickCallback = function (event, model) {}
 
 var graphClickCallback = function (event, model) {
   var data = model.get("data");
   var flowId = data.flow;
-  var requestURL = contextURL + "/manager?project=" + projectName + "&flow="
-      + flowId;
+  var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
 
   var menu = [
     {
@@ -278,6 +271,25 @@ var graphClickCallback = function (event, model) {
     {
       title: "Collapse All Flows...", callback: function () {
         model.trigger("collapseAllFlows");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {break: 1},
+    {
+      title: "Expand Flows 1 Level...", callback: function () {
+        model.trigger("expandFlows1");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Expand Flows 2 Levels...", callback: function () {
+        model.trigger("expandFlows2");
+        model.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Expand Flows 3 Levels...", callback: function () {
+        model.trigger("expandFlows3");
         model.trigger("resetPanZoom");
       }
     },
@@ -299,7 +311,5 @@ var graphClickCallback = function (event, model) {
       }
     }
   ];
-
   contextMenuView.show(event, menu);
-}
-
+};

@@ -36,6 +36,13 @@ General Properties
 |                       | color for the Azkaban |                       |
 |                       | UI.                   |                       |
 +-----------------------+-----------------------+-----------------------+
+|   azkaban.depth       | Graph expansion level.| 2                     |
+|                       | Zero (0) means all    | This means the flows  |
+|                       | flows are collapsed   | will be recursively   |
+|                       | when the graph is     | expanded up to two    |
+|                       | rendered for the      | levels down when the  |
+|                       | first time.           | graph is 1st shown.   |
++-----------------------+-----------------------+-----------------------+
 |   web.resource.dir    | Sets the directory    | web/                  |
 |                       | for the ui’s css and  |                       |
 |                       | javascript files.     |                       |
