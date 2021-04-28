@@ -82,6 +82,8 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     flowProps.put("props7", "execflow7");
     flowProps.put("props6", "execflow6");
     flowProps.put("props5", "execflow5");
+    flowProps.put("runtime1", "runtime1-ROOT");
+    flowProps.put("runtime2", "runtime2-ROOT");
 
     // Set some node-specific overrides
     final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
@@ -90,7 +92,9 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
         // overrides by nested job id: this is the most specific, so always wins
         "innerflow:job4", ImmutableMap.of(
-            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5")
+            "runtime1", "runtime1-job4",
+            "props4", "innerflow-job4-val-4",
+            "props5", "innerflow-job4-val-5")
     ));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
@@ -139,6 +143,9 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("shared1", job4Props.get("props1"));
     Assert.assertEquals("shared2", job4Props.get("props2"));
     Assert.assertEquals("moo3", job4Props.get("props3"));
+    // runtime props: these don't exist anywhere in static props. most specific wins.
+    Assert.assertEquals("runtime1-job4", job4Props.get("runtime1"));
+    Assert.assertEquals("runtime2-ROOT", job4Props.get("runtime2"));
   }
 
   @Test
