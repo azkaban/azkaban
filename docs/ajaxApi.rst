@@ -27,7 +27,7 @@ Authenticate
 
 -  **Method:** POST
 -  **Request URL:** /?action=login
--  **Parameter Location:** Request Query String
+-  **Parameter Location:** Request body
 
 This API helps authenticate a user and provides a ``session.id`` in
 response.
@@ -622,7 +622,7 @@ This API executes a flow via an ajax call, supporting a rich selection
 of different options. Running an individual job can also be achieved via
 this API by disabling all other jobs in the same flow.
 
--  **Method:** GET
+-  **Method:** POST
 -  **Request URL:** /executor?ajax=executeFlow
 -  **Parameter Location:** Request Query String
 
@@ -742,7 +742,7 @@ Here is a curl command example:
 
 .. code-block:: guess
 
-   curl -k --get --data 'session.id=189b956b-f39f-421e-9a95-e3117e7543c9' --data 'ajax=executeFlow' --data 'project=azkaban-test-project' --data 'flow=test' https://localhost:8443/executor
+   curl -k -X POST --data "session.id=189b956b-f39f-421e-9a95-e3117e7543c9&ajax=executeFlow&project=azkaban-test-project&flow=test" https://localhost:8443/executor
 
 Sample response:
 
