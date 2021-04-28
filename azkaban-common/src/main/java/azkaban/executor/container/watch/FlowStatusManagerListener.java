@@ -12,6 +12,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
+import azkaban.executor.container.watch.AzPodStatus.TransitionValidator;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +31,10 @@ import org.slf4j.LoggerFactory;
  * (1) Updating WebServer and database state of flows based on Pod status
  * (2) Driving pod lifecycle actions, such as deleting flow pods in a final state.
  */
-public class FlowStatusUpdatingListener implements AzPodStatusListener {
+@Singleton
+public class FlowStatusManagerListener implements AzPodStatusListener {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowStatusUpdatingListener.class);
+  private static final Logger logger = LoggerFactory.getLogger(FlowStatusManagerListener.class);
   public static final int EVENT_CACHE_STATS_FREQUENCY = 100;
   public static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 4096;
 
@@ -50,7 +53,7 @@ public class FlowStatusUpdatingListener implements AzPodStatusListener {
   private final AtomicLong flowContainerEventCount = new AtomicLong(0);
 
   @Inject
-  public FlowStatusUpdatingListener(Props azkProps,
+  public FlowStatusManagerListener(Props azkProps,
       ContainerizedImpl containerizedImpl,
       ExecutorLoader executorLoader,
       AlerterHolder alerterHolder) {
@@ -63,7 +66,7 @@ public class FlowStatusUpdatingListener implements AzPodStatusListener {
     this.alerterHolder = alerterHolder;
 
     maxCacheEntries =
-        azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_DRIVER_THREAD_POOL_SIZE,
+        azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_EVENT_CACHE_MAX_ENTRIES,
         DEFAULT_EVENT_CACHE_MAX_ENTRIES);
     this.podStatusCache = CacheBuilder.newBuilder()
         .maximumSize(maxCacheEntries)
@@ -99,7 +102,7 @@ public class FlowStatusUpdatingListener implements AzPodStatusListener {
         event.getAzPodStatus(),
         event.getPodName()));
 
-    if (!AzPodStatusUtils.isTransitionValid(currentStatus, event.getAzPodStatus())) {
+    if (!TransitionValidator.isTransitionValid(currentStatus, event.getAzPodStatus())) {
       IllegalStateException ise = new IllegalStateException(
           format("Pod status transition is not supported %s -> %s, for pod %s",
               currentStatus,
@@ -116,7 +119,7 @@ public class FlowStatusUpdatingListener implements AzPodStatusListener {
    * @param event pod watch event
    */
   private void validateAndPreProcess(AzPodStatusMetadata event) {
-    // Confirm that event is indeed a for a FlowContainer and has the corresponding metadata
+    // Confirm that event is for a FlowContainer and has the corresponding Flow metadata.
     if (!event.getFlowPodMetadata().isPresent()) {
       IllegalStateException ise = new IllegalStateException(
           format("Flow metadata is not present for pod %s", event.getPodName()));

@@ -154,8 +154,8 @@ public class KubernetesWatchTest {
     return createExecutableFlow(executionId, flowStatus, DEFAULT_FLOW_NAME, DEFAULT_PROJECT_NAME);
   }
 
-  private FlowStatusUpdatingListener flowStatusUpdatingListener(Props azkProps) {
-    return new FlowStatusUpdatingListener(azkProps, mockedContainerizedImpl(),
+  private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
+    return new FlowStatusManagerListener(azkProps, mockedContainerizedImpl(),
         mockedExecutorLoader(), mock(AlerterHolder.class));
   }
 
@@ -238,7 +238,7 @@ public class KubernetesWatchTest {
   public void testUpdatingListenerTransitionCompleted() throws Exception {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
-    FlowStatusUpdatingListener updatingListener = flowStatusUpdatingListener(azkProps);
+    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
 
     // Add a StatusLoggingListener for sanity check the events sequence. This also validates
     // support for registering multiple listeners.

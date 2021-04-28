@@ -15,6 +15,12 @@
  */
 package azkaban.executor.container.watch;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * The Enum represents the different stages of the pod lifecycle.
  * While the Kubernetes API can provide very granular information about the current states
@@ -100,4 +106,102 @@ public enum AzPodStatus {
    * Status that can't be classified as one of the above.
    */
   AZ_POD_UNEXPECTED;
+
+  /**
+   * Contains static routines for validation of {@link AzPodStatus} transitions.
+   */
+  public static class TransitionValidator {
+    private static final EnumSet<AzPodStatus> finalStatuses = EnumSet.of(
+        AZ_POD_COMPLETED,
+        AZ_POD_INIT_FAILURE,
+        AZ_POD_APP_FAILURE,
+        AZ_POD_DELETED,
+        AZ_POD_UNEXPECTED
+    );
+
+    // A key in this map is the 'target' status and the value is the set of 'source statuses' from
+    // which transition the the 'target' (key) status is not permitted and and event sequence
+    // corresponding to these transitions should never be received.
+    private static final Map<AzPodStatus, Set<AzPodStatus>> invalidSourceStatusMap =
+        buildInvalidStatusMap();
+
+    private static EnumSet<AzPodStatus> getInvalidSourceStatusesForReady() {
+      return finalStatuses;
+    }
+
+    private static EnumSet<AzPodStatus> getInvalidSourceStatusesForAppStarting() {
+      EnumSet<AzPodStatus> invalidSources = EnumSet.copyOf(getInvalidSourceStatusesForReady());
+      invalidSources.add(AZ_POD_READY);
+      return invalidSources;
+    }
+
+    private static Set<AzPodStatus> getInvalidSourceStatusesForInitRunning() {
+      EnumSet<AzPodStatus> invalidSources = EnumSet.copyOf(getInvalidSourceStatusesForAppStarting());
+      invalidSources.add(AZ_POD_APP_CONTAINERS_STARTING);
+      return invalidSources;
+    }
+
+    private static EnumSet<AzPodStatus> getInvalidSourceStatusesForScheduled() {
+      EnumSet<AzPodStatus> invalidSources = EnumSet.copyOf(getInvalidSourceStatusesForInitRunning());
+      invalidSources.add(AZ_POD_INIT_CONTAINERS_RUNNING);
+      return invalidSources;
+    }
+
+    private static EnumSet<AzPodStatus> getInvalidSourceStatusesForRequested() {
+      EnumSet<AzPodStatus> invalidSources = EnumSet.copyOf(getInvalidSourceStatusesForScheduled());
+      invalidSources.add(AZ_POD_SCHEDULED);
+      return invalidSources;
+    }
+
+    private static Set<AzPodStatus> getInvalidSourceStatusesForAppFailure() {
+      return EnumSet.of(AZ_POD_INIT_FAILURE, AZ_POD_DELETED);
+    }
+
+    private static Set<AzPodStatus> getInvalidSourceStatusesForInitFailure() {
+      return EnumSet.of(AZ_POD_APP_FAILURE, AZ_POD_DELETED);
+    }
+
+    private static Set<AzPodStatus> getInvalidSourceStatusesForUnexpected() {
+      return EnumSet.of(AZ_POD_DELETED);
+    }
+
+    private static Set<AzPodStatus> getInvalidSourceStatusesForDeleted() {
+      return ImmutableSet.of();
+    }
+
+    private static Set<AzPodStatus> getInvalidSourceStatusesForUnset() {
+      return EnumSet.allOf(AzPodStatus.class);
+    }
+
+    // Build the invalid status static map.
+    private static Map<AzPodStatus, Set<AzPodStatus>> buildInvalidStatusMap() {
+      ImmutableMap.Builder builder = ImmutableMap.builder()
+          .put(AZ_POD_READY, getInvalidSourceStatusesForReady())
+          .put(AZ_POD_APP_CONTAINERS_STARTING, getInvalidSourceStatusesForAppStarting())
+          .put(AZ_POD_INIT_CONTAINERS_RUNNING, getInvalidSourceStatusesForInitRunning())
+          .put(AZ_POD_SCHEDULED, getInvalidSourceStatusesForScheduled())
+          .put(AZ_POD_REQUESTED, getInvalidSourceStatusesForRequested())
+          .put(AZ_POD_APP_FAILURE, getInvalidSourceStatusesForAppFailure())
+          .put(AZ_POD_INIT_FAILURE, getInvalidSourceStatusesForInitFailure())
+          .put(AZ_POD_UNEXPECTED, getInvalidSourceStatusesForUnexpected())
+          .put(AZ_POD_DELETED, getInvalidSourceStatusesForDeleted())
+          .put(AZ_POD_UNSET, getInvalidSourceStatusesForUnset());
+      return builder.build();
+    }
+
+    /**
+     * Checks if the transition from {@code oldStatus} to {@code newStatus} is supported.
+     * A return value of 'false' indicates a event status sequence that is not expected to occur in
+     * practice and can help to identify problem with the event processing behavior.
+     *
+     * @param oldStatus
+     * @param newStatus
+     * @return true if transition is supported, false otherwise.
+     */
+    public static boolean isTransitionValid(AzPodStatus oldStatus, AzPodStatus newStatus) {
+      Set<AzPodStatus> invalidSet = invalidSourceStatusMap
+          .getOrDefault(newStatus, ImmutableSet.of());
+      return !invalidSet.contains(oldStatus);
+    }
+  }
 }

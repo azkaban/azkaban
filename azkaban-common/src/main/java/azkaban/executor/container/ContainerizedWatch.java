@@ -1,5 +1,9 @@
 package azkaban.executor.container;
 
+/**
+ * Defines methods for lifecycle management of a resource watch corresponding to a
+ * {@link ContainerizedImpl}
+ */
 public interface ContainerizedWatch {
 
   /**

@@ -32,7 +32,7 @@ import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.executor.container.watch.AzPodStatusListener;
-import azkaban.executor.container.watch.FlowStatusUpdatingListener;
+import azkaban.executor.container.watch.FlowStatusManagerListener;
 import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
 import azkaban.executor.container.watch.RawPodWatchEventListener;
@@ -210,7 +210,7 @@ public class AzkabanWebServerModule extends AbstractModule {
       final ContainerizedImpl containerizedImpl,
       final ExecutorLoader executorLoader,
       final AlerterHolder alerterHolder) {
-    return new FlowStatusUpdatingListener(azkProps, containerizedImpl, executorLoader, alerterHolder);
+    return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder);
   }
 
   @Inject

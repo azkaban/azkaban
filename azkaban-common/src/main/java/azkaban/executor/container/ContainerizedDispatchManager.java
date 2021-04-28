@@ -188,7 +188,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   public void start() {
     this.queueProcessor = setupQueueProcessor();
     this.queueProcessor.start();
-    this.startWatch();
+    startWatch();
   }
 
   // Start the event watch if configured.
@@ -198,7 +198,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       return;
     }
     if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
-        false) == true) {
+        false)) {
       logger.info("Starting containerized watch.");
       this.containerizedWatch.get().launchWatch();
     } else {
@@ -249,7 +249,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       this.queueProcessor.shutdown();
     }
 
-    if (containerizedWatch.isPresent()) {
+    if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
+        false) && containerizedWatch.isPresent()) {
       logger.info("Shutting down containerized watch");
       containerizedWatch.get().requestShutdown();
     }
