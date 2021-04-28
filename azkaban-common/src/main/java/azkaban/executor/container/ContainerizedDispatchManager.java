@@ -144,13 +144,15 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   /**
    * This method is used to get dispatch method for a flow based on multiple criteria mentioned
-   * below. a) If @Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER is set to
-   * true then dispatch method should be containerized b) If based on deterministic ramp up,
-   * dispatch method is anything other than containerized then that should be returned. c) If
-   * deterministic ramp up chooses dispatch method as containerized then validate all the jobtypes
-   * in a flow are in allow list of job criteria. Return containerized if all the jobtypes for a
-   * flow are allowed. Else, return POLL.
-   *
+   * below.
+   * a) If @Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER is set to true
+   * then dispatch method should be containerized
+   * b) If @ExecutionOptions.USE_EXECUTOR is set then dispatch method should be POLL.
+   * c) If based on deterministic ramp up, dispatch method is anything other than containerized
+   * then that should be returned.
+   * d) If deterministic ramp up chooses dispatch method as containerized then validate all the
+   * jobtypes in a flow are in allow list of job criteria. Return containerized if all the
+   * jobtypes for a flow are allowed. Else, return POLL.
    * @param flow
    * @return
    */
@@ -159,10 +161,15 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     ExecutionOptions executionOptions = flow.getExecutionOptions();
     if (executionOptions != null) {
       final Map<String, String> flowParam = executionOptions.getFlowParameters();
-      if (flowParam != null && !flowParam.isEmpty() && Boolean.valueOf(flowParam
-          .getOrDefault(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER,
-              "false"))) {
-        return DispatchMethod.CONTAINERIZED;
+      if (flowParam != null && !flowParam.isEmpty()) {
+        if (Boolean.valueOf(flowParam
+            .getOrDefault(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER,
+                "false"))) {
+          return DispatchMethod.CONTAINERIZED;
+        }
+        if (flowParam.containsKey(ExecutionOptions.USE_EXECUTOR)) {
+          return DispatchMethod.POLL;
+        }
       }
     }
 

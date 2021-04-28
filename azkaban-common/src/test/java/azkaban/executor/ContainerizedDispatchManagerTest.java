@@ -78,6 +78,7 @@ public class ContainerizedDispatchManagerTest {
   private ExecutableFlow flow5;
   private ExecutableFlow flow6;
   private ExecutableFlow flow7;
+  private ExecutableFlow flow8;
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
@@ -101,6 +102,8 @@ public class ContainerizedDispatchManagerTest {
         , DispatchMethod.POLL);
     this.flow7 = TestUtils.createTestExecutableFlow("exectest1", "exec2"
         , DispatchMethod.POLL);
+    this.flow8 = TestUtils.createTestExecutableFlow("exectest1", "exec2"
+        , DispatchMethod.CONTAINERIZED);
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     this.flow3.setExecutionId(3);
@@ -114,6 +117,12 @@ public class ContainerizedDispatchManagerTest {
     options.addAllFlowParameters(flowParam);
     this.flow6.setExecutionOptions(options);
     this.flow7.setExecutionId(7);
+    final ExecutionOptions options8 = new ExecutionOptions();
+    final Map<String, String> flowParam8 = new HashMap<>();
+    flowParam8.put(ExecutionOptions.USE_EXECUTOR, "1");
+    options8.addAllFlowParameters(flowParam8);
+    this.flow8.setExecutionOptions(options8);
+    this.flow8.setExecutionId(8);
     this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
     this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
     this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), null, DispatchMethod.CONTAINERIZED);
@@ -172,6 +181,20 @@ public class ContainerizedDispatchManagerTest {
     DispatchMethod dispatchMethodFor7 =
         this.containerizedDispatchManager.getDispatchMethod(this.flow7);
     Assert.assertEquals(DispatchMethod.POLL, dispatchMethodFor7);
+  }
+
+  /**
+   * This test case is verifying that if useExecutor flow param is set then dispatch method
+   * should be POLL.
+   * @throws Exception
+   */
+  @Test
+  public void testFlowParamForUseExecutor() throws Exception {
+    initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(0);
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
+    DispatchMethod dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow8);
+    Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
   }
 
   @Test
