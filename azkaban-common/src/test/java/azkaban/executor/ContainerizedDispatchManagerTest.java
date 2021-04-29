@@ -381,7 +381,7 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager =
         new ContainerizedDispatchManager(this.props, this.loader,
         this.commonMetrics,
-        this.apiGateway, this.containerizedImpl, null);
+        this.apiGateway, this.containerizedImpl, null, null);
     this.containerizedDispatchManager.start();
   }
 
@@ -463,7 +463,7 @@ public class ContainerizedDispatchManagerTest {
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
         new ContainerizedDispatchManager(containerEnabledProps, this.loader,
-            this.commonMetrics, apiGateway, this.containerizedImpl, null);
+            this.commonMetrics, apiGateway, this.containerizedImpl,null, null);
     dispatchManager.start();
     return dispatchManager;
   }

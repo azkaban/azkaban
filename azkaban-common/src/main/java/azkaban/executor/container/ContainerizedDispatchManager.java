@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,17 +70,20 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
   private final PodEventListener podEventListener;
+  private final Optional<ContainerizedWatch> containerizedWatch;
 
   @Inject
   public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl,
-      final AlerterHolder alerterHolder) throws ExecutorManagerException {
+      final AlerterHolder alerterHolder,
+      final ContainerizedWatch containerizedWatch) throws ExecutorManagerException {
     super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder);
     rateLimiter =
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
     this.containerizedImpl = containerizedImpl;
+    this.containerizedWatch = Optional.ofNullable(containerizedWatch);
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
     this.podEventListener =  new PodEventListener();
@@ -181,13 +185,33 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * This method is used to start queue processor thread. The queue processor thread will pick
-   * execution from queue maintained in database and create a container for it.
+   * This is responsible for starting processing loops for the containerized dispatch.
+   * Currently this includes:
+   * (1) This method is used to start queue processor thread. The queue processor thread will pick
+   *   execution from queue maintained in database and create a container for it.
+   * (2) Starting container event watch, if present.
    */
   @Override
   public void start() {
     this.queueProcessor = setupQueueProcessor();
     this.queueProcessor.start();
+    startWatch();
+  }
+
+  // Start the event watch if configured.
+  private void startWatch() {
+    if (!containerizedWatch.isPresent()) {
+      logger.info("Containerized watch was not provided and will not be started");
+      return;
+    }
+    if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
+        false)) {
+      logger.info("Starting containerized watch.");
+      this.containerizedWatch.get().launchWatch();
+    } else {
+      logger.info("Containerized watch was not started as the config {} is not true.",
+          ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED);
+    }
   }
 
   private QueueProcessorThread setupQueueProcessor() {
@@ -230,6 +254,12 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     logger.info("Shutting down queue processor thread for containerized dispatch implementation.");
     if (null != this.queueProcessor) {
       this.queueProcessor.shutdown();
+    }
+
+    if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
+        false) && containerizedWatch.isPresent()) {
+      logger.info("Shutting down containerized watch");
+      containerizedWatch.get().requestShutdown();
     }
   }
 

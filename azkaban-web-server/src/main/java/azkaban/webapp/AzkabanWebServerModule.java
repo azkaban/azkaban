@@ -21,13 +21,18 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerizedWatch;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
+import azkaban.executor.container.watch.AzPodStatusListener;
+import azkaban.executor.container.watch.FlowStatusManagerListener;
 import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
 import azkaban.executor.container.watch.RawPodWatchEventListener;
@@ -59,9 +64,11 @@ import azkaban.webapp.metrics.WebMetricsImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.util.Providers;
 import io.kubernetes.client.openapi.ApiClient;
 import java.lang.reflect.Constructor;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
@@ -80,6 +87,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   private static final Logger log = Logger.getLogger(AzkabanWebServerModule.class);
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
+  public static final String FLOW_POD_MONITOR = "FlowPodMonitor";
   private final Props props;
 
   public AzkabanWebServerModule(final Props props) {
@@ -130,6 +138,7 @@ public class AzkabanWebServerModule extends AbstractModule {
         return ExecutionController.class;
       case CONTAINERIZED:
         bind(ContainerizedImpl.class).to(resolveContainerizedImpl());
+        bind(ContainerizedWatch.class).to(KubernetesWatch.class);
         return ContainerizedDispatchManager.class;
       case PUSH:
       default:
@@ -159,14 +168,49 @@ public class AzkabanWebServerModule extends AbstractModule {
             DispatchMethod.PUSH.name()));
   }
 
+  /**
+   *  Binds container watch dependencies based on the dispatch method.
+   *
+   *  Hack Alert: This binding to a 'null' provider in the if-condition is hacky.
+   *  This was a required to satisfy the {@code ContainerizedImpl} dependency when the
+   *  dispatch method is not containerized. The field is injected in one of the listener
+   *  providing methods {@link createFlowPodMonitoringListener}.
+   *  The binding is still safe as AzPodStatusListener will never be injected when
+   *  containerized dispatch is not enabled.
+   *  Fix: The way conditional bindings are currently defined in this module is an anti-pattern in
+   *  guice: https://github.com/google/guice/wiki/AvoidConditionalLogicInModules
+   *  A more comprehensive fix should split the dispatch-method based bindings into different
+   *  modules.
+   */
   private void bindContainerWatchDependencies() {
     if(!isContainerizedDispatchMethodEnabled()) {
+      bind(ContainerizedImpl.class).toProvider(Providers.of(null));
       return;
     }
-
     log.info("Binding kubernetes watch dependencies");
     bind(KubernetesWatch.class).in(Scopes.SINGLETON);
-    bind(RawPodWatchEventListener.class).to(AzPodStatusDrivingListener.class).in(Scopes.SINGLETON);
+  }
+
+  @Inject
+  @Singleton
+  @Provides
+  private RawPodWatchEventListener createStatusDrivingListener(final Props azkProps,
+      @Named(FLOW_POD_MONITOR) AzPodStatusListener flowPodMonitorListener) {
+    AzPodStatusDrivingListener listener = new AzPodStatusDrivingListener(azkProps);
+    listener.registerAzPodStatusListener(flowPodMonitorListener);
+    return listener;
+  }
+
+  @Inject
+  @Named(FLOW_POD_MONITOR)
+  @Singleton
+  @Provides
+  private AzPodStatusListener createFlowPodMonitoringListener(
+      final Props azkProps,
+      final ContainerizedImpl containerizedImpl,
+      final ExecutorLoader executorLoader,
+      final AlerterHolder alerterHolder) {
+    return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder);
   }
 
   @Inject

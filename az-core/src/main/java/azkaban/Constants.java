@@ -646,6 +646,8 @@ public class Constants {
     public static final String KUBERNETES_WATCH_ENABLED = KUBERNETES_WATCH_PREFIX + "enabled";
     public static final String KUBERNETES_WATCH_DRIVER_THREAD_POOL_SIZE =
         KUBERNETES_WATCH_PREFIX + "driver.threadpool.size";
+    public static final String KUBERNETES_WATCH_EVENT_CACHE_MAX_ENTRIES =
+        KUBERNETES_WATCH_PREFIX + "cache.max.entries";
 
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =

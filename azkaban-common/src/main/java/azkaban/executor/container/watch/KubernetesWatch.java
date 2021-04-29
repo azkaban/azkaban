@@ -17,6 +17,7 @@ package azkaban.executor.container.watch;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.executor.container.ContainerizedWatch;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * extended for including other Kubernetes resources.
  */
 @Singleton
-public class KubernetesWatch {
+public class KubernetesWatch implements ContainerizedWatch {
   private static final Logger logger = LoggerFactory.getLogger(KubernetesWatch.class);
 
   private final ApiClient apiClient;
@@ -192,6 +193,7 @@ public class KubernetesWatch {
    * @return reference to watch processing thread
    * @throws AzkabanWatchException if watch can't be launched.
    */
+  @VisibleForTesting
   public synchronized Thread launchPodWatch() {
     if (this.isLaunched) {
       AzkabanWatchException awe = new AzkabanWatchException("Pod watch has already been launched");
@@ -210,12 +212,18 @@ public class KubernetesWatch {
     return this.watchRunner;
   }
 
+  @Override
+  public void launchWatch() {
+    this.launchPodWatch();
+  }
+
   /**
    * Submit request for shutting down any watch processing. If shutdown has already been requested,
    * subsequent invocations of this method will be ignored.
    *
    * @return 'true' if the shutdown was not already requested, 'false' otherwise.
    */
+  @Override
   public boolean requestShutdown() {
     boolean notAlreadyRequested = this.isShutdownRequested.compareAndSet(false, true);
     if (!notAlreadyRequested) {

@@ -17,6 +17,7 @@ package azkaban.executor.container.watch;
 
 import static azkaban.executor.container.KubernetesContainerizedImpl.CLUSTER_LABEL_NAME;
 import static azkaban.executor.container.KubernetesContainerizedImpl.EXECUTION_ID_LABEL_NAME;
+import static azkaban.executor.container.KubernetesContainerizedImpl.EXECUTION_ID_LABEL_PREFIX;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -102,11 +103,13 @@ public class AzPodStatusMetadata {
         logger.warn(format("Label %s not found for pod %s", CLUSTER_LABEL_NAME, podName));
         return Optional.empty();
       }
-      executionId = podStatusExtractor.getV1Pod().getMetadata().getLabels().get(EXECUTION_ID_LABEL_NAME);
-      if (executionId == null) {
+      String executionLabel =
+          podStatusExtractor.getV1Pod().getMetadata().getLabels().get(EXECUTION_ID_LABEL_NAME);
+      if (executionLabel == null) {
         logger.warn(format("Label %s not found for pod %s", EXECUTION_ID_LABEL_NAME, podName));
         return Optional.empty();
       }
+      executionId = executionLabel.substring(EXECUTION_ID_LABEL_PREFIX.length());
       return Optional.of(new FlowPodMetadata(executionId, clusterName));
     }
   }
