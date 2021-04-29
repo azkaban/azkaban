@@ -241,23 +241,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
-    this.startWatch();
-  }
-
-  // Starts the kubernetes watch if configured.
-  // todo: this could benefit from a small api change in {@link ContainerizedDispatchManager}
-  //   which will also provide a suitable place for terminating the watch during server shutdown.
-  //   Will be discussed and included in a subsequent commit.
-  private void startWatch() {
-    if (this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED,
-        false) == true) {
-      requireNonNull(this.kubernetesWatch, "kubernetes watch must not be null");
-      logger.info("Starting kubernetes watch.");
-      this.kubernetesWatch.launchPodWatch();
-    } else {
-      logger.info("Kubernetes watch was not started as the config {} is not true.",
-          ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_ENABLED);
-    }
   }
 
   /**
@@ -792,6 +775,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * Get a {@code lableSelector} that can be used to list all the flow-container-pods for the
    * current namespace.
+   *   Example Selector: 'cluster=cluster1,app=azkaban-exec-server'
    *
    * @return label selector
    */
