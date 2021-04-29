@@ -286,7 +286,6 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
     while (iterator.hasNext()) {
       final String imageTypeName = iterator.next();
       final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
-      Collections.sort(imageRampupList, this.getRampupPercentageComparator());
       if (imageRampupList.isEmpty()) {
         log.info("ImageRampupList was empty, so continue");
         continue;
@@ -411,14 +410,5 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
         new VersionInfo(v.getImageVersion().getVersion(), v.getImageVersion().getPath(),
             v.getImageVersion().getState())));
     return versionInfoMap;
-  }
-
-  /**
-   * Return rampup percentage comparator
-   *
-   * @return Comparator<ImageRampup>
-   */
-  private Comparator<ImageRampup> getRampupPercentageComparator() {
-    return Comparator.comparingInt(ImageRampup::getRampupPercentage);
   }
 }

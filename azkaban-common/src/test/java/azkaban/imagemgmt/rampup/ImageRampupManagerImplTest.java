@@ -120,10 +120,10 @@ public class ImageRampupManagerImplTest {
     imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(flow, imageTypes);
     Assert.assertEquals("3.6.5", imageTypeVersionMap.get("azkaban_config").getVersion());
-    Assert.assertEquals("3.6.2", imageTypeVersionMap.get("azkaban_core").getVersion());
-    Assert.assertEquals("1.8.2", imageTypeVersionMap.get("azkaban_exec").getVersion());
-    Assert.assertEquals("2.1.2", imageTypeVersionMap.get("hive_job").getVersion());
-    Assert.assertEquals("1.1.2", imageTypeVersionMap.get("spark_job").getVersion());
+    Assert.assertEquals("3.6.1", imageTypeVersionMap.get("azkaban_core").getVersion());
+    Assert.assertEquals("1.8.1", imageTypeVersionMap.get("azkaban_exec").getVersion());
+    Assert.assertEquals("2.1.1", imageTypeVersionMap.get("hive_job").getVersion());
+    Assert.assertEquals("1.1.1", imageTypeVersionMap.get("spark_job").getVersion());
   }
 
   /**

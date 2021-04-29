@@ -35,6 +35,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -679,6 +680,12 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
           imageRampupMap.put(imageTypeName, imageRampupList);
         }
       } while (rs.next());
+
+      for (List<ImageRampup> imageRampupList : imageRampupMap.values()) {
+        // Sort the list by id so that the ordering of the list is equivalent to the order
+        // specified in the json array at the time of using ImageRampUpAPIs
+        Collections.sort(imageRampupList, Comparator.comparingInt(ImageRampup::getId));
+      }
       return imageRampupMap;
     }
   }
