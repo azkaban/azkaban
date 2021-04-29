@@ -29,6 +29,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
+import azkaban.Constants.JobProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
@@ -204,6 +205,14 @@ public class ContainerizedDispatchManagerTest {
     Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
 
     this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of());
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
+
+    this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
+    this.containerizedDispatchManager.getContainerProxyUserCriteria().updateDenyList(ImmutableSet.of("azktest", "azkdata"));
+    dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
+    Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
+    this.flow5.addAllProxyUsers(ImmutableSet.of("azktest"));
     dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
     Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
   }

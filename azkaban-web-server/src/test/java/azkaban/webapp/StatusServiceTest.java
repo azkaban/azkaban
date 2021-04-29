@@ -25,6 +25,7 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerJobTypeCriteria;
+import azkaban.executor.container.ContainerProxyUserCriteria;
 import azkaban.executor.container.ContainerRampUpCriteria;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO;
@@ -74,6 +75,8 @@ public class StatusServiceTest {
 
     this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_JOBTYPE_ALLOWLIST,
         "jobType1, jobType2");
+    this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_PROXY_USER_DENYLIST,
+        "proxyToUser1, proxyToUser2");
     this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_RAMPUP,
         "50");
     ImageVersionMetadataResponseDTO imageVersionMetadataResponseDTO = new ImageVersionMetadataResponseDTO(
@@ -88,6 +91,8 @@ public class StatusServiceTest {
         .thenReturn(new ContainerRampUpCriteria(this.props));
     Mockito.when(this.executorManager.getContainerJobTypeCriteria())
         .thenReturn(new ContainerJobTypeCriteria(this.props));
+    Mockito.when(this.executorManager.getContainerProxyUserCriteria())
+        .thenReturn(new ContainerProxyUserCriteria(this.props));
     Mockito.when(this.executorLoader.fetchActiveExecutors()).thenReturn(
         Collections.singletonList(new Executor(7, "0.0.0.0", 12345, true)));
     this.statusService = Mockito.spy(new StatusService(this.props, this.executorLoader,

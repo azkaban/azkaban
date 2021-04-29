@@ -126,7 +126,8 @@ public class StatusService {
         getStringImageVersionMetadataResponseDTOMap(),
         getActiveExecutors(),
         containerizedDispatchManager.getContainerRampUpCriteria().getRampUp(),
-        containerizedDispatchManager.getContainerJobTypeCriteria().getAllowListAsString());
+        containerizedDispatchManager.getContainerJobTypeCriteria().getAllowListAsString(),
+        containerizedDispatchManager.getContainerProxyUserCriteria().getDenyListAsString());
   }
 
   @VisibleForTesting

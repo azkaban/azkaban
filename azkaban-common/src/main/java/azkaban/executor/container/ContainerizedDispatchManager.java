@@ -68,6 +68,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchManager.class);
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
+  private final ContainerProxyUserCriteria containerProxyUserCriteria;
   private final PodEventListener podEventListener;
 
   @Inject
@@ -82,6 +83,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerizedImpl = containerizedImpl;
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
+    this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
     this.podEventListener =  new PodEventListener();
     this.addListener(this.podEventListener);
   }
@@ -92,6 +94,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   public ContainerRampUpCriteria getContainerRampUpCriteria() {
     return this.containerRampUpCriteria;
+  }
+
+  public ContainerProxyUserCriteria getContainerProxyUserCriteria(){
+    return this.containerProxyUserCriteria;
   }
 
   /**
@@ -170,7 +176,11 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
-    return this.containerJobTypeCriteria.getDispatchMethod(flow);
+    dispatchMethod = this.containerJobTypeCriteria.getDispatchMethod(flow);
+    if ( dispatchMethod != DispatchMethod.CONTAINERIZED) {
+      return dispatchMethod;
+    }
+    return this.containerProxyUserCriteria.getDisPatchMethod(flow);
   }
 
   /**
