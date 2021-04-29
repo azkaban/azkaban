@@ -3,7 +3,7 @@ CREATE TABLE project_events (
   event_type TINYINT NOT NULL,
   event_time BIGINT  NOT NULL,
   username   VARCHAR(64),
-  message    TEXT
+  message    VARCHAR(65400)
 );
 
 CREATE INDEX log
