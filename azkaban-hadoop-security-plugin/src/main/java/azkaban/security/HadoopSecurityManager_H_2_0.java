@@ -231,7 +231,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
     logger.info("Fetching all hadoop tokens.");
     fetchMetaStoreToken(userToProxyFQN, userToProxy, props, logger, cred);
     fetchJHSToken(userToProxyFQN, userToProxy, props, logger, cred);
-    getProxiedUser(userToProxyFQN, userToProxy).doAs((PrivilegedExceptionAction<Void>) () -> {
+    getProxiedUser(userToProxyFQN).doAs((PrivilegedExceptionAction<Void>) () -> {
       fetchNameNodeToken(userToProxyFQN, userToProxy, props, logger, cred);
       fetchJobTrackerToken(userToProxyFQN, userToProxy, props, logger, cred);
       return null;

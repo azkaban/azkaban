@@ -83,6 +83,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   protected static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
       "obtain.jobhistoryserver.token";
   protected static final String OTHER_NAMENODES_TO_GET_TOKEN = "other_namenodes";
+  protected static final String FQN_SUFFIX_DELIMITER = "/";
   protected UserGroupInformation loginUser;
   protected final ExecuteAsUser executeAsUser;
   protected final Configuration conf;
@@ -91,7 +92,6 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   protected boolean securityEnabled;
   public static final String CHOWN = "chown";
   public static final String CHMOD = "chmod";
-  private static final String DEFAULT_FLOW_EXECUTION_ID = String.valueOf(0);
 
   // Unable to use slf4j logger as this reference is passed at many places for JobTypeManager
   private static final Logger logger = Logger
@@ -171,50 +171,34 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   }
 
   /**
-   * This method is used to get UGI for proxy user if userToProxyFQN is not possible to configure
-   * correctly.
-   * @param userToProxy
-   * @return
-   * @throws HadoopSecurityManagerException
-   */
-  private UserGroupInformation getProxiedUser(final String userToProxy)
-      throws HadoopSecurityManagerException {
-    return getProxiedUser(userToProxy, userToProxy);
-  }
-
-  /**
    * Create a proxied user based on the explicit user name, taking other parameters necessary from
    * properties file.
-   *
-   * @param userToProxyFQN
-   * @param userToProxy
    */
   @Override
-  public synchronized UserGroupInformation getProxiedUser(final String userToProxyFQN,
-      final String userToProxy)
+  public synchronized UserGroupInformation getProxiedUser(final String userToProxy)
       throws HadoopSecurityManagerException {
 
-    if (userToProxyFQN == null) {
+    if (userToProxy == null) {
       throw new HadoopSecurityManagerException("userToProxy can't be null");
     }
 
-    UserGroupInformation ugi = this.userUgiMap.get(userToProxyFQN);
+    UserGroupInformation ugi = this.userUgiMap.get(userToProxy);
     if (ugi == null) {
-      logger.info("Proxy user " + userToProxyFQN
+      logger.info("Proxy user " + userToProxy
           + " does not exist. Creating new proxy user");
       if (this.shouldProxy) {
         try {
           ugi =
-              UserGroupInformation.createProxyUser(userToProxyFQN,
+              UserGroupInformation.createProxyUser(userToProxy,
                   UserGroupInformation.getLoginUser());
         } catch (final IOException e) {
           throw new HadoopSecurityManagerException(
               "Failed to create proxy user", e);
         }
       } else {
-        ugi = UserGroupInformation.createRemoteUser(userToProxyFQN);
+        ugi = UserGroupInformation.createRemoteUser(userToProxy);
       }
-      this.userUgiMap.putIfAbsent(userToProxyFQN, ugi);
+      this.userUgiMap.putIfAbsent(userToProxy, ugi);
     }
     return ugi;
   }
@@ -395,7 +379,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
     try {
       fetchAllHadoopTokens(userToProxyFQN, userToProxy, props, logger, cred);
-      getProxiedUser(userToProxyFQN, userToProxy).doAs((PrivilegedExceptionAction<Void>) () -> {
+      getProxiedUser(userToProxyFQN).doAs((PrivilegedExceptionAction<Void>) () -> {
         registerAllCustomCredentials(userToProxy, props, cred, logger);
         return null;
       });
@@ -422,7 +406,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
    */
   protected String getFQNSuffix(Props props) {
     return (null != props.getString(HadoopSecurityManager.DOMAIN_NAME, null)) ?
-        "/" + kerberosSuffix(props) : "";
+        FQN_SUFFIX_DELIMITER + kerberosSuffix(props) : "";
   }
 
   /**
@@ -525,7 +509,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     final StringBuilder builder = new StringBuilder("az_");
     builder.append(host);
     builder.append("_");
-    builder.append(props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID, DEFAULT_FLOW_EXECUTION_ID));
+    builder.append(props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
     builder.append(props.getString(HadoopSecurityManager.DOMAIN_NAME));
     return builder.toString();
   }

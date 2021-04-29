@@ -62,11 +62,9 @@ public abstract class HadoopSecurityManager {
   /**
    * Create a proxied user based on the explicit user name, taking other parameters necessary from
    * properties file.
-   * @param userToProxyFQN
-   * @param userToProxy
    */
-  public abstract UserGroupInformation getProxiedUser(final String userToProxyFQN,
-      final String userToProxy) throws HadoopSecurityManagerException;
+  public abstract UserGroupInformation getProxiedUser(String toProxy)
+      throws HadoopSecurityManagerException;
 
   /**
    * Create a proxied user, taking all parameters, including which user to proxy from provided
