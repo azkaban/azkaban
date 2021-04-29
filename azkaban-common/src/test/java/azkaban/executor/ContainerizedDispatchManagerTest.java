@@ -209,7 +209,8 @@ public class ContainerizedDispatchManagerTest {
     Assert.assertEquals(DispatchMethod.POLL, dispatchMethod);
 
     this.containerizedDispatchManager.getContainerJobTypeCriteria().updateAllowList(ImmutableSet.of("ALL"));
-    this.containerizedDispatchManager.getContainerProxyUserCriteria().updateDenyList(ImmutableSet.of("azktest", "azkdata"));
+    this.containerizedDispatchManager.getContainerProxyUserCriteria().appendDenyList(ImmutableSet.of(
+        "azktest", "azkdata"));
     dispatchMethod = this.containerizedDispatchManager.getDispatchMethod(this.flow5);
     Assert.assertEquals(DispatchMethod.CONTAINERIZED, dispatchMethod);
     this.flow5.addAllProxyUsers(ImmutableSet.of("azktest"));

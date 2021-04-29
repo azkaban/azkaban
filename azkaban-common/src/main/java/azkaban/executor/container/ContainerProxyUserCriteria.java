@@ -22,6 +22,7 @@ import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.collections4.CollectionUtils;
 
 /**
  * Class for determining {@link DispatchMethod} based on deny list
@@ -34,9 +35,6 @@ public class ContainerProxyUserCriteria {
     this.denyList =
         new HashSet<>(azkProps.getStringList(ContainerizedDispatchManagerProperties.CONTAINERIZED_PROXY_USER_DENYLIST));
   }
-
-  @VisibleForTesting
-  public void updateDenyList(final Set<String> denyList) { this.denyList = denyList; }
 
   @VisibleForTesting
   public void appendDenyList(final Set<String> denyList) { this.denyList.addAll(denyList); }
@@ -60,11 +58,10 @@ public class ContainerProxyUserCriteria {
    * @return DispatchMethod
    */
   public DispatchMethod getDisPatchMethod(final ExecutableFlow flow) {
-    for (String proxyUser: flow.getProxyUsers()) {
-      if (this.denyList.contains(proxyUser)) {
-        return DispatchMethod.POLL;
-      }
+    if (CollectionUtils.containsAny(flow.getProxyUsers(), this.denyList)) {
+      return DispatchMethod.POLL;
+    } else {
+      return DispatchMethod.CONTAINERIZED;
     }
-    return DispatchMethod.CONTAINERIZED;
   }
 }

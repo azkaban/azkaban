@@ -1064,10 +1064,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       case UPDATE_RAMP_UP:
         containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(Integer.parseInt(val));
         break;
-      case UPDATE_DENY_LIST:
-        containerizedDispatchManager.getContainerProxyUserCriteria()
-            .updateDenyList(ServletUtils.getSetFromString(val));
-        break;
       case APPEND_DENY_LIST:
         containerizedDispatchManager.getContainerProxyUserCriteria()
             .appendDenyList(ServletUtils.getSetFromString(val));

@@ -165,20 +165,11 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     this.executorServlet.handlePost(this.req, this.res, this.session);
     assertEquals(7, containerizedDispatchManager.getContainerRampUpCriteria().getRampUp());
 
-    // test update proxy.to.user deny list
-    this.req.removeParameter("subType");
-    this.req.removeParameter("val");
-    this.req.addParameter("subType", "updateDenyList");
-    this.req.addParameter("val","azktest,azkdata");
-    this.executorServlet.handlePost(this.req, this.res, this.session);
-    output = containerizedDispatchManager.getContainerProxyUserCriteria().getDenyList();
-    assertEquals(ImmutableSet.of("azktest", "azkdata"), output);
-
     // test append proxy.to.user deny list
     this.req.removeParameter("subType");
     this.req.removeParameter("val");
     this.req.addParameter("subType", "appendDenyList");
-    this.req.addParameter("val","azdev");
+    this.req.addParameter("val","azktest,azkdata,azdev");
     this.executorServlet.handlePost(this.req, this.res, this.session);
     output = containerizedDispatchManager.getContainerProxyUserCriteria().getDenyList();
     assertEquals(ImmutableSet.of("azktest", "azkdata","azdev"), output);
@@ -187,7 +178,7 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     this.req.removeParameter("subType");
     this.req.removeParameter("val");
     this.req.addParameter("subType", "removeFromDenyList");
-    this.req.addParameter("val","azkdev, azkdata, azktest");
+    this.req.addParameter("val","azkdev,azkdata,azktest");
     this.executorServlet.handlePost(this.req, this.res, this.session);
     output = containerizedDispatchManager.getContainerProxyUserCriteria().getDenyList();
     assertEquals(ImmutableSet.of("azdev"), output);
