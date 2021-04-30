@@ -18,9 +18,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
-import java.util.concurrent.ConcurrentMap;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -37,19 +40,19 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   private static final Logger logger = LoggerFactory.getLogger(FlowStatusManagerListener.class);
   public static final int EVENT_CACHE_STATS_FREQUENCY = 100;
   public static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 4096;
+  public static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
 
   private final ContainerizedImpl containerizedImpl;
   private final ExecutorLoader executorLoader;
   private final AlerterHolder alerterHolder;
   private final Cache<String, AzPodStatusMetadata> podStatusCache;
+  private final ExecutorService executor;
 
   // Note about the cache size.
   // Each incoming event is expected to be less than 5KB in size and the maximum cache size will be
   // about 5KB * maxCacheEntries.
   private final int maxCacheEntries;
 
-  // Convenience member for referring to the Cache through ConcurrentMap interface.
-  private final ConcurrentMap<String, AzPodStatusMetadata> podStatusMap;
   private final AtomicLong flowContainerEventCount = new AtomicLong(0);
 
   @Inject
@@ -65,6 +68,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     this.executorLoader = executorLoader;
     this.alerterHolder = alerterHolder;
 
+    this.executor = Executors.newSingleThreadExecutor(
+        new ThreadFactoryBuilder().setNameFormat("azk-watch-pool-%d").build());
+
     maxCacheEntries =
         azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_EVENT_CACHE_MAX_ENTRIES,
         DEFAULT_EVENT_CACHE_MAX_ENTRIES);
@@ -72,7 +78,6 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
         .maximumSize(maxCacheEntries)
         .recordStats()
         .build();
-    this.podStatusMap = podStatusCache.asMap();
   }
 
   @VisibleForTesting
@@ -93,10 +98,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    * @param event pod watch event
    */
   private void validateTransition(AzPodStatusMetadata event) {
-    AzPodStatus currentStatus = AzPodStatus.AZ_POD_UNSET;
-    if (podStatusMap.containsKey(event.getPodName())) {
-      currentStatus = podStatusMap.get(event.getPodName()).getAzPodStatus();
-    }
+    AzPodStatus currentStatus = getCurrentAzPodStatus(event.getPodName());
     logger.debug(format("Transition requested from %s -> %s, for pod %s",
         currentStatus,
         event.getAzPodStatus(),
@@ -163,49 +165,51 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    * @return true if the status is different from cached value, false otherwise
    */
   private boolean isUpdatedPodStatusDistinct(AzPodStatusMetadata event) {
-    AzPodStatus currentStatus = AzPodStatus.AZ_POD_UNSET;
-    if (podStatusMap.containsKey(event.getPodName())) {
-      currentStatus = podStatusMap.get(event.getPodName()).getAzPodStatus();
-    }
-    boolean shouldSkip = currentStatus == event.getAzPodStatus();
-    if (shouldSkip) {
+    AzPodStatus currentStatus = getCurrentAzPodStatus(event.getPodName());
+    boolean skipUpdates = (currentStatus == event.getAzPodStatus());
+    if (skipUpdates) {
       logger.info(format("Event pod status is same as current %s, for pod %s."
           +" Any updates will be skipped.", currentStatus, event.getPodName()));
     }
-    return !shouldSkip;
+    return !skipUpdates;
+  }
+
+  private AzPodStatus getCurrentAzPodStatus(String podName) {
+    AzPodStatus currentStatus = AzPodStatus.AZ_POD_UNSET;
+    AzPodStatusMetadata currentEvent = podStatusCache.getIfPresent(podName);
+    if (currentEvent != null ) {
+      currentStatus = currentEvent.getAzPodStatus();
+    }
+    return currentStatus;
   }
 
   // Update the cache with the given event.
   private void updatePodStatus(AzPodStatusMetadata event) {
-    podStatusMap.put(event.getPodName(), event);
+    podStatusCache.put(event.getPodName(), event);
     logger.debug(format("Updated status to %s, for pod %s", event.getAzPodStatus(), event.getPodName()));
   }
 
   /**
-   * Apply the boolean function {@code expectedStatusMatcher} to execution-id and if it returns true
-   * then finalize the status of the flow in db.
-   * This can be used for finalizing the flow based on whether the current Flow Status has a
-   * specific value or is present within a given set of values.
+   * If the Flow corresponding to Pod event is not already in a final state then finalize the flow
+   * with the state {@link Status::Failed}
    *
    * <p> Note:
    * Unfortunately many (if not all) of the Flow status updates in Azkaban don't fully enforce
    * the Flow lifecycle state-machine and {@code ExecutionControllerUtils.finalizeFlow} used
    * within this method is no exception. It will simply finalize the flow (as failed) even if the
    * flow status is in a finalized state in the Db. <br>
-   * This indirectly impacts this listener implementation as occasionally more than one thread
-   * could try to update the state of the same flow in db. Although it's not any worse than how
+   * This can indirectly impact this listener implementation in future, if more than one thread
+   * tries to update the state of the same flow in db. Although it's not any worse than how
    * the rest of Azkaban already behaves, we should fix the behavior at least during the
    * finalization of flows. One way of achieving this is to add a utility method to atomically
    * test-and-finalize a flow from a non-final to a failed state.
    *
    * @implNote Flow status check and update is not atomic, details above.
-   * @param event
-   * @param expectedStatusMatcher
+   * @param event pod event
    * @return
    */
-  private azkaban.executor.Status compareAndFinalizeFlowStatus(AzPodStatusMetadata event,
-      Function<Status, Boolean> expectedStatusMatcher) {
-    requireNonNull(expectedStatusMatcher, "flow matcher must not be null");
+  private Optional<Status> compareAndFinalizeFlowStatus(AzPodStatusMetadata event) {
+    requireNonNull(event, "event must not be null");
 
     int executionId = Integer.parseInt(event.getFlowPodMetadata().get().getExecutionId());
     ExecutableFlow executableFlow = null;
@@ -217,18 +221,21 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
       logger.error(message, e);
       throw new AzkabanWatchException(message, e);
     }
-    checkState(executableFlow != null, "executable flow must not be null");
-    azkaban.executor.Status originalStatus = executableFlow.getStatus();
+    if (executableFlow == null) {
+      logger.error("Unable to find executable flow for execution: " + executionId);
+      return Optional.empty();
+    }
+    Status originalStatus = executableFlow.getStatus();
 
-    if (!expectedStatusMatcher.apply(originalStatus)) {
+    if (!Status.isStatusFinished(originalStatus)) {
       logger.info(format(
-          "Flow for pod %s does not have the expected status in database and will be finalized.",
+          "Flow for pod %s does not have a final status in database and will be finalized.",
           event.getPodName()));
       final String reason = "Flow Pod execution was completed.";
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null);
     }
-    return originalStatus;
+    return Optional.of(originalStatus);
   }
 
   /**
@@ -253,68 +260,95 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     }
   }
 
-  @Override
-  public void onPodCompleted(AzPodStatusMetadata event) {
+  /**
+   * Common processing for all the final states of the flow-pod. This is responsible
+   * for deleting the flow container as well as finalizing the Flow status in the Db in case
+   * it's not already in a final state.
+   *
+   * @param event pod event
+   */
+  private void processFinalState(AzPodStatusMetadata event) {
     requireNonNull(event, "event must not be null");
     validateAndPreProcess(event);
-    if (!isUpdatedPodStatusDistinct(event)) {
-      return;
-    }
-    azkaban.executor.Status originalFlowStatus = compareAndFinalizeFlowStatus(event,
-        azkaban.executor.Status::isStatusFinished);
-    if (!Status.isStatusFinished(originalFlowStatus)) {
-      logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
-          event.getPodName(), originalFlowStatus));
-    }
-    deleteFlowContainer(event);
+    boolean skipUpdates = !isUpdatedPodStatusDistinct(event);
     postProcess(event);
+    if (!skipUpdates) {
+      Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event);
+      if (originalFlowStatus.isPresent() &&
+          !Status.isStatusFinished(originalFlowStatus.get())) {
+        logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
+            event.getPodName(), originalFlowStatus));
+      }
+      deleteFlowContainer(event);
+    }
   }
 
-  // Temporary exception generation method, for operations which are not yet implemented.
-  private UnsupportedOperationException createUnsupportedException(AzPodStatusMetadata event) {
-    String message = format("Callback for Pod status %s is not yet implemented. Pod name %s",
-        event.getAzPodStatus(),
-        event.getPodName());
-    return new UnsupportedOperationException(message);
+  /**
+   * Common processing for the non-final states for the flow-pod.
+   *
+   * @param event pod event
+   */
+  private void processNonFinalState(AzPodStatusMetadata event) {
+    requireNonNull(event, "event must not be null");
+    validateAndPreProcess(event);
+    postProcess(event);
   }
 
   @Override
   public void onPodRequested(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processNonFinalState(event));
   }
 
   @Override
   public void onPodScheduled(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processNonFinalState(event));
   }
 
   @Override
   public void onPodInitContainersRunning(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processNonFinalState(event));
   }
 
   @Override
   public void onPodAppContainersStarting(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processNonFinalState(event));
   }
 
   @Override
   public void onPodReady(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processNonFinalState(event));
   }
 
   @Override
+  public void onPodCompleted(AzPodStatusMetadata event) {
+    executor.execute(() -> processFinalState(event));
+  }
+
+  // Note that a Pod can end up in a InitFailure state while the corresponding flow is
+  // in DISPATCHING or PREPARING state. Current implementation will finalize such flows to
+  // a 'failed' state. In future we can consider examining the reason for failure within the
+  // {@link AzPodStatusMetadata} and resubmitting the flow for dispatch accordingly.
+  @Override
   public void onPodInitFailure(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processFinalState(event));
   }
 
   @Override
   public void onPodAppFailure(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processFinalState(event));
   }
 
   @Override
   public void onPodUnexpected(AzPodStatusMetadata event) {
-    logger.warn("Unsupported method.", createUnsupportedException(event));
+    executor.execute(() -> processFinalState(event));
+  }
+
+  public void shutdown() {
+    this.executor.shutdown();
+    try {
+      this.executor.awaitTermination(SHUTDOWN_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      logger.warn("Executor service shutdown was interrupted.", e);
+    }
   }
 }
