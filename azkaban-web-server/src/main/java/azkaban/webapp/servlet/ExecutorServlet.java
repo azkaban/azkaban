@@ -1109,7 +1109,6 @@ enum ContainerPropUpdate {
   APPEND_ALLOW_LIST("appendAllowList"),
   REMOVE_FROM_ALLOW_LIST("removeFromAllowList"),
   UPDATE_RAMP_UP("updateRampUp"),
-  UPDATE_DENY_LIST("updateDenyList"),
   APPEND_DENY_LIST("appendDenyList"),
   REMOVE_FROM_DENY_LIST("removeFromDenyList");
 
