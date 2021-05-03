@@ -34,7 +34,7 @@ public class ImageVersionDTO extends BaseDTO {
   @JsonProperty("imagePath")
   @Size(max = 1024, message = "Path must not exceed 1024 characters.")
   private String path;
-  // Represents image version. Version is in major.minor.patch format
+  // Represents image version. Version is in major.minor.patch.hotfix format
   @JsonProperty("imageVersion")
   @NotBlank(message = "imageVersion cannot be blank.", groups = ValidationOnCreate.class)
   @Pattern(regexp = "^(\\d+\\.)?(\\d+\\.)?(\\d+\\.)?(\\d+)$", message = "ImageVersion must be in "
