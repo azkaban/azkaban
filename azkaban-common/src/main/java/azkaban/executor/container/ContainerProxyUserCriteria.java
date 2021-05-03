@@ -57,7 +57,7 @@ public class ContainerProxyUserCriteria {
    * @param flow
    * @return DispatchMethod
    */
-  public DispatchMethod getDisPatchMethod(final ExecutableFlow flow) {
+  public DispatchMethod getDispatchMethod(final ExecutableFlow flow) {
     if (CollectionUtils.containsAny(flow.getProxyUsers(), this.denyList)) {
       return DispatchMethod.POLL;
     } else {

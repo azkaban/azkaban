@@ -171,7 +171,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         return DispatchMethod.CONTAINERIZED;
       }
     }
-
+    logger.info("dispatch method by proxy user criteria is",
+        this.containerProxyUserCriteria.getDispatchMethod(flow));
     DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
@@ -180,7 +181,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     if ( dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
-    return this.containerProxyUserCriteria.getDisPatchMethod(flow);
+    return this.containerProxyUserCriteria.getDispatchMethod(flow);
   }
 
   /**
