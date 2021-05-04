@@ -21,7 +21,11 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.execapp.event.JobCallbackManager;
+import azkaban.imagemgmt.version.VersionSet;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nonnull;
 import org.apache.log4j.Logger;
 
@@ -46,5 +50,19 @@ public class ServerUtils {
     if (jobCallbackEnabled) {
       JobCallbackManager.initialize(props);
     }
+  }
+
+  /**
+   * Pretty format VersionSet
+   * @param versionSet the versionSet
+   * @return Readable versionSet in JSON format.
+   */
+  public static String getVersionSetJsonString(final VersionSet versionSet) {
+    final Map<String, String> imageToVersionStringMap = new HashMap<>();
+    for (final String imageType: versionSet.getImageToVersionMap().keySet()) {
+      imageToVersionStringMap.put(imageType,
+          versionSet.getImageToVersionMap().get(imageType).getVersion());
+    }
+    return JSONUtils.toJSON(imageToVersionStringMap, true).replaceAll("\"", "");
   }
 }
