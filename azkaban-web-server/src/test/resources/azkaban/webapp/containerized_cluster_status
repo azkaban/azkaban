@@ -7,6 +7,7 @@
   "isDatabaseUp" : true,
   "containerizationRampUp" : 50,
   "containerizationJobTypeFilter" : "jobType2,jobType1",
+  "containerizationProxyToUserFilter" : "proxyToUser2,proxyToUser1",
   "executorStatusMap" : {
     "7" : {
       "id" : 7,
