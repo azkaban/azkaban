@@ -29,6 +29,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
+import azkaban.common.ServerUtils;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
@@ -1586,7 +1587,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         // executed in a container, which also indicates executor type is Kubernetes.
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
         metaData.put(EventReporterConstants.VERSION_SET,
-            getVersionSetJsonString(flow.getVersionSet()));
+            ServerUtils.getVersionSetJsonString(flow.getVersionSet()));
       } else {
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
       }
@@ -1622,17 +1623,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
 
       return metaData;
-    }
-
-    @VisibleForTesting
-    protected String getVersionSetJsonString (final VersionSet versionSet){
-      final Map<String, String> imageToVersionStringMap = new HashMap<>();
-      for (final String imageType: versionSet.getImageToVersionMap().keySet()){
-        imageToVersionStringMap.put(imageType,
-            versionSet.getImageToVersionMap().get(imageType).getVersion());
-      }
-
-      return JSONUtils.toJSON(imageToVersionStringMap, true);
     }
 
     @Override

@@ -622,7 +622,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
       // Should not happen.
       logger.error("VersionSet is not set for the flow");
     } else {
-      logger.info(String.format("VersionSet: %s", versionSet.getVersionSetJsonString()));
+      logger.info("VersionSet: " + ServerUtils.getVersionSetJsonString(versionSet));
     }
   }
 

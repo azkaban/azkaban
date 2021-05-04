@@ -30,6 +30,7 @@ import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 
 import azkaban.Constants;
+import azkaban.common.ServerUtils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -366,8 +367,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
             flowMetadata.get(PROJECT_FILE_UPLOAD_TIME));
     Assert.assertEquals("Event metadata not created as expected.", "null",
         flowMetadata.get(SLA_OPTIONS));
-    Assert.assertEquals("Event metadata not created as expected", flowRunnerEventListener.getVersionSetJsonString(versionSet),
-        flowMetadata.get(VERSION_SET)); // Checks version set
+    Assert.assertEquals("Event metadata not created as expected",
+        ServerUtils.getVersionSetJsonString(versionSet), flowMetadata.get(VERSION_SET)); // Checks version set
     Assert.assertEquals("Event metadata not created as expected", "KUBERNETES",
         flowMetadata.get(EXECUTOR_TYPE)); // Checks executor type
   }
