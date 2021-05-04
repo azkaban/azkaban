@@ -586,6 +586,8 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "rampup";
     public static final String CONTAINERIZED_JOBTYPE_ALLOWLIST =
         AZKABAN_CONTAINERIZED_PREFIX + "jobtype.allowlist";
+    public static final String CONTAINERIZED_PROXY_USER_DENYLIST =
+        AZKABAN_CONTAINERIZED_PREFIX + "proxy.user.denylist";
 
     // Kubernetes related properties
     public static final String AZKABAN_KUBERNETES_PREFIX = "azkaban.kubernetes.";

@@ -1013,6 +1013,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
    * value to be updated
    * <p>
    * Example: propType=containerDispatch&subType=updateAllowList&val=spark,java
+   * propType=containerDispatch&subType=updateDenyList&val=azktest
    */
   private void ajaxUpdateProperty(final HttpServletRequest req,
       final HttpServletResponse resp, final HashMap<String, Object> ret, final User user)
@@ -1063,6 +1064,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       case UPDATE_RAMP_UP:
         containerizedDispatchManager.getContainerRampUpCriteria().setRampUp(Integer.parseInt(val));
         break;
+      case APPEND_DENY_LIST:
+        containerizedDispatchManager.getContainerProxyUserCriteria()
+            .appendDenyList(ServletUtils.getSetFromString(val));
+        break;
+      case REMOVE_FROM_DENY_LIST:
+        containerizedDispatchManager.getContainerProxyUserCriteria()
+            .removeFromDenyList(ServletUtils.getSetFromString(val));
+        break;
       default:
         break;
     }
@@ -1099,7 +1108,10 @@ enum ContainerPropUpdate {
   UPDATE_ALLOW_LIST("updateAllowList"),
   APPEND_ALLOW_LIST("appendAllowList"),
   REMOVE_FROM_ALLOW_LIST("removeFromAllowList"),
-  UPDATE_RAMP_UP("updateRampUp");
+  UPDATE_RAMP_UP("updateRampUp"),
+  APPEND_DENY_LIST("appendDenyList"),
+  REMOVE_FROM_DENY_LIST("removeFromDenyList");
+
   private final String param;
 
   ContainerPropUpdate(String param) {

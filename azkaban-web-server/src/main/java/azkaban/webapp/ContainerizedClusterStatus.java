@@ -28,8 +28,8 @@ import org.codehaus.jackson.annotate.JsonPropertyOrder;
  * for containerized cluster.
  */
 @JsonPropertyOrder({"version", "pid", "installationPath", "usedMemory", "xmx", "isDatabaseUp",
-    "containerizationRampUp", "containerizationJobTypeFilter", "executorStatusMap",
-    "imageTypeVersionMap"})
+    "containerizationRampUp", "containerizationJobTypeFilter", "containerizationProxyToUserFilter",
+    "executorStatusMap", "imageTypeVersionMap"})
 public class ContainerizedClusterStatus extends Status {
 
   @JsonProperty("imageTypeVersionMap")
@@ -40,6 +40,8 @@ public class ContainerizedClusterStatus extends Status {
   private final int containerizationRampUp;
   @JsonProperty("containerizationJobTypeFilter")
   private final String containerizationJobTypeFilter;
+  @JsonProperty("containerizationProxyToUserFilter")
+  private final String containerizationProxyToUserFilter;
 
   public ContainerizedClusterStatus(final String version,
       final String pid,
@@ -50,12 +52,14 @@ public class ContainerizedClusterStatus extends Status {
       final Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap,
       final Map<Integer, Executor> executorStatusMap,
       final int containerizationRampUp,
-      final String containerizationJobTypeFilter) {
+      final String containerizationJobTypeFilter,
+      final String containerizationProxyToUserFilter) {
     super(version, pid, installationPath, usedMemory, xmx, isDatabaseUp);
     this.imageTypeVersionMap = imageTypeVersionMap;
     this.executorStatusMap = executorStatusMap;
     this.containerizationRampUp = containerizationRampUp;
     this.containerizationJobTypeFilter = containerizationJobTypeFilter;
+    this.containerizationProxyToUserFilter = containerizationProxyToUserFilter;
   }
 
   public Map<String, ImageVersionMetadataResponseDTO> getImageTypeVersionMap() {

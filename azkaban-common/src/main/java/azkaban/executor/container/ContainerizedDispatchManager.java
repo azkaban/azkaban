@@ -69,6 +69,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private static final Logger logger = LoggerFactory.getLogger(ContainerizedDispatchManager.class);
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
+  private final ContainerProxyUserCriteria containerProxyUserCriteria;
   private final PodEventListener podEventListener;
   private final Optional<ContainerizedWatch> containerizedWatch;
 
@@ -86,6 +87,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerizedWatch = Optional.ofNullable(containerizedWatch);
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
+    this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
     this.podEventListener =  new PodEventListener();
     this.addListener(this.podEventListener);
   }
@@ -96,6 +98,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   public ContainerRampUpCriteria getContainerRampUpCriteria() {
     return this.containerRampUpCriteria;
+  }
+
+  public ContainerProxyUserCriteria getContainerProxyUserCriteria(){
+    return this.containerProxyUserCriteria;
   }
 
   /**
@@ -176,12 +182,17 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
         }
       }
     }
-
+    logger.info("dispatch method by proxy user criteria is",
+        this.containerProxyUserCriteria.getDispatchMethod(flow));
     DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
-    return this.containerJobTypeCriteria.getDispatchMethod(flow);
+    dispatchMethod = this.containerJobTypeCriteria.getDispatchMethod(flow);
+    if ( dispatchMethod != DispatchMethod.CONTAINERIZED) {
+      return dispatchMethod;
+    }
+    return this.containerProxyUserCriteria.getDispatchMethod(flow);
   }
 
   /**
