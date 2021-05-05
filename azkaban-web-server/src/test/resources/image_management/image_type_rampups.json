@@ -16,7 +16,11 @@
     },
     {
       "imageVersion": "2.1.2",
-      "rampupPercentage": "70"
+      "rampupPercentage": "20"
+    },
+    {
+      "imageVersion": "2.1.3",
+      "rampupPercentage": "50"
     }
   ],
   "azkaban_core": [
