@@ -232,18 +232,15 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   },
 
   scheduleClick: function () {
-    console.log("click schedule button.");
     this.hideExecutionOptionPanel();
     schedulePanelView.showSchedulePanel();
   },
 
   loadFlowInfo: function (projectName, flowId, execId) {
-    console.log("Loading flow " + flowId);
     fetchFlowInfo(this.model, projectName, flowId, execId);
   },
 
   loadGraph: function (projectName, flowId, exgraph, callback) {
-    console.log("Loading flow " + flowId);
     var requestURL = contextURL + "/executor";
 
     var graphModel = executableGraphModel;
@@ -302,8 +299,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   },
 
   handleExecuteFlow: function (evt) {
-    console.log("click schedule button.");
-    var executeURL = contextURL + "/executor";
     var executingData = this.getExecutionOptionData();
     executeFlow(executingData);
   }

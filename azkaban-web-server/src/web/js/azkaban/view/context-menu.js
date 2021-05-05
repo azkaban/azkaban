@@ -30,7 +30,6 @@ azkaban.ContextMenuView = Backbone.View.extend({
   },
 
   show: function (evt, menu) {
-    console.log("Show context menu");
     $(".contextMenu").remove();
     var x = evt.pageX;
     var y = evt.pageY;
@@ -41,12 +40,10 @@ azkaban.ContextMenuView = Backbone.View.extend({
   },
 
   hide: function (evt) {
-    console.log("Hide context menu");
     $(".contextMenu").remove();
   },
 
   handleClick: function (evt) {
-    console.log("handling click");
   },
 
   setupMenu: function (menu) {

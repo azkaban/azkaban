@@ -23,17 +23,17 @@
 <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
 
 <script type="text/javascript" src="${context}/js/azkaban/util/svgutils.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js?v=1620232349"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/layout.js?v=1620232349"></script>
 
-<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js?v=1620232349"></script>
 <script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
 
-<script type="text/javascript" src="${context}/js/azkaban/util/flow-loader.js?v=1619379665"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/flow-loader.js?v=1620232349"></script>
 <script type="text/javascript" src="${context}/js/azkaban/util/job-list-common.js?v=1570835891"></script>
 <script type="text/javascript" src="${context}/js/azkaban/view/job-list.js?v=1570835891"></script>
 <script type="text/javascript" src="${context}/js/azkaban/model/svg-graph.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/model/flow-trigger.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js?v=1619379665"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js?v=1620232349"></script>
 
 <link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css"/>

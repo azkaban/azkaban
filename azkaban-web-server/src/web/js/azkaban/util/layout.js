@@ -30,7 +30,7 @@ var idSort = function (a, b) {
   else {
     return 0;
   }
-}
+};
 
 function prepareLayout(nodes, hmargin, layers, nodeMap) {
   var maxLayer = 0;
@@ -367,7 +367,6 @@ function spaceVertically(layers, maxLayer) {
       }
     }
 
-    console.log("Max " + maxDelta);
     var calcHeight = maxDelta * degreeRatio;
 
     var newMinHeight = minHeight + startMaxHeight / 2 + layerMaxHeight / 2;

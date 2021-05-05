@@ -72,7 +72,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var self = this;
     if (self.rightClick && self.rightClick.graph) {
       $(svg).on("contextmenu", function (evt) {
-        console.log("graph click");
         var currentTarget = evt.currentTarget;
 
         self.rightClick.graph(evt, self.model, currentTarget.data);
@@ -104,7 +103,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
     // Create a g node for edges, so that they're forced in the back.
     var edgeG = this.svg.group(g);
     if (nodes.length == 0) {
-      console.log("No results");
       return;
     }
 
@@ -156,7 +154,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
         // Proper children selectors don't work properly on svg
         for (var i = 0; i < nodes.length; ++i) {
           $(nodes[i].gNode).on("contextmenu", function (evt) {
-            console.log("node click");
             var currentTarget = evt.currentTarget;
             self.rightClick.node(evt, self.model, currentTarget.data);
             return false;
@@ -165,7 +162,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
       }
       if (this.rightClick.graph) {
         $(g).on("contextmenu", function (evt) {
-          console.log("graph click");
           var currentTarget = evt.currentTarget;
 
           self.rightClick.graph(evt, self.model, currentTarget.data);
@@ -233,7 +229,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
   },
 
   changeSelected: function (self) {
-    console.log("change selected");
     var selected = this.model.get("selected");
     var previous = this.model.previous("selected");
 
@@ -247,7 +242,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
       var g = selected.gNode;
       addClass(g, "selected");
 
-      console.log(this.model.get("autoPanZoom"));
       if (this.model.get("autoPanZoom")) {
         this.centerNode(selected);
       }
@@ -417,7 +411,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
   },
 
   collapseFlow: function (node) {
-    console.log("Collapsing flow");
     var svg = this.svg;
     var gnode = node.gNode;
     node.expanded = false;
@@ -713,8 +706,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var totalHeight = labelBBox.height + 2 * verticalMargin;
 
     svg.change(labelG, {
-      transform: translateStr(horizontalMargin, labelBBox.height / 2
-          + verticalMargin)
+      transform: translateStr(horizontalMargin, labelBBox.height / 2 + verticalMargin)
     });
     svg.change(innerG,
         {transform: translateStr(-totalWidth / 2, -totalHeight / 2)});
@@ -753,8 +745,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var innerG = gNode.innerG;
     var borderRect = innerG.borderRect;
 
-    $(innerG).animate(
-        {svgTransform: translateStr(-node.width / 2, -node.height / 2)}, time);
+    $(innerG).animate({svgTransform: translateStr(-node.width / 2, -node.height / 2)}, time);
     $(borderRect).animate({svgWidth: node.width, svgHeight: node.height}, time);
     $(borderRect).animate({svgFill: 'white'}, time);
   },
@@ -800,6 +791,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
   panZoom: function (params) {
     params.maxScale = 2;
+    if (typeof params.duration === 'undefined') params.duration = 5;
     $(this.svgGraph).svgNavigate("transformToBox", params);
   }
 });
