@@ -326,7 +326,9 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
   public Map<String, List<ImageRampup>> getRampupForAllImageTypes()
       throws ImageMgmtException {
     try {
-      return this.databaseOperator.query(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY,
+      final StringBuilder queryBuilder = new StringBuilder(SELECT_ALL_IMAGE_TYPE_RAMPUP_QUERY);
+      queryBuilder.append(" order by iv.version");
+      return this.databaseOperator.query(queryBuilder.toString(),
           new FetchImageTypeRampupHandler(), true, true);
     } catch (final SQLException ex) {
       log.error("Exception while fetching rampup for image types.", ex);
@@ -349,6 +351,7 @@ public class ImageRampupDaoImpl implements ImageRampupDao {
         queryBuilder.append("? ,");
       }
       queryBuilder.append("? )");
+      queryBuilder.append(" order by iv.version");
       log.info("fetchRampupByImageTypes query: " + queryBuilder.toString());
       final List<Object> params = new ArrayList<>();
       // Select active image rampup plan

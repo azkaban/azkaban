@@ -269,7 +269,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   }
 
   /**
-   * Method to process the rampup list and get the random rampup version based on rampup logic for
+   * Method to process the rampup list and get the rampup version based on rampup logic for
    * the given image types in the rampup map.
    *
    * @param imageTypeRampups
@@ -280,13 +280,15 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       final Map<String, List<ImageRampup>> imageTypeRampups) {
     final Set<String> imageTypeSet = imageTypeRampups.keySet();
     log.info("Found active rampup for the image types {} ", imageTypeSet);
-    final Iterator<String> iterator = imageTypeSet.iterator();
     final Map<String, ImageVersion> imageTypeRampupVersionMap =
         new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    while (iterator.hasNext()) {
-      final String imageTypeName = iterator.next();
+    if (imageTypeSet.isEmpty()) {
+      log.warn("No active rampup found for the image types");
+      return imageTypeRampupVersionMap;
+    }
+    log.info("Found active rampup for the image types {} ", imageTypeSet);
+    for (final String imageTypeName : imageTypeSet) {
       final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
-      Collections.sort(imageRampupList, this.getRampupPercentageComparator());
       if (imageRampupList.isEmpty()) {
         log.info("ImageRampupList was empty, so continue");
         continue;
@@ -294,10 +296,11 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       if (null == flow) {
         log.info("Flow object is null, so continue");
         final ImageRampup firstImageRampup = imageRampupList.get(0);
-        imageTypeRampupVersionMap.put(imageTypeName, this.fetchImageVersion(imageTypeName,
-            firstImageRampup.getImageVersion()).orElseThrow(() ->
-            new ImageMgmtException(String.format("Unable to fetch version %s from image "
-                + "versions table.", firstImageRampup.getImageVersion()))));
+        imageTypeRampupVersionMap.put(imageTypeName,
+            this.fetchImageVersion(imageTypeName, firstImageRampup.getImageVersion())
+                .orElseThrow(() -> new ImageMgmtException(
+                    String.format("Unable to fetch version %s from image " + "versions table.",
+                        firstImageRampup.getImageVersion()))));
         continue;
       }
       int prevRampupPercentage = 0;
@@ -308,9 +311,10 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
         if (flowNameHashValMapping >= prevRampupPercentage + 1
             && flowNameHashValMapping <= prevRampupPercentage + rampupPercentage) {
           imageTypeRampupVersionMap.put(imageTypeName,
-              this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion()).orElseThrow(() ->
-                  new ImageMgmtException(String.format("Unable to fetch version %s from image "
-                      + "versions table.", imageRampup.getImageVersion()))));
+              this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion())
+                  .orElseThrow(() -> new ImageMgmtException(
+                      String.format("Unable to fetch version %s from image " + "versions table.",
+                          imageRampup.getImageVersion()))));
           log.debug("The image version {} is selected for image type {} with rampup percentage {}",
               imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
           break;
