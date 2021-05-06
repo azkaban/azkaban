@@ -59,6 +59,7 @@ import azkaban.server.IMBeanRegistrable;
 import azkaban.server.MBeanRegistrationManager;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
+import azkaban.spi.EventType;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
@@ -77,7 +78,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -699,12 +702,16 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    */
   @Override
   public void handleEvent(final Event event) {
-    final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-    final ExecutableFlow flow = flowRunner.getExecutableFlow();
-    // Set Flow level SLA options for containerized executions
-    this.triggerManager
-        .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
-            .getExecutionOptions().getSlaOptions()));
+    final List<EventType> flowEventTypeList = Arrays.asList(EventType.FLOW_STARTED,
+        EventType.FLOW_FINISHED, EventType.FLOW_STATUS_CHANGED);
+    if (flowEventTypeList.contains(event.getType())) {
+      final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+      final ExecutableFlow flow = flowRunner.getExecutableFlow();
+      // Set Flow level SLA options for containerized executions
+      this.triggerManager
+          .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
+              .getExecutionOptions().getSlaOptions()));
+    }
   }
 
   /**
