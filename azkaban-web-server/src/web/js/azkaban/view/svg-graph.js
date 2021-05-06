@@ -408,6 +408,10 @@ azkaban.SvgGraphView = Backbone.View.extend({
     bounds.maxX = bounds.maxX ? bounds.maxX + margin : margin;
     bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
     this.graphBounds = bounds;
+
+    if (this.model.get("autoPanZoom")) {
+      this.model.trigger("resetPanZoom");
+    }
   },
 
   collapseFlow: function (node) {
@@ -438,6 +442,10 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.graphBounds = bounds;
 
     this.expandedLevel = 0;
+
+    if (this.model.get("autoPanZoom")) {
+      this.model.trigger("resetPanZoom");
+    }
   },
 
   expandAllFlows: function (node, maxDepth, depth) {
