@@ -702,9 +702,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    */
   @Override
   public void handleEvent(final Event event) {
-    final List<EventType> flowEventTypeList = Arrays.asList(EventType.FLOW_STARTED,
-        EventType.FLOW_FINISHED, EventType.FLOW_STATUS_CHANGED);
-    if (flowEventTypeList.contains(event.getType())) {
+    if (event.getType().isFlowEventType()) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
       // Set Flow level SLA options for containerized executions
