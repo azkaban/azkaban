@@ -17,6 +17,7 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.EventReporterConstants;
 
+import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
@@ -27,6 +28,7 @@ import azkaban.spi.ExecutorType;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -41,9 +43,10 @@ public class PodEventListener implements EventListener<Event> {
   private Props props;
   private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
 
-  public PodEventListener() {
+  @Inject
+  public PodEventListener(final Props props) {
     try {
-      this.props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
+      this.props = props;
       this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     } catch (final Exception e) {
       logger.error("AzkabanEventReporter is not configured");
@@ -76,10 +79,11 @@ public class PodEventListener implements EventListener<Event> {
     metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
     metaData.put(EventReporterConstants.FLOW_VERSION, String.valueOf(flow.getAzkabanFlowVersion()));
     metaData.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
-    if (flow.getVersionSet() != null) { // Flow version set is set when flow is
-      // executed in a container, which also indicates executor type is Kubernetes.
+    if (flow.getVersionSet() != null) { // Save version set information
       metaData.put(EventReporterConstants.VERSION_SET,
           getVersionSetJsonString(flow.getVersionSet()));
+    }
+    if (flow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
       metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
     } else {
       metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));

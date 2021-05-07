@@ -89,7 +89,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, null);
+    super(azkProps, executorLoader, commonMetrics, apiGateway, null, null);
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;

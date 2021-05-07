@@ -29,11 +29,11 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
-import azkaban.Constants.JobProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
+import azkaban.executor.container.DummyEventListener;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
@@ -391,7 +391,7 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager =
         new ContainerizedDispatchManager(this.props, this.loader,
         this.commonMetrics,
-        this.apiGateway, this.containerizedImpl, null, null);
+        this.apiGateway, this.containerizedImpl, null, null, new DummyEventListener());
     this.containerizedDispatchManager.start();
   }
 
@@ -473,7 +473,7 @@ public class ContainerizedDispatchManagerTest {
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
         new ContainerizedDispatchManager(containerEnabledProps, this.loader,
-            this.commonMetrics, apiGateway, this.containerizedImpl,null, null);
+            this.commonMetrics, apiGateway, this.containerizedImpl,null, null, new DummyEventListener());
     dispatchManager.start();
     return dispatchManager;
   }

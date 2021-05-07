@@ -20,6 +20,7 @@ import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.event.EventData;
+import azkaban.event.EventListener;
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
@@ -70,7 +71,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
   private final ContainerProxyUserCriteria containerProxyUserCriteria;
-  private final PodEventListener podEventListener;
   private final Optional<ContainerizedWatch> containerizedWatch;
 
   @Inject
@@ -78,8 +78,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl,
       final AlerterHolder alerterHolder,
-      final ContainerizedWatch containerizedWatch) throws ExecutorManagerException {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder);
+      final ContainerizedWatch containerizedWatch, final EventListener eventListener) throws ExecutorManagerException {
+    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener);
     rateLimiter =
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
@@ -88,8 +88,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
     this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
-    this.podEventListener =  new PodEventListener();
-    this.addListener(this.podEventListener);
+    this.addListener(this.eventListener);
   }
 
   public ContainerJobTypeCriteria getContainerJobTypeCriteria() {

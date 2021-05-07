@@ -21,12 +21,15 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
+import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedWatch;
+import azkaban.executor.container.DummyEventListener;
+import azkaban.executor.container.PodEventListener;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
@@ -116,10 +119,16 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
+    bind(EventListener.class).to(resolvePodEventListenerClass()).in(Scopes.SINGLETON);
 
     // Following bindings will be present if and only if containerized dispatch is enabled.
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
+  }
+
+  private Class<? extends EventListener> resolvePodEventListenerClass() {
+    return isContainerizedDispatchMethodEnabled() ? PodEventListener.class :
+        DummyEventListener.class;
   }
 
   private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {

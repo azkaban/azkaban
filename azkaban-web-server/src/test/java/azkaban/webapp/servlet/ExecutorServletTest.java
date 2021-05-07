@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.executor.container.DummyEventListener;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaType;
@@ -129,7 +130,7 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
   @Test
   public void testPostAjaxUpdateProperty() throws Exception {
     ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
-        new Props(), null, null, null, null, null, null);
+        new Props(), null, null, null, null, null, null, new DummyEventListener());
     Mockito.when(this.azkabanWebServer.getExecutorManager())
         .thenReturn(containerizedDispatchManager);
     this.executorServlet.init(this.servletConfig);
