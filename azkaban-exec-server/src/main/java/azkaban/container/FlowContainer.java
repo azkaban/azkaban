@@ -699,12 +699,14 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    */
   @Override
   public void handleEvent(final Event event) {
-    final FlowRunner flowRunner = (FlowRunner) event.getRunner();
-    final ExecutableFlow flow = flowRunner.getExecutableFlow();
-    // Set Flow level SLA options for containerized executions
-    this.triggerManager
-        .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
-            .getExecutionOptions().getSlaOptions()));
+    if (event.getType().isFlowEventType()) {
+      final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+      final ExecutableFlow flow = flowRunner.getExecutableFlow();
+      // Set Flow level SLA options for containerized executions
+      this.triggerManager
+          .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
+              .getExecutionOptions().getSlaOptions()));
+    }
   }
 
   /**
