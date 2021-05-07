@@ -224,7 +224,7 @@ public class AzPodStatusExtractor {
   }
 
   /**
-   * Evaluate if event can be classified as status {@link AzPodStatus.AZ_POD_REQUESTED}
+   * Evaluate if event can be classified as status {@link AzPodStatus#AZ_POD_REQUESTED}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodRequested() {
@@ -239,7 +239,7 @@ public class AzPodStatusExtractor {
   }
 
   /**
-   * Evaluate if event can be classified as status {@link AzPodStatus.AZ_POD_SCHEDULED}
+   * Evaluate if event can be classified as status {@link AzPodStatus#AZ_POD_SCHEDULED}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodScheduled() {
@@ -281,9 +281,23 @@ public class AzPodStatusExtractor {
     return true;
   }
 
+  private boolean isAnyInitContainerFailed() {
+    requireNonNull(this.v1PodStatus, "pod status must not be null");
+    List<V1ContainerStatus> initContainerStatuses = this.v1PodStatus.getInitContainerStatuses();
+    if (initContainerStatuses == null || initContainerStatuses.isEmpty()) {
+      logger.debug("AnyInitContainerFailed is false as init container status is null or empty");
+      return false;
+    }
+    boolean anyContainerFailed = initContainerStatuses.stream().anyMatch(status ->
+        status.getState().getTerminated() != null &&
+            (status.getState().getTerminated().getExitCode() == null ||
+                status.getState().getTerminated().getExitCode() != 0));
+    return anyContainerFailed;
+  }
+
   /**
    * Evaluate if event can be classified as status
-   * {@link AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING}
+   * {@link AzPodStatus#AZ_POD_INIT_CONTAINERS_RUNNING}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodInitContainersRunning() {
@@ -303,13 +317,18 @@ public class AzPodStatusExtractor {
       logger.debug("InitRunning false as initialized condition is true");
       return false;
     }
+    // There must not be any failed init container
+    if (isAnyInitContainerFailed()) {
+      logger.debug("InitRunning false as an init container has failed");
+      return false;
+    }
     logger.debug("InitRunning is true");
     return true;
   }
 
   /**
    * Evaluate if event can be classified as status
-   * {@link AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING}
+   * {@link AzPodStatus#AZ_POD_APP_CONTAINERS_STARTING}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodAppContainerStarting() {
@@ -335,8 +354,22 @@ public class AzPodStatusExtractor {
     return true;
   }
 
+  private boolean isAnyAppContainerFailed() {
+    requireNonNull(this.v1PodStatus, "pod status must not be null");
+    List<V1ContainerStatus> containerStatuses = this.v1PodStatus.getContainerStatuses();
+    if (containerStatuses == null || containerStatuses.isEmpty()) {
+      logger.debug("AnyAppContainerFailed is false as container status is null or empty");
+      return false;
+    }
+    boolean anyContainerFailed = containerStatuses.stream().anyMatch(status ->
+        status.getState().getTerminated() != null &&
+            (status.getState().getTerminated().getExitCode() == null ||
+                status.getState().getTerminated().getExitCode() != 0));
+    return anyContainerFailed;
+  }
+
   /**
-   * Evaluate if event can be classified as status {@link AzPodStatus.AZ_POD_READY}
+   * Evaluate if event can be classified as status {@link AzPodStatus#AZ_POD_READY}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodReady() {
@@ -346,7 +379,7 @@ public class AzPodStatusExtractor {
       logger.debug("PodReady false as container-ready condition is not present or not true");
       return false;
     }
-    // All application containers should be running
+    // All application containers should have started
     List<V1ContainerStatus> containerStatuses = this.v1PodStatus.getContainerStatuses();
     if (containerStatuses == null || containerStatuses.isEmpty()) {
       logger.debug("PodReady false as container status is null or empty");
@@ -356,7 +389,12 @@ public class AzPodStatusExtractor {
         status.getState().getRunning() != null &&
             status.getState().getRunning().getStartedAt() != null);
     if (!allContainersRunning) {
-      logger.debug("PodReady false as all containers are not running");
+      logger.debug("PodReady false as all containers did not start running");
+      return false;
+    }
+    // No applications containers should have failed
+    if(isAnyAppContainerFailed()) {
+      logger.debug("PodReady false as an application container has failed");
       return false;
     }
     logger.debug("PodReady is true");
@@ -364,7 +402,7 @@ public class AzPodStatusExtractor {
   }
 
   /**
-   * Evaluate if event can be classified as status {@link AzPodStatus.AZ_POD_COMPLETED}
+   * Evaluate if event can be classified as status {@link AzPodStatus#AZ_POD_COMPLETED}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodCompleted() {
@@ -378,7 +416,7 @@ public class AzPodStatusExtractor {
   }
 
   /**
-   * Evaluate if event can be classified as status {@link AzPodStatus.AZ_POD_INIT_FAILURE}
+   * Evaluate if event can be classified as status {@link AzPodStatus#AZ_POD_INIT_FAILURE}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodInitFailure() {
@@ -395,16 +433,7 @@ public class AzPodStatusExtractor {
     }
 
     // There must be at least 1 failed init container
-    List<V1ContainerStatus> initContainerStatuses = this.v1PodStatus.getInitContainerStatuses();
-    if (initContainerStatuses == null || initContainerStatuses.isEmpty()) {
-      logger.debug("InitFailed is false as init container status is null or empty");
-      return false;
-    }
-    boolean anyContainerFailed = initContainerStatuses.stream().anyMatch(status ->
-        status.getState().getTerminated() != null &&
-            (status.getState().getTerminated().getExitCode() == null ||
-                status.getState().getTerminated().getExitCode() != 0));
-    if (!anyContainerFailed) {
+    if (!isAnyInitContainerFailed()) {
       logger.debug("InitFailed is false as as all init container are terminated with exit code 0");
       return false;
     }
@@ -413,7 +442,7 @@ public class AzPodStatusExtractor {
   }
 
   /**
-   * Evaluate if event can be classified as status {@link AzPodStatus.AZ_POD_APP_FAILURE}
+   * Evaluate if event can be classified as status {@link AzPodStatus#AZ_POD_APP_FAILURE}
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodAppFailure() {
@@ -429,16 +458,7 @@ public class AzPodStatusExtractor {
       return false;
     }
     // There must be at least 1 failed app container
-    List<V1ContainerStatus> containerStatuses = this.v1PodStatus.getInitContainerStatuses();
-    if (containerStatuses == null || containerStatuses.isEmpty()) {
-      logger.debug("AppFailed is false as container status is null or empty");
-      return false;
-    }
-    boolean anyContainerFailed = containerStatuses.stream().anyMatch(status ->
-        status.getState().getTerminated() != null &&
-            (status.getState().getTerminated().getExitCode() == null ||
-                status.getState().getTerminated().getExitCode() != 0));
-    if (!anyContainerFailed) {
+    if (!isAnyAppContainerFailed()) {
       logger.debug("AppFailed is false as as no container terminated with non-zero exit code");
       return false;
     }
