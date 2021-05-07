@@ -49,10 +49,6 @@ import org.slf4j.LoggerFactory;
 public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
   private static final Logger logger = LoggerFactory.getLogger(AzPodStatusDrivingListener.class);
 
-  private static final int DEFAULT_THREAD_POOL_SIZE = 4;
-  public static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
-  private final int threadPoolSize;
-  private final ExecutorService executor;
   private final ImmutableMap<AzPodStatus, List<Consumer<AzPodStatusMetadata>>> listenerMap;
 
   /**
@@ -61,12 +57,6 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
   @Inject
   public AzPodStatusDrivingListener(Props azkProps) {
     requireNonNull(azkProps, "azkaban properties must not be null");
-    this.threadPoolSize = azkProps.getInt(
-        ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_DRIVER_THREAD_POOL_SIZE,
-        DEFAULT_THREAD_POOL_SIZE);
-
-    this.executor = Executors.newFixedThreadPool(this.threadPoolSize,
-        new ThreadFactoryBuilder().setNameFormat("azk-watch-pool-%d").build());
 
     ImmutableMap.Builder listenerMapBuilder = ImmutableMap.builder()
         .put(AzPodStatus.AZ_POD_REQUESTED, new ArrayList<>())
@@ -107,12 +97,6 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
    * Shutdown the driver, including the {@link ExecutorService} with a timeout.
    */
   public void shutdown() {
-    this.executor.shutdown();
-    try {
-      this.executor.awaitTermination(SHUTDOWN_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      logger.warn("Executor service shutdown was interrupted.", e);
-    }
   }
 
   /**
@@ -124,7 +108,7 @@ public class AzPodStatusDrivingListener implements RawPodWatchEventListener {
    */
   private void deliverCallbacksForEvent(AzPodStatusMetadata podStatusMetadata) {
     this.listenerMap.get(podStatusMetadata.getAzPodStatus()).stream()
-        .forEach(callback -> this.executor.execute(() -> callback.accept(podStatusMetadata)));
+        .forEach(callback -> callback.accept(podStatusMetadata));
   }
 
   @Override

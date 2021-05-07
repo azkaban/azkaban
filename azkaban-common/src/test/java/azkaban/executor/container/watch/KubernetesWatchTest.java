@@ -89,7 +89,9 @@ public class KubernetesWatchTest {
   private static final String DEFAULT_NAMESPACE = "dev-namespace1";
   private static final String DEFAULT_CLUSTER = "cluster1";
   private static String PODNAME_WITH_SUCCESS = "flow-pod-cluster1-280";
+  private static String PODNAME_WITH_INIT_FAILURE = "flow-pod-cluster1-740";
   private static int EXECUTION_ID_WITH_SUCCEESS = 280;
+  private static int EXECUTION_ID_WITH_INIT_FAILURE = 740;
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
   private static final String DEFAULT_FLOW_NAME = "exec1";
@@ -235,7 +237,7 @@ public class KubernetesWatchTest {
   //   1. Delete the PODs in completed state.
   //   2. Finalize the corresponding flow execution (in case not already in a final state)
   @Test
-  public void testUpdatingListenerTransitionCompleted() throws Exception {
+  public void testFlowStatusManagerListenerTransitionCompleted() throws Exception {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
@@ -267,6 +269,33 @@ public class KubernetesWatchTest {
 
     // Sanity check for asserting the sequence in which events were received.
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
+  }
+
+  @Test
+  public void testFlowManagerListenerInitContainerFailure() throws Exception {
+    // Setup a FlowUpdatingListener
+    Props azkProps = new Props();
+    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    statusDriver.registerAzPodStatusListener(updatingListener);
+
+    // Mocked flow in RUNNING state. Init failure event will be processed for this execution.
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE, Status.RUNNING);
+    when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE))
+        .thenReturn(flow1);
+
+    // Run events through the registered listeners.
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        1);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    // Verify that the previously RUNNING flow has been finalized to a failure state.
+    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
+    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+
+    // Verify the Pod deletion API is invoked.
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INIT_FAILURE);
   }
 
   @Test
