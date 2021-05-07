@@ -229,8 +229,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
 
     if (!Status.isStatusFinished(originalStatus)) {
       logger.info(format(
-          "Flow for pod %s does not have a final status in database and will be finalized.",
-          event.getPodName()));
+          "Flow execution-id %d for pod %s does not have a final status in database and will be "
+              + "finalized.", executionId, event.getPodName()));
       final String reason = "Flow Pod execution was completed.";
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null);
@@ -348,7 +348,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     try {
       this.executor.awaitTermination(SHUTDOWN_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
-      logger.warn("Executor service shutdown was interrupted.", e);
+      logger.warn("Executor service shutdown for flow-pod status listener was interrupted.",
+          e);
     }
   }
 }
