@@ -16,13 +16,17 @@
 package azkaban.executor.container;
 
 import azkaban.event.EventListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is a no-op implementation of {@link EventListener}
  */
 public class DummyEventListener implements EventListener {
+  private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
 
   @Override
   public void handleEvent(Object event) {
+    logger.info("Event listener has not been configured");
   }
 }

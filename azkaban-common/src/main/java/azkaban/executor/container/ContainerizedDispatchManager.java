@@ -88,7 +88,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
     this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
-    this.addListener(this.eventListener);
   }
 
   public ContainerJobTypeCriteria getContainerJobTypeCriteria() {
