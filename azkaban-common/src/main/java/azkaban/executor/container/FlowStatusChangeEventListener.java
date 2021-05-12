@@ -31,20 +31,20 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
- * This class is the event listener for flow executed in a Kubernetes pod
- * It handles event, gets event metadata, and sends metadata to event reporter plugin
+ * This class reports FLOW_STATUS_CHANGED events in web server, flow statuses include
+ * e.g. READY, DISPATCHING, PREPARING
+ * It handles event, prepares event metadata, and sends metadata to event reporter plugin
  */
-public class PodEventListener implements EventListener<Event> {
+public class FlowStatusChangeEventListener implements EventListener<Event> {
   private AzkabanEventReporter azkabanEventReporter;
   private Props props;
-  private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
+  private static final Logger logger = Logger.getLogger(FlowStatusChangeEventListener.class);
 
   @Inject
-  public PodEventListener(final Props props) {
+  public FlowStatusChangeEventListener(final Props props) {
     try {
       this.props = props;
       this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);

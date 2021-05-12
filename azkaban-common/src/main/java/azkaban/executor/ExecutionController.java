@@ -17,7 +17,6 @@ package azkaban.executor;
 
 import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
-import azkaban.executor.container.DummyEventListener;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;

@@ -20,6 +20,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
+import azkaban.executor.container.DummyEventListener;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
@@ -90,7 +91,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread, EventListener eventListener) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, null, null);
+    super(azkProps, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener());
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;

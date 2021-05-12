@@ -34,7 +34,6 @@ import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
-import azkaban.event.EventListener;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
@@ -113,7 +112,7 @@ public class KubernetesContainerizedImplTest {
       ImageVersion> imageVersionConverter;
   private static Converter<ImageRampupPlanRequestDTO, ImageRampupPlanResponseDTO,
       ImageRampupPlan> imageRampupPlanConverter;
-  private static PodEventListener podEventListener;
+  private static FlowStatusChangeEventListener flowStatusChangeEventListener;
 
   private static final Logger log = LoggerFactory.getLogger(KubernetesContainerizedImplTest.class);
 
@@ -147,9 +146,10 @@ public class KubernetesContainerizedImplTest {
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(getInjector(this.props));
-    this.podEventListener = new PodEventListener(this.props);
+    this.flowStatusChangeEventListener = new FlowStatusChangeEventListener(this.props);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
-        this.executorLoader, this.loader, this.imageRampupManager, null, podEventListener);
+        this.executorLoader, this.loader, this.imageRampupManager, null,
+        flowStatusChangeEventListener);
   }
 
   /**
@@ -400,7 +400,7 @@ public class KubernetesContainerizedImplTest {
     flow.setStatus(Status.PREPARING);
     flow.setVersionSet(versionSet);
     // Test event reported from a pod
-    final Map<String, String> metaData = podEventListener.getFlowMetaData(flow);
+    final Map<String, String> metaData = flowStatusChangeEventListener.getFlowMetaData(flow);
     Assert.assertTrue(metaData.get(EXECUTION_ID).equals("2"));
     Assert.assertTrue(metaData.get(FLOW_STATUS).equals("PREPARING"));
     final String versionSetJsonString = metaData.get(VERSION_SET);

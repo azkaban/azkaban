@@ -16,17 +16,16 @@
 package azkaban.executor.container;
 
 import azkaban.event.EventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
- * This class is a no-op implementation of {@link EventListener}
+ * This class is a no-op implementation of {@link FlowStatusChangeEventListener}
  */
 public class DummyEventListener implements EventListener {
-  private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
+  private static final Logger logger = Logger.getLogger(FlowStatusChangeEventListener.class);
 
   @Override
   public void handleEvent(Object event) {
-    logger.info("Event listener has not been configured");
+    logger.debug("Event listener is not been implemented");
   }
 }
