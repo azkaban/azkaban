@@ -17,6 +17,7 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
 import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
+import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -767,7 +768,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Note that the service label must match the selector used for the corresponding service
     if (isServiceRequired()) {
       mapBuilder.put("service", String.join("-", SERVICE_SELECTOR_PREFIX,
-          Integer.toString(executionId)));
+          clusterQualifiedExecId(this.clusterName, executionId)));
     }
     return mapBuilder.build();
   }
@@ -849,7 +850,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           new AzKubernetesV1ServiceBuilder(
               "v1Service.yaml");
       final V1Service serviceObject = azKubernetesV1ServiceBuilder
-          .withExecId(String.valueOf(executionId))
+          .withExecId(clusterQualifiedExecId(this.clusterName, executionId))
           .withServiceName(getServiceName(executionId))
           .withNamespace(this.namespace)
           .withApiVersion(SERVICE_API_VERSION_2)

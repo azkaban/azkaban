@@ -16,6 +16,9 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ExecutorApiGateway {
   private final static Logger logger = LoggerFactory.getLogger(ExecutorApiGateway.class);
+  public static final String DEFAULT_CLUSTER_NAME = "azkaban";
   public final static String DEFAULT_EXECUTION_RESOURCE = "executor";
   public final static String CONTAINERIZED_EXECUTION_RESOURCE = "container";
 
@@ -50,15 +54,20 @@ public class ExecutorApiGateway {
   //   - In future this implementation could be guice-injected (possibly based on a config property)
   //   - This implementation simply prefixes resource name with the execution-id and assumes that
   //     that a reverse proxy can route the request correctly based on this prefix.
-  private final static BiFunction<Integer, String, String> executionResourceNameModifier =
-      ((e,r) -> String.join("/",  e.toString(), r));
+  private final static BiFunction<String, String, String> executionResourceNameModifier =
+      ((e,r) -> String.join("/",  e, r));
 
   private final static Executor defaultEmptyExecutor = new Executor(-1, "", 1, false);
   private final ExecutorApiClient apiClient;
+  private final String clusterName;
 
   @Inject
   public ExecutorApiGateway(final ExecutorApiClient apiClient, Props azkProps) {
+    requireNonNull(apiClient, "api client must not be null");
+    requireNonNull(azkProps, "azkaban properties must not be null");
     this.apiClient = apiClient;
+    this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
+        DEFAULT_CLUSTER_NAME);
   }
 
   Map<String, Object> callWithExecutable(final ExecutableFlow exflow,
@@ -85,6 +94,11 @@ public class ExecutorApiGateway {
   }
 
   @VisibleForTesting
+  public String getClusterName() {
+    return this.clusterName;
+  }
+
+  @VisibleForTesting
   String createExecutionPath(final Optional<Integer> executionId, DispatchMethod dispatchMethod) throws ExecutorManagerException {
     if (null == dispatchMethod || dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return "/" + DEFAULT_EXECUTION_RESOURCE;
@@ -95,7 +109,9 @@ public class ExecutorApiGateway {
       logger.error(errorMessage);
       throw new ExecutorManagerException(errorMessage);
     }
-    return "/" + executionResourceNameModifier.apply(executionId.get(), CONTAINERIZED_EXECUTION_RESOURCE);
+    return "/" + executionResourceNameModifier.apply(
+        clusterQualifiedExecId(clusterName, executionId.get()),
+        CONTAINERIZED_EXECUTION_RESOURCE);
   }
 
   Map<String, Object> callWithExecutionId(final String host, final int port,
