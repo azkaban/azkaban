@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_PORT;
+import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.junit.Assert.assertEquals;
@@ -101,7 +102,7 @@ public class ExecutorApiGatewayTest {
     final ExecutorApiGateway gateway = gatewayWithConfigs(this.client, containerizationEnabledProps());
     final int executionId = 12345;
     final String path = gateway.createExecutionPath(Optional.of(executionId), DispatchMethod.CONTAINERIZED);
-    Assert.assertEquals("/" + executionId + "/" +
+    Assert.assertEquals("/" + clusterQualifiedExecId(gateway.getClusterName(), executionId) + "/" +
             ExecutorApiGateway.CONTAINERIZED_EXECUTION_RESOURCE,
         path);
   }
@@ -152,7 +153,7 @@ public class ExecutorApiGatewayTest {
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
         1, "bond", DispatchMethod.CONTAINERIZED);
 
-    final URI expectedUri = new URI("http://host1:1234/1/container");
+    final URI expectedUri = new URI("http://host1:1234/azkaban-1/container");
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
         new Pair<>("action", "ping"),
         new Pair<>("execid", "1"),

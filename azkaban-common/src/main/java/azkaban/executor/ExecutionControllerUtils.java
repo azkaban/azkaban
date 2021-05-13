@@ -394,4 +394,16 @@ public class ExecutionControllerUtils {
     logger.info("Application Ids found: " + applicationIds.toString());
     return applicationIds;
   }
+
+  /**
+   * Create a string by combining the cluster name with the execution Id.
+   *
+   * @param clusterName name of the azkaban cluster
+   * @param executionId execution id of a flow
+   * @return
+   */
+  public static String clusterQualifiedExecId(final String clusterName, final int executionId) {
+    requireNonNull(clusterName, "cluster name must not be null");
+    return String.format("%s-%d", clusterName, executionId);
+  }
 }
