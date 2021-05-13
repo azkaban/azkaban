@@ -29,7 +29,6 @@ import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
-import azkaban.executor.container.DummyEventListener;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.spi.EventType;

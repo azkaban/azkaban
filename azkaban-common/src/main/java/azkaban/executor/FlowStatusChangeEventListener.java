@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.executor.container;
+package azkaban.executor;
 
 import static azkaban.Constants.EventReporterConstants;
 
@@ -21,7 +21,6 @@ import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
-import azkaban.executor.ExecutableFlow;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.ExecutorType;
@@ -58,8 +57,7 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
    * @param flow
    * @return flow metadata
    */
-  @VisibleForTesting
-  protected Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
+  public synchronized Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
     final Map<String, String> metaData = new HashMap<>();
 
     // Set up properties not in eventData
@@ -114,7 +112,7 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
    * @param event
    */
   @Override
-  public void handleEvent(final Event event) {
+  public synchronized void handleEvent(final Event event) {
     if (this.azkabanEventReporter != null) {
       final ExecutableFlow flow = (ExecutableFlow) event.getRunner();
       if (flow != null) {

@@ -36,7 +36,6 @@ import azkaban.event.EventListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
-import azkaban.executor.container.DummyEventListener;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.spi.EventType;

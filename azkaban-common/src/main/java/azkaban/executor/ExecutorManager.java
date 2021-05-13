@@ -19,8 +19,6 @@ package azkaban.executor;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
-import azkaban.event.EventListener;
-import azkaban.executor.container.DummyEventListener;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
@@ -90,7 +88,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ActiveExecutors activeExecutors,
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
-      final RunningExecutionsUpdaterThread updaterThread, EventListener eventListener) {
+      final RunningExecutionsUpdaterThread updaterThread) {
     super(azkProps, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener());
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;

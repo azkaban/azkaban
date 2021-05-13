@@ -28,7 +28,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedWatch;
-import azkaban.executor.container.FlowStatusChangeEventListener;
+import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;

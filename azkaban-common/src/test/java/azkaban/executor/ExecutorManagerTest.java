@@ -161,7 +161,7 @@ public class ExecutorManagerTest {
     updaterThread.waitTimeMs = 0;
     final ExecutorManager executorManager = new ExecutorManager(this.props, this.loader,
         this.commonMetrics, this.apiGateway, this.runningExecutions, activeExecutors,
-        this.updaterStage, executionFinalizer, updaterThread, null);
+        this.updaterStage, executionFinalizer, updaterThread);
     executorManager.setSleepAfterDispatchFailure(Duration.ZERO);
     executorManager.initialize();
     return executorManager;

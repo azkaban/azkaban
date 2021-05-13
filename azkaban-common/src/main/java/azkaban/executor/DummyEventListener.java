@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.executor.container;
+package azkaban.executor;
 
 import azkaban.event.EventListener;
 import org.apache.log4j.Logger;
@@ -22,7 +22,7 @@ import org.apache.log4j.Logger;
  * This class is a no-op implementation of {@link FlowStatusChangeEventListener}
  */
 public class DummyEventListener implements EventListener {
-  private static final Logger logger = Logger.getLogger(FlowStatusChangeEventListener.class);
+  private static final Logger logger = Logger.getLogger(EventListener.class);
 
   @Override
   public void handleEvent(Object event) {

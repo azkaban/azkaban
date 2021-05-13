@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import azkaban.executor.container.ContainerizedDispatchManager;
-import azkaban.executor.container.DummyEventListener;
+import azkaban.executor.DummyEventListener;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaType;
