@@ -29,13 +29,16 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
-import azkaban.Constants.JobProperties;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventData;
+import azkaban.event.EventListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
+import azkaban.spi.EventType;
 import azkaban.user.User;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -83,6 +86,7 @@ public class ContainerizedDispatchManagerTest {
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
+  private EventListener eventListener = new DummyEventListener();
 
   @Before
   public void setup() throws Exception {
@@ -292,6 +296,10 @@ public class ContainerizedDispatchManagerTest {
   public void testSubmitFlows() throws Exception {
     initializeContainerizedDispatchImpl();
     this.containerizedDispatchManager.submitExecutableFlow(this.flow1, this.user.getUserId());
+    Assert.assertEquals(this.containerizedDispatchManager.eventListener, this.eventListener);
+    this.containerizedDispatchManager.fireEventListeners(Event.create(flow1,
+        EventType.FLOW_STATUS_CHANGED,
+        new EventData(this.flow1)));
     verify(this.loader).uploadExecutableFlow(this.flow1);
   }
 
@@ -391,7 +399,7 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager =
         new ContainerizedDispatchManager(this.props, this.loader,
         this.commonMetrics,
-        this.apiGateway, this.containerizedImpl, null, null);
+        this.apiGateway, this.containerizedImpl, null, null, this.eventListener);
     this.containerizedDispatchManager.start();
   }
 
@@ -473,7 +481,7 @@ public class ContainerizedDispatchManagerTest {
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
         new ContainerizedDispatchManager(containerEnabledProps, this.loader,
-            this.commonMetrics, apiGateway, this.containerizedImpl,null, null);
+            this.commonMetrics, apiGateway, this.containerizedImpl,null, null, new DummyEventListener());
     dispatchManager.start();
     return dispatchManager;
   }

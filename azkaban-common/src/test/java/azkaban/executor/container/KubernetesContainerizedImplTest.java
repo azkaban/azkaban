@@ -31,11 +31,13 @@ import static org.mockito.Mockito.when;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.Constants.EventReporterConstants;
 import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.Status;
 import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
@@ -62,6 +64,7 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
+import azkaban.spi.ExecutorType;
 import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -112,6 +115,7 @@ public class KubernetesContainerizedImplTest {
       ImageVersion> imageVersionConverter;
   private static Converter<ImageRampupPlanRequestDTO, ImageRampupPlanResponseDTO,
       ImageRampupPlan> imageRampupPlanConverter;
+  private static FlowStatusChangeEventListener flowStatusChangeEventListener;
 
   private static final Logger log = LoggerFactory.getLogger(KubernetesContainerizedImplTest.class);
 
@@ -143,8 +147,12 @@ public class KubernetesContainerizedImplTest {
         , MEMORY_REQUESTED_IN_PROPS);
     this.executorLoader = mock(ExecutorLoader.class);
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
+    SERVICE_PROVIDER.unsetInjector();
+    SERVICE_PROVIDER.setInjector(getInjector(this.props));
+    this.flowStatusChangeEventListener = new FlowStatusChangeEventListener(this.props);
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
-        this.executorLoader, this.loader, this.imageRampupManager, null);
+        this.executorLoader, this.loader, this.imageRampupManager, null,
+        flowStatusChangeEventListener);
   }
 
   /**
@@ -394,12 +402,8 @@ public class KubernetesContainerizedImplTest {
 
     flow.setStatus(Status.PREPARING);
     flow.setVersionSet(versionSet);
-
-    SERVICE_PROVIDER.unsetInjector();
-    SERVICE_PROVIDER.setInjector(getInjector(new Props()));
-    final PodEventListener podEventListener = new PodEventListener();
-    final Map<String, String> metaData = podEventListener.getFlowMetaData(flow);
-
+    // Test event reported from a pod
+    final Map<String, String> metaData = flowStatusChangeEventListener.getFlowMetaData(flow);
     Assert.assertTrue(metaData.get(EXECUTION_ID).equals("2"));
     Assert.assertTrue(metaData.get(FLOW_STATUS).equals("PREPARING"));
     final String versionSetJsonString = metaData.get(VERSION_SET);

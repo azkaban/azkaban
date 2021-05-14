@@ -21,7 +21,7 @@ import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
-import azkaban.executor.container.PodEventListener;
+import azkaban.event.EventListener;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
@@ -63,13 +63,13 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
-  private final PodEventListener podEventListener;
+  protected final EventListener eventListener;
 
   protected AbstractExecutorManagerAdapter(final Props azkProps,
       final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
-      final AlerterHolder alerterHolder) {
+      final AlerterHolder alerterHolder, final EventListener eventListener) {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.commonMetrics = commonMetrics;
@@ -77,8 +77,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
-    this.podEventListener = new PodEventListener();
-    this.addListener(podEventListener);
+    this.eventListener = eventListener;
+    this.addListener(eventListener);
   }
 
   /**
@@ -360,9 +360,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     // The exflow id is set by the loader. So it's unavailable until after
     // this call.
     this.executorLoader.uploadExecutableFlow(exflow);
-    // Emit dispatching flow event
-    this.fireEventListeners(Event.create(exflow, EventType.FLOW_STATUS_CHANGED,
-        new EventData(exflow)));
 
     return message;
   }
