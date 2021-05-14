@@ -81,7 +81,7 @@
 
           <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
 
-          #set($ref = $ref + ":")
+          #set($ref = $ref + ${pathDelimiter})
         #end
 
         <li class="active"><strong>Job</strong> $jobid</li>

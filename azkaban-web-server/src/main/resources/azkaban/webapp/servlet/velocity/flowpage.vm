@@ -130,7 +130,7 @@
             <li class="${linkclass}"><strong>$flowlabel</strong> $flow</li>
           #end
 
-          #set($ref = $ref + ":")
+          #set($ref = $ref + ${pathDelimiter})
         #end
       </ol>
     </div>

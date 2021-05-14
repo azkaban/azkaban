@@ -77,7 +77,7 @@
 
         <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
 
-        #set($ref = $ref + ":")
+        #set($ref = $ref + ${pathDelimiter})
       #end
 
       <li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>

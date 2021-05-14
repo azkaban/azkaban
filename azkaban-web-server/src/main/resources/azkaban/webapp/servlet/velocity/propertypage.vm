@@ -69,7 +69,7 @@
 
           <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
 
-          #set($ref = $ref + ":")
+          #set($ref = $ref + ${pathDelimiter})
         #end
 
         <li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
