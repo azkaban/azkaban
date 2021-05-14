@@ -33,6 +33,7 @@ import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
+import azkaban.event.EventListener;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -141,7 +142,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String secretVolume;
   private final String secretMountpath;
   private final String podTemplatePath;
-  private final PodEventListener podEventListener;
+  private final EventListener eventListener;
 
 
   private static final Logger logger = LoggerFactory
@@ -152,13 +153,15 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final ExecutorLoader executorLoader,
       final VersionSetLoader versionSetLoader,
       final ImageRampupManager imageRampupManager,
-      final KubernetesWatch kubernetesWatch)
+      final KubernetesWatch kubernetesWatch, EventListener eventListener)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.versionSetLoader = versionSetLoader;
     this.imageRampupManager = imageRampupManager;
     this.kubernetesWatch = kubernetesWatch;
+    this.eventListener = eventListener;
+    this.addListener(this.eventListener);
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
     this.flowContainerName =
@@ -222,8 +225,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.podTemplatePath = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_TEMPLATE_PATH,
             StringUtils.EMPTY);
-    this.podEventListener = new PodEventListener();
-    this.addListener(this.podEventListener);
 
     try {
       // Path to the configuration file for Kubernetes which contains information about

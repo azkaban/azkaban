@@ -369,7 +369,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
         flowMetadata.get(SLA_OPTIONS));
     Assert.assertEquals("Event metadata not created as expected",
         ServerUtils.getVersionSetJsonString(versionSet), flowMetadata.get(VERSION_SET)); // Checks version set
-    Assert.assertEquals("Event metadata not created as expected", "KUBERNETES",
+    Assert.assertEquals("Event metadata not created as expected", "BAREMETAL",
         flowMetadata.get(EXECUTOR_TYPE)); // Checks executor type
   }
 

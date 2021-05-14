@@ -1584,10 +1584,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.SLA_OPTIONS, flow.getSlaOptionStr());
       // Flow executor type by versionSet
       if (flow.getVersionSet() != null) { // Flow version set is set when flow is
-        // executed in a container, which also indicates executor type is Kubernetes.
-        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
+        // executed in a container
         metaData.put(EventReporterConstants.VERSION_SET,
             ServerUtils.getVersionSetJsonString(flow.getVersionSet()));
+      }
+      if (flow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
+        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
       } else {
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
       }
@@ -1679,11 +1681,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         VersionInfo versionInfo =
             executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
         if(versionInfo != null){
-          metaData.put(EventReporterConstants.EXECUTOR_TYPE,
-              String.valueOf(ExecutorType.KUBERNETES));
           // Add job type image version number
           metaData.put(EventReporterConstants.VERSION, versionInfo.getVersion());
         }
+      }
+      if (executableFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
+        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
       } else {
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
       }

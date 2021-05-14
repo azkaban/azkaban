@@ -26,8 +26,12 @@ import static org.mockito.Mockito.when;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventData;
+import azkaban.event.EventListener;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
+import azkaban.spi.EventType;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -72,6 +76,7 @@ public class ExecutionControllerTest {
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
+  private EventListener eventListener = new DummyEventListener();
 
   @Before
   public void setup() throws Exception {
@@ -83,7 +88,7 @@ public class ExecutionControllerTest {
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
     this.controller = new ExecutionController(this.props, this.loader, this.commonMetrics,
-        this.apiGateway, this.alertHolder, this.executorHealthChecker);
+        this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
@@ -173,6 +178,10 @@ public class ExecutionControllerTest {
   public void testSubmitFlows() throws Exception {
     this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(this.flow1);
+    Assert.assertEquals(this.controller.eventListener, this.eventListener);
+    this.controller.fireEventListeners(Event.create(flow1,
+        EventType.FLOW_STATUS_CHANGED,
+        new EventData(this.flow1)));
   }
 
   @Test

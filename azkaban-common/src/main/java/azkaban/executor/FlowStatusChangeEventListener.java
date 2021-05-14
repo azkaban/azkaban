@@ -13,37 +13,39 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package azkaban.executor.container;
+package azkaban.executor;
 
 import static azkaban.Constants.EventReporterConstants;
 
+import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
-import azkaban.executor.ExecutableFlow;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.ExecutorType;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
- * This class is the event listener for flow executed in a Kubernetes pod
- * It handles event, gets event metadata, and sends metadata to event reporter plugin
+ * This class reports FLOW_STATUS_CHANGED events in web server, flow statuses include
+ * e.g. READY, DISPATCHING, PREPARING
+ * It handles event, prepares event metadata, and sends metadata to event reporter plugin
  */
-public class PodEventListener implements EventListener<Event> {
+public class FlowStatusChangeEventListener implements EventListener<Event> {
   private AzkabanEventReporter azkabanEventReporter;
   private Props props;
-  private static final Logger logger = LoggerFactory.getLogger(PodEventListener.class);
+  private static final Logger logger = Logger.getLogger(FlowStatusChangeEventListener.class);
 
-  public PodEventListener() {
+  @Inject
+  public FlowStatusChangeEventListener(final Props props) {
     try {
-      this.props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
+      this.props = props;
       this.azkabanEventReporter = ServiceProvider.SERVICE_PROVIDER.getInstance(AzkabanEventReporter.class);
     } catch (final Exception e) {
       logger.error("AzkabanEventReporter is not configured");
@@ -55,8 +57,7 @@ public class PodEventListener implements EventListener<Event> {
    * @param flow
    * @return flow metadata
    */
-  @VisibleForTesting
-  protected Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
+  public synchronized Map<String, String> getFlowMetaData(final ExecutableFlow flow) {
     final Map<String, String> metaData = new HashMap<>();
 
     // Set up properties not in eventData
@@ -76,10 +77,11 @@ public class PodEventListener implements EventListener<Event> {
     metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
     metaData.put(EventReporterConstants.FLOW_VERSION, String.valueOf(flow.getAzkabanFlowVersion()));
     metaData.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
-    if (flow.getVersionSet() != null) { // Flow version set is set when flow is
-      // executed in a container, which also indicates executor type is Kubernetes.
+    if (flow.getVersionSet() != null) { // Save version set information
       metaData.put(EventReporterConstants.VERSION_SET,
           getVersionSetJsonString(flow.getVersionSet()));
+    }
+    if (flow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
       metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
     } else {
       metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
@@ -110,7 +112,7 @@ public class PodEventListener implements EventListener<Event> {
    * @param event
    */
   @Override
-  public void handleEvent(final Event event) {
+  public synchronized void handleEvent(final Event event) {
     if (this.azkabanEventReporter != null) {
       final ExecutableFlow flow = (ExecutableFlow) event.getRunner();
       if (flow != null) {
