@@ -189,7 +189,6 @@ var nodeClickCallback = function (event, model, node) {
 var jobClickCallback = function (event, model, node) {
   var type = node.type;
   var flowId = node.parent.flow;
-  // var jobId = node.id;
   
   var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + node.id;
   var menu;
