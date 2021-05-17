@@ -71,6 +71,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private String name;
   private String label;
   private String color;
+  private String depth;
 
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
@@ -115,6 +116,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.name = props.getString("azkaban.name", "");
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
+    this.depth = props.getString("azkaban.depth", "2");
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
     this.displayExecutionPageSize = props.getInt(ConfigurationKeys.DISPLAY_EXECUTION_PAGE_SIZE, 16);
 
@@ -291,6 +293,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
+    page.add("azkaban_depth", this.depth);
     page.add("note_type", NoteServlet.type);
     page.add("note_message", NoteServlet.message);
     page.add("note_url", NoteServlet.url);
@@ -343,6 +346,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
+    page.add("azkaban_depth", this.depth);
     page.add("note_type", NoteServlet.type);
     page.add("note_message", NoteServlet.message);
     page.add("note_url", NoteServlet.url);

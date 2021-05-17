@@ -18,7 +18,7 @@ $.namespace('azkaban');
 
 azkaban.GraphModel = Backbone.Model.extend({
   initialize: function () {
-
+    this.set({'autoPanZoom': true});
   },
 
   /*
