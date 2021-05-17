@@ -1506,6 +1506,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       page.add("flowid", flow.getId());
+      page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
+      page.add("pathDelimiter", Constants.PATH_DELIMITER);   
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
@@ -1617,6 +1619,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       page.add("flowid", flow.getId());
+      page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
+      page.add("pathDelimiter", Constants.PATH_DELIMITER);   
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
@@ -1710,6 +1714,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("errorMsg", "Flow " + flowName + " not found.");
       } else {
         page.add("flowid", flow.getId());
+        page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
+        page.add("pathDelimiter", Constants.PATH_DELIMITER);         
         page.add("isLocked", flow.isLocked());
         if (flow.isLocked()) {
           final Props props = this.projectManager.getProps();
