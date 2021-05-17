@@ -232,18 +232,15 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   },
 
   scheduleClick: function () {
-    console.log("click schedule button.");
     this.hideExecutionOptionPanel();
     schedulePanelView.showSchedulePanel();
   },
 
   loadFlowInfo: function (projectName, flowId, execId) {
-    console.log("Loading flow " + flowId);
     fetchFlowInfo(this.model, projectName, flowId, execId);
   },
 
   loadGraph: function (projectName, flowId, exgraph, callback) {
-    console.log("Loading flow " + flowId);
     var requestURL = contextURL + "/executor";
 
     var graphModel = executableGraphModel;
@@ -302,8 +299,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   },
 
   handleExecuteFlow: function (evt) {
-    console.log("click schedule button.");
-    var executeURL = contextURL + "/executor";
     var executingData = this.getExecutionOptionData();
     executeFlow(executingData);
   }
@@ -770,6 +765,25 @@ var expanelGraphClickCallback = function (event, model) {
     {
       title: "Open Flow in New Window...", callback: function () {
         window.open(requestURL);
+      }
+    },
+    {break: 1},
+    {
+      title: "Expand Flows 1 Level...", callback: function () {
+        executableGraphModel.trigger("expandFlows1");
+        executableGraphModel.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Expand Flows 2 Levels...", callback: function () {
+        executableGraphModel.trigger("expandFlows2");
+        executableGraphModel.trigger("resetPanZoom");
+      }
+    },
+    {
+      title: "Expand Flows 3 Levels...", callback: function () {
+        executableGraphModel.trigger("expandFlows3");
+        executableGraphModel.trigger("resetPanZoom");
       }
     },
     {break: 1},
