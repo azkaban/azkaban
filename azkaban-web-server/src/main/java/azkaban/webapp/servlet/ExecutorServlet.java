@@ -379,6 +379,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
+    page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
+    page.add("pathDelimiter", Constants.PATH_DELIMITER);
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
     page.add("jobType", node.getType());
@@ -445,6 +447,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", triggerInst.getFlowId());
+    page.add("flowlist", triggerInst.getFlowId().split(Constants.PATH_DELIMITER, 0));
+    page.add("pathDelimiter", Constants.PATH_DELIMITER);
 
     page.render();
   }
@@ -495,6 +499,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
+    page.add("flowlist", flow.getFlowId().split(Constants.PATH_DELIMITER, 0));
+    page.add("pathDelimiter", Constants.PATH_DELIMITER);    
 
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
