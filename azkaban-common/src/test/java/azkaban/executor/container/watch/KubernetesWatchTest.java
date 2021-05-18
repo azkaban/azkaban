@@ -537,65 +537,65 @@ public class KubernetesWatchTest {
 
     @Override
     public synchronized void onPodRequested(final AzPodStatusMetadata event) {
-      super.onPodRequested(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podRequestedCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodScheduled(final AzPodStatusMetadata event) {
-      super.onPodScheduled(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podScheduledCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodInitContainersRunning(final AzPodStatusMetadata event) {
-      super.onPodInitContainersRunning(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podInitContainersRunningCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodAppContainersStarting(final AzPodStatusMetadata event) {
-      super.onPodAppContainersStarting(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         PodAppContainersStartingCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodReady(final AzPodStatusMetadata event) {
-      super.onPodReady(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podReadyCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodCompleted(final AzPodStatusMetadata event) {
-      super.onPodCompleted(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podCompletedCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodInitFailure(final AzPodStatusMetadata event) {
-      super.onPodInitFailure(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podInitFailureCounter++;
+        updatePodStatus(event);
       }
     }
 
     @Override
     public synchronized void onPodAppFailure(final AzPodStatusMetadata event) {
-      super.onPodAppFailure(event);
       if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
         podAppFailureCounter++;
+        updatePodStatus(event);
       }
     }
 
@@ -608,9 +608,7 @@ public class KubernetesWatchTest {
       return podRequestedCounter;
     }
 
-    public int getPodScheduledCounter() {
-      return podScheduledCounter;
-    }
+    public int getPodScheduledCounter() { return podScheduledCounter; }
 
     public int getPodInitContainersRunningCounter() {
       return podInitContainersRunningCounter;

@@ -19,6 +19,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.metrics.ContainerMetrics;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -87,7 +88,7 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
   }
 
   // Update the cache with the given event.
-  private void updatePodStatus(final AzPodStatusMetadata event) {
+  protected void updatePodStatus(final AzPodStatusMetadata event) {
     podStatusMap.put(event.getPodName(), event.getAzPodStatus());
     logger.debug(format("Updated status to %s, for pod %s", event.getAzPodStatus(), event.getPodName()));
   }
