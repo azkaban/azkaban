@@ -639,6 +639,15 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
+   * Disable auto-mounting of service account tokens.
+   *
+   * @param podSpec pod specification
+   */
+  private void disableSATokenAutomount(V1PodSpec podSpec) {
+    podSpec.automountServiceAccountToken(false);
+  }
+
+  /**
    * @param executionId
    * @param podSpec
    * @return
@@ -692,6 +701,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, flowParam);
+    disableSATokenAutomount(podSpec);
+
+    // If a pod-template is provided, merge its component definitions into the podSpec.
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {
       try {
         final AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate
