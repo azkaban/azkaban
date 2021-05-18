@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container.watch;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -30,6 +31,8 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
+import azkaban.metrics.ContainerMetrics;
+import azkaban.metrics.DummyContainerMetricsImpl;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
@@ -246,8 +249,11 @@ public class KubernetesWatchTest {
     // support for registering multiple listeners.
     StatusLoggingListener loggingListener = statusLoggingListener();
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    AzPodStatusRecordHandlerListener recordHandlerListener =
+        new AzPodStatusRecordHandlerListener(new DummyContainerMetricsImpl());
     statusDriver.registerAzPodStatusListener(loggingListener);
     statusDriver.registerAzPodStatusListener(updatingListener);
+    statusDriver.registerAzPodStatusListener(recordHandlerListener);
 
     // Mocked flow in RUNNING state. Pod completion event will be processed for this execution.
     ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_SUCCEESS, Status.RUNNING);
@@ -266,6 +272,17 @@ public class KubernetesWatchTest {
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
+
+    // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
+    //metrics. In total there are 10 events, of which Scheduled and InitContainersRunning are
+    //duplicated event statuses.
+    assertThat(recordHandlerListener.getPodRequestedCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodScheduledCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodInitContainersRunningCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodAppContainersStartingCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodReadyCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodCompletedCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodInitFailureCounter()).isEqualTo(1);
 
     // Sanity check for asserting the sequence in which events were received.
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
@@ -502,6 +519,121 @@ public class KubernetesWatchTest {
           watchEvent.object.getStatus().getMessage(), watchEvent.object.getStatus().getPhase()));
       AzPodStatus azPodStatus = AzPodStatusExtractor.getAzPodStatusFromEvent(watchEvent).getAzPodStatus();
       logger.debug("AZ_POD_STATUS: " + azPodStatus);
+    }
+  }
+
+  /**
+   * A class extends {@link ContainerStatusMetricsHandlerListener} that can be tested for metrics
+   * updating
+   */
+  private static class AzPodStatusRecordHandlerListener extends ContainerStatusMetricsHandlerListener {
+    private int podRequestedCounter =0, podScheduledCounter = 0, podInitContainersRunningCounter = 0,
+        PodAppContainersStartingCounter = 0, podReadyCounter = 0, podCompletedCounter = 0,
+        podInitFailureCounter = 0, podAppFailureCounter = 0, podUnexpectedCounter = 0;
+    public AzPodStatusRecordHandlerListener(
+        ContainerMetrics containerMetrics) {
+      super(containerMetrics);
+    }
+
+    @Override
+    public synchronized void onPodRequested(final AzPodStatusMetadata event) {
+      super.onPodRequested(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podRequestedCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodScheduled(final AzPodStatusMetadata event) {
+      super.onPodScheduled(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podScheduledCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodInitContainersRunning(final AzPodStatusMetadata event) {
+      super.onPodInitContainersRunning(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podInitContainersRunningCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodAppContainersStarting(final AzPodStatusMetadata event) {
+      super.onPodAppContainersStarting(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        PodAppContainersStartingCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodReady(final AzPodStatusMetadata event) {
+      super.onPodReady(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podReadyCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodCompleted(final AzPodStatusMetadata event) {
+      super.onPodCompleted(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podCompletedCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodInitFailure(final AzPodStatusMetadata event) {
+      super.onPodInitFailure(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podInitFailureCounter++;
+      }
+    }
+
+    @Override
+    public synchronized void onPodAppFailure(final AzPodStatusMetadata event) {
+      super.onPodAppFailure(event);
+      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
+        podAppFailureCounter++;
+      }
+    }
+
+    @Override
+    public void onPodUnexpected(AzPodStatusMetadata event) {
+      super.onPodUnexpected(event);
+    }
+
+    public int getPodRequestedCounter() {
+      return podRequestedCounter;
+    }
+
+    public int getPodScheduledCounter() {
+      return podScheduledCounter;
+    }
+
+    public int getPodInitContainersRunningCounter() {
+      return podInitContainersRunningCounter;
+    }
+
+    public int getPodAppContainersStartingCounter() {
+      return PodAppContainersStartingCounter;
+    }
+
+    public int getPodReadyCounter() {
+      return podReadyCounter;
+    }
+
+    public int getPodCompletedCounter() {
+      return podCompletedCounter;
+    }
+
+    public int getPodInitFailureCounter() {
+      return podInitFailureCounter;
+    }
+
+    public int getPodAppFailureCounter() {
+      return podAppFailureCounter;
     }
   }
 }

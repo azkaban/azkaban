@@ -48,6 +48,7 @@ import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.AzkabanAPIMetrics;
+import azkaban.metrics.ContainerMetrics;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanAPI;
@@ -169,7 +170,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
   private final ObjectMapper objectMapper;
-
+  private final ContainerMetrics containerMetrics;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -186,7 +187,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper, ContainerMetrics containerMetrics) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -203,6 +204,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     this.objectMapper = objectMapper;
+    this.containerMetrics = containerMetrics;
 
     loadBuiltinCheckersAndActions();
 
@@ -539,6 +541,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     configureRoutes();
     startWebMetrics();
 
+    // start ContainerMetrics only if containerized execution is enabled
+    if (isContainerizedDispatchMethodEnabled()) {
+      startContainerMetrics();
+    }
+
     if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
       // existing flow triggers
@@ -625,6 +632,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     });
 
     this.webMetrics.startReporting(this.props);
+  }
+
+  /**
+   * Set up and start reporting container metrics
+   */
+  private void startContainerMetrics() {
+    this.containerMetrics.setUp();
+    this.containerMetrics.startReporting(this.props);
   }
 
   private void loadBuiltinCheckersAndActions() {
