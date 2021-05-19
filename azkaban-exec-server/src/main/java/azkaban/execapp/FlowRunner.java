@@ -908,11 +908,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     final ExecutableFlowBase parentFlow = node.getParentFlow();
     if (parentFlow != null) {
       // flow level runtime props have been already applied on parent input props
-      Props flowProps = Props.clone(parentFlow.getInputProps());
-      if (!isOverrideExistingEnabled()) {
-        // if there are more specific runtime props, those override the flow level props
-        flowProps = applyRuntimeProperties(node, runtimeProperties, flowProps);
-      }
+      final Props flowProps = Props.clone(parentFlow.getInputProps());
       flowProps.setEarliestAncestor(props);
       props = flowProps;
     }
@@ -939,9 +935,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       if (flowParam != null && !flowParam.isEmpty()) {
         props = new Props(props, flowParam);
       }
-      // 5.2. apply node-specific runtime props
+      // 5.2. apply node-specific runtime props recursively
       props = applyRuntimeProperties(node, runtimeProperties, props);
     } else if (runtimeProperties.containsKey(node.getNestedId())) {
+      // apply node-specific runtime props (current node only)
       props = new Props(props, runtimeProperties.get(node.getNestedId()));
     }
 
