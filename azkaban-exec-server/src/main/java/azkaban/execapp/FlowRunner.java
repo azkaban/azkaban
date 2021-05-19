@@ -883,12 +883,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       return;
     }
 
-    Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
-        .getRuntimeProperties();
-    if (runtimeProperties == null) {
-      runtimeProperties = new HashMap<>();
-    }
-
     Props props = null;
 
     if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
@@ -927,18 +921,23 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       props = jobSource;
     }
 
-    // 5. If configured, runtime properties override also existing .job props & output props
+    // 5. Runtime properties
+    Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
+        .getRuntimeProperties();
+    if (runtimeProperties == null) {
+      runtimeProperties = new HashMap<>();
+    }
     if (isOverrideExistingEnabled()) {
-      // 5.1. apply flow level runtime props
+      // 5.a.1. apply flow level runtime props
       final Map<String, String> flowParam =
           this.flow.getExecutionOptions().getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
         props = new Props(props, flowParam);
       }
-      // 5.2. apply node-specific runtime props recursively
+      // 5.a.2. apply node-specific runtime props recursively
       props = applyRuntimeProperties(node, runtimeProperties, props);
     } else if (runtimeProperties.containsKey(node.getNestedId())) {
-      // apply node-specific runtime props (current node only)
+      // 5.b. apply node-specific runtime props (current node only)
       props = new Props(props, runtimeProperties.get(node.getNestedId()));
     }
 
