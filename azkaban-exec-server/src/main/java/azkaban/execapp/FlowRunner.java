@@ -941,6 +941,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
       // 5.2. apply node-specific runtime props
       props = applyRuntimeProperties(node, runtimeProperties, props);
+    } else if (runtimeProperties.containsKey(node.getNestedId())) {
+      props = new Props(props, runtimeProperties.get(node.getNestedId()));
     }
 
     node.setInputProps(props);

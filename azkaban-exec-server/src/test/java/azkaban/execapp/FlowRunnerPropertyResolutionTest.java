@@ -42,10 +42,10 @@ import org.junit.Test;
  * The tests are contained in execpropstest, and should be resolved in the following fashion, where
  * the later props take precedence over the previous ones.
  * <p>
- * 1. Global props (set in the FlowRunner) 2. Shared job props (depends on job directory) 3.
- * Previous job outputs to the embedded flow (Only if contained in embedded flow) 4. Embedded flow
- * properties (Only if contained in embedded flow) 5. Previous job outputs (if exists) 6. Job Props
- * 7. Flow Override properties
+ * 1. Global props (set in the FlowRunner) 2. Shared job props (depends on job directory) 3. Flow
+ * Override properties 4. Previous job outputs to the embedded flow (Only if contained in embedded
+ * flow) 5. Embedded flow properties (Only if contained in embedded flow) 6. Previous job outputs
+ * (if exists) 7. Job Props
  * <p>
  * The test contains the following structure: job2 -> innerFlow (job1 -> job4 ) -> job3
  * <p>
@@ -56,41 +56,84 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
   private static final String EXEC_FLOW_DIR = "execpropstest";
   private static final String FLOW_YAML_DIR = "loadpropsflowyamltest";
   private static final String FLOW_NAME = "job3";
-  private static final String FLOW_YAML_FILE = FLOW_NAME + ".flow";
+  private static final String FLOW_YAML_FILE = FlowRunnerPropertyResolutionTest.FLOW_NAME + ".flow";
   private FlowRunnerTestUtil testUtil;
 
-  /**
-   * Tests the basic flow resolution. Flow is defined in execpropstest
-   */
   @Test
-  public void testPropertyResolution() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
-    assertProperties(false);
+  public void testFlow1_0RuntimePropertyResolution() throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(FlowRunnerPropertyResolutionTest.EXEC_FLOW_DIR,
+        this.temporaryFolder);
+    assertProperties();
   }
 
   @Test
-  public void testPropertyResolutionWithFlowOverridesExisting() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
-    assertProperties(true);
+  public void testFlow1_0RuntimePropertyResolutionWithHighestPrecedenceToRuntimePropsEnabled()
+      throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(FlowRunnerPropertyResolutionTest.EXEC_FLOW_DIR,
+        this.temporaryFolder);
+    assertPropertiesWithHighestPrecedenceToRuntimePropsEnabled();
   }
 
   @Test
-  public void testRuntimeOverrides() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
+  public void testFlow2_0RuntimePropertyResolution() throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(FlowRunnerPropertyResolutionTest.FLOW_YAML_DIR,
+        this.temporaryFolder);
+    final Project project = this.testUtil.getProject();
+    when(this.testUtil.getProjectLoader().isFlowFileUploaded(project.getId(), project.getVersion()))
+        .thenReturn(true);
+    when(this.testUtil.getProjectLoader()
+        .getLatestFlowVersion(project.getId(), project.getVersion(),
+            FlowRunnerPropertyResolutionTest.FLOW_YAML_FILE)).thenReturn(1);
+    when(this.testUtil.getProjectLoader()
+        .getUploadedFlowFile(eq(project.getId()), eq(project.getVersion()), eq(
+            FlowRunnerPropertyResolutionTest.FLOW_YAML_FILE),
+            eq(1), any(File.class)))
+        .thenReturn(ExecutionsTestUtil.getFlowFile(FlowRunnerPropertyResolutionTest.FLOW_YAML_DIR,
+            FlowRunnerPropertyResolutionTest.FLOW_YAML_FILE));
+    assertProperties();
+  }
 
-    final HashMap<String, String> flowProps = new HashMap<>();
-    flowProps.put("props7", "execflow7");
-    flowProps.put("props6", "execflow6");
-    flowProps.put("props5", "execflow5");
-    flowProps.put("runtime1", "runtime1-ROOT");
-    flowProps.put("runtime2", "runtime2-ROOT");
+  @Test
+  public void testFlow2_0RuntimePropertyResolutionWithHighestPrecedenceToRuntimePropsEnabled()
+      throws Exception {
+    this.testUtil = new FlowRunnerTestUtil(FlowRunnerPropertyResolutionTest.FLOW_YAML_DIR,
+        this.temporaryFolder);
+    final Project project = this.testUtil.getProject();
+    when(this.testUtil.getProjectLoader().isFlowFileUploaded(project.getId(), project.getVersion()))
+        .thenReturn(true);
+    when(this.testUtil.getProjectLoader()
+        .getLatestFlowVersion(project.getId(), project.getVersion(),
+            FlowRunnerPropertyResolutionTest.FLOW_YAML_FILE)).thenReturn(1);
+    when(this.testUtil.getProjectLoader()
+        .getUploadedFlowFile(eq(project.getId()), eq(project.getVersion()), eq(
+            FlowRunnerPropertyResolutionTest.FLOW_YAML_FILE),
+            eq(1), any(File.class)))
+        .thenReturn(ExecutionsTestUtil.getFlowFile(FlowRunnerPropertyResolutionTest.FLOW_YAML_DIR,
+            FlowRunnerPropertyResolutionTest.FLOW_YAML_FILE));
+    assertPropertiesWithHighestPrecedenceToRuntimePropsEnabled();
+  }
 
-    // Set some node-specific overrides
-    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, flowProps);
+  private void assertProperties() throws Exception {
+    final HashMap<String, String> rootFlowNodeRuntimeProps = new HashMap<>();
+    rootFlowNodeRuntimeProps.put("props7", "execflow7");
+    rootFlowNodeRuntimeProps.put("props6", "execflow6");
+    rootFlowNodeRuntimeProps.put("props5", "execflow5");
+    rootFlowNodeRuntimeProps.put("runtime1", "runtime1-ROOT");
+    rootFlowNodeRuntimeProps.put("runtime2", "runtime2-ROOT");
+
+    // Set some node (root flow + other DAG nodes) runtime properties.
+    final FlowRunner runner = this.testUtil.createFromFlowMap(
+        FlowRunnerPropertyResolutionTest.FLOW_NAME, rootFlowNodeRuntimeProps);
     runner.getExecutableFlow().getExecutionOptions().addAllRuntimeProperties(ImmutableMap.of(
-        "job2", ImmutableMap.of("job-prop-2", "job2-val-2", "props6", "job2-val-6"),
-        "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
-        // overrides by nested job id: this is the most specific, so always wins
+        "job2", ImmutableMap.of(
+            "job-prop-2", "job2-val-2",
+            "props6", "job2-val-6"),
+        "innerflow", ImmutableMap.of(
+            "props6", "innerflow-val-6",
+            "props4", "innerflow-val-4",
+            "props10", "innerflow-val-10"),
+        // overrides by nested job id (or fully qualified name): this is the most specific, so
+        // always wins
         "innerflow:job4", ImmutableMap.of(
             "runtime1", "runtime1-job4",
             "props4", "innerflow-job4-val-4",
@@ -100,267 +143,196 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     createNodeMap(runner.getExecutableFlow(), nodeMap);
     final ExecutableFlow flow = runner.getExecutableFlow();
 
-    // 1. Start flow. Job 2 should start
+    // Start flow. Job 2 should start
     FlowRunnerTestUtil.startThread(runner);
-    InteractiveTestJob.getTestJob("job2").succeedJob();
-    InteractiveTestJob.getTestJob("innerflow:job1").succeedJob();
-    InteractiveTestJob.getTestJob("innerflow:job4").succeedJob();
+    assertStatus(flow, "job2", Status.RUNNING);
 
+    // The priority order should be:
+    // job2-overrides -> job2 -> root-flow-node-overrides -> flow-or-shared-props
     final Props job2Props = nodeMap.get("job2").getInputProps();
     Assert.assertEquals("shared1", job2Props.get("props1"));
     Assert.assertEquals("job2", job2Props.get("props2"));
     Assert.assertEquals("moo3", job2Props.get("props3"));
     Assert.assertEquals("job7", job2Props.get("props7"));
     Assert.assertEquals("execflow5", job2Props.get("props5"));
-    // should've been overridden by the most specific runtime property
-    // props6=execflow6 is a flow override, but it's not the most specific one
     Assert.assertEquals("job2-val-6", job2Props.get("props6"));
     Assert.assertEquals("shared4", job2Props.get("props4"));
     Assert.assertEquals("shared8", job2Props.get("props8"));
-    // entirely new prop via nodeOverride
     Assert.assertEquals("job2-val-2", job2Props.get("job-prop-2"));
+    Assert.assertEquals("runtime1-ROOT", job2Props.get("runtime1"));
+    Assert.assertEquals("runtime2-ROOT", job2Props.get("runtime2"));
+    Assert.assertNull(job2Props.get("props10"));
 
+    // The priority order should be:
+    // job1-overrides -> job1 -> innerflow-overrides -> innerflow -> job2-output ->
+    // root-flow-node-overrides -> flow-or-shared-props
+    final Props job2Generated = new Props();
+    job2Generated.put("props6", "g2job6");
+    job2Generated.put("props4", "g2job4");
+    job2Generated.put("props5", "g2job5");
+    job2Generated.put("props7", "g2job7");
+    job2Generated.put("props10", "g2job10");
+    InteractiveTestJob.getTestJob("job2").succeedJob(job2Generated);
+    assertStatus(flow, "innerflow:job1", Status.RUNNING);
     final Props job1Props = nodeMap.get("innerflow:job1").getInputProps();
     Assert.assertEquals("job1", job1Props.get("props1"));
     Assert.assertEquals("job2", job1Props.get("props2"));
     Assert.assertEquals("job8", job1Props.get("props8"));
-    // nodeOverride by the sub-flow parent
     Assert.assertEquals("innerflow-val-6", job1Props.get("props6"));
     Assert.assertEquals("innerflow5", job1Props.get("props5"));
-    Assert.assertEquals("execflow7", job1Props.get("props7"));
+    Assert.assertEquals("g2job7", job1Props.get("props7"));
     Assert.assertEquals("moo3", job1Props.get("props3"));
     Assert.assertEquals("innerflow-val-4", job1Props.get("props4"));
+    Assert.assertEquals("innerflow-val-10", job1Props.get("props10"));
+    Assert.assertEquals("runtime1-ROOT", job1Props.get("runtime1"));
+    Assert.assertEquals("runtime2-ROOT", job1Props.get("runtime2"));
 
+    // The priority order should be:
+    // job4-overrides -> job4 -> job1-output -> innerflow-overrides -> innerflow ->
+    // job2-output -> root-flow-node-overrides -> flow-or-shared-props
+    final Props job1GeneratedProps = new Props();
+    job1GeneratedProps.put("props4", "g1job4");
+    job1GeneratedProps.put("props10", "g1job10");
+    InteractiveTestJob.getTestJob("innerflow:job1").succeedJob(job1GeneratedProps);
+    assertStatus(flow, "innerflow:job4", Status.RUNNING);
     final Props job4Props = nodeMap.get("innerflow:job4").getInputProps();
     Assert.assertEquals("job8", job4Props.get("props8"));
     Assert.assertEquals("job9", job4Props.get("props9"));
-    // nodeOverride by the sub-flow parent
-    Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
-    Assert.assertEquals("execflow7", job4Props.get("props7"));
-    // nodeOverride with nested id
     Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
+    Assert.assertEquals("g1job10", job4Props.get("props10"));
+    Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
+    Assert.assertEquals("g2job7", job4Props.get("props7"));
     Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
     Assert.assertEquals("shared1", job4Props.get("props1"));
     Assert.assertEquals("shared2", job4Props.get("props2"));
     Assert.assertEquals("moo3", job4Props.get("props3"));
-    // runtime props: these don't exist anywhere in static props. most specific wins.
     Assert.assertEquals("runtime1-job4", job4Props.get("runtime1"));
     Assert.assertEquals("runtime2-ROOT", job4Props.get("runtime2"));
+
+    // The priority order should be:
+    // job3-overrides -> job3 -> innerflow-output -> root-flow-node-overrides -> flow-or-shared-props
+    final Props job4GeneratedProps = new Props();
+    job4GeneratedProps.put("props9", "g4job9");
+    job4GeneratedProps.put("props6", "g4job6");
+    InteractiveTestJob.getTestJob("innerflow:job4").succeedJob(job4GeneratedProps);
+    assertStatus(flow, FlowRunnerPropertyResolutionTest.FLOW_NAME, Status.RUNNING);
+    final Props job3Props = nodeMap.get("job3").getInputProps();
+    Assert.assertEquals("job3", job3Props.get("props3"));
+    Assert.assertEquals("g4job6", job3Props.get("props6"));
+    Assert.assertEquals("g4job9", job3Props.get("props9"));
+    Assert.assertEquals("execflow7", job3Props.get("props7"));
+    Assert.assertEquals("execflow5", job3Props.get("props5"));
+    Assert.assertEquals("shared1", job3Props.get("props1"));
+    Assert.assertEquals("shared2", job3Props.get("props2"));
+    Assert.assertEquals("moo4", job3Props.get("props4"));
+    Assert.assertNull(job3Props.get("props10"));
+    Assert.assertEquals("runtime1-ROOT", job3Props.get("runtime1"));
+    Assert.assertEquals("runtime2-ROOT", job3Props.get("runtime2"));
   }
 
-  @Test
-  public void testRuntimeOverridesWithFlowOverridesExisting() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil(EXEC_FLOW_DIR, this.temporaryFolder);
+  private void assertPropertiesWithHighestPrecedenceToRuntimePropsEnabled() throws Exception {
+    final HashMap<String, String> rootFlowNodeRuntimeProps = new HashMap<>();
+    rootFlowNodeRuntimeProps.put("props7", "execflow7");
+    rootFlowNodeRuntimeProps.put("props6", "execflow6");
+    rootFlowNodeRuntimeProps.put("props5", "execflow5");
 
-    final HashMap<String, String> flowProps = new HashMap<>();
-    flowProps.put("props7", "execflow7");
-    flowProps.put("props6", "execflow6");
-    flowProps.put("props5", "execflow5");
-
-    // enable overriding also for existing job props
-    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, null, flowProps,
+    final FlowRunner runner = this.testUtil.createFromFlowMap(
+        FlowRunnerPropertyResolutionTest.FLOW_NAME, null, rootFlowNodeRuntimeProps,
         Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, "true"));
-    // Set some node-specific overrides
+
+    // Set some node (root flow + other DAG nodes) runtime properties.
     runner.getExecutableFlow().getExecutionOptions().addAllRuntimeProperties(ImmutableMap.of(
-        "job2", ImmutableMap.of("job-prop-2", "job2-val-2", "props6", "job2-val-6"),
-        "innerflow", ImmutableMap.of("props6", "innerflow-val-6", "props4", "innerflow-val-4"),
+        "job2", ImmutableMap.of(
+            "job-prop-2", "job2-val-2",
+            "props6", "job2-val-6"),
+        "innerflow", ImmutableMap.of(
+            "props6", "innerflow-val-6",
+            "props4", "innerflow-val-4",
+            "props10", "innerflow-val-10"),
         // overrides by nested job id: this is the most specific, so always wins
         "innerflow:job4", ImmutableMap.of(
-            "props4", "innerflow-job4-val-4", "props5", "innerflow-job4-val-5")
+            "props4", "innerflow-job4-val-4",
+            "props5", "innerflow-job4-val-5")
     ));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
     final ExecutableFlow flow = runner.getExecutableFlow();
 
-    // 1. Start flow. Job 2 should start
+    // Start flow. Job 2 should start
     FlowRunnerTestUtil.startThread(runner);
-    InteractiveTestJob.getTestJob("job2").succeedJob();
-    InteractiveTestJob.getTestJob("innerflow:job1").succeedJob();
-    InteractiveTestJob.getTestJob("innerflow:job4").succeedJob();
+    assertStatus(flow, "job2", Status.RUNNING);
 
+    // The priority order should be:
+    // job2-overrides -> root-flow-node-overrides -> job2 -> flow-or-shared-props
     final Props job2Props = nodeMap.get("job2").getInputProps();
     Assert.assertEquals("shared1", job2Props.get("props1"));
     Assert.assertEquals("job2", job2Props.get("props2"));
     Assert.assertEquals("moo3", job2Props.get("props3"));
     Assert.assertEquals("execflow7", job2Props.get("props7"));
     Assert.assertEquals("execflow5", job2Props.get("props5"));
-    // should've been overridden by nodeOverride
     Assert.assertEquals("job2-val-6", job2Props.get("props6"));
     Assert.assertEquals("shared4", job2Props.get("props4"));
     Assert.assertEquals("shared8", job2Props.get("props8"));
-    // entirely new prop via nodeOverride
     Assert.assertEquals("job2-val-2", job2Props.get("job-prop-2"));
+    Assert.assertNull(job2Props.get("props10"));
 
+    // The priority order should be:
+    // job1-overrides -> innerflow-overrides -> root-flow-node-overrides -> job1 -> innerflow ->
+    // job2-output -> flow-or-shared-props
+    final Props job2Generated = new Props();
+    job2Generated.put("props6", "g2job6");
+    job2Generated.put("props8", "g2job8");
+    job2Generated.put("props10", "g2job10");
+    InteractiveTestJob.getTestJob("job2").succeedJob(job2Generated);
+    assertStatus(flow, "innerflow:job1", Status.RUNNING);
     final Props job1Props = nodeMap.get("innerflow:job1").getInputProps();
     Assert.assertEquals("job1", job1Props.get("props1"));
     Assert.assertEquals("job2", job1Props.get("props2"));
     Assert.assertEquals("job8", job1Props.get("props8"));
-    // nodeOverride by the sub-flow parent
     Assert.assertEquals("innerflow-val-6", job1Props.get("props6"));
+    Assert.assertEquals("innerflow-val-10", job1Props.get("props10"));
+    Assert.assertEquals("innerflow-val-4", job1Props.get("props4"));
     Assert.assertEquals("execflow5", job1Props.get("props5"));
     Assert.assertEquals("execflow7", job1Props.get("props7"));
     Assert.assertEquals("moo3", job1Props.get("props3"));
-    Assert.assertEquals("innerflow-val-4", job1Props.get("props4"));
 
-    final Props job4Props = nodeMap.get("innerflow:job4").getInputProps();
-    Assert.assertEquals("job8", job4Props.get("props8"));
-    Assert.assertEquals("job9", job4Props.get("props9"));
-    // nodeOverride by the sub-flow parent
-    Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
-    Assert.assertEquals("execflow7", job4Props.get("props7"));
-    Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
-    Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
-    Assert.assertEquals("shared1", job4Props.get("props1"));
-    Assert.assertEquals("shared2", job4Props.get("props2"));
-    Assert.assertEquals("moo3", job4Props.get("props3"));
-  }
-
-  /**
-   * Tests the YAML flow resolution. Flow is defined in loadpropsflowyamltest
-   */
-  @Test
-  public void testYamlFilePropertyResolution() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil(FLOW_YAML_DIR, this.temporaryFolder);
-    final Project project = this.testUtil.getProject();
-    when(this.testUtil.getProjectLoader().isFlowFileUploaded(project.getId(), project.getVersion()))
-        .thenReturn(true);
-    when(this.testUtil.getProjectLoader()
-        .getLatestFlowVersion(project.getId(), project.getVersion(), FLOW_YAML_FILE)).thenReturn(1);
-    when(this.testUtil.getProjectLoader()
-        .getUploadedFlowFile(eq(project.getId()), eq(project.getVersion()), eq(FLOW_YAML_FILE),
-            eq(1), any(File.class)))
-        .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE));
-    assertProperties(false);
-  }
-
-  @Test
-  public void testYamlFilePropertyResolutionWithFlowOverridesExisting() throws Exception {
-    this.testUtil = new FlowRunnerTestUtil(FLOW_YAML_DIR, this.temporaryFolder);
-    final Project project = this.testUtil.getProject();
-    when(this.testUtil.getProjectLoader().isFlowFileUploaded(project.getId(), project.getVersion()))
-        .thenReturn(true);
-    when(this.testUtil.getProjectLoader()
-        .getLatestFlowVersion(project.getId(), project.getVersion(), FLOW_YAML_FILE)).thenReturn(1);
-    when(this.testUtil.getProjectLoader()
-        .getUploadedFlowFile(eq(project.getId()), eq(project.getVersion()), eq(FLOW_YAML_FILE),
-            eq(1), any(File.class)))
-        .thenReturn(ExecutionsTestUtil.getFlowFile(FLOW_YAML_DIR, FLOW_YAML_FILE));
-    assertProperties(true);
-  }
-
-  /**
-   * Helper method to test the flow property resolution.
-   */
-  private void assertProperties(final boolean flowOverridesExisting) throws Exception {
-    final HashMap<String, String> flowProps = new HashMap<>();
-    flowProps.put("props7", "flow7");
-    flowProps.put("props6", "flow6");
-    flowProps.put("props5", "flow5");
-    // enable overriding also for existing job props
-    final FlowRunner runner = this.testUtil.createFromFlowMap(FLOW_NAME, null, flowProps,
-        Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED,
-            Boolean.toString(flowOverridesExisting)));
-    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
-    createNodeMap(runner.getExecutableFlow(), nodeMap);
-    final ExecutableFlow flow = runner.getExecutableFlow();
-
-    // 1. Start flow. Job 2 should start
-    FlowRunnerTestUtil.startThread(runner);
-    assertStatus(flow, "job2", Status.RUNNING);
-
-    // Job 2 is a normal job.
-    // Only the flow overrides and the shared properties matter
-    final Props job2Props = nodeMap.get("job2").getInputProps();
-    Assert.assertEquals("shared1", job2Props.get("props1"));
-    Assert.assertEquals("job2", job2Props.get("props2"));
-    Assert.assertEquals("moo3", job2Props.get("props3"));
-    if (flowOverridesExisting) {
-      Assert.assertEquals("flow7", job2Props.get("props7"));
-    } else {
-      Assert.assertNull(job2Props.get("job7"));
-    }
-    Assert.assertEquals("flow5", job2Props.get("props5"));
-    Assert.assertEquals("flow6", job2Props.get("props6"));
-    Assert.assertEquals("shared4", job2Props.get("props4"));
-    Assert.assertEquals("shared8", job2Props.get("props8"));
-
-    // Job 1 is inside another flow, and is nested in a different directory
     // The priority order should be:
-    // job1->innerflow->job2.output->job1.sharedprops->flow.overrides
-    final Props job2Generated = new Props();
-    job2Generated.put("props6", "gjob6");
-    job2Generated.put("props9", "gjob9");
-    job2Generated.put("props10", "gjob10");
-    InteractiveTestJob.getTestJob("job2").succeedJob(job2Generated);
-    assertStatus(flow, "innerflow:job1", Status.RUNNING);
-
-    final Props job1Props = nodeMap.get("innerflow:job1").getInputProps();
-    Assert.assertEquals("job1", job1Props.get("props1"));
-    Assert.assertEquals("job2", job1Props.get("props2"));
-    Assert.assertEquals("job8", job1Props.get("props8"));
-    Assert.assertEquals("gjob9", job1Props.get("props9"));
-    Assert.assertEquals("gjob10", job1Props.get("props10"));
-    if (flowOverridesExisting) {
-      Assert.assertEquals("flow6", job1Props.get("props6"));
-      Assert.assertEquals("flow5", job1Props.get("props5"));
-      Assert.assertEquals("flow7", job1Props.get("props7"));
-    } else {
-      Assert.assertEquals("innerflow6", job1Props.get("props6"));
-      Assert.assertEquals("innerflow5", job1Props.get("props5"));
-      Assert.assertEquals("flow7", job1Props.get("props7"));
-    }
-    Assert.assertEquals("moo3", job1Props.get("props3"));
-    Assert.assertEquals("moo4", job1Props.get("props4"));
-
-    // Job 4 is inside another flow and takes output from job 1
-    // The priority order should be:
-    // job4->job1.output->innerflow->job2.output->job4.sharedprops->flow.overrides
+    // job4-overrides -> innerflow-overrides -> root-flow-node-overrides -> job4 ->
+    // job1-output -> innerflow -> job2-output -> flow-or-shared-props
     final Props job1GeneratedProps = new Props();
-    job1GeneratedProps.put("props9", "g2job9");
-    job1GeneratedProps.put("props7", "g2job7");
-    InteractiveTestJob.getTestJob("innerflow:job1").succeedJob(
-        job1GeneratedProps);
+    job1GeneratedProps.put("props10", "g1job10");
+    job1GeneratedProps.put("props1", "g1job1");
+    InteractiveTestJob.getTestJob("innerflow:job1").succeedJob(job1GeneratedProps);
     assertStatus(flow, "innerflow:job4", Status.RUNNING);
     final Props job4Props = nodeMap.get("innerflow:job4").getInputProps();
     Assert.assertEquals("job8", job4Props.get("props8"));
     Assert.assertEquals("job9", job4Props.get("props9"));
-    if (flowOverridesExisting) {
-      Assert.assertEquals("flow7", job4Props.get("props7"));
-      Assert.assertEquals("flow5", job4Props.get("props5"));
-      Assert.assertEquals("flow6", job4Props.get("props6"));
-    } else {
-      Assert.assertEquals("g2job7", job4Props.get("props7"));
-      Assert.assertEquals("innerflow5", job4Props.get("props5"));
-      Assert.assertEquals("innerflow6", job4Props.get("props6"));
-    }
-    Assert.assertEquals("gjob10", job4Props.get("props10"));
-    Assert.assertEquals("shared4", job4Props.get("props4"));
-    Assert.assertEquals("shared1", job4Props.get("props1"));
+    Assert.assertEquals("innerflow-val-6", job4Props.get("props6"));
+    Assert.assertEquals("innerflow-val-10", job4Props.get("props10"));
+    Assert.assertEquals("execflow7", job4Props.get("props7"));
+    Assert.assertEquals("innerflow-job4-val-4", job4Props.get("props4"));
+    Assert.assertEquals("innerflow-job4-val-5", job4Props.get("props5"));
+    Assert.assertEquals("g1job1", job4Props.get("props1"));
     Assert.assertEquals("shared2", job4Props.get("props2"));
     Assert.assertEquals("moo3", job4Props.get("props3"));
 
-    // Job 3 is a normal job taking props from an embedded flow
     // The priority order should be:
-    // job3->innerflow.output->job3.sharedprops->flow.overrides
+    // job3-overrides -> root-flow-node-overrides -> job3 -> innerflow-output -> flow-or-shared-props
     final Props job4GeneratedProps = new Props();
     job4GeneratedProps.put("props9", "g4job9");
     job4GeneratedProps.put("props6", "g4job6");
-    InteractiveTestJob.getTestJob("innerflow:job4").succeedJob(
-        job4GeneratedProps);
-    assertStatus(flow, FLOW_NAME, Status.RUNNING);
+    InteractiveTestJob.getTestJob("innerflow:job4").succeedJob(job4GeneratedProps);
+    assertStatus(flow, FlowRunnerPropertyResolutionTest.FLOW_NAME, Status.RUNNING);
     final Props job3Props = nodeMap.get("job3").getInputProps();
     Assert.assertEquals("job3", job3Props.get("props3"));
-    if (flowOverridesExisting) {
-      Assert.assertEquals("flow6", job3Props.get("props6"));
-    } else {
-      Assert.assertEquals("g4job6", job3Props.get("props6"));
-    }
+    Assert.assertEquals("execflow6", job3Props.get("props6"));
     Assert.assertEquals("g4job9", job3Props.get("props9"));
-    Assert.assertEquals("flow7", job3Props.get("props7"));
-    Assert.assertEquals("flow5", job3Props.get("props5"));
+    Assert.assertEquals("execflow7", job3Props.get("props7"));
+    Assert.assertEquals("execflow5", job3Props.get("props5"));
     Assert.assertEquals("shared1", job3Props.get("props1"));
     Assert.assertEquals("shared2", job3Props.get("props2"));
     Assert.assertEquals("moo4", job3Props.get("props4"));
+    Assert.assertNull(job3Props.get("props10"));
   }
 
   private void createNodeMap(final ExecutableFlowBase flow,
