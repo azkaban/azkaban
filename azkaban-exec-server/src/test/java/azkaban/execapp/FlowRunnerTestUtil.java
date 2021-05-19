@@ -57,8 +57,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowRunnerTestUtil {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FlowRunnerTestUtil.class);
 
   private static int id = 101;
   private final Map<String, Flow> flowMap;
@@ -84,9 +88,9 @@ public class FlowRunnerTestUtil {
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
 
     this.projectLoader = mock(ProjectLoader.class);
-    handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
-            1, null, null, null, "111.111.111.111");
-    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
+    this.handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
+        1, null, null, null, "111.111.111.111");
+    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(this.handler);
 
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
@@ -115,6 +119,7 @@ public class FlowRunnerTestUtil {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final FlowLoader loader = loaderFactory.createFlowLoader(sourceDir);
 
+    LOG.info("Loading project flows from " + sourceDir);
     loader.loadProjectFlow(project, sourceDir);
     if (!loader.getErrors().isEmpty()) {
       for (final String error : loader.getErrors()) {
@@ -126,6 +131,7 @@ public class FlowRunnerTestUtil {
     }
 
     final Map<String, Flow> flowMap = loader.getFlowMap();
+    LOG.info("Loaded flows: " + flowMap.keySet());
     project.setFlows(flowMap);
     FileUtils.copyDirectory(sourceDir, workingDir);
     return flowMap;
@@ -234,6 +240,7 @@ public class FlowRunnerTestUtil {
       final String flowName, final ExecutionOptions options,
       final Map<String, String> flowParams, final Props azkabanProps)
       throws Exception {
+    LOG.info("Creating a FlowRunner for flow '" + flowName + "'");
     final Flow flow = this.flowMap.get(flowName);
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     return createFromExecutableFlow(eventCollector, exFlow, options, flowParams,
@@ -297,7 +304,7 @@ public class FlowRunnerTestUtil {
     return this.project;
   }
 
-  public VersionSet createVersionSet(){
+  public VersionSet createVersionSet() {
     final String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
         + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
         + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","
