@@ -49,7 +49,7 @@ public class AzKubernetesV1PodBuilderTest {
             .addFlowContainer(flowContainerName, flowContainerImage, ImagePullPolicy.IF_NOT_PRESENT,
                 azConfVer)
             .addHostPathVolume("nscd-socket", "/var/run/nscd/socket", "Socket",
-                "/var/run/nscd/socket")
+                "/var/run/nscd/socket", true)
             .addSecretVolume("azkaban-private-properties", "azkaban-private-properties",
                 "/var/azkaban/private/conf")
             .addEnvVarToFlowContainer("envKey", "envValue")

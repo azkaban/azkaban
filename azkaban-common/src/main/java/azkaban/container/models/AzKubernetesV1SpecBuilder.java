@@ -171,13 +171,14 @@ public class AzKubernetesV1SpecBuilder {
      * @param volMountPath Path to be mounted for the flow container.
      */
     public AzKubernetesV1SpecBuilder addHostPathVolume(final String volName, final String hostPath,
-        final String hostPathType, final String volMountPath) {
+        final String hostPathType, final String volMountPath, final boolean readOnly) {
         final V1Volume hostPathVolume = new V1VolumeBuilder().withName(volName).withNewHostPath()
             .withPath(hostPath).withType(hostPathType).endHostPath().build();
         this.appVolumes.add(hostPathVolume);
         final V1VolumeMount hostPathVolMount = new V1VolumeMountBuilder()
             .withName(volName)
             .withMountPath(volMountPath)
+            .withReadOnly(readOnly)
             .build();
         this.appVolumeMounts.add(hostPathVolMount);
         return this;
