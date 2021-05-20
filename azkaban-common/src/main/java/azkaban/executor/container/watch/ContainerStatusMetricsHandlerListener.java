@@ -40,7 +40,7 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
 
   private static final Logger logger =
       Logger.getLogger(ContainerStatusMetricsHandlerListener.class);
-  public static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 204800;
+  public static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 50000;
   public static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
 
   private final ContainerMetrics containerMetrics;
@@ -51,21 +51,19 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
   // Convenience member for referring to the Cache through ConcurrentMap interface.
   // Since cached data is key-value pair of pod name and pod status from event metadata,
   // each data size is expected to be no more than 100 bytes, maximum cache size will
-  // be 100 bytes * DEFAULT_EVENT_CACHE_MAX_ENTRIES ~ 20 mb
-  private final ConcurrentMap<String, AzPodStatus> podStatusMap;
+  // be 100 bytes * DEFAULT_EVENT_CACHE_MAX_ENTRIES ~ 5 mb
 
   @Inject
   public ContainerStatusMetricsHandlerListener(final ContainerMetrics containerMetrics) {
     this.containerMetrics = containerMetrics;
 
     this.executor = Executors.newSingleThreadExecutor(
-        new ThreadFactoryBuilder().setNameFormat("azk-watch-pool-%d").build());
+        new ThreadFactoryBuilder().setNameFormat("azk-container-metrics-pool-%d").build());
 
     this.podStatusCache = CacheBuilder.newBuilder()
         .maximumSize(DEFAULT_EVENT_CACHE_MAX_ENTRIES)
         .recordStats()
         .build();
-    this.podStatusMap = podStatusCache.asMap();
   }
 
   /**
@@ -76,9 +74,8 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
    */
   protected boolean isUpdatedPodStatusDistinct(final AzPodStatusMetadata event) {
     AzPodStatus currentStatus = AzPodStatus.AZ_POD_UNSET;
-    if (podStatusMap.containsKey(event.getPodName())) {
-      currentStatus = podStatusMap.get(event.getPodName());
-    }
+    currentStatus = podStatusCache.getIfPresent(event.getPodName());
+
     boolean shouldSkip = currentStatus == event.getAzPodStatus();
     if (shouldSkip) {
       logger.info(format("Event pod status is same as current %s, for pod %s."
@@ -89,7 +86,7 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
 
   // Update the cache with the given event.
   protected void updatePodStatus(final AzPodStatusMetadata event) {
-    podStatusMap.put(event.getPodName(), event.getAzPodStatus());
+    podStatusCache.put(event.getPodName(), event.getAzPodStatus());
     logger.debug(format("Updated status to %s, for pod %s", event.getAzPodStatus(), event.getPodName()));
   }
 
@@ -99,7 +96,7 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
    */
   private void validateAndProcess(final AzPodStatusMetadata event) {
     requireNonNull(event, "event must be non-null");
-    if (event.getFlowPodMetadata().isPresent() && !isUpdatedPodStatusDistinct(event)) {
+    if (!event.getFlowPodMetadata().isPresent() || !isUpdatedPodStatusDistinct(event)) {
       return;
     }
     // Update AzPodStatus metrics for the flow-pod respectively
@@ -129,7 +126,8 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
         containerMetrics.markPodAppFailure();
         break;
       default:
-        logger.trace("Current flow pod status is not for metric emitting");
+        logger.error(String.format("Current flow pod status %s is not for metric emitting",
+            event.getAzPodStatus()));
     }
     updatePodStatus(event);
   }

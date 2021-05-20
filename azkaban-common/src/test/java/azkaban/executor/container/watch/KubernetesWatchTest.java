@@ -315,6 +315,36 @@ public class KubernetesWatchTest {
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INIT_FAILURE);
   }
 
+  // Validates that the callbacks are processed in ContainerStatusMetricsHandlerListener
+  @Test
+  public void testContainerStatusMetricsHandlerListener() throws Exception {
+    // Setup a ContainerStatusMetricsHandlerListener
+    Props azkProps = new Props();
+    AzPodStatusRecordHandlerListener recordHandlerListener =
+        new AzPodStatusRecordHandlerListener(new DummyContainerMetricsImpl());
+
+    // Register ContainerStatusMetricsHandlerListener
+    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    statusDriver.registerAzPodStatusListener(recordHandlerListener);
+
+    // Run all the events through the registered listeners.
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        1);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
+    //metrics. In total there are 10 events, of which Scheduled and InitContainersRunning are
+    //duplicated event statuses.
+    assertThat(recordHandlerListener.getPodRequestedCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodScheduledCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodInitContainersRunningCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodAppContainersStartingCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodReadyCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodCompletedCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodInitFailureCounter()).isEqualTo(1);
+  }
+
   @Test
   @Ignore("Blocking watch execution, useful only for development")
   public void testBlockingPodWatch() throws Exception {
