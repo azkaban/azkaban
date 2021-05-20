@@ -249,11 +249,8 @@ public class KubernetesWatchTest {
     // support for registering multiple listeners.
     StatusLoggingListener loggingListener = statusLoggingListener();
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
-    AzPodStatusRecordHandlerListener recordHandlerListener =
-        new AzPodStatusRecordHandlerListener(new DummyContainerMetricsImpl());
     statusDriver.registerAzPodStatusListener(loggingListener);
     statusDriver.registerAzPodStatusListener(updatingListener);
-    statusDriver.registerAzPodStatusListener(recordHandlerListener);
 
     // Mocked flow in RUNNING state. Pod completion event will be processed for this execution.
     ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_SUCCEESS, Status.RUNNING);
@@ -272,17 +269,6 @@ public class KubernetesWatchTest {
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
-
-    // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
-    //metrics. In total there are 10 events, of which Scheduled and InitContainersRunning are
-    //duplicated event statuses.
-    assertThat(recordHandlerListener.getPodRequestedCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodScheduledCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodInitContainersRunningCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodAppContainersStartingCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodReadyCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodCompletedCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodInitFailureCounter()).isEqualTo(1);
 
     // Sanity check for asserting the sequence in which events were received.
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
