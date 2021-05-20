@@ -29,8 +29,6 @@ public abstract class HadoopSecurityManager {
 
   public static final String ENABLE_PROXYING = "azkaban.should.proxy"; // boolean
 
-  public static final String PROXY_KEYTAB_LOCATION = "proxy.keytab.location";
-  public static final String PROXY_USER = "proxy.user";
   public static final String USER_TO_PROXY = "user.to.proxy";
   public static final String OBTAIN_BINARY_TOKEN = "obtain.binary.token";
   public static final String MAPREDUCE_JOB_CREDENTIALS_BINARY =
@@ -73,7 +71,24 @@ public abstract class HadoopSecurityManager {
   public abstract UserGroupInformation getProxiedUser(Props prop)
       throws HadoopSecurityManagerException;
 
+  /**
+   * This method is used to get FileSystem as proxyUser.
+   * @param user
+   * @return
+   * @throws HadoopSecurityManagerException
+   */
   public abstract FileSystem getFSAsUser(String user)
+      throws HadoopSecurityManagerException;
+
+  /**
+   * This method is used to get FileSystem as proxyUser. It is also taking realIdentity for audit
+   * purpose.
+   * @param realIdentity
+   * @param proxyUser
+   * @return
+   * @throws HadoopSecurityManagerException
+   */
+  public abstract FileSystem getFSAsUser(String realIdentity, String proxyUser)
       throws HadoopSecurityManagerException;
 
   public abstract void cancelTokens(File tokenFile, String userToProxy,
