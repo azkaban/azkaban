@@ -104,6 +104,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
   public static final String HOST_PATH_TYPE = "Socket";
   public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
+  public static final boolean DEFAULT_NSCD_MOUNT_READ_ONLY = true;
   public static final String DEFAULT_SECRET_NAME = "azkaban-k8s-secret";
   public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
   public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
@@ -131,6 +132,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final long serviceTimeout;
   private final String nscdSocketHostPath;
   private final String nscdSocketVolumeMountPath;
+  private final boolean isNscdMountReadOnly;
   private final VersionSetLoader versionSetLoader;
   private final ImageRampupManager imageRampupManager;
   private final KubernetesWatch kubernetesWatch;
@@ -212,6 +214,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         this.azkProps.getString(
             ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH,
             DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH);
+    this.isNscdMountReadOnly = this.azkProps.getBoolean(
+        ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_MOUNT_READ_ONLY,
+        DEFAULT_NSCD_MOUNT_READ_ONLY);
     this.secretName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_NAME,
             DEFAULT_SECRET_NAME);
@@ -635,7 +640,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void addNscdSocketInVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
     v1SpecBuilder
         .addHostPathVolume(NSCD_SOCKET_VOLUME_NAME, this.nscdSocketHostPath, HOST_PATH_TYPE,
-            this.nscdSocketVolumeMountPath);
+            this.nscdSocketVolumeMountPath, this.isNscdMountReadOnly);
   }
 
   /**
