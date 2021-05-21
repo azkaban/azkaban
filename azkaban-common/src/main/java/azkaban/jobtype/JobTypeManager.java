@@ -325,6 +325,13 @@ public class JobTypeManager {
     return createJob(jobId, jobParams, logger);
   }
 
+  /**
+   * Create job parameters that can be used to create a job instance.
+   * @param jobId job id
+   * @param jobProps job properties
+   * @param logger logger
+   * @return job parameters that can be used to create a job instance
+   */
   public JobParams createJobParams(final String jobId, Props jobProps, final Logger logger) {
     // This is final because during build phase, you should never need to swap
     // the pluginSet for safety reasons
@@ -381,7 +388,11 @@ public class JobTypeManager {
       // inject cluster jars and native libraries into jobs through properties
       // User's job props should take precedence over cluster props
       Props finalProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
+      Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(finalProps);
       finalProps.putAll(jobProps);
+      // CAUTION: ADD ROUTER-SPECIFIC PROPERTIES THAT ARE CRITICAL FOR JOB EXECUTION AS THE LAST
+      // STEP TO STOP THEM FROM BEING ACCIDENTALLY OVERRIDDEN BY JOB PROPERTIES
+      finalProps.putAll(nonOverriddableClusterProps);
       finalProps = PropsUtils.resolveProps(finalProps);
 
       return new JobParams(jobTypeClass, finalProps, pluginSet.getPluginPrivateProps(jobType),
@@ -397,6 +408,21 @@ public class JobTypeManager {
       throw new JobTypeManagerException("Failed to build job executor for job "
           + jobId, t);
     }
+  }
+
+  private static Props getClusterSpecificNonOverridableJobProps(final Props clusterSpecificJobProp) {
+    final Props props = new Props();
+    final String clusterClasspath =
+        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);
+    if (clusterClasspath != null) {
+      props.put(CommonJobProperties.TARGET_CLUSTER_CLASSPATH, clusterClasspath);
+    }
+    final String clusterNativeLib =
+        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB);
+    if (clusterNativeLib != null) {
+      props.put(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB, clusterNativeLib);
+    }
+    return props;
   }
 
   private static Props getJobProps(Props jobProps, JobTypePluginSet pluginSet, String jobType) {
