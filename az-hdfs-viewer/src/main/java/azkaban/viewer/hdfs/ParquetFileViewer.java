@@ -29,9 +29,15 @@ import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.AccessControlException;
 import org.apache.log4j.Logger;
-import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.avro.AvroSchemaConverter;
+
+import org.codehaus.jackson.JsonEncoding;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
+import parquet.avro.AvroParquetReader;
+import parquet.avro.AvroSchemaConverter;
 
 /**
  * This class implements a viewer for Parquet files.
@@ -39,10 +45,10 @@ import org.apache.parquet.avro.AvroSchemaConverter;
  * @author David Z. Chen (dchen@linkedin.com)
  */
 public class ParquetFileViewer extends HdfsFileViewer {
-  private static final Logger logger = Logger.getLogger(ParquetFileViewer.class);
+  private static Logger logger = Logger.getLogger(ParquetFileViewer.class);
 
   // Will spend 5 seconds trying to pull data and then stop.
-  private final static long STOP_TIME = 2000L;
+  private final static long STOP_TIME = 2000l;
 
   private static final String VIEWER_NAME = "Parquet";
 
@@ -52,14 +58,15 @@ public class ParquetFileViewer extends HdfsFileViewer {
   }
 
   @Override
-  public Set<Capability> getCapabilities(FileSystem fs, Path path) {
+  public Set<Capability> getCapabilities(FileSystem fs, Path path)
+      throws AccessControlException {
     if (logger.isDebugEnabled()) {
       logger.debug("Parquet file path: " + path.toUri().getPath());
     }
 
     AvroParquetReader<GenericRecord> parquetReader = null;
     try {
-      parquetReader = new AvroParquetReader<>(path);
+      parquetReader = new AvroParquetReader<GenericRecord>(path);
     } catch (IOException e) {
       if (logger.isDebugEnabled()) {
         logger.debug(path.toUri().getPath() + " is not a Parquet file.");
@@ -86,9 +93,16 @@ public class ParquetFileViewer extends HdfsFileViewer {
       logger.debug("Display Parquet file: " + path.toUri().getPath());
     }
 
+    JsonGenerator json = null;
     AvroParquetReader<GenericRecord> parquetReader = null;
     try {
-      parquetReader = new AvroParquetReader<>(path);
+      parquetReader = new AvroParquetReader<GenericRecord>(path);
+
+      // Initialize JsonGenerator.
+      json =
+          new JsonFactory()
+              .createJsonGenerator(outputStream, JsonEncoding.UTF8);
+      json.useDefaultPrettyPrinter();
 
       // Declare the avroWriter encoder that will be used to output the records
       // as JSON but don't construct them yet because we need the first record
@@ -107,7 +121,7 @@ public class ParquetFileViewer extends HdfsFileViewer {
         if (avroWriter == null) {
           Schema schema = record.getSchema();
           avroWriter = new GenericDatumWriter<GenericRecord>(schema);
-          encoder = EncoderFactory.get().jsonEncoder(schema, outputStream, true);
+          encoder = EncoderFactory.get().jsonEncoder(schema, json);
         }
 
         if (line >= startLine) {
@@ -124,10 +138,12 @@ public class ParquetFileViewer extends HdfsFileViewer {
       throw e;
     } catch (Throwable t) {
       logger.error(t.getMessage());
+      return;
     } finally {
-      if (parquetReader != null) {
-        parquetReader.close();
+      if (json != null) {
+        json.close();
       }
+      parquetReader.close();
     }
   }
 
@@ -136,7 +152,7 @@ public class ParquetFileViewer extends HdfsFileViewer {
     String schema = null;
     try {
       AvroParquetReader<GenericRecord> parquetReader =
-          new AvroParquetReader<>(path);
+          new AvroParquetReader<GenericRecord>(path);
       GenericRecord record = parquetReader.read();
       if (record == null) {
         return null;
