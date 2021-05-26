@@ -177,7 +177,16 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   @Override
   public synchronized UserGroupInformation getProxiedUser(final String userToProxy)
       throws HadoopSecurityManagerException {
+    return getProxiedUser(userToProxy, userToProxy);
+  }
 
+  /**
+   * Create a proxied user based on the explicit user name, taking other parameters necessary from
+   * properties file. It is also taking readIdentity for audit purpose.
+   */
+  @Override
+  public synchronized UserGroupInformation getProxiedUser(final String realIdentity, final String userToProxy)
+      throws HadoopSecurityManagerException {
     if (userToProxy == null) {
       throw new HadoopSecurityManagerException("userToProxy can't be null");
     }
@@ -213,10 +222,24 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   @Override
   public FileSystem getFSAsUser(final String user)
       throws HadoopSecurityManagerException {
+    return getFSAsUser(user, user);
+  }
+
+  /**
+   * Get file system as User passed in parameter. It is also passing realIdentity for audit purpose.
+   *
+   * @param realIdentity
+   * @param proxyUser
+   * @return
+   * @throws HadoopSecurityManagerException
+   */
+  @Override
+  public FileSystem getFSAsUser(final String realIdentity, final String proxyUser)
+      throws HadoopSecurityManagerException {
     final FileSystem fs;
     try {
-      logger.info("Getting file system as " + user);
-      final UserGroupInformation ugi = getProxiedUser(user);
+      logger.info("Getting file system as " + proxyUser + " on behalf of " + realIdentity);
+      final UserGroupInformation ugi = getProxiedUser(realIdentity, proxyUser);
 
       if (ugi != null) {
         fs = ugi.doAs(new PrivilegedAction<FileSystem>() {
