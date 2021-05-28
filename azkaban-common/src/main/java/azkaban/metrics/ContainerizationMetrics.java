@@ -21,7 +21,7 @@ import azkaban.utils.Props;
 /**
  * Defines all the metrics emitted by containerized executions
  */
-public interface ContainerMetrics {
+public interface ContainerizationMetrics {
 
   void setUp();
 
@@ -33,7 +33,7 @@ public interface ContainerMetrics {
 
   void markPodScheduled();
 
-  void markContainerRunning();
+  void markInitContainerRunning();
 
   void markAppContainerStarting();
 

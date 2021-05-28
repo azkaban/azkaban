@@ -31,8 +31,8 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
-import azkaban.metrics.ContainerMetrics;
-import azkaban.metrics.DummyContainerMetricsImpl;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
@@ -307,7 +307,7 @@ public class KubernetesWatchTest {
     // Setup a ContainerStatusMetricsHandlerListener
     Props azkProps = new Props();
     AzPodStatusRecordHandlerListener recordHandlerListener =
-        new AzPodStatusRecordHandlerListener(new DummyContainerMetricsImpl());
+        new AzPodStatusRecordHandlerListener(new DummyContainerizationMetricsImpl());
 
     // Register ContainerStatusMetricsHandlerListener
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
@@ -547,8 +547,8 @@ public class KubernetesWatchTest {
         PodAppContainersStartingCounter = 0, podReadyCounter = 0, podCompletedCounter = 0,
         podInitFailureCounter = 0, podAppFailureCounter = 0, podUnexpectedCounter = 0;
     public AzPodStatusRecordHandlerListener(
-        ContainerMetrics containerMetrics) {
-      super(containerMetrics);
+        ContainerizationMetrics containerizationMetrics) {
+      super(containerizationMetrics);
     }
 
     @Override

@@ -18,12 +18,10 @@ package azkaban.executor.container.watch;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-import azkaban.metrics.ContainerMetrics;
-import com.google.common.annotations.VisibleForTesting;
+import azkaban.metrics.ContainerizationMetrics;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -40,22 +38,21 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
 
   private static final Logger logger =
       Logger.getLogger(ContainerStatusMetricsHandlerListener.class);
-  public static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 50000;
-  public static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
+  private static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 50000;
+  private static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
 
-  private final ContainerMetrics containerMetrics;
+  private final ContainerizationMetrics containerizationMetrics;
+
+  // Since cached data is key-value pair of pod name and pod status from event metadata,
+  // each data size is expected to be no more than 100 bytes, maximum cache size will
+  // be 100 bytes * DEFAULT_EVENT_CACHE_MAX_ENTRIES ~ 5 mb
   private final Cache<String, AzPodStatus> podStatusCache;
 
   private final ExecutorService executor;
 
-  // Convenience member for referring to the Cache through ConcurrentMap interface.
-  // Since cached data is key-value pair of pod name and pod status from event metadata,
-  // each data size is expected to be no more than 100 bytes, maximum cache size will
-  // be 100 bytes * DEFAULT_EVENT_CACHE_MAX_ENTRIES ~ 5 mb
-
   @Inject
-  public ContainerStatusMetricsHandlerListener(final ContainerMetrics containerMetrics) {
-    this.containerMetrics = containerMetrics;
+  public ContainerStatusMetricsHandlerListener(final ContainerizationMetrics containerizationMetrics) {
+    this.containerizationMetrics = containerizationMetrics;
 
     this.executor = Executors.newSingleThreadExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-metrics-pool-%d").build());
@@ -102,31 +99,31 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
     // Update AzPodStatus metrics for the flow-pod respectively
     switch (event.getAzPodStatus()) {
       case AZ_POD_REQUESTED:
-        containerMetrics.markPodRequested();
+        containerizationMetrics.markPodRequested();
         break;
       case AZ_POD_SCHEDULED:
-        containerMetrics.markPodScheduled();
+        containerizationMetrics.markPodScheduled();
         break;
       case AZ_POD_INIT_CONTAINERS_RUNNING:
-        containerMetrics.markContainerRunning();
+        containerizationMetrics.markInitContainerRunning();
         break;
       case AZ_POD_APP_CONTAINERS_STARTING:
-        containerMetrics.markAppContainerStarting();
+        containerizationMetrics.markAppContainerStarting();
         break;
       case AZ_POD_READY:
-        containerMetrics.markPodReady();
+        containerizationMetrics.markPodReady();
         break;
       case AZ_POD_COMPLETED:
-        containerMetrics.markPodCompleted();
+        containerizationMetrics.markPodCompleted();
         break;
       case AZ_POD_INIT_FAILURE:
-        containerMetrics.markPodInitFailure();
+        containerizationMetrics.markPodInitFailure();
         break;
       case AZ_POD_APP_FAILURE:
-        containerMetrics.markPodAppFailure();
+        containerizationMetrics.markPodAppFailure();
         break;
       default:
-        logger.error(String.format("Current flow pod status %s is not for metric emitting",
+        logger.error(String.format("Current flow pod status %s is unexpected",
             event.getAzPodStatus()));
     }
     updatePodStatus(event);

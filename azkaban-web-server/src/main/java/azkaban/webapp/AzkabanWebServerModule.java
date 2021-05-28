@@ -56,9 +56,9 @@ import azkaban.imagemgmt.services.ImageVersionMetadataService;
 import azkaban.imagemgmt.services.ImageVersionMetadataServiceImpl;
 import azkaban.imagemgmt.version.JdbcVersionSetLoader;
 import azkaban.imagemgmt.version.VersionSetLoader;
-import azkaban.metrics.ContainerMetrics;
-import azkaban.metrics.ContainerMetricsImpl;
-import azkaban.metrics.DummyContainerMetricsImpl;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.ContainerizationMetricsImpl;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -125,16 +125,16 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
     bind(EventListener.class).to(resolveEventListenerClass()).in(Scopes.SINGLETON);
     // Implement container metrics based on dispatch method
-    bind(ContainerMetrics.class).to(resolveContainerMetricsClass()).in(Scopes.SINGLETON);
+    bind(ContainerizationMetrics.class).to(resolveContainerMetricsClass()).in(Scopes.SINGLETON);
 
     // Following bindings will be present if and only if containerized dispatch is enabled.
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
   }
 
-  private Class<? extends ContainerMetrics> resolveContainerMetricsClass() {
-    return isContainerizedDispatchMethodEnabled() ? ContainerMetricsImpl.class :
-        DummyContainerMetricsImpl.class;
+  private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
+    return isContainerizedDispatchMethodEnabled() ? ContainerizationMetricsImpl.class :
+        DummyContainerizationMetricsImpl.class;
   }
 
   private Class<? extends EventListener> resolveEventListenerClass() {
@@ -238,8 +238,9 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Named(CONTAINER_STATUS_METRICS_HANDLER)
   @Singleton
   @Provides
-  private AzPodStatusListener createContainerStatusMetricsHandlerListener(ContainerMetrics containerMetrics) {
-    return new ContainerStatusMetricsHandlerListener(containerMetrics);
+  private AzPodStatusListener createContainerStatusMetricsHandlerListener(
+      ContainerizationMetrics containerizationMetrics) {
+    return new ContainerStatusMetricsHandlerListener(containerizationMetrics);
   }
 
   @Inject

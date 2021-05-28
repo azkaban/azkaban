@@ -19,11 +19,11 @@ import azkaban.utils.Props;
 import org.apache.log4j.Logger;
 
 /**
- * No-op implementation of {@link ContainerMetrics} used when dispatch method is not
+ * No-op implementation of {@link ContainerizationMetrics} used when dispatch method is not
  * CONTAINERIZED or during unit test
  */
-public class DummyContainerMetricsImpl implements ContainerMetrics{
-  private static final Logger logger = Logger.getLogger(ContainerMetricsImpl.class);
+public class DummyContainerizationMetricsImpl implements ContainerizationMetrics {
+  private static final Logger logger = Logger.getLogger(ContainerizationMetricsImpl.class);
 
   @Override
   public void setUp() {
@@ -47,7 +47,7 @@ public class DummyContainerMetricsImpl implements ContainerMetrics{
   }
 
   @Override
-  public void markContainerRunning() {
+  public void markInitContainerRunning() {
   }
 
   @Override
