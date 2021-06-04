@@ -584,33 +584,33 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   @Override
   public void cancelTokens(final File tokenFile, final String userToProxy, final Logger logger)
       throws HadoopSecurityManagerException {
-    // nntoken
-    Credentials cred = null;
     try {
-      cred =
-          Credentials.readTokenStorageFile(new Path(tokenFile.toURI()),
-              this.conf);
+      final Credentials cred = Credentials
+          .readTokenStorageFile(new Path(tokenFile.toURI()), this.conf);
       for (final Token<? extends TokenIdentifier> t : cred.getAllTokens()) {
-        logger.info("Got token.");
-        logger.info("Token kind: " + t.getKind());
-        logger.info("Token service: " + t.getService());
+        try {
+          logger.info("Got token.");
+          logger.info("Token kind: " + t.getKind());
+          logger.info("Token service: " + t.getService());
 
-        if (t.getKind().equals(new Text("HIVE_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling hive token.");
-          cancelHiveToken(t, userToProxy);
-        } else if (t.getKind().equals(new Text("RM_DELEGATION_TOKEN"))) {
-          logger.info("Ignore cancelling mr job tracker token request.");
-        } else if (t.getKind().equals(new Text("HDFS_DELEGATION_TOKEN"))) {
-          logger.info("Ignore cancelling namenode token request.");
-        } else if (t.getKind().equals(new Text("MR_DELEGATION_TOKEN"))) {
-          logger.info("Ignore cancelling jobhistoryserver mr token request.");
-        } else {
-          logger.info("unknown token type " + t.getKind());
+          if (t.getKind().equals(new Text("HIVE_DELEGATION_TOKEN"))) {
+            logger.info("Cancelling hive token.");
+            cancelHiveToken(t, userToProxy);
+          } else if (t.getKind().equals(new Text("RM_DELEGATION_TOKEN"))) {
+            logger.info("Ignore cancelling mr job tracker token request.");
+          } else if (t.getKind().equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+            logger.info("Ignore cancelling namenode token request.");
+          } else if (t.getKind().equals(new Text("MR_DELEGATION_TOKEN"))) {
+            logger.info("Ignore cancelling jobhistoryserver mr token request.");
+          } else {
+            logger.info("unknown token type " + t.getKind());
+          }
+        } catch (final Exception e) {
+          logger.warn("Failed to cancel token", e);
         }
       }
     } catch (final Exception e) {
-      throw new HadoopSecurityManagerException("Failed to cancel tokens "
-          + e.getMessage() + e.getCause(), e);
+      throw new HadoopSecurityManagerException("Failed to cancel tokens", e);
     }
   }
 
