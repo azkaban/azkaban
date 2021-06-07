@@ -39,8 +39,8 @@ public class AzkabanFlow extends AzkabanNode {
 
   private AzkabanFlow(final String name, final Props props, final String condition,
       final Map<String, AzkabanNode> nodes, final List<String> dependsOn,
-      final FlowTrigger flowTrigger) {
-    super(name, Constants.FLOW_NODE_TYPE, props, condition, dependsOn);
+      final FlowTrigger flowTrigger, List<Dataset> inputDataset, List<Dataset> outputDataset) {
+    super(name, Constants.FLOW_NODE_TYPE, props, condition, dependsOn, inputDataset, outputDataset);
     this.nodes = nodes;
     this.flowTrigger = flowTrigger;
   }
@@ -65,6 +65,8 @@ public class AzkabanFlow extends AzkabanNode {
     private List<String> dependsOn;
     private Map<String, AzkabanNode> nodes;
     private FlowTrigger flowTrigger;
+    private List<Dataset> inputDataset;
+    private List<Dataset> outputDataset;
 
     public AzkabanFlowBuilder name(final String name) {
       this.name = name;
@@ -97,6 +99,16 @@ public class AzkabanFlow extends AzkabanNode {
       return this;
     }
 
+    public AzkabanFlowBuilder inputDataset(final List<Dataset> inputDataset) {
+      this.inputDataset = inputDataset;
+      return this;
+    }
+
+    public AzkabanFlowBuilder outputDataset(final List<Dataset> outputDataset) {
+      this.outputDataset = outputDataset;
+      return this;
+    }
+
     public AzkabanFlowBuilder flowTrigger(final FlowTrigger flowTrigger) {
       this.flowTrigger = flowTrigger;
       return this;
@@ -104,7 +116,7 @@ public class AzkabanFlow extends AzkabanNode {
 
     public AzkabanFlow build() {
       return new AzkabanFlow(this.name, this.props, this.condition, this.nodes, this.dependsOn, this
-          .flowTrigger);
+          .flowTrigger, inputDataset, outputDataset);
     }
   }
 }

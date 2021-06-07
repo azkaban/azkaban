@@ -180,6 +180,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     node.setCondition(azkabanNode.getCondition());
     node.setPropsSource(flowFile.getName());
     node.setJobSource(flowFile.getName());
+    node.setInputDataset(azkabanNode.getInputDataset());
+    node.setOutputDataset(azkabanNode.getOutputDataset());
 
     if (azkabanNode.getType().equals(Constants.FLOW_NODE_TYPE)) {
       final String embeddedFlowId = flowName + Constants.PATH_DELIMITER + node.getId();
@@ -188,6 +190,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
           flowFile);
       flowNode.setEmbeddedFlow(true);
       flowNode.setCondition(node.getCondition());
+      flowNode.setInputDataset(node.getInputDataset());
+      flowNode.setOutputDataset(node.getOutputDataset());
       this.flowMap.put(flowNode.getId(), flowNode);
     }
 

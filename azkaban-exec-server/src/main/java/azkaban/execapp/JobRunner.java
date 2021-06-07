@@ -35,6 +35,8 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.project.Dataset;
+import azkaban.project.DatasetUtils;
 import azkaban.spi.EventType;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.PatternLayoutEscaped;
@@ -49,9 +51,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.kafka.log4jappender.KafkaLog4jAppender;
 import org.apache.log4j.Appender;
 import org.apache.log4j.EnhancedPatternLayout;
@@ -759,6 +765,8 @@ public class JobRunner extends EventHandler implements Runnable {
             submitUser);
       }
 
+      insertDatasetDependencyProps();
+
       final Props props = this.node.getRampProps();
       if (props != null) {
         this.logger.info(String
@@ -800,6 +808,48 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return finalStatus;
+  }
+
+  /**
+   * Adds input and output dataset dependency info in job property
+   */
+  private void insertDatasetDependencyProps() {
+    List<Dataset> inputDataset = this.node.getInputDataset();
+    List<Dataset> outputDataset = this.node.getOutputDataset();
+
+    try {
+      String inputDatasetProp = null;
+      String outputDatasetProp = null;
+      if (CollectionUtils.isNotEmpty(inputDataset)) {
+        Map<String, String> currentExecOutputDatasetMap = new HashMap<>();
+        /**
+         * The commented code is applicable for computing dataset values in case of partial execution
+         */
+//        String execId = this.props.get(CommonJobProperties.EXEC_ID);
+//        currentExecOutputDatasetMap = this.loader.fetchAllOutputDatasets(Integer.valueOf(execId));
+        Map<String, String> rawToResolvedDatasetMap = DatasetUtils.
+            resolveInputDatasetAndCreateRawToResolvedDatasetMap(inputDataset, currentExecOutputDatasetMap, this.props);
+        logger.info("InputDataset:");
+        inputDataset.forEach(dataset -> logger.info(dataset));
+        inputDatasetProp = DatasetUtils.datasetListToPropJsonString(inputDataset);
+        this.props.put(CommonJobProperties.INPUT_DATASET, inputDatasetProp);
+//        this.loader.addExecutionJobDataset(rawToResolvedDatasetMap, "input", this.node);
+      }
+
+      if (CollectionUtils.isNotEmpty(outputDataset)) {
+        Map<String, String> rawToResolvedDatasetMap = DatasetUtils.
+            resolveOutputDatasetAndCreateRawToResolvedDatasetMap(outputDataset, this.props);
+        outputDatasetProp = DatasetUtils.datasetListToPropJsonString(outputDataset);
+        this.props.put(CommonJobProperties.OUTPUT_DATASET, outputDatasetProp);
+        logger.info("OutputDataset:");
+        DatasetUtils.datasetStringToObject(outputDatasetProp).forEach(dataset -> logger.info(dataset));
+//        this.loader.addExecutionJobDataset(rawToResolvedDatasetMap, "output", this.node);
+      }
+    } catch (Exception e) {
+      String errorMsg = "Exception while adding dataset property";
+      logger.error(errorMsg, e);
+      throw new RuntimeException(errorMsg, e);
+    }
   }
 
   /**

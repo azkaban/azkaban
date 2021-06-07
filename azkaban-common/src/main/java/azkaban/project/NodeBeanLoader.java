@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.quartz.CronExpression;
@@ -81,6 +82,10 @@ public class NodeBeanLoader {
           .dependsOn(nodeBean.getDependsOn())
           .nodes(nodeBean.getNodes().stream().map(this::toAzkabanNode).collect(Collectors.toList()))
           .flowTrigger(toFlowTrigger(nodeBean.getTrigger()))
+          .inputDataset(Objects.nonNull(nodeBean.getInputs()) ?
+              DatasetUtils.convertMapToDataset(nodeBean.getInputs().get(0).getDatasets()) : null)
+          .outputDataset(Objects.nonNull(nodeBean.getOutputs()) ?
+              DatasetUtils.convertMapToDataset(nodeBean.getOutputs().get(0).getDatasets()) : null)
           .build();
     } else {
       return new AzkabanJob.AzkabanJobBuilder()
@@ -89,6 +94,10 @@ public class NodeBeanLoader {
           .condition(nodeBean.getCondition())
           .type(nodeBean.getType())
           .dependsOn(nodeBean.getDependsOn())
+          .inputDataset(Objects.nonNull(nodeBean.getInputs()) ?
+              DatasetUtils.convertMapToDataset(nodeBean.getInputs().get(0).getDatasets()) : null)
+          .outputDataset(Objects.nonNull(nodeBean.getOutputs()) ?
+              DatasetUtils.convertMapToDataset(nodeBean.getOutputs().get(0).getDatasets()) : null)
           .build();
     }
   }

@@ -364,4 +364,14 @@ public interface ExecutorLoader {
    */
   int updateVersionSetId(final int executionId, final int versionSetId)
       throws ExecutorManagerException;
+
+  void addExecutionJobDataset(final Map<String, String> rawToResolvedDatasetMap, final String datasetType,
+      final ExecutableNode node) throws ExecutorManagerException;
+
+  Map<String, String> fetchAllOutputDatasets(final int execId) throws ExecutorManagerException;
+
+  List<ExecutionJobDataset> fetchAllDatasets(final int execId) throws ExecutorManagerException;
+
+  void persistDatasetForExecId(final List<ExecutionJobDataset> jobDatasetList, final int execId)
+      throws ExecutorManagerException;
 }

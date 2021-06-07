@@ -590,4 +590,26 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void unsetExecutorIdForExecution(final int executionId) {
   }
+
+  @Override
+  public void addExecutionJobDataset(final Map<String, String> rawToResolvedDatasetMap, final String datasetType,
+      final ExecutableNode node) throws ExecutorManagerException {
+
+  }
+
+  @Override
+  public Map<String, String> fetchAllOutputDatasets(final int execId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public List<ExecutionJobDataset> fetchAllDatasets(final int execId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public void persistDatasetForExecId(final List<ExecutionJobDataset> jobDatasetList, final int execId)
+      throws ExecutorManagerException {
+
+  }
 }
