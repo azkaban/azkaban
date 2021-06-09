@@ -303,11 +303,11 @@ public class KubernetesWatchTest {
 
   // Validates that the callbacks are processed in ContainerStatusMetricsHandlerListener
   @Test
-  public void testContainerStatusMetricsHandlerListener() throws Exception {
+  public void testContainerStatusMetricsListener() throws Exception {
     // Setup a ContainerStatusMetricsHandlerListener
     Props azkProps = new Props();
-    AzPodStatusRecordHandlerListener recordHandlerListener =
-        new AzPodStatusRecordHandlerListener(new DummyContainerizationMetricsImpl());
+    AzPodStatusMetricsListener recordHandlerListener =
+        new AzPodStatusMetricsListener(new DummyContainerizationMetricsImpl());
 
     // Register ContainerStatusMetricsHandlerListener
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
@@ -539,14 +539,14 @@ public class KubernetesWatchTest {
   }
 
   /**
-   * A class extends {@link ContainerStatusMetricsHandlerListener} that can be tested for metrics
+   * A class extends {@link ContainerStatusMetricsListener} that can be tested for metrics
    * updating
    */
-  private static class AzPodStatusRecordHandlerListener extends ContainerStatusMetricsHandlerListener {
+  private static class AzPodStatusMetricsListener extends ContainerStatusMetricsListener {
     private int podRequestedCounter =0, podScheduledCounter = 0, podInitContainersRunningCounter = 0,
         PodAppContainersStartingCounter = 0, podReadyCounter = 0, podCompletedCounter = 0,
         podInitFailureCounter = 0, podAppFailureCounter = 0, podUnexpectedCounter = 0;
-    public AzPodStatusRecordHandlerListener(
+    public AzPodStatusMetricsListener(
         ContainerizationMetrics containerizationMetrics) {
       super(containerizationMetrics);
     }

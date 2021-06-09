@@ -64,73 +64,58 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   /**
    * Mark the occurrence of various pod statuses, defined by {@link azkaban.executor.container.watch.AzPodStatus}
    */
-  // Increment in the number of pod whose application containers exited without errors
+
   @Override
   public void markPodCompleted() {
     this.podCompleted.mark();
   }
 
-  // Increment in the number of pod creation received by Kubernetes api-server
   @Override
   public void markPodRequested() {
     this.podRequested.mark();
   }
 
-  // Increment in the number of pod scheduled
   @Override
   public void markPodScheduled() {
     this.podScheduled.mark();
   }
 
-  // Increment in the number of pod whose init containers are executing
   @Override
   public void markInitContainerRunning() {
     this.initContainerRunning.mark();
   }
 
-  // Increment in the number of pod whose at least 1 application container has started
   @Override
   public void markAppContainerStarting() {
     this.appContainerStarting.mark();
   }
 
-  // Increment in the number of pod whose application containers alll started
   @Override
   public void markPodReady() { this.podReady.mark(); }
 
-  // Increment in the number of pod failed during initialization
   @Override
   public void markPodInitFailure() {
     this.podInitFailure.mark();
   }
 
-  // Increment in the number of pod failed during application containers running
   @Override
   public void markPodAppFailure() {
     this.podAppFailure.mark();
   }
 
-  /**
-   * Add a time duration of dispatching a pod from ready to preparing to the histogram
-   */
+
   @Override
   public void addTimeToDispatch(final long time) {
-    //Todo haqin: implement metric that records time taken to dispatch flow to a container
+    //TODO haqin: implement metric that records time taken to dispatch flow to a container
   }
 
-  /**
-   * Record a flow dispatched to executor
-   */
   @Override
   public void markFlowSubmitToExecutor() {
-    //Todo haqin: implement metric that records number of flows dispatched to bare metal executor
+    //TODO haqin: implement metric that records number of flows dispatched to bare metal executor
   }
 
-  /**
-   * Record a flow dispatched to container
-   */
   @Override
   public void markFlowSubmitToContainer() {
-    //Todo haqin: implement metric that records number of flows dispatched to a container
+    //TODO haqin: implement metric that records number of flows dispatched to a container
   }
 }

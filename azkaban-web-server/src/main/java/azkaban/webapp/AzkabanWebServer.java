@@ -187,7 +187,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
-      final ObjectMapper objectMapper, ContainerizationMetrics containerizationMetrics) {
+      final ObjectMapper objectMapper,
+      final ContainerizationMetrics containerizationMetrics) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -540,11 +541,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     configureRoutes();
     startWebMetrics();
+    startContainerMetrics();
 
-    // start ContainerMetrics only if containerized execution is enabled
-    if (isContainerizedDispatchMethodEnabled()) {
-      startContainerMetrics();
-    }
 
     if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule

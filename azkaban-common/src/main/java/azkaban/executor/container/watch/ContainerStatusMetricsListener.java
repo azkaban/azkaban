@@ -34,10 +34,10 @@ import org.apache.log4j.Logger;
  * updating container metrics based on pod status
  */
 @Singleton
-public class ContainerStatusMetricsHandlerListener implements AzPodStatusListener{
+public class ContainerStatusMetricsListener implements AzPodStatusListener{
 
   private static final Logger logger =
-      Logger.getLogger(ContainerStatusMetricsHandlerListener.class);
+      Logger.getLogger(ContainerStatusMetricsListener.class);
   private static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 50000;
   private static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
 
@@ -51,7 +51,7 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
   private final ExecutorService executor;
 
   @Inject
-  public ContainerStatusMetricsHandlerListener(final ContainerizationMetrics containerizationMetrics) {
+  public ContainerStatusMetricsListener(final ContainerizationMetrics containerizationMetrics) {
     this.containerizationMetrics = containerizationMetrics;
 
     this.executor = Executors.newSingleThreadExecutor(
@@ -123,8 +123,7 @@ public class ContainerStatusMetricsHandlerListener implements AzPodStatusListene
         containerizationMetrics.markPodAppFailure();
         break;
       default:
-        logger.error(String.format("Current flow pod status %s is unexpected",
-            event.getAzPodStatus()));
+        // do nothing when status is AZ_POD_UNSET, AZ_POD_UNEXPECTED, AZ_POD_UNEXPECTED
     }
     updatePodStatus(event);
   }

@@ -34,7 +34,7 @@ import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.executor.container.watch.AzPodStatusListener;
-import azkaban.executor.container.watch.ContainerStatusMetricsHandlerListener;
+import azkaban.executor.container.watch.ContainerStatusMetricsListener;
 import azkaban.executor.container.watch.FlowStatusManagerListener;
 import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
@@ -240,7 +240,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Provides
   private AzPodStatusListener createContainerStatusMetricsHandlerListener(
       ContainerizationMetrics containerizationMetrics) {
-    return new ContainerStatusMetricsHandlerListener(containerizationMetrics);
+    return new ContainerStatusMetricsListener(containerizationMetrics);
   }
 
   @Inject
