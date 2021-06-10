@@ -18,6 +18,7 @@ package azkaban.flow;
 
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ public class Flow {
   private static final String IS_LOCKED_PROPERTY = "isLocked";
   private static final String FLOW_LOCK_ERROR_MESSAGE_PROPERTY = "flowLockErrorMessage";
 
-  private final String id;  // This is actually the flow name
+  private final String id;  // This is actually the node path. I.e. rootFlow:subFlow1:subFlow2
   private int projectId;
   private int version = -1; // This is actually the project version
   private final HashMap<String, Node> nodes = new HashMap<>();
@@ -293,6 +294,22 @@ public class Flow {
     return this.id;
   }
 
+  /**
+   * Return all flow parents of this flow. From each parent its name and node path are returned.
+   */
+  public List<Pair<String, String>> getParents() {
+    final List<Pair<String, String>> parents = new ArrayList<>(); // Tuple (flow name, node path)
+    final String[] parentNames = getId().split(Constants.PATH_DELIMITER, 0);
+    parents.add(new Pair<>(parentNames[0], parentNames[0])); // root flow is first element
+    for (int i = 1; i < parentNames.length; i++) {
+      final String nodePath = String
+          .join(Constants.PATH_DELIMITER, parents.get(parents.size() - 1).getSecond(),
+              parentNames[i]);
+      parents.add(new Pair<>(parentNames[i], nodePath));
+    }
+    return parents;
+  }
+
   public void addError(final String error) {
     if (this.errors == null) {
       this.errors = new ArrayList<>();
@@ -485,7 +502,7 @@ public class Flow {
     return this.isLocked;
   }
 
-  public void setLocked(boolean locked) {
+  public void setLocked(final boolean locked) {
     this.isLocked = locked;
   }
 

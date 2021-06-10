@@ -40,20 +40,25 @@
     #parse("azkaban/webapp/servlet/velocity/errormsg.vm")
   #else
 
-  ## Page header
+    ## Page header
 
   <div class="az-page-header page-header-bare">
     <div class="container-full">
-      <h1><a
-          href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${property}">Properties
-        <small>$property</small>
-      </a></h1>
+      <h1>
+        <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${propsSource}&propNode=${propsNodePath}">
+          Properties <small>$propsSourceLabel</small>
+        </a>
+      </h1>
     </div>
   </div>
   <div class="page-breadcrumb">
     <div class="container-full">
       <ol class="breadcrumb">
-        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+        <li>
+          <a href="${context}/manager?project=${project.name}">
+            <strong>Project</strong> $project.name
+          </a>
+        </li>
 
         #set($ref = "${context}/manager?project=${project.name}&flow=")
         #foreach( $flow in ${flowlist} )
@@ -72,8 +77,12 @@
           #set($ref = $ref + ${pathDelimiter})
         #end
 
-        <li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
-        <li class="active"><strong>Properties</strong> $property</li>
+        <li>
+          <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">
+            <strong>Job</strong> $jobid
+          </a>
+        </li>
+        <li class="active"><strong>Properties</strong> $propsSourceLabel</li>
       </ol>
     </div>
   </div>
@@ -85,24 +94,24 @@
     <div class="row row-offcanvas row-offcanvas-right">
       <div class="col-xs-12 col-sm-9">
 
-      ## Properties
+        ## Properties
 
         <div class="panel panel-default">
-          <div class="panel-heading">$property</div>
+          <div class="panel-heading">$propsSourceLabel</div>
 
           <table class="table table-striped table-bordered properties-table">
             <thead>
             <tr>
-              <th class="tb-pname">Parameter Name</th>
+              <th class="tb-pname">Property Name</th>
               <th class="tb-pvalue">Value</th>
             </tr>
             </thead>
             <tbody>
-              #foreach ($parameter in $parameters)
-              <tr>
-                <td class="property-key">$parameter.first</td>
-                <td>$parameter.second</td>
-              </tr>
+              #foreach ($prop in $properties)
+                <tr>
+                  <td class="property-key">$prop.first</td>
+                  <td>$prop.second</td>
+                </tr>
               #end
             </tbody>
           </table>
@@ -111,7 +120,7 @@
       <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
         <div class="well" id="job-summary">
           <h4>Properties
-            <small>$property</small>
+            <small>$propsSourceLabel</small>
           </h4>
           <p><strong>Job</strong> $jobid</p>
         </div>
@@ -119,14 +128,16 @@
         <div class="panel panel-default">
           <div class="panel-heading">Inherited From</div>
           <ul class="list-group">
-            #if ($inheritedproperties)
+            #if (${inheritedproperties.isEmpty()})
+              <li class="list-group-item">No inherited properties.</li>
+            #else
               #foreach ($inheritedproperty in $inheritedproperties)
-                <li class="list-group-item"><a
-                    href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$inheritedproperty">$inheritedproperty</a>
+                <li class="list-group-item">
+                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${inheritedproperty}&propNode=${flowid}">
+                    $inheritedproperty
+                  </a>
                 </li>
               #end
-            #else
-              <li class="list-group-item">No inherited properties.</li>
             #end
           </ul>
         </div>
@@ -134,14 +145,16 @@
         <div class="panel panel-default">
           <div class="panel-heading">Source of</div>
           <ul class="list-group">
-            #if ($dependingproperties)
+            #if (${dependingproperties.isEmpty()})
+              <li class="list-group-item">No dependents.</li>
+            #else
               #foreach ($dependingproperty in $dependingproperties)
-                <li class="list-group-item"><a
-                    href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$dependingproperty">$dependingproperty</a>
+                <li class="list-group-item">
+                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$jobid&prop=${dependingproperty}&propNode=${flowid}">
+                    $dependingproperty
+                  </a>
                 </li>
               #end
-            #else
-              <li class="list-group-item">No dependents.</li>
             #end
           </ul>
         </div>
