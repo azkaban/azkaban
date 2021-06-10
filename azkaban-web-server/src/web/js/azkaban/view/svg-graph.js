@@ -524,7 +524,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  relayoutFlow: function (node) {
+  relayoutFlow: function (node, delay) {
+    if (typeof delay === 'undefined') delay = 250;
+
     if (node.expanded) {
       this.layoutExpandedFlowNode(node);
     }
@@ -532,20 +534,22 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var parent = node.parent;
     if (parent) {
       layoutGraph(parent.nodes, parent.edges, 10);
-      this.relayoutFlow(parent);
+      this.relayoutFlow(parent, delay);
       // Move all points again.
-      this.moveNodeEdges(parent.nodes, parent.edges);
-      this.animateExpandedFlowNode(node, 250);
+      this.moveNodeEdges(parent.nodes, parent.edges, delay);
+      this.animateExpandedFlowNode(node, delay);
     }
   },
 
-  moveNodeEdges: function (nodes, edges) {
+  moveNodeEdges: function (nodes, edges, delay) {
+    if (typeof delay === 'undefined') delay = 250;
+
     var svg = this.svg;
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i];
       var gNode = node.gNode;
 
-      $(gNode).animate({"svgTransform": translateStr(node.x, node.y)}, 250);
+      $(gNode).animate({"svgTransform": translateStr(node.x, node.y)}, delay);
     }
 
     for (var j = 0; j < edges.length; ++j) {
@@ -567,7 +571,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
         }
         pointArray.push([endNode.x, endPointY]);
 
-        animatePolylineEdge(svg, edge, pointArray, 250);
+        animatePolylineEdge(svg, edge, pointArray, delay);
         edge.oldpoints = pointArray;
       }
       else {
