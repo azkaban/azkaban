@@ -1589,7 +1589,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     // The name of the file where properties are located
     final String propsSource = getParam(req, "prop");
     // The properties that should be retrieved:
-    // In Flow 1.0 is the entire .properties file, so prop and proNode parameters have same value
+    // In Flow 1.0 is the entire .properties file. Flow and proNode parameters have same value
     // In Flow 2.0 is just the properties of provided node.
     final String propsNodePath = getParam(req, "propNode");
 
@@ -1664,7 +1664,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
       page.add("propsSourceLabel", propsSourceLabel);
       page.add("propsSource", propsSource);
-      page.add(".createAPIEndpoints", propsNodePath);
+      page.add("propsNodePath", propsNodePath);
 
       // Resolve property dependencies
       final List<String> inheritProps = new ArrayList<>();
