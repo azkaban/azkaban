@@ -1549,15 +1549,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       // Resolve inherited properties
       final List<Pair<String, String>> allParentFlows = flow.getParents();
-      final List<Pair<String, String>> reversedParents = new ArrayList<>(allParentFlows);
-      Collections.reverse(reversedParents); // direct parent first, root flow last
       // List of triplets of NAME and NODE PATH of flows from which properties are
       // inherited as well as the FILE NAME where they are to be found
       final List<String[]> inheritedProperties = new ArrayList<>();
       final String nodePropsSource = node.getPropsSource();
       if (nodePropsSource != null) {
         if (flow.getAzkabanFlowVersion() == Constants.AZKABAN_FLOW_VERSION_2_0) {
-          reversedParents.stream().forEach(p -> inheritedProperties
+          allParentFlows.stream().forEach(p -> inheritedProperties
               .add(new String[]{p.getFirst(), p.getSecond(), nodePropsSource}));
         } else {
           inheritedProperties.add(new String[]{nodePropsSource, flowId, nodePropsSource});
