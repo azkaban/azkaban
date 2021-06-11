@@ -92,7 +92,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
     this.graphBounds = this.renderGraph(this.model.get("data"), this.mainG);
     
-    if (this.model.get("autoExpand")) {
+    if (this.model.get("autoExpandFlows")) {
       this.autoExpandFlows();
     } else {
       this.resetPanZoom(0);

@@ -24,7 +24,7 @@ azkaban.JobListView = Backbone.View.extend({
     "click li.listElement": "handleJobClick",
     "click #resetPanZoomBtn": "handleResetPanZoom",
     "click #autoPanZoomBtn": "handleAutoPanZoom",
-    "click #autoExpandBtn": "handleAutoExpand",
+    "click #autoExpandFlowsBtn": "handleAutoExpandFlows",
     "contextmenu li.listElement": "handleContextMenuClick",
     "click .expandarrow": "handleToggleMenuExpand",
     "click .expandallarrow": "handleToggleMenuExpandAll",
@@ -46,12 +46,12 @@ azkaban.JobListView = Backbone.View.extend({
     this.listNodes = {};
 
     this.presetToggleBtn("autoPanZoom");
-    this.presetToggleBtn("autoExpand");
+    this.presetToggleBtn("autoExpandFlows");
   },
 
   presetToggleBtn: function(name) {
     var target = "#" + name + "Btn";
-    if (localStorage.getItem("LiAz-" + name) !== 'false') {
+    if (localStorage.getItem("Azkaban-" + name) !== 'false') {
       if ($(target).hasClass('btn-default')) $(target).removeClass('btn-default');
       $(target).addClass('btn-info');
     } else {
@@ -372,7 +372,7 @@ azkaban.JobListView = Backbone.View.extend({
     var props = {}; // dancing around no-es6
     props[name] = isToggleOn;
     this.model.set(props);
-    localStorage.setItem("LiAz-" + name, isToggleOn);
+    localStorage.setItem("Azkaban-" + name, isToggleOn);
     return isToggleOn;
   },
 
@@ -380,8 +380,8 @@ azkaban.JobListView = Backbone.View.extend({
     if (this.handleToggleButton(evt, "autoPanZoom")) this.model.trigger("resetPanZoom");
   },
 
-  handleAutoExpand: function (evt) {
-    this.model.trigger((this.handleToggleButton(evt, "autoExpand")) ? "autoExpandFlows" : "collapseAllFlows");
+  handleAutoExpandFlows: function (evt) {
+    this.model.trigger((this.handleToggleButton(evt, "autoExpandFlows")) ? "autoExpandFlows" : "collapseAllFlows");
   },
 
   handleClose: function (evt) {
