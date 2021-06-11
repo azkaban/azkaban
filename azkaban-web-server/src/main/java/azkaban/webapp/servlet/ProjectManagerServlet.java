@@ -86,6 +86,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Triple;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1550,19 +1551,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       // Resolve inherited properties
       final List<Pair<String, String>> allParentFlows = flow.getParents();
       // List of triplets of NAME and NODE PATH of flows from which properties are
-      // inherited as well as the FILE NAME where they are to be found
-      final List<String[]> inheritedProperties = new ArrayList<>();
+      // inherited as well as the FILE NAME where they are to be found.
+      final List<Triple<String, String, String>> inheritedProperties = new ArrayList<>();
       final String nodePropsSource = node.getPropsSource();
       if (nodePropsSource != null) {
         if (flow.getAzkabanFlowVersion() == Constants.AZKABAN_FLOW_VERSION_2_0) {
           allParentFlows.stream().forEach(p -> inheritedProperties
-              .add(new String[]{p.getFirst(), p.getSecond(), nodePropsSource}));
+              .add(Triple.of(p.getFirst(), p.getSecond(), nodePropsSource)));
         } else {
-          inheritedProperties.add(new String[]{nodePropsSource, flowId, nodePropsSource});
+          inheritedProperties.add(Triple.of(nodePropsSource, flowId, nodePropsSource));
           FlowProps parent = flow.getFlowProps(nodePropsSource);
           while (parent.getInheritedSource() != null) {
             final String inheritedSource = parent.getInheritedSource();
-            inheritedProperties.add(new String[]{inheritedSource, flowId, inheritedSource});
+            inheritedProperties.add(Triple.of(inheritedSource, flowId, inheritedSource));
             parent = flow.getFlowProps(parent.getInheritedSource());
           }
         }

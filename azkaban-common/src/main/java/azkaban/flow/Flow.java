@@ -296,6 +296,8 @@ public class Flow {
 
   /**
    * Return all flow parents of this flow. From each parent its name and node path are returned.
+   *
+   * @return the list of parents
    */
   public List<Pair<String, String>> getParents() {
     final List<Pair<String, String>> parents = new ArrayList<>(); // Tuple (flow name, node path)

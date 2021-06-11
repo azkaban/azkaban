@@ -190,7 +190,7 @@
             #else
               #foreach($prop in ${inheritedProperties})
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${prop[2]}&propNode=${prop[1]}">${prop[0]}</a>
+                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${prop.right}&propNode=${prop.middle}">${prop.left}</a>
                 </li>
               #end
             #end
