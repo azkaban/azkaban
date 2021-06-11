@@ -24,6 +24,7 @@ azkaban.JobListView = Backbone.View.extend({
     "click li.listElement": "handleJobClick",
     "click #resetPanZoomBtn": "handleResetPanZoom",
     "click #autoPanZoomBtn": "handleAutoPanZoom",
+    "click #autoExpandFlowsBtn": "handleAutoExpandFlows",
     "contextmenu li.listElement": "handleContextMenuClick",
     "click .expandarrow": "handleToggleMenuExpand",
     "click .expandallarrow": "handleToggleMenuExpandAll",
@@ -43,6 +44,20 @@ azkaban.JobListView = Backbone.View.extend({
     this.list = $(this.el).find("#joblist");
     this.contextMenu = settings.contextMenuCallback;
     this.listNodes = {};
+
+    this.presetToggleBtn("autoPanZoom");
+    this.presetToggleBtn("autoExpandFlows");
+  },
+
+  presetToggleBtn: function(name) {
+    var target = "#" + name + "Btn";
+    if (localStorage.getItem("Azkaban-" + name) !== 'false') {
+      if ($(target).hasClass('btn-default')) $(target).removeClass('btn-default');
+      $(target).addClass('btn-info');
+    } else {
+      if ($(target).hasClass('btn-info')) $(target).removeClass('btn-info');
+      $(target).addClass('btn-default');
+    }
   },
 
   filterJobs: function (self) {
@@ -71,10 +86,8 @@ azkaban.JobListView = Backbone.View.extend({
       var spanlabel = $(li).find("> a > span");
 
       var endIndex = index + filter.length;
-      var newHTML = nodeName.substring(0, index)
-          + "<span class=\"filterHighlight\">" +
-          nodeName.substring(index, endIndex) + "</span>" +
-          nodeName.substring(endIndex, nodeName.length);
+      var newHTML = nodeName.substring(0, index) + "<span class=\"filterHighlight\">" +
+        nodeName.substring(index, endIndex) + "</span>" + nodeName.substring(endIndex, nodeName.length);
       $(spanlabel).html(newHTML);
 
       // Apply classes to all the included embedded flows.
@@ -85,7 +98,6 @@ azkaban.JobListView = Backbone.View.extend({
         $(parentLi).show();
         $(parentLi).addClass("subFilter");
       }
-
       $(li).show();
     }
   },
@@ -345,20 +357,31 @@ azkaban.JobListView = Backbone.View.extend({
     this.model.trigger("resetPanZoom");
   },
 
-  handleAutoPanZoom: function (evt) {
+  handleToggleButton: function (evt, name) {
     var target = evt.currentTarget;
+    var isToggleOn = false;
+
     if ($(target).hasClass('btn-default')) {
       $(target).removeClass('btn-default');
       $(target).addClass('btn-info');
-    }
-    else if ($(target).hasClass('btn-info')) {
+      isToggleOn = true;
+    } else if ($(target).hasClass('btn-info')) {
       $(target).removeClass('btn-info');
       $(target).addClass('btn-default');
     }
+    var props = {}; // dancing around no-es6
+    props[name] = isToggleOn;
+    this.model.set(props);
+    localStorage.setItem("Azkaban-" + name, isToggleOn);
+    return isToggleOn;
+  },
 
-    // Using $().hasClass('active') does not use here because it appears that
-    // this is called before the Bootstrap toggle completes.
-    this.model.set({"autoPanZoom": $(target).hasClass('btn-info')});
+  handleAutoPanZoom: function (evt) {
+    if (this.handleToggleButton(evt, "autoPanZoom")) this.model.trigger("resetPanZoom");
+  },
+
+  handleAutoExpandFlows: function (evt) {
+    this.model.trigger((this.handleToggleButton(evt, "autoExpandFlows")) ? "autoExpandFlows" : "collapseAllFlows");
   },
 
   handleClose: function (evt) {

@@ -33,6 +33,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
     this.model.bind('change:updateAll', this.handleUpdateAllStatus, this);
     this.model.bind('expandFlow', this.expandFlow, this);
     this.model.bind('collapseFlow', this.collapseFlow, this);
+    this.model.bind('autoExpandFlows', this.autoExpandFlows, this);
     this.model.bind('expandAllFlows', this.expandAllFlows, this);
     this.model.bind('expandFlows1', this.expandFlows1, this);
     this.model.bind('expandFlows2', this.expandFlows2, this);
@@ -90,8 +91,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
     $(this.mainG).empty();
 
     this.graphBounds = this.renderGraph(this.model.get("data"), this.mainG);
-    this.expandAllFlows(null, graphDepth || 1);
-    this.resetPanZoom(0);
+    
+    if (this.model.get("autoExpandFlows")) {
+      this.autoExpandFlows();
+    } else {
+      this.resetPanZoom(0);
+    }
   },
 
   renderGraph: function (data, g) {
@@ -448,6 +453,11 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
+  autoExpandFlows: function() {
+    this.expandAllFlows(null, graphDepth || 1);
+    this.resetPanZoom(0);
+  },
+
   expandAllFlows: function (node, maxDepth, depth) {
     if (maxDepth === undefined) maxDepth = Number.MAX_SAFE_INTEGER;
     if (depth === undefined) depth = 0;
@@ -514,7 +524,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
     }
   },
 
-  relayoutFlow: function (node) {
+  relayoutFlow: function (node, delay) {
+    if (typeof delay === 'undefined') delay = 250;
+
     if (node.expanded) {
       this.layoutExpandedFlowNode(node);
     }
@@ -522,20 +534,22 @@ azkaban.SvgGraphView = Backbone.View.extend({
     var parent = node.parent;
     if (parent) {
       layoutGraph(parent.nodes, parent.edges, 10);
-      this.relayoutFlow(parent);
+      this.relayoutFlow(parent, delay);
       // Move all points again.
-      this.moveNodeEdges(parent.nodes, parent.edges);
-      this.animateExpandedFlowNode(node, 20);
+      this.moveNodeEdges(parent.nodes, parent.edges, delay);
+      this.animateExpandedFlowNode(node, delay);
     }
   },
 
-  moveNodeEdges: function (nodes, edges) {
+  moveNodeEdges: function (nodes, edges, delay) {
+    if (typeof delay === 'undefined') delay = 250;
+
     var svg = this.svg;
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i];
       var gNode = node.gNode;
 
-      $(gNode).animate({"svgTransform": translateStr(node.x, node.y)}, 20);
+      $(gNode).animate({"svgTransform": translateStr(node.x, node.y)}, delay);
     }
 
     for (var j = 0; j < edges.length; ++j) {
@@ -557,7 +571,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
         }
         pointArray.push([endNode.x, endPointY]);
 
-        animatePolylineEdge(svg, edge, pointArray, 20);
+        animatePolylineEdge(svg, edge, pointArray, delay);
         edge.oldpoints = pointArray;
       }
       else {
@@ -799,7 +813,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
   panZoom: function (params) {
     params.maxScale = 2;
-    if (typeof params.duration === 'undefined') params.duration = 5;
+    if (typeof params.duration === 'undefined') params.duration = 500;
     $(this.svgGraph).svgNavigate("transformToBox", params);
   }
 });
