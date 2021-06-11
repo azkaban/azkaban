@@ -109,6 +109,7 @@ import org.apache.log4j.PatternLayout;
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
+ * Placeholder
  */
 public class FlowRunner extends EventHandler<Event> implements Runnable {
 
