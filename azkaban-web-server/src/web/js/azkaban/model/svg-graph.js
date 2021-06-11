@@ -18,7 +18,8 @@ $.namespace('azkaban');
 
 azkaban.GraphModel = Backbone.Model.extend({
   initialize: function () {
-    this.set({'autoPanZoom': true});
+    this.set({'autoPanZoom': (localStorage.getItem("Azkaban-autoPanZoom") !== 'false')});
+    this.set({'autoExpandFlows': (localStorage.getItem("Azkaban-autoExpandFlows") !== 'false')});
   },
 
   /*
