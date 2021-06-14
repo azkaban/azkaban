@@ -34,6 +34,7 @@ import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.executor.container.watch.AzPodStatusListener;
+import azkaban.executor.container.watch.ContainerStatusMetricsListener;
 import azkaban.executor.container.watch.FlowStatusManagerListener;
 import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
@@ -55,6 +56,9 @@ import azkaban.imagemgmt.services.ImageVersionMetadataService;
 import azkaban.imagemgmt.services.ImageVersionMetadataServiceImpl;
 import azkaban.imagemgmt.version.JdbcVersionSetLoader;
 import azkaban.imagemgmt.version.VersionSetLoader;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.ContainerizationMetricsImpl;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -90,6 +94,7 @@ public class AzkabanWebServerModule extends AbstractModule {
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
   public static final String FLOW_POD_MONITOR = "FlowPodMonitor";
+  private static final String CONTAINER_STATUS_METRICS_HANDLER = "ContainerStatusMetricsHandler";
   private final Props props;
 
   public AzkabanWebServerModule(final Props props) {
@@ -119,10 +124,17 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
     bind(EventListener.class).to(resolveEventListenerClass()).in(Scopes.SINGLETON);
+    // Implement container metrics based on dispatch method
+    bind(ContainerizationMetrics.class).to(resolveContainerMetricsClass()).in(Scopes.SINGLETON);
 
     // Following bindings will be present if and only if containerized dispatch is enabled.
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
+  }
+
+  private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
+    return isContainerizedDispatchMethodEnabled() ? ContainerizationMetricsImpl.class :
+        DummyContainerizationMetricsImpl.class;
   }
 
   private Class<? extends EventListener> resolveEventListenerClass() {
@@ -202,9 +214,11 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Singleton
   @Provides
   private RawPodWatchEventListener createStatusDrivingListener(final Props azkProps,
-      @Named(FLOW_POD_MONITOR) AzPodStatusListener flowPodMonitorListener) {
+      @Named(FLOW_POD_MONITOR) AzPodStatusListener flowPodMonitorListener,
+      @Named(CONTAINER_STATUS_METRICS_HANDLER) AzPodStatusListener containerStatusMetricsHandlerListener) {
     AzPodStatusDrivingListener listener = new AzPodStatusDrivingListener(azkProps);
     listener.registerAzPodStatusListener(flowPodMonitorListener);
+    listener.registerAzPodStatusListener(containerStatusMetricsHandlerListener);
     return listener;
   }
 
@@ -218,6 +232,15 @@ public class AzkabanWebServerModule extends AbstractModule {
       final ExecutorLoader executorLoader,
       final AlerterHolder alerterHolder) {
     return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder);
+  }
+
+  @Inject
+  @Named(CONTAINER_STATUS_METRICS_HANDLER)
+  @Singleton
+  @Provides
+  private AzPodStatusListener createContainerStatusMetricsHandlerListener(
+      ContainerizationMetrics containerizationMetrics) {
+    return new ContainerStatusMetricsListener(containerizationMetrics);
   }
 
   @Inject
