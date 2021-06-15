@@ -16,6 +16,8 @@
 
 package azkaban.flow;
 
+import static azkaban.flow.CommonJobProperties.FAILURE_ACTION_PROPERTY;
+
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.Pair;
@@ -61,6 +63,16 @@ public class Flow {
   private int numLevels = -1;
   private final List<String> failureEmail = new ArrayList<>();
   private final List<String> successEmail = new ArrayList<>();
+
+  public String getFailureAction() {
+    return failureAction;
+  }
+
+  public void setFailureAction(final String failureAction) {
+    this.failureAction = failureAction;
+  }
+
+  private String failureAction;
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private ArrayList<String> errors;
   private Map<String, Object> metadata = new HashMap<>();
@@ -111,7 +123,9 @@ public class Flow {
         .getOrDefault(SUCCESS_EMAIL_PROPERTY, flow.getSuccessEmails());
     final String mailCreator = (String) flowObject
         .getOrDefault(MAIL_CREATOR_PROPERTY, flow.getMailCreator());
-
+    final String failureAction = (String) flowObject.getOrDefault(
+        FAILURE_ACTION_PROPERTY, flow.getFailureAction()
+    );
     flow.setLayedOut(layedout);
     flow.setEmbeddedFlow(isEmbeddedFlow);
     flow.setAzkabanFlowVersion(azkabanFlowVersion);
@@ -124,7 +138,7 @@ public class Flow {
     flow.addFailureEmails(failureEmails);
     flow.addSuccessEmails(successEmails);
     flow.setMailCreator(mailCreator);
-
+    flow.setFailureAction(failureAction);
     // Loading projects
     final Map<String, FlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
@@ -388,6 +402,9 @@ public class Flow {
     flowObj.put(IS_LOCKED_PROPERTY, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PROPERTY, this.flowLockErrorMessage);
 
+    if (this.failureAction != null) {
+      flowObj.put(FAILURE_ACTION_PROPERTY, this.failureAction);
+    }
     if (this.errors != null) {
       flowObj.put(ERRORS_PROPERTY, this.errors);
     }

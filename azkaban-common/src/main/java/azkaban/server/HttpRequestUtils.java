@@ -15,6 +15,8 @@
  */
 package azkaban.server;
 
+import static azkaban.executor.ExecutionOptions.FAILURE_ACTION_OVERRIDE;
+
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
@@ -67,6 +69,11 @@ public class HttpRequestUtils {
     if (hasParam(req, "successEmailsOverride")) {
       final boolean override = getBooleanParam(req, "successEmailsOverride", false);
       execOptions.setSuccessEmailsOverridden(override);
+    }
+
+    if (hasParam(req, FAILURE_ACTION_OVERRIDE)) {
+      final boolean override = getBooleanParam(req, FAILURE_ACTION_OVERRIDE, false);
+      execOptions.setFailureActionOverride(override);
     }
 
     if (hasParam(req, "failureEmails")) {
