@@ -310,6 +310,7 @@ public class ExecutionFlowDao {
       data = stringData;
       // Todo kunkun-tang: use a common method to transform stringData to data.
       if (encType == EncodingType.GZIP) {
+        logger.info("Flow " + flow.getFlowId() + " jsondata " + json);
         data = GZIPUtils.gzipBytes(stringData);
       }
     } catch (final IOException e) {

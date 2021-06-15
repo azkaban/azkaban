@@ -69,7 +69,15 @@ public class TriggerInstanceProcessor {
     try {
       final Project project = triggerInst.getProject();
       final Flow flow = FlowUtils.getFlow(project, triggerInst.getFlowId());
+      String failActionStr = (flow.getFailureActionStr() == null) ? "unassigned" :
+          flow.getFailureActionStr();
+      String failAction = (flow.getFailureAction() == null) ? "unassigned" :
+          flow.getFailureAction().toString();
+      logger.info("Before FlowUtils.createExecutableFlow. executableFlow " +
+          failActionStr + " " + failAction);
       final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
+      logger.info("After FlowUtils.createExecutableFlow. executableFlow Failure action " +
+          executableFlow.getExecutionOptions().getFailureAction().toString());
       // execute the flow with default execution option(concurrency option being "ignore
       // currently running")
       executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_EVENT);

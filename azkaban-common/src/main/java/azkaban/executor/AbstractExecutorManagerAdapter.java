@@ -311,7 +311,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
     ExecutionOptions options = exflow.getExecutionOptions();
     if (options == null) {
+      logger.info("ExecutionOptions were null, so created new one");
       options = new ExecutionOptions();
+    } else {
+      logger.info("ExecutionOptions Failure Action before upload= {}",
+          options.getFailureAction().toString());
     }
 
     if (options.getDisabledJobs() != null) {

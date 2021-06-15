@@ -18,6 +18,7 @@ package azkaban.executor;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
+import azkaban.jobExecutor.AbstractJob;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
@@ -32,7 +33,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 
@@ -57,6 +59,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
   public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
+  private static final Logger logger = LoggerFactory.getLogger(ExecutableFlow.class);
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -147,8 +150,17 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   @Override
   protected void setFlow(final Project project, final Flow flow) {
+    if (flow.getFailureAction() != null) {
+      logger.info("FailureAction 1 = {}", flow.getFailureAction().toString());
+    }
+
+    if (flow.getFailureActionStr() != null) {
+      logger.info("FailureActionStr 1 = {}", flow.getFailureActionStr());
+    }
     super.setFlow(project, flow);
     this.executionOptions = new ExecutionOptions();
+
+    logger.info("Setting executionOptions for {} {}", project.getName(), flow.getId());
     this.executionOptions.setMailCreator(flow.getMailCreator());
 
     if (flow.getSuccessEmails() != null) {
@@ -156,6 +168,15 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
     if (flow.getFailureEmails() != null) {
       this.executionOptions.setFailureEmails(flow.getFailureEmails());
+    }
+    if (flow.getFailureAction() != null) {
+      this.executionOptions.setFailureAction(flow.getFailureAction());
+      logger.info("setFlow() flow FailureAction = {}", flow.getFailureAction().toString());
+      logger.info("setFlow() executionOptions FailureAction = {}", executionOptions.getFailureAction().toString());
+    }
+
+    if (flow.getFailureActionStr() != null) {
+      logger.info("setFlow() FailureActionStr = {}", flow.getFailureActionStr());
     }
   }
 

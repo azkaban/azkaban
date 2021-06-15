@@ -17,6 +17,7 @@
 package azkaban.project;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -168,6 +169,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     // Todo jamiesjc: deprecate startNodes, endNodes and numLevels, and remove below method finally.
     // Blow method will construct startNodes, endNodes and numLevels for the flow.
     flow.initialize();
+    flow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
+    flow.setFailureActionStr(FailureAction.FINISH_ALL_POSSIBLE.toString());
 
     return flow;
   }
