@@ -500,7 +500,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
     page.add("flowlist", flow.getFlowId().split(Constants.PATH_DELIMITER, 0));
-    page.add("pathDelimiter", Constants.PATH_DELIMITER);    
+    page.add("pathDelimiter", Constants.PATH_DELIMITER);
 
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
@@ -999,6 +999,16 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     options.setMailCreator(flow.getMailCreator());
 
+    /**
+     * If the user has not explicitly overridden the failure action from the UI or
+     * through API, we will consider the value specified in DSL/Yaml
+     * By providing this override option, user can still choose to modify failure
+     * option.
+     */
+    if (!options.isFailureActionOverridden() && flow.getFailureAction() != null) {
+      options.setFailureAction(
+          options.mapToFailureAction(flow.getFailureAction()));
+    }
     try {
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, options, user);
       final String message =
