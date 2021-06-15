@@ -287,6 +287,8 @@ public class ExecutionOptions {
   }
 
   public enum FailureAction {
-    FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
+    FINISH_CURRENTLY_RUNNING,
+    CANCEL_ALL,
+    FINISH_ALL_POSSIBLE;
   }
 }

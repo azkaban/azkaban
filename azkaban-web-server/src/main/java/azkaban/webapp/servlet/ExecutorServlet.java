@@ -500,7 +500,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
     page.add("flowlist", flow.getFlowId().split(Constants.PATH_DELIMITER, 0));
-    page.add("pathDelimiter", Constants.PATH_DELIMITER);    
+    page.add("pathDelimiter", Constants.PATH_DELIMITER);
 
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
@@ -990,6 +990,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", "Error parsing flow options: " + e.getMessage());
       return;
     }
+    logger.info("ExecutorServlet.java:ajaxExecuteFlow forcing FailureAction = FINISH_ALL_POSSIBLE");
+    options.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
     exflow.setExecutionOptions(options);
     if (!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());

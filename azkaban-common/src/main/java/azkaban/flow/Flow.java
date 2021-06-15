@@ -18,6 +18,7 @@ package azkaban.flow;
 
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +44,8 @@ public class Flow {
   private static final String METADATA_PROPERTY = "metadata";
   private static final String FAILURE_EMAIL_PROPERTY = "failure.email";
   private static final String SUCCESS_EMAIL_PROPERTY = "success.email";
+  private static final String FAILURE_ACTION_PROPERTY = "azkaban.flow.failureAction";
+  private static final String FAILURE_ACTION_STR_PROPERTY = "azkaban.flow.failureActionStr";
   private static final String MAIL_CREATOR_PROPERTY = "mailCreator";
   private static final String ERRORS_PROPERTY = "errors";
   private static final String IS_LOCKED_PROPERTY = "isLocked";
@@ -61,6 +64,8 @@ public class Flow {
   private int numLevels = -1;
   private final List<String> failureEmail = new ArrayList<>();
   private final List<String> successEmail = new ArrayList<>();
+  private FailureAction failureAction = null;
+  private String failureActionString = null;
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private ArrayList<String> errors;
   private Map<String, Object> metadata = new HashMap<>();
@@ -109,6 +114,12 @@ public class Flow {
         .getOrDefault(FAILURE_EMAIL_PROPERTY, flow.getFailureEmails());
     final List<String> successEmails = (List<String>) flowObject
         .getOrDefault(SUCCESS_EMAIL_PROPERTY, flow.getSuccessEmails());
+    final FailureAction failureAction =
+        FailureAction.valueOf((String) flowObject.getOrDefault(FAILURE_ACTION_PROPERTY,
+        FailureAction.FINISH_CURRENTLY_RUNNING.toString()));
+    final String failureActionStr = (String) flowObject.getOrDefault(FAILURE_ACTION_STR_PROPERTY,
+        FailureAction.FINISH_CURRENTLY_RUNNING.toString());
+
     final String mailCreator = (String) flowObject
         .getOrDefault(MAIL_CREATOR_PROPERTY, flow.getMailCreator());
 
@@ -125,6 +136,9 @@ public class Flow {
     flow.addSuccessEmails(successEmails);
     flow.setMailCreator(mailCreator);
 
+    if (failureAction != null) {
+      flow.setFailureAction(failureAction);
+    }
     // Loading projects
     final Map<String, FlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
@@ -138,6 +152,10 @@ public class Flow {
     flow.addAllEdges(edges);
 
     return flow;
+  }
+
+  public String getFailureActionStr() {
+    return this.failureActionString;
   }
 
   private static Map<String, Node> loadNodesFromObjects(final List<Object> nodeList) {
@@ -252,6 +270,14 @@ public class Flow {
 
   public void addFailureEmails(final Collection<String> emails) {
     this.failureEmail.addAll(emails);
+  }
+
+  public void setFailureAction(final FailureAction val) {
+    this.failureAction = val;
+  }
+
+  public FailureAction getFailureAction() {
+    return this.failureAction;
   }
 
   public int getNumLevels() {
@@ -396,6 +422,14 @@ public class Flow {
       flowObj.put(METADATA_PROPERTY, this.metadata);
     }
 
+    if (this.failureAction != null) {
+      flowObj.put(FAILURE_ACTION_PROPERTY, this.failureAction);
+    }
+
+    if (this.failureActionString != null) {
+      flowObj.put(FAILURE_ACTION_STR_PROPERTY, this.failureActionString);
+    }
+
     return flowObj;
   }
 
@@ -514,5 +548,9 @@ public class Flow {
 
   public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
     this.flowLockErrorMessage = flowLockErrorMessage;
+  }
+
+  public void setFailureActionStr(final String str) {
+    this.failureActionString = str;
   }
 }
