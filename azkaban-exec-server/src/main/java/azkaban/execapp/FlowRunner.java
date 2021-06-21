@@ -53,7 +53,6 @@ import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.imagemgmt.version.VersionInfo;
-import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
@@ -66,7 +65,6 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.spi.ExecutorType;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
@@ -360,15 +358,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   private boolean isPollDispatchMethodEnabled() {
-    return DispatchMethod.isPollMethodEnabled(azkabanProps
+    return DispatchMethod.isPollMethodEnabled(this.azkabanProps
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()));
   }
 
   private boolean isContainerizedDispatchMethodEnabled() {
-    return DispatchMethod.isContainerizedMethodEnabled(azkabanProps
-            .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
-                    DispatchMethod.PUSH.name()));
+    return DispatchMethod.isContainerizedMethodEnabled(this.azkabanProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   private void reportFlowFinishedMetrics() {
@@ -1372,19 +1370,18 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     long maxStartTime = -1;
     while (!queue.isEmpty()) {
       final ExecutableNode node = queue.poll();
-      final Status oldStatus = node.getStatus();
+      final Status initStatus = node.getStatus();
       maxStartTime = Math.max(node.getStartTime(), maxStartTime);
-
       final long currentTime = System.currentTimeMillis();
-      if (node.getStatus() == Status.SUCCEEDED) {
+      if (initStatus == Status.SUCCEEDED) {
         // This is a candidate parent for restart
         nodesToRetry.add(node);
         continue;
-      } else if (node.getStatus() == Status.RUNNING) {
+      } else if (initStatus == Status.RUNNING) {
         continue;
-      } else if (node.getStatus() == Status.KILLING) {
+      } else if (initStatus == Status.KILLING) {
         continue;
-      } else if (node.getStatus() == Status.SKIPPED) {
+      } else if (initStatus == Status.SKIPPED || initStatus == Status.DISABLED) {
         node.setStatus(Status.DISABLED);
         node.setEndTime(-1);
         node.setStartTime(-1);
@@ -1392,13 +1389,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       } else if (node instanceof ExecutableFlowBase) {
         final ExecutableFlowBase base = (ExecutableFlowBase) node;
         switch (base.getStatus()) {
+          case READY:
+            // Node hasn't run yet, continue analyzing its IN nodes
+            break;
           case CANCELLED:
             node.setStatus(Status.READY);
             node.setEndTime(-1);
             node.setStartTime(-1);
             node.setUpdateTime(currentTime);
-            // Break out of the switch. We'll reset the flow just like a normal
-            // node
+            // Break out of the switch. We'll reset the flow just like a normal node.
             break;
           case KILLED:
           case FAILED:
@@ -1406,27 +1405,24 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
             resetFailedState(base, nodesToRetry);
             continue;
           default:
-            // Continue the while loop. If the job is in a finished state that's
-            // not
-            // a failure, we don't want to reset the job.
+            // Continue the while loop. If the job is in a finished state that's not a failure, we
+            // don't want to reset the job.
             continue;
         }
-      } else if (node.getStatus() == Status.CANCELLED) {
+      } else if (initStatus == Status.CANCELLED) {
         // Not a flow, but killed
         node.setStatus(Status.READY);
         node.setStartTime(-1);
         node.setEndTime(-1);
         node.setUpdateTime(currentTime);
-      } else if (node.getStatus() == Status.FAILED
-          || node.getStatus() == Status.KILLED) {
+      } else if (initStatus == Status.FAILED || initStatus == Status.KILLED) {
         node.resetForRetry();
         nodesToRetry.add(node);
       }
 
-      if (!(node instanceof ExecutableFlowBase)
-          && node.getStatus() != oldStatus) {
+      if (!(node instanceof ExecutableFlowBase) && node.getStatus() != initStatus) {
         this.logger.info("Resetting job '" + node.getNestedId() + "' from "
-            + oldStatus + " to " + node.getStatus());
+            + initStatus + " to " + node.getStatus());
       }
 
       for (final String inId : node.getInNodes()) {
@@ -1438,8 +1434,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     // At this point, the following code will reset the flow
     final Status oldFlowState = flow.getStatus();
     if (maxStartTime == -1) {
-      // Nothing has run inside the flow, so we assume the flow hasn't even
-      // started running yet.
+      // Nothing has run inside the flow, so we assume the flow hasn't even started running yet.
       flow.setStatus(Status.READY);
     } else {
       flow.setStatus(Status.RUNNING);
@@ -1448,16 +1443,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // start node has not.
       for (final String id : flow.getStartNodes()) {
         final ExecutableNode node = flow.getExecutableNode(id);
-        if (node.getStatus() == Status.READY
-            || node.getStatus() == Status.DISABLED) {
+        if (node.getStatus() == Status.READY || node.getStatus() == Status.DISABLED) {
           nodesToRetry.add(node);
         }
       }
     }
     flow.setUpdateTime(System.currentTimeMillis());
     flow.setEndTime(-1);
-    this.logger.info("Resetting flow '" + flow.getNestedId() + "' from "
-        + oldFlowState + " to " + flow.getStatus());
+    this.logger.info("Resetting flow '" + flow.getNestedId() + "' from " + oldFlowState + " to "
+        + flow.getStatus());
   }
 
   private void interrupt() {
@@ -1676,11 +1670,11 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.START_TIME, String.valueOf(node.getStartTime()));
       metaData.put(EventReporterConstants.JOB_TYPE, String.valueOf(node.getType()));
       // Add version of the job type
-      if(executableFlow.getVersionSet() != null){ // Flow version set is set when flow is
+      if(executableFlow.getVersionSet() != null) { // Flow version set is set when flow is
         // executed in a container, which also indicates executor type is Kubernetes.
-        VersionInfo versionInfo =
+        final VersionInfo versionInfo =
             executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
-        if(versionInfo != null){
+        if (versionInfo != null) {
           // Add job type image version number
           metaData.put(EventReporterConstants.VERSION, versionInfo.getVersion());
         }
