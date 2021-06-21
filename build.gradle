@@ -54,7 +54,7 @@ allprojects {
     mavenLocal()
 //  need this for rest.li/pegasus 28.* artifacts until they are in Maven Central:
     maven {
-      url 'https://linkedin.bintray.com/maven'
+      url 'https://linkedin.jfrog.io/artifactory/open-source/'
     }
   }
 }
