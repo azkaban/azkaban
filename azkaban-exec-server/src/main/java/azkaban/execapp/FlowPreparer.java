@@ -121,9 +121,10 @@ public class FlowPreparer extends AbstractFlowPreparer {
           (flowPrepCompletionTime - criticalSectionStartTime) / 1000,
           flow.getExecutionId(), execDir.getPath());
     } catch (final Exception ex) {
-      FileIOUtils.deleteDirectorySilently(tempDir);
       LOGGER.error("Error in preparing flow execution {}", flow.getExecutionId(), ex);
       throw new ExecutorManagerException(ex);
+    } finally {
+      FileIOUtils.deleteDirectorySilently(tempDir);
     }
   }
 
@@ -163,11 +164,10 @@ public class FlowPreparer extends AbstractFlowPreparer {
     return String.valueOf(proj.getProjectId()) + "." + String.valueOf(proj.getVersion());
   }
 
-  private File createTempDir(final ProjectDirectoryMetadata proj) {
+  private File createTempDir(final ProjectDirectoryMetadata proj) throws IOException {
     final String projectDir = generateProjectDirName(proj);
-    final File tempDir = new File(this.projectCacheDir,
-        "_temp." + projectDir + "." + System.currentTimeMillis());
-    tempDir.mkdirs();
+    final File tempDir = Files.createTempDirectory(
+        this.projectCacheDir.toPath(), "_temp." + projectDir + ".").toFile();
     return tempDir;
   }
 
