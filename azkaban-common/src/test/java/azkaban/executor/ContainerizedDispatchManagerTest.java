@@ -37,6 +37,8 @@ import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.metrics.MetricsManager;
 import azkaban.spi.EventType;
 import azkaban.user.User;
@@ -86,7 +88,8 @@ public class ContainerizedDispatchManagerTest {
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
-  private EventListener eventListener = new DummyEventListener();
+  private EventListener eventListener;
+  private ContainerizationMetrics containerizationMetrics;
 
   @Before
   public void setup() throws Exception {
@@ -147,6 +150,9 @@ public class ContainerizedDispatchManagerTest {
             flow1);
     when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
         executionReferencePair));
+
+    this.eventListener = new DummyEventListener();
+    this.containerizationMetrics = new DummyContainerizationMetricsImpl();
   }
 
   @Test
@@ -399,7 +405,8 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager =
         new ContainerizedDispatchManager(this.props, this.loader,
         this.commonMetrics,
-        this.apiGateway, this.containerizedImpl, null, null, this.eventListener);
+        this.apiGateway, this.containerizedImpl, null, null, this.eventListener,
+            this.containerizationMetrics);
     this.containerizedDispatchManager.start();
   }
 
@@ -481,7 +488,8 @@ public class ContainerizedDispatchManagerTest {
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
         new ContainerizedDispatchManager(containerEnabledProps, this.loader,
-            this.commonMetrics, apiGateway, this.containerizedImpl,null, null, new DummyEventListener());
+            this.commonMetrics, apiGateway, this.containerizedImpl,null, null, this.eventListener,
+            this.containerizationMetrics);
     dispatchManager.start();
     return dispatchManager;
   }

@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
-import azkaban.Constants.EventReporterConstants;
 import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
@@ -64,7 +63,8 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
-import azkaban.spi.ExecutorType;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -116,6 +116,7 @@ public class KubernetesContainerizedImplTest {
   private static Converter<ImageRampupPlanRequestDTO, ImageRampupPlanResponseDTO,
       ImageRampupPlan> imageRampupPlanConverter;
   private static FlowStatusChangeEventListener flowStatusChangeEventListener;
+  private static ContainerizationMetrics containerizationMetrics;
 
   private static final Logger log = LoggerFactory.getLogger(KubernetesContainerizedImplTest.class);
 
@@ -150,9 +151,10 @@ public class KubernetesContainerizedImplTest {
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(getInjector(this.props));
     this.flowStatusChangeEventListener = new FlowStatusChangeEventListener(this.props);
+    this.containerizationMetrics = new DummyContainerizationMetricsImpl();
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
         this.executorLoader, this.loader, this.imageRampupManager, null,
-        flowStatusChangeEventListener);
+        flowStatusChangeEventListener, containerizationMetrics);
   }
 
   /**

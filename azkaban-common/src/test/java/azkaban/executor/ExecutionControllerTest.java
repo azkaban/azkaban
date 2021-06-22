@@ -30,6 +30,8 @@ import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.metrics.MetricsManager;
 import azkaban.spi.EventType;
 import azkaban.user.User;
@@ -77,6 +79,7 @@ public class ExecutionControllerTest {
   private ExecutionReference ref2;
   private ExecutionReference ref3;
   private EventListener eventListener = new DummyEventListener();
+  private ContainerizationMetrics containerizationMetrics= new DummyContainerizationMetricsImpl();
 
   @Before
   public void setup() throws Exception {
@@ -88,7 +91,7 @@ public class ExecutionControllerTest {
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
     this.controller = new ExecutionController(this.props, this.loader, this.commonMetrics,
-        this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener);
+        this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener, this.containerizationMetrics);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);

@@ -24,6 +24,7 @@ import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
 import azkaban.flow.FlowUtils;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
 import azkaban.spi.EventType;
@@ -64,12 +65,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   protected final EventListener eventListener;
+  protected final ContainerizationMetrics containerizationMetrics;
 
   protected AbstractExecutorManagerAdapter(final Props azkProps,
       final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
-      final AlerterHolder alerterHolder, final EventListener eventListener) {
+      final AlerterHolder alerterHolder,
+      final EventListener eventListener,
+      final ContainerizationMetrics containerizationMetrics) {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
     this.commonMetrics = commonMetrics;
@@ -78,6 +82,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
     this.eventListener = eventListener;
+    this.containerizationMetrics = containerizationMetrics;
     this.addListener(eventListener);
   }
 
@@ -282,10 +287,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
       String message = uploadExecutableFlow(exflow, userId, flowId, "");
 
-      // Emit ready flow event
+      // Emit ready/preparing flow event
       this.fireEventListeners(Event.create(exflow,
           EventType.FLOW_STATUS_CHANGED, new EventData(exflow)));
 
+      if (exflow.getDispatchMethod()==DispatchMethod.CONTAINERIZED) {
+        this.containerizationMetrics.markFlowSubmitToContainer();
+      } else {
+        this.containerizationMetrics.markFlowSubmitToExecutor();
+      }
       this.commonMetrics.markSubmitFlowSuccess();
       message += "Execution queued successfully with exec id " + exflow.getExecutionId();
       return message;

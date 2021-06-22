@@ -18,6 +18,7 @@ package azkaban.executor;
 import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import java.lang.Thread.State;
@@ -49,8 +50,10 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   public ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
-  ExecutorHealthChecker executorHealthChecker, EventListener eventListener) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener);
+  ExecutorHealthChecker executorHealthChecker, final EventListener eventListener,
+      final ContainerizationMetrics containerizationMetrics) {
+    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
+        containerizationMetrics);
     this.executorHealthChecker = executorHealthChecker;
   }
 

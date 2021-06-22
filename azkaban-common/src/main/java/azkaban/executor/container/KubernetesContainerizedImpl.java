@@ -45,6 +45,7 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -145,6 +146,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String secretMountpath;
   private final String podTemplatePath;
   private final EventListener eventListener;
+  private final ContainerizationMetrics containerizationMetrics;
 
 
   private static final Logger logger = LoggerFactory
@@ -155,7 +157,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final ExecutorLoader executorLoader,
       final VersionSetLoader versionSetLoader,
       final ImageRampupManager imageRampupManager,
-      final KubernetesWatch kubernetesWatch, EventListener eventListener)
+      final KubernetesWatch kubernetesWatch,
+      final EventListener eventListener,
+      final ContainerizationMetrics containerizationMetrics)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
@@ -163,6 +167,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.imageRampupManager = imageRampupManager;
     this.kubernetesWatch = kubernetesWatch;
     this.eventListener = eventListener;
+    this.containerizationMetrics = containerizationMetrics;
     this.addListener(this.eventListener);
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
@@ -736,6 +741,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     flow.setStatus(Status.PREPARING);
     flow.setVersionSet(versionSet);
     this.executorLoader.updateExecutableFlow(flow);
+    // Record time taken to dispatch flow to a container
+    if (flow.getSubmitTime()>0) {
+      final long containerDispatchDuration = System.currentTimeMillis() - flow.getSubmitTime();
+      this.containerizationMetrics.addTimeToDispatch(containerDispatchDuration);
+    }
     // Emit preparing flow event with version set
     this.fireEventListeners(Event.create(flow, EventType.FLOW_STATUS_CHANGED, new EventData(flow)));
   }
