@@ -20,14 +20,12 @@ package azkaban.execapp;
 import azkaban.execapp.metric.ProjectCacheHitRatio;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.project.ProjectFileHandler;
 import azkaban.spi.Dependency;
-import azkaban.storage.ProjectStorageManager;
 import azkaban.test.executions.ThinArchiveTestUtils;
 import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
-import azkaban.utils.Utils;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -117,7 +115,7 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
   }
 
   @Test
-  public void testSetupFlowByMultipleThreads() {
+  public void testSetupFlowByMultipleThreads() throws IOException {
     final int threadNum = 4;
 
     final ExecutableFlow[] executableFlows = new ExecutableFlow[]{
@@ -148,6 +146,9 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
       assertTrue(execDir.exists());
       assertTrue(new File(execDir, SAMPLE_FLOW_01).exists());
     }
+
+    assertFalse("Temp files are left behind!",
+        Files.newDirectoryStream(projectsDir.toPath(), "_temp.*").iterator().hasNext());
   }
 
   @Test

@@ -201,7 +201,7 @@ public class FileIOUtils {
   /**
    * A thin wrapper for File.getCanonicalPath() that doesn't throw a checked exception
    *
-   * @param file input file
+   * @param f input file
    * @return String canonical path of the file
    */
   public static String getCanonicalPath(final File f) {
