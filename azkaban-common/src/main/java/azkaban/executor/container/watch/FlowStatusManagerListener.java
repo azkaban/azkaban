@@ -96,23 +96,14 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    * contain an event for all running flows. This could happen, for example, during webserver
    * restarts.
    * @param event pod watch event
+   * @returns true if transition is valid else false
    */
-  private void validateTransition(AzPodStatusMetadata event) {
-    AzPodStatus currentStatus = getCurrentAzPodStatus(event.getPodName());
+  private boolean validateTransition(AzPodStatusMetadata event, AzPodStatus currentStatus) {
     logger.debug(format("Transition requested from %s -> %s, for pod %s",
         currentStatus,
         event.getAzPodStatus(),
         event.getPodName()));
-
-    if (!TransitionValidator.isTransitionValid(currentStatus, event.getAzPodStatus())) {
-      IllegalStateException ise = new IllegalStateException(
-          format("Pod status transition is not supported %s -> %s, for pod %s",
-              currentStatus,
-              event.getAzPodStatus(),
-              event.getPodName()));
-      logger.error("Unsupported state transition.", ise);
-      throw ise;
-    }
+    return TransitionValidator.isTransitionValid(currentStatus, event.getAzPodStatus());
   }
 
   /**
@@ -130,7 +121,23 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     }
     long eventCount = flowContainerEventCount.incrementAndGet();
     logEventCacheStats(eventCount);
-    validateTransition(event);
+
+    AzPodStatus currentStatus = getCurrentAzPodStatus(event.getPodName());
+    boolean isTransitionValid = validateTransition(event, currentStatus);
+    if (!isTransitionValid) {
+      IllegalStateException transitionException = new IllegalStateException(
+          format("Pod status transition is not supported %s -> %s, for pod %s",
+              currentStatus,
+              event.getAzPodStatus(),
+              event.getPodName()));
+      logger.error("Unsupported state transition.", transitionException);
+      try {
+        finalizeFlowAndDeleteContainer(event);
+      } catch (Exception deletionException) {
+        transitionException.addSuppressed(deletionException);
+      }
+      throw transitionException;
+    }
   }
 
   /**
@@ -234,8 +241,22 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
       final String reason = "Flow Pod execution was completed.";
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null);
+      // Log event for cases where the flow was not already in a final state
+      logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }
     return Optional.of(originalStatus);
+  }
+
+  private void logWatchEvent(AzPodStatusMetadata event, String message) {
+    try {
+      logger.warn(new StringBuffer(message)
+          .append(System.lineSeparator())
+          .append(event.getPodWatchEvent().object.toString())
+          .toString());
+    } catch (Exception e) {
+      logger.error("Unexpected exception while logging watch event for pod " + event.getPodName()
+          , e);
+    }
   }
 
   /**
@@ -261,6 +282,21 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   }
 
   /**
+   * Finalize the flow for the given event and delete its container.
+   *
+   * @param event
+   */
+  private void finalizeFlowAndDeleteContainer(AzPodStatusMetadata event) {
+    Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event);
+    if (originalFlowStatus.isPresent() &&
+        !Status.isStatusFinished(originalFlowStatus.get())) {
+      logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
+          event.getPodName(), originalFlowStatus.get()));
+    }
+    deleteFlowContainer(event);
+  }
+
+  /**
    * Common processing for all the final states of the flow-pod. This is responsible
    * for deleting the flow container as well as finalizing the Flow status in the Db in case
    * it's not already in a final state.
@@ -273,13 +309,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     boolean skipUpdates = !isUpdatedPodStatusDistinct(event);
     postProcess(event);
     if (!skipUpdates) {
-      Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event);
-      if (originalFlowStatus.isPresent() &&
-          !Status.isStatusFinished(originalFlowStatus.get())) {
-        logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
-            event.getPodName(), originalFlowStatus));
-      }
-      deleteFlowContainer(event);
+      finalizeFlowAndDeleteContainer(event);
     }
   }
 
