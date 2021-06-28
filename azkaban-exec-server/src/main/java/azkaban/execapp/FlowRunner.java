@@ -770,8 +770,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   /**
-   * Recursively propagate status to parent flow. Alert on first error of the flow in new AZ
-   * dispatching design.
+   * Recursively propagate status to parent flow. Alert on first error of the flow in new AZ dispatching design.
    *
    * @param base   the base flow
    * @param status the status to be propagated
@@ -952,7 +951,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   private Props applyRuntimeProperties(final ExecutableNode node,
       final Map<String, Map<String, String>> runtimeProperties, final Props props) {
     Props propsWithOverides = props;
-    if (node.getParentFlow() != null) {
+    if (node.getParentFlow() != null && !parentIsOnTheSameLevel(node)) {
       // apply recursively top->down
       propsWithOverides = applyRuntimeProperties(node.getParentFlow(), runtimeProperties, props);
     }
@@ -964,8 +963,14 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   /**
-   * @param props This method is to put in any job properties customization before feeding to the
-   *              job.
+   * Detects if the "parent" is actually the root job node.
+   */
+  private boolean parentIsOnTheSameLevel(final ExecutableNode node) {
+    return node.getParentFlow() instanceof ExecutableFlow;
+  }
+
+  /**
+   * @param props This method is to put in any job properties customization before feeding to the job.
    */
   private void customizeJobProperties(final Props props) {
     final boolean memoryCheck = this.flow.getExecutionOptions().getMemoryCheck();
@@ -1101,8 +1106,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   /**
-   * Determines what the state of the next node should be. Returns null if the node should not be
-   * run.
+   * Determines what the state of the next node should be. Returns null if the node should not be run.
    */
   public Status getImpliedStatus(final ExecutableNode node) {
     // If it's running or finished with 'SUCCEEDED', than don't even
