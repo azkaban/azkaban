@@ -137,7 +137,9 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         "innerflow:job4", ImmutableMap.of(
             "runtime1", "runtime1-job4",
             "props4", "innerflow-job4-val-4",
-            "props5", "innerflow-job4-val-5")
+            "props5", "innerflow-job4-val-5"),
+        // job3 is a job, but it's also the root node of this flow
+        "job3", ImmutableMap.of("prop-job3", "should-be-set-only-for-job3")
     ));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
@@ -228,6 +230,10 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertNull(job3Props.get("props10"));
     Assert.assertEquals("runtime1-ROOT", job3Props.get("runtime1"));
     Assert.assertEquals("runtime2-ROOT", job3Props.get("runtime2"));
+
+    Assert.assertEquals("should-be-set-only-for-job3", job3Props.get("prop-job3"));
+    Assert.assertNull(job2Props.get("prop-job3"));
+    Assert.assertNull(job4Props.get("prop-job3"));
   }
 
   private void assertPropertiesWithHighestPrecedenceToRuntimePropsEnabled() throws Exception {
@@ -252,7 +258,9 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
         // overrides by nested job id: this is the most specific, so always wins
         "innerflow:job4", ImmutableMap.of(
             "props4", "innerflow-job4-val-4",
-            "props5", "innerflow-job4-val-5")
+            "props5", "innerflow-job4-val-5"),
+        // job3 is a job, but it's also the root node of this flow
+        "job3", ImmutableMap.of("prop-job3", "should-be-set-only-for-job3")
     ));
     final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     createNodeMap(runner.getExecutableFlow(), nodeMap);
@@ -333,6 +341,10 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
     Assert.assertEquals("shared2", job3Props.get("props2"));
     Assert.assertEquals("moo4", job3Props.get("props4"));
     Assert.assertNull(job3Props.get("props10"));
+
+    Assert.assertEquals("should-be-set-only-for-job3", job3Props.get("prop-job3"));
+    Assert.assertNull(job2Props.get("prop-job3"));
+    Assert.assertNull(job4Props.get("prop-job3"));
   }
 
   private void createNodeMap(final ExecutableFlowBase flow,
