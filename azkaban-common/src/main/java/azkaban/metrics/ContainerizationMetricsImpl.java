@@ -105,17 +105,11 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
 
   @Override
-  public void addTimeToDispatch(final long time) {
-    //TODO haqin: implement metric that records time taken to dispatch flow to a container
-  }
+  public void addTimeToDispatch(final long time) { timeToDispatch.update(time); }
 
   @Override
-  public void markFlowSubmitToExecutor() {
-    //TODO haqin: implement metric that records number of flows dispatched to bare metal executor
-  }
+  public void markFlowSubmitToExecutor() { flowSubmitToExecutor.mark(); }
 
   @Override
-  public void markFlowSubmitToContainer() {
-    //TODO haqin: implement metric that records number of flows dispatched to a container
-  }
+  public void markFlowSubmitToContainer() { flowSubmitToContainer.mark(); }
 }
