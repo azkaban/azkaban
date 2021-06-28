@@ -33,6 +33,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.spi.EventType;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -78,8 +79,11 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl,
       final AlerterHolder alerterHolder,
-      final ContainerizedWatch containerizedWatch, final EventListener eventListener) throws ExecutorManagerException {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener);
+      final ContainerizedWatch containerizedWatch,
+      final EventListener eventListener,
+      final ContainerizationMetrics containerizationMetrics) throws ExecutorManagerException {
+    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
+        containerizationMetrics);
     rateLimiter =
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
