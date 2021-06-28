@@ -770,7 +770,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   /**
-   * Recursively propagate status to parent flow. Alert on first error of the flow in new AZ dispatching design.
+   * Recursively propagate status to parent flow. Alert on first error of the flow in new AZ
+   * dispatching design.
    *
    * @param base   the base flow
    * @param status the status to be propagated
@@ -970,7 +971,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   /**
-   * @param props This method is to put in any job properties customization before feeding to the job.
+   * @param props This method is to put in any job properties customization before feeding to the
+   *              job.
    */
   private void customizeJobProperties(final Props props) {
     final boolean memoryCheck = this.flow.getExecutionOptions().getMemoryCheck();
@@ -1106,7 +1108,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   /**
-   * Determines what the state of the next node should be. Returns null if the node should not be run.
+   * Determines what the state of the next node should be. Returns null if the node should not be
+   * run.
    */
   public Status getImpliedStatus(final ExecutableNode node) {
     // If it's running or finished with 'SUCCEEDED', than don't even
@@ -1715,13 +1718,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       if (executableFlow.getVersionSet() != null) { // Flow version set is set when flow is
         // executed in a container, which also indicates executor type is Kubernetes.
         final VersionInfo versionInfo =
-            executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
+            executableFlow.getVersionSet().getImageToVersionMap()
+                .getOrDefault(node.getType(), null);
         if (versionInfo != null) {
           // Add job type image version number
           metaData.put(EventReporterConstants.VERSION, versionInfo.getVersion());
         }
       }
-      if (executableFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
+      if (executableFlow.getDispatchMethod()
+          == DispatchMethod.CONTAINERIZED) { // Determine executor type
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
       } else {
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
