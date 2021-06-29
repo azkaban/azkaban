@@ -93,8 +93,10 @@ public class KubernetesWatchTest {
   private static final String DEFAULT_CLUSTER = "cluster1";
   private static String PODNAME_WITH_SUCCESS = "flow-pod-cluster1-280";
   private static String PODNAME_WITH_INIT_FAILURE = "flow-pod-cluster1-740";
+  private static String PODNAME_WITH_INVALID_TRANSITIONS = "flow-pod-cluster1-999";
   private static int EXECUTION_ID_WITH_SUCCEESS = 280;
   private static int EXECUTION_ID_WITH_INIT_FAILURE = 740;
+  private static int EXECUTION_ID_WITH_INVALID_TRANSITIONS = 999;
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
   private static final String DEFAULT_FLOW_NAME = "exec1";
@@ -320,15 +322,44 @@ public class KubernetesWatchTest {
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
-    //metrics. In total there are 10 events, of which Scheduled and InitContainersRunning are
+    //metrics. In total there are 15 events, of which some Scheduled and InitContainersRunning are
     //duplicated event statuses.
-    assertThat(recordHandlerListener.getPodRequestedCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodScheduledCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodInitContainersRunningCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodAppContainersStartingCounter()).isEqualTo(1);
+    assertThat(recordHandlerListener.getPodRequestedCounter()).isEqualTo(2);
+    assertThat(recordHandlerListener.getPodScheduledCounter()).isEqualTo(3);
+    assertThat(recordHandlerListener.getPodInitContainersRunningCounter()).isEqualTo(2);
+    assertThat(recordHandlerListener.getPodAppContainersStartingCounter()).isEqualTo(2);
     assertThat(recordHandlerListener.getPodReadyCounter()).isEqualTo(1);
     assertThat(recordHandlerListener.getPodCompletedCounter()).isEqualTo(1);
     assertThat(recordHandlerListener.getPodInitFailureCounter()).isEqualTo(1);
+  }
+
+  // Validate that for invalid pod transitions corresponding flows are finalized and containers
+  // are deleted.
+  @Test
+  public void testFlowManagerListenerInvalidTransition() throws Exception {
+    // Setup a FlowUpdatingListener
+    Props azkProps = new Props();
+    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    statusDriver.registerAzPodStatusListener(updatingListener);
+
+    // Mocked flow in RUNNING state.
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INVALID_TRANSITIONS, Status.RUNNING);
+    when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INVALID_TRANSITIONS))
+        .thenReturn(flow1);
+
+    // Process events through the registered listeners.
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        1);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    // Verify that the previously RUNNING flow has been finalized to a failure state.
+    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
+    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+
+    // Verify the Pod deletion API is invoked.
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
   }
 
   @Test
