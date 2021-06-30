@@ -312,7 +312,6 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testSubmitFlowsExceedingMaxConcurrentRuns() throws Exception {
     initializeContainerizedDispatchImpl();
-    this.containerizedDispatchManager.disableQueueProcessorThread();
     this.props.put(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST, "exectest1,"
         + "exec2,3");
     submitFlow(this.flow2, this.ref2);
@@ -326,7 +325,6 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testSubmitFlowsConcurrentWhitelist() throws Exception {
     initializeContainerizedDispatchImpl();
-    this.containerizedDispatchManager.disableQueueProcessorThread();
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     submitFlow(this.flow2, this.ref2);
     submitFlow(this.flow3, this.ref3);
@@ -369,6 +367,7 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testDisablingQueueProcessThread() throws Exception {
     initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.start();
     Assert.assertEquals(this.containerizedDispatchManager.isQueueProcessorThreadActive(), true);
     this.containerizedDispatchManager.disableQueueProcessorThread();
     Assert.assertEquals(this.containerizedDispatchManager.isQueueProcessorThreadActive(), false);
@@ -379,6 +378,7 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testEnablingQueueProcessThread() throws Exception {
     initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.start();
     this.containerizedDispatchManager.disableQueueProcessorThread();
     Assert.assertEquals(this.containerizedDispatchManager.isQueueProcessorThreadActive(), false);
     this.containerizedDispatchManager.enableQueueProcessorThread();
@@ -407,7 +407,6 @@ public class ContainerizedDispatchManagerTest {
         this.commonMetrics,
         this.apiGateway, this.containerizedImpl, null, null, this.eventListener,
             this.containerizationMetrics);
-    this.containerizedDispatchManager.start();
   }
 
   @Test
