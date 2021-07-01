@@ -386,16 +386,20 @@ public class JobTypeManager {
       }
 
       // inject cluster jars and native libraries into jobs through properties
-      // User's job props should take precedence over cluster props
-      Props finalProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
-      Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(finalProps);
-      finalProps.putAll(jobProps);
+      Props clusterSpecificProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
+      for (final String k : clusterSpecificProps.getKeySet()) {
+        // User's job props should take precedence over cluster props
+        if (!jobProps.containsKey(k)) {
+          jobProps.put(k, clusterSpecificProps.get(k));
+        }
+      }
+      Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(clusterSpecificProps);
       // CAUTION: ADD ROUTER-SPECIFIC PROPERTIES THAT ARE CRITICAL FOR JOB EXECUTION AS THE LAST
       // STEP TO STOP THEM FROM BEING ACCIDENTALLY OVERRIDDEN BY JOB PROPERTIES
-      finalProps.putAll(nonOverriddableClusterProps);
-      finalProps = PropsUtils.resolveProps(finalProps);
+      jobProps.putAll(nonOverriddableClusterProps);
+      jobProps = PropsUtils.resolveProps(jobProps);
 
-      return new JobParams(jobTypeClass, finalProps, pluginSet.getPluginPrivateProps(jobType),
+      return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
           pluginLoadProps, jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
