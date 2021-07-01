@@ -31,6 +31,7 @@ import azkaban.imagemgmt.utils.ValidatorUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -58,6 +59,18 @@ public class ImageTypeServiceImpl implements ImageTypeService {
       @Named(IMAGE_TYPE) final Converter converter) {
     this.imageTypeDao = imageTypeDao;
     this.converter = converter;
+  }
+
+  @Override
+  public ImageTypeDTO findImageTypeWithOwnersByName(String imageTypeName) throws ImageMgmtException {
+    Optional<ImageType> imageType =
+        this.imageTypeDao.getImageTypeWithOwnershipsByName(imageTypeName);
+    if (imageType.isPresent()) {
+      return this.converter.convertToApiResponseDTO(imageType.get());
+    } else {
+      log.info("No Image Type Exists for ImageType name " + imageTypeName);
+      throw new ImageMgmtException("No Image Type Exists for ImageType name " + imageTypeName);
+    }
   }
 
   @Override

@@ -18,8 +18,10 @@ package azkaban.imagemgmt.servlets;
 import azkaban.imagemgmt.dto.ImageTypeDTO;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.exception.ImageMgmtValidationException;
+import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
@@ -36,6 +38,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,16 +46,24 @@ import org.slf4j.LoggerFactory;
 /**
  * This servlet exposes the REST APIs such as create, get etc. for image type. Below are the
  * supported APIs. Create Image Type API: POST /imageTypes?session.id=? --data @payload.json Get
- * Image Type API: GET /imageTypes?session.id=?&imageType=? GET /imageTypes/{id}?session.id=?
+ * Image Type API: GET /imageTypes?&imageType=? GET /imageTypes/{id}
+ * GET /imageTypes/{imageType} GET /imageTypes/{imageType}?owner=?
  */
 public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
   private static final String GET_IMAGE_TYPE_URI = "/imageTypes";
   private static final String IMAGE_TYPE_ID_KEY = "id";
+  private static final Integer INDEX_AFTER_LEADING_SLASH = 1;
+  private static final CharSequence PATH_SEPARATOR = "/";
+  private static final String FORBIDDEN_USER = "The user does not have appropriate permissions to"
+      + " access this endpoint";
+  private static final String PATH_NOT_SUPPORTED =
+      "The path provided is not supported by this API. Please check the documentation";
   private static final UriTemplate IMAGE_TYPE_WITH_ID_URI_TEMPLATE = new UriTemplate(
       String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
   private ImageTypeService imageTypeService;
   private ConverterUtils converterUtils;
+  private PermissionManager permissionManager;
 
   private static final Logger log = LoggerFactory.getLogger(ImageTypeServlet.class);
 
@@ -66,6 +77,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.imageTypeService = server.getImageTypeService();
     this.converterUtils = server.getConverterUtils();
+    this.permissionManager = server.getPermissionManager();
   }
 
   @Override
@@ -74,10 +86,34 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       final Map<String, String> templateVariableToValue = new HashMap<>();
-      if (IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
+      ImageTypeDTO imageTypeDTO = null;
+      if(IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(),
+          templateVariableToValue)) {
+        if (StringUtils.isNotBlank(req.getPathInfo())) {
+          String imageTypeName = req.getPathInfo().substring(INDEX_AFTER_LEADING_SLASH);
+          if (imageTypeName.contains(PATH_SEPARATOR)) {
+            throw new ImageMgmtInvalidInputException(PATH_NOT_SUPPORTED);
+          }
+          if(!hasImageManagementPermission(imageTypeName, session.getUser(), Type.GET)){
+            throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, FORBIDDEN_USER);
+          }
+          if (hasParam(req, "owner")) {
+            final String proxyUser = getParam(req, "owner");
+            final boolean hasPermissions = this.permissionManager.hasPermission(imageTypeName,
+                proxyUser, Type.GET);
+              if(!hasPermissions) {
+                throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN,FORBIDDEN_USER);
+              }
+          }
+          imageTypeDTO = this.imageTypeService.findImageTypeWithOwnersByName(imageTypeName);
+          sendResponse(resp, HttpServletResponse.SC_OK, imageTypeDTO);
+        }
+      } else if (IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(),
+          templateVariableToValue)) {
         // TODO: Implementation will be provided in the future PR
-      } else if (GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
-        // TODO: Implementation will be provided in the future PR
+      } else {
+        log.info(PATH_NOT_SUPPORTED);
+        throw new ImageMgmtInvalidInputException(PATH_NOT_SUPPORTED);
       }
     } catch (final Exception e) {
       log.error("Content is likely not present " + e);

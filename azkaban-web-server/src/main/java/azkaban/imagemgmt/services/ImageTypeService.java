@@ -27,6 +27,16 @@ import java.io.IOException;
 public interface ImageTypeService {
 
   /**
+   * Method for finding image type by name.
+   *
+   * @param imageTypeName - String of the ImageType to find
+   * @return ImageTypeDTO - ImageTypeDTO for the corresponding imageTypeName
+   * @throws ImageMgmtException
+   */
+
+  public ImageTypeDTO findImageTypeWithOwnersByName(String imageTypeName) throws ImageMgmtException;
+
+  /**
    * Method for processing and delegation of image type creation/registration.
    *
    * @param imageType - DTO which encaptulates  and transfers the create request details
