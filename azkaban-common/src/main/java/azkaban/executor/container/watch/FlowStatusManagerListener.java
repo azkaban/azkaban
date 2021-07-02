@@ -98,7 +98,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    * @param event pod watch event
    * @returns true if transition is valid else false
    */
-  private boolean validateTransition(AzPodStatusMetadata event, AzPodStatus currentStatus) {
+  private boolean validateTransition(AzPodStatusMetadata event) {
+    final AzPodStatus currentStatus = getCurrentAzPodStatus(event.getPodName());
     logger.debug(format("Transition requested from %s -> %s, for pod %s",
         currentStatus,
         event.getAzPodStatus(),
@@ -122,12 +123,11 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     long eventCount = flowContainerEventCount.incrementAndGet();
     logEventCacheStats(eventCount);
 
-    AzPodStatus currentStatus = getCurrentAzPodStatus(event.getPodName());
-    boolean isTransitionValid = validateTransition(event, currentStatus);
+    boolean isTransitionValid = validateTransition(event);
     if (!isTransitionValid) {
       IllegalStateException transitionException = new IllegalStateException(
           format("Pod status transition is not supported %s -> %s, for pod %s",
-              currentStatus,
+              getCurrentAzPodStatus(event.getPodName()),
               event.getAzPodStatus(),
               event.getPodName()));
       logger.error("Unsupported state transition.", transitionException);
@@ -239,6 +239,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
           "Flow execution-id %d for pod %s does not have a final status in database and will be "
               + "finalized.", executionId, event.getPodName()));
       final String reason = "Flow Pod execution was completed.";
+      if (!validateTransition(event)) {
+        executableFlow.setStatus(Status.POD_FAILED);
+      }
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null);
       // Log event for cases where the flow was not already in a final state

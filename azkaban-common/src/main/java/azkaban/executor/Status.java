@@ -30,6 +30,8 @@ public enum Status {
   SUCCEEDED(50),
   KILLING(55),
   KILLED(60),
+  // POD_FAILED refers to a failed containerized flow due to pod failure
+  POD_FAILED(65),
   FAILED(70),
   FAILED_FINISHING(80),
   SKIPPED(90),
@@ -57,6 +59,7 @@ public enum Status {
 
   public static boolean isStatusFinished(final Status status) {
     switch (status) {
+      case POD_FAILED:
       case FAILED:
       case KILLED:
       case SUCCEEDED:
@@ -82,6 +85,7 @@ public enum Status {
 
   public static boolean isStatusFailed(final Status status) {
     switch (status) {
+      case POD_FAILED:
       case FAILED:
       case KILLED:
       case CANCELLED:

@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Class implements ContainerMetrics and emit metrics for containerized executions
  */
-//Todo haqin: setup timeToDispatch, flowSubmitToExecutor, flowSubmitToContainer, implement
-//corresponding methods
 public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
   private static final Logger logger = LoggerFactory.getLogger(ContainerizationMetricsImpl.class);
@@ -53,6 +51,9 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.podReady = this.metricsManager.addMeter("Pod-Ready-Meter");
     this.podInitFailure = this.metricsManager.addMeter("Pod-Init-Failure-Meter");
     this.podAppFailure = this.metricsManager.addMeter("Pod-App-Failure-Meter");
+    this.flowSubmitToContainer = this.metricsManager.addMeter("Flow-Submit-to-Container-Meter");
+    this.flowSubmitToExecutor = this.metricsManager.addMeter("Flow-Submit-to-Executor-Meter");
+    this.timeToDispatch = this.metricsManager.addHistogram("Time-to-Dispatch-Pod-Histogram");
   }
 
   @Override
