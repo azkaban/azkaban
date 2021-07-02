@@ -85,7 +85,6 @@ public enum Status {
 
   public static boolean isStatusFailed(final Status status) {
     switch (status) {
-      case POD_FAILED:
       case FAILED:
       case KILLED:
       case CANCELLED:
