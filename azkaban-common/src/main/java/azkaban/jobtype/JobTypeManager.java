@@ -17,6 +17,7 @@
 package azkaban.jobtype;
 
 import azkaban.Constants;
+import azkaban.Constants.PluginManager;
 import azkaban.cluster.Cluster;
 import azkaban.cluster.ClusterRouter;
 import azkaban.cluster.DisabledClusterRouter;
@@ -42,8 +43,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 public class JobTypeManager {
@@ -159,6 +162,38 @@ public class JobTypeManager {
 
     plugins.setCommonPluginJobProps(commonPluginJobProps);
     plugins.setCommonPluginLoadProps(commonPluginLoadProps);
+
+    if (commonPluginLoadProps
+        .containsKey(Constants.PluginManager.DEFAULT_PROXY_USERS_JOBTYPE_CLASSES)) {
+      plugins.addDefaultProxyUsersJobTypeClasses(commonPluginLoadProps
+          .getStringList(Constants.PluginManager.DEFAULT_PROXY_USERS_JOBTYPE_CLASSES));
+    }
+
+    if (commonPluginLoadProps.containsKey(PluginManager.DEFAULT_PROXY_USERS_FILTER)) {
+      plugins.addDefaultProxyUsersFilter(
+          commonPluginLoadProps.getStringList(PluginManager.DEFAULT_PROXY_USERS_FILTER));
+    }
+
+    // Loads the default-proxy-users mappings for all job types.
+    final File defaultProxyUsersFile = new File(jobPluginsDir,
+        Constants.PluginManager.DEFAULT_PROXY_USERS_FILE);
+    if (!defaultProxyUsersFile.exists()) {
+      LOGGER.info("Default proxy users file " + defaultProxyUsersFile
+          + " not found.");
+    } else {
+      LOGGER.info("Default proxy users file " + defaultProxyUsersFile
+          + " found. Attempting to load.");
+      try {
+        final Props defaultProxyUsers = new Props(null, defaultProxyUsersFile);
+        for (String jobType : defaultProxyUsers.getKeySet()) {
+          plugins.addDefaultProxyUser(jobType, defaultProxyUsers.getString(jobType,
+              StringUtils.EMPTY));
+        }
+      } catch (final IOException e) {
+        throw new JobTypeManagerException(
+            "Failed to load common plugin loader properties" + e.getCause());
+      }
+    }
 
     // Loading job types
     for (final File dir : jobPluginsDir.listFiles()) {
@@ -338,12 +373,12 @@ public class JobTypeManager {
     final JobTypePluginSet pluginSet = getJobTypePluginSet();
 
     try {
-      final String jobType = jobProps.getString("type");
-      if (jobType == null || jobType.length() == 0) {
-        /* throw an exception when job name is null or empty */
+      final Optional<String> jobTypeOptional = getJobType(jobProps);
+      if (!jobTypeOptional.isPresent()) {
         throw new JobExecutionException(String.format(
-            "The 'type' parameter for job[%s] is null or empty", jobProps));
+            "The 'type' parameter for job[%s] is missing or null or empty", jobProps));
       }
+      final String jobType = jobTypeOptional.get();
 
       logger.info("Building " + jobType + " job executor. ");
 
@@ -414,6 +449,15 @@ public class JobTypeManager {
     }
   }
 
+  /**
+   * @param jobProps Properties for an Azkaban Job
+   * @return The {@link Optional} jobType for the Azkaban Job.
+   */
+  public static Optional<String> getJobType(Props jobProps) {
+    final String jobType = jobProps.getString("type", StringUtils.EMPTY);
+    return StringUtils.isNotBlank(jobType) ? Optional.of(jobType) : Optional.empty();
+  }
+
   private static Props getClusterSpecificNonOverridableJobProps(final Props clusterSpecificJobProp) {
     final Props props = new Props();
     final String clusterClasspath =
@@ -452,7 +496,7 @@ public class JobTypeManager {
     return jobProps;
   }
 
-  private static Props getPluginLoadProps(JobTypePluginSet pluginSet, String jobType) {
+  static Props getPluginLoadProps(JobTypePluginSet pluginSet, String jobType) {
     Props pluginLoadProps = pluginSet.getPluginLoaderProps(jobType);
     if (pluginLoadProps != null) {
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
