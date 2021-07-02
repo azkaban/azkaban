@@ -78,6 +78,10 @@
     background-color: @flow-succeeded-color;
   }
 
+  &.POD_FAILED {
+    background-color: @flow-failed-color;
+  }
+
   &.FAILED {
     background-color: @flow-failed-color;
   }
@@ -142,6 +146,10 @@ td {
 
     &.SUCCEEDED {
       background-color: @flow-succeeded-color;
+    }
+
+    &.POD_FAILED {
+      background-color: @flow-failed-color;
     }
 
     &.FAILED {
@@ -209,6 +217,10 @@ td {
 
   &.PAUSED {
     color: @flow-paused-color;
+  }
+
+  &.POD_FAILED {
+    color: @flow-failed-color;
   }
 
   &.FAILED {
@@ -362,6 +374,10 @@ li.tree-list-item {
 
     &.SUCCEEDED .icon {
       background-position: 48px 0px;
+    }
+
+    &.POD_FAILED .icon {
+      background-position: 0px 0px;
     }
 
     &.FAILED .icon {

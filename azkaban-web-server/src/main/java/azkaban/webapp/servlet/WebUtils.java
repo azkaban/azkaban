@@ -93,6 +93,8 @@ public class WebUtils {
         return "Killing";
       case DISPATCHING:
         return "Dispatching";
+      case POD_FAILED:
+        return "Pod Failure";
       default:
     }
     return "Unknown";
