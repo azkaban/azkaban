@@ -18,6 +18,7 @@ package azkaban.jobtype;
 
 import static azkaban.test.Utils.initServiceProvider;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +30,8 @@ import com.google.common.io.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -89,6 +92,8 @@ public class JobTypeManagerTest {
     assertEquals("commonprivate1", priv.getString("commonprivate1"));
     assertEquals("commonprivate2", priv.getString("commonprivate2"));
     assertEquals("commonprivate3", priv.getString("commonprivate3"));
+    assertEquals("azkaban.jobtype.FakeJavaJob2",
+        priv.getString("default.proxyusers.jobtype.classes"));
   }
 
   /**
@@ -347,4 +352,31 @@ public class JobTypeManagerTest {
     assertEquals("3", ntjobProps.get("pluginprops3"));
     assertEquals("pluginprops", ntjobProps.get("commonprop3"));
   }
+
+  @Test
+  public void testDefaultProxyUsers() throws Exception {
+    final JobTypePluginSet pluginSet = this.manager.getJobTypePluginSet();
+
+    // Verify the allowed jobType classes for defaultProxyUser feature
+    Set<String> defaultProxyUsersJobTypeClasses = pluginSet.getDefaultProxyUsersJobTypeClasses();
+    assertEquals(1, defaultProxyUsersJobTypeClasses.size());
+    assertTrue(defaultProxyUsersJobTypeClasses.contains("azkaban.jobtype.FakeJavaJob2"));
+
+    // Verify defaultProxyUser
+    Optional<String> proxyUser = pluginSet.getDefaultProxyUser("testjob");
+    assertEquals("azkabanUser1", proxyUser.get());
+
+    // JobType class is not allowed for defaultProxyUser
+    proxyUser = pluginSet.getDefaultProxyUser("anothertestjob");
+    assertFalse(proxyUser.isPresent());
+
+    // Plugin itself doesn't exist even if it is part of default-proxy-user mapping
+    proxyUser = pluginSet.getDefaultProxyUser("notestjob");
+    assertFalse(proxyUser.isPresent());
+
+    // defaultProxyUser is part of the filter list
+    proxyUser = pluginSet.getDefaultProxyUser("testjobwithpropsprocessor");
+    assertFalse(proxyUser.isPresent());
+  }
+
 }

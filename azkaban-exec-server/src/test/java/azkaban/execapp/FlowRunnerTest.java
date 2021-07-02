@@ -352,7 +352,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
             flowMetadata.get(AZ_WEBSERVER));
     Assert.assertEquals("Event metadata not created as expected.", "unknown",
             flowMetadata.get(AZ_HOST));
-    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get(SUBMIT_USER));
     Assert.assertEquals("Event metadata not created as expected.", "test",
             flowMetadata.get(PROJECT_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "derived-member-data",

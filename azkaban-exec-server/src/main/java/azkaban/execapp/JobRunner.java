@@ -92,6 +92,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private Integer pipelineLevel = null;
   private FlowWatcher watcher = null;
   private Set<String> proxyUsers = null;
+  private String effectiveUser = null;
 
   private String jobLogChunkSize;
   private int jobLogBackupIndex;
@@ -190,8 +191,50 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   public String getEffectiveUser() {
-    return this.props.getString(JobProperties.USER_TO_PROXY,
-        this.getNode().getExecutableFlow().getSubmitUser());
+    return this.effectiveUser;
+  }
+
+  /**
+   * Determine the effective user for the job.
+   * <p>
+   * If the jobType for this job has a defaultProxyUser then return that. If the user.to.proxy is
+   * not specified in the job props, then return submit user. If the user.to.proxy is specified in
+   * the Job, and - It is also part of list of proxy users in the project permissions, then return
+   * the same. - Otherwise return Optional.empty()
+   *
+   * @return {@link Optional} effective user for the Job
+   */
+  public Optional<String> determineEffectiveUser() {
+    Optional<String> jobType = JobTypeManager.getJobType(this.props);
+    if (jobType.isPresent()) {
+      // JobTypePluginSet is never NULL
+      Optional<String> defaultProxyUser = this.jobtypeManager.getJobTypePluginSet()
+          .getDefaultProxyUser(jobType.get());
+      if (defaultProxyUser.isPresent()) {
+        this.logger.info(String.format("Found default proxy user %s for the job type %s",
+            defaultProxyUser.get(), jobType.get()));
+        return defaultProxyUser;
+      }
+    }
+
+    if (this.props.containsKey(JobProperties.USER_TO_PROXY)) {
+      final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
+      if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
+        final String permissionsPageURL = getProjectPermissionsURL();
+        this.logger.error("User " + jobProxyUser
+            + " has no permission to execute this job " + this.jobId + "!"
+            + " If you want to execute this flow as " + jobProxyUser
+            + ", please add it to Proxy Users under project permissions page: " +
+            permissionsPageURL);
+        return Optional.empty();
+      }
+      return Optional.of(jobProxyUser);
+    } else {
+      final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
+      this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
+          submitUser);
+      return Optional.ofNullable(submitUser);
+    }
   }
 
   public void setPipeline(final FlowWatcher watcher, final int pipelineLevel) {
@@ -637,12 +680,11 @@ public class JobRunner extends EventHandler implements Runnable {
       }
       fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
-      final Status prepareStatus = prepareJob();
-      if (prepareStatus != null) {
+      if (prepareJob()) {
         // Writes status to the db
         writeStatus();
         fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED,
-            new EventData(prepareStatus, this.node.getNestedId())));
+            new EventData(Status.RUNNING, this.node.getNestedId())));
         finalStatus = runJob();
       } else {
         finalStatus = changeStatus(Status.FAILED);
@@ -696,17 +738,16 @@ public class JobRunner extends EventHandler implements Runnable {
     }
   }
 
-  private Status prepareJob() throws RuntimeException {
+  private boolean prepareJob() throws RuntimeException {
     // Check pre conditions
     if (this.props == null || this.isKilled()) {
       logError("Failing job. The job properties don't exist");
-      return null;
+      return false;
     }
 
-    final Status finalStatus;
     synchronized (this.syncObject) {
       if (this.node.getStatus() == Status.FAILED || this.isKilled()) {
-        return null;
+        return false;
       }
 
       logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node.getStartTime());
@@ -727,7 +768,7 @@ public class JobRunner extends EventHandler implements Runnable {
           createMetaDataFileName(this.node));
       this.props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, this.attachmentFileName);
       this.props.put(CommonJobProperties.JOB_LOG_FILE, this.logFile.getAbsolutePath());
-      finalStatus = changeStatus(Status.RUNNING);
+      changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
       if (this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
@@ -735,29 +776,19 @@ public class JobRunner extends EventHandler implements Runnable {
           logError("Specified " + AbstractProcessJob.WORKING_DIR + " is not valid: " +
               this.props.get(AbstractProcessJob.WORKING_DIR) + ". Must be a subdirectory of " +
               this.workingDir.getAbsolutePath());
-          return null;
+          return false;
         }
       } else {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
 
-      if (this.props.containsKey(JobProperties.USER_TO_PROXY)) {
-        final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
-        if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
-          final String permissionsPageURL = getProjectPermissionsURL();
-          this.logger.error("User " + jobProxyUser
-              + " has no permission to execute this job " + this.jobId + "!"
-              + " If you want to execute this flow as " + jobProxyUser
-              + ", please add it to Proxy Users under project permissions page: " +
-              permissionsPageURL);
-          return null;
-        }
-      } else {
-        final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
-        this.props.put(JobProperties.USER_TO_PROXY, submitUser);
-        this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
-            submitUser);
+      Optional<String> effectiveUserOptional = determineEffectiveUser();
+      // Fail if the effective user is not present
+      if (!effectiveUserOptional.isPresent()) {
+        return false;
       }
+      this.effectiveUser = effectiveUserOptional.get();
+      this.props.put(JobProperties.USER_TO_PROXY, this.effectiveUser);
 
       final Props props = this.node.getRampProps();
       if (props != null) {
@@ -795,11 +826,11 @@ public class JobRunner extends EventHandler implements Runnable {
 
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
-        return null;
+        return false;
       }
     }
 
-    return finalStatus;
+    return true;
   }
 
   /**

@@ -571,6 +571,13 @@ public class Constants {
     public static final String COMMONCONFFILE = "common.properties";
     // common private properties for multiple plugins
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
+    // mapping for the jobType to default proxy user
+    public static final String DEFAULT_PROXY_USERS_FILE = "default-proxy-users.properties";
+    // allowed jobType classes for default proxy user
+    public static final String DEFAULT_PROXY_USERS_JOBTYPE_CLASSES = "default.proxyusers.jobtype"
+        + ".classes";
+    // users not allowed as default proxy user
+    public static final String DEFAULT_PROXY_USERS_FILTER = "default.proxyusers.filter";
   }
 
   public static class ContainerizedDispatchManagerProperties {
