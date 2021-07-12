@@ -387,10 +387,10 @@ public class JobTypeManager {
 
       // inject cluster jars and native libraries into jobs through properties
       Props clusterSpecificProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
-      for (final String k : clusterSpecificProps.getKeySet()) {
+      for (final String key : clusterSpecificProps.getKeySet()) {
         // User's job props should take precedence over cluster props
-        if (!jobProps.containsKey(k)) {
-          jobProps.put(k, clusterSpecificProps.get(k));
+        if (!jobProps.containsKey(key)) {
+          jobProps.put(key, clusterSpecificProps.get(key));
         }
       }
       Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(clusterSpecificProps);
