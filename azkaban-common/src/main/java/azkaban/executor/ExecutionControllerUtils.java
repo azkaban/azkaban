@@ -249,7 +249,7 @@ public class ExecutionControllerUtils {
       exFlow.setEndTime(time);
     }
 
-    if (exFlow.getStatus() != Status.POD_FAILED) {
+    if (!Status.isStatusFinished(exFlow.getStatus())) {
       exFlow.setStatus(Status.FAILED);
     }
   }

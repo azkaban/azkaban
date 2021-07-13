@@ -16,7 +16,7 @@
 
 var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING",
   "WAITING", "KILLED", "DISABLED", "READY", "CANCELLED", "UNKNOWN", "PAUSED",
-  "SKIPPED", "QUEUED", "FAILED_SUCCEEDED", "DISPATCHING", "POD_FAILED"];
+  "SKIPPED", "QUEUED", "FAILED_SUCCEEDED", "DISPATCHING", "EXECUTION_STOPPED"];
 var statusStringMap = {
   "QUEUED": "Queued",
   "SKIPPED": "Skipped",
@@ -35,5 +35,5 @@ var statusStringMap = {
   "PAUSED": "Paused",
   "FAILED_SUCCEEDED": "Failed, treated as success",
   "DISPATCHING": "Dispatching",
-  "POD_FAILED": "Pod Failure"
+  "EXECUTION_STOPPED": "Execution stopped, crashed executor/container"
 };
