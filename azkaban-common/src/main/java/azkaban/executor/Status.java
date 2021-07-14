@@ -30,7 +30,7 @@ public enum Status {
   SUCCEEDED(50),
   KILLING(55),
   KILLED(60),
-  // EXECUTION_STOPPED refers to a terminating flow status due to crashed executor/container
+  // EXECUTION_STOPPED refers to a terminal flow status due to crashed executor/container
   EXECUTION_STOPPED(65),
   FAILED(70),
   FAILED_FINISHING(80),
