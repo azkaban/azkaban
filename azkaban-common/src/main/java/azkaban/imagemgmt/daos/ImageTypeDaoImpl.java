@@ -153,8 +153,16 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       imageTypes = this.databaseOperator
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
               name.toLowerCase());
+      if (imageTypes == null) {
+        log.error("Unable to fetch image type metadata from image type : " + name);
+        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+            "Unable to fetch image type metadata for image type : " + name);
+      }
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
+        log.error(
+            "Failed to get image type with ownerships by name. Can't have more that one image type"
+                + " record for a given type with name : " + name);
         throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type with "
             + "ownerships by name. Can't have more that one image type record for a given type "
             + "with name : " + name);
@@ -166,7 +174,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
       throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
-          "Unable to fetch image type metadata from image type : " + name);
+          "Unable to fetch image type metadata for image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
   }

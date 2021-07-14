@@ -39,7 +39,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 public class ImageTypeServiceImplTest {
 
@@ -82,19 +81,21 @@ public class ImageTypeServiceImplTest {
   public void testFindImageTypeWithOwnersByName() throws Exception {
     final ImageType imageType = new ImageType();
     when(this.imageTypeDao.getImageTypeWithOwnershipsByName(any(String.class))).thenReturn
-   ((Optional<ImageType>) Optional.of(imageType));
+        ((Optional<ImageType>) Optional.of(imageType));
     this.imageTypeService.findImageTypeWithOwnersByName("anyString");
   }
 
   @Test(expected = ImageMgmtException.class)
   public void testFindImageTypeWithOwnersByNameFailsWithImageMgmtException() throws Exception {
-    when(this.imageTypeDao.getImageTypeWithOwnershipsByName(any(String.class))).thenReturn(Optional.empty());
+    when(this.imageTypeDao.getImageTypeWithOwnershipsByName(any(String.class)))
+        .thenReturn(Optional.empty());
     this.imageTypeService.findImageTypeWithOwnersByName("anyString");
   }
 
   @Test
   public void testCreateImageTypeForConfigs() throws Exception {
-    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type_configs.json");
+    final String jsonPayload = JSONUtils
+        .readJsonFileAsString("image_management/image_type_configs.json");
     final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
     imageTypeDTO.setCreatedBy("azkaban");
     imageTypeDTO.setModifiedBy("azkaban");
@@ -112,7 +113,8 @@ public class ImageTypeServiceImplTest {
 
   @Test(expected = ImageMgmtValidationException.class)
   public void testCreateImageTypeInvalidType() throws IOException {
-    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/invalid_image_type.json");
+    final String jsonPayload = JSONUtils
+        .readJsonFileAsString("image_management/invalid_image_type.json");
     final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
     imageTypeDTO.setCreatedBy("azkaban");
     imageTypeDTO.setModifiedBy("azkaban");

@@ -38,7 +38,6 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,21 +45,17 @@ import org.slf4j.LoggerFactory;
 /**
  * This servlet exposes the REST APIs such as create, get etc. for image type. Below are the
  * supported APIs. Create Image Type API: POST /imageTypes?session.id=? --data @payload.json Get
- * Image Type API: GET /imageTypes?&imageType=? GET /imageTypes/{id}
- * GET /imageTypes/{imageType} GET /imageTypes/{imageType}?owner=?
+ * Image Type API: GET /imageTypes?&imageType=? GET /imageTypes/{imageType}
  */
 public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
-  private static final String GET_IMAGE_TYPE_URI = "/imageTypes";
-  private static final String IMAGE_TYPE_ID_KEY = "id";
-  private static final Integer INDEX_AFTER_LEADING_SLASH = 1;
-  private static final CharSequence PATH_SEPARATOR = "/";
-  private static final String FORBIDDEN_USER = "The user does not have appropriate permissions to"
+  private static final String IMAGE_TYPE_NAME_KEY = "name";
+  private static final String FORBIDDEN_USER_ERR_MSG = "The user does not have appropriate permissions to"
       + " access this endpoint";
   private static final String PATH_NOT_SUPPORTED =
       "The path provided is not supported by this API. Please check the documentation";
-  private static final UriTemplate IMAGE_TYPE_WITH_ID_URI_TEMPLATE = new UriTemplate(
-      String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
+  private static final UriTemplate IMAGE_TYPE_WITH_NAME_URI_TEMPLATE = new UriTemplate(
+      String.format("/imageTypes/{%s}", IMAGE_TYPE_NAME_KEY));
   private ImageTypeService imageTypeService;
   private ConverterUtils converterUtils;
   private PermissionManager permissionManager;
@@ -86,31 +81,15 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       throws ServletException, IOException {
     try {
       final Map<String, String> templateVariableToValue = new HashMap<>();
-      ImageTypeDTO imageTypeDTO = null;
-      if(IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(),
-          templateVariableToValue)) {
-        if (StringUtils.isNotBlank(req.getPathInfo())) {
-          String imageTypeName = req.getPathInfo().substring(INDEX_AFTER_LEADING_SLASH);
-          if (imageTypeName.contains(PATH_SEPARATOR)) {
-            throw new ImageMgmtInvalidInputException(PATH_NOT_SUPPORTED);
-          }
-          if(!hasImageManagementPermission(imageTypeName, session.getUser(), Type.GET)){
-            throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, FORBIDDEN_USER);
-          }
-          if (hasParam(req, "owner")) {
-            final String proxyUser = getParam(req, "owner");
-            final boolean hasPermissions = this.permissionManager.hasPermission(imageTypeName,
-                proxyUser, Type.GET);
-              if(!hasPermissions) {
-                throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN,FORBIDDEN_USER);
-              }
-          }
-          imageTypeDTO = this.imageTypeService.findImageTypeWithOwnersByName(imageTypeName);
-          sendResponse(resp, HttpServletResponse.SC_OK, imageTypeDTO);
+      ImageTypeDTO imageTypeDTO;
+      if (IMAGE_TYPE_WITH_NAME_URI_TEMPLATE.match(req.getRequestURI(), templateVariableToValue)) {
+        String imageTypeName = templateVariableToValue.get(IMAGE_TYPE_NAME_KEY);
+        if (!hasImageManagementPermission(imageTypeName, session.getUser(), Type.GET)) {
+          log.info(FORBIDDEN_USER_ERR_MSG);
+          throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, FORBIDDEN_USER_ERR_MSG);
         }
-      } else if (IMAGE_TYPE_WITH_ID_URI_TEMPLATE.match(req.getRequestURI(),
-          templateVariableToValue)) {
-        // TODO: Implementation will be provided in the future PR
+        imageTypeDTO = this.imageTypeService.findImageTypeWithOwnersByName(imageTypeName);
+        sendResponse(resp, HttpServletResponse.SC_OK, imageTypeDTO);
       } else {
         log.info(PATH_NOT_SUPPORTED);
         throw new ImageMgmtInvalidInputException(PATH_NOT_SUPPORTED);
@@ -132,7 +111,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
           ImageTypeDTO.class);
       // Check for required permission to invoke the API
       final String imageType = genericImageType.getName();
-      if(imageType == null) {
+      if (imageType == null) {
         log.info("Required field imageType is null. Must provide valid imageType to "
             + "create/register image type.");
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
@@ -152,7 +131,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",
-          IMAGE_TYPE_WITH_ID_URI_TEMPLATE.createURI(imageTypeId.toString()));
+          IMAGE_TYPE_WITH_NAME_URI_TEMPLATE.createURI(imageType));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
     } catch (final ImageMgmtException e) {
       log.error("Exception while creating an image type", e);
