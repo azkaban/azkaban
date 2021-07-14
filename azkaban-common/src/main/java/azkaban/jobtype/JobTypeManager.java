@@ -471,27 +471,30 @@ public class JobTypeManager {
    * Create an instance of Job with the given parameters, job id and job logger.
    */
   public static Job createJob(final String jobId, final JobParams jobParams, final Logger logger) {
-    Job job;
     try {
-      try {
-        job =
-            (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
-                jobParams.jobProps, jobParams.pluginPrivateProps, logger);
-      } catch (final Exception e) {
-        logger.info("Failed with 6 inputs with exception e = "
-            + e.getMessage());
-        job =
-            (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
-                jobParams.jobProps, logger);
+      return
+          (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
+              jobParams.jobProps, jobParams.pluginPrivateProps, logger);
+    } catch (final Throwable e) {
+      final String message = "Ctor with private properties %s, will try one without. e = ";
+      if (e instanceof IllegalStateException && e.getCause() instanceof NoSuchMethodException) {
+        // expected, message quietly, don't confuse users
+        logger.debug(String.format(message, "not defined") + e.getMessage());
+      } else {
+        // unexpected, message loudly
+        logger.warn(String.format(message, "failed"), e);
       }
-    } catch (final Exception e) {
-      logger.error(String.format("Failed to build job: %s", jobId), e);
-      throw new JobTypeManagerException(String.format("Failed to build job %s", jobId), e);
-    } catch (final Throwable t) {
-      logger.error(String.format("Failed to build job: %s", jobId), t);
-      throw new JobTypeManagerException(String.format("Failed to build job %s", jobId), t);
     }
-    return job;
+
+    try {
+      return
+          (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
+              jobParams.jobProps, logger);
+    } catch (final Throwable e) {
+      final String message = String.format("Failed to build job: %s", jobId);
+      logger.error(message, e);
+      throw new JobTypeManagerException(message, e);
+    }
   }
 
   public static final class JobParams {
