@@ -82,7 +82,7 @@ ext.deps = [
     gson                 : 'com.google.code.gson:gson:2.8.1',
     guava                : 'com.google.guava:guava:21.0',
     guice                : 'com.google.inject:guice:4.1.0',
-    h2                   : 'com.h2database:h2:1.4.193',
+    h2                   : 'com.h2database:h2:1.4.200',
     hadoopAnnotations    : "org.apache.hadoop:hadoop-annotations:" + versions.hadoop,
     hadoopAuth           : "org.apache.hadoop:hadoop-auth:" + versions.hadoop,
     hadoopCommon         : "org.apache.hadoop:hadoop-common:" + versions.hadoop,
