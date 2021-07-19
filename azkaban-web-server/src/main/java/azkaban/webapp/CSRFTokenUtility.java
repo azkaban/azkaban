@@ -19,13 +19,15 @@ import azkaban.server.session.Session;
 import azkaban.utils.StringUtils;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Random;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.log4j.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Singleton Class for generating CSRF token from session-id. This class uses "HmacSHA256" algorithm
@@ -76,13 +78,7 @@ public class CSRFTokenUtility {
    * @return CSRF token derived from session-id
    */
   private String getCSRFTokenFromSessionId(String sessionId) {
-    byte[] bytes;
-    try {
-      bytes = sessionId.getBytes("UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      logger.info("Unable to convert sessionId to bytes", e);
-      return null;
-    }
+    byte[] bytes = sessionId.getBytes(UTF_8);
     byte[] hashedSessionId = this.hashFunction.doFinal(bytes);
     return Base64.getEncoder().encodeToString(hashedSessionId);
   }
@@ -91,7 +87,7 @@ public class CSRFTokenUtility {
    * @return Eight bytes SecretKey to be used for initializing HmacSHA256
    */
   private static byte[] getSecretKey() {
-    Random randomGen = new Random();
+    SecureRandom randomGen = new SecureRandom();
     byte[] secretKey = new byte[8];
     randomGen.nextBytes(secretKey);
     return secretKey;
@@ -121,6 +117,8 @@ public class CSRFTokenUtility {
     if (StringUtils.isEmpty(csrfTokenFromSessionId)) {
       return false;
     }
-    return csrfTokenFromRequest.equals(csrfTokenFromSessionId);
+    return MessageDigest.isEqual(
+        csrfTokenFromRequest.getBytes(UTF_8),
+        csrfTokenFromSessionId.getBytes(UTF_8));
   }
 }
