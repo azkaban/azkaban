@@ -3,9 +3,7 @@
   "name": "azkaban",
   "description": "Azkaban 3 [![Build Status](https://travis-ci.com/azkaban/azkaban.svg?branch=master)](https://travis-ci.com/azkaban/azkaban) ========",
   "dependencies": {
-    "chai": "3.5.0",
     "later": "1.2.0",
-    "mocha": "5.0.4",
     "moment": "2.21.0",
     "moment-timezone": "0.5.14",
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
@@ -13,8 +11,18 @@
     "underscore": "1.8.3",
     "ycssmin": "1.0.1"
   },
+  "devDependencies": {
+    "chai": "3.5.0",
+    "chai-http": "4.0.0",
+    "mocha": "5.0.4"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pretest": "npm run startSoloServer",
+    "test": "mocha --recursive 'src/web/js/azkaban/test/' || npm run stop_n_exit",
+    "posttest": "npm run stopSoloServer",
+    "startSoloServer": "cd ../azkaban-solo-server/build/install/azkaban-solo-server; bin/start-solo.sh; sleep 3",
+    "stopSoloServer": "cd ../azkaban-solo-server/build/install/azkaban-solo-server; bin/shutdown-solo.sh",
+    "stop_n_exit": "npm run stopSoloServer && exit 1"
   },
   "repository": {
     "type": "git",
