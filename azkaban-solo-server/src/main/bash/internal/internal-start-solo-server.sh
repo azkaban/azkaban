@@ -62,8 +62,8 @@ if [[ -f "${conf}/log4j.properties" ]]; then
       -Dlog4j.log.dir=${installdir}/logs"
 fi
 
-java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} $@ &
+java_cmd="java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} $@"
 
-echo $! > $currentpidfile
+execute ${java_cmd}
 
 
