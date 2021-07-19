@@ -186,15 +186,11 @@ public class HttpRequestUtils {
     if (!hasPermission(userManager, user, Type.ADMIN)) {
       params.remove(ExecutionOptions.FLOW_PRIORITY);
       params.remove(ExecutionOptions.USE_EXECUTOR);
-      params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
-      params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
       // Passing test version will be allowed for Azkaban ADMIN role only
       params.remove(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
     } else {
       validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
-      validateBooleanParam(params, FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
-      validateBooleanParam(params, FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
       // Passing of test version is allowed for azkaban admin only. Validate
       // if it is boolean param
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
