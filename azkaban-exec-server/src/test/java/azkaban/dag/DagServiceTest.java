@@ -29,7 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import javafx.util.Pair;
+
+import azkaban.utils.Pair;
 import org.junit.After;
 import org.junit.Test;
 
