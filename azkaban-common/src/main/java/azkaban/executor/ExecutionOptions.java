@@ -42,6 +42,7 @@ public class ExecutionOptions {
   public static final int DEFAULT_FLOW_PRIORITY = 5;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
+  private static final String RUNTIME_PROPERTIES = "runtimeProperties";
   private static final String NOTIFY_ON_FIRST_FAILURE = "notifyOnFirstFailure";
   private static final String NOTIFY_ON_LAST_FAILURE = "notifyOnLastFailure";
   private static final String SUCCESS_EMAILS = "successEmails";
@@ -78,6 +79,7 @@ public class ExecutionOptions {
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<>();
+  private Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
   private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
   private List<SlaOption> slaOptions = new ArrayList<>();
@@ -102,6 +104,10 @@ public class ExecutionOptions {
       options.flowParameters = new HashMap<>();
       options.flowParameters.putAll(wrapper
           .<String, String>getMap(FLOW_PARAMETERS));
+    }
+    if (optionsMap.containsKey(RUNTIME_PROPERTIES)) {
+      options.runtimeProperties = new HashMap<>();
+      options.runtimeProperties.putAll(wrapper.getMap(RUNTIME_PROPERTIES));
     }
     // Failure notification
     options.notifyOnFirstFailure =
@@ -155,8 +161,16 @@ public class ExecutionOptions {
     this.flowParameters.putAll(flowParam);
   }
 
+  public void addAllRuntimeProperties(final Map<String, Map<String, String>> runtimeProperties) {
+    this.runtimeProperties.putAll(runtimeProperties);
+  }
+
   public Map<String, String> getFlowParameters() {
     return this.flowParameters;
+  }
+
+  public Map<String, Map<String, String>> getRuntimeProperties() {
+    return this.runtimeProperties;
   }
 
   public boolean isFailureEmailsOverridden() {
@@ -288,6 +302,7 @@ public class ExecutionOptions {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
     flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
+    flowOptionObj.put(RUNTIME_PROPERTIES, this.runtimeProperties);
     flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
     flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
     flowOptionObj.put(SUCCESS_EMAILS, this.successEmails);
