@@ -66,6 +66,7 @@ import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.spi.ExecutorType;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
@@ -422,7 +423,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       this.logger.info("ROOT Runtime Props: " + flowParam);
       commonFlowProps = new Props(commonFlowProps, flowParam);
     }
-    this.flow.setInputProps(commonFlowProps);
+    this.flow.setInputProps(PropsUtils.resolveProps(commonFlowProps));
 
     // If there are runtime properties, we log them now.
     final Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
