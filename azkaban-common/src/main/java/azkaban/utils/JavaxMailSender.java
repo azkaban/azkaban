@@ -14,15 +14,13 @@ import javax.mail.internet.MimeMessage;
  */
 public class JavaxMailSender {
 
-  public static final String PROTOCOL = "smtp";
-
   private final Session session;
   private final SMTPTransport t;
 
-  public JavaxMailSender(final Properties props)
-      throws NoSuchProviderException {
+  public JavaxMailSender(final Properties props, String protocol)
+          throws NoSuchProviderException {
     this.session = Session.getInstance(props, null);
-    this.t = (SMTPTransport) this.session.getTransport(PROTOCOL);
+    this.t = (SMTPTransport) this.session.getTransport(protocol);
   }
 
   public Message createMessage() {
@@ -30,7 +28,7 @@ public class JavaxMailSender {
   }
 
   public void connect(final String mailHost, final int mailPort, final String mailUser,
-      final String mailPassword) throws MessagingException {
+                      final String mailPassword) throws MessagingException {
     this.t.connect(mailHost, mailPort, mailUser, mailPassword);
   }
 
@@ -39,7 +37,7 @@ public class JavaxMailSender {
   }
 
   public void sendMessage(final Message message, final Address[] recipients)
-      throws MessagingException {
+          throws MessagingException {
     this.t.sendMessage(message, recipients);
   }
 

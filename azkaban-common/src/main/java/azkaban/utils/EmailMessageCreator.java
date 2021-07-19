@@ -27,6 +27,7 @@ public class EmailMessageCreator {
 
   private final String mailHost;
   private final int mailPort;
+  private final String mailProtocol;
   private final String mailUser;
   private final String mailPassword;
   private final String mailSender;
@@ -36,6 +37,7 @@ public class EmailMessageCreator {
   @Inject
   public EmailMessageCreator(final Props props) {
     this.mailHost = props.getString("mail.host", "localhost");
+    this.mailProtocol = props.getString("mail.protocol", "smtp");
     this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
@@ -46,7 +48,7 @@ public class EmailMessageCreator {
 
   public EmailMessage createMessage() {
     final EmailMessage message = new EmailMessage(
-        this.mailHost, this.mailPort, this.mailUser, this.mailPassword, this);
+            this.mailHost, this.mailPort, this.mailUser, this.mailPassword, this);
     message.setFromAddress(this.mailSender);
     message.setTLS(this.tls);
     message.setAuth(this.usesAuth);
@@ -54,6 +56,6 @@ public class EmailMessageCreator {
   }
 
   public JavaxMailSender createSender(final Properties props) throws NoSuchProviderException {
-    return new JavaxMailSender(props);
+    return new JavaxMailSender(props, this.mailProtocol);
   }
 }
