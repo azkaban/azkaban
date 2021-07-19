@@ -30,8 +30,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 public class CronSchedule implements Serializable {
 
   /**
-   * CAUTION : Please do NOT change this serialVersionUID as it may break
-   * backward compatibility.
+   * CAUTION : Please do NOT change this serialVersionUID as it may break backward compatibility.
    */
   private static final long serialVersionUID = -1330280892166841227L;
   private static final String DEFAULT_TIMEZONE = TimeZone.getDefault().getID();
