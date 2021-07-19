@@ -54,6 +54,9 @@ public class Constants {
   // Job properties override suffix
   public static final String JOB_OVERRIDE_SUFFIX = ".jor";
 
+  // Key for the root node of the DAG in runtime properties
+  public static final String ROOT_NODE_IDENTIFIER = "ROOT";
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";

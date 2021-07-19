@@ -21,7 +21,7 @@
 #parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1611955192"></script>
     <script type="text/javascript" src="${context}/jobsummary/js/azkaban/view/job-summary.js"></script>
     <script type="text/javascript" src="${context}/jobsummary/js/azkaban/model/log-data.js"></script>
     <script type="text/javascript">

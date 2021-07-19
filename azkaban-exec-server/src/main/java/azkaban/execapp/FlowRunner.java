@@ -345,7 +345,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         this.fireEventListeners(
             Event.create(this, EventType.FLOW_FINISHED, new EventData(this.flow)));
         this.logger
-            .info("Created " + EventType.FLOW_FINISHED + " event for " + this.flow.getExecutionId());
+            .info(
+                "Created " + EventType.FLOW_FINISHED + " event for " + this.flow.getExecutionId());
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
@@ -414,13 +415,21 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
     }
 
-    // If there are flow overrides, we apply them now.
+    // If there are flow overrides, we log them & apply them on the flow node.
     final Map<String, String> flowParam =
         this.flow.getExecutionOptions().getFlowParameters();
     if (flowParam != null && !flowParam.isEmpty()) {
+      this.logger.info("ROOT Runtime Props: " + flowParam);
       commonFlowProps = new Props(commonFlowProps, flowParam);
     }
     this.flow.setInputProps(commonFlowProps);
+
+    // If there are runtime properties, we log them now.
+    final Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
+        .getRuntimeProperties();
+    if (runtimeProperties != null && !runtimeProperties.isEmpty()) {
+      this.logger.info("Other Runtime Props: " + runtimeProperties);
+    }
 
     if (this.watcher != null) {
       this.watcher.setLogger(this.logger);
@@ -892,6 +901,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     // 2. Parent Flow Properties
     final ExecutableFlowBase parentFlow = node.getParentFlow();
     if (parentFlow != null) {
+      // flow level runtime props have been already applied on parent input props
       final Props flowProps = Props.clone(parentFlow.getInputProps());
       flowProps.setEarliestAncestor(props);
       props = flowProps;
@@ -911,19 +921,53 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       props = jobSource;
     }
 
-    if (this.azkabanProps.getBoolean(
-        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false)) {
-      // Flow override props are configured to also override existing job props
-      // =>
-      // 5. If there are any runtime flow overrides, we apply them now.
+    // 5. Runtime properties
+    Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
+        .getRuntimeProperties();
+    if (runtimeProperties == null) {
+      runtimeProperties = new HashMap<>();
+    }
+    if (isOverrideExistingEnabled()) {
+      // 5.a.1. apply flow level runtime props
       final Map<String, String> flowParam =
           this.flow.getExecutionOptions().getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
-        props.putAll(flowParam);
+        props = new Props(props, flowParam);
       }
+      // 5.a.2. apply node-specific runtime props recursively
+      props = applyRuntimeProperties(node, runtimeProperties, props);
+    } else if (runtimeProperties.containsKey(node.getNestedId())) {
+      // 5.b. apply node-specific runtime props (current node only)
+      props = new Props(props, runtimeProperties.get(node.getNestedId()));
     }
 
     node.setInputProps(props);
+  }
+
+  private boolean isOverrideExistingEnabled() {
+    return this.azkabanProps.getBoolean(
+        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false);
+  }
+
+  private Props applyRuntimeProperties(final ExecutableNode node,
+      final Map<String, Map<String, String>> runtimeProperties, final Props props) {
+    Props propsWithOverides = props;
+    if (node.getParentFlow() != null && !parentIsOnTheSameLevel(node)) {
+      // apply recursively top->down
+      propsWithOverides = applyRuntimeProperties(node.getParentFlow(), runtimeProperties, props);
+    }
+    if (runtimeProperties.containsKey(node.getNestedId())) {
+      // runtime props override any existing props
+      propsWithOverides = new Props(propsWithOverides, runtimeProperties.get(node.getNestedId()));
+    }
+    return propsWithOverides;
+  }
+
+  /**
+   * Detects if the "parent" is actually the root job node.
+   */
+  private boolean parentIsOnTheSameLevel(final ExecutableNode node) {
+    return node.getParentFlow() instanceof ExecutableFlow;
   }
 
   /**
@@ -1032,7 +1076,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     // Attach Ramp Props if there is any desired properties
     final String jobId = node.getId();
-    final String jobType = Optional.ofNullable(node.getInputProps()).map(props -> props.getString("type"))
+    final String jobType = Optional.ofNullable(node.getInputProps())
+        .map(props -> props.getString("type"))
         .orElse(null);
     if (jobType != null && jobId != null) {
       final Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
@@ -1556,7 +1601,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // or else use jetty.hostname
       metaData.put(EventReporterConstants.AZ_WEBSERVER,
           props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-          props.getString("jetty.hostname", "localhost")));
+              props.getString("jetty.hostname", "localhost")));
       metaData.put(EventReporterConstants.PROJECT_NAME, flow.getProjectName());
       metaData.put(EventReporterConstants.SUBMIT_USER, flow.getSubmitUser());
       metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(flow.getExecutionId()));
@@ -1670,16 +1715,18 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.START_TIME, String.valueOf(node.getStartTime()));
       metaData.put(EventReporterConstants.JOB_TYPE, String.valueOf(node.getType()));
       // Add version of the job type
-      if(executableFlow.getVersionSet() != null) { // Flow version set is set when flow is
+      if (executableFlow.getVersionSet() != null) { // Flow version set is set when flow is
         // executed in a container, which also indicates executor type is Kubernetes.
         final VersionInfo versionInfo =
-            executableFlow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(), null);
+            executableFlow.getVersionSet().getImageToVersionMap()
+                .getOrDefault(node.getType(), null);
         if (versionInfo != null) {
           // Add job type image version number
           metaData.put(EventReporterConstants.VERSION, versionInfo.getVersion());
         }
       }
-      if (executableFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
+      if (executableFlow.getDispatchMethod()
+          == DispatchMethod.CONTAINERIZED) { // Determine executor type
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
       } else {
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
@@ -1692,7 +1739,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // or else use jetty.hostname
       metaData.put(EventReporterConstants.AZ_WEBSERVER,
           props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-          props.getString("jetty.hostname", "localhost")));
+              props.getString("jetty.hostname", "localhost")));
       metaData.put(EventReporterConstants.JOB_PROXY_USER, jobRunner.getEffectiveUser());
       // attempt id
       metaData.put(EventReporterConstants.ATTEMPT_ID, String.valueOf(node.getAttempt()));
