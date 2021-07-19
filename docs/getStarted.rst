@@ -108,6 +108,7 @@ Inside the ``conf`` directory, there should be three files:
 - ``azkaban.properties`` - Used by Azkaban for runtime parameters
 - ``global.properties`` - Global static properties that are passed as shared properties to every workflow and job.
 - ``azkaban-users.xml`` - Used to add users and roles for authentication. This file is not used if the XmLUserManager is not set up to use it.
+- ``log4j.properties`` - is a optional configuration file for server log. If this configuration file is missing, the default log location is under ``local`` directory
 
 The ``azkaban.properties`` file is the main configuration file.
 
