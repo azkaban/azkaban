@@ -78,6 +78,7 @@ public class DefaultMailCreator implements MailCreator {
       message.setSubject("Flow '" + flow.getFlowId() + "' has encountered a failure on "
           + azkabanName);
 
+      message.println("\n\r <html><head><meta http-equiv='content-type' content='text/html; charset=utf-8' /></head><body>");
       message.println("<h2 style=\"color:#FF0000\"> Execution '"
           + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' of project '"
           + flow.getProjectName() + "' has encountered a failure on " + azkabanName + "</h2>");
@@ -120,6 +121,7 @@ public class DefaultMailCreator implements MailCreator {
       }
 
       message.println("</ul>");
+      message.println("</body></html>");
       return true;
     }
 
@@ -142,6 +144,7 @@ public class DefaultMailCreator implements MailCreator {
       message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
           + azkabanName);
 
+      message.println("\n\r <html><head><meta http-equiv='content-type' content='text/html; charset=utf-8' /></head><body>");
       message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
           + "' of flow '" + flow.getFlowId() + "' of project '"
           + flow.getProjectName() + "' has failed on " + azkabanName + "</h2>");
@@ -199,6 +202,7 @@ public class DefaultMailCreator implements MailCreator {
         message.println("</table>");
       }
 
+      message.println("</body></html>");
       return true;
     }
     return false;
@@ -220,6 +224,7 @@ public class DefaultMailCreator implements MailCreator {
       message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on "
           + azkabanName);
 
+      message.println("\n\r <html><head><meta http-equiv='content-type' content='text/html; charset=utf-8' /></head><body>");
       message.println("<h2> Execution '" + flow.getExecutionId()
           + "' of flow '" + flow.getFlowId() + "' of project '"
           + flow.getProjectName() + "' has succeeded on " + azkabanName + "</h2>");
@@ -239,6 +244,7 @@ public class DefaultMailCreator implements MailCreator {
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
+      message.println("</body></html>");
       return true;
     }
     return false;
@@ -259,6 +265,7 @@ public class DefaultMailCreator implements MailCreator {
       message.setSubject(
           "Flow status could not be updated from " + executor.getHost() + " on " + azkabanName);
 
+      message.println("\n\r <html><head><meta http-equiv='content-type' content='text/html; charset=utf-8' /></head><body>");
       message.println(
           "<h2 style=\"color:#FF0000\"> Flow status could not be updated from " + executor.getHost()
               + " on " + azkabanName + "</h2>");
@@ -275,6 +282,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<ul>");
       appendFlowLinksToMessage(message, flows, scheme, clientHostname, clientPortNumber);
       message.println("</ul>");
+      message.println("</body></html>");
       return true;
     }
 
@@ -296,6 +304,7 @@ public class DefaultMailCreator implements MailCreator {
     message.setSubject(
         "Alert: Executor is unreachable, " + executor.getHost() + " on " + azkabanName);
 
+    message.println("\n\r <html><head><meta http-equiv='content-type' content='text/html; charset=utf-8' /></head><body>");
     message.println(
         "<h2 style=\"color:#FFA500\"> Executor is unreachable. Executor host - " + executor
             .getHost() + " on Cluster - " + azkabanName + "</h2>");
@@ -316,6 +325,7 @@ public class DefaultMailCreator implements MailCreator {
             + "executor-host: %s, executor-port: %d", executor.getId(), executor.getHost(),
         executor.getPort()));
     message.println("<pre>" + ExceptionUtils.getStackTrace(failureException) + "</pre>");
+    message.println("</body></html>");
 
     return true;
   }
