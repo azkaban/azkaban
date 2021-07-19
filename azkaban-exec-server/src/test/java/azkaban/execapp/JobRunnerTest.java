@@ -90,6 +90,29 @@ public class JobRunnerTest {
   }
 
   @Test
+  public void testEffectiveUser() throws Exception {
+    final MockExecutorLoader loader = new MockExecutorLoader();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    JobRunner runner =
+        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
+    runner.run();
+    String effectiveUser = runner.getEffectiveUser();
+    Assert.assertEquals(SUBMIT_USER, effectiveUser);
+    Assert.assertEquals(effectiveUser, runner.getProps().get("user.to.proxy"));
+
+    this.jobtypeManager.getJobTypePluginSet()
+        .addDefaultProxyUsersJobTypeClasses(InteractiveTestJob.class.getName());
+    this.jobtypeManager.getJobTypePluginSet().addDefaultProxyUser("test", "defaultTestUser");
+
+    runner =
+        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
+    runner.run();
+    effectiveUser = runner.getEffectiveUser();
+    Assert.assertEquals("defaultTestUser", effectiveUser);
+    Assert.assertEquals(effectiveUser, runner.getProps().get("user.to.proxy"));
+  }
+
+  @Test
   public void testBasicRun() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
