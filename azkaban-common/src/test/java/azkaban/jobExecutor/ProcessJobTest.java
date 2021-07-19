@@ -16,13 +16,21 @@
 
 package azkaban.jobExecutor;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import azkaban.Constants.JobProperties;
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
+
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -226,6 +234,34 @@ public class ProcessJobTest {
     future.get();
     assertThat(this.job.isSuccess()).isFalse();
   }
+
+  @Test
+  public void testGeneratedProperties() throws Exception {
+
+    String workingDir = this.props.get(AbstractProcessJob.WORKING_DIR);
+    Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
+    File script = new File(workingDir, "write_to_props.sh");
+    Files.createFile(script.toPath(), PosixFilePermissions.asFileAttribute(perms));
+
+    try (BufferedWriter w = Files.newBufferedWriter(script.toPath(), UTF_8)) {
+      w.write("#!/bin/sh\n" +
+        "echo '{\"props\":\"x,y,x\",\"str\":\"test\",\"arry\":[\"a\",\"b\"],\"obj\":{\"c\":[\"d\",\"e\"]}}' " +
+        "> $JOB_OUTPUT_PROP_FILE\n");
+    }
+
+    this.props.put(ProcessJob.COMMAND, "./write_to_props.sh");
+
+    this.job.run();
+
+    Props generated = this.job.getJobGeneratedProperties();
+
+    assertEquals("x,y,x", generated.get("props"));
+    assertEquals("[\"a\",\"b\"]", generated.get("arry"));
+    assertEquals("{\"c\":[\"d\",\"e\"]}", generated.get("obj"));
+    assertEquals("test", generated.get("str"));
+
+  }
+
 
   static class SleepBeforeRunJob extends ProcessJob implements Runnable {
 
