@@ -17,6 +17,8 @@ import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -53,9 +55,27 @@ public class JobCallbackManager implements EventListener<Event> {
   private final JmxJobCallbackMBean callbackMbean;
   private final String azkabanHostName;
   private final SimpleDateFormat gmtDateFormatter;
+  private final Props azkabanProps;
+  private final Props globalProps;
 
   private JobCallbackManager(final Props props) {
+    azkabanProps = props;
     maxNumCallBack = props.getInt("jobcallback.max_count", maxNumCallBack);
+
+    final String globalPropsPath = props.getString("executor.global.properties", null);
+    if (globalPropsPath != null) {
+      Props globalProps;
+      try {
+        globalProps = new Props(null, globalPropsPath);
+      } catch (IOException e) {
+        logger.warn("Can't load executor.global.properties", e);
+        globalProps = new Props();
+      }
+
+      this.globalProps = globalProps;
+    } else {
+      globalProps = new Props();
+    }
 
     // initialize the request maker
     JobCallbackRequestMaker.initialize(props);
@@ -209,7 +229,10 @@ public class JobCallbackManager implements EventListener<Event> {
 
       // don't want to waste time resolving properties if there are
       // callback properties to parse
-      final Props props = PropsUtils.resolveProps(jobRunner.getProps());
+      Props current = new Props(azkabanProps);
+      current.putAll(globalProps);
+      current.putAll(jobRunner.getProps());
+      final Props props = PropsUtils.resolveProps(current);
 
       final Map<String, String> contextInfo =
           JobCallbackUtil.buildJobContextInfoMap(event, this.azkabanHostName);
