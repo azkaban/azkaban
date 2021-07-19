@@ -157,7 +157,7 @@ public class HadoopProxy {
    * @param logger logger handler
    */
   public void killAllSpawnedHadoopJobs(Props jobProps, final Logger logger) {
-    if (tokenFile == null) {
+    if (obtainTokens && tokenFile == null) {
       return; // do null check for tokenFile
     }
 
