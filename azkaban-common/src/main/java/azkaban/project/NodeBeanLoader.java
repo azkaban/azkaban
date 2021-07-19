@@ -43,7 +43,10 @@ public class NodeBeanLoader {
     checkArgument(flowFile != null && flowFile.exists());
     checkArgument(flowFile.getName().endsWith(Constants.FLOW_FILE_SUFFIX));
 
-    final NodeBean nodeBean = new Yaml().loadAs(new FileInputStream(flowFile), NodeBean.class);
+    final NodeBean nodeBean;
+    try (final FileInputStream inputStream = new FileInputStream(flowFile)) {
+      nodeBean = new Yaml().loadAs(inputStream, NodeBean.class);
+    }
     if (nodeBean == null) {
       throw new ProjectManagerException(
           "Failed to load flow file " + flowFile.getName() + ". Node bean is null .");
