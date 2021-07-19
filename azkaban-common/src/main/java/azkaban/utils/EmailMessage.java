@@ -16,8 +16,10 @@
 
 package azkaban.utils;
 
+import com.sun.net.ssl.internal.ssl.Provider;
 import java.io.File;
 import java.io.InputStream;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -48,10 +50,12 @@ public class EmailMessage {
   private final String _mailUser;
   private final String _mailPassword;
   private final EmailMessageCreator creator;
+  private final String _ssl = "ssl";
+  private final String _tls = "tls";
+  private String _security;
   private String _subject;
   private String _fromAddress;
   private String _mimeType = "text/plain";
-  private String _tls;
   private long _totalAttachmentSizeSoFar;
   private boolean _usesAuth = true;
   private boolean _enableAttachementEmbedment = true;
@@ -102,8 +106,8 @@ public class EmailMessage {
     return this;
   }
 
-  public EmailMessage setTLS(final String tls) {
-    this._tls = tls;
+  public EmailMessage setSecurity(final String security) {
+    this._security = security;
     return this;
   }
 
@@ -164,21 +168,7 @@ public class EmailMessage {
 
   public void sendEmail() throws MessagingException {
     checkSettings();
-    final Properties props = new Properties();
-    if (this._usesAuth) {
-      props.put("mail.smtp.auth", "true");
-      props.put("mail.user", this._mailUser);
-      props.put("mail.password", this._mailPassword);
-    } else {
-      props.put("mail.smtp.auth", "false");
-    }
-    props.put("mail.smtp.host", this._mailHost);
-    props.put("mail.smtp.port", this._mailPort);
-    props.put("mail.smtp.timeout", _mailTimeout);
-    props.put("mail.smtp.connectiontimeout", _connectionTimeout);
-    props.put("mail.smtp.starttls.enable", this._tls);
-    props.put("mail.smtp.ssl.trust", this._mailHost);
-
+    final Properties props = makeSenderProps();
     final JavaxMailSender sender = this.creator.createSender(props);
     final Message message = sender.createMessage();
 
@@ -252,6 +242,33 @@ public class EmailMessage {
     s.close();
     throw new MessagingException("Failed to send email messages after "
         + attempt + " attempts.");
+  }
+
+  private Properties makeSenderProps() {
+    final Properties props = new Properties();
+    if (this._usesAuth) {
+      props.put("mail.smtp.auth", "true");
+      props.put("mail.user", this._mailUser);
+      props.put("mail.password", this._mailPassword);
+    } else {
+      props.put("mail.smtp.auth", "false");
+    }
+    if (this._security.equalsIgnoreCase(this._ssl)) {
+      Security.addProvider(new Provider());
+      final String sslFactory = "javax.net.ssl.SSLSocketFactory";
+      props.put("mail.smtp.socketFactory.class", sslFactory);
+      props.put("mail.smtp.socketFactory.fallback", "false");
+      props.put("mail.smtp.socketFactory.port", this._mailPort);
+    } else if (this._security.equalsIgnoreCase(this._tls)) {
+      props.put("mail.smtp.starttls.enable", "true");
+    }
+    props.put("mail.smtp.host", this._mailHost);
+    props.put("mail.smtp.port", this._mailPort);
+    props.put("mail.smtp.timeout", _mailTimeout);
+    props.put("mail.smtp.connectiontimeout", _connectionTimeout);
+    props.put("mail.smtp.ssl.trust", this._mailHost);
+
+    return props;
   }
 
   public void setBody(final String body, final String mimeType) {
