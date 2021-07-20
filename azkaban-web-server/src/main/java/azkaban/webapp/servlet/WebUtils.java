@@ -94,7 +94,7 @@ public class WebUtils {
       case DISPATCHING:
         return "Dispatching";
       case EXECUTION_STOPPED:
-        return "Execution stopped, crashed executor/container";
+        return "Execution stopped";
       default:
     }
     return "Unknown";

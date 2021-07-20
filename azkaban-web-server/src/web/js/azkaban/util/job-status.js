@@ -35,5 +35,5 @@ var statusStringMap = {
   "PAUSED": "Paused",
   "FAILED_SUCCEEDED": "Failed, treated as success",
   "DISPATCHING": "Dispatching",
-  "EXECUTION_STOPPED": "Execution stopped, crashed executor/container"
+  "EXECUTION_STOPPED": "Execution stopped"
 };
