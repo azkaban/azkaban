@@ -249,7 +249,9 @@ public class ExecutionControllerUtils {
       exFlow.setEndTime(time);
     }
 
-    exFlow.setStatus(Status.FAILED);
+    if (!Status.isStatusFinished(exFlow.getStatus())) {
+      exFlow.setStatus(Status.FAILED);
+    }
   }
 
   /**
