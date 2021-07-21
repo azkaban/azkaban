@@ -28,6 +28,7 @@ import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageType.Deployable;
 import azkaban.imagemgmt.utils.ValidatorUtils;
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -62,7 +63,23 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   }
 
   @Override
-  public ImageTypeDTO findImageTypeWithOwnersByName(String imageTypeName) throws ImageMgmtException {
+  public List<ImageTypeDTO> getAllImageTypesWithOwnerships() {
+    List<ImageType> imageTypes = this.imageTypeDao.getAllImageTypesWithOwnerships();
+    List<ImageTypeDTO> imageTypeDTOs =
+        imageTypes.stream().map(i -> this.converter.convertToApiResponseDTO(i))
+            .collect(Collectors.toList());
+    return imageTypeDTOs;
+  }
+
+  @Override
+  public ImageTypeDTO findImageTypeWithOwnershipsById(String id) {
+    ImageType imageType = this.imageTypeDao.getImageTypeWithOwnershipsById(id);
+    return this.converter.convertToApiResponseDTO(imageType);
+  }
+
+  @Override
+  public ImageTypeDTO findImageTypeWithOwnershipsByName(String imageTypeName)
+      throws ImageMgmtException {
     Optional<ImageType> imageType =
         this.imageTypeDao.getImageTypeWithOwnershipsByName(imageTypeName);
     if (imageType.isPresent()) {

@@ -82,14 +82,14 @@ public class ImageTypeServiceImplTest {
     final ImageType imageType = new ImageType();
     when(this.imageTypeDao.getImageTypeWithOwnershipsByName(any(String.class))).thenReturn
         ((Optional<ImageType>) Optional.of(imageType));
-    this.imageTypeService.findImageTypeWithOwnersByName("anyString");
+    this.imageTypeService.findImageTypeWithOwnershipsByName("anyString");
   }
 
   @Test(expected = ImageMgmtException.class)
   public void testFindImageTypeWithOwnersByNameFailsWithImageMgmtException() throws Exception {
     when(this.imageTypeDao.getImageTypeWithOwnershipsByName(any(String.class)))
         .thenReturn(Optional.empty());
-    this.imageTypeService.findImageTypeWithOwnersByName("anyString");
+    this.imageTypeService.findImageTypeWithOwnershipsByName("anyString");
   }
 
   @Test
