@@ -10,6 +10,7 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl.FetchImageTypeHandler;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.util.Assert;
 
 public class ImageTypeDaoTest {
 
@@ -66,7 +68,25 @@ public class ImageTypeDaoTest {
 
   }
 
+  @Test
+  public void testGetImageTypeWithOwnershipsById() throws Exception {
+    List<ImageType> its = getImageTypeList();
+    String id = "1";
+    when(databaseOperatorMock.query(anyString(), any(FetchImageTypeHandler.class),
+        anyString())).thenReturn(its);
+    ImageType imageType = imageTypeDaoMock.getImageTypeWithOwnershipsById(id);
+    Assert.notNull(imageType);
+    assert imageType.getName().equals("name");
+  }
 
+  @Test(expected = ImageMgmtDaoException.class)
+  public void testGetImageTypeWithOwnershipsByIdWhenFetchReturnsNull() throws Exception {
+    String id = "1";
+    when(databaseOperatorMock.query(anyString(), any(FetchImageTypeHandler.class),
+        anyString())).thenReturn(null);
+    imageTypeDaoMock.getImageTypeWithOwnershipsById(id);
+  }
+  
   private List<ImageType> getImageTypeList() {
     List<ImageType> its = new ArrayList<ImageType>();
     ImageType it = new ImageType();

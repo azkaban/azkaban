@@ -62,12 +62,11 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       "The path provided is not supported by this API. Please check the documentation";
   private static final UriTemplate IMAGE_TYPE_NAME_OR_ID_URI_TEMPLATE = new UriTemplate(
       String.format("/imageTypes/{%s}", IMAGE_TYPE_NAME_OR_ID));
-  private ImageTypeService imageTypeService;
-  private ConverterUtils converterUtils;
   private static final String IMAGE_TYPE_ID_KEY = "id";
   private static final UriTemplate IMAGE_TYPE_WITH_ID_URI_TEMPLATE = new UriTemplate(
       String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
-
+  private ImageTypeService imageTypeService;
+  private ConverterUtils converterUtils;
 
   private static final Logger log = LoggerFactory.getLogger(ImageTypeServlet.class);
 
@@ -115,7 +114,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       resp.setStatus(HttpStatus.SC_FORBIDDEN);
     } catch (final ImageMgmtException e) {
       if (e.getErrorCode() != null) {
-        log.error("An error has occured");
+        log.error("An error has occurred");
         resp.setStatus(e.getErrorCode().getCode());
       } else {
         resp.setStatus(HttpStatus.SC_BAD_REQUEST);
@@ -126,7 +125,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  public void getImageTypeDTOByIdOrImageTypeName(
+  private void getImageTypeDTOByIdOrImageTypeName(
       final HttpServletResponse resp, final Session session,
       final Map<String, String> templateVariableToValue) throws IOException {
     ImageTypeDTO imageTypeDTO;
@@ -144,7 +143,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
     sendResponse(resp, HttpServletResponse.SC_OK, imageTypeDTO);
   }
 
-  public void getAllImageTypeDTOs(final HttpServletResponse resp, final Session session)
+  private void getAllImageTypeDTOs(final HttpServletResponse resp, final Session session)
       throws IOException {
     if (!isAzkabanAdmin(session.getUser())) {
       throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, FORBIDDEN_USER_ERR_MSG);
