@@ -15,8 +15,8 @@
  */
 package azkaban.security;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.Constants;
@@ -528,7 +528,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
   protected String kerberosSuffix(final Props props) {
     // AZKABAN_SERVER_HOST_NAME is not set in Props here, get it from another instance of Props.
     final String host = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class)
-        .getString(AZKABAN_SERVER_HOST_NAME, "unknown");
+        .getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME, "unknown");
     final StringBuilder builder = new StringBuilder("az_");
     builder.append(host);
     builder.append("_");
