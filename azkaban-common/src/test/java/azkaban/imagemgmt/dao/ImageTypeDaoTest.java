@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.util.Assert;
 
 public class ImageTypeDaoTest {
 
@@ -64,6 +65,17 @@ public class ImageTypeDaoTest {
     java.util.Optional<ImageType> imageType = imageTypeDaoMock
         .getImageTypeWithOwnershipsByName(name);
 
+  }
+
+  @Test
+  public void testGetImageTypeWithOwnershipsById() throws Exception {
+    List<ImageType> its = getImageTypeList();
+    String id = "1";
+    when(databaseOperatorMock.query(anyString(), any(FetchImageTypeHandler.class),
+        anyString())).thenReturn(its);
+    ImageType imageType = imageTypeDaoMock.getImageTypeWithOwnershipsById(id);
+    Assert.notNull(imageType);
+    assert imageType.getName().equals("name");
   }
 
 
