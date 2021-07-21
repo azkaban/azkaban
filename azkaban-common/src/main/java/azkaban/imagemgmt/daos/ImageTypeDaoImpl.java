@@ -139,7 +139,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to get image type for : " + id);
     }
     ImageType imageType = imageTypes.get(0);
@@ -164,7 +164,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to get image type metadata for image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
@@ -199,7 +199,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to fetch image type metadata for image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
@@ -253,7 +253,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to fetch all image type metadata ");
     }
     return imageTypes;
@@ -274,7 +274,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME + " failed.",
           ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to fetch ownership for image type : " + imageTypeName);
     }
   }
@@ -297,7 +297,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID
           + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format(
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR, String.format(
           "Unable to fetch ownership for image type: %s, user id: %s. ", imageTypeName, userId));
     }
     return imageOwnerships.isEmpty() ? Optional.empty() : Optional.of(imageOwnerships.get(0));

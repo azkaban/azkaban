@@ -95,7 +95,7 @@ public class ImageTypeServiceImplTest {
 
   @Test
   public void testFindImageTypeWithOwnershipsById() throws Exception {
-    String id = "1";
+    final String id = "1";
     ImageTypeDTO expected = getImageTypeDTO();
     ImageType imageType = getImageType();
     when(this.imageTypeDao.getImageTypeWithOwnershipsById(id)).thenReturn(imageType);

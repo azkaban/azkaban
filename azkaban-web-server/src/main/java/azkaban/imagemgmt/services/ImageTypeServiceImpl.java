@@ -86,7 +86,8 @@ public class ImageTypeServiceImpl implements ImageTypeService {
       return this.converter.convertToApiResponseDTO(imageType.get());
     } else {
       log.info("No Image Type Exists for ImageType name " + imageTypeName);
-      throw new ImageMgmtException("No Image Type Exists for ImageType name " + imageTypeName);
+      throw new ImageMgmtException(ErrorCode.NOT_FOUND, "No Image Type Exists for ImageType name "
+          + imageTypeName);
     }
   }
 

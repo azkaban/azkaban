@@ -92,8 +92,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
         getImageTypeDTOByIdOrImageTypeName(resp, session, templateVariableToValue);
       } else if (GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
         ImageTypeDTO imageTypeDTO;
-        if (!StringUtils.isEmpty(req.getQueryString()) && req.getQueryString()
-            .contains(IMAGE_TYPE)) {
+        if (req.getQueryString().contains(IMAGE_TYPE)) {
           final String imageTypeName = HttpRequestUtils
               .getParam(req, ImageMgmtConstants.IMAGE_TYPE);
           if (!hasImageManagementPermission(imageTypeName, session.getUser(), Type.GET)) {
@@ -112,16 +111,22 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
     } catch (final ImageMgmtInvalidPermissionException e) {
       log.error("The user provided does not have permissions to access the resource");
       resp.setStatus(HttpStatus.SC_FORBIDDEN);
+      sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
+          "User does not have permissions. Error Message: " + e.getMessage());
     } catch (final ImageMgmtException e) {
       if (e.getErrorCode() != null) {
         log.error("An error has occurred");
         resp.setStatus(e.getErrorCode().getCode());
       } else {
         resp.setStatus(HttpStatus.SC_BAD_REQUEST);
+        sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
+            "Exception on GET call to /imageTypes. Reason: " + e.getMessage());
       }
     } catch (final Exception e) {
       log.error("Content is likely not present " + e);
       resp.setStatus(HttpStatus.SC_NOT_FOUND);
+      sendErrorResponse(resp, HttpServletResponse.SC_NOT_FOUND,
+          "Exception on GET call to /imageTypes. Reason: " + e.getMessage());
     }
   }
 
