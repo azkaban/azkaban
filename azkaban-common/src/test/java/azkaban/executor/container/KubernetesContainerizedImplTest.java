@@ -267,7 +267,7 @@ public class KubernetesContainerizedImplTest {
     assert (podSpec != null);
 
     final V1Pod pod = this.kubernetesContainerizedImpl
-        .createPodFromSpec(flow.getExecutionId(), podSpec);
+        .createPodFromSpec(flow.getExecutionId(), podSpec, flowParam);
     final String podSpecYaml = Yaml.dump(pod).trim();
     assert (!podSpecYaml.isEmpty());
     log.info("Pod spec for execution id {} is {}", flow.getExecutionId(), podSpecYaml);

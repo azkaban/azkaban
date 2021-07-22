@@ -115,6 +115,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String APP_LABEL_NAME = "app";
   public static final String EXECUTION_ID_LABEL_NAME = "execution-id";
   public static final String EXECUTION_ID_LABEL_PREFIX = "execid-";
+  public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
 
   private final String namespace;
   private final ApiClient client;
@@ -663,8 +664,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   @VisibleForTesting
-  V1Pod createPodFromSpec(final int executionId, final V1PodSpec podSpec) {
-    final ImmutableMap<String, String> labels = getLabelsForPod(executionId);
+  V1Pod createPodFromSpec(final int executionId, final V1PodSpec podSpec, Map<String, String> flowParam) {
+    final ImmutableMap<String, String> labels = getLabelsForPod(executionId, flowParam);
     final ImmutableMap<String, String> annotations = getAnnotationsForPod();
 
     final V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), this.namespace, podSpec)
@@ -725,7 +726,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         throw new ExecutorManagerException(e);
       }
     }
-    final V1Pod pod = createPodFromSpec(executionId, podSpec);
+    final V1Pod pod = createPodFromSpec(executionId, podSpec, flowParam);
     logPodSpecYaml(executionId, pod, flowParam);
 
     try {
@@ -787,7 +788,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    *
    * @return
    */
-  private ImmutableMap getLabelsForPod(final int executionId) {
+  private ImmutableMap getLabelsForPod(final int executionId, Map<String, String> flowParam) {
     final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
     mapBuilder.put(CLUSTER_LABEL_NAME, this.clusterName);
     mapBuilder.put(EXECUTION_ID_LABEL_NAME, EXECUTION_ID_LABEL_PREFIX + executionId);
@@ -797,6 +798,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (isServiceRequired()) {
       mapBuilder.put("service", String.join("-", SERVICE_SELECTOR_PREFIX,
           clusterQualifiedExecId(this.clusterName, executionId)));
+    }
+
+    // Set the label for disabling pod-cleanup.
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP)) {
+      mapBuilder.put(DISABLE_CLEANUP_LABEL_NAME,
+          flowParam.get(FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP));
     }
     return mapBuilder.build();
   }
