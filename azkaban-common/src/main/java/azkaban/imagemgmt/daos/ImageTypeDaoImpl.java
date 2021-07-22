@@ -158,7 +158,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
               name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
-        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type by "
+        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "Failed to get image type by "
             + "name. Can't have more that one image type record for a given type with name : "
             + name);
       }
@@ -189,7 +189,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         log.error(
             "Failed to get image type with ownerships by name. Can't have more that one image type"
                 + " record for a given type with name : " + name);
-        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type with "
+        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "Failed to get image type"
+            + " with "
             + "ownerships by name. Can't have more that one image type record for a given type "
             + "with name : " + name);
       }

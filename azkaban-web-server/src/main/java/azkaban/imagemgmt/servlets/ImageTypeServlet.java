@@ -119,9 +119,9 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
         resp.setStatus(e.getErrorCode().getCode());
       } else {
         resp.setStatus(HttpStatus.SC_BAD_REQUEST);
-        sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
-            "Exception on GET call to /imageTypes. Reason: " + e.getMessage());
       }
+      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
+          "Exception on GET call to /imageTypes. Reason: " + e.getMessage());
     } catch (final Exception e) {
       log.error("Content is likely not present " + e);
       resp.setStatus(HttpStatus.SC_NOT_FOUND);
