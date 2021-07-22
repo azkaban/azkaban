@@ -271,4 +271,66 @@ public class PropsUtilsTest {
     Props props = PropsUtils.newProps(null, file);
     Assert.assertNull(props);
   }
+
+
+  @Test
+  public void testPropsWithAllPropertiesDefined() {
+    Props props = new Props();
+    String valA = "a";
+    props.put("A", valA);
+    props.put("B", "${A}");
+    props.put("C", "c");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals(valA, resolvedProps.get("B"));
+    Assert.assertEquals(valA, resolvedProps.get("A"));
+    Assert.assertEquals("c", resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithMultipleReferencesToDefinedProps() {
+    Props props = new Props();
+    String valA = "a";
+    props.put("A", valA);
+    String valB = "B";
+    props.put("B", valB);
+    props.put("C", "${A}${B}");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals(valA, resolvedProps.get("A"));
+    Assert.assertEquals(valB, resolvedProps.get("B"));
+    Assert.assertEquals(valA + valB, resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithNestedDefinedProperties() {
+    Props props = new Props();
+    String valA = "a";
+    props.put("A", valA);
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals(valA, resolvedProps.get("B"));
+    Assert.assertEquals(valA, resolvedProps.get("A"));
+    Assert.assertEquals(valA, resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithPropertiesUndefined() {
+    Props props = new Props();
+    props.put("B", "${A}");
+    props.put("C", "c");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertNull(resolvedProps.get("A"));
+    Assert.assertEquals("${A}", resolvedProps.get("B"));
+    Assert.assertEquals("c", resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithNestedPropertiesUndefined() {
+    Props props = new Props();
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals("${A}",resolvedProps.get("B"));
+    Assert.assertEquals("${A}", resolvedProps.get("C"));
+  }
 }
