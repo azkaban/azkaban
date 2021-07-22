@@ -686,6 +686,9 @@ public class Constants {
     // Constant to enable pod for developer testing
     public static final String FLOW_PARAM_ENABLE_DEV_POD = "enable.dev.pod";
 
+    // Constant to disable pod cleanup through the kubernetes watch
+    public static final String FLOW_PARAM_DISABLE_POD_CLEANUP = "disable.pod.cleanup";
+
     // Constant to dispatch execution to Containerization
     public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER = "dispatch.execution.to"
         + ".container";
