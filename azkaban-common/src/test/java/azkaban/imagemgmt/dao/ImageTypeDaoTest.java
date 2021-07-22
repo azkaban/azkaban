@@ -32,7 +32,6 @@ public class ImageTypeDaoTest {
     imageTypeDaoMock = new ImageTypeDaoImpl(databaseOperatorMock);
   }
 
-
   @Test
   public void testGetImageTypeWithOwnershipsByName() throws Exception {
     List<ImageType> its = getImageTypeList();
@@ -58,16 +57,6 @@ public class ImageTypeDaoTest {
         .getImageTypeWithOwnershipsByName(name);
   }
 
-  @Test(expected = ImageMgmtDaoException.class)
-  public void testGetImageTypeWithOwnershipsByNameFailsWhenQueryResultsAreNull() throws Exception {
-    String name = "imageName";
-    when(databaseOperatorMock.query(anyString(), any(FetchImageTypeHandler.class),
-        anyString())).thenReturn(null);
-    java.util.Optional<ImageType> imageType = imageTypeDaoMock
-        .getImageTypeWithOwnershipsByName(name);
-
-  }
-
   @Test
   public void testGetImageTypeWithOwnershipsById() throws Exception {
     List<ImageType> its = getImageTypeList();
@@ -86,7 +75,7 @@ public class ImageTypeDaoTest {
         anyString())).thenReturn(null);
     imageTypeDaoMock.getImageTypeWithOwnershipsById(id);
   }
-  
+
   private List<ImageType> getImageTypeList() {
     List<ImageType> its = new ArrayList<ImageType>();
     ImageType it = new ImageType();

@@ -133,7 +133,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
             "Failed to find image type for " + id);
       }
-      if (imageTypes != null && imageTypes.size() > 1) {
+      if (imageTypes.size() > 1) {
         throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "The request for image "
             + "type with id " + id + " unexpectedly returned more than one result!");
       }
@@ -157,10 +157,11 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
               name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
-      if (imageTypes != null && imageTypes.size() > 1) {
-        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "Failed to get image type by "
-            + "name. Can't have more that one image type record for a given type with name : "
-            + name);
+      if (imageTypes.size() > 1) {
+        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY,
+            "Failed to get image type by "
+                + "name. Can't have more that one image type record for a given type with name : "
+                + name);
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
@@ -179,11 +180,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       imageTypes = this.databaseOperator
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
               name.toLowerCase());
-      if (imageTypes == null) {
-        log.error("Unable to fetch image type metadata from image type : " + name);
-        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
-            "Unable to fetch image type metadata for image type : " + name);
-      }
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
         log.error(

@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
   private static final String GET_IMAGE_TYPE_URI = "/imageTypes";
-  private static final String IMAGE_TYPE = "imageType";
   private static final String IMAGE_TYPE_NAME_OR_ID = "imageTypeNameOrId";
   private static final String FORBIDDEN_USER_ERR_MSG =
       "The user does not have appropriate permissions to"
@@ -92,7 +91,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
         getImageTypeDTOByIdOrImageTypeName(resp, session, templateVariableToValue);
       } else if (GET_IMAGE_TYPE_URI.equals(req.getRequestURI())) {
         ImageTypeDTO imageTypeDTO;
-        if (req.getQueryString().contains(IMAGE_TYPE)) {
+        if (req.getQueryString().contains(ImageMgmtConstants.IMAGE_TYPE)) {
           final String imageTypeName = HttpRequestUtils
               .getParam(req, ImageMgmtConstants.IMAGE_TYPE);
           if (!hasImageManagementPermission(imageTypeName, session.getUser(), Type.GET)) {
@@ -120,7 +119,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       } else {
         resp.setStatus(HttpStatus.SC_BAD_REQUEST);
       }
-      sendErrorResponse(resp, HttpServletResponse.SC_BAD_REQUEST,
+      sendErrorResponse(resp, resp.getStatus(),
           "Exception on GET call to /imageTypes. Reason: " + e.getMessage());
     } catch (final Exception e) {
       log.error("Content is likely not present " + e);
