@@ -16,6 +16,7 @@
 package azkaban.executor.container.watch;
 
 import static azkaban.executor.container.KubernetesContainerizedImpl.CLUSTER_LABEL_NAME;
+import static azkaban.executor.container.KubernetesContainerizedImpl.DISABLE_CLEANUP_LABEL_NAME;
 import static azkaban.executor.container.KubernetesContainerizedImpl.EXECUTION_ID_LABEL_NAME;
 import static azkaban.executor.container.KubernetesContainerizedImpl.EXECUTION_ID_LABEL_PREFIX;
 import static java.lang.String.format;
@@ -71,10 +72,16 @@ public class AzPodStatusMetadata {
   public static class FlowPodMetadata {
     private final String executionId;
     private final String clusterName;
+    private final boolean isCleanupDisabled;
 
-    private FlowPodMetadata(String executionId, String clusterName) {
+    private FlowPodMetadata(String executionId, String clusterName, boolean isCleanupDisabled) {
       this.executionId = executionId;
       this.clusterName = clusterName;
+      this.isCleanupDisabled = isCleanupDisabled;
+    }
+
+    public FlowPodMetadata(String executionId, String clusterName) {
+      this(executionId, clusterName, false);
     }
 
     public String getExecutionId() {
@@ -85,6 +92,10 @@ public class AzPodStatusMetadata {
       return this.clusterName;
     }
 
+    public boolean isCleanupDisabled() {
+      return this.isCleanupDisabled;
+    }
+
     public static Optional<FlowPodMetadata> extract(AzPodStatusExtractor podStatusExtractor) {
       requireNonNull(podStatusExtractor.getV1Pod(), "pod must not be null");
       requireNonNull(podStatusExtractor.getV1Pod().getMetadata(), "pod metadata must not be null");
@@ -93,6 +104,7 @@ public class AzPodStatusMetadata {
       String podName = podStatusExtractor.getV1Pod().getMetadata().getName();
       String executionId = null;
       String clusterName = null;
+      boolean isCleanupDisabled = false;
 
       if (podStatusExtractor.getV1Pod().getMetadata().getLabels() == null) {
         logger.warn("No labels found for pod: " + podName);
@@ -110,7 +122,21 @@ public class AzPodStatusMetadata {
         return Optional.empty();
       }
       executionId = executionLabel.substring(EXECUTION_ID_LABEL_PREFIX.length());
-      return Optional.of(new FlowPodMetadata(executionId, clusterName));
+
+      String cleanupDisabledLabel =
+          podStatusExtractor.getV1Pod().getMetadata().getLabels().get(DISABLE_CLEANUP_LABEL_NAME);
+      if (cleanupDisabledLabel != null) {
+        // Any value other than false or 0 will is considered as true. The label is expected to
+        // to be assigned sparingly and only for the purpose of debugging any issues.
+        if (!cleanupDisabledLabel.equalsIgnoreCase("false") &&
+            !cleanupDisabledLabel.equals("0")) {
+          isCleanupDisabled = true;
+        }
+      } else {
+        logger.debug(format("Label %s is not found for pod %s", DISABLE_CLEANUP_LABEL_NAME,
+            podName));
+      }
+      return Optional.of(new FlowPodMetadata(executionId, clusterName, isCleanupDisabled));
     }
   }
 }

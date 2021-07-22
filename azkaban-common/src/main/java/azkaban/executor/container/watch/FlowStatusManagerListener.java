@@ -266,6 +266,11 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    */
   private void deleteFlowContainer(AzPodStatusMetadata event) {
     logger.info("Deleting Flow Pod: " + event.getPodName());
+    if (event.getFlowPodMetadata().get().isCleanupDisabled()) {
+      logger.warn(format("Pod deletion is disabled for pod %s, please delete it manually.",
+          event.getPodName()));
+      return;
+    }
     try {
       containerizedImpl.deleteContainer(
           Integer.parseInt(
