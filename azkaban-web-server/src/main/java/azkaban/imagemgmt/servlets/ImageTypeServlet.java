@@ -113,13 +113,14 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       sendErrorResponse(resp, HttpServletResponse.SC_FORBIDDEN,
           "User does not have permissions. Error Message: " + e.getMessage());
     } catch (final ImageMgmtException e) {
+      int status;
       if (e.getErrorCode() != null) {
         log.error("An error has occurred");
-        resp.setStatus(e.getErrorCode().getCode());
+        status = e.getErrorCode().getCode();
       } else {
-        resp.setStatus(HttpStatus.SC_BAD_REQUEST);
+        status = HttpStatus.SC_BAD_REQUEST;
       }
-      sendErrorResponse(resp, resp.getStatus(),
+      sendErrorResponse(resp, status,
           "Exception on GET call to /imageTypes. Reason: " + e.getMessage());
     } catch (final Exception e) {
       log.error("Content is likely not present " + e);
