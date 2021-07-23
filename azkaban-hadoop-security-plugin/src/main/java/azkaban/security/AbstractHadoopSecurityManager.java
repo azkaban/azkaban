@@ -15,8 +15,8 @@
  */
 package azkaban.security;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.Constants;
@@ -523,12 +523,16 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /*
    * Create a suffix for Kerberos principal, the format is,
-   * az_<host name>_<execution id><DOMAIN_NAME>
+   * az_<webserver_host name>_<execution id><DOMAIN_NAME>
+   * The UGI with executor host name is less useful in containerized world
+   * where each flow runs in its own container with unique host name.
+   * For meaningful analytics using the UGI data, it is better to use webserver
+   * hostname.
    */
   protected String kerberosSuffix(final Props props) {
     // AZKABAN_SERVER_HOST_NAME is not set in Props here, get it from another instance of Props.
     final String host = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class)
-        .getString(AZKABAN_SERVER_HOST_NAME, "unknown");
+        .getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME, "unknown");
     final StringBuilder builder = new StringBuilder("az_");
     builder.append(host);
     builder.append("_");
