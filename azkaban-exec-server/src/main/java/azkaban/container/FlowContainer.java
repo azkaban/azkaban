@@ -724,9 +724,8 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   @VisibleForTesting
   void shutdown() {
     logger.info("Shutting down the container");
-    int execId = -1;
     if (this.flowRunner != null) {
-      execId = this.flowRunner.getExecutionId();
+      final int execId = this.flowRunner.getExecutionId();
       while (!this.flowFuture.isDone()) {
         // This should not happen immediately as submitFlowRunner is a blocking call.
         try {
@@ -764,7 +763,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     logger.info("Sayonara!");
     if (this.flowRunner != null) {
       // If the flowRunner is not created, the execId would be invalid.
-      uploadLogFile(execId);
+      uploadLogFile(this.flowRunner.getExecutionId());
     }
     System.exit(0);
   }
