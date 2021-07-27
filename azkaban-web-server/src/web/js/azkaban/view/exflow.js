@@ -218,6 +218,8 @@ azkaban.FlowTabView = Backbone.View.extend({
     } else if (data.status == "KILLED") {
       $("#executebtn").show();
     } else if (data.status == "KILLING") {
+    } else if (data.status == "EXECUTION_STOPPED") {
+      $("#executebtn").show();
     }
   },
 
