@@ -723,16 +723,19 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    */
   @VisibleForTesting
   void shutdown() {
-    logger.info("Shutting down the pod");
-    final int execId = this.flowRunner.getExecutionId();
-    while (!this.flowFuture.isDone()) {
-      // This should not happen immediately as submitFlowRunner is a blocking call.
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        logger.error(String.format("The sleep while waiting for execution : %d to finish was interrupted",
-            execId));
+    logger.info("Shutting down the container");
+    if (this.flowRunner != null) {
+      final int execId = this.flowRunner.getExecutionId();
+      while (!this.flowFuture.isDone()) {
+        // This should not happen immediately as submitFlowRunner is a blocking call.
+        try {
+          Thread.sleep(100);
+        } catch (final InterruptedException e) {
+          logger.error(String.format("The sleep while waiting for execution : %d to finish was interrupted", execId));
+        }
       }
+    } else {
+      logger.warn("Flowrunner is null, the flow execution never started!");
     }
 
     boolean result = false;
@@ -758,7 +761,10 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
       logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
     }
     logger.info("Sayonara!");
-    uploadLogFile(execId);
+    if (this.flowRunner != null) {
+      // If the flowRunner is not created, the execId would be invalid.
+      uploadLogFile(this.flowRunner.getExecutionId());
+    }
     System.exit(0);
   }
 }
