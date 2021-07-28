@@ -220,33 +220,45 @@ public class ExecutionControllerUtils {
    */
   public static void failEverything(final ExecutableFlow exFlow) {
     final long time = System.currentTimeMillis();
-    for (final ExecutableNode node : exFlow.getExecutableNodes()) {
-      switch (node.getStatus()) {
-        case SUCCEEDED:
-        case FAILED:
-        case KILLED:
-        case SKIPPED:
-        case DISABLED:
-          continue;
-          // case UNKNOWN:
-        case READY:
-          // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to KILLED
-          if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
-            node.setStatus(Status.KILLED);
-          } else {
-            node.setStatus(Status.KILLING);
-          }
-          break;
-        default:
-          node.setStatus(Status.FAILED);
-          break;
+    final LinkedList<ExecutableNode> queue = new LinkedList<>();
+    queue.add(exFlow);
+    // Traverse the DAG and fail every node that's not in a terminal state
+    while (!queue.isEmpty()) {
+      final ExecutableNode node = queue.poll();
+      if (node instanceof ExecutableFlowBase) {
+        final ExecutableFlowBase base = (ExecutableFlowBase) node;
+        for (final ExecutableNode subNode : base.getExecutableNodes()) {
+          queue.add(subNode);
+        }
       }
+      if (node != exFlow) {
+        switch (node.getStatus()) {
+          case SUCCEEDED:
+          case FAILED:
+          case KILLED:
+          case SKIPPED:
+          case DISABLED:
+            continue;
+            // case UNKNOWN:
+          case READY:
+            // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to KILLED
+            if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
+              node.setStatus(Status.KILLED);
+            } else {
+              node.setStatus(Status.KILLING);
+            }
+            break;
+          default:
+            node.setStatus(Status.FAILED);
+            break;
+        }
 
-      if (node.getStartTime() == -1) {
-        node.setStartTime(time);
-      }
-      if (node.getEndTime() == -1) {
-        node.setEndTime(time);
+        if (node.getStartTime() == -1) {
+          node.setStartTime(time);
+        }
+        if (node.getEndTime() == -1) {
+          node.setEndTime(time);
+        }
       }
     }
 
