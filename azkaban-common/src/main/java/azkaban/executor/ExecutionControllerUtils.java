@@ -230,7 +230,12 @@ public class ExecutionControllerUtils {
           continue;
           // case UNKNOWN:
         case READY:
-          node.setStatus(Status.KILLING);
+          // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to KILLED
+          if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
+            node.setStatus(Status.KILLED);
+          } else {
+            node.setStatus(Status.KILLING);
+          }
           break;
         default:
           node.setStatus(Status.FAILED);

@@ -27,6 +27,7 @@ import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
@@ -354,9 +355,13 @@ public class KubernetesWatchTest {
         1);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
-    // Verify that the previously RUNNING flow has been finalized to a failure state.
+    // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
+    // nodes set to terminal state, too.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
     assertThat(flow1.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
+    for (final ExecutableNode node: flow1.getExecutableNodes()) {
+      assertThat(node.getStatus()).isEqualTo(Status.KILLED);
+    }
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
