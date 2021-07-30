@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -220,7 +221,7 @@ public class ExecutionControllerUtils {
    */
   public static void failEverything(final ExecutableFlow exFlow) {
     final long time = System.currentTimeMillis();
-    final LinkedList<ExecutableNode> queue = new LinkedList<>();
+    final Queue<ExecutableNode> queue = new LinkedList<>();
     queue.add(exFlow);
     // Traverse the DAG and fail every node that's not in a terminal state
     while (!queue.isEmpty()) {
