@@ -27,6 +27,8 @@ import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
@@ -50,6 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -344,7 +347,10 @@ public class KubernetesWatchTest {
     statusDriver.registerAzPodStatusListener(updatingListener);
 
     // Mocked flow in RUNNING state.
-    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INVALID_TRANSITIONS, Status.RUNNING);
+    ExecutableFlow flow1 = TestUtils.createTestExecutableFlowFromYaml("embeddedflowyamltest",
+        "embedded_flow");
+    flow1.setExecutionId(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
+    flow1.setStatus(Status.RUNNING);
     when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INVALID_TRANSITIONS))
         .thenReturn(flow1);
 
@@ -354,9 +360,26 @@ public class KubernetesWatchTest {
         1);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
-    // Verify that the previously RUNNING flow has been finalized to a failure state.
+    // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
+    // nodes set to terminal state, too.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
+    Queue<ExecutableNode> queue = new LinkedList<>();
+    queue.add(flow1);
+    // traverse through every node in flow1
+    while(!queue.isEmpty()) {
+      ExecutableNode node = queue.poll();
+      if (node==flow1) {
+        assertThat(node.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
+      } else {
+        assertThat(node.getStatus()).isEqualTo(Status.KILLED);
+      }
+      if (node instanceof ExecutableFlowBase) {
+        final ExecutableFlowBase base = (ExecutableFlowBase) node;
+        for (final ExecutableNode subNode : base.getExecutableNodes()) {
+          queue.add(subNode);
+        }
+      }
+    }
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
