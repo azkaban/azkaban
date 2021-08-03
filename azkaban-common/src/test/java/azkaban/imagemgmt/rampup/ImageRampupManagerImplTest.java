@@ -277,13 +277,20 @@ public class ImageRampupManagerImplTest {
     final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionForAllImageTypes(null);
     Assert.assertNotNull(imageTypeVersionMap);
-    // Below image type versions are obtained from active ramp up. Version is selected randomly
-    // based on rampup percentage.
+    // Below image type versions are obtained from active ramp up. Version is selected based on
+    // the maximum rampup percentage value.
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_core"));
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_exec"));
     Assert.assertNotNull(imageTypeVersionMap.get("hive_job"));
     Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
+
+    Assert.assertEquals("3.6.5", imageTypeVersionMap.get("azkaban_config").getVersion());
+    Assert.assertEquals("3.6.2", imageTypeVersionMap.get("azkaban_core").getVersion());
+    Assert.assertEquals("1.8.2", imageTypeVersionMap.get("azkaban_exec").getVersion());
+    Assert.assertEquals("2.1.3", imageTypeVersionMap.get("hive_job").getVersion());
+    Assert.assertEquals("1.1.2", imageTypeVersionMap.get("spark_job").getVersion());
+
     // Below two image types are from based on active image version
     Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
     Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());

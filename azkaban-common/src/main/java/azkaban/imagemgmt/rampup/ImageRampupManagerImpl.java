@@ -296,11 +296,16 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       if (null == flow) {
         log.info("Flow object is null, so continue");
         final ImageRampup firstImageRampup = imageRampupList.get(0);
+
+        // Find the imageVersion in the Rampup list with maximum rampup percentage.
+        final ImageRampup maxImageRampup = imageRampupList.stream()
+            .max(Comparator.comparing(ImageRampup::getRampupPercentage))
+            .orElseGet(() -> firstImageRampup);
         imageTypeRampupVersionMap.put(imageTypeName,
-            this.fetchImageVersion(imageTypeName, firstImageRampup.getImageVersion())
+            this.fetchImageVersion(imageTypeName, maxImageRampup.getImageVersion())
                 .orElseThrow(() -> new ImageMgmtException(
                     String.format("Unable to fetch version %s from image " + "versions table.",
-                        firstImageRampup.getImageVersion()))));
+                        maxImageRampup.getImageVersion()))));
         continue;
       }
       int prevRampupPercentage = 0;
