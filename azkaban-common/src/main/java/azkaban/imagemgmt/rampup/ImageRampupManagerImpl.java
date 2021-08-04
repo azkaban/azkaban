@@ -30,9 +30,7 @@ import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +69,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   private final ImageVersionDao imageVersionDao;
   private final ImageRampupDao imageRampupDao;
   private static final String MSG_RANDOM_RAMPUP_VERSION_SELECTION = "The version selection is "
-      + "based on random rampup.";
+      + "based on deterministic rampup.";
   private static final String MSG_ACTIVE_VERSION_SELECTION = "The version selection is "
       + "based on latest available ACTIVE version.";
   private static final String MSG_NON_ACTIVE_VERSION_SELECTION = "Non ACTIVE "
@@ -294,13 +292,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
         continue;
       }
       if (null == flow) {
+        // When flow object is null, there is no utility in rampup version.
         log.info("Flow object is null, so continue");
-        final ImageRampup firstImageRampup = imageRampupList.get(0);
-        imageTypeRampupVersionMap.put(imageTypeName,
-            this.fetchImageVersion(imageTypeName, firstImageRampup.getImageVersion())
-                .orElseThrow(() -> new ImageMgmtException(
-                    String.format("Unable to fetch version %s from image " + "versions table.",
-                        firstImageRampup.getImageVersion()))));
         continue;
       }
       int prevRampupPercentage = 0;

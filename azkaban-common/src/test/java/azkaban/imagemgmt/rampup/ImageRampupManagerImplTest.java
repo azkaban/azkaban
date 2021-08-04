@@ -105,19 +105,11 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("azkaban_exec");
     when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
-    Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
-        .getVersionByImageTypes(null, imageTypes);
-    Assert.assertNotNull(imageTypeVersionMap);
-    Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
-    Assert.assertNotNull(imageTypeVersionMap.get("azkaban_core"));
-    Assert.assertNotNull(imageTypeVersionMap.get("azkaban_exec"));
-    Assert.assertNotNull(imageTypeVersionMap.get("hive_job"));
-    Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
 
     // Assert the for a flow, versions are always deterministic and remain the same
     final ExecutableFlow flow = TestUtils
         .createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
-    imageTypeVersionMap = this.imageRampupManger
+    Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(flow, imageTypes);
     Assert.assertEquals("3.6.5", imageTypeVersionMap.get("azkaban_config").getVersion());
     Assert.assertEquals("3.6.2", imageTypeVersionMap.get("azkaban_core").getVersion());
@@ -147,7 +139,7 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("pig_job");
     imageTypes.add("hadoop_job");
     final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
-        + "/image_type_active_version.json");
+        + "/all_image_types_active_version.json");
     final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
         jsonImageTypeActiveVersion, ImageVersionDTO.class);
     final List<ImageVersion> activeImageVersions =
@@ -238,7 +230,7 @@ public class ImageRampupManagerImplTest {
 
   /**
    * This test is a success test for getting version for all the available image types. The versions
-   * are either from active rampup or based on active image version.
+   * are from active image version.
    *
    * @throws Exception
    */
@@ -277,13 +269,19 @@ public class ImageRampupManagerImplTest {
     final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionForAllImageTypes(null);
     Assert.assertNotNull(imageTypeVersionMap);
-    // Below image type versions are obtained from active ramp up. Version is selected randomly
-    // based on rampup percentage.
+    // Below image type versions are obtained from latest active version.
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_core"));
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_exec"));
     Assert.assertNotNull(imageTypeVersionMap.get("hive_job"));
     Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
+
+    Assert.assertEquals("3.6.7", imageTypeVersionMap.get("azkaban_config").getVersion());
+    Assert.assertEquals("3.6.3", imageTypeVersionMap.get("azkaban_core").getVersion());
+    Assert.assertEquals("1.8.3", imageTypeVersionMap.get("azkaban_exec").getVersion());
+    Assert.assertEquals("2.1.4", imageTypeVersionMap.get("hive_job").getVersion());
+    Assert.assertEquals("1.1.3", imageTypeVersionMap.get("spark_job").getVersion());
+
     // Below two image types are from based on active image version
     Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
     Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());
@@ -334,8 +332,10 @@ public class ImageRampupManagerImplTest {
     when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
+    final ExecutableFlow flow = TestUtils
+        .createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
     final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
-        .getVersionForAllImageTypes(null);
+        .getVersionForAllImageTypes(flow);
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
