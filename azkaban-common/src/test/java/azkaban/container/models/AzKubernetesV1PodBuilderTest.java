@@ -17,7 +17,6 @@
 
 package azkaban.container.models;
 
-import azkaban.executor.container.KubernetesContainerizedImpl;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableMap;
 import io.kubernetes.client.openapi.models.V1Pod;
