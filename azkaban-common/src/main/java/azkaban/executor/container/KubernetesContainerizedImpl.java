@@ -74,6 +74,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -526,6 +527,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         String.valueOf(executionId));
     setupJavaRemoteDebug(envVariables, flowParam);
     setupDevPod(envVariables, flowParam);
+    setupRPMs(envVariables, flowParam);
     setupPodEnvVariables(envVariables, flowParam);
     // Add env variables to spec builder
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
@@ -604,6 +606,30 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       envVariables.put(ContainerizedDispatchManagerProperties.ENV_ENABLE_DEV_POD,
           flowParam.get(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD));
     }
+  }
+
+  /**
+   * This method is used to setup environment variable for RPMs. Based on this environment
+   * variable startup scripts for the flow container can download/install them.
+   *
+   * @param envVariables
+   * @param flowParam
+   */
+  @VisibleForTesting
+  static void setupRPMs(final Map<String, String> envVariables,
+      final Map<String, String> flowParam) {
+    if (MapUtils.isEmpty(flowParam)) {
+      return;
+    }
+    flowParam.entrySet().stream()
+        .filter(e -> e.getKey().startsWith(FlowParameters.FLOW_PARAM_RPM_PREFIX))
+        .forEach(e -> {
+          String rpmSuffix = e.getKey().substring(FlowParameters.FLOW_PARAM_RPM_PREFIX.length());
+          String formattedRpmSuffix = rpmSuffix.replace(".", "_").toUpperCase();
+          envVariables
+              .put(ContainerizedDispatchManagerProperties.ENV_RPM_PREFIX + formattedRpmSuffix,
+                  e.getValue());
+        });
   }
 
   /**

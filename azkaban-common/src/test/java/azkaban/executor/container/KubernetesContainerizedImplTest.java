@@ -421,6 +421,21 @@ public class KubernetesContainerizedImplTest {
             .get(AZKABAN_BASE_IMAGE).getVersion());
   }
 
+  @Test
+  public void testSetupRPMs() {
+    final Map<String, String> envVariables = new HashMap<>();
+    final Map<String, String> flowParam = new HashMap<>();
+    flowParam.put("mykey", "myprop");
+    flowParam.put("flow.container.rpm.cluster1.hadoop", "rpm_hadoop_cluster1_1.1");
+    flowParam.put("flow.container.rpm.cluster2.hadoop", "rpm_hadoop_cluster2_1.1");
+    flowParam.put("flow.container.rpm.cluster1.hive", "rpm_hive_cluster1_3.1");
+    KubernetesContainerizedImpl.setupRPMs(envVariables, flowParam);
+    Assert.assertEquals(3, envVariables.size());
+    Assert.assertEquals("rpm_hadoop_cluster1_1.1", envVariables.get("RPM_CLUSTER1_HADOOP"));
+    Assert.assertEquals("rpm_hadoop_cluster2_1.1", envVariables.get("RPM_CLUSTER2_HADOOP"));
+    Assert.assertEquals("rpm_hive_cluster1_3.1", envVariables.get("RPM_CLUSTER1_HIVE"));
+  }
+
   private ExecutableFlow createTestFlow() throws Exception {
     return TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
   }

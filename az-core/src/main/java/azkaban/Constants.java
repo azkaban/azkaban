@@ -669,6 +669,7 @@ public class Constants {
     public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
     public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
     public static final String ENV_ENABLE_DEV_POD = "ENABLE_DEV_POD";
+    public static final String ENV_RPM_PREFIX = "RPM_";
   }
 
   public static class ImageMgmtConstants {
@@ -692,6 +693,10 @@ public class Constants {
 
     // Constant to enable pod for developer testing
     public static final String FLOW_PARAM_ENABLE_DEV_POD = "enable.dev.pod";
+
+    // Params with this prefix will be set as environment variables to the flow container and can
+    // be utilized by any script for download/installation.
+    public static final String FLOW_PARAM_RPM_PREFIX = "flow.container.rpm.";
 
     // Constant to disable pod cleanup through the kubernetes watch
     public static final String FLOW_PARAM_DISABLE_POD_CLEANUP = "disable.pod.cleanup";
