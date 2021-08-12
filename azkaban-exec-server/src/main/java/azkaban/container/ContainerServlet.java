@@ -60,6 +60,11 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  @VisibleForTesting
+  void setFlowContainer(FlowContainer flowContainer) {
+    this.flowContainer = flowContainer;
+  }
+
   @Override
   public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
@@ -101,6 +106,9 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
           case ConnectorParams.LOG_ACTION:
             handleFetchLogEvent(execid, req, resp, respMap);
             break;
+          case ConnectorParams.MODIFY_EXECUTION_ACTION:
+            handleModifyExecutionRequest(respMap, execid, user, req);
+            break;
           default:
             respMap.put(ConnectorParams.RESPONSE_ERROR, "Unsupported action type: " + action);
             break;
@@ -112,6 +120,40 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     }
     writeJSON(resp, respMap);
     resp.flushBuffer();
+  }
+
+  /**
+   * This method checks if the modifyExecution request also has param modifyType with value
+   * retryFailures, then it attempts to retry the failed jobs in the running execution.
+   *
+   * @param respMap
+   * @param execId
+   * @param user
+   * @param req
+   * @throws ServletException
+   */
+  @VisibleForTesting
+  void handleModifyExecutionRequest(final Map<String, Object> respMap, final int execId,
+      final String user, final HttpServletRequest req) throws ServletException {
+    if (user == null) {
+      respMap.put(ConnectorParams.RESPONSE_ERROR, "user has not been set");
+      return;
+    }
+
+    if (!hasParam(req, ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE)) {
+      respMap.put(ConnectorParams.RESPONSE_ERROR, "Modification type not set.");
+      return;
+    }
+    final String modificationType = getParam(req, ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE);
+
+    try {
+      if (ConnectorParams.MODIFY_RETRY_FAILURES.equals(modificationType)) {
+        this.flowContainer.retryFailures(execId, user);
+      }
+    } catch (final ExecutorManagerException e) {
+      logger.error(e.getMessage(), e);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
+    }
   }
 
   @VisibleForTesting
