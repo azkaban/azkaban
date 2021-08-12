@@ -443,6 +443,26 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   }
 
   /**
+   * Attempts to retry the failed jobs in a running execution.
+   *
+   * @param execId
+   * @param user
+   * @throws ExecutorManagerException
+   */
+  public void retryFailures(final int execId, final String user)
+      throws ExecutorManagerException {
+
+    if (this.flowRunner == null) {
+      logger.warn(String.format("Attempt to retry failures for execId: %d before flow got a "
+          + "chance to start.", execId));
+      throw new ExecutorManagerException("Execution " + execId
+          + " is not running.");
+    }
+
+    this.flowRunner.retryFailures(user);
+  }
+
+  /**
    * Return accumulated flow logs with the specified length from the flow container starting from
    * the given byte offset.
    *
