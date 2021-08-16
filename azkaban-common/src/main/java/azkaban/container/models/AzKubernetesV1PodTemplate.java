@@ -84,7 +84,7 @@ public class AzKubernetesV1PodTemplate {
    * @return The Flow Container which must be the first container among all app-containers
    */
   public V1Container getFlowContainer() {
-    List<V1Container> containers = this.podFromTemplate.getSpec().getContainers();
+    final List<V1Container> containers = this.podFromTemplate.getSpec().getContainers();
     return containers.isEmpty() ? null : containers.get(FLOW_CONTAINER_INDEX);
   }
 

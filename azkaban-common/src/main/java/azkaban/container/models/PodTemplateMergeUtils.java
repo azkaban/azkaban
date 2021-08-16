@@ -71,45 +71,46 @@ public class PodTemplateMergeUtils {
   private static void mergeInitContainers(V1PodSpec podSpec,
       AzKubernetesV1PodTemplate podTemplate) {
     List<V1Container> podSpecInitContainers = podSpec.getInitContainers();
-    if (null != podSpecInitContainers) {
-      // Get init containers from podTemplate which are not part of pod-spec init containers.
-      final List<V1Container> templateOnlyInitContainers = podTemplate.getInitContainers(
-          templateInitContainer -> podSpecInitContainers.stream().map(V1Container::getName)
-              .noneMatch(name -> name.equals(templateInitContainer.getName())));
-
-      // Get init containers from podTemplate which are also part of pod-spec init containers
-      // i.e. the other containers apart from the above list templateOnlyInitContainers.
-      final List<V1Container> templateAlsoInitContainers = podTemplate.getInitContainers(
-          templateInitContainer -> templateOnlyInitContainers.stream().map(V1Container::getName)
-              .noneMatch(name -> name.equals(templateInitContainer.getName())));
-
-      // Get init containers from pod-spec which are not part of podTemplate init containers.
-      final List<V1Container> podSpecOnlyInitContainers =
-          podSpec.getInitContainers().stream().filter(
-              podSpecInitContainer -> templateAlsoInitContainers.stream().map(V1Container::getName)
-                  .noneMatch(name -> name.equals(podSpecInitContainer.getName()))
-          ).collect(Collectors.toList());
-
-      // Get init containers from pod-spec which are also part of podTemplate init containers
-      // i.e. the other containers apart from the above list podSpecOnlyInitContainers.
-      final Map<String, V1Container> podSpecAlsoInitContainers =
-          podSpec.getInitContainers().stream().filter(
-              podSpecInitContainer -> podSpecOnlyInitContainers.stream().map(V1Container::getName)
-                  .noneMatch(name -> name.equals(podSpecInitContainer.getName()))
-          ).collect(Collectors.toMap(V1Container::getName, e -> e));
-
-      final List<V1Container> allInitContainers = new ArrayList<>();
-      allInitContainers.addAll(podSpecOnlyInitContainers);
-      allInitContainers.addAll(templateOnlyInitContainers);
-
-      // Merge templateAlsoInitContainers and podSpecAlsoInitContainers.
-      List<V1Container> mergedInitContainers = getMergedInitContainers(templateAlsoInitContainers,
-          podSpecAlsoInitContainers);
-      allInitContainers.addAll(mergedInitContainers);
-
-      // This resets the init containers already part of pod-spec.
-      podSpec.setInitContainers(allInitContainers);
+    if (null == podSpecInitContainers) {
+      return;
     }
+    // Get init containers from podTemplate which are not part of pod-spec init containers.
+    final List<V1Container> templateOnlyInitContainers = podTemplate.getInitContainers(
+        templateInitContainer -> podSpecInitContainers.stream().map(V1Container::getName)
+            .noneMatch(name -> name.equals(templateInitContainer.getName())));
+
+    // Get init containers from podTemplate which are also part of pod-spec init containers
+    // i.e. the other containers apart from the above list templateOnlyInitContainers.
+    final List<V1Container> templateAlsoInitContainers = podTemplate.getInitContainers(
+        templateInitContainer -> templateOnlyInitContainers.stream().map(V1Container::getName)
+            .noneMatch(name -> name.equals(templateInitContainer.getName())));
+
+    // Get init containers from pod-spec which are not part of podTemplate init containers.
+    final List<V1Container> podSpecOnlyInitContainers =
+        podSpec.getInitContainers().stream().filter(
+            podSpecInitContainer -> templateAlsoInitContainers.stream().map(V1Container::getName)
+                .noneMatch(name -> name.equals(podSpecInitContainer.getName()))
+        ).collect(Collectors.toList());
+
+    // Get init containers from pod-spec which are also part of podTemplate init containers
+    // i.e. the other containers apart from the above list podSpecOnlyInitContainers.
+    final Map<String, V1Container> podSpecAlsoInitContainers =
+        podSpec.getInitContainers().stream().filter(
+            podSpecInitContainer -> podSpecOnlyInitContainers.stream().map(V1Container::getName)
+                .noneMatch(name -> name.equals(podSpecInitContainer.getName()))
+        ).collect(Collectors.toMap(V1Container::getName, e -> e));
+
+    final List<V1Container> allInitContainers = new ArrayList<>();
+    allInitContainers.addAll(podSpecOnlyInitContainers);
+    allInitContainers.addAll(templateOnlyInitContainers);
+
+    // Merge templateAlsoInitContainers and podSpecAlsoInitContainers.
+    List<V1Container> mergedInitContainers = getMergedInitContainers(templateAlsoInitContainers,
+        podSpecAlsoInitContainers);
+    allInitContainers.addAll(mergedInitContainers);
+
+    // This resets the init containers already part of pod-spec.
+    podSpec.setInitContainers(allInitContainers);
   }
 
   /**
@@ -145,7 +146,7 @@ public class PodTemplateMergeUtils {
    * corresponding templateContainer. 3) ImagePullPolicy, Image, and VolumeMounts are overridden
    * from podSpecContainer to templateContainer.
    *
-   * @param templateContainer Container form the pod-spec template
+   * @param templateContainer Container from the pod-spec template
    * @param podSpecContainer  Container from the dynamically generated pod-spec
    */
   private static void mergeTemplateAndPodSpecContainer(V1Container templateContainer,
@@ -200,19 +201,17 @@ public class PodTemplateMergeUtils {
    * podSpecInitContainerVolumeMounts.
    */
   private static List<V1VolumeMount> getMergedContainerVolumeMounts(
-      List<V1VolumeMount> templateContainerVolumeMounts,
-      List<V1VolumeMount> podSpecContainerVolumeMounts) {
+      final List<V1VolumeMount> templateContainerVolumeMounts,
+      final List<V1VolumeMount> podSpecContainerVolumeMounts) {
     final List<V1VolumeMount> allContainerVolumeMounts = new ArrayList<>();
     if (null != templateContainerVolumeMounts && null != podSpecContainerVolumeMounts) {
-      List<V1VolumeMount> templateOnlyInitContainerVolumeMounts = templateContainerVolumeMounts
+      allContainerVolumeMounts.addAll(podSpecContainerVolumeMounts);
+      templateContainerVolumeMounts
           .stream()
           .filter(templateInitContainerVolumeMount -> podSpecContainerVolumeMounts.stream()
               .map(V1VolumeMount::getName)
               .noneMatch(name -> name.equals(templateInitContainerVolumeMount.getName()))
-          ).collect(Collectors.toList());
-
-      allContainerVolumeMounts.addAll(podSpecContainerVolumeMounts);
-      allContainerVolumeMounts.addAll(templateOnlyInitContainerVolumeMounts);
+          ).forEach(vm -> allContainerVolumeMounts.add(vm));
     } else if (null != templateContainerVolumeMounts) {
       allContainerVolumeMounts.addAll(templateContainerVolumeMounts);
     } else if (null != podSpecContainerVolumeMounts) {
