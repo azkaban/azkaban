@@ -50,18 +50,9 @@ spec:
       name: azkaban-private-properties
     - mountPath: /var/run/kubelet
       name: kubelet
+    - mountPath: azBasePath/plugins/jobtypes/custom-spark
+      name: jobtype-volume-custom-spark
   initContainers:
-  - env:
-    - name: AZ_CLUSTER
-      value: mycluster
-    - name: JOBTYPE_MOUNT_PATH
-      value: /data/jobtypes/spark
-    image: path/spark-jobtype:0.0.5
-    imagePullPolicy: IfNotPresent
-    name: jobtype-init-spark
-    volumeMounts:
-    - mountPath: /data/jobtypes/spark
-      name: jobtype-volume-spark
   - command:
     - chown
     - -R
@@ -74,6 +65,21 @@ spec:
     volumeMounts:
     - mountPath: /var/run/kubelet
       name: kubelet
+  - env:
+    - name: CUSTOM_ENV
+      value: customVal
+    - name: AZ_CLUSTER
+      value: mycluster
+    - name: JOBTYPE_MOUNT_PATH
+      value: /data/jobtypes/spark
+    image: path/spark-jobtype:0.0.5
+    imagePullPolicy: IfNotPresent
+    name: jobtype-init-spark
+    volumeMounts:
+    - mountPath: /data/jobtypes/spark
+      name: jobtype-volume-spark
+    - mountPath: /data/jobtypes/custom-spark
+      name: jobtype-volume-custom-spark
   restartPolicy: Never
   volumes:
   - emptyDir: {}
@@ -86,6 +92,8 @@ spec:
     secret:
       defaultMode: 256
       secretName: azkaban-private-properties
+  - emptyDir: {}
+    name: jobtype-volume-custom-spark
   - hostPath:
       type: Directory
       path: /export/content/lid/apps/kubelet/i002/var
