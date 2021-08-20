@@ -51,6 +51,11 @@ import org.apache.log4j.Logger;
 
 public class JobTypeManager {
   private static final Logger LOGGER = Logger.getLogger(JobTypeManager.class);
+  private static final String[] NON_OVERRIDABLE_PROPS =
+      { CommonJobProperties.TARGET_CLUSTER_CLASSPATH,
+        CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB,
+        "env.HADOOP_HOME", "env.HADOOP_COMMON_HOME", "env.HADOOP_YARN_HOME", "env.HADOOP_HDFS_HOME",
+        "env.HADOOP_MAPRED_HOME", "env.HADOOP_CONF_DIR", "env.YARN_CONF_DIR" };
 
   private final String jobTypePluginDir; // the dir for jobtype plugins
   private final ClassLoader parentLoader;
@@ -460,15 +465,11 @@ public class JobTypeManager {
 
   private static Props getClusterSpecificNonOverridableJobProps(final Props clusterSpecificJobProp) {
     final Props props = new Props();
-    final String clusterClasspath =
-        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);
-    if (clusterClasspath != null) {
-      props.put(CommonJobProperties.TARGET_CLUSTER_CLASSPATH, clusterClasspath);
-    }
-    final String clusterNativeLib =
-        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB);
-    if (clusterNativeLib != null) {
-      props.put(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB, clusterNativeLib);
+    for (String prop : NON_OVERRIDABLE_PROPS) {
+      final String value = clusterSpecificJobProp.get(prop);
+      if (value != null) {
+        props.put(prop, value);
+      }
     }
     return props;
   }
