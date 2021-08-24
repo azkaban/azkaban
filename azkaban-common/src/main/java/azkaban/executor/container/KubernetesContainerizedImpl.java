@@ -719,7 +719,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       try {
         final AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate
             .getInstance(this.podTemplatePath);
-        PodTemplateMergeUtils.mergePodSpec(podSpec, podTemplate);
+        V1PodSpec podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
+        logPodSpecYaml(executionId, podSpecFromTemplate, flowParam, "ExecId: {}, PodSpec template "
+            + "before merge: {}");
+        PodTemplateMergeUtils.mergePodSpec(podSpec, podSpecFromTemplate);
+        logPodSpecYaml(executionId, podSpecFromTemplate, flowParam, "ExecId: {}, PodSpec after "
+            + "template merge: {}");
       } catch (final IOException e) {
         logger.info("ExecId: {}, Failed to create k8s pod from template: {}", executionId,
             e.getMessage());
@@ -727,7 +732,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       }
     }
     final V1Pod pod = createPodFromSpec(executionId, podSpec, flowParam);
-    logPodSpecYaml(executionId, pod, flowParam);
+    logPodSpecYaml(executionId, pod, flowParam, "ExecId: {}, Pod: {}");
 
     try {
       this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
@@ -756,17 +761,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * then pod spec yaml will be printed in logs for INFO level else it will be logged for DEBUG
    * level.
    * @param executionId
-   * @param pod
+   * @param podObject Pod/PodSpec depending on the log
    * @param flowParam
    */
-  private void logPodSpecYaml(final int executionId, final V1Pod pod,
-      final Map<String, String> flowParam) {
-    final String podSpecYaml = Yaml.dump(pod).trim();
+  private static void logPodSpecYaml(final int executionId, final Object podObject,
+      final Map<String, String> flowParam, String message) {
+    final String podSpecYaml = Yaml.dump(podObject).trim();
     if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
-      logger.info("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
+      logger.info(message, executionId, podSpecYaml);
     } else {
-      logger.debug("ExecId: {}, Pod spec is {}", executionId, podSpecYaml);
+      logger.debug(message, executionId, podSpecYaml);
     }
   }
 
