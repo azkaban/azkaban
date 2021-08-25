@@ -65,7 +65,8 @@ public class AzKubernetesV1PodBuilderTest {
         // Merge the podSpec created earlier with the pod from the template
         AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate.getInstance(
             this.getClass().getResource("v1PodTestTemplate1.yaml").getFile());
-        PodTemplateMergeUtils.mergePodSpec(podSpec, podTemplate);
+        V1PodSpec podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
+        PodTemplateMergeUtils.mergePodSpec(podSpec, podSpecFromTemplate);
         V1Pod pod2 = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
             .withPodLabels(labels)
             .withPodAnnotations(annotations)
@@ -73,5 +74,18 @@ public class AzKubernetesV1PodBuilderTest {
         String createdPodSpec2 = Yaml.dump(pod2).trim();
         String readPodSpec2 = TestUtils.readResource("v1PodTest2.yaml", this).trim();
         Assert.assertEquals(readPodSpec2, createdPodSpec2);
+
+        // Verify that the number of volumeMounts to flow container after Merge is five in the
+        // podSpecFromTemplate
+        Assert.assertEquals(5, podSpecFromTemplate.getContainers().get(0)
+            .getVolumeMounts().size());
+
+        // Verify that the number of volumeMounts in a new podSpecFromTemplate is two and hence
+        // it is not corrupted by the previous Merge
+        podTemplate = AzKubernetesV1PodTemplate.getInstance(
+            this.getClass().getResource("v1PodTestTemplate1.yaml").getFile());
+        podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
+        Assert.assertEquals(2, podSpecFromTemplate.getContainers().get(0)
+            .getVolumeMounts().size());
     }
 }
