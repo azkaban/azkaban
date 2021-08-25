@@ -29,6 +29,7 @@ import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
 import azkaban.container.models.ImagePullPolicy;
+import azkaban.container.models.InitContainerType;
 import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -66,6 +67,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -99,6 +101,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES = "/data/jobtypes";
   public static final String DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_JOBTYPES =
       "/export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes";
+  public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_DEPENDENCIES = "/data/dependencies";
+  public static final String DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_DEPENDENCIES =
+      "/export/apps/azkaban/azkaban-exec-server/current/plugins/dependencies";
   public static final String IMAGE = "image";
   public static final String VERSION = "version";
   public static final String NSCD_SOCKET_VOLUME_NAME = "nscd-socket";
@@ -140,6 +145,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final KubernetesWatch kubernetesWatch;
   private final String initMountPathPrefixForJobtypes;
   private final String appMountPathPrefixForJobtypes;
+  private final Set<String> dependencyTypes;
+  private final String initMountPathPrefixForDependencies;
+  private final String appMountPathPrefixForDependencies;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
       String.CASE_INSENSITIVE_ORDER);
   private final String secretName;
@@ -212,6 +220,18 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         this.azkProps
             .getString(ContainerizedDispatchManagerProperties.KUBERNETES_MOUNT_PATH_FOR_JOBTYPES,
                 DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_JOBTYPES);
+    this.dependencyTypes =
+        new TreeSet<>(this.azkProps
+            .getStringList(ContainerizedDispatchManagerProperties.KUBERNETES_DEPENDENCY_TYPES));
+    this.initMountPathPrefixForDependencies =
+        this.azkProps
+            .getString(
+                ContainerizedDispatchManagerProperties.KUBERNETES_INIT_MOUNT_PATH_FOR_DEPENDENCIES,
+                DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_DEPENDENCIES);
+    this.appMountPathPrefixForDependencies =
+        this.azkProps
+            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_MOUNT_PATH_FOR_DEPENDENCIES,
+                DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_DEPENDENCIES);
     this.nscdSocketHostPath =
         this.azkProps
             .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_HOST_PATH,
@@ -495,12 +515,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param executionId
    * @param versionSet
    * @param jobTypes
+   * @param dependencyTypes
    * @return
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
   V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet,
-      final SortedSet<String> jobTypes, final Map<String, String> flowParam)
+      final SortedSet<String> jobTypes, final Set<String> dependencyTypes,
+      final Map<String, String> flowParam)
       throws ExecutorManagerException {
     // Gets azkaban base image full path containing version.
     final String azkabanBaseImageFullPath = getAzkabanBaseImageFullPath(versionSet);
@@ -530,8 +552,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Add env variables to spec builder
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
-    // Create init container yaml file for each jobType
-    addInitContainerForAllJobTypes(executionId, jobTypes, v1SpecBuilder, versionSet);
+    // Create init container yaml file for each jobType and dependency
+    addInitContainers(executionId, jobTypes, dependencyTypes, v1SpecBuilder, versionSet);
+
 
     // Add volume with secrets mounted
     addSecretVolume(v1SpecBuilder);
@@ -696,6 +719,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     logger
         .info("ExecId: {}, Jobtypes for flow {} are: {}", executionId, flow.getFlowId(), jobTypes);
+    logger
+        .info("ExecId: {}, Dependencies for flow {} are: {}", executionId, flow.getFlowId(),
+            this.dependencyTypes);
 
     Map<String, String> flowParam = null;
     if (flow.getExecutionOptions() != null) {
@@ -710,8 +736,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
+    allImageTypes.addAll(this.dependencyTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
-    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, flowParam);
+    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
     disableSATokenAutomount(podSpec);
 
     // If a pod-template is provided, merge its component definitions into the podSpec.
@@ -849,12 +876,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    *
    * @param executionId
    * @param jobTypes
+   * @param dependencyTypes
    * @param v1SpecBuilder
    * @param versionSet
    * @throws ExecutorManagerException
    */
-  private void addInitContainerForAllJobTypes(final int executionId,
-      final Set<String> jobTypes, final AzKubernetesV1SpecBuilder v1SpecBuilder,
+  private void addInitContainers(final int executionId,
+      final Set<String> jobTypes, final Set<String> dependencyTypes,
+      final AzKubernetesV1SpecBuilder v1SpecBuilder,
       final VersionSet versionSet)
       throws ExecutorManagerException {
     for (final String jobType : jobTypes) {
@@ -865,12 +894,25 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       }
       try {
         final String imageFullPath = versionSet.getVersion(jobType).get().pathWithVersion();
-        v1SpecBuilder.addJobType(jobType, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
+        v1SpecBuilder.addInitContainerType(jobType, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
             String.join("/", this.initMountPathPrefixForJobtypes, jobType),
-            String.join("/", this.appMountPathPrefixForJobtypes, jobType));
+            String.join("/", this.appMountPathPrefixForJobtypes, jobType), InitContainerType.JOBTYPE);
       } catch (final Exception e) {
         throw new ExecutorManagerException("Did not find the version string for image type: " +
             jobType + " in versionSet");
+      }
+    }
+    for (final String dependency: dependencyTypes) {
+      try {
+        final String imageFullPath = versionSet.getVersion(dependency).get().pathWithVersion();
+        v1SpecBuilder
+            .addInitContainerType(dependency, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
+                String.join("/", this.initMountPathPrefixForDependencies, dependency),
+                String.join("/", this.appMountPathPrefixForDependencies, dependency),
+                InitContainerType.DEPENDENCY);
+      } catch (final Exception e) {
+        throw new ExecutorManagerException("Did not find the version string for image type: " +
+            dependency + " in versionSet");
       }
     }
   }

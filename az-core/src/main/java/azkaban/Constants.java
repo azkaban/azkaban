@@ -645,6 +645,13 @@ public class Constants {
     public static final String KUBERNETES_POD_TEMPLATE_PATH =
         KUBERNETES_POD_PREFIX + "template.path";
 
+    public static final String KUBERNETES_DEPENDENCY_TYPES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "dependencyTypes";
+    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_DEPENDENCIES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.dependencies.mount.path";
+    public static final String KUBERNETES_MOUNT_PATH_FOR_DEPENDENCIES =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "dependencies.mount.path";
+
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
     public static final String KUBERNETES_SERVICE_REQUIRED = KUBERNETES_SERVICE_PREFIX +

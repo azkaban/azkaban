@@ -43,8 +43,8 @@ public class AzKubernetesV1PodBuilderTest {
         String flowContainerImage = "path/azkaban-base-image:0.0.5";
         String azConfVer = "0.0.3";
         V1PodSpec podSpec = new AzKubernetesV1SpecBuilder(clusterName, Optional.empty())
-            .addJobType(jobTypeName, jobTypeImage, ImagePullPolicy.IF_NOT_PRESENT,
-                jobTypeInitMountPath, jobTypeFlowMountPath)
+            .addInitContainerType(jobTypeName, jobTypeImage, ImagePullPolicy.IF_NOT_PRESENT,
+                jobTypeInitMountPath, jobTypeFlowMountPath, InitContainerType.JOBTYPE)
             .addFlowContainer(flowContainerName, flowContainerImage, ImagePullPolicy.IF_NOT_PRESENT,
                 azConfVer)
             .addHostPathVolume("nscd-socket", "/var/run/nscd/socket", "Socket",
