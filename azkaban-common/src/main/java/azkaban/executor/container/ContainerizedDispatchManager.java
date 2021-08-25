@@ -475,10 +475,29 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     throw new UnsupportedOperationException("Unsupported Method");
   }
 
-  //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
   @Override
   public void retryFailures(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
-    throw new UnsupportedOperationException("Unsupported Method");
+    synchronized (exFlow) {
+      logger.info("Retrying failures for execId: {}", exFlow.getExecutionId());
+      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+          .fetchUnfinishedFlows();
+      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
+        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
+            .get(exFlow.getExecutionId());
+        // Note that ExecutionReference may have the 'executor' as null. ApiGateway call is expected
+        // to handle this scenario.
+        this.apiGateway.callWithReferenceByUser(pair.getFirst(),
+            ConnectorParams.MODIFY_EXECUTION_ACTION, userId,
+            new Pair<>(
+                ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE,
+                ConnectorParams.MODIFY_RETRY_FAILURES));
+      } else {
+        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
+        logger.warn("Exception while retrying flow failures. ", eme);
+        throw eme;
+      }
+    }
   }
 
   //TODO: BDP-2567 Add container stats information
