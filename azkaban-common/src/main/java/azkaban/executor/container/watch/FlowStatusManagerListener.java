@@ -1,6 +1,20 @@
+/*
+ * Copyright 2021 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.executor.container.watch;
 
-import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -247,21 +261,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null);
       // Log event for cases where the flow was not already in a final state
-      logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
+      WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }
     return Optional.of(originalStatus);
-  }
-
-  private void logWatchEvent(AzPodStatusMetadata event, String message) {
-    try {
-      logger.warn(new StringBuffer(message)
-          .append(System.lineSeparator())
-          .append(event.getPodWatchEvent().object.toString())
-          .toString());
-    } catch (Exception e) {
-      logger.error("Unexpected exception while logging watch event for pod " + event.getPodName()
-          , e);
-    }
   }
 
   /**
