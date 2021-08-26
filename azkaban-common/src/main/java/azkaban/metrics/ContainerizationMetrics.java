@@ -83,4 +83,13 @@ public interface ContainerizationMetrics {
    */
   void markFlowSubmitToContainer();
 
+  /**
+   * Record number of flow executions stopped due to container infra failure
+   */
+  void markExecutionStopped();
+
+  /**
+   * Record number of container dispatch failure
+   */
+  void markContainerDispatchFail();
 }

@@ -33,6 +33,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Meter podCompleted, podRequested, podScheduled, initContainerRunning,
       appContainerStarting, podReady, podInitFailure, podAppFailure;
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
+  private Meter executionStopped, containerDispatchFail;
   private Histogram timeToDispatch;
 
   @Inject
@@ -54,12 +55,14 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.flowSubmitToExecutor = this.metricsManager.addMeter("Flow-Submit-To-Executor-Meter");
     this.flowSubmitToContainer = this.metricsManager.addMeter("Flow-Submit-To-Container-Meter");
     this.timeToDispatch = this.metricsManager.addHistogram("Time-To-Dispatch-Pod-Histogram");
+    this.executionStopped = this.metricsManager.addMeter("Execution-Stopped-Meter");
+    this.containerDispatchFail = this.metricsManager.addMeter("Container-Dispatch-Fail-Meter");
   }
 
   @Override
   public void startReporting(Props props) {
     logger.info(String.format("Start reporting container metrics"));
-    this.metricsManager.startReporting("AZ-WEB", props);
+    this.metricsManager.startReporting("AZ-CONTAINER", props);
   }
 
   /**
@@ -113,4 +116,10 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
   @Override
   public void markFlowSubmitToContainer() { flowSubmitToContainer.mark(); }
+
+  @Override
+  public void markExecutionStopped() { executionStopped.mark(); }
+
+  @Override
+  public void markContainerDispatchFail() { containerDispatchFail.mark(); }
 }

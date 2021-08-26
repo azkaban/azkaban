@@ -230,8 +230,9 @@ public class AzkabanWebServerModule extends AbstractModule {
       final Props azkProps,
       final ContainerizedImpl containerizedImpl,
       final ExecutorLoader executorLoader,
-      final AlerterHolder alerterHolder) {
-    return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder);
+      final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics) {
+    return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder,
+        containerizationMetrics);
   }
 
   @Inject

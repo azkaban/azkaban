@@ -72,11 +72,17 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
 
   @Override
   public void markFlowSubmitToExecutor() {
-
   }
 
   @Override
   public void markFlowSubmitToContainer() {
+  }
 
+  @Override
+  public void markExecutionStopped() {
+  }
+
+  @Override
+  public void markContainerDispatchFail() {
   }
 }

@@ -436,6 +436,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
               new EventData(dsFlow)));
         } catch (ExecutorManagerException executorManagerException) {
+          ContainerizedDispatchManager.this.containerizationMetrics.markContainerDispatchFail();
           logger.error("Unable to update execution status to FAILED for : {}", executionId);
         }
       }
