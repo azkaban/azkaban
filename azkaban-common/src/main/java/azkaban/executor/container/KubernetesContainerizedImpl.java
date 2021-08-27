@@ -740,8 +740,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Create all image types by adding azkaban base image, azkaban config and all job types for
     // the flow.
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(azkabanBaseImageName);
-    allImageTypes.add(azkabanConfigImageName);
+    allImageTypes.add(this.azkabanBaseImageName);
+    allImageTypes.add(this.azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
@@ -815,11 +815,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getAzkabanBaseImageFullPath(final VersionSet versionSet) {
-    return versionSet.getVersion(azkabanBaseImageName).get().pathWithVersion();
+    return versionSet.getVersion(this.azkabanBaseImageName).get().pathWithVersion();
   }
 
   private String getAzkabanConfigVersion(final VersionSet versionSet) {
-    return versionSet.getVersion(azkabanConfigImageName).get().getVersion();
+    return versionSet.getVersion(this.azkabanConfigImageName).get().getVersion();
   }
 
   /**
