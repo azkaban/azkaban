@@ -149,7 +149,11 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
               event.getAzPodStatus(),
               event.getPodName()));
       logger.error("Unsupported state transition.", transitionException);
-      containerizationMetrics.markExecutionStopped();
+      try {
+        containerizationMetrics.markExecutionStopped();
+      } catch (Exception e) {
+        logger.warn("Containerization metrics are not initialized.", e);
+      }
       try {
         finalizeFlowAndDeleteContainer(event, Optional.of(Status.EXECUTION_STOPPED));
       } catch (Exception deletionException) {
