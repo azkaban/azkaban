@@ -98,7 +98,7 @@ public class ContainerStatusMetricsListener implements AzPodStatusListener{
       return;
     }
     // Update AzPodStatus metrics for the flow-pod respectively
-    try {
+    if (containerizationMetrics.isInitialized()) {
       switch (event.getAzPodStatus()) {
         case AZ_POD_REQUESTED:
           containerizationMetrics.markPodRequested();
@@ -127,8 +127,8 @@ public class ContainerStatusMetricsListener implements AzPodStatusListener{
         default:
           // do nothing when status is AZ_POD_UNSET, AZ_POD_UNEXPECTED
       }
-    } catch (Exception e) {
-      logger.warn("Containerization metrics are not initialized.", e);
+    } else {
+      logger.warn ("Containerization metrics are not initialized");
     }
     updatePodStatus(event);
   }

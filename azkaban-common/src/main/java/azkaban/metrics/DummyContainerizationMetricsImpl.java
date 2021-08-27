@@ -35,6 +35,11 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
   }
 
   @Override
+  public boolean isInitialized() {
+    return false;
+  }
+
+  @Override
   public void markPodCompleted() {
   }
 

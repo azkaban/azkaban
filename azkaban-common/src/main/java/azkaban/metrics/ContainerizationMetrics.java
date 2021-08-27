@@ -28,6 +28,11 @@ public interface ContainerizationMetrics {
   void startReporting(final Props props);
 
   /**
+   * @return isInitialized status
+   */
+  public boolean isInitialized();
+
+  /**
    *  Record the number of pod whose application containers exited without errors
    */
   void markPodCompleted();

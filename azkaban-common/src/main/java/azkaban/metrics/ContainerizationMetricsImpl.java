@@ -35,6 +35,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
   private Meter executionStopped, containerDispatchFail;
   private Histogram timeToDispatch;
+  private boolean isInitialized = false;
 
   @Inject
   public ContainerizationMetricsImpl(MetricsManager metricsManager) {
@@ -63,6 +64,12 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   public void startReporting(Props props) {
     logger.info(String.format("Start reporting container metrics"));
     this.metricsManager.startReporting("AZ-WEB", props);
+    this.isInitialized = true;
+  }
+
+  @Override
+  public boolean isInitialized() {
+    return isInitialized;
   }
 
   /**
