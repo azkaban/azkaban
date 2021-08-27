@@ -125,7 +125,7 @@ public class ContainerStatusMetricsListener implements AzPodStatusListener{
           containerizationMetrics.markPodAppFailure();
           break;
         default:
-          // do nothing when status is AZ_POD_UNSET, AZ_POD_UNEXPECTED, AZ_POD_UNEXPECTED
+          // do nothing when status is AZ_POD_UNSET, AZ_POD_UNEXPECTED
       }
     } catch (Exception e) {
       logger.warn("Containerization metrics are not initialized.", e);
