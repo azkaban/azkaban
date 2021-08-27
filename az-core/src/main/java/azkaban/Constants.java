@@ -614,6 +614,10 @@ public class Constants {
         KUBERNETES_POD_PREFIX + "nscd.socket.host.path";
     public static final String KUBERNETES_POD_NSCD_MOUNT_READ_ONLY =
         KUBERNETES_POD_PREFIX + "nscd.mount.read.only";
+    public static final String KUBERNETES_POD_AZKABAN_BASE_IMAGE_NAME = AZKABAN_KUBERNETES_PREFIX +
+        "azkaban-base.image.name";
+    public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
+        AZKABAN_KUBERNETES_PREFIX + "azkaban-config.image.name";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
@@ -685,8 +689,6 @@ public class Constants {
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
     public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
-    public static final String AZKABAN_BASE_IMAGE = "azkaban-base";
-    public static final String AZKABAN_CONFIG = "azkaban-config";
   }
 
   public static class FlowParameters {
