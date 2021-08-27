@@ -15,8 +15,6 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
-import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
 import static java.util.Objects.requireNonNull;
 
@@ -121,6 +119,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String EXECUTION_ID_LABEL_NAME = "execution-id";
   public static final String EXECUTION_ID_LABEL_PREFIX = "execid-";
   public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
+  public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
+  public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
 
   private final String namespace;
   private final ApiClient client;
@@ -156,6 +156,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String podTemplatePath;
   private final EventListener eventListener;
   private final ContainerizationMetrics containerizationMetrics;
+  private final String azkabanBaseImageName;
+  private final String azkabanConfigImageName;
 
 
   private static final Logger logger = LoggerFactory
@@ -256,7 +258,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.podTemplatePath = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_TEMPLATE_PATH,
             StringUtils.EMPTY);
-
+    this.azkabanBaseImageName = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_BASE_IMAGE_NAME,
+            DEFAULT_AZKABAN_BASE_IMAGE_NAME);
+    this.azkabanConfigImageName = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME,
+            DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
@@ -733,8 +740,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Create all image types by adding azkaban base image, azkaban config and all job types for
     // the flow.
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(AZKABAN_BASE_IMAGE);
-    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.add(azkabanBaseImageName);
+    allImageTypes.add(azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
@@ -808,11 +815,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getAzkabanBaseImageFullPath(final VersionSet versionSet) {
-    return versionSet.getVersion(AZKABAN_BASE_IMAGE).get().pathWithVersion();
+    return versionSet.getVersion(azkabanBaseImageName).get().pathWithVersion();
   }
 
   private String getAzkabanConfigVersion(final VersionSet versionSet) {
-    return versionSet.getVersion(AZKABAN_CONFIG).get().getVersion();
+    return versionSet.getVersion(azkabanConfigImageName).get().getVersion();
   }
 
   /**

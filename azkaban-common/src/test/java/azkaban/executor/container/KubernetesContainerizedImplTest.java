@@ -20,8 +20,6 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLE
 import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
-import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
-import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
@@ -259,8 +257,8 @@ public class KubernetesContainerizedImplTest {
 
     final Map<String, String> flowParam = new HashMap<>();  // empty map
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(AZKABAN_BASE_IMAGE);
-    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(dependencyTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
@@ -294,8 +292,8 @@ public class KubernetesContainerizedImplTest {
     jobTypes.add("pigLi-0.11.1");
     // Add azkaban base image and config
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(AZKABAN_BASE_IMAGE);
-    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     allImageTypes.addAll(jobTypes);
     final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
     final VersionSet presetVersionSet = versionSetBuilder
@@ -363,8 +361,8 @@ public class KubernetesContainerizedImplTest {
     jobTypes.add("noop");
     // Add azkaban base image and config
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(AZKABAN_BASE_IMAGE);
-    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(dependencyTypes);
 
@@ -403,8 +401,8 @@ public class KubernetesContainerizedImplTest {
 
     final Map<String, String> flowParam = new HashMap<>();  // empty map
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(AZKABAN_BASE_IMAGE);
-    allImageTypes.add(AZKABAN_CONFIG);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
+    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
@@ -423,9 +421,9 @@ public class KubernetesContainerizedImplTest {
     assertThat(imageToVersionMap.keySet()).isEqualTo(versionSet.getImageToVersionMap().keySet());
     assertThat(imageToVersionMap.get("spark")).isEqualTo(versionSet.getImageToVersionMap()
         .get("spark").getVersion());
-    assertThat(imageToVersionMap.get(AZKABAN_BASE_IMAGE))
+    assertThat(imageToVersionMap.get(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME))
         .isEqualTo(versionSet.getImageToVersionMap()
-            .get(AZKABAN_BASE_IMAGE).getVersion());
+            .get(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME).getVersion());
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
@@ -520,8 +518,10 @@ public class KubernetesContainerizedImplTest {
    */
   private Map<String, VersionInfo> getVersionMap() {
     final Map<String, VersionInfo> versionMap = new TreeMap<>();
-    versionMap.put(AZKABAN_BASE_IMAGE, new VersionInfo("7.0.4", "path1", State.ACTIVE));
-    versionMap.put(AZKABAN_CONFIG, new VersionInfo("9.1.1", "path2", State.ACTIVE));
+    versionMap.put(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME,
+        new VersionInfo("7.0.4", "path1", State.ACTIVE));
+    versionMap.put(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME,
+        new VersionInfo("9.1.1", "path2", State.ACTIVE));
     versionMap.put("spark", new VersionInfo("8.0", "path3", State.ACTIVE));
     versionMap.put("kafkaPush", new VersionInfo("7.1", "path4", State.ACTIVE));
     versionMap.put(DEPENDENCY1, new VersionInfo("6.4", "path5", State.ACTIVE));
