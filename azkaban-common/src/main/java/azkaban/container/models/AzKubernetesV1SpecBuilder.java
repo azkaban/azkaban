@@ -48,11 +48,8 @@ import org.slf4j.LoggerFactory;
 public class AzKubernetesV1SpecBuilder {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(AzKubernetesV1SpecBuilder.class);
-    private static final String JOBTYPE_VOLUME_PREFIX = "jobtype-volume-";
-    private static final String JOBTYPE_INIT_PREFIX = "jobtype-init-";
     private static final String AZ_CLUSTER_KEY = "AZ_CLUSTER";
     private static final String AZ_CONF_VERSION_KEY = "AZ_CONF_VERSION";
-    private static final String JOBTYPE_MOUNT_PATH_KEY = "JOBTYPE_MOUNT_PATH";
     private static final String DEFAULT_RESTART_POLICY = "Never";
     private static final int SECRET_VOLUME_DEFAULT_MODE = 0400; // file read permitted only for the user
 
@@ -111,53 +108,56 @@ public class AzKubernetesV1SpecBuilder {
     }
 
     /**
-     * @param name JobType name to uniquely identify the init container names
+     * @param name Name to uniquely identify the init container names
      * @param image Docker image path in the image registry
      * @param imagePullPolicy Docker image pull policy
-     * @param initMountPath Path to be utilized by the jobType container image
-     * @param appMountPath Path mounted to flow-container/application-container corresponding to jobType
+     * @param initMountPath Path to be utilized by the init container image
+     * @param appMountPath Path mounted to flow-container/application-container corresponding to
+     *                     initContainerType
      *
-     * This method adds configured init container responsible for copying jobType binaries/configs
+     * This method adds configured init container responsible for copying binaries/configs
      * to a volume also mounted to the application container.
      */
-    public AzKubernetesV1SpecBuilder addJobType(String name, String image, ImagePullPolicy imagePullPolicy, String initMountPath, String appMountPath) {
-        LOGGER.info("Creating spec objects for jobType " + name);
-        String jobTypeVolumeName = JOBTYPE_VOLUME_PREFIX + name.toLowerCase();
+    public AzKubernetesV1SpecBuilder addInitContainerType(String name, String image,
+        ImagePullPolicy imagePullPolicy, String initMountPath, String appMountPath,
+        final InitContainerType initContainerType) {
+        LOGGER.info("Creating spec objects for type " + name);
+        String jobTypeVolumeName = initContainerType.volumePrefix + name.toLowerCase();
         V1Volume jobTypeVolume = new V1VolumeBuilder()
                 .withName(jobTypeVolumeName)
                 .withNewEmptyDir()
                 .endEmptyDir()
                 .build();
-        LOGGER.debug("Created jobTypeVolume object with name " + jobTypeVolumeName);
+        LOGGER.debug("Created volume object with name " + jobTypeVolumeName);
         V1EnvVar jobTypeMountPath = new V1EnvVarBuilder()
-                .withName(JOBTYPE_MOUNT_PATH_KEY)
+                .withName(initContainerType.mountPathKey)
                 .withValue(initMountPath)
                 .build();
         V1VolumeMount initMountVolume = new V1VolumeMountBuilder()
                 .withName(jobTypeVolumeName)
                 .withMountPath(initMountPath)
                 .build();
-        LOGGER.debug("Created volume mount object to jobType init container " + initMountPath);
+        LOGGER.debug("Created volume mount object to init container " + initMountPath);
         V1VolumeMount appMountVolume = new V1VolumeMountBuilder()
                 .withName(jobTypeVolumeName)
                 .withMountPath(appMountPath)
                 .build();
         LOGGER.debug("Created volume mount object to app container " + appMountPath);
         V1Container initContainer = new V1ContainerBuilder()
-                .withName(JOBTYPE_INIT_PREFIX + name.toLowerCase())
+                .withName(initContainerType.initPrefix + name.toLowerCase())
                 .addToEnv(this.azClusterName, jobTypeMountPath)
                 .withImagePullPolicy(imagePullPolicy.getPolicyVal())
                 .withImage(image)
                 .withVolumeMounts(initMountVolume)
                 .build();
-        LOGGER.debug("Created init container object for jobType " + name);
+        LOGGER.debug("Created init container object for " + name);
 
         this.appVolumes.add(jobTypeVolume);
-        LOGGER.debug("Added jobType volume to the pod spec");
+        LOGGER.debug("Added volume to the pod spec");
         this.appVolumeMounts.add(appMountVolume);
-        LOGGER.debug("Added jobType volume mount for the application container");
+        LOGGER.debug("Added volume mount for the application container");
         this.initContainers.add(initContainer);
-        LOGGER.debug("Added jobType init container to the pod spec");
+        LOGGER.debug("Added init container to the pod spec");
         return this;
     }
 

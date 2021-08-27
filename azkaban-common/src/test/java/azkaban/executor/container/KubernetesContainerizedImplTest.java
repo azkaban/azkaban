@@ -69,6 +69,7 @@ import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -109,6 +110,7 @@ public class KubernetesContainerizedImplTest {
   private static final String TEST_JSON_DIR = "image_management/k8s_dispatch_test";
   private static final String CPU_REQUESTED_IN_PROPS = "2";
   private static final String MEMORY_REQUESTED_IN_PROPS = "4Gi";
+  public static final String DEPENDENCY1 = "dependency1";
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -249,6 +251,7 @@ public class KubernetesContainerizedImplTest {
     when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
+    final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
     assert (jobTypes.contains("command"));
     assert (jobTypes.contains("hadoopJava"));
     assert (jobTypes.contains("spark"));
@@ -259,10 +262,11 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
+    allImageTypes.addAll(dependencyTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
-        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, flowParam);
+        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, dependencyTypes, flowParam);
 
     assert (podSpec != null);
 
@@ -351,6 +355,7 @@ public class KubernetesContainerizedImplTest {
     when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
+    final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
     // Add included job types
     jobTypes.add("hadoopJava");
     jobTypes.add("pig");
@@ -361,6 +366,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(AZKABAN_BASE_IMAGE);
     allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
+    allImageTypes.addAll(dependencyTypes);
 
     final Map<String, String> flowParam = new HashMap<>();
 
@@ -376,6 +382,7 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals("9.1.1", versionSet.getVersion("azkaban-config").get().getVersion());
     Assert.assertEquals("8.0", versionSet.getVersion("spark").get().getVersion());
     Assert.assertEquals("7.1", versionSet.getVersion("kafkaPush").get().getVersion());
+    Assert.assertEquals("6.4", versionSet.getVersion("dependency1").get().getVersion());
   }
 
   /**
@@ -517,6 +524,7 @@ public class KubernetesContainerizedImplTest {
     versionMap.put(AZKABAN_CONFIG, new VersionInfo("9.1.1", "path2", State.ACTIVE));
     versionMap.put("spark", new VersionInfo("8.0", "path3", State.ACTIVE));
     versionMap.put("kafkaPush", new VersionInfo("7.1", "path4", State.ACTIVE));
+    versionMap.put(DEPENDENCY1, new VersionInfo("6.4", "path5", State.ACTIVE));
     return versionMap;
   }
 
