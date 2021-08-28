@@ -245,14 +245,23 @@ executing, several options can be set.
 
 .. image:: figures/executeflowconcurrent.png
 
-Flow Parameters
+Runtime Properties
 ~~~~~~~~~~~~~~~
 
-Allows users to override flow parameters. The flow parameters override
-the global properties for a job, but not the properties of the job
-itself.
+Runtime Properties allow users to override properties temporarily.
 
-.. image:: figures/executeflowparameters.png
+Note: This feature was previously known as Flow Parameters.
+
+.. image:: figures/executeflowruntimeproperties.png
+
+The scope of each runtime property is defined by the Node selection. Rows with `ROOT` Node apply to all jobs in the flow. Properties can be scoped per sub-flow as well as individual jobs. Most specific node path takes precedence.
+
+Overrides are applied depending on the Azkaban server configuration property `executor.props.resolve.overrideExisting.enabled`:
+
++ **If overriding of existing properties is not enabled (default):**
+   + Runtime properties override the global properties for a job, but not the properties of the job itself.
++ **If overriding of existing properties is enabled:**
+   + Runtime properties override also existing job props
 
 
 
