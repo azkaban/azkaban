@@ -113,6 +113,7 @@ public class KubernetesWatchTest {
       AzPodStatus.AZ_POD_COMPLETED);
 
   private ApiClient defaultApiClient;
+  private ContainerizationMetrics containerizationMetrics = new DummyContainerizationMetricsImpl();
 
   @Before
   public void setUp() throws Exception {
@@ -166,7 +167,7 @@ public class KubernetesWatchTest {
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
     return new FlowStatusManagerListener(azkProps, mockedContainerizedImpl(),
-        mockedExecutorLoader(), mock(AlerterHolder.class));
+        mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics);
   }
 
   private AzPodStatusDrivingListener statusDriverWithListener(AzPodStatusListener listener) {

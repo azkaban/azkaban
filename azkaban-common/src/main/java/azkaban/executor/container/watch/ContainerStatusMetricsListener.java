@@ -22,6 +22,7 @@ import azkaban.metrics.ContainerizationMetrics;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -97,33 +98,37 @@ public class ContainerStatusMetricsListener implements AzPodStatusListener{
       return;
     }
     // Update AzPodStatus metrics for the flow-pod respectively
-    switch (event.getAzPodStatus()) {
-      case AZ_POD_REQUESTED:
-        containerizationMetrics.markPodRequested();
-        break;
-      case AZ_POD_SCHEDULED:
-        containerizationMetrics.markPodScheduled();
-        break;
-      case AZ_POD_INIT_CONTAINERS_RUNNING:
-        containerizationMetrics.markInitContainerRunning();
-        break;
-      case AZ_POD_APP_CONTAINERS_STARTING:
-        containerizationMetrics.markAppContainerStarting();
-        break;
-      case AZ_POD_READY:
-        containerizationMetrics.markPodReady();
-        break;
-      case AZ_POD_COMPLETED:
-        containerizationMetrics.markPodCompleted();
-        break;
-      case AZ_POD_INIT_FAILURE:
-        containerizationMetrics.markPodInitFailure();
-        break;
-      case AZ_POD_APP_FAILURE:
-        containerizationMetrics.markPodAppFailure();
-        break;
-      default:
-        // do nothing when status is AZ_POD_UNSET, AZ_POD_UNEXPECTED, AZ_POD_UNEXPECTED
+    if (containerizationMetrics.isInitialized()) {
+      switch (event.getAzPodStatus()) {
+        case AZ_POD_REQUESTED:
+          containerizationMetrics.markPodRequested();
+          break;
+        case AZ_POD_SCHEDULED:
+          containerizationMetrics.markPodScheduled();
+          break;
+        case AZ_POD_INIT_CONTAINERS_RUNNING:
+          containerizationMetrics.markInitContainerRunning();
+          break;
+        case AZ_POD_APP_CONTAINERS_STARTING:
+          containerizationMetrics.markAppContainerStarting();
+          break;
+        case AZ_POD_READY:
+          containerizationMetrics.markPodReady();
+          break;
+        case AZ_POD_COMPLETED:
+          containerizationMetrics.markPodCompleted();
+          break;
+        case AZ_POD_INIT_FAILURE:
+          containerizationMetrics.markPodInitFailure();
+          break;
+        case AZ_POD_APP_FAILURE:
+          containerizationMetrics.markPodAppFailure();
+          break;
+        default:
+          // do nothing when status is AZ_POD_UNSET, AZ_POD_UNEXPECTED
+      }
+    } else {
+      logger.warn ("Containerization metrics are not initialized");
     }
     updatePodStatus(event);
   }

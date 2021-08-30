@@ -27,6 +27,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.AzPodStatus.TransitionValidator;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -62,6 +63,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   private final Cache<String, AzPodStatusMetadata> podStatusCache;
   private final ExecutorService executor;
 
+  private final ContainerizationMetrics containerizationMetrics;
+
   // Note about the cache size.
   // Each incoming event is expected to be less than 5KB in size and the maximum cache size will be
   // about 5KB * maxCacheEntries.
@@ -73,7 +76,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   public FlowStatusManagerListener(Props azkProps,
       ContainerizedImpl containerizedImpl,
       ExecutorLoader executorLoader,
-      AlerterHolder alerterHolder) {
+      AlerterHolder alerterHolder, ContainerizationMetrics containerizationMetrics) {
+    this.containerizationMetrics = containerizationMetrics;
     requireNonNull(azkProps, "azkaban properties must not be null");
     requireNonNull(containerizedImpl, "container implementation must not be null");
     requireNonNull(executorLoader, "executor loader must not be null");
@@ -145,6 +149,11 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
               event.getAzPodStatus(),
               event.getPodName()));
       logger.error("Unsupported state transition.", transitionException);
+      if (containerizationMetrics.isInitialized()) {
+        containerizationMetrics.markExecutionStopped();
+      } else {
+        logger.warn ("Containerization metrics are not initialized");
+      }
       try {
         finalizeFlowAndDeleteContainer(event, Optional.of(Status.EXECUTION_STOPPED));
       } catch (Exception deletionException) {
