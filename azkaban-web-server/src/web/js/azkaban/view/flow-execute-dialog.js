@@ -348,6 +348,7 @@ azkaban.EditTableView = Backbone.View.extend({
     var tdName = document.createElement("td");
     $(tdName).addClass('property-key');
     var tdValue = document.createElement("td");
+    var tdDelete = document.createElement("td");
 
     var remove = document.createElement("div");
     $(remove).addClass("pull-right").addClass('remove-btn');
@@ -384,13 +385,14 @@ azkaban.EditTableView = Backbone.View.extend({
     $(tdName).addClass("editable");
 
     $(tdValue).append(valueData);
-    $(tdValue).append(remove);
+    $(tdDelete).append(remove);
     $(tdValue).addClass("editable").addClass('value');
 
     $(tr).addClass("editRow");
     $(tr).append(tdJobOrFlow);
     $(tr).append(tdName);
     $(tr).append(tdValue);
+    $(tr).append(tdDelete);
 
     $(tr).insertBefore(".addRow");
     return tr;
@@ -442,17 +444,6 @@ azkaban.EditTableView = Backbone.View.extend({
     var valueData = document.createElement("span");
     $(valueData).addClass("spanValue");
     $(valueData).text(text);
-
-    if ($(parent).hasClass("value")) {
-      var remove = document.createElement("div");
-      $(remove).addClass("pull-right").addClass('remove-btn');
-      var removeBtn = document.createElement("button");
-      $(removeBtn).attr('type', 'button');
-      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
-      $(removeBtn).text('Delete');
-      $(remove).append(removeBtn);
-      $(parent).append(remove);
-    }
 
     $(parent).removeClass("editing");
     $(parent).append(valueData);
