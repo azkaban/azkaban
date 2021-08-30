@@ -432,6 +432,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           dsFlow.setStatus(Status.FAILED);
           dsFlow.setUpdateTime(System.currentTimeMillis());
           ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
+          ContainerizedDispatchManager.this.containerizationMetrics.markContainerDispatchFail();
           // Emit failed flow event
           ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
               new EventData(dsFlow)));
