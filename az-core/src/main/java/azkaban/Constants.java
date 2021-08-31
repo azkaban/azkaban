@@ -721,5 +721,9 @@ public class Constants {
     // Constant to allow test version to be passed as flow parameter. Passing test version will be
     // allowed for Azkaban ADMIN role only
     public static final String FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION = "allow.image.test.version";
+
+    //
+    public static final String FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED = "allow"
+        + ".restart.on.execution.stopped";
   }
 }

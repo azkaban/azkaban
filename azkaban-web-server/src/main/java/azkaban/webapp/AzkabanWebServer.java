@@ -28,6 +28,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
@@ -208,6 +209,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.containerizationMetrics = containerizationMetrics;
 
     loadBuiltinCheckersAndActions();
+
+    // For flow restart in EXECUTION_STOPPED state due to infra failure
+    ExecutionControllerUtils.setProjectManager(this.projectManager);
+    ExecutionControllerUtils.setExecutorManagerAdapter(this.executorManagerAdapter);
 
     // load all trigger agents here
 
