@@ -40,6 +40,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private ProjectManager projectManager;
   private static final int executionId = 111;
   private static final int projectId = 1;
+  private OnExecutionEventListener listener;
 
   @Before
   public void setup() throws Exception {
@@ -72,22 +73,28 @@ public class ExecutionControllerUtilsRestartFlowTest {
         new DummyEventListener(), new DummyContainerizationMetricsImpl());
     this.projectManager = mock(ProjectManager.class);
     when(projectManager.getProject(projectId)).thenReturn(project);
-    ExecutionControllerUtils.setExecutorManagerAdapter(this.containerizedDispatchManager);
-    ExecutionControllerUtils.setProjectManager(this.projectManager);
+
+    this.listener = new OnContainerizedExecutionEventListener(executorLoader,
+        containerizedDispatchManager, projectManager);
+    ExecutionControllerUtils.onExecutionEventListener = listener;
   }
 
   @Test
   public void testRestartOnExecutionStopped() throws Exception {
     this.flow1.setStatus(Status.EXECUTION_STOPPED);
 
-    ExecutionControllerUtils.finalizeFlow(this.executorLoader, mock(AlerterHolder.class),
-        this.flow1, "EXECUTION_STOPPED", null);
-    assertTrue(this.executorLoader.flowUpdateCount==4);
+    ExecutionControllerUtils.restartFlow(flow1);
 
-    ExecutableFlow restartedExFlow = this.executorLoader.fetchExecutableFlow(-1);
+    final ExecutableFlow restartedExFlow = this.executorLoader.fetchExecutableFlow(-1);
     assertTrue(restartedExFlow.getFlowId().equals(flow1.getFlowId()));
     assertTrue(restartedExFlow.getProjectName().equals(project.getName()));
     assertTrue(restartedExFlow.getSubmitUser().equals(flow1.getSubmitUser()));
     assertTrue(restartedExFlow.getDispatchMethod().equals(DispatchMethod.CONTAINERIZED));
+
+    final ExecutionOptions options1 = flow1.getExecutionOptions();
+    assertTrue(options1.isExecutionRetried());
+    final ExecutableFlow flow2 = executorLoader.fetchExecutableFlow(executionId);
+    final ExecutionOptions options2 = flow1.getExecutionOptions();
+    assertTrue(options2.isExecutionRetried());
   }
 }

@@ -210,10 +210,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
     loadBuiltinCheckersAndActions();
 
-    // For flow restart in EXECUTION_STOPPED state due to infra failure
-    ExecutionControllerUtils.setProjectManager(this.projectManager);
-    ExecutionControllerUtils.setExecutorManagerAdapter(this.executorManagerAdapter);
-
     // load all trigger agents here
 
     final String triggerPluginDir =

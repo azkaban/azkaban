@@ -18,16 +18,12 @@ package azkaban.executor;
 
 import static java.util.Objects.requireNonNull;
 
-import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.DispatchMethod;
 import azkaban.alert.Alerter;
-import azkaban.flow.Flow;
-import azkaban.flow.FlowUtils;
-import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -39,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -67,17 +65,7 @@ public class ExecutionControllerUtils {
   private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
       .compile("Invalid Application ID");
 
-  private static ProjectManager projectManager;
-
-  public static void setProjectManager(ProjectManager projectManager) {
-    ExecutionControllerUtils.projectManager = projectManager;
-  }
-
-  private static ExecutorManagerAdapter executorManagerAdapter;
-
-  public static void setExecutorManagerAdapter(ExecutorManagerAdapter executorManagerAdapter) {
-    ExecutionControllerUtils.executorManagerAdapter = executorManagerAdapter;
-  }
+  public static OnExecutionEventListener onExecutionEventListener;
 
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
@@ -120,15 +108,18 @@ public class ExecutionControllerUtils {
       logger.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
     }
 
-    // If the flow is in state EXECUTION_STOPPED and user enabled restartability in flow parameters
+    // If the flow is in state EXECUTION_STOPPED and user enabled restartability in flow
+    // parameters, invoke restart callback
     if (flow.getStatus() == Status.EXECUTION_STOPPED) {
-      final ExecutionOptions executionOptions = flow.getExecutionOptions();
-      if (executionOptions != null) {
-        final Map<String, String> flowParam = executionOptions.getFlowParameters();
+      final ExecutionOptions options = flow.getExecutionOptions();
+      if (options != null && !options.isExecutionRetried()) {
+        final Map<String, String> flowParam = options.getFlowParameters();
         if (flowParam != null && !flowParam.isEmpty()) {
           if (Boolean.valueOf(flowParam.getOrDefault(FlowParameters
               .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
-            restartExecutableFlow(flow);
+            final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
+            executor.execute(()->restartFlow(flow));
           }
         }
       }
@@ -140,46 +131,11 @@ public class ExecutionControllerUtils {
   }
 
   /**
-   * When a flow is in EXECUTION_STOPPED state, and user allows to restart the entire flow execution
-   * with same flow options, a new execution will be dispatched
-   * @param exFlow
+   * This method invokes a callback to submit the flow with a new execution id
+   * @param flow
    */
-  public static void restartExecutableFlow(final ExecutableFlow exFlow) {
-    if (projectManager == null || executorManagerAdapter == null) {
-      logger.error("ExecutionControllerUtils not properly initialized.");
-      return;
-    }
-    if (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Enable restartability
-      // for containerized execution
-      final Project project;
-      final Flow flow;
-      try {
-        project = FlowUtils.getProject(projectManager, exFlow.getProjectId());
-        flow = FlowUtils.getFlow(project, exFlow.getFlowId());
-      } catch (final RuntimeException e) {
-        logger.error(e.getMessage());
-        return;
-      }
-      final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
-      executableFlow.setSubmitUser(exFlow.getSubmitUser());
-      executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
-
-      final ExecutionOptions options = exFlow.getExecutionOptions();
-      if(!options.isFailureEmailsOverridden()) {
-        options.setFailureEmails(flow.getFailureEmails());
-      }
-      if (!options.isSuccessEmailsOverridden()) {
-        options.setSuccessEmails(flow.getSuccessEmails());
-      }
-      options.setMailCreator(flow.getMailCreator());
-      executableFlow.setExecutionOptions(options);
-      try {
-        logger.info("Restarting flow " + project.getName() + "." + executableFlow.getFlowName());
-        executorManagerAdapter.submitExecutableFlow(executableFlow, executableFlow.getSubmitUser());
-      } catch (final ExecutorManagerException e) {
-        logger.error("Failed to restart flow "+ executableFlow.getFlowId() + ". " + e.getMessage());
-      }
-    }
+  protected static void restartFlow(ExecutableFlow flow) {
+    onExecutionEventListener.onExecutionEvent(flow, "Restart Flow");
   }
 
   /**
