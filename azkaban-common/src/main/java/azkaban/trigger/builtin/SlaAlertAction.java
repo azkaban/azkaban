@@ -23,7 +23,6 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
-import azkaban.utils.Emailer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,8 +107,7 @@ public class SlaAlertAction implements TriggerAction {
       if (alerter != null) {
         try {
           final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
-          final String azkabanUrl = ((Emailer) alerter).getAzkabanURL();
-          alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow, azkabanUrl));
+          alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow, alerter.getAzkabanURL()));
         } catch (final Exception e) {
           e.printStackTrace();
           logger.error("Failed to alert by " + SlaOption.ALERT_TYPE_EMAIL);
