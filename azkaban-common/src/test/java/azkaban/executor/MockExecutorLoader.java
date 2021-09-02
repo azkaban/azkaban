@@ -487,6 +487,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(int maxCount, int executorID) throws ExecutorManagerException {
+    return new ArrayList<>();
+  }
+
+  @Override
   public int selectAndUpdateExecution(final int executorId, final boolean isActive,
       final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {

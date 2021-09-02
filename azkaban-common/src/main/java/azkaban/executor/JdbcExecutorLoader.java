@@ -117,6 +117,12 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(final int maxCount, int executorID)
+          throws ExecutorManagerException {
+    return this.executionFlowDao.fetchRecentlyFinishedFlows(maxCount, executorID);
+  }
+
+  @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
     return this.fetchActiveFlowDao.fetchActiveFlows();

@@ -58,7 +58,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -397,16 +399,28 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void handleExecutionsPage(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException,
       IOException {
+    String executor = req.getParameter("worker");
+    Integer executorID = executor==null?null:Integer.parseInt(executor);
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/executionspage.vm");
 
-    final List<Pair<ExecutableFlow, Optional<Executor>>> runningFlows =
-        this.executorManagerAdapter.getActiveFlowsWithExecutor();
+    List<Pair<ExecutableFlow, Optional<Executor>>> runningFlows;
+    runningFlows = this.executorManagerAdapter.getActiveFlowsWithExecutor();
+    if(null != executorID) {
+      runningFlows = runningFlows.stream()
+              .filter(x-> Objects.equals(x.getSecond().map(ex -> ex.getId()).orElse(null), executorID))
+              .collect(Collectors.toList());
+    }
     page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
 
-    final List<ExecutableFlow> finishedFlows =
-        this.executorManagerAdapter.getRecentlyFinishedFlows();
+    final List<ExecutableFlow> finishedFlows;
+    if(null == executorID) {
+      finishedFlows = this.executorManagerAdapter.getRecentlyFinishedFlows();
+    } else {
+      finishedFlows = this.executorManagerAdapter.getRecentlyFinishedFlows(executorID);
+    }
+
     page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
     page.add("vmutils", new VelocityUtil(this.projectManager));
     page.render();
