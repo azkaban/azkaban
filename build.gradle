@@ -67,6 +67,8 @@ ext.versions = [hadoop: '2.10.0',
 
 ext.deps = [
     // External dependencies
+    awsEC2              : 'com.amazonaws:aws-java-sdk-ec2:1.11.922',
+    awsAutoscale        : 'com.amazonaws:aws-java-sdk-autoscaling:1.11.922',
     // restli 1.* had this one included transitively. restli 28.* doesn't. But we still need it:
     json                 : 'org.json:json:20170516',
     assertj              : 'org.assertj:assertj-core:3.8.0',

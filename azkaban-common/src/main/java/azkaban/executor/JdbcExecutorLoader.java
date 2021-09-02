@@ -390,6 +390,11 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public int checkExecutionQueueSize(int executor_id, boolean isActive) throws ExecutorManagerException {
+    return this.executionFlowDao.checkExecutionQueueSize(executor_id, isActive);
+  }
+
+  @Override
   public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
     return this.executionRampDao.fetchExecutableRampMap();
   }

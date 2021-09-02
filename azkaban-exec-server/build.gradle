@@ -24,6 +24,8 @@ dependencies {
         transitive = false
     }
 
+    compile deps.awsEC2
+    compile deps.awsAutoscale
     compile deps.hadoopCommon
     compile deps.guava
     compile deps.jsr305

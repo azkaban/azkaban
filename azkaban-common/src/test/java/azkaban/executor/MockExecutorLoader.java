@@ -501,6 +501,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public int checkExecutionQueueSize(int executor_id, boolean isActive) throws ExecutorManagerException {
+    return 0;
+  }
+
+  @Override
   public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
       final int limit,
       final Status updatedStatus,
