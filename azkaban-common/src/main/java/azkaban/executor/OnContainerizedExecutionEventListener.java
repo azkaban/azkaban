@@ -50,39 +50,37 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
    * @param exFlow
    */
   public boolean restartExecutableFlow(final ExecutableFlow exFlow) {
-    if (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Enable restartability
-      // for containerized execution
-      final Project project;
-      final Flow flow;
-      try {
-        project = FlowUtils.getProject(projectManager, exFlow.getProjectId());
-        flow = FlowUtils.getFlow(project, exFlow.getFlowId());
-      } catch (final RuntimeException e) {
-        logger.error(e.getMessage());
-        return false;
-      }
-      final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
-      executableFlow.setSubmitUser(exFlow.getSubmitUser());
-      executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
-
-      final ExecutionOptions options = exFlow.getExecutionOptions();
-      if(!options.isFailureEmailsOverridden()) {
-        options.setFailureEmails(flow.getFailureEmails());
-      }
-      if (!options.isSuccessEmailsOverridden()) {
-        options.setSuccessEmails(flow.getSuccessEmails());
-      }
-      options.setMailCreator(flow.getMailCreator());
-      executableFlow.setExecutionOptions(options);
-      try {
-        logger.info("Restarting flow " + project.getName() + "." + executableFlow.getFlowName());
-        executorManagerAdapter.submitExecutableFlow(executableFlow, executableFlow.getSubmitUser());
-      } catch (final ExecutorManagerException e) {
-        logger.error("Failed to restart flow "+ executableFlow.getFlowId() + ". " + e.getMessage());
-        return false;
-      }
-      return true;
+    if (exFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return false;
+    // Enable restartability for containerized execution
+    final Project project;
+    final Flow flow;
+    try {
+      project = FlowUtils.getProject(projectManager, exFlow.getProjectId());
+      flow = FlowUtils.getFlow(project, exFlow.getFlowId());
+    } catch (final RuntimeException e) {
+      logger.error(e.getMessage());
+      return false;
     }
-    return false;
+    final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
+    executableFlow.setSubmitUser(exFlow.getSubmitUser());
+    executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
+
+    final ExecutionOptions options = exFlow.getExecutionOptions();
+    if(!options.isFailureEmailsOverridden()) {
+      options.setFailureEmails(flow.getFailureEmails());
+    }
+    if (!options.isSuccessEmailsOverridden()) {
+      options.setSuccessEmails(flow.getSuccessEmails());
+    }
+    options.setMailCreator(flow.getMailCreator());
+    executableFlow.setExecutionOptions(options);
+    try {
+      logger.info("Restarting flow " + project.getName() + "." + executableFlow.getFlowName());
+      executorManagerAdapter.submitExecutableFlow(executableFlow, executableFlow.getSubmitUser());
+    } catch (final ExecutorManagerException e) {
+      logger.error("Failed to restart flow "+ executableFlow.getFlowId() + ". " + e.getMessage());
+      return false;
+    }
+    return true;
   }
 }
