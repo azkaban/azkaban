@@ -432,6 +432,10 @@ public class JobTypeManager {
         if (!jobProps.containsKey(key)) {
           jobProps.put(key, clusterSpecificProps.get(key));
         }
+        // If there is a cluster specific property found in pluginLoadProps, then overwrite it in pluginLoadProps
+        if (pluginLoadProps.containsKey(key)) {
+          pluginLoadProps.put(key, clusterSpecificProps.get(key));
+        }
       }
       Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(clusterSpecificProps);
       // CAUTION: ADD ROUTER-SPECIFIC PROPERTIES THAT ARE CRITICAL FOR JOB EXECUTION AS THE LAST
