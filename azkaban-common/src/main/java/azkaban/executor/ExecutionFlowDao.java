@@ -387,30 +387,36 @@ public class ExecutionFlowDao {
   public int selectAndUpdateExecution(final int executorId, final boolean isActive,
       final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
-        + "where exec_id = ?";
-    final String selectExecutionForUpdate = isActive ?
-        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
-        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
-
-    final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
-      transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-      final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), dispatchMethod.getNumVal(),
-              executorId);
-
-      int execId = -1;
-      if (!execIds.isEmpty()) {
-        execId = execIds.get(0);
-        transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
-      }
-      transOperator.getConnection().commit();
-      return execId;
-    };
-
     try {
-      return this.dbOperator.transaction(selectAndUpdateExecution);
+      int taskCandidates = Math.max(1, 2 * this.dbOperator.transaction(transOperator -> {
+        transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        return this.dbOperator.query("SELECT COUNT(*) FROM executors WHERE active = 1",
+                new SelectFromExecutionFlows());
+      }).get(0));
+
+      final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
+          + "where exec_id = ? AND executor_id is NULL";
+      final String selectExecutionForUpdate = isActive ?
+              SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE(taskCandidates) :
+              SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE(taskCandidates);
+
+      final List<Integer> execIds = this.dbOperator.transaction(transOperator -> {
+        transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        return this.dbOperator.query(selectExecutionForUpdate,
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), executorId);
+      });
+      for (Integer execId : execIds) {
+        if(this.dbOperator.transaction(transOperator -> {
+          transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+          if(1 == transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), Status.PREPARING.getNumVal(), execId)) {
+            transOperator.getConnection().commit();
+            return true;
+          } else {
+            return false;
+          }
+        })) return execId;
+      }
+      return -1;
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error selecting and updating execution with executor "
           + executorId, e);
@@ -423,8 +429,8 @@ public class ExecutionFlowDao {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
         + "where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
-        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
-        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
+        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE(1) :
+        SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE(1);
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
       int execId = -1;
@@ -489,7 +495,7 @@ public class ExecutionFlowDao {
                 new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), limit);
           } else {
             execIds = transOperator.query(
-                String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
+                String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, "", 1),
                 new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal());
           }
           if (CollectionUtils.isNotEmpty(execIds)) {
@@ -550,11 +556,10 @@ public class ExecutionFlowDao {
       ResultSetHandler<List<Integer>> {
 
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
-        "SELECT exec_id from execution_flows WHERE exec_id = (SELECT exec_id from execution_flows"
+        "SELECT exec_id from execution_flows"
             + " WHERE status = ? and dispatch_method = ?"
             + " and executor_id is NULL and flow_data is NOT NULL %s"
-            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and "
-            + "executor_id is NULL FOR UPDATE";
+            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT %s FOR UPDATE";
 
     private static final String SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE exec_id in (SELECT exec_id from execution_flows"
@@ -563,12 +568,14 @@ public class ExecutionFlowDao {
             + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC "
             + " LIMIT ? FOR UPDATE";
 
-    public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
-            "and (use_executor is NULL or use_executor = ?)");
+    private static String SELECT_EXECUTION_FOR_UPDATE_ACTIVE(int limit) {
+      return String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
+          "AND (use_executor is NULL or use_executor = ?)", limit);
+    }
 
-    public static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "and use_executor = ?");
+    private static String SELECT_EXECUTION_FOR_UPDATE_INACTIVE(int limit) {
+      return String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "AND use_executor = ?", limit);
+    }
 
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {

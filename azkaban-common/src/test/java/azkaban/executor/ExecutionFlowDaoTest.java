@@ -520,7 +520,7 @@ public class ExecutionFlowDaoTest {
   @Test
   public void testSelectAndUpdateExecution() throws Exception {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
-    flow.setStatus(Status.PREPARING);
+    flow.setStatus(Status.READY);
     flow.setSubmitTime(System.currentTimeMillis());
     flow.setDispatchMethod(DispatchMethod.POLL);
     this.executionFlowDao.uploadExecutableFlow(flow);
@@ -659,13 +659,13 @@ public class ExecutionFlowDaoTest {
 
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow lowPriorityFlow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.READY, DispatchMethod.POLL);
 
     final ExecutableFlow highPriorityFlow = submitNewFlow("exectest1", "exec1", currentTime + 5,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 5, DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 5, Status.READY, DispatchMethod.POLL);
 
     final ExecutableFlow lowPriorityFlow2 = submitNewFlow("exectest1", "exec1", currentTime + 10,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, Status.READY, DispatchMethod.POLL);
 
     assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected flow with highest priority")
@@ -694,13 +694,13 @@ public class ExecutionFlowDaoTest {
 
     final long currentTime = System.currentTimeMillis();
     final ExecutableFlow submittedFlow1 = submitNewFlow("exectest1", "exec1", currentTime,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, Status.READY, DispatchMethod.POLL);
 
     final ExecutableFlow submittedFlow2 = submitNewFlow("exectest1", "exec1", currentTime + 5,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, Status.READY, DispatchMethod.POLL);
 
     final ExecutableFlow submittedFlow3 = submitNewFlow("exectest1", "exec1", currentTime + 10,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY + 3, Status.READY, DispatchMethod.POLL);
 
     assertThat(this.executionFlowDao.selectAndUpdateExecution(-1, true, DispatchMethod.POLL))
         .as("Expected first flow submitted")
