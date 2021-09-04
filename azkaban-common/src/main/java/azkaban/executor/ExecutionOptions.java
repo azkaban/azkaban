@@ -303,9 +303,10 @@ public class ExecutionOptions {
     this.slaOptions = slaOptions;
   }
 
-  public boolean isExecutionRetried() { return isExecutionRetried; }
+  public boolean isExecutionRetried() { return this.isExecutionRetried; }
 
-  public void setExecutionRetried(boolean executionRetried) { isExecutionRetried = executionRetried; }
+  public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
+      executionRetried; }
 
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();

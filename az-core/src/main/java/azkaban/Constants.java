@@ -147,6 +147,9 @@ public class Constants {
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
 
+  // Flow restart action on EXECUTION_STOPPED
+  public static final String RESTART_FLOW = "Restart Flow";
+
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 

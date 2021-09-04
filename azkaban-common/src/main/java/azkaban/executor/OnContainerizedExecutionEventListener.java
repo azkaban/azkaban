@@ -21,7 +21,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
   private final ProjectManager projectManager;
 
   @Inject
-  public OnContainerizedExecutionEventListener(ExecutorLoader executorLoader,
+  public OnContainerizedExecutionEventListener(final ExecutorLoader executorLoader,
       ExecutorManagerAdapter executorManagerAdapter, ProjectManager projectManager) {
     this.executorLoader = executorLoader;
     this.executorManagerAdapter = executorManagerAdapter;
@@ -30,14 +30,14 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
 
   @Override
   public void onExecutionEvent(final ExecutableFlow flow, final String action) {
-    if (action.equals("Restart Flow")) {
+    if (action.equals(Constants.RESTART_FLOW)) {
       if (restartExecutableFlow(flow)) {
         // Update the flow options so that the flow will be not retried by Azkaban
         final ExecutionOptions options = flow.getExecutionOptions();
         options.setExecutionRetried(true);
         flow.setExecutionOptions(options);
         try {
-          executorLoader.updateExecutableFlow(flow);
+          this.executorLoader.updateExecutableFlow(flow);
         } catch (ExecutorManagerException e) {
           logger.error("Unable to update flow retry value: " + e.getMessage());
         }
@@ -47,15 +47,17 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
 
   /**
    * A new execution will be dispatched based on the original ExecutableFLow
-   * @param exFlow
+   * @param exFlow original ExecutableFlow in EXECUTION_STOPPED state
    */
-  public boolean restartExecutableFlow(final ExecutableFlow exFlow) {
-    if (exFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return false;
+  private boolean restartExecutableFlow(final ExecutableFlow exFlow) {
     // Enable restartability for containerized execution
+    if (exFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return false;
+
+    // Create a new ExecutableFlow based on existing flow in EXECUTION_STOPPED state
     final Project project;
     final Flow flow;
     try {
-      project = FlowUtils.getProject(projectManager, exFlow.getProjectId());
+      project = FlowUtils.getProject(this.projectManager, exFlow.getProjectId());
       flow = FlowUtils.getFlow(project, exFlow.getFlowId());
     } catch (final RuntimeException e) {
       logger.error(e.getMessage());
@@ -64,7 +66,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
     executableFlow.setSubmitUser(exFlow.getSubmitUser());
     executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
-
+    // Set up flow ExecutionOptions
     final ExecutionOptions options = exFlow.getExecutionOptions();
     if(!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());
@@ -74,9 +76,11 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     }
     options.setMailCreator(flow.getMailCreator());
     executableFlow.setExecutionOptions(options);
+    // Submit new flow for execution
     try {
       logger.info("Restarting flow " + project.getName() + "." + executableFlow.getFlowName());
-      executorManagerAdapter.submitExecutableFlow(executableFlow, executableFlow.getSubmitUser());
+      this.executorManagerAdapter.submitExecutableFlow(executableFlow,
+          executableFlow.getSubmitUser());
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to restart flow "+ executableFlow.getFlowId() + ". " + e.getMessage());
       return false;

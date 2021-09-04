@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
 import azkaban.project.ProjectManager;
@@ -113,9 +114,9 @@ public class ExecutionControllerUtils {
     if (flow.getStatus() == Status.EXECUTION_STOPPED) {
       final ExecutionOptions options = flow.getExecutionOptions();
       if (options != null && !options.isExecutionRetried()) {
-        final Map<String, String> flowParam = options.getFlowParameters();
-        if (flowParam != null && !flowParam.isEmpty()) {
-          if (Boolean.valueOf(flowParam.getOrDefault(FlowParameters
+        final Map<String, String> flowParams = options.getFlowParameters();
+        if (flowParams != null && !flowParams.isEmpty()) {
+          if (Boolean.valueOf(flowParams.getOrDefault(FlowParameters
               .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
             final ExecutorService executor = Executors.newSingleThreadExecutor(
                 new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
@@ -135,7 +136,7 @@ public class ExecutionControllerUtils {
    * @param flow
    */
   protected static void restartFlow(ExecutableFlow flow) {
-    onExecutionEventListener.onExecutionEvent(flow, "Restart Flow");
+    onExecutionEventListener.onExecutionEvent(flow, Constants.RESTART_FLOW);
   }
 
   /**
