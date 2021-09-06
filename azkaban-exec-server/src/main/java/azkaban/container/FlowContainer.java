@@ -35,6 +35,7 @@ import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
+import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.execapp.TriggerManager;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
@@ -71,6 +72,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import io.kubernetes.client.custom.Quantity;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -269,6 +271,11 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     }
   }
 
+  @VisibleForTesting
+  void setFlowRunner(FlowRunner flowRunner) {
+    this.flowRunner = flowRunner;
+  }
+
   /**
    * Set Azkaban Props
    *
@@ -318,7 +325,38 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     logVersionSet(flow);
 
     createFlowRunner(flow);
+    setResourceUtilization();
     submitFlowRunner();
+  }
+
+  /**
+   * This method reads the CPU and MEMORY REQUEST ENV variables. If they are present then they will
+   * be used to set the Resource Utilization in FlowRunner object via FlowRunnerProxy.
+   */
+  @VisibleForTesting
+  void setResourceUtilization() {
+    FlowRunnerProxy flowRunnerProxy = this.flowRunner.getProxy();
+    String cpuRequest = System
+        .getenv(Constants.ContainerizedDispatchManagerProperties.ENV_CPU_REQUEST);
+    String memoryRequest = System
+        .getenv(Constants.ContainerizedDispatchManagerProperties.ENV_MEMORY_REQUEST);
+
+    // cpuRequest and memoryRequest are converted to Quantity object to get the parsed value from
+    // the human readable string. Example:
+    //   1KiB will be converted to 1024 bytes
+    //   500m will be converted to 0.500
+    if (null != cpuRequest) {
+      Quantity cpuRequestQuantity = new Quantity(cpuRequest);
+      flowRunnerProxy.setCpuUtilization(cpuRequestQuantity.getNumber().doubleValue());
+    }
+    if (null != memoryRequest) {
+      Quantity memoryRequestQuantity = new Quantity(memoryRequest);
+      try {
+        flowRunnerProxy.setMemoryUtilization(memoryRequestQuantity.getNumber().longValueExact());
+      } catch (ArithmeticException e) {
+        logger.info("Unable to set Memory Utilization", e);
+      }
+    }
   }
 
   /**

@@ -36,6 +36,7 @@ dependencies {
     testCompile deps.hadoopAnnotations
     testCompile deps.hadoopAuth
     testCompile deps.hadoopHdfs
+    testCompile deps.systemRules
 }
 
 distributions {
