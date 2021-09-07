@@ -254,14 +254,23 @@ Note: This feature was previously known as Flow Parameters.
 
 .. image:: figures/executeflowruntimeproperties.png
 
+..
+  How executeflowruntimeproperties.png was generated:
+  - Run tools/deploy_example_flow.py
+  - Follow the Execution link
+  - Click "Prepare Execution"
+  - Select the "Runtime Properties" tab
+  - Take a screenshot
+
 The scope of each runtime property is defined by the Node selection. Rows with `ROOT` Node apply to all jobs in the flow. Properties can be scoped per sub-flow as well as individual jobs. Most specific node path takes precedence.
 
 Overrides are applied depending on the Azkaban server configuration property `executor.props.resolve.overrideExisting.enabled`:
 
-+ **If overriding of existing properties is not enabled (default):**
-   + Runtime properties override the global properties for a job, but not the properties of the job itself.
-+ **If overriding of existing properties is enabled:**
-   + Runtime properties override also existing job props
+
++ **executor.props.resolve.overrideExisting.enabled=false (default):**
+   + Predefined job properties (props in `.job`, `.properties` (Flow 1.0) or `.flow` (Flow 2.0) files) have higher precedence than runtime properties overrides specified in any parent node.
++ **executor.props.resolve.overrideExisting.enabled=true:**
+   + Runtime properties overrides in parent nodes have higher precedence than predefined job properties.
 
 
 
