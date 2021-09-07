@@ -271,7 +271,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   }
 
   @VisibleForTesting
-  void setFlowRunner(FlowRunner flowRunner) {
+  void setFlowRunner(final FlowRunner flowRunner) {
     this.flowRunner = flowRunner;
   }
 
@@ -334,10 +334,10 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    */
   @VisibleForTesting
   void setResourceUtilization() {
-    FlowRunnerProxy flowRunnerProxy = this.flowRunner.getProxy();
-    String cpuRequest = System
+    final FlowRunnerProxy flowRunnerProxy = this.flowRunner.getProxy();
+    final String cpuRequest = System
         .getenv(Constants.ContainerizedDispatchManagerProperties.ENV_CPU_REQUEST);
-    String memoryRequest = System
+    final String memoryRequest = System
         .getenv(Constants.ContainerizedDispatchManagerProperties.ENV_MEMORY_REQUEST);
 
     // cpuRequest and memoryRequest are converted to Quantity object to get the parsed value from
@@ -345,11 +345,11 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     //   1KiB will be converted to 1024 bytes
     //   500m will be converted to 0.500
     if (null != cpuRequest) {
-      Quantity cpuRequestQuantity = new Quantity(cpuRequest);
+      final Quantity cpuRequestQuantity = new Quantity(cpuRequest);
       flowRunnerProxy.setCpuUtilization(cpuRequestQuantity.getNumber().doubleValue());
     }
     if (null != memoryRequest) {
-      Quantity memoryRequestQuantity = new Quantity(memoryRequest);
+      final Quantity memoryRequestQuantity = new Quantity(memoryRequest);
       try {
         flowRunnerProxy.setMemoryUtilization(memoryRequestQuantity.getNumber().longValueExact());
       } catch (ArithmeticException e) {
