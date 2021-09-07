@@ -1618,7 +1618,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
      * @param effectiveUser
      * @param jobType
      */
-    public void setEffectiveUser(String jobId, String effectiveUser, Optional<String> jobType) {
+    public void setEffectiveUser(final String jobId, final String effectiveUser,
+        final Optional<String> jobType) {
       if (StringUtils.isBlank(jobId)) {
         logger.error("Job effective user can't be set as jobId string is blank.");
         return;
@@ -1627,7 +1628,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         logger.error("Job effective user can't be set as effectiveUser string is blank.");
         return;
       }
-      String previousVal;
+      final String previousVal;
       if (!jobType.isPresent()) {
         logger.error("Job effective user can't be set as jobType is absent.");
         return;
@@ -1655,7 +1656,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
      *            cloud providers and 1 hyperthread on bare-metal Intel processors. Fractional
      *            values are allowed.
      */
-    public void setCpuUtilization(Double cpuUtilized) {
+    public void setCpuUtilization(final Double cpuUtilized) {
       FlowRunner.this.cpuUtilized = Optional.ofNullable(cpuUtilized);
     }
 
@@ -1663,7 +1664,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
      *
      * @param memoryUtilizedInBytes by the Azkaban flow.
      */
-    public void setMemoryUtilization(Long memoryUtilizedInBytes) {
+    public void setMemoryUtilization(final Long memoryUtilizedInBytes) {
       FlowRunner.this.memoryUtilizedInBytes = Optional.ofNullable(memoryUtilizedInBytes);
     }
   }
@@ -1794,8 +1795,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
      * @param flowRunner
      * @param flowMetadata
      */
-    private void setEffectiveUsers(FlowRunner flowRunner, Map<String, String> flowMetadata) {
-      HashSet<String> effectiveUsers = new HashSet<>();
+    private void setEffectiveUsers(final FlowRunner flowRunner,
+        final Map<String, String> flowMetadata) {
+      final HashSet<String> effectiveUsers = new HashSet<>();
 
       // Utilize effectiveUsers for ignored jobtypes only when effectiveUsers for other
       // jobtypes are not present. Hence if a flow has only one job which is noop, then the
@@ -1806,7 +1808,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         effectiveUsers.addAll(new HashSet<>(flowRunner.jobEffectiveUsers.values()));
       }
       if (!effectiveUsers.isEmpty()) {
-        String effectiveUsersString = String.join(",", effectiveUsers);
+        final String effectiveUsersString = String.join(",", effectiveUsers);
         flowRunner.logger.info("All EffectiveUsers: " + effectiveUsersString);
         flowMetadata.put(EventReporterConstants.EFFECTIVE_USERS, effectiveUsersString);
       }
