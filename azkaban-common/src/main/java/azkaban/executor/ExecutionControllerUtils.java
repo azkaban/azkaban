@@ -18,10 +18,13 @@ package azkaban.executor;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
+import azkaban.project.ProjectManager;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -30,14 +33,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import azkaban.Constants.FlowParameters;
 
 /**
  * Utils for controlling executions.
@@ -58,6 +65,8 @@ public class ExecutionControllerUtils {
       .compile("Failed to read the application");
   private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
       .compile("Invalid Application ID");
+
+  public static OnExecutionEventListener onExecutionEventListener;
 
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
@@ -100,9 +109,34 @@ public class ExecutionControllerUtils {
       logger.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
     }
 
+    // If the flow is in state EXECUTION_STOPPED and user enabled restartability in flow
+    // parameters, invoke restart callback
+    if (flow.getStatus() == Status.EXECUTION_STOPPED) {
+      final ExecutionOptions options = flow.getExecutionOptions();
+      if (options != null && !options.isExecutionRetried()) {
+        final Map<String, String> flowParams = options.getFlowParameters();
+        if (flowParams != null && !flowParams.isEmpty()) {
+          if (Boolean.valueOf(flowParams.getOrDefault(FlowParameters
+              .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
+            final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
+            executor.execute(()->restartFlow(flow));
+          }
+        }
+      }
+    }
+
     if (alertUser) {
       alertUserOnFlowFinished(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
     }
+  }
+
+  /**
+   * This method invokes a callback to submit the flow with a new execution id
+   * @param flow
+   */
+  protected static void restartFlow(ExecutableFlow flow) {
+    onExecutionEventListener.onExecutionEvent(flow, Constants.RESTART_FLOW);
   }
 
   /**
