@@ -268,9 +268,9 @@ Overrides are applied depending on the Azkaban server configuration property `ex
 
 
 + **executor.props.resolve.overrideExisting.enabled=false (default):**
-   + Predefined job properties (props in `.job`, `.properties` (Flow 1.0) or `.flow` (Flow 2.0) files) have higher precedence than runtime properties overrides specified in any parent node.
+   + Runtime properties don't override predefined properties from a more specific node path. In particular runtime properties at flow level don't override predefined properties at job level.
 + **executor.props.resolve.overrideExisting.enabled=true:**
-   + Runtime properties overrides in parent nodes have higher precedence than predefined job properties.
+   + Runtime properties (also those that are set on a parent node or at flow level) have higher precedence than predefined properties.
 
 
 
