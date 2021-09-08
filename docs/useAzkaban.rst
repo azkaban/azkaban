@@ -264,12 +264,12 @@ Note: This feature was previously known as Flow Parameters.
 
 The scope of each runtime property is defined by the Node selection. Rows with `ROOT` Node apply to all jobs in the flow. Properties can be scoped per sub-flow as well as individual jobs. Most specific node path takes precedence.
 
-Overrides are applied depending on the Azkaban server configuration property `executor.props.resolve.overrideExisting.enabled`:
+Overrides are applied depending on the Azkaban server configuration property `azkaban.executor.runtimeProps.override.eager`:
 
 
-+ **executor.props.resolve.overrideExisting.enabled=false (default):**
++ **azkaban.executor.runtimeProps.override.eager=false (default):**
    + Runtime properties don't override predefined properties from a more specific node path. In particular runtime properties at flow level don't override predefined properties at job level.
-+ **executor.props.resolve.overrideExisting.enabled=true:**
++ **azkaban.executor.runtimeProps.override.eager=true:**
    + Runtime properties (also those that are set on a parent node or at flow level) have higher precedence than predefined properties.
 
 

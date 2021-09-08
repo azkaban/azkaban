@@ -463,8 +463,8 @@ public class Constants {
 
     // By default job props always win over flow override props.
     // If this flag is set to true, then override props override also override existing job props.
-    public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
-        "executor.props.resolve.overrideExisting.enabled";
+    public static final String AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER =
+        "azkaban.executor.runtimeProps.override.eager";
 
     // Executor client TLS properties
     public static final String EXECUTOR_CLIENT_TLS_ENABLED = "azkaban.executor.client.tls.enabled";
