@@ -147,6 +147,9 @@ public class Constants {
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
 
+  // Flow restart action on EXECUTION_STOPPED
+  public static final String RESTART_FLOW = "Restart Flow";
+
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 
@@ -721,5 +724,8 @@ public class Constants {
     // Constant to allow test version to be passed as flow parameter. Passing test version will be
     // allowed for Azkaban ADMIN role only
     public static final String FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION = "allow.image.test.version";
+
+    public static final String FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED =
+        "allow.restart.on.execution.stopped";
   }
 }

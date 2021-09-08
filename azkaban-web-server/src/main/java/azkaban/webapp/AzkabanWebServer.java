@@ -28,6 +28,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;

@@ -24,9 +24,12 @@ import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.OnContainerizedExecutionEventListener;
+import azkaban.executor.OnExecutionEventListener;
 import azkaban.executor.container.ContainerizedWatch;
 import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
@@ -59,6 +62,7 @@ import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.ContainerizationMetricsImpl;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -313,5 +317,18 @@ public class AzkabanWebServerModule extends AbstractModule {
         Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
     return engine;
+  }
+
+  @Inject
+  @Singleton
+  @Provides
+  public OnExecutionEventListener createOnContainerizationExecutionEventListener (
+      final ExecutorLoader executorLoader,
+      final ExecutorManagerAdapter executorManagerAdapter,
+      final ProjectManager projectManager) {
+    OnExecutionEventListener listener = new OnContainerizedExecutionEventListener(executorLoader,
+        executorManagerAdapter, projectManager);
+    ExecutionControllerUtils.onExecutionEventListener = listener;
+    return listener;
   }
 }
