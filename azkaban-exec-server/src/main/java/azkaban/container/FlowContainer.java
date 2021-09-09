@@ -212,7 +212,8 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
-            this.globalProps, getClass().getClassLoader(), clusterRouter);
+            this.globalProps, getClass().getClassLoader(), clusterRouter,
+            this.azKabanProps.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
 
     this.numJobThreadPerFlow = props.getInt(JOB_THREAD_COUNT, DEFAULT_JOB_TREAD_COUNT);
     if (this.azKabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
