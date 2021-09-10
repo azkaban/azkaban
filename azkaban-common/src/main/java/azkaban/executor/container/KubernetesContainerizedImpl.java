@@ -436,10 +436,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               // the overridden version exists/registered on Azkaban database. Hence, it follows a
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
-              overlayMap.put(imageType,
-                  this.imageRampupManager.getVersionInfo(imageType,
-                      flowParams.get(imageTypeOverrideParam(imageType)),
-                      State.getNewAndActiveStateFilter()));
+              final VersionInfo versionInfo = this.imageRampupManager.getVersionInfo(imageType,
+                  flowParams.get(imageTypeOverrideParam(imageType)),
+                  State.getNewAndActiveStateFilter());
+              overlayMap.put(imageType, versionInfo);
+              logger.info("User overridden image type {} of version {} is used", imageType,
+                  versionInfo.getVersion());
             } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType)
                 .isPresent())) {
               logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
@@ -485,6 +487,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         final Map<String, VersionInfo> overlayMap = new HashMap<>();
         for (final String imageType : imageTypesUsedInFlow) {
           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
+          VersionInfo versionInfo;
           if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
             // Fetches the user overridden version from the database and this will make sure if
             // the overridden version exists/registered on Azkaban database. Hence, it follows a
@@ -494,15 +497,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
                 Boolean.TRUE.equals(Boolean
                     .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
-              overlayMap.put(imageType,
-                  this.imageRampupManager.getVersionInfo(imageType,
-                      flowParams.get(imageTypeVersionOverrideParam),
-                      State.getNewActiveAndTestStateFilter()));
+              versionInfo = this.imageRampupManager.getVersionInfo(imageType,
+                  flowParams.get(imageTypeVersionOverrideParam),
+                  State.getNewActiveAndTestStateFilter());
+              overlayMap.put(imageType, versionInfo);
+              logger.info("User overridden image type {} of version {} is used", imageType,
+                  versionInfo.getVersion());
             } else {
-              overlayMap.put(imageType,
-                  this.imageRampupManager.getVersionInfo(imageType,
-                      flowParams.get(imageTypeVersionOverrideParam),
-                      State.getNewAndActiveStateFilter()));
+              versionInfo = this.imageRampupManager.getVersionInfo(imageType,
+                  flowParams.get(imageTypeVersionOverrideParam),
+                  State.getNewAndActiveStateFilter());
+              overlayMap.put(imageType, versionInfo);
+              logger.info("User overridden image type {} of version {} is used", imageType,
+                  versionInfo.getVersion());
             }
           }
         }
@@ -511,8 +518,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow,
                 overlayMap.keySet());
         final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
-        versionSetBuilder.addElements(overlayMap);
-        versionSet = versionSetBuilder.addElements(versionMap).build();
+        versionSetBuilder.addElements(versionMap);
+        versionSet = versionSetBuilder.addElements(overlayMap).build();
       }
     } catch (final IOException e) {
       logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
