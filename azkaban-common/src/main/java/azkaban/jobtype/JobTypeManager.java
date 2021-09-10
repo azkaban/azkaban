@@ -439,17 +439,18 @@ public class JobTypeManager {
       }
 
       // Override any plugin load props if specified.
-      Props pluginLoadPropsCopy = pluginLoadProps;
+      // Make a clone of pluginLoadProps to ensure the original object is not corrupted.
+      // Use the cloned object from here on.
+      final Props pluginLoadPropsCopy = Props.clone(pluginLoadProps);
       if (pluginLoadOverrideProps != null) {
-        // Make a clone of pluginLoadProps
-        pluginLoadPropsCopy = Props.clone(pluginLoadProps);
         final String[] propsList = pluginLoadOverrideProps.split(",");
         for (final String prop : propsList) {
           final String value = clusterSpecificProps.getString(prop, null);
           if (value == null) {
             // The property must be present in cluster specific props
-            throw new JobExecutionException(String.format("Required cluster property %s "
-            + " is not present in ClusterSpecific Properties", prop));
+            logger.warn(String.format("Expected override property %s is not "
+            + " present in ClusterSpecific Properties, ignoring it.", prop));
+            continue;
           }
           pluginLoadPropsCopy.put(prop, value);
         }

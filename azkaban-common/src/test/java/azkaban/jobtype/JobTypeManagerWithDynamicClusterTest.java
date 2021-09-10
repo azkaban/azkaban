@@ -303,10 +303,10 @@ public class JobTypeManagerWithDynamicClusterTest {
   }
 
   /**
-   * Verify that overidden plugin load props throws exception if a required property
+   * Verify that overidden plugin load props and ignores if a property
    * is missing.
    */
-  @Test (expected = JobTypeManagerException.class)
+  @Test
   public void testPluginLoadPropsOverrideByClusterSpecificParamsNegative() {
 
     final Props jobProps = new Props();
