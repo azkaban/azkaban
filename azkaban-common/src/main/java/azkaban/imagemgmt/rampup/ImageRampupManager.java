@@ -46,7 +46,7 @@ public interface ImageRampupManager {
    * @throws ImageMgmtException
    */
   public Map<String, VersionInfo> getVersionByImageTypes(ExecutableFlow flow,
-      Set<String> imageTypes)
+      Set<String> imageTypes, Set<String> overlayImageTypes)
       throws ImageMgmtException;
 
   /**

@@ -246,7 +246,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(1);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
         .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
@@ -280,7 +280,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
         .thenReturn(getVersionMap());
     when(imageRampupManager
         .getVersionInfo(any(String.class), any(String.class), any(Set.class)))
@@ -350,7 +350,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
         .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
@@ -394,7 +394,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
         .thenReturn(getVersionMap());
 
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);

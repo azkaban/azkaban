@@ -65,7 +65,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -463,7 +463,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             if (!imageVersionsNotFound.isEmpty()) {
               versionSetBuilder.addElements(
                   this.imageRampupManager
-                      .getVersionByImageTypes(executableFlow, imageVersionsNotFound));
+                      .getVersionByImageTypes(executableFlow, imageVersionsNotFound,
+                          overlayMap.keySet()));
             }
             if (!overlayMap.isEmpty()) {
               versionSetBuilder.addElements(overlayMap);
@@ -480,9 +481,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         // Need to build a version set
         // Filter all the job types available in azkaban base image from the input image types set
         imageTypesUsedInFlow = this.filterIncludedJobTypes(imageTypesUsedInFlow);
-        final Map<String, VersionInfo> versionMap =
-            this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow);
+
         // Now we will check the flow params for any override versions provided and apply them
+        final Map<String, VersionInfo> overlayMap = new HashMap<>();
         for (final String imageType : imageTypesUsedInFlow) {
           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
           if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
@@ -494,12 +495,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
                 Boolean.TRUE.equals(Boolean
                     .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
-              versionMap.put(imageType,
+              overlayMap.put(imageType,
                   this.imageRampupManager.getVersionInfo(imageType,
                       flowParams.get(imageTypeVersionOverrideParam),
                       State.getNewActiveAndTestStateFilter()));
             } else {
-              versionMap.put(imageType,
+              overlayMap.put(imageType,
                   this.imageRampupManager.getVersionInfo(imageType,
                       flowParams.get(imageTypeVersionOverrideParam),
                       State.getNewAndActiveStateFilter()));
@@ -507,6 +508,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           }
         }
 
+        final Map<String, VersionInfo> versionMap =
+            this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow,
+                overlayMap.keySet());
+        versionMap.putAll(overlayMap);
         final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
         versionSet = versionSetBuilder.addElements(versionMap).build();
       }
