@@ -65,7 +65,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -511,8 +510,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         final Map<String, VersionInfo> versionMap =
             this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow,
                 overlayMap.keySet());
-        versionMap.putAll(overlayMap);
         final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
+        versionSetBuilder.addElements(overlayMap);
         versionSet = versionSetBuilder.addElements(versionMap).build();
       }
     } catch (final IOException e) {
