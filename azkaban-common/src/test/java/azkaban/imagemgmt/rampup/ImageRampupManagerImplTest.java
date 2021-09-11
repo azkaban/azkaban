@@ -42,6 +42,7 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.TestUtils;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +111,7 @@ public class ImageRampupManagerImplTest {
     final ExecutableFlow flow = TestUtils
         .createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
     Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
-        .getVersionByImageTypes(flow, imageTypes);
+        .getVersionByImageTypes(flow, imageTypes, new HashSet<>());
     Assert.assertEquals("3.6.5", imageTypeVersionMap.get("azkaban_config").getVersion());
     Assert.assertEquals("3.6.2", imageTypeVersionMap.get("azkaban_core").getVersion());
     Assert.assertEquals("1.8.2", imageTypeVersionMap.get("azkaban_exec").getVersion());
@@ -156,7 +157,7 @@ public class ImageRampupManagerImplTest {
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
     final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
-        .getVersionByImageTypes(null, imageTypes);
+        .getVersionByImageTypes(null, imageTypes, new HashSet<>());
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
@@ -174,7 +175,7 @@ public class ImageRampupManagerImplTest {
 
   /**
    * For the given image types some of the versions are from active rampups, some of the versions
-   * are based on active image version. But there are some image types for which there is neighter
+   * are based on active image version. But there are some image types for which there is neither
    * active rampups nor active image version, hence throws exception.
    *
    * @throws Exception
@@ -211,8 +212,10 @@ public class ImageRampupManagerImplTest {
     when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
     when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
         .thenReturn(activeImageVersions);
+    final Set<String> overlaySet = new HashSet<>();
+    overlaySet.add("kabootar_job");
     final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
-        .getVersionByImageTypes(null, imageTypes);
+        .getVersionByImageTypes(null, imageTypes, new HashSet<>());
     Assert.assertNotNull(imageTypeVersionMap);
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
