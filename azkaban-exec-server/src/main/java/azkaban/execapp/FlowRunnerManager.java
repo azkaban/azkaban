@@ -229,7 +229,8 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.jobtypeManager =
         new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             Constants.PluginManager.JOBTYPE_DEFAULTDIR), this.globalProps,
-            getClass().getClassLoader(), this.clusterRouter);
+            getClass().getClassLoader(), this.clusterRouter,
+            props.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
 
     ProjectCacheCleaner cleaner = null;
     this.LOGGER.info("Configuring Project Cache");

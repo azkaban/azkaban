@@ -150,6 +150,9 @@ public class Constants {
   // Flow restart action on EXECUTION_STOPPED
   public static final String RESTART_FLOW = "Restart Flow";
 
+  // Overridable plugin load properties
+  public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
+
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 
