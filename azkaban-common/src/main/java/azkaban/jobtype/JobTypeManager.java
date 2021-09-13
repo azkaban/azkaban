@@ -64,19 +64,23 @@ public class JobTypeManager {
   private JobTypePluginSet pluginSet;
   // Only used to load keyStore.
   private Props cachedCommonPluginLoadProps;
+  // Overridable plugin load properties
+  private final String pluginLoadOverrideProps;
 
   @VisibleForTesting
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
       final ClassLoader parentClassLoader) {
-    this(jobtypePluginDir, globalProperties, parentClassLoader, new DisabledClusterRouter());
+    this(jobtypePluginDir, globalProperties, parentClassLoader, new DisabledClusterRouter(), null);
   }
 
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
-    final ClassLoader parentClassLoader, ClusterRouter clusterRouter) {
+    final ClassLoader parentClassLoader, final ClusterRouter clusterRouter,
+    final String pluginLoadOverrideProps  ) {
     this.jobTypePluginDir = jobtypePluginDir;
     this.parentLoader = parentClassLoader;
     this.globalProperties = globalProperties;
     this.clusterRouter = clusterRouter;
+    this.pluginLoadOverrideProps = pluginLoadOverrideProps;
     loadPlugins();
   }
 
@@ -433,6 +437,25 @@ public class JobTypeManager {
           jobProps.put(key, clusterSpecificProps.get(key));
         }
       }
+
+      // Override any plugin load props if specified.
+      // Make a clone of pluginLoadProps to ensure the original object is not corrupted.
+      // Use the cloned object from here on.
+      final Props pluginLoadPropsCopy = Props.clone(pluginLoadProps);
+      if (pluginLoadOverrideProps != null) {
+        final String[] propsList = pluginLoadOverrideProps.split(",");
+        for (final String prop : propsList) {
+          final String value = clusterSpecificProps.getString(prop, null);
+          if (value == null) {
+            // The property must be present in cluster specific props
+            logger.warn(String.format("Expected override property %s is not "
+            + " present in ClusterSpecific Properties, ignoring it.", prop));
+            continue;
+          }
+          pluginLoadPropsCopy.put(prop, value);
+        }
+      }
+
       Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(clusterSpecificProps);
       // CAUTION: ADD ROUTER-SPECIFIC PROPERTIES THAT ARE CRITICAL FOR JOB EXECUTION AS THE LAST
       // STEP TO STOP THEM FROM BEING ACCIDENTALLY OVERRIDDEN BY JOB PROPERTIES
@@ -440,7 +463,7 @@ public class JobTypeManager {
       jobProps = PropsUtils.resolveProps(jobProps);
 
       return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
-          pluginLoadProps, jobContextClassLoader);
+          pluginLoadPropsCopy, jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());
