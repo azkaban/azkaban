@@ -712,15 +712,15 @@ public class Constants {
     public static final String FLOW_PARAM_DISABLE_POD_CLEANUP = "disable.pod.cleanup";
 
     // Constant to dispatch execution to Containerization
-    public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER = "dispatch.execution.to"
-        + ".container";
+    public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER =
+        "dispatch.execution.to.container";
 
     // Constant for cpu request for flow container
     public static final String FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST = "flow.container.cpu.request";
 
     // Constant for memory request for flow container
-    public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST = "flow.container.memory"
-        + ".request";
+    public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST =
+        "flow.container.memory.request";
 
     public static final String FLOW_PARAM_POD_ENV_VAR = "pod.env.var.";
 
