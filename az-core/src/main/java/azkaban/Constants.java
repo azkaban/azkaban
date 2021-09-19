@@ -188,6 +188,9 @@ public class Constants {
     public static final String QUEUE_DURATION = "queueDuration";
     public static final String FAILURE_MESSAGE = "failureMessage";
     public static final String JOB_STATUS = "jobStatus";
+    public static final String EFFECTIVE_USERS = "effectiveUsers";
+    public static final String CPU_UTILIZED = "cpuUtilized";
+    public static final String MEMORY_UTILIZED_IN_BYTES = "memoryUtilizedInBytes";
   }
 
   public static class ConfigurationKeys {
@@ -686,6 +689,8 @@ public class Constants {
     public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
     public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
     public static final String ENV_ENABLE_DEV_POD = "ENABLE_DEV_POD";
+    public static final String ENV_CPU_REQUEST = "CPU_REQUEST";
+    public static final String ENV_MEMORY_REQUEST = "MEMORY_REQUEST";
   }
 
   public static class ImageMgmtConstants {

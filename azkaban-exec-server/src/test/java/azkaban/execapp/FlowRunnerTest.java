@@ -41,7 +41,9 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
@@ -388,6 +390,22 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertTrue(this.runner.getFlowPauseDuration() >= 0);
     Assert.assertTrue(this.runner.getFlowPauseTime() != -1);
     Assert.assertEquals("dementor", this.runner.getExecutableFlow().getModifiedBy());
+  }
+
+  @Test
+  public void testFlowRunnerProxy() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+    FlowRunnerTestUtil.startThread(this.runner);
+    assertThreadShutDown();
+    ConcurrentHashMap<String, String> jobEffectiveUsers = this.runner.getJobEffectiveUsers();
+    HashSet<String> effectiveUsers = new HashSet<>(jobEffectiveUsers.values());
+    // Total 9 jobs
+    Assert.assertEquals(9, jobEffectiveUsers.size());
+    Assert.assertEquals(1, effectiveUsers.size());
+    Assert.assertTrue(effectiveUsers.contains("submitUser"));
   }
 
   private void assertAttempts(final String name, final int attempt) {

@@ -99,6 +99,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -136,8 +137,14 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       .newSetFromMap(new ConcurrentHashMap<>());
   // Thread safe swap queue for finishedExecutions.
   private final SwapQueue<ExecutableNode> finishedNodes;
+  private final ConcurrentHashMap<String, String> jobEffectiveUsers = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, String> ignoredJobEffectiveUsers =
+      new ConcurrentHashMap<>();
+  private final FlowRunnerProxy flowRunnerProxy;
   private final AzkabanEventReporter azkabanEventReporter;
   private final AlerterHolder alerterHolder;
+  private Optional<Double> cpuUtilized = Optional.empty();
+  private Optional<Long> memoryUtilizedInBytes = Optional.empty();
   private Logger logger;
   private Appender flowAppender;
   private File logFile;
@@ -262,6 +269,20 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     this.projectFileHandler =
         this.projectLoader.fetchProjectMetaData(this.flow.getProjectId(), this.flow.getVersion());
+    this.flowRunnerProxy = new FlowRunnerProxy();
+  }
+
+  /**
+   * @return the proxy class object associated with this instance.
+   */
+  @VisibleForTesting
+  public FlowRunnerProxy getProxy() {
+    return this.flowRunnerProxy;
+  }
+
+  @VisibleForTesting
+  ConcurrentHashMap<String, String> getJobEffectiveUsers() {
+    return this.jobEffectiveUsers;
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -1260,7 +1281,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     final JobRunner jobRunner =
         new JobRunner(node, path.getParentFile(), this.executorLoader,
-            this.jobtypeManager, this.azkabanProps);
+            this.jobtypeManager, this.azkabanProps, this.flowRunnerProxy);
 
     if (this.watcher != null) {
       jobRunner.setPipeline(this.watcher, this.pipelineLevel);
@@ -1581,6 +1602,73 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return this.flowListener;
   }
 
+  /**
+   * This class is responsible to making changes to the {@link FlowRunner} object. This proxy class
+   * object can be passed to other class objects without risking the flowRunner object itself.
+   * <p>
+   * Example: This proxy class object can be passed to JobRunner class object for setting
+   * effectiveUsers in the FlowRunner which doesn't have a direct reference to FlowRunner class
+   * object.
+   */
+  public class FlowRunnerProxy {
+
+    /**
+     *
+     * @param jobId
+     * @param effectiveUser
+     * @param jobType
+     */
+    public void setEffectiveUser(final String jobId, final String effectiveUser,
+        final Optional<String> jobType) {
+      if (StringUtils.isBlank(jobId)) {
+        logger.error("Job effective user can't be set as jobId string is blank.");
+        return;
+      }
+      if (StringUtils.isBlank(effectiveUser)) {
+        logger.error("Job effective user can't be set as effectiveUser string is blank.");
+        return;
+      }
+      final String previousVal;
+      if (!jobType.isPresent()) {
+        logger.error("Job effective user can't be set as jobType is absent.");
+        return;
+      }
+      // Currently noop is the only jobtype for ignoredJobEffectiveUsers, but in future there can
+      // be more.
+      if (jobType.get().equals("noop")) {
+        previousVal = FlowRunner.this.ignoredJobEffectiveUsers.put(jobId, effectiveUser);
+      } else {
+        previousVal = FlowRunner.this.jobEffectiveUsers.put(jobId, effectiveUser);
+      }
+      if (null != previousVal) {
+        logger.info(
+            String.format("Updated effectiveUser map for id: %s, prevVal: %s, newVal: %s", jobId,
+                previousVal, effectiveUser));
+      } else {
+        logger.info(String
+            .format("Updated effectiveUser map for id: %s, val: %s", jobId, effectiveUser));
+      }
+    }
+
+    /**
+     *
+     * @param cpuUtilized measured in cpu Units. One cpu is equivalent to 1 vCPU/Core for
+     *            cloud providers and 1 hyperthread on bare-metal Intel processors. Fractional
+     *            values are allowed.
+     */
+    public void setCpuUtilization(final Double cpuUtilized) {
+      FlowRunner.this.cpuUtilized = Optional.ofNullable(cpuUtilized);
+    }
+
+    /**
+     *
+     * @param memoryUtilizedInBytes by the Azkaban flow.
+     */
+    public void setMemoryUtilization(final Long memoryUtilizedInBytes) {
+      FlowRunner.this.memoryUtilizedInBytes = Optional.ofNullable(memoryUtilizedInBytes);
+    }
+  }
+
   // Class helps report the flow start and stop events.
   @VisibleForTesting
   class FlowRunnerEventListener implements EventListener<Event> {
@@ -1687,8 +1775,42 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
           final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
           flowMetadata.put(EventReporterConstants.END_TIME, String.valueOf(flow.getEndTime()));
           flowMetadata.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
+
+          // Add the unique effectiveUsers across all jobs as a comma separated string.
+          setEffectiveUsers(flowRunner, flowMetadata);
+
+          // Add resource utilization if they are present
+          cpuUtilized.ifPresent(val -> flowMetadata.put(EventReporterConstants.CPU_UTILIZED,
+              Double.toString(val)));
+          memoryUtilizedInBytes
+              .ifPresent(val -> flowMetadata.put(EventReporterConstants.MEMORY_UTILIZED_IN_BYTES,
+                  Long.toString(val)));
+          logger.info("FLOW_FINISHED metadata: \n" + flowMetadata);
           FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
         }
+      }
+    }
+
+    /**
+     * @param flowRunner
+     * @param flowMetadata
+     */
+    private void setEffectiveUsers(final FlowRunner flowRunner,
+        final Map<String, String> flowMetadata) {
+      final HashSet<String> effectiveUsers = new HashSet<>();
+
+      // Utilize effectiveUsers for ignored jobtypes only when effectiveUsers for other
+      // jobtypes are not present. Hence if a flow has only one job which is noop, then the
+      // effectiveUsers of flow will have the effectiveUser of the noop job.
+      if (flowRunner.jobEffectiveUsers.isEmpty()) {
+        effectiveUsers.addAll(new HashSet<>(flowRunner.ignoredJobEffectiveUsers.values()));
+      } else {
+        effectiveUsers.addAll(new HashSet<>(flowRunner.jobEffectiveUsers.values()));
+      }
+      if (!effectiveUsers.isEmpty()) {
+        final String effectiveUsersString = String.join(",", effectiveUsers);
+        flowRunner.logger.info("All EffectiveUsers: " + effectiveUsersString);
+        flowMetadata.put(EventReporterConstants.EFFECTIVE_USERS, effectiveUsersString);
       }
     }
   }
