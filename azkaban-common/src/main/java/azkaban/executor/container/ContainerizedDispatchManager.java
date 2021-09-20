@@ -531,12 +531,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   @Override
-  public Map<String, String> doRampActions(List<Map<String, Object>> rampAction)
-      throws ExecutorManagerException {
-    throw new UnsupportedOperationException("Unsupported Method");
-  }
-
-  @Override
   public Set<String> getAllActiveExecutorServerHosts() {
     throw new UnsupportedOperationException("Unsupported Method");
   }
