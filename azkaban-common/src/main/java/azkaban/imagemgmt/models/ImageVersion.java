@@ -117,13 +117,16 @@ public class ImageVersion extends BaseModel {
    * table. DEPRECATED - An image type version which is no longer in use is marked as DEPRECATED
    * TEST - This is to represent a TEST version of the image and once the version is tested it can
    * be marked as NEW.
+   * STABLE - When an image version is marked as ACTIVE, the other ACTIVE version(s) are marked as
+   * STABLE as there can be only 1 ACTIVE version at a time.
    */
   public enum State {
     NEW("new"),
     ACTIVE("active"),
     UNSTABLE("unstable"),
     DEPRECATED("deprecated"),
-    TEST("test");
+    TEST("test"),
+    STABLE("stable");
     private final String stateValue;
 
     private State(final String stateValue) {
