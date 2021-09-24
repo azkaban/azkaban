@@ -154,7 +154,7 @@ public class KubernetesContainerizedImplTest {
     this.containerizationMetrics = new DummyContainerizationMetricsImpl();
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
         this.executorLoader, this.loader, this.imageRampupManager, null,
-        flowStatusChangeEventListener, containerizationMetrics);
+        flowStatusChangeEventListener, containerizationMetrics, null);
   }
 
   /**
@@ -262,7 +262,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(dependencyTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
         .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, dependencyTypes, flowParam);
 
@@ -307,7 +307,7 @@ public class KubernetesContainerizedImplTest {
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
         String.valueOf(presetVersionSet.getVersionSetId()));
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
 
     assert (versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
@@ -335,7 +335,7 @@ public class KubernetesContainerizedImplTest {
         KubernetesContainerizedImpl.IMAGE, "azkaban-base", KubernetesContainerizedImpl.VERSION),
         "7.0.4");
     versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
 
     assert (versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
@@ -369,7 +369,7 @@ public class KubernetesContainerizedImplTest {
     final Map<String, String> flowParam = new HashMap<>();
 
     final VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
 
     // Included jobs in the azkaban base image, so must not present in versionSet.
     Assert.assertEquals(false, versionSet.getVersion("hadoopJava").isPresent());
@@ -405,7 +405,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), new Props(null,flowParam), allImageTypes, flow);
 
     flow.setStatus(Status.PREPARING);
     flow.setVersionSet(versionSet);

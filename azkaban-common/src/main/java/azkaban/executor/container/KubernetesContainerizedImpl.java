@@ -45,6 +45,7 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.ProjectLoader;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -157,6 +158,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ContainerizationMetrics containerizationMetrics;
   private final String azkabanBaseImageName;
   private final String azkabanConfigImageName;
+  private final ProjectLoader projectLoader;
 
 
   private static final Logger logger = LoggerFactory
@@ -169,7 +171,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final ImageRampupManager imageRampupManager,
       final KubernetesWatch kubernetesWatch,
       final EventListener eventListener,
-      final ContainerizationMetrics containerizationMetrics)
+      final ContainerizationMetrics containerizationMetrics,
+      final ProjectLoader projectLoader)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
@@ -178,6 +181,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.kubernetesWatch = kubernetesWatch;
     this.eventListener = eventListener;
     this.containerizationMetrics = containerizationMetrics;
+    this.projectLoader = projectLoader;
     this.addListener(this.eventListener);
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
@@ -393,21 +397,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * This method fetches the complete version set information (Map of jobs and their versions)
    * required to run the flow.
    *
-   * @param flowParams
+   * @param flowProps
    * @param imageTypesUsedInFlow
    * @return VersionSet
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  VersionSet fetchVersionSet(final int executionId, final Map<String, String> flowParams,
+  VersionSet fetchVersionSet(final int executionId, final Props flowProps,
       Set<String> imageTypesUsedInFlow, final ExecutableFlow executableFlow)
       throws ExecutorManagerException {
     VersionSet versionSet = null;
 
     try {
-      if (flowParams != null &&
-          flowParams.containsKey(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID)) {
-        final int versionSetId = Integer.parseInt(flowParams
+      if (flowProps != null &&
+          flowProps.containsKey(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID)) {
+        final int versionSetId = Integer.parseInt(flowProps
             .get(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID));
         try {
           versionSet = this.versionSetLoader.getVersionSetById(versionSetId).get();
@@ -431,13 +435,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           final Set<String> imageVersionsNotFound = new TreeSet<>();
           final Map<String, VersionInfo> overlayMap = new HashMap<>();
           for (final String imageType : imageTypesUsedInFlow) {
-            if (flowParams.containsKey(imageTypeOverrideParam(imageType))) {
+            if (flowProps.containsKey(imageTypeOverrideParam(imageType))) {
               // Fetches the user overridden version from the database and this will make sure if
               // the overridden version exists/registered on Azkaban database. Hence, it follows a
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
               final VersionInfo versionInfo = this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeOverrideParam(imageType)),
+                  flowProps.get(imageTypeOverrideParam(imageType)),
                   State.getNewAndActiveStateFilter());
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
@@ -488,24 +492,24 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         for (final String imageType : imageTypesUsedInFlow) {
           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
           VersionInfo versionInfo;
-          if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
+          if (flowProps != null && flowProps.containsKey(imageTypeVersionOverrideParam)) {
             // Fetches the user overridden version from the database and this will make sure if
             // the overridden version exists/registered on Azkaban database. Hence, it follows a
             // fail fast mechanism to throw exception if the version does not exist for the
             // given image type.
             // Allow test version override if allow.test.version flow parameter is set to true
-            if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
+            if (flowProps.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
                 Boolean.TRUE.equals(Boolean
-                    .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
+                    .valueOf(flowProps.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
               versionInfo = this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeVersionOverrideParam),
+                  flowProps.get(imageTypeVersionOverrideParam),
                   State.getNewActiveAndTestStateFilter());
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
                   versionInfo.getVersion());
             } else {
               versionInfo = this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeVersionOverrideParam),
+                  flowProps.get(imageTypeVersionOverrideParam),
                   State.getNewAndActiveStateFilter());
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
@@ -717,6 +721,25 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
+   *  This method fetches all the flow properties from the db and flattens
+   *  them into a single Props object.
+   * @param flow the executable flow
+   * @return flattened Props object with all the flow properties.
+   */
+  private Props getFlowProps(final ExecutableFlow flow) {
+    Props commonProps = new Props();
+    final Map<String, Props> propsMap =
+        projectLoader.fetchProjectProperties(flow.getProjectId(), flow.getVersion());
+    if (null != propsMap) {
+      // Flatten the props as long list of props objects may cause stack overflow.
+      for (final Props props : propsMap.values()) {
+        commonProps.putAll(props);
+      }
+    }
+    return commonProps;
+  }
+
+  /**
    * This method is used to create pod. 1. Fetch jobTypes for the flow 2. Fetch flow parameters for
    * version set and each image type if it is set. 3. If valid version set is provided then use
    * versions from it. 4. If valid version set is not provided then call Ramp up manager API and get
@@ -748,6 +771,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (flowParam != null && !flowParam.isEmpty()) {
       logger.info("ExecId: {}, Flow Parameters are: {}", executionId, flowParam);
     }
+    final Props commonFlowProps = getFlowProps(flow);
+    // Always put flow params AFTER the flow properties as flow params always take precedence.
+    final Props mergedFlowPropsAndParams = new Props(commonFlowProps, flowParam);
     // Create all image types by adding azkaban base image, azkaban config and all job types for
     // the flow.
     final Set<String> allImageTypes = new TreeSet<>();
@@ -755,7 +781,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.add(this.azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
-    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
+    final VersionSet versionSet =
+        fetchVersionSet(executionId, mergedFlowPropsAndParams, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
     disableSATokenAutomount(podSpec);
 
