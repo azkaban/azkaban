@@ -103,11 +103,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       "/export/apps/azkaban/azkaban-exec-server/current/plugins/dependencies";
   public static final String IMAGE = "image";
   public static final String VERSION = "version";
-  public static final String NSCD_SOCKET_VOLUME_NAME = "nscd-socket";
-  public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
-  public static final String HOST_PATH_TYPE = "Socket";
-  public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
-  public static final boolean DEFAULT_NSCD_MOUNT_READ_ONLY = true;
   public static final String DEFAULT_SECRET_NAME = "azkaban-k8s-secret";
   public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
   public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
@@ -136,9 +131,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String memoryRequest;
   private final int servicePort;
   private final long serviceTimeout;
-  private final String nscdSocketHostPath;
-  private final String nscdSocketVolumeMountPath;
-  private final boolean isNscdMountReadOnly;
   private final VersionSetLoader versionSetLoader;
   private final ImageRampupManager imageRampupManager;
   private final KubernetesWatch kubernetesWatch;
@@ -233,17 +225,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         this.azkProps
             .getString(ContainerizedDispatchManagerProperties.KUBERNETES_MOUNT_PATH_FOR_DEPENDENCIES,
                 DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_DEPENDENCIES);
-    this.nscdSocketHostPath =
-        this.azkProps
-            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_HOST_PATH,
-                DEFAULT_NSCD_SOCKET_HOST_PATH);
-    this.nscdSocketVolumeMountPath =
-        this.azkProps.getString(
-            ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH,
-            DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH);
-    this.isNscdMountReadOnly = this.azkProps.getBoolean(
-        ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_MOUNT_READ_ONLY,
-        DEFAULT_NSCD_MOUNT_READ_ONLY);
     this.secretName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_NAME,
             DEFAULT_SECRET_NAME);
@@ -556,9 +537,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit,
                 flowContainerMemoryRequest);
 
-    // Add volume for nscd-socket
-    addNscdSocketInVolume(v1SpecBuilder);
-
     final Map<String, String> envVariables = new HashMap<>();
     envVariables.put(ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID,
         String.valueOf(versionSet.getVersionSetId()));
@@ -677,17 +655,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void addEnvVariablesToSpecBuilder(final AzKubernetesV1SpecBuilder v1SpecBuilder,
       final Map<String, String> envVariables) {
     envVariables.forEach((key, value) -> v1SpecBuilder.addEnvVarToFlowContainer(key, value));
-  }
-
-  /**
-   * This method is used to add volume for nscd socket.
-   *
-   * @param v1SpecBuilder
-   */
-  private void addNscdSocketInVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
-    v1SpecBuilder
-        .addHostPathVolume(NSCD_SOCKET_VOLUME_NAME, this.nscdSocketHostPath, HOST_PATH_TYPE,
-            this.nscdSocketVolumeMountPath, this.isNscdMountReadOnly);
   }
 
   /**
