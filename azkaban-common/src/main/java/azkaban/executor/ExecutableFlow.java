@@ -19,6 +19,7 @@ import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.project.Project;
+import azkaban.project.ProjectLoader;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
@@ -85,6 +86,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   // For Flows dispatched from a k8s pod
   private VersionSet versionSet;
+
+  // Flattened flow properties overridden by flow params
+  private Props flattenedFlowPropsAndParams = null;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -475,4 +479,37 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public void setVersionSet(final VersionSet versionSet) {
     this.versionSet = versionSet;
   }
+
+  /**
+   * Getter of flattened flow properties and flow params. This API takes lazy
+   * loading approach. If the properties are not set, then they are first set.
+   * @return Returns the flattened flow props overridden by flow params.
+   */
+  public Props getFlowPropsAndParams(final ProjectLoader projectLoader) {
+    // If the object is set, just return it.
+    if (this.flattenedFlowPropsAndParams != null) {
+      return this.flattenedFlowPropsAndParams;
+    }
+    // Set the props and params.
+    this.flattenedFlowPropsAndParams = new Props();
+    // Fetch props from the project.
+    final Map<String, Props> propsMap =
+        projectLoader.fetchProjectProperties(this.projectId, this.version);
+    if (null != propsMap) {
+      propsMap.values().forEach(props ->
+          this.flattenedFlowPropsAndParams.putAll(props));
+    }
+    // Fetch the flow parameters
+    Map<String, String> flowParam = null;
+    if (this.executionOptions != null) {
+      flowParam = this.executionOptions.getFlowParameters();
+    }
+    // Always put flow params AFTER the flow properties as flow params always take precedence
+    if (flowParam != null && !flowParam.isEmpty()) {
+      this.flattenedFlowPropsAndParams =
+          new Props(this.flattenedFlowPropsAndParams, flowParam);
+    }
+    return this.flattenedFlowPropsAndParams;
+  }
+
 }
