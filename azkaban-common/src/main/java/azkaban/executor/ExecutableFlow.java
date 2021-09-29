@@ -508,7 +508,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     // Filter out the properties to keep only the override ones.
-    final Props flowProps =
+    final Props flowOverrideProps =
         new Props(null, props.getMapByPrefix(PARAM_OVERRIDE));
 
     // Fetch the flow parameters
@@ -517,9 +517,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
       flowParam = this.executionOptions.getFlowParameters();
     }
     // Always put flow params AFTER the flow properties as flow params always take precedence
-    this.flattenedFlowPropsAndParams = flowProps;
+    this.flattenedFlowPropsAndParams = flowOverrideProps;
     if (flowParam != null && !flowParam.isEmpty()) {
-      this.flattenedFlowPropsAndParams = new Props(flowProps, flowParam);
+      this.flattenedFlowPropsAndParams = new Props(flowOverrideProps, flowParam);
     }
     return this.flattenedFlowPropsAndParams;
   }
