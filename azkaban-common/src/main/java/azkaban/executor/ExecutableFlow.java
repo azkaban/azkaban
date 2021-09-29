@@ -503,19 +503,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
       final Map<String, Props> propsMap = projectLoader.
           fetchProjectProperties(projectId, version);
       if (null != propsMap) {
-        Props finalProps = props;
-        propsMap.values().forEach(finalProps::putAll);
-        props = finalProps;
+        propsMap.values().forEach(props::putAll);
       }
     }
 
     // Filter out the properties to keep only the override ones.
-    final Map<String, String> filteredProps = props.getMapByPrefix(PARAM_OVERRIDE);
-    final Props flowProps = new Props(null, filteredProps);
-    /*filteredProps.forEach((key, value) -> {
-      final String newKey = key.substring(PARAM_OVERRIDE.length() + 1);
-      flowProps.put(newKey, value);
-    });*/
+    final Props flowProps =
+        new Props(null, props.getMapByPrefix(PARAM_OVERRIDE));
 
     // Fetch the flow parameters
     Map<String, String> flowParam = null;
@@ -523,11 +517,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
       flowParam = this.executionOptions.getFlowParameters();
     }
     // Always put flow params AFTER the flow properties as flow params always take precedence
-    Props combinedProps = flowProps;
+    this.flattenedFlowPropsAndParams = flowProps;
     if (flowParam != null && !flowParam.isEmpty()) {
-      combinedProps = new Props(flowProps, flowParam);
+      this.flattenedFlowPropsAndParams = new Props(flowProps, flowParam);
     }
-    this.flattenedFlowPropsAndParams = combinedProps;
     return this.flattenedFlowPropsAndParams;
   }
 
