@@ -64,6 +64,7 @@ import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.FlowLoaderUtils;
 import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
@@ -436,14 +437,16 @@ public class KubernetesContainerizedImplTest {
    */
   @Test
   public void testFlowPropertyAndParamsMerge() throws Exception {
-    final ExecutableFlow flow = createFlowWithMultipleJobtypes();
+    final ExecutableFlow flow = createTestFlow();
     flow.setExecutionId(3);
     final Props flowProps = new Props();
-    flowProps.put("image.version", "1.2.3");
+    flowProps.put("param.override.image.version", "1.2.3");
+    flowProps.put("regular.param", "4.5.6"); // Should be filtered out.
     final Map<String, Props> propsMap = new HashMap<>();
     propsMap.put("test", flowProps);
     when(this.projectLoader.fetchProjectProperties(flow.getProjectId(), flow.getVersion())).thenReturn(propsMap);
-    //when(flow.getExecutionOptions().getFlowParameters()).thenReturn(flowParam);
+    //when(FlowLoaderUtils.loadPropsFromYamlFile(this.projectLoader, flow, null)).thenReturn(flowProps);
+    //doReturn(flowProps).when(FlowLoaderUtils.loadPropsFromYamlFile(this.projectLoader, flow, null));
     final ExecutionOptions executionOptions = new ExecutionOptions();
     flow.setExecutionOptions(executionOptions);
     final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
@@ -460,14 +463,14 @@ public class KubernetesContainerizedImplTest {
    */
   @Test
   public void testFlowPropertyAndParamsMergeWithOverwrite() throws Exception {
-    final ExecutableFlow flow = createFlowWithMultipleJobtypes();
+    final ExecutableFlow flow = createTestFlow();
     flow.setExecutionId(3);
     final Props flowProps = new Props();
-    flowProps.put("image.version", "1.2.3");
+    flowProps.put("param.override.image.version", "1.2.3");
+    flowProps.put("regular.param", "4.5.6"); // Should be filtered out.
     final Map<String, Props> propsMap = new HashMap<>();
     propsMap.put("test", flowProps);
     when(this.projectLoader.fetchProjectProperties(flow.getProjectId(), flow.getVersion())).thenReturn(propsMap);
-    //when(flow.getExecutionOptions().getFlowParameters()).thenReturn(flowParam);
     final ExecutionOptions executionOptions = new ExecutionOptions();
     flow.setExecutionOptions(executionOptions);
     final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();

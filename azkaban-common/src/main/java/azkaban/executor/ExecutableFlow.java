@@ -18,6 +18,7 @@ package azkaban.executor;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
+import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.sla.SlaOption;
@@ -58,6 +59,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
   public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
+  private static final String PARAM_OVERRIDE = "param.override.";
+
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -490,25 +493,41 @@ public class ExecutableFlow extends ExecutableFlowBase {
     if (this.flattenedFlowPropsAndParams != null) {
       return this.flattenedFlowPropsAndParams;
     }
-    // Set the props and params.
-    this.flattenedFlowPropsAndParams = new Props();
-    // Fetch props from the project.
-    final Map<String, Props> propsMap =
-        projectLoader.fetchProjectProperties(this.projectId, this.version);
-    if (null != propsMap) {
-      propsMap.values().forEach(props ->
-          this.flattenedFlowPropsAndParams.putAll(props));
+
+    Props props = new Props();
+    // Fetch the flow properties
+    if (FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion)) {
+      props = FlowLoaderUtils.loadPropsFromYamlFile(projectLoader,
+          this, null);
+    } else {
+      final Map<String, Props> propsMap = projectLoader.
+          fetchProjectProperties(projectId, version);
+      if (null != propsMap) {
+        Props finalProps = props;
+        propsMap.values().forEach(finalProps::putAll);
+        props = finalProps;
+      }
     }
+
+    // Filter out the properties to keep only the override ones.
+    final Map<String, String> filteredProps = props.getMapByPrefix(PARAM_OVERRIDE);
+    final Props flowProps = new Props(null, filteredProps);
+    /*filteredProps.forEach((key, value) -> {
+      final String newKey = key.substring(PARAM_OVERRIDE.length() + 1);
+      flowProps.put(newKey, value);
+    });*/
+
     // Fetch the flow parameters
     Map<String, String> flowParam = null;
     if (this.executionOptions != null) {
       flowParam = this.executionOptions.getFlowParameters();
     }
     // Always put flow params AFTER the flow properties as flow params always take precedence
+    Props combinedProps = flowProps;
     if (flowParam != null && !flowParam.isEmpty()) {
-      this.flattenedFlowPropsAndParams =
-          new Props(this.flattenedFlowPropsAndParams, flowParam);
+      combinedProps = new Props(flowProps, flowParam);
     }
+    this.flattenedFlowPropsAndParams = combinedProps;
     return this.flattenedFlowPropsAndParams;
   }
 
