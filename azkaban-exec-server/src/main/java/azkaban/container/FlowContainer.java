@@ -41,6 +41,7 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
@@ -140,12 +141,12 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   private final ProjectLoader projectLoader;
   private final TriggerManager triggerManager;
   private final JobTypeManager jobTypeManager;
-  private final ClusterRouter clusterRouter;
   private final AbstractFlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
   private final Props azKabanProps;
+  private final AlerterHolder alerterHolder;
   private Props globalProps;
   private final int numJobThreadPerFlow;
   private Path execDirPath;
@@ -173,6 +174,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
       final ProjectLoader projectLoader,
       final ClusterRouter clusterRouter,
       final TriggerManager triggerManager,
+      final AlerterHolder alerterHolder,
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
@@ -201,13 +203,13 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     this.containerContext = context;
 
     this.eventReporter = eventReporter;
+    this.alerterHolder = alerterHolder;
 
     this.jobLogChunkSize = this.azKabanProps.getString(JOB_LOG_CHUNK_SIZE,
         DEFAULT_LOG_CHUNK_SIZE);
     this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
         DEFAULT_VALIDATE_PROXY_USER);
-    this.clusterRouter = clusterRouter;
     this.triggerManager = triggerManager;
     this.triggerManager.setDispatchMethod(DispatchMethod.CONTAINERIZED);
     this.jobTypeManager =
@@ -385,7 +387,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     this.flowRunner = new FlowRunner(flow, this.executorLoader,
         this.projectLoader, this.jobTypeManager, this.azKabanProps, this.eventReporter,
-        null, commonMetrics, execMetrics);
+        this.alerterHolder, commonMetrics, execMetrics);
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)

@@ -371,7 +371,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
-        if (isPollDispatchMethodEnabled()) {
+        if (isPollDispatchMethodEnabled() || isContainerizedDispatchMethodEnabled()) {
           ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
