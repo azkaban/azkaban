@@ -422,7 +422,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
-      final Props flowProps = loadPropsFromYamlFile(this.flow.getId());
+      final Props flowProps = FlowLoaderUtils.loadPropsFromYamlFile(
+          this.projectLoader, this.flow, null);
       if (flowProps != null) {
         flowProps.setParent(commonFlowProps);
         commonFlowProps = flowProps;
@@ -1005,7 +1006,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
       final String jobPath =
           node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
-      props = loadPropsFromYamlFile(jobPath);
+      props = FlowLoaderUtils.loadPropsFromYamlFile(this.projectLoader,
+          this.flow, jobPath);
       if (props == null) {
         this.logger.info("Job props loaded from yaml file is empty for job " + node.getId());
         return props;
@@ -1048,44 +1050,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     customizeJobProperties(props);
 
     return props;
-  }
-
-  private Props loadPropsFromYamlFile(final String path) {
-    File tempDir = null;
-    Props props = null;
-    try {
-      tempDir = Files.createTempDir();
-      props = FlowLoaderUtils.getPropsFromYamlFile(path, getFlowFile(tempDir));
-    } catch (final Exception e) {
-      this.logger.error("Failed to get props from flow file. " + e);
-    } finally {
-      if (tempDir != null && tempDir.exists()) {
-        try {
-          FileUtils.deleteDirectory(tempDir);
-        } catch (final IOException e) {
-          this.logger.error("Failed to delete temp directory." + e);
-          tempDir.deleteOnExit();
-        }
-      }
-    }
-    return props;
-  }
-
-  private File getFlowFile(final File tempDir) throws Exception {
-    final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
-    // There should be exact one source (file name) for each flow file.
-    if (flowPropsList.isEmpty() || flowPropsList.get(0) == null) {
-      throw new ProjectManagerException(
-          "Failed to get flow file source. Flow props is empty for " + this.flow.getId());
-    }
-    final String source = flowPropsList.get(0).getSource();
-    final int flowVersion = this.projectLoader
-        .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
-    final File flowFile = this.projectLoader
-        .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), source,
-            flowVersion, tempDir);
-
-    return flowFile;
   }
 
   @SuppressWarnings("FutureReturnValueIgnored")

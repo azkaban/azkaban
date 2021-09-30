@@ -45,6 +45,7 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.ProjectLoader;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -149,6 +150,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ContainerizationMetrics containerizationMetrics;
   private final String azkabanBaseImageName;
   private final String azkabanConfigImageName;
+  private final ProjectLoader projectLoader;
 
 
   private static final Logger logger = LoggerFactory
@@ -161,7 +163,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final ImageRampupManager imageRampupManager,
       final KubernetesWatch kubernetesWatch,
       final EventListener eventListener,
-      final ContainerizationMetrics containerizationMetrics)
+      final ContainerizationMetrics containerizationMetrics,
+      final ProjectLoader projectLoader)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
@@ -170,6 +173,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.kubernetesWatch = kubernetesWatch;
     this.eventListener = eventListener;
     this.containerizationMetrics = containerizationMetrics;
+    this.projectLoader = projectLoader;
     this.addListener(this.eventListener);
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
@@ -374,13 +378,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * This method fetches the complete version set information (Map of jobs and their versions)
    * required to run the flow.
    *
-   * @param flowParams
+   * @param flowParams Set of flow properties and flow parameters
    * @param imageTypesUsedInFlow
    * @return VersionSet
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  VersionSet fetchVersionSet(final int executionId, final Map<String, String> flowParams,
+  VersionSet fetchVersionSet(final int executionId, final Props flowParams,
       Set<String> imageTypesUsedInFlow, final ExecutableFlow executableFlow)
       throws ExecutorManagerException {
     VersionSet versionSet = null;
@@ -722,7 +726,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.add(this.azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
-    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
+    final VersionSet versionSet = fetchVersionSet(executionId,
+        flow.getFlowPropsAndParams(this.projectLoader), allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
     disableSATokenAutomount(podSpec);
 
