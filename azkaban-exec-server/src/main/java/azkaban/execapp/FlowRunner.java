@@ -372,7 +372,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
         if (isPollDispatchMethodEnabled() || isContainerizedDispatchMethodEnabled()) {
-          this.logger.info("Deepak : sending email");
           ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
