@@ -125,6 +125,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String podPrefix;
   private final String servicePrefix;
   private final String clusterName;
+  private final String clusterEnv;
   private final String flowContainerName;
   private final String cpuLimit;
   private final String cpuRequest;
@@ -189,6 +190,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             DEFAULT_SERVICE_NAME_PREFIX);
     this.clusterName = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
+    // This is utilized to set AZ_CLUSTER ENV variable to the POD containers.
+    this.clusterEnv = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_ENV,
+        this.clusterName);
     this.cpuLimit = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
             CPU_LIMIT);
@@ -535,7 +539,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
-        new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
+        new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,
                 azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit,
