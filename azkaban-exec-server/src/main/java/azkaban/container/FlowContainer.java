@@ -54,6 +54,8 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectWhitelist;
+import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.IMBeanRegistrable;
@@ -127,6 +129,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   public static final String JOB_LOG_BACKUP_INDEX = "job.log.backup.index";
   public static final String PROXY_USER_LOCK_DOWN = "proxy.user.lock.down";
   private static final int SHUTDOWN_TIMEOUT_IN_SECONDS = 10;
+  private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
 
 
   // Logging
@@ -378,6 +381,29 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
       watcher = new RemoteFlowWatcher(pipelinedExecId, this.executorLoader);
     }
 
+    int numJobThreads = this.numJobThreadPerFlow;
+    if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
+      try {
+        if (!ProjectWhitelist.isXmlFileLoaded()) {
+          ProjectWhitelist.load(azKabanProps);
+        }
+        final int numJobs =
+            Integer.valueOf(options.getFlowParameters().get(
+                FLOW_NUM_JOB_THREADS));
+        logger.info("Num of job threads read from flow parameter is " + numJobs);
+        if (numJobs > 0 && (numJobs <= numJobThreads || ProjectWhitelist
+            .isProjectWhitelisted(flow.getProjectId(),
+                WhitelistType.NumJobPerFlow))) {
+          numJobThreads = numJobs;
+        }
+      } catch (final Exception e) {
+        throw new ExecutorManagerException(
+            "Failed to set the number of job threads "
+                + options.getFlowParameters().get(FLOW_NUM_JOB_THREADS)
+                + " for flow " + flow.getExecutionId(), e);
+      }
+    }
+
     // TODO : figure out the metrics
     // Create the FlowRunner
     final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
@@ -389,7 +415,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(this.numJobThreadPerFlow)
+        .setNumJobThreads(numJobThreads)
         .addListener(this);
   }
 
