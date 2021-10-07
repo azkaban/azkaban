@@ -196,6 +196,7 @@ public class Constants {
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
+    public static final String AZKABAN_CLUSTER_ENV = "azkaban.cluster.env";
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
     // Property to enable appropriate dispatch model
     public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
