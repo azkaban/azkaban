@@ -505,9 +505,13 @@ public class FlowRunnerManager implements EventListener<Event>,
     int numJobThreads = this.numJobThreadPerFlow;
     if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
       try {
+        if (!ProjectWhitelist.isXmlFileLoaded()) {
+          ProjectWhitelist.load(azkabanProps);
+        }
         final int numJobs =
             Integer.valueOf(options.getFlowParameters().get(
                 FLOW_NUM_JOB_THREADS));
+        LOGGER.info("Num of job threads read from flow parameter is " + numJobs);
         if (numJobs > 0 && (numJobs <= numJobThreads || ProjectWhitelist
             .isProjectWhitelisted(flow.getProjectId(),
                 WhitelistType.NumJobPerFlow))) {
