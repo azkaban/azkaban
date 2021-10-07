@@ -295,28 +295,33 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
         continue;
       }
       if (null == flow) {
-        // When flow object is null, there is no utility in rampup version.
         log.info("Flow object is null, so continue");
-        continue;
-      }
-      int prevRampupPercentage = 0;
-      final int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(flow);
-      log.info("HashValMapping: " + flowNameHashValMapping);
-      for (final ImageRampup imageRampup : imageRampupList) {
-        final int rampupPercentage = imageRampup.getRampupPercentage();
-        if (flowNameHashValMapping >= prevRampupPercentage + 1
-            && flowNameHashValMapping <= prevRampupPercentage + rampupPercentage) {
-          imageTypeRampupVersionMap.put(imageTypeName,
-              this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion())
-                  .orElseThrow(() -> new ImageMgmtException(
-                      String.format("Unable to fetch version %s from image " + "versions table.",
-                          imageRampup.getImageVersion()))));
-          log.debug("The image version {} is selected for image type {} with rampup percentage {}",
-              imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
-          break;
+        final ImageRampup firstImageRampup = imageRampupList.get(0);
+        imageTypeRampupVersionMap.put(imageTypeName,
+            this.fetchImageVersion(imageTypeName, firstImageRampup.getImageVersion())
+                .orElseThrow(() -> new ImageMgmtException(
+                    String.format("Unable to fetch version %s from image " + "versions table.",
+                        firstImageRampup.getImageVersion()))));
+      } else {
+        int prevRampupPercentage = 0;
+        final int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(flow);
+        log.info("HashValMapping: " + flowNameHashValMapping);
+        for (final ImageRampup imageRampup : imageRampupList) {
+          final int rampupPercentage = imageRampup.getRampupPercentage();
+          if (flowNameHashValMapping >= prevRampupPercentage + 1
+              && flowNameHashValMapping <= prevRampupPercentage + rampupPercentage) {
+            imageTypeRampupVersionMap.put(imageTypeName,
+                this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion())
+                    .orElseThrow(() -> new ImageMgmtException(
+                        String.format("Unable to fetch version %s from image " + "versions table.",
+                            imageRampup.getImageVersion()))));
+            log.debug("The image version {} is selected for image type {} with rampup percentage {}",
+                imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
+            break;
+          }
+          log.info("ImageTypeRampupVersionMap: " + imageTypeRampupVersionMap);
+          prevRampupPercentage += rampupPercentage;
         }
-        log.info("ImageTypeRampupVersionMap: " + imageTypeRampupVersionMap);
-        prevRampupPercentage += rampupPercentage;
       }
     }
     return imageTypeRampupVersionMap;
