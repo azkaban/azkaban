@@ -20,6 +20,9 @@ import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class def is missing
+ */
 public class FlowProps {
 
   private String parentSource;
