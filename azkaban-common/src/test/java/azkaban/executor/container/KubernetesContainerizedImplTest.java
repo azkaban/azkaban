@@ -267,7 +267,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(dependencyTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
         .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, dependencyTypes, flowParam);
 
@@ -312,7 +312,7 @@ public class KubernetesContainerizedImplTest {
     flowParam.put(Constants.FlowParameters.FLOW_PARAM_VERSION_SET_ID,
         String.valueOf(presetVersionSet.getVersionSetId()));
     VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     assert (versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
@@ -340,7 +340,7 @@ public class KubernetesContainerizedImplTest {
         KubernetesContainerizedImpl.IMAGE, "azkaban-base", KubernetesContainerizedImpl.VERSION),
         "7.0.4");
     versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     assert (versionSet.getVersion("kafkaPush").get()
         .equals(presetVersionSet.getVersion("kafkaPush").get()));
@@ -374,7 +374,7 @@ public class KubernetesContainerizedImplTest {
     final Map<String, String> flowParam = new HashMap<>();
 
     final VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     // Included jobs in the azkaban base image, so must not present in versionSet.
     Assert.assertEquals(false, versionSet.getVersion("hadoopJava").isPresent());
@@ -410,7 +410,7 @@ public class KubernetesContainerizedImplTest {
     allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
-        .fetchVersionSet(flow.getExecutionId(), new Props(null, flowParam), allImageTypes, flow);
+        .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
 
     flow.setStatus(Status.PREPARING);
     flow.setVersionSet(versionSet);
@@ -445,13 +445,13 @@ public class KubernetesContainerizedImplTest {
     final Map<String, Props> propsMap = new HashMap<>();
     propsMap.put("test", flowProps);
     when(this.projectLoader.fetchProjectProperties(flow.getProjectId(), flow.getVersion())).thenReturn(propsMap);
-    //when(FlowLoaderUtils.loadPropsFromYamlFile(this.projectLoader, flow, null)).thenReturn(flowProps);
-    //doReturn(flowProps).when(FlowLoaderUtils.loadPropsFromYamlFile(this.projectLoader, flow, null));
     final ExecutionOptions executionOptions = new ExecutionOptions();
     flow.setExecutionOptions(executionOptions);
     final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(0, flowParams.size());
-    final Props mergedFlowPropsAndParams = flow.getFlowPropsAndParams(this.projectLoader);
+    // Merge the flow props and flow params
+    flow.setFlowPropsAndParams(this.projectLoader);
+    final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
@@ -477,7 +477,9 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals(0, flowParams.size());
     // flow params take priority.
     flowParams.put("image.version", "2.3.4");
-    final Props mergedFlowPropsAndParams = flow.getFlowPropsAndParams(this.projectLoader);
+    // Merge the flow props and flow params
+    flow.setFlowPropsAndParams(this.projectLoader);
+    final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("2.3.4", mergedFlowPropsAndParams.get("image.version"));
