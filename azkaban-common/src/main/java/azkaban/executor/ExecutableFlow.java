@@ -90,9 +90,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
   // For Flows dispatched from a k8s pod
   private VersionSet versionSet;
 
-  // Flattened flow properties overridden by flow params
-  private Props flattenedFlowPropsAndParams = null;
-
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
     this.projectName = project.getName();
@@ -488,12 +485,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
    * loading approach. If the properties are not set, then they are first set.
    * @return Returns the flattened flow props overridden by flow params.
    */
-  public Props getFlowPropsAndParams(final ProjectLoader projectLoader) {
-    // If the object is set, just return it.
-    if (this.flattenedFlowPropsAndParams != null) {
-      return this.flattenedFlowPropsAndParams;
-    }
-
+  public void setFlowPropsAndParams(final ProjectLoader projectLoader) {
     Props props = new Props();
     // Fetch the flow properties
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion)) {
@@ -508,20 +500,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     // Filter out the properties to keep only the override ones.
-    final Props flowOverrideProps =
-        new Props(null, props.getMapByPrefix(PARAM_OVERRIDE));
+    Map<String, String> flowOverridePropsMap = props.getMapByPrefix(PARAM_OVERRIDE);
 
-    // Fetch the flow parameters
-    Map<String, String> flowParam = null;
+    // Update the flow params with override props
     if (this.executionOptions != null) {
-      flowParam = this.executionOptions.getFlowParameters();
+      this.executionOptions.addAllFlowParameters(flowOverridePropsMap);
     }
-    // Always put flow params AFTER the flow properties as flow params always take precedence
-    this.flattenedFlowPropsAndParams = flowOverrideProps;
-    if (flowParam != null && !flowParam.isEmpty()) {
-      this.flattenedFlowPropsAndParams = new Props(flowOverrideProps, flowParam);
-    }
-    return this.flattenedFlowPropsAndParams;
   }
 
 }
