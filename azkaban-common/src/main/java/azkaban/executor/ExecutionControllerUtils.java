@@ -77,10 +77,11 @@ public class ExecutionControllerUtils {
    * @param flow the execution
    * @param reason reason for finalizing the execution
    * @param originalError the cause, if execution is being finalized because of an error
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void finalizeFlow(final ExecutorLoader executorLoader, final AlerterHolder
+  public static void finalizeFlow(final ExecutorLoader executorLoader, @Nullable final AlerterHolder
       alerterHolder, final ExecutableFlow flow, final String reason,
-      @Nullable final Throwable originalError) {
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
     boolean alertUser = true;
 
     // First check if the execution in the datastore is finished.
@@ -94,7 +95,7 @@ public class ExecutionControllerUtils {
         // If it's marked finished, we're good. If not, we fail everything and then mark it
         // finished.
         if (!isFinished(dsFlow)) {
-          failEverything(dsFlow);
+          failEverything(dsFlow, finalFlowStatus);
           executorLoader.updateExecutableFlow(dsFlow);
         }
       }
@@ -126,7 +127,7 @@ public class ExecutionControllerUtils {
       }
     }
 
-    if (alertUser) {
+    if (null != alerterHolder && alertUser) {
       alertUserOnFlowFinished(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
     }
   }
@@ -252,8 +253,9 @@ public class ExecutionControllerUtils {
    * Set the flow status to failed and fail every node inside the flow.
    *
    * @param exFlow the executable flow
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void failEverything(final ExecutableFlow exFlow) {
+  public static void failEverything(final ExecutableFlow exFlow, final Status finalFlowStatus) {
     final long time = System.currentTimeMillis();
     final Queue<ExecutableNode> queue = new LinkedList<>();
     queue.add(exFlow);
@@ -276,15 +278,20 @@ public class ExecutionControllerUtils {
             continue;
             // case UNKNOWN:
           case READY:
-            // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to KILLED
-            if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
+            if (finalFlowStatus == Status.KILLED) {
+              // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
+              node.setStatus(Status.KILLED);
+            } else if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
+              // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to
+              // KILLED.
               node.setStatus(Status.KILLED);
             } else {
               node.setStatus(Status.KILLING);
             }
             break;
           default:
-            node.setStatus(Status.FAILED);
+            // Set the default job/node status as the finalFlowStatus
+            node.setStatus(finalFlowStatus);
             break;
         }
 
@@ -302,7 +309,7 @@ public class ExecutionControllerUtils {
     }
 
     if (!Status.isStatusFinished(exFlow.getStatus())) {
-      exFlow.setStatus(Status.FAILED);
+      exFlow.setStatus(finalFlowStatus);
     }
   }
 

@@ -458,27 +458,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     }
   }
 
-  @Override
-  public void cancelFlow(ExecutableFlow exFlow, String userId)
-      throws ExecutorManagerException {
-    synchronized (exFlow) {
-      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
-          .fetchUnfinishedFlows();
-      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
-        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
-            .get(exFlow.getExecutionId());
-        // Note that ExecutionReference may have the 'executor' as null. ApiGateway call is expected
-        // to handle this scenario.
-        this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
-      } else {
-        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
-            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
-        logger.warn("Exception while cancelling flow. ", eme);
-        throw eme;
-      }
-    }
-  }
-
   //TODO: BDP-3642 Add a way to call Flow container APIs using apiGateway
   @Override
   public void resumeFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
