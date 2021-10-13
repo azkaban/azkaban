@@ -482,7 +482,7 @@ public class KubernetesContainerizedImplTest {
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
-    Assert.assertEquals("2.3.4", mergedFlowPropsAndParams.get("image.version"));
+    Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
   }
   private ExecutableFlow createTestFlow() throws Exception {
     return TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
