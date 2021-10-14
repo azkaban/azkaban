@@ -16,6 +16,7 @@
 package azkaban.executor.container;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,10 +24,14 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
 import java.util.ArrayList;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +40,7 @@ public class ContainerCleanupManagerTest {
   private Props props;
   private ExecutorLoader executorLoader;
   private ContainerizedImpl containerImpl;
-  private final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
+  private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
 
   @Before
@@ -43,65 +48,60 @@ public class ContainerCleanupManagerTest {
     this.props = new Props();
     this.executorLoader = mock(ExecutorLoader.class);
     this.containerImpl = mock(ContainerizedImpl.class);
-    this.cleaner = new ContainerCleanupManager(this.props, this.executorLoader, this.containerImpl);
-
-    this.executableFlows.add(new ExecutableFlow());
-    this.executableFlows.get(0).setExecutionId(1000);
-    this.executableFlows.get(0).setStatus(Status.SUCCEEDED);
-
-    this.executableFlows.add(new ExecutableFlow());
-    this.executableFlows.get(1).setExecutionId(1001);
-    this.executableFlows.get(1).setStatus(Status.FAILED);
-
-    this.executableFlows.add(new ExecutableFlow());
-    this.executableFlows.get(2).setExecutionId(1002);
-    this.executableFlows.get(2).setStatus(Status.FAILED);
+    this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
+    this.cleaner = new ContainerCleanupManager(this.props, this.executorLoader,
+        this.containerImpl, this.containerizedDispatchManager);
   }
 
   @Test
   public void testEmptyStaleExecutions() throws Exception {
     // List of stale flows is empty
-    when(this.executorLoader.fetchStaleFlows(any())).thenReturn(new ArrayList<>());
-    this.cleaner.terminateStaleContainers();
-    verify(this.executorLoader).fetchStaleFlows(any());
+    when(this.executorLoader.fetchStaleFlowsForStatus(any())).thenReturn(new ArrayList<>());
+    this.cleaner.cleanUpStaleFlows();
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.DISPATCHING);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.PREPARING);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.RUNNING);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.PAUSED);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.KILLING);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.EXECUTION_STOPPED);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.FAILED_FINISHING);
     verifyZeroInteractions(this.containerImpl);
-  }
-
-  @Test
-  public void testValidStaleExecutions() throws Exception {
-    when(this.executorLoader.fetchStaleFlows(any())).thenReturn(this.executableFlows);
-    this.cleaner.terminateStaleContainers();
-    // Container deletion should be attempted for all executiosn in the list.
-    for (final ExecutableFlow flow : this.executableFlows) {
-      verify(this.containerImpl).deleteContainer(flow.getExecutionId());
-    }
   }
 
   @Test
   public void testExceptionInFetchingExecutions() throws Exception {
     // Mock an exception while fetching stale flows.
     doThrow(new RuntimeException("mock runtime exception"))
-        .when(this.executorLoader).fetchStaleFlows(any());
+        .when(this.executorLoader).fetchStaleFlowsForStatus(any());
     // Verifies that exception is consumed, otherwise this test will fail with exception.
-    this.cleaner.terminateStaleContainers();
+    this.cleaner.cleanUpStaleFlows();
     // Additionally verify  no invocations for container deletion should take place
     verifyZeroInteractions(this.containerImpl);
   }
 
   @Test
-  public void testExecptionInDeletingContainer() throws Exception {
-    when(this.executorLoader.fetchStaleFlows(any())).thenReturn(this.executableFlows);
+  public void testCleanUpPreparingFlows() throws ExecutorManagerException {
+    ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
+    ExecutableFlow flow = new ExecutableFlow();
+    flow.setExecutionId(1000);
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitUser("goku");
+    flow.setExecutionOptions(new ExecutionOptions());
+    executableFlows.add(flow);
+    when(this.executorLoader.fetchStaleFlowsForStatus(Status.PREPARING))
+        .thenReturn(executableFlows);
+    when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId()))
+        .thenReturn(flow);
 
-    // Deleting the first execution container throws and exception.
-    doThrow(new RuntimeException("mock runtime exception"))
-        .when(this.containerImpl).deleteContainer(this.executableFlows.get(0).getExecutionId());
-    this.cleaner.terminateStaleContainers();
+    // Skip the invocation of api gateway and just utilize finalizeFlow when cancelFlow is called.
+    doAnswer(e -> {
+      ExecutionControllerUtils.finalizeFlow(this.executorLoader, null, flow, "", null,
+          Status.KILLED);
+      return null;
+    }).when(this.containerizedDispatchManager).cancelFlow(flow, flow.getSubmitUser());
 
-    // Subsequent execution containers should still be deleted.
-    for (final ExecutableFlow flow : this.executableFlows.subList(1, this.executableFlows.size())) {
-      verify(this.containerImpl).deleteContainer(flow.getExecutionId());
-    }
+    this.cleaner.cleanUpStaleFlows(Status.PREPARING);
+    Assert.assertEquals(Status.KILLED, flow.getStatus());
+    verify(this.containerImpl).deleteContainer(flow.getExecutionId());
   }
 }
-
-
