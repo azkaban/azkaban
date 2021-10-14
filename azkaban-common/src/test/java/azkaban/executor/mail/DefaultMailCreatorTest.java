@@ -127,8 +127,37 @@ public class DefaultMailCreatorTest {
     assertTrue(this.mailCreator.createErrorEmail(
         this.executableFlow, executableFlows, this.message, this.azkabanName, this.scheme, this
             .clientHostname, this.clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' has failed on unit-tests", this.message.getSubject());
+    assertEquals("Flow 'mail-creator-test' has FAILED on unit-tests", this.message.getSubject());
     assertThat(TestUtils.readResource("errorEmail.html", this))
+        .isEqualToIgnoringWhitespace(this.message.getBody());
+  }
+
+  @Test
+  public void createKilledEmail() throws Exception {
+    setJobStatus(Status.KILLED);
+    this.executableFlow.setEndTime(END_TIME_MILLIS);
+    this.executableFlow.setStatus(Status.KILLED);
+    final List<ExecutableFlow> executableFlows = new ArrayList<>();
+
+    final ExecutableFlow executableFlow1 = new ExecutableFlow(this.project, this.flow);
+    executableFlow1.setExecutionId(1);
+    executableFlow1.setStartTime(START_TIME_MILLIS);
+    executableFlow1.setEndTime(END_TIME_MILLIS);
+    executableFlow1.setStatus(Status.FAILED);
+    executableFlows.add(executableFlow1);
+
+    final ExecutableFlow executableFlow2 = new ExecutableFlow(this.project, this.flow);
+    executableFlow2.setExecutionId(2);
+    executableFlow2.setStartTime(START_TIME_MILLIS);
+    executableFlow2.setEndTime(END_TIME_MILLIS);
+    executableFlow2.setStatus(Status.SUCCEEDED);
+    executableFlows.add(executableFlow2);
+
+    assertTrue(this.mailCreator.createErrorEmail(
+        this.executableFlow, executableFlows, this.message, this.azkabanName, this.scheme,
+        this.clientHostname, this.clientPortNumber));
+    assertEquals("Flow 'mail-creator-test' was KILLED on unit-tests", this.message.getSubject());
+    assertThat(TestUtils.readResource("killedEmail.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
