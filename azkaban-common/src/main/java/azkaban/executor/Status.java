@@ -16,10 +16,14 @@
 
 package azkaban.executor;
 
+import azkaban.utils.Pair;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 public enum Status {
   READY(10),
@@ -43,6 +47,22 @@ public enum Status {
 
   private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
       .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
+
+  private static final String SUBMIT_TIME = "submit_time";
+  private static final String START_TIME = "start_time";
+  private static final String UPDATE_TIME = "update_time";
+  // Defines the validity duration associated with certain statuses from the
+  // submit/start/update time.
+  public static final ImmutableMap<Status, Pair<Duration, String>> validityMap = new Builder<Status,
+      Pair<Duration, String>>()
+      .put(DISPATCHING, new Pair<>(Duration.ofMinutes(10), SUBMIT_TIME))
+      .put(PREPARING, new Pair<>(Duration.ofMinutes(15), SUBMIT_TIME))
+      .put(RUNNING, new Pair<>(Duration.ofDays(10), START_TIME))
+      .put(PAUSED, new Pair<>(Duration.ofDays(10), START_TIME))
+      .put(KILLING, new Pair<>(Duration.ofMinutes(15), UPDATE_TIME))
+      .put(EXECUTION_STOPPED, new Pair<>(Duration.ofMinutes(15), UPDATE_TIME))
+      .put(FAILED_FINISHING, new Pair<>(Duration.ofDays(10), START_TIME))
+      .build();
 
   public static final Set<Status> nonFinishingStatusAfterFlowStartsSet = new TreeSet<>(
       Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));

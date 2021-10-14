@@ -17,10 +17,12 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
-import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.FlowParameters;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.utils.Props;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
@@ -46,46 +48,98 @@ public class ContainerCleanupManager {
 
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
   private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(10);
-  private static final Duration DEFAULT_STALE_CONTAINER_AGE_MINS =
-      Duration.ofMinutes(10 * 24 * 60); // 10 days
   private final long cleanupIntervalMin;
-  private final long staleContainerAgeMins;
   private final ScheduledExecutorService cleanupService;
   private final ExecutorLoader executorLoader;
   private final ContainerizedImpl containerizedImpl;
+  private final ContainerizedDispatchManager containerizedDispatchManager;
 
   @Inject
   public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
-      final ContainerizedImpl containerizedImpl) {
+      final ContainerizedImpl containerizedImpl,
+      final ContainerizedDispatchManager containerizedDispatchManager) {
     this.cleanupIntervalMin = azkProps
         .getLong(
             ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
             DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
-    this.staleContainerAgeMins = azkProps.getLong(ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS,
-        DEFAULT_STALE_CONTAINER_AGE_MINS.toMinutes());
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;
     this.containerizedImpl = containerizedImpl;
+    this.containerizedDispatchManager = containerizedDispatchManager;
+  }
+
+  public void cleanUpStaleFlows() {
+    cleanUpStaleFlows(Status.DISPATCHING);
+    cleanUpStaleFlows(Status.PREPARING);
+    cleanUpStaleFlows(Status.RUNNING);
+    cleanUpStaleFlows(Status.PAUSED);
+    cleanUpStaleFlows(Status.KILLING);
+    cleanUpStaleFlows(Status.EXECUTION_STOPPED);
+    cleanUpStaleFlows(Status.FAILED_FINISHING);
   }
 
   /**
-   * Execute container-provider specific APIs for all 'stale' containers. A container is considered
-   * 'stale' if it was launched {@code staleContainerAgeMins} ago and the corresponding execution is
-   * not yet in a final state.
-   * <p>
-   * It's important that this method does not throw exceptions as that will interrupt the scheduling
-   * of {@code cleanupService}.
+   * Try cleaning the stale flows for a given status. This will try to cancel the flow, if
+   * unreachable, flow will be finalized. Pod Container will be deleted.
+   *
+   * @param status
    */
-  public void terminateStaleContainers() {
+  public void cleanUpStaleFlows(final Status status) {
+    List<ExecutableFlow> staleFlows;
     try {
-      final List<ExecutableFlow> staleFlows = this.executorLoader
-          .fetchStaleFlows(Duration.ofMinutes(this.staleContainerAgeMins));
-      for (final ExecutableFlow flow : staleFlows) {
-        deleteContainerQuietly(flow.getExecutionId());
-      }
+      staleFlows = this.executorLoader.fetchStaleFlowsForStatus(status);
     } catch (final Exception e) {
-      logger.error("Unexpected exception during container cleanup." + e);
+      logger.error("Exception occurred while fetching stale flows during clean up." + e);
+      return;
+    }
+    for (final ExecutableFlow flow : staleFlows) {
+      if (shouldIgnore(flow, status)) {
+        return;
+      }
+      logger.info("Cleaning up stale flow " + flow.getExecutionId() + " in state " + status.name());
+      cancelFlowQuietly(flow);
+      deleteContainerQuietly(flow.getExecutionId());
+    }
+  }
+
+  /**
+   * Handles special cases. If the flow is in PREPARING STATE and enable.dev.pod=true then ignore
+   * executions from the last 2 days.
+   *
+   * @param flow
+   * @param status
+   * @return
+   */
+  private boolean shouldIgnore(final ExecutableFlow flow, final Status status) {
+    if (status != Status.PREPARING) {
+      return false;
+    }
+    final ExecutionOptions executionOptions = flow.getExecutionOptions();
+    if (null == executionOptions) {
+      return false;
+    }
+    boolean isDevPod = Boolean.parseBoolean(
+        executionOptions.getFlowParameters().get(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD));
+    if (!isDevPod) {
+      return false;
+    }
+    return flow.getSubmitTime() > System.currentTimeMillis() - Duration.ofDays(2).toMillis();
+  }
+
+  /**
+   * Try to quietly cancel the flow. Cancel flow tries to gracefully kill the executions if they are
+   * reachable, otherwise, flow will be finalized.
+   *
+   * @param flow
+   */
+  private void cancelFlowQuietly(ExecutableFlow flow) {
+    try {
+      this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
+    } catch (ExecutorManagerException eme) {
+      logger.info("ExecutorManagerException while cancelling flow.", eme);
+    } catch (RuntimeException re) {
+      logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
     }
   }
 
@@ -110,7 +164,7 @@ public class ContainerCleanupManager {
   @SuppressWarnings("FutureReturnValueIgnored")
   public void start() {
     logger.info("Start container cleanup service");
-    this.cleanupService.scheduleAtFixedRate(this::terminateStaleContainers, 0L,
+    this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleFlows, 0L,
         this.cleanupIntervalMin, TimeUnit.MINUTES);
   }
 
