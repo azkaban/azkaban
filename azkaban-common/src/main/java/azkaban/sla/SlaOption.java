@@ -304,14 +304,18 @@ public class SlaOption {
    * @param flow the executable flow.
    * @return the SLA message.
    */
-  public String createSlaMessage(final ExecutableFlow flow) {
+  public String createSlaMessage(final ExecutableFlow flow, final String azkabanUrl) {
     final int execId = flow.getExecutionId();
     final String durationStr = durationToString(this.duration);
+    final String executionUrl = azkabanUrl + "/" + "executor?" + "execid=" + execId;
+    final String executionLink = "<a href=\"" + executionUrl + "\">" + flow.getFlowId()
+        + " Execution Link</a>";
     switch (this.type.getComponent()) {
       case FLOW:
         final String basicinfo =
             "SLA Alert: Your flow " + this.flowName + " failed to " + this.type.getStatus()
-                + " within " + durationStr + "<br/>";
+                + " within " + durationStr + "<br/>"
+                + executionLink + "<br/>";
         final String expected =
             "Here are details : <br/>" + "Flow " + this.flowName + " in execution "
                 + execId + " is expected to FINISH within " + durationStr + " from "
@@ -320,7 +324,8 @@ public class SlaOption {
         return basicinfo + expected + actual;
       case JOB:
         return "SLA Alert: Your job " + this.jobName + " failed to " + this.type.getStatus()
-            + " within " + durationStr + " in execution " + execId;
+            + " within " + durationStr + " in execution " + execId
+            + "</br>" + executionLink;
       default:
         return "Unrecognized SLA component type " + this.type.getComponent();
     }
