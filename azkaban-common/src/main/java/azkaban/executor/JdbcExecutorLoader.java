@@ -102,9 +102,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchStaleFlows(executionDuration);
+    return this.executionFlowDao.fetchStaleFlowsForStatus(status);
   }
 
   @Override

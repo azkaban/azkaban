@@ -30,6 +30,7 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.OnExecutionEventListener;
+import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedWatch;
 import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
@@ -134,6 +135,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     // Following bindings will be present if and only if containerized dispatch is enabled.
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
+    bindContainerCleanupManager();
   }
 
   private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
@@ -212,6 +214,15 @@ public class AzkabanWebServerModule extends AbstractModule {
     }
     log.info("Binding kubernetes watch dependencies");
     bind(KubernetesWatch.class).in(Scopes.SINGLETON);
+  }
+
+  private void bindContainerCleanupManager() {
+    if(!isContainerizedDispatchMethodEnabled()) {
+      bind(ContainerCleanupManager.class).toProvider(Providers.of(null));
+      return;
+    }
+    log.info("Binding ContainerCleanupManager");
+    bind(ContainerCleanupManager.class).in(Scopes.SINGLETON);
   }
 
   @Inject

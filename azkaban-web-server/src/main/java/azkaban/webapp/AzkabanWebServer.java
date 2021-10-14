@@ -31,6 +31,7 @@ import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
@@ -108,7 +109,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TimeZone;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.management.ObjectName;
@@ -172,6 +175,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final ExecutionLogsCleaner executionLogsCleaner;
   private final ObjectMapper objectMapper;
   private final ContainerizationMetrics containerizationMetrics;
+  private final Optional<ContainerCleanupManager> containerCleanupManager;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -189,7 +193,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
       final ObjectMapper objectMapper,
-      final ContainerizationMetrics containerizationMetrics) {
+      final ContainerizationMetrics containerizationMetrics,
+      @Nullable final ContainerCleanupManager containerCleanupManager) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -207,6 +212,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     this.objectMapper = objectMapper;
     this.containerizationMetrics = containerizationMetrics;
+    this.containerCleanupManager = Optional.ofNullable(containerCleanupManager);
 
     loadBuiltinCheckersAndActions();
 
@@ -543,6 +549,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     configureRoutes();
     startWebMetrics();
     startContainerMetrics();
+    this.containerCleanupManager.ifPresent(ContainerCleanupManager::start);
 
 
     if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
@@ -763,6 +770,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.mbeanRegistrationManager.closeMBeans();
     this.scheduleManager.shutdown();
     this.executorManagerAdapter.shutdown();
+    this.containerCleanupManager.ifPresent(ContainerCleanupManager::shutdown);
     try {
       this.server.stop();
     } catch (final Exception e) {

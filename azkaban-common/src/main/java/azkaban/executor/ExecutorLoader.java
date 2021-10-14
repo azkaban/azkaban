@@ -242,14 +242,13 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * Fetch stale flows. A flow is considered stale if it was started more than {@code
-   * executionDuration} ago and is not yet in a final state.
-   *
-   * @param executionDuration
+   * This method is used to get those flows which are stale. Staleness is determined based on the
+   * validity of the status as defined in {@link Status#validityMap}.
+   * @param status
    * @return
    * @throws ExecutorManagerException
    */
-  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+  List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status)
       throws ExecutorManagerException;
 
   List<ExecutableFlow> fetchAgedQueuedFlows(

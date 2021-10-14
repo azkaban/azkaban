@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
@@ -144,29 +143,31 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMillis)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status)
       throws ExecutorManagerException {
-    // Sample query created by the string builder:
-    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE
-    //   start_time < ? AND status IN (30, 40, 80, 110)
-    final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
-    query.append(" AND status IN (");
-    query.append(
-        Status.nonFinishingStatusAfterFlowStartsSet.stream()
-            .map(s -> String.valueOf(s.getNumVal()))
-            .collect(Collectors.joining(", ")));
-    query.append(")");
+    if (!Status.validityMap.containsKey(status)) {
+      throw new ExecutorManagerException(
+          "Validity duration is not defined for status: " + status.name());
+    }
+    final Pair<Duration, String> validity = Status.validityMap.get(status);
+    final Duration validityDuration = validity.getFirst();
+    final String validityFrom = validity.getSecond();
+    final long beforeInMillis = System.currentTimeMillis() - validityDuration.toMillis();
 
+    // For status PREPARING (20), validityDuration is 15 Mins and validityFrom is "submit_time"
+    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef
+    // WHERE status=20 AND submit_time>0 AND submit_time<beforeInMillis
+    final StringBuilder query = new StringBuilder()
+        .append(FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY)
+        .append(" WHERE status=? ")
+        .append(" AND " + validityFrom + ">0")
+        .append(" AND " + validityFrom + "<?");
     try {
-      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMillis);
+      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(),
+          status.getNumVal(), beforeInMillis);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching stale flows", e);
     }
-  }
-
-  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
-      throws ExecutorManagerException {
-    return fetchStaleFlows(System.currentTimeMillis() - executionDuration.toMillis());
   }
 
   /**

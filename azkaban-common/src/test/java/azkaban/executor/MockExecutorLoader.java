@@ -450,7 +450,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status)
       throws ExecutorManagerException {
     throw new ExecutorManagerException("Method Not Implemented!");
   }
