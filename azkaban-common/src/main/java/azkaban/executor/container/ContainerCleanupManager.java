@@ -95,7 +95,7 @@ public class ContainerCleanupManager {
     }
     for (final ExecutableFlow flow : staleFlows) {
       if (shouldIgnore(flow, status)) {
-        return;
+        continue;
       }
       logger.info("Cleaning up stale flow " + flow.getExecutionId() + " in state " + status.name());
       cancelFlowQuietly(flow);
