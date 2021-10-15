@@ -19,7 +19,7 @@ import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.MemConfValue;
@@ -389,13 +389,13 @@ public class FlowLoaderUtils {
    */
   private static File getFlowFile(final File tempDir, final ProjectLoader projectLoader,
       final ExecutableFlow flow) throws Exception {
-    final List<FlowProps> flowPropsList = ImmutableList.copyOf(flow.getFlowProps());
+    final List<ImmutableFlowProps> immutableFlowPropsList = ImmutableList.copyOf(flow.getFlowProps());
     // There should be exact one source (file name) for each flow file.
-    if (flowPropsList.isEmpty() || flowPropsList.get(0) == null) {
+    if (immutableFlowPropsList.isEmpty() || immutableFlowPropsList.get(0) == null) {
       throw new ProjectManagerException(
           "Failed to get flow file source. Flow props is empty for " + flow.getId());
     }
-    final String source = flowPropsList.get(0).getSource();
+    final String source = immutableFlowPropsList.get(0).getSource();
     final int flowVersion = projectLoader
         .getLatestFlowVersion(flow.getProjectId(), flow.getVersion(), source);
     return projectLoader
