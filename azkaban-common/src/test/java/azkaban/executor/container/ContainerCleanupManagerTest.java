@@ -16,9 +16,11 @@
 package azkaban.executor.container;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -92,16 +94,29 @@ public class ContainerCleanupManagerTest {
         .thenReturn(executableFlows);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId()))
         .thenReturn(flow);
-
-    // Skip the invocation of api gateway and just utilize finalizeFlow when cancelFlow is called.
+    // Mimic the successful cancellation by just setting the flow execution status to Killed.
     doAnswer(e -> {
-      ExecutionControllerUtils.finalizeFlow(this.executorLoader, null, flow, "", null,
-          Status.KILLED);
+      flow.setStatus(Status.KILLED);
       return null;
     }).when(this.containerizedDispatchManager).cancelFlow(flow, flow.getSubmitUser());
-
     this.cleaner.cleanUpStaleFlows(Status.PREPARING);
     Assert.assertEquals(Status.KILLED, flow.getStatus());
     verify(this.containerImpl).deleteContainer(flow.getExecutionId());
+    verify(this.executorLoader, times(0)).uploadLogFile(anyInt(), any(), anyInt(), any());
+
+    // Skip the invocation of api gateway and just utilize finalizeFlow when cancelFlow is called.
+    // Also throws the exception as it will be thrown if the flow execution is unreachable.
+    doAnswer(e -> {
+      ExecutionControllerUtils.finalizeFlow(this.executorLoader, null, flow, "", null,
+          Status.KILLED);
+      throw new ExecutorManagerException("Flow execution is unreachable. Finalizing the flow.");
+    }).when(this.containerizedDispatchManager).cancelFlow(flow, flow.getSubmitUser());
+    flow.setStatus(Status.PREPARING);
+    this.cleaner.cleanUpStaleFlows(Status.PREPARING);
+    Assert.assertEquals(Status.KILLED, flow.getStatus());
+    // One from the previous call to cleanUpStaleFlows
+    verify(this.containerImpl, times(2)).deleteContainer(flow.getExecutionId());
+    // Verify that exception is thrown while cleaning up stale flow and logs should be uploaded.
+    verify(this.executorLoader).uploadLogFile(anyInt(), any(), anyInt(), any());
   }
 }

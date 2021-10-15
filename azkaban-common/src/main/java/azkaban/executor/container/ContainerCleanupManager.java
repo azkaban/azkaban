@@ -25,6 +25,10 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -32,6 +36,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,8 +104,35 @@ public class ContainerCleanupManager {
         continue;
       }
       logger.info("Cleaning up stale flow " + flow.getExecutionId() + " in state " + status.name());
-      cancelFlowQuietly(flow);
+      String cancelMessage = cancelFlowQuietly(flow);
       deleteContainerQuietly(flow.getExecutionId());
+      uploadMessageQuietly(flow.getExecutionId(), cancelMessage);
+    }
+  }
+
+  private void uploadMessageQuietly(final int execId, final String message) {
+    if (StringUtils.isBlank(message)) {
+      return;
+    }
+    try {
+      File tempFile = File.createTempFile("cleanup-" + execId + "-", ".tmp");
+      uploadMessageQuietly(execId, message, tempFile);
+      tempFile.delete();
+    } catch (IOException ie) {
+      logger.error("IOException while uploading cleanup logs.", ie);
+    } catch (RuntimeException re) {
+      logger.error("Unexpected RuntimeException while uploading cleanup logs.", re);
+    }
+  }
+
+  private void uploadMessageQuietly(final int execId, final String message, final File tempFile) {
+    try {
+      Files.write(tempFile.toPath(), message.getBytes(StandardCharsets.UTF_8));
+      this.executorLoader.uploadLogFile(execId, "", 0, tempFile);
+    } catch (ExecutorManagerException | IOException eme) {
+      logger.error("Exception while uploading cleanup logs.", eme);
+    } catch (RuntimeException re) {
+      logger.error("Unexpected RuntimeException while uploading cleanup logs.", re);
     }
   }
 
@@ -132,15 +165,26 @@ public class ContainerCleanupManager {
    * reachable, otherwise, flow will be finalized.
    *
    * @param flow
+   * @return the errorMessage
    */
-  private void cancelFlowQuietly(ExecutableFlow flow) {
+  private String cancelFlowQuietly(ExecutableFlow flow) {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Cleaning up stale flow with status: " + flow.getStatus() + "\n");
     try {
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
+      return StringUtils.EMPTY;
     } catch (ExecutorManagerException eme) {
-      logger.info("ExecutorManagerException while cancelling flow.", eme);
+      String msg = "ExecutorManagerException while cancelling flow.";
+      logger.error(msg, eme);
+      builder.append(msg + "\n");
+      builder.append(ExceptionUtils.getStackTrace(eme) + "\n");
     } catch (RuntimeException re) {
-      logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
+      String msg = "Unexpected RuntimeException while finalizing flow during clean up.";
+      logger.error(msg, re);
+      builder.append(msg + "\n");
+      builder.append(ExceptionUtils.getStackTrace(re) + "\n");
     }
+    return builder.toString();
   }
 
   // Deletes the container specified by executionId while logging and consuming any exceptions.
