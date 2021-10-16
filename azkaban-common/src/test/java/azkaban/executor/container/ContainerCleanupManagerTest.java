@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -46,6 +47,8 @@ public class ContainerCleanupManagerTest {
   @Before
   public void setup() throws Exception {
     this.props = new Props();
+    // 10 days
+    this.props.put(AZKABAN_MAX_FLOW_RUNNING_MINS, 14400);
     this.executorLoader = mock(ExecutorLoader.class);
     this.containerImpl = mock(ContainerizedImpl.class);
     this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
@@ -56,15 +59,22 @@ public class ContainerCleanupManagerTest {
   @Test
   public void testEmptyStaleExecutions() throws Exception {
     // List of stale flows is empty
-    when(this.executorLoader.fetchStaleFlowsForStatus(any())).thenReturn(new ArrayList<>());
+    when(this.executorLoader.fetchStaleFlowsForStatus(any(), any())).thenReturn(new ArrayList<>());
     this.cleaner.cleanUpStaleFlows();
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.DISPATCHING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.PREPARING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.RUNNING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.PAUSED);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.KILLING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.EXECUTION_STOPPED);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.FAILED_FINISHING);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.DISPATCHING,
+        this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.PREPARING, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.RUNNING, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.PAUSED, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.KILLING, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.EXECUTION_STOPPED, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.FAILED_FINISHING, this.cleaner.getValidityMap());
     verifyZeroInteractions(this.containerImpl);
   }
 
@@ -72,7 +82,7 @@ public class ContainerCleanupManagerTest {
   public void testExceptionInFetchingExecutions() throws Exception {
     // Mock an exception while fetching stale flows.
     doThrow(new RuntimeException("mock runtime exception"))
-        .when(this.executorLoader).fetchStaleFlowsForStatus(any());
+        .when(this.executorLoader).fetchStaleFlowsForStatus(any(), any());
     // Verifies that exception is consumed, otherwise this test will fail with exception.
     this.cleaner.cleanUpStaleFlows();
     // Additionally verify  no invocations for container deletion should take place
@@ -88,7 +98,8 @@ public class ContainerCleanupManagerTest {
     flow.setSubmitUser("goku");
     flow.setExecutionOptions(new ExecutionOptions());
     executableFlows.add(flow);
-    when(this.executorLoader.fetchStaleFlowsForStatus(Status.PREPARING))
+    when(this.executorLoader
+        .fetchStaleFlowsForStatus(Status.PREPARING, this.cleaner.getValidityMap()))
         .thenReturn(executableFlows);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId()))
         .thenReturn(flow);

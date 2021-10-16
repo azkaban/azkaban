@@ -36,6 +36,7 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import azkaban.utils.TimeUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -269,9 +270,11 @@ public class ExecutionFlowDaoTest {
         ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan5Days),
         DispatchMethod.CONTAINERIZED);
 
+    ImmutableMap<Status, Pair<Duration, String>> validityMap = ImmutableMap.of(Status.RUNNING,
+        new Pair<>(Duration.ofDays(10), "start_time"));
     // Only the first flow in the RUNNING state should be returned.
     final List<ExecutableFlow> fetchedStaleFlows =
-        this.executionFlowDao.fetchStaleFlowsForStatus(Status.RUNNING);
+        this.executionFlowDao.fetchStaleFlowsForStatus(Status.RUNNING, validityMap);
     assertThat(fetchedStaleFlows.size()).isEqualTo(1);
 
     final ExecutableFlow fetchedFlow1 = fetchedStaleFlows.get(0);
