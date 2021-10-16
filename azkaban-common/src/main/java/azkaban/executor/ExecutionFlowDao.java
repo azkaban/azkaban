@@ -23,6 +23,7 @@ import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -143,13 +144,14 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException {
-    if (!Status.validityMap.containsKey(status)) {
+    if (!validityMap.containsKey(status)) {
       throw new ExecutorManagerException(
           "Validity duration is not defined for status: " + status.name());
     }
-    final Pair<Duration, String> validity = Status.validityMap.get(status);
+    final Pair<Duration, String> validity = validityMap.get(status);
     final Duration validityDuration = validity.getFirst();
     final String validityFrom = validity.getSecond();
     final long beforeInMillis = System.currentTimeMillis() - validityDuration.toMillis();
