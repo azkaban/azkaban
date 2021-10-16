@@ -21,6 +21,7 @@ import azkaban.project.ProjectLoader;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -102,9 +103,10 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchStaleFlowsForStatus(status);
+    return this.executionFlowDao.fetchStaleFlowsForStatus(status, validityMap);
   }
 
   @Override
