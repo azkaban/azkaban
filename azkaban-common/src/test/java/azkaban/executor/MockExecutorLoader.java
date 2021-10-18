@@ -152,6 +152,13 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public void appendLogFile(final int execId, final String name, final int attempt,
+      final File... files)
+      throws ExecutorManagerException {
+    throw new ExecutorManagerException("Method Not Implemented!");
+  }
+
+  @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
     final ExecutableFlow toUpdate = this.flows.get(flow.getExecutionId());

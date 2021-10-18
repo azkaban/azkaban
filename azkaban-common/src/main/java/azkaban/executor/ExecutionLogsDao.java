@@ -67,10 +67,28 @@ public class ExecutionLogsDao {
     }
   }
 
+  public void appendLogFile(final int execId, final String name, final int attempt,
+      final File... files) throws ExecutorManagerException {
+    final AppendLogsHandler handler = new AppendLogsHandler();
+    try {
+      int lastEndByte = this.dbOperator.query(AppendLogsHandler.LAST_END_BYTE, handler, execId,
+          name, attempt);
+      uploadLogFile(execId, name, attempt, lastEndByte, files);
+    } catch (final SQLException e) {
+      logger.error("appendLogFile failed.", e);
+      throw new ExecutorManagerException("appendLogFile failed.", e);
+    }
+  }
+
   public void uploadLogFile(final int execId, final String name, final int attempt,
       final File... files) throws ExecutorManagerException {
+    uploadLogFile(execId, name, attempt, 0, files);
+  }
+
+  public void uploadLogFile(final int execId, final String name, final int attempt,
+      final int offset, final File... files) throws ExecutorManagerException {
     final SQLTransaction<Integer> transaction = transOperator -> {
-      uploadLogFile(transOperator, execId, name, attempt, files, this.defaultEncodingType);
+      uploadLogFile(transOperator, execId, name, attempt, offset, files, this.defaultEncodingType);
       transOperator.getConnection().commit();
       return 1;
     };
@@ -84,14 +102,14 @@ public class ExecutionLogsDao {
 
   private void uploadLogFile(final DatabaseTransOperator transOperator, final int execId,
       final String name,
-      final int attempt, final File[] files, final EncodingType encType)
+      final int attempt, final int offset, final File[] files, final EncodingType encType)
       throws SQLException {
     // 50K buffer... if logs are greater than this, we chunk.
     // However, we better prevent large log files from being uploaded somehow
     final byte[] buffer = new byte[50 * 1024];
     int pos = 0;
     int length = buffer.length;
-    int startByte = 0;
+    int startByte = offset;
     try {
       for (int i = 0; i < files.length; ++i) {
         final File file = files[i];
@@ -187,6 +205,20 @@ public class ExecutionLogsDao {
     transOperator.update(INSERT_EXECUTION_LOGS, execId, name, attempt,
         encType.getNumVal(), startByte, startByte + length, buf, DateTime.now()
             .getMillis());
+  }
+
+  private static class AppendLogsHandler implements ResultSetHandler<Integer> {
+    private static final String LAST_END_BYTE =
+        "SELECT MAX(end_byte) AS last_end_byte FROM execution_logs "
+            + "WHERE exec_id=? AND name=? AND attempt=?";
+
+    @Override
+    public Integer handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return 0;
+      }
+      return Math.max(rs.getInt(1), 0);
+    }
   }
 
   private static class FetchLogsHandler implements ResultSetHandler<LogData> {

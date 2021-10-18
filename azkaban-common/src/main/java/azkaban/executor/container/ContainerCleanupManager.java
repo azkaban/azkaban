@@ -128,7 +128,7 @@ public class ContainerCleanupManager {
   private void uploadMessageQuietly(final int execId, final String message, final File tempFile) {
     try {
       Files.write(tempFile.toPath(), message.getBytes(StandardCharsets.UTF_8));
-      this.executorLoader.uploadLogFile(execId, "", 0, tempFile);
+      this.executorLoader.appendLogFile(execId, "", 0, tempFile);
     } catch (ExecutorManagerException | IOException eme) {
       logger.error("Exception while uploading cleanup logs.", eme);
     } catch (RuntimeException re) {

@@ -296,6 +296,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public void appendLogFile(final int execId, final String name, final int attempt,
+      final File... files)
+      throws ExecutorManagerException {
+    this.executionLogsDao.appendLogFile(execId, name, attempt, files);
+  }
+
+  @Override
   public void uploadAttachmentFile(final ExecutableNode node, final File file)
       throws ExecutorManagerException {
     this.executionJobDao.uploadAttachmentFile(node, file);
