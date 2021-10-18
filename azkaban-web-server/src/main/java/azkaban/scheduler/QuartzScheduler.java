@@ -20,8 +20,10 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.project.CronSchedule;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
+import java.io.InvalidClassException;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -30,7 +32,9 @@ import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
+import org.quartz.JobPersistenceException;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerConfigException;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.Trigger.TriggerState;
@@ -40,12 +44,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
- * mapping.
- * Quartz job key naming standard:
- * Job key is composed of job name and group name. Job type denotes job name. Project id+flow
- * name denotes group name.
- * E.x FLOW_TRIGGER as job name, 1.flow1 as group name
+ * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one mapping.
+ * Quartz job key naming standard: Job key is composed of job name and group name. Job type denotes
+ * job name. Project id+flow name denotes group name. E.x FLOW_TRIGGER as job name, 1.flow1 as group
+ * name
  */
 @Singleton
 public class QuartzScheduler {
@@ -70,9 +72,54 @@ public class QuartzScheduler {
     this.scheduler.setJobFactory(SERVICE_PROVIDER.getInstance(SchedulerJobFactory.class));
   }
 
+  public static boolean isSerializationBug(final Throwable ex) {
+    if (ex instanceof SchedulerConfigException ||
+        ex instanceof JobPersistenceException) {
+      Throwable cause = ex.getCause();
+      if (cause != null && cause != ex) {
+        return isSerializationBug(cause);
+      }
+    } else if (ex instanceof InvalidClassException) {
+      String message = ex.getMessage();
+      if (message.contains(CronSchedule.class.getName())) {
+        return message.contains(Long.toString(CustomQuartzDeserializer.BAD_CRON_SID));
+      }
+    }
+    return false;
+  }
+
   public void start() throws SchedulerException {
-    this.scheduler.start();
-    logger.info("Quartz Scheduler started.");
+    try {
+      this.scheduler.start();
+      logger.info("Quartz Scheduler started.");
+    } catch (SchedulerConfigException e) {
+      if (isSerializationBug(e) && enableSerializationHack()) {
+        try {
+          this.scheduler.start();
+          logger.info("Quartz Scheduler started (with serialization hack).");
+          return;
+        } catch (SchedulerConfigException e2) {
+          logger.error("Error initializing hacked scheduler", e2);
+        }
+      }
+      logger.error("Error initializing scheduler", e);
+      scheduler = null;
+    }
+  }
+
+  public boolean enableSerializationHack() {
+    try {
+      Scheduler fix = QuartzHacker.fix(this.scheduler);
+      if (null == fix) {
+        return false;
+      } else {
+        this.scheduler = fix;
+        return true;
+      }
+    } catch (Throwable e) {
+      logger.warn("Unexpected error while applying Deserializer hack", e);
+      return false;
+    }
   }
 
   @VisibleForTesting
@@ -87,6 +134,7 @@ public class QuartzScheduler {
 
   /**
    * Pause a job if it's present.
+   *
    * @param jobName
    * @param groupName
    * @return true if job has been paused, no if job doesn't exist.
@@ -127,6 +175,7 @@ public class QuartzScheduler {
 
   /**
    * Resume a job.
+   *
    * @param jobName
    * @param groupName
    * @return true the job has been resumed, no if the job doesn't exist.
@@ -144,6 +193,7 @@ public class QuartzScheduler {
 
   /**
    * Unschedule a job.
+   *
    * @param jobName
    * @param groupName
    * @return true if job is found and unscheduled.
@@ -155,18 +205,20 @@ public class QuartzScheduler {
   }
 
   /**
-   * Only cron schedule register is supported. Since register might be called when
-   * concurrently uploading projects, so synchronized is added to ensure thread safety.
+   * Only cron schedule register is supported. Since register might be called when concurrently
+   * uploading projects, so synchronized is added to ensure thread safety.
    *
    * @param cronExpression the cron schedule for this job
    * @param jobDescription Regarding QuartzJobDescription#groupName, in order to guarantee no
-   * duplicate quartz schedules, we design the naming convention depending on use cases: <ul>
-   * <li>User flow schedule: we use {@link JobKey#JobKey} to represent the identity of a
-   * flow's schedule. The format follows "$projectID.$flowName" to guarantee no duplicates.
-   * <li>Quartz schedule for AZ internal use: the groupName should start with letters, rather
-   * than
-   * number, which is the first case.</ul>
-   *
+   *                       duplicate quartz schedules, we design the naming convention depending on
+   *                       use cases: <ul>
+   *                       <li>User flow schedule: we use {@link JobKey#JobKey} to represent the
+   *                       identity of a
+   *                       flow's schedule. The format follows "$projectID.$flowName" to guarantee
+   *                       no duplicates.
+   *                       <li>Quartz schedule for AZ internal use: the groupName should start with
+   *                       letters, rather
+   *                       than number, which is the first case.</ul>
    * @return true if job has been scheduled, false if the same job exists already.
    */
   public synchronized boolean scheduleJobIfAbsent(final String cronExpression, final QuartzJobDescription

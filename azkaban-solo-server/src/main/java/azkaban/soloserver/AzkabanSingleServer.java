@@ -19,6 +19,7 @@ package azkaban.soloserver;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.execapp.AzkabanExecServerModule;
@@ -34,6 +35,11 @@ import java.io.IOException;
 import java.security.Permission;
 import java.security.Policy;
 import java.security.ProtectionDomain;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
 import javax.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -62,6 +68,35 @@ public class AzkabanSingleServer {
     }
   }
 
+  private static void initializeQuartzDb(final String jdbcUrl, final String user,
+      final String password, final String initScript) {
+    try {
+      DriverManager.registerDriver(
+          (Driver) Class.forName("org.h2.Driver").getDeclaredConstructor().newInstance());
+      Properties connectionProps = new Properties();
+      connectionProps.put("user", user);
+      connectionProps.put("password", password);
+      Connection conn = DriverManager.getConnection(jdbcUrl, connectionProps);
+      String tableName = "QRTZ_TRIGGERS";
+      boolean tableExists = conn.getMetaData().getTables(null, null, tableName, null).next();
+      if (tableExists) {
+        log.info("Quartz DB already initialized");
+      } else {
+        File initScriptFile = new File(initScript);
+        String sql = "RUNSCRIPT FROM '" + initScriptFile.getAbsolutePath() + "'";
+        try {
+          conn.createStatement().execute(sql);
+          log.info("Quartz DB initialized");
+        } catch (SQLException e) {
+          log.info("Error running sql initializer: " + sql, e);
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Error initializing Quartz DB", e);
+    }
+    new File("local/plugins").mkdirs();
+  }
+
   public static void start(String[] args) throws Exception {
     log.info("Starting Azkaban Server");
 
@@ -84,6 +119,23 @@ public class AzkabanSingleServer {
       log.error("Properties not found. Need it to connect to the db.");
       log.error("Exiting...");
       return;
+    }
+
+    if (props.getBoolean(Constants.ConfigurationKeys.ENABLE_QUARTZ, false)) {
+      String dataSource = props.getString("org.quartz.jobStore.dataSource");
+      String initScript = props.getString("azkaban.server.schedule.quartz_schema");
+      if (dataSource != null) {
+        String tablePrefix = props.getString("org.quartz.jobStore.tablePrefix");
+        if ("QRTZ_".equals(tablePrefix)) {
+          String driver = props.getString("org.quartz.dataSource." + dataSource + ".driver");
+          if ("org.h2.Driver".equals(driver)) {
+            String jdbcUrl = props.getString("org.quartz.dataSource." + dataSource + ".URL");
+            String user = props.getString("org.quartz.dataSource." + dataSource + ".user");
+            String password = props.getString("org.quartz.dataSource." + dataSource + ".password");
+            initializeQuartzDb(jdbcUrl, user, password, initScript);
+          }
+        }
+      }
     }
 
     if (props.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, true)) {
