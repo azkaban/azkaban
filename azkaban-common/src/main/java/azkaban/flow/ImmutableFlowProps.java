@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,9 +26,9 @@ import java.util.Map;
 
 public final class ImmutableFlowProps {
 
-  private String parentSource;
-  private String propSource;
-  private Props props = null;
+  private final String parentSource;
+  private final String propSource;
+  private final Props props;
 
   private static final Interner<ImmutableFlowProps> interner = Interners.newWeakInterner();
 
@@ -80,16 +80,25 @@ public final class ImmutableFlowProps {
      * Using intern() eliminates all the duplicate values, thereby significantly reducing heap
      * memory usage.
      */
-    if(parentSource != null) {
-      this.parentSource = parentSource.intern();
-    }
-    if (propSource != null) {
-      this.propSource = propSource.intern();
-    }
+
+    this.parentSource = (parentSource != null) ? parentSource.intern() : null;
+    this.propSource = (propSource != null) ? propSource.intern() : null;
+    this.props = null;
   }
 
+  /**
+   * Sets Props as a reference for this class. In addition, it also copies source(s) of the
+   * specified props and its parent.
+   *
+   * @param props The reference of props this class stores.
+   */
   private ImmutableFlowProps(final Props props) {
-    this.setProps(props);
+    this.props = props;
+    String parentSource = props.getParent() == null ? null : props.getParent().getSource();
+    String propSource = props.getSource();
+
+    this.parentSource = (parentSource != null) ? parentSource.intern() : null;
+    this.propSource = (propSource != null) ? propSource.intern() : null;
   }
 
   static ImmutableFlowProps fromObject(final Object obj) {
@@ -103,29 +112,6 @@ public final class ImmutableFlowProps {
 
   public Props getProps() {
     return this.props;
-  }
-
-  /**
-   * Sets Props as a reference for this class. In addition, it also copies source(s) of the
-   * specified props and its parent.
-   * This method should only be called from the constructor, because we want this class to be
-   * immutable.
-   * @param props The reference of props this class stores.
-   */
-  private void setProps(final Props props) {
-    this.props = props;
-    String parentSource = props.getParent() == null ? null : props.getParent().getSource();
-
-    setParentSource(parentSource);
-    setPropSource(props.getSource());
-  }
-
-  private void setParentSource(final String parentSource) {
-    this.parentSource = (parentSource != null) ? parentSource.intern() : null;
-  }
-
-  private void setPropSource(final String propSource) {
-    this.propSource = (propSource != null) ? propSource.intern() : null;
   }
 
   public String getSource() {
@@ -159,13 +145,14 @@ public final class ImmutableFlowProps {
 
 
 
-  @Override
-  /**
+
+  /*
    * Tells whether the two objects can be considered equivalent.
    *
    * This equivalence will not be breakable. Once the two objects are equivalent, they are
    * guaranteed to always be equivalent.
    */
+  @Override
   public boolean equals(Object obj) {
     /*
     Since ImmutableFlowProps will be interned based on equivalence, this equivalence should not
@@ -219,7 +206,11 @@ public final class ImmutableFlowProps {
         .toHashCode();
   }
 
-  public void Print() {
+  /*
+   * This method very handy to use this with unit-test and understand the interning.
+   *
+   */
+  public void print() {
     System.out.println("this = " + System.identityHashCode(this));
     System.out.println("parentSource = " + System.identityHashCode(parentSource));
     System.out.println("propSource = " + System.identityHashCode(propSource));
