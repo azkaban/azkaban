@@ -266,6 +266,9 @@ public interface ExecutorLoader {
   void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException;
 
+  void appendLogFile(int execId, String name, int attempt, File... files)
+      throws ExecutorManagerException;
+
   void uploadAttachmentFile(ExecutableNode node, File file)
       throws ExecutorManagerException;
 
