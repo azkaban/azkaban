@@ -296,7 +296,8 @@ public class ExecutableFlowBase extends ExecutableNode {
       final String source = (String) fprop.get("source");
       final String inheritedSource = (String) fprop.get("inherited");
 
-      final ImmutableFlowProps immutableFlowProps = new ImmutableFlowProps(inheritedSource, source);
+      final ImmutableFlowProps immutableFlowProps = ImmutableFlowProps
+          .createFlowProps(inheritedSource, source);
       this.flowProps.put(source, immutableFlowProps);
     }
   }

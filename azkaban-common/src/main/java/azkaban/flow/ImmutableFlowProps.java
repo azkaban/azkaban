@@ -24,6 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+/**
+ * A wrapper over Props.
+ *
+ * ImmutableFlowProps stores a reference to props, along with the name of the prop's source, and
+ * the name of prop's parent's source.
+ */
 public final class ImmutableFlowProps {
 
   private final String parentSource;
@@ -61,17 +67,45 @@ public final class ImmutableFlowProps {
   // check for equality (equals). If both specify, the new object being equivalent - the earlier
   // equivalent object is used and the new one is freed.
 
+  /**
+   * Factory for building ImmutableFlowProps, and initialize it with the names of prop's source
+   * and parent source.
+   *
+   * The factory returns a reference of deduped object. Instead of returning a duplicate, it
+   * returns the reference of the pre-existing object. De-dup process checks for the name of prop's
+   * source and parent source to be the same. It also checks for reference to prop being the same.
+   * Two distinct references for the props, even if their contents are the sane, will be treated
+   * as non-equivalent.
+   *
+   * @param parentSource Name of the prop's parents' source
+   * @param propSource Name of the prop's source
+   * @return A de-duplicated reference to ImmutableFlowProps
+   */
   public static ImmutableFlowProps createFlowProps(final String parentSource, final String propSource) {
     ImmutableFlowProps candidate = new ImmutableFlowProps(parentSource, propSource);
     return interner.intern(candidate);
   }
 
+  /**
+   * Factory for building ImmutableFlowProps, and initialize it with the props object.
+   * The the names of prop's source and parent source, are retrieved from the props object
+   * itself.
+   *
+   * The factory returns a reference of de-duped object. Instead of returning a duplicate, it
+   * returns the reference of the pre-existing object. De-dup process checks for the name of prop's
+   * source and parent source to be the same. It also checks for reference to prop being the same.
+   * Two distinct references for the props, even if their contents are the sane, will be treated
+   * as non-equivalent.
+   *
+   * @param props The reference of props this class stores.
+   * @return A de-duplicated reference to ImmutableFlowProps
+   */
   public static ImmutableFlowProps createFlowProps(final Props props) {
     ImmutableFlowProps candidate = new ImmutableFlowProps(props);
     return interner.intern(candidate);
   }
 
-  public ImmutableFlowProps(final String parentSource, final String propSource) {
+  private ImmutableFlowProps(final String parentSource, final String propSource) {
     /**
      * Use String interning so that just 1 copy of the string value exists in String Constant Pool
      * and the value is reused. Azkaban Heap dump analysis indicated a  high percentage of heap
@@ -101,6 +135,16 @@ public final class ImmutableFlowProps {
     this.propSource = (propSource != null) ? propSource.intern() : null;
   }
 
+  /**
+   * Deserealizes an Object into ImmutableFlowProps.
+   *
+   * source and parentSource fields are the only ones that are part of
+   * serialization/deserialization.
+   *
+   * @param obj The objects from which ImmutableFlowProps is deserialized.
+   * @return ImmutableFlowProps that's created upon deserialization.
+   * @see #toObject()
+   */
   static ImmutableFlowProps fromObject(final Object obj) {
     final Map<String, Object> flowMap = (Map<String, Object>) obj;
     final String source = (String) flowMap.get("source");
@@ -110,18 +154,41 @@ public final class ImmutableFlowProps {
     return immutableFlowProps;
   }
 
+  /**
+   * Returns the props
+   *
+   * @return Prop Props of this object.
+   */
   public Props getProps() {
     return this.props;
   }
 
+  /**
+   * Returns the name of the source.
+   *
+   * @return the name of the prop's source
+   */
   public String getSource() {
     return this.propSource;
   }
 
+  /**
+   * Returns the name of the prop's parents' source.
+   *
+   * @return The name of the prop's parents' source.
+   */
   public String getInheritedSource() {
     return this.parentSource;
   }
 
+  /**
+   * Serializes the ImmutableFlowProps into an Object.
+   *
+   * The 'propSource' and 'parentSource' are part of the serialization. The props is left out.
+   *
+   * @return The serialized Object.
+   * @see #fromObject(Object)
+   */
   public Object toObject() {
     final HashMap<String, Object> obj = new HashMap<>();
     obj.put("source", this.propSource);
@@ -131,6 +198,7 @@ public final class ImmutableFlowProps {
     return obj;
   }
 
+  // Tells whether the two references pointing to the same object.
   private static boolean equalRef(final Object ref1, final Object ref2) {
       if (ref1 == ref2) {
         return true;
@@ -143,14 +211,14 @@ public final class ImmutableFlowProps {
       return false;
   }
 
-
-
-
-  /*
+  /**
    * Tells whether the two objects can be considered equivalent.
    *
-   * This equivalence will not be breakable. Once the two objects are equivalent, they are
-   * guaranteed to always be equivalent.
+   * The class and this function are designed so that the equivalence will not be breakable. Once
+   * the two objects are equivalent, they are guaranteed to always be equivalent.
+   *
+   * @param obj The reference object to compare with.
+   * @see #hashCode()
    */
   @Override
   public boolean equals(Object obj) {
@@ -181,7 +249,7 @@ public final class ImmutableFlowProps {
       return false;
     }
 
-    // Even though the contents of two props might be the same, the two will be considered to
+    // Even though the contents of two props might be the same, the two will be considered to be
     // different if their objects are different. This is because Props are mutable, and future
     // equivalence may be broken.
     if (!equalRef(this.props, other.props)) {
@@ -191,13 +259,20 @@ public final class ImmutableFlowProps {
     return true;
   }
 
+  /**
+   * Returns a hash code for this object.
+   * @return Hash of this object.
+   */
   @Override
   public int hashCode() {
-    // For reference:
-    // https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/builder/HashCodeBuilder.html
+    // This method gets used by interning.
+    // Interning, first uses hashcode. If hashcode is same, it then uses equals/to deterine whether
+    //an object can be interned.
 
     // The hashCodeBuilder_17_37 maintains a state, hence it has to be created afresh.
     // Otherwise, the hash-code will be different for the same inputs.
+    // For reference:
+    // https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/builder/HashCodeBuilder.html
     HashCodeBuilder hashCodeBuilder_17_37 = new HashCodeBuilder(17, 37);
     return hashCodeBuilder_17_37
         .append(parentSource)
@@ -206,9 +281,10 @@ public final class ImmutableFlowProps {
         .toHashCode();
   }
 
-  /*
-   * This method very handy to use this with unit-test and understand the interning.
+  /**
+   * Prints identity hash codes for the fields in this object.
    *
+   * This method very handy to use this with unit-test and understand  the interning.
    */
   public void print() {
     System.out.println("this = " + System.identityHashCode(this));
