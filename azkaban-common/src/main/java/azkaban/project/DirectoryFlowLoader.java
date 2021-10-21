@@ -21,7 +21,7 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.project.FlowLoaderUtils.DirFilter;
@@ -61,7 +61,7 @@ public class DirectoryFlowLoader implements FlowLoader {
   // Flow dependencies for embedded flows.
   private HashMap<String, Set<String>> flowDependencies;
 
-  private ArrayList<FlowProps> flowPropsList;
+  private ArrayList<ImmutableFlowProps> flowPropsList;
   private ArrayList<Props> propsList;
   private Set<String> duplicateJobs;
 
@@ -158,8 +158,8 @@ public class DirectoryFlowLoader implements FlowLoader {
         parent = new Props(parent, file);
         parent.setSource(relative);
 
-        final FlowProps flowProps = new FlowProps(parent);
-        this.flowPropsList.add(flowProps);
+        final ImmutableFlowProps immutableFlowProps = ImmutableFlowProps.createFlowProps(parent);
+        this.flowPropsList.add(immutableFlowProps);
       } catch (final IOException e) {
         this.errors.add("Error loading properties " + file.getName() + ":"
             + e.getMessage());
