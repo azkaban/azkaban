@@ -965,7 +965,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private boolean isOverrideExistingEnabled() {
     return this.azkabanProps.getBoolean(
-        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false);
+        ConfigurationKeys.AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER, false);
   }
 
   private Props applyRuntimeProperties(final ExecutableNode node,
