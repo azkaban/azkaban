@@ -22,7 +22,7 @@ import azkaban.Constants;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.flow.Node;
 import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
@@ -158,7 +158,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     }
     props.setSource(flowFile.getName());
 
-    flow.addAllFlowProperties(ImmutableList.of(new FlowProps(props)));
+    flow.addAllFlowProperties(ImmutableList.of(ImmutableFlowProps.createFlowProps(props)));
 
     // Convert azkabanNodes to nodes inside the flow.
     azkabanFlow.getNodes().values().stream()
