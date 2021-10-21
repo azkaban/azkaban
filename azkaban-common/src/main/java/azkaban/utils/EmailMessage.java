@@ -19,6 +19,7 @@ package azkaban.utils;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -28,6 +29,7 @@ import javax.activation.DataSource;
 import javax.activation.FileDataSource;
 import javax.mail.BodyPart;
 import javax.mail.Message;
+import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
@@ -246,12 +248,18 @@ public class EmailMessage {
         s.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
         return;
       } catch (final Exception e) {
-        this.logger.error("Sending email messages failed, attempt: " + attempt, e);
+        this.logger.error("Sending email message failed, attempt: " + attempt
+            + ", message: " + messageToString(message), e);
       }
     }
     s.close();
     throw new MessagingException("Failed to send email messages after "
         + attempt + " attempts.");
+  }
+
+  private static String messageToString(Message message) throws MessagingException {
+    return "[recipients: " + Arrays.toString(message.getRecipients(RecipientType.TO))
+        + ", subject: " + message.getSubject() + "]";
   }
 
   public void setBody(final String body, final String mimeType) {
