@@ -388,7 +388,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  VersionSet fetchVersionSet(final int executionId, final Props flowParams,
+  VersionSet fetchVersionSet(final int executionId, final Map<String, String> flowParams,
       Set<String> imageTypesUsedInFlow, final ExecutableFlow executableFlow)
       throws ExecutorManagerException {
     VersionSet versionSet = null;
@@ -731,7 +731,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
     final VersionSet versionSet = fetchVersionSet(executionId,
-        flow.getFlowPropsAndParams(this.projectLoader), allImageTypes, flow);
+        flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
     disableSATokenAutomount(podSpec);
 
