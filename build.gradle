@@ -27,17 +27,17 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '2.0.2'
+  id 'com.gradle.build-scan' version '3.2'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
 
-# https://stackoverflow.com/questions/52636622/how-to-accept-gradle-tos-for-build-scan-automatically-and-still-manage-to-ru
-if (hasProperty('buildScan')) {
+// https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
+gradleEnterprise {
     buildScan {
-        termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-        termsOfServiceAgree = 'yes'
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
     }
 }
 
