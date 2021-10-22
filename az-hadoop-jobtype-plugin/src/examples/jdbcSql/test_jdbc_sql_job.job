@@ -1,0 +1,19 @@
+# this are global plugin parameters are coming from 
+# {azkaban_setup}/plugins/jobtypes/jdbcSql/private.properties
+# jdbcSql.my_xyz_DB.connectionurl = jdbc:derby:tempderbydb/mydb;create=true
+# jdbcSql.my_xyz_DB.username = root
+# jdbcSql.my_xyz_DB.password = passs
+
+# this one defines which database this job execution happen!
+type=jdbcSql
+jdbcSql.database = my_xyz_DB
+jdbcSql.file = testSQL.sql
+jdbcSql.preexecution_file = testpreSQL.sql
+jdbcSql.postexecution_file = testpostSQL.sql
+
+# sql parameters to pass into to sql script
+jdbcSql.sqlparam.schema_name = TEST_SCHEMA
+jdbcSql.sqlparam.table_name = PERSONS
+# logs sql statements in the logging as info!
+jdbcSql.logsql = true
+
