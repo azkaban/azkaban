@@ -269,6 +269,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
       }
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null, Status.FAILED);
+      ExecutionControllerUtils.restartFlow(executableFlow, originalStatus);
       // Log event for cases where the flow was not already in a final state
       WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }

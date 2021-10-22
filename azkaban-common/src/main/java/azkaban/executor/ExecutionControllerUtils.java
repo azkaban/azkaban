@@ -20,10 +20,11 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.FlowParameters;
 import azkaban.alert.Alerter;
-import azkaban.project.ProjectManager;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -44,7 +45,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import azkaban.Constants.FlowParameters;
 
 /**
  * Utils for controlling executions.
@@ -67,6 +67,10 @@ public class ExecutionControllerUtils {
       .compile("Invalid Application ID");
 
   public static OnExecutionEventListener onExecutionEventListener;
+  public static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(
+      new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
+  public static final ImmutableSet<Status> RESTARTABLE_STATUSES =
+      ImmutableSet.of(Status.READY, Status.DISPATCHING, Status.PREPARING, Status.EXECUTION_STOPPED);
 
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
@@ -110,26 +114,46 @@ public class ExecutionControllerUtils {
       logger.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
     }
 
-    // If the flow is in state EXECUTION_STOPPED and user enabled restartability in flow
-    // parameters, invoke restart callback
-    if (flow.getStatus() == Status.EXECUTION_STOPPED) {
-      final ExecutionOptions options = flow.getExecutionOptions();
-      if (options != null && !options.isExecutionRetried()) {
-        final Map<String, String> flowParams = options.getFlowParameters();
-        if (flowParams != null && !flowParams.isEmpty()) {
-          if (Boolean.valueOf(flowParams.getOrDefault(FlowParameters
-              .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
-            final ExecutorService executor = Executors.newSingleThreadExecutor(
-                new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
-            executor.execute(()->restartFlow(flow));
-          }
-        }
-      }
-    }
-
     if (null != alerterHolder && alertUser) {
       alertUserOnFlowFinished(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
     }
+  }
+
+  /**
+   * This method tries to restart the flow for certain statuses otherwise simply return.
+   * If the flow is already retried once, then it won't be retried again.
+   * If the status is EXECUTION_STOPPED, then it will be retried only if
+   * allow.restart.on.execution.stopped is set to true
+   *
+   * @param flow
+   * @param originalStatus
+   */
+  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
+    if (!RESTARTABLE_STATUSES.contains(originalStatus)) {
+      return;
+    }
+    final ExecutionOptions options = flow.getExecutionOptions();
+    if (options == null || options.isExecutionRetried()) {
+      return;
+    }
+    if (originalStatus != Status.EXECUTION_STOPPED) {
+      logger.info("ContainerCleanupManager submitted flow for restart: " + flow.getExecutionId());
+      ExecutionControllerUtils.submitRestartFlow(flow);
+      return;
+    }
+    final Map<String, String> flowParams = options.getFlowParameters();
+    if (flowParams == null || flowParams.isEmpty()) {
+      return;
+    }
+    if (Boolean.parseBoolean(flowParams.getOrDefault(FlowParameters
+        .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
+      logger.info("ContainerCleanupManager submitted flow for restart: " + flow.getExecutionId());
+      ExecutionControllerUtils.submitRestartFlow(flow);
+    }
+  }
+
+  private static void submitRestartFlow(ExecutableFlow flow) {
+    EXECUTOR_SERVICE.execute(() -> restartFlow(flow));
   }
 
   /**
