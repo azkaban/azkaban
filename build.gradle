@@ -27,15 +27,18 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '1.9'
+  id 'com.gradle.build-scan' version '3.2'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
 
-buildScan {
-  licenseAgreementUrl = 'https://gradle.com/terms-of-service'
-  licenseAgree = 'yes'
+// https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
@@ -237,8 +240,11 @@ subprojects {
 }
 
 /**
- * Gradle wrapper task.*/
-task wrapper(type: Wrapper) {
+ * Gradle wrapper task.
+ * https://docs.gradle.org/5.2.1/userguide/gradle_wrapper.html#customizing_wrapper
+ * https://stackoverflow.com/questions/53709282/cannot-add-task-wrapper-as-a-task-with-that-name-already-exists
+ **/
+wrapper {
   distributionType('ALL')
 }
 
