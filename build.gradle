@@ -33,6 +33,14 @@ plugins {
   id 'idea'
 }
 
+# https://stackoverflow.com/questions/52636622/how-to-accept-gradle-tos-for-build-scan-automatically-and-still-manage-to-ru
+if (hasProperty('buildScan')) {
+    buildScan {
+        termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+        termsOfServiceAgree = 'yes'
+    }
+}
+
 apply plugin: 'com.cinnober.gradle.semver-git'
 
 apply plugin: 'compare-gradle-builds'
