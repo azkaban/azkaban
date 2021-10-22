@@ -90,9 +90,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
-  public static final String CPU_LIMIT = "4";
+  public static final String DEFAULT_MAX_CPU = "0";
+  public static final String DEFAULT_MAX_MEMORY = "0Gi";
   public static final String DEFAULT_CPU_REQUEST = "1";
-  public static final String MEMORY_LIMIT = "64Gi";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
@@ -127,10 +127,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String clusterName;
   private final String clusterEnv;
   private final String flowContainerName;
-  private final String cpuLimit;
+  private String cpuLimit;
   private final String cpuRequest;
-  private final String memoryLimit;
+  private final String maxAllowedCPU;
+  private String memoryLimit;
   private final String memoryRequest;
+  private final String maxAllowedMemory;
   private final int servicePort;
   private final long serviceTimeout;
   private final VersionSetLoader versionSetLoader;
@@ -193,18 +195,20 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // This is utilized to set AZ_CLUSTER ENV variable to the POD containers.
     this.clusterEnv = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_ENV,
         this.clusterName);
-    this.cpuLimit = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
-            CPU_LIMIT);
     this.cpuRequest = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
-    this.memoryLimit = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
-            MEMORY_LIMIT);
+    this.cpuLimit = this.cpuRequest;
+    this.maxAllowedCPU = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU,
+            DEFAULT_MAX_CPU);
     this.memoryRequest = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
             DEFAULT_MEMORY_REQUEST);
+    this.memoryLimit = this.getMemoryLimitFromRequest(this.memoryRequest);
+    this.maxAllowedMemory = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
+            DEFAULT_MAX_MEMORY);
     this.servicePort =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
             54343);
@@ -538,6 +542,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Get CPU and memory requested for a flow container
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
+
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,
@@ -567,8 +572,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method is used to get cpu request for a flow container. Precedence is defined below. a)
-   * Use CPU request set in flow parameter b) Use CPU request set in system properties or default
-   * which is set in @cpuRequest.
+   * Use CPU request set in flow parameter constrained by max allowed cpu set in config b) Use CPU
+   * request set in system properties or default which is set in @cpuRequest.
    *
    * @param flowParam
    * @return CPU request for a flow container
@@ -577,15 +582,31 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   String getFlowContainerCPURequest(final Map<String, String> flowParam) {
     if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
-      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+      String cpuRequest =
+          flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+      try {
+        int requestedCPU = Integer.parseInt(cpuRequest);
+        final int maxCPU = Integer.parseInt(this.maxAllowedCPU);
+        if (maxCPU > 0  && maxCPU < requestedCPU) {
+          cpuRequest = String.valueOf(maxCPU);
+          logger.info ("User requested cpu exceeds maxi allowed cpu, setting requested cpu to "
+              + "maxi allowed cpu: " + cpuRequest);
+        }
+        // set cpu limit to be same as requested pod cpu
+        this.cpuLimit = cpuRequest;
+      } catch (final NumberFormatException ne) {
+        logger.error("NumberFormatException while parsing value for pod cpu request");
+      }
+      return cpuRequest;
+
     }
     return this.cpuRequest;
   }
 
   /**
    * This method is used to get memory request for a flow container. Precedence is defined below. a)
-   * Use memory request set in flow parameter b) Use memory request set in system properties or
-   * default which is set in @memoryRequest
+   * Use memory request set in flow parameter constrained by max allowed memory set in config b) Use
+   * memory request set in system properties or default which is set in @memoryRequest
    *
    * @param flowParam
    * @return Memory request for a flow container
@@ -594,9 +615,54 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
     if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
-      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+      String memoryRequest =
+          flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+      try {
+        // take number value from memory string
+        int requestedMemory =
+            Integer.parseInt(getNumericMemory(memoryRequest));
+        final int maxMemory = Integer.parseInt(getNumericMemory(this.maxAllowedMemory));
+        if (maxMemory > 0  && maxMemory < requestedMemory) {
+          requestedMemory = maxMemory;
+          memoryRequest = requestedMemory + "Gi";
+          logger.info ("User requested memory exceeds max allowed memory, setting requested "
+              + "cpu to max allowed memory: " + memoryRequest);
+        }
+        // the memory limit is set to be twice of requested pod memory
+        this.memoryLimit = getMemoryLimitFromRequest(memoryRequest);
+      } catch (final NumberFormatException ne) {
+        logger.error("NumberFormatException while parsing value for pod memory request");
+      }
+      return memoryRequest;
     }
     return this.memoryRequest;
+  }
+
+  /**
+   * This method returns memory limit as twice of requested memory
+   * @param memoryRequest
+   * @return memory limit based on requested memory
+   */
+  @VisibleForTesting
+  String getMemoryLimitFromRequest (final String memoryRequest) {
+    String memoryLimit = memoryRequest;
+    try {
+      int requestedMemory = Integer.parseInt(getNumericMemory(memoryRequest));
+      memoryLimit = requestedMemory * 2 + "Gi";
+    } catch (final NumberFormatException ne) {
+      logger.error("NumberFormatException while parsing pod memory request");
+    }
+    return memoryLimit;
+  }
+
+  /**
+   * This method extracts numeric value from a memory string: e.g. 64Gi -> 64
+   * @param memoryStr
+   * @return numeric memory value
+   */
+  private String getNumericMemory(final String memoryStr) {
+    if (null == memoryStr || memoryStr.length() <= 2) return memoryStr;
+    return memoryStr.substring(0, memoryStr.length()-2);
   }
 
   /**
@@ -1029,5 +1095,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private String getPodName(final int executionId) {
     return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
+  }
+
+  public String getCpuLimit() {
+    return this.cpuLimit;
+  }
+
+  public String getMemoryLimit() {
+    return this.memoryLimit;
   }
 }
