@@ -206,26 +206,23 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
     this.cpuLimitMultiplier = this.azkProps
-        .getInt(ContainerizedDispatchManagerProperties
-            .KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
+        .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
             DEFAULT_CPU_LIMIT_MULTIPLIER);
-    this.cpuLimit = this.getResourceLimitFromResourceRequest(
-        this.cpuRequest, this.cpuLimitMultiplier);
+    this.cpuLimit = this.getResourceLimitFromResourceRequest(this.cpuRequest,
+        this.cpuLimitMultiplier);
     this.maxAllowedCPU = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties
-                .KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU, DEFAULT_MAX_CPU);
-    this.memoryRequest = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
-            DEFAULT_MEMORY_REQUEST);
-    this.memoryLimitMultiplier =
-        this.azkProps.getInt(ContainerizedDispatchManagerProperties
-            .KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU
+            , DEFAULT_MAX_CPU);
+    this.memoryRequest = this.azkProps.getString(ContainerizedDispatchManagerProperties.
+            KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST, DEFAULT_MEMORY_REQUEST);
+    this.memoryLimitMultiplier = this.azkProps
+        .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
             DEFAULT_MEMORY_LIMIT_MULTIPLIER);
-    this.memoryLimit = this.getResourceLimitFromResourceRequest(
-        this.memoryRequest, memoryLimitMultiplier);
+    this.memoryLimit = this.getResourceLimitFromResourceRequest(this.memoryRequest,
+        memoryLimitMultiplier);
     this.maxAllowedMemory = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties
-                .KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY, DEFAULT_MAX_MEMORY);
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
+            DEFAULT_MAX_MEMORY);
     this.servicePort =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
             54343);
@@ -589,7 +586,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method is used to get cpu request for a flow container. Precedence is defined below. a)
-   * Use CPU request set in flow parameter constrained by max allowed cpu set in config b) Use CPU
+   * Use CPU request set in flow parameter constrained by max allowed cpu set in config b) Use cpu
    * request set in system properties or default which is set in @cpuRequest.
    *
    * @param flowParam
@@ -597,18 +594,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   @VisibleForTesting
   String getFlowContainerCPURequest(final Map<String, String> flowParam) {
-    if (flowParam != null && !flowParam.isEmpty() && flowParam
+    if (flowParam == null || flowParam.isEmpty() || !flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
-      String userCPURequest =
-          flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
-      if (compareResources(this.maxAllowedCPU, userCPURequest)) {
-        userCPURequest = this.maxAllowedCPU;
-      }
-      this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest,
-          DEFAULT_CPU_LIMIT_MULTIPLIER);
-      return userCPURequest;
+      return this.cpuRequest;
     }
-    return this.cpuRequest;
+    String userCPURequest =
+        flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+    if (compareResources(this.maxAllowedCPU, userCPURequest) < 0) { // user requested cpu exceeds
+      // max allowed cpu
+      userCPURequest = this.maxAllowedCPU;
+    }
+    this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest,
+        DEFAULT_CPU_LIMIT_MULTIPLIER);
+    return userCPURequest;
   }
 
   /**
@@ -621,40 +619,45 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   @VisibleForTesting
   String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
-    if (flowParam != null && !flowParam.isEmpty() && flowParam
+    if (flowParam == null || flowParam.isEmpty() || !flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
-      String userMemoryRequest =
-          flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
-      if (compareResources(this.maxAllowedMemory, userMemoryRequest)) {
-        userMemoryRequest = this.maxAllowedMemory;
-      }
-      this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest,
-          DEFAULT_MEMORY_LIMIT_MULTIPLIER);
-      return userMemoryRequest;
+      return this.memoryRequest;
     }
-    return this.memoryRequest;
+    String userMemoryRequest =
+        flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+    if (compareResources(this.maxAllowedMemory, userMemoryRequest) < 0) { // user requested memory
+      // exceeds max allowed memory
+      userMemoryRequest = this.maxAllowedMemory;
+    }
+    this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest,
+        DEFAULT_MEMORY_LIMIT_MULTIPLIER);
+    return userMemoryRequest;
   }
 
   /**
-   * This method compares max allowed resource with user requested resource, if user requested
-   * resource is below max allowed resource, or two resources cannot be compared, return false;
-   * Otherwise, return true.
-   * @param resource1 max allowed resource
-   * @param resource2 user requested resource
+   * This method compares resource 1 (e.g. max allowed resource) with resource 2 (e.g. user
+   * requested resource):
+   * 1) if resource 1 >= resource 2, return 1;
+   * 2) if resource 1 < resource 2, return -1;
+   * 3) if resource 1 cannot be compared with resource 2, e.g. parse error, different resource types
+   * The format of a Kubernetes quantity indicates the type of resource, e.g. cpu, memory.
+   * @param resource1
+   * @param resource2
    * @return
    */
-  private boolean compareResources (final String resource1, final String resource2) {
+  private int compareResources (final String resource1, final String resource2) {
     try {
       final Quantity quantity1 = new Quantity(resource1), quantity2 = new Quantity(resource2);
-      if (quantity1.getFormat() == quantity2.getFormat()
-          && quantity1.getNumber().compareTo(quantity2.getNumber()) < 0) {
-        return true;
+      if (quantity1.getFormat() == quantity2.getFormat()) {
+        return quantity1.getNumber().compareTo(quantity2.getNumber()) < 0 ? -1 : 1;
       }
     } catch (final QuantityFormatException qe) { // only user requested resource in flow
       // parameter could result in exception
       logger.error("QuantityFormatException while parsing user requested resource: " + resource2);
     }
-    return false;
+    // Resources cannot be compared, e.g. resources are different (cpu vs. memory) or
+    // exception encountered when parsing resource string
+    return 0;
   }
 
   /**
@@ -673,9 +676,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final BigDecimal numericValueLimit =
           numericValueRequested.multiply(new BigDecimal(multiplier));
       resourceLimit = numericValueLimit + suffix;
-    } catch (final QuantityFormatException qe ) {
-      logger.error(
-          "QuantityFormatException while parsing user requested resource: " + resourceRequest);
     } catch (final NumberFormatException ne) {
       logger.error("NumberFormatException while paring user requested resource numeric value: "
       + resourceRequest);
