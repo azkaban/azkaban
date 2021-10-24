@@ -50,6 +50,8 @@ import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
@@ -62,6 +64,7 @@ import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -90,10 +93,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
-  public static final String DEFAULT_MAX_CPU = "0";
-  public static final String DEFAULT_MAX_MEMORY = "0Gi";
+  public static final String DEFAULT_MAX_CPU = "8";
+  public static final String DEFAULT_MAX_MEMORY = "64Gi";
   public static final String DEFAULT_CPU_REQUEST = "1";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
+  public static final int DEFAULT_CPU_LIMIT_MULTIPLIER = 1;
+  public static final int DEFAULT_MEMORY_LIMIT_MULTIPLIER = 2;
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
   public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES = "/data/jobtypes";
@@ -128,9 +133,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String clusterEnv;
   private final String flowContainerName;
   private String cpuLimit;
+  private int cpuLimitMultiplier;
   private final String cpuRequest;
   private final String maxAllowedCPU;
   private String memoryLimit;
+  private int memoryLimitMultiplier;
   private final String memoryRequest;
   private final String maxAllowedMemory;
   private final int servicePort;
@@ -198,17 +205,27 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.cpuRequest = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
-    this.cpuLimit = this.cpuRequest;
+    this.cpuLimitMultiplier = this.azkProps
+        .getInt(ContainerizedDispatchManagerProperties
+            .KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
+            DEFAULT_CPU_LIMIT_MULTIPLIER);
+    this.cpuLimit = this.getResourceLimitFromResourceRequest(
+        this.cpuRequest, this.cpuLimitMultiplier);
     this.maxAllowedCPU = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU,
-            DEFAULT_MAX_CPU);
+        .getString(ContainerizedDispatchManagerProperties
+                .KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU, DEFAULT_MAX_CPU);
     this.memoryRequest = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
             DEFAULT_MEMORY_REQUEST);
-    this.memoryLimit = this.getMemoryLimitFromRequest(this.memoryRequest);
+    this.memoryLimitMultiplier =
+        this.azkProps.getInt(ContainerizedDispatchManagerProperties
+            .KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
+            DEFAULT_MEMORY_LIMIT_MULTIPLIER);
+    this.memoryLimit = this.getResourceLimitFromResourceRequest(
+        this.memoryRequest, memoryLimitMultiplier);
     this.maxAllowedMemory = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
-            DEFAULT_MAX_MEMORY);
+        .getString(ContainerizedDispatchManagerProperties
+                .KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY, DEFAULT_MAX_MEMORY);
     this.servicePort =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
             54343);
@@ -582,23 +599,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   String getFlowContainerCPURequest(final Map<String, String> flowParam) {
     if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
-      String cpuRequest =
+      String userCPURequest =
           flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
-      try {
-        int requestedCPU = Integer.parseInt(cpuRequest);
-        final int maxCPU = Integer.parseInt(this.maxAllowedCPU);
-        if (maxCPU > 0  && maxCPU < requestedCPU) {
-          cpuRequest = String.valueOf(maxCPU);
-          logger.info ("User requested cpu exceeds maxi allowed cpu, setting requested cpu to "
-              + "maxi allowed cpu: " + cpuRequest);
-        }
-        // set cpu limit to be same as requested pod cpu
-        this.cpuLimit = cpuRequest;
-      } catch (final NumberFormatException ne) {
-        logger.error("NumberFormatException while parsing value for pod cpu request");
+      if (compareResources(this.maxAllowedCPU, userCPURequest)) {
+        userCPURequest = this.maxAllowedCPU;
       }
-      return cpuRequest;
-
+      this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest,
+          DEFAULT_CPU_LIMIT_MULTIPLIER);
+      return userCPURequest;
     }
     return this.cpuRequest;
   }
@@ -615,54 +623,64 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
     if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
-      String memoryRequest =
+      String userMemoryRequest =
           flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
-      try {
-        // take number value from memory string
-        int requestedMemory =
-            Integer.parseInt(getNumericMemory(memoryRequest));
-        final int maxMemory = Integer.parseInt(getNumericMemory(this.maxAllowedMemory));
-        if (maxMemory > 0  && maxMemory < requestedMemory) {
-          requestedMemory = maxMemory;
-          memoryRequest = requestedMemory + "Gi";
-          logger.info ("User requested memory exceeds max allowed memory, setting requested "
-              + "cpu to max allowed memory: " + memoryRequest);
-        }
-        // the memory limit is set to be twice of requested pod memory
-        this.memoryLimit = getMemoryLimitFromRequest(memoryRequest);
-      } catch (final NumberFormatException ne) {
-        logger.error("NumberFormatException while parsing value for pod memory request");
+      if (compareResources(this.maxAllowedMemory, userMemoryRequest)) {
+        userMemoryRequest = this.maxAllowedMemory;
       }
-      return memoryRequest;
+      this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest,
+          DEFAULT_MEMORY_LIMIT_MULTIPLIER);
+      return userMemoryRequest;
     }
     return this.memoryRequest;
   }
 
   /**
-   * This method returns memory limit as twice of requested memory
-   * @param memoryRequest
-   * @return memory limit based on requested memory
+   * This method compares max allowed resource with user requested resource, if user requested
+   * resource is below max allowed resource, or two resources cannot be compared, return false;
+   * Otherwise, return true.
+   * @param resource1 max allowed resource
+   * @param resource2 user requested resource
+   * @return
    */
-  @VisibleForTesting
-  String getMemoryLimitFromRequest (final String memoryRequest) {
-    String memoryLimit = memoryRequest;
+  private boolean compareResources (final String resource1, final String resource2) {
     try {
-      int requestedMemory = Integer.parseInt(getNumericMemory(memoryRequest));
-      memoryLimit = requestedMemory * 2 + "Gi";
-    } catch (final NumberFormatException ne) {
-      logger.error("NumberFormatException while parsing pod memory request");
+      final Quantity quantity1 = new Quantity(resource1), quantity2 = new Quantity(resource2);
+      if (quantity1.getFormat() == quantity2.getFormat()
+          && quantity1.getNumber().compareTo(quantity2.getNumber()) < 0) {
+        return true;
+      }
+    } catch (final QuantityFormatException qe) { // only user requested resource in flow
+      // parameter could result in exception
+      logger.error("QuantityFormatException while parsing user requested resource: " + resource2);
     }
-    return memoryLimit;
+    return false;
   }
 
   /**
-   * This method extracts numeric value from a memory string: e.g. 64Gi -> 64
-   * @param memoryStr
-   * @return numeric memory value
+   * This method returns resource limit as a multiplier of requested resource
+   * @param resourceRequest
+   * @return resource limit based on requested resource
    */
-  private String getNumericMemory(final String memoryStr) {
-    if (null == memoryStr || memoryStr.length() <= 2) return memoryStr;
-    return memoryStr.substring(0, memoryStr.length()-2);
+  @VisibleForTesting
+  String getResourceLimitFromResourceRequest(final String resourceRequest, int multiplier) {
+    String resourceLimit = resourceRequest;
+    try {
+      final String PARTS_RE = "[eEinumkKMGTP]+";
+      final String[] parts = resourceRequest.split(PARTS_RE);
+      final BigDecimal numericValueRequested = new BigDecimal(parts[0]);
+      final String suffix = resourceRequest.substring(parts[0].length());
+      final BigDecimal numericValueLimit =
+          numericValueRequested.multiply(new BigDecimal(multiplier));
+      resourceLimit = numericValueLimit + suffix;
+    } catch (final QuantityFormatException qe ) {
+      logger.error(
+          "QuantityFormatException while parsing user requested resource: " + resourceRequest);
+    } catch (final NumberFormatException ne) {
+      logger.error("NumberFormatException while paring user requested resource numeric value: "
+      + resourceRequest);
+    }
+    return resourceLimit;
   }
 
   /**

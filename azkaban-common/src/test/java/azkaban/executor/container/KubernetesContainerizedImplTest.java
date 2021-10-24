@@ -112,8 +112,10 @@ public class KubernetesContainerizedImplTest {
   private static final String CPU_REQUESTED_IN_PROPS = "2";
   private static final String MEMORY_REQUESTED_IN_PROPS = "4Gi";
   private static final String MAX_ALLOWED_CPU = "4";
-  private static final String MAX_ALLOWED_MEMORY = "8Gi";
+  private static final String MAX_ALLOWED_MEMORY = "32Gi";
   public static final String DEPENDENCY1 = "dependency1";
+  public static final int CPU_LIMIT_MULTIPLIER = 1;
+  public static final int MEMORY_LIMIT_MULTIPLIER = 2;
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -188,14 +190,20 @@ public class KubernetesContainerizedImplTest {
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(memoryRequestedInFlowParam);
     // cpu limit should be same as request cpu, memory should be twice of requested memory
-    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(cpuRequestedInFlowParam);
+    String expectedCPULimit =
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(cpuRequestedInFlowParam,
+                CPU_LIMIT_MULTIPLIER);
+    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
     String expectedMemoryLimit =
-        this.kubernetesContainerizedImpl.getMemoryLimitFromRequest(memoryRequestedInFlowParam);
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(memoryRequestedInFlowParam,
+                MEMORY_LIMIT_MULTIPLIER);
     assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
 
     // User requested cpu and memory that exceed max allowed cpu and memory
     final String greaterThanMaxCPURequestedInFlowParam = "5";
-    final String greaterThanMaxMemoryRequestedInFlowParam = "10Gi";
+    final String greaterThanMaxMemoryRequestedInFlowParam = "80Gi";
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST,
         greaterThanMaxCPURequestedInFlowParam);
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
@@ -205,10 +213,30 @@ public class KubernetesContainerizedImplTest {
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(MAX_ALLOWED_MEMORY);
     // cpu limit should be same as request cpu, memory should be twice of requested memory
-    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(MAX_ALLOWED_CPU);
+    expectedCPULimit =
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(MAX_ALLOWED_CPU, CPU_LIMIT_MULTIPLIER);
+    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
     expectedMemoryLimit =
-        this.kubernetesContainerizedImpl.getMemoryLimitFromRequest(MAX_ALLOWED_MEMORY);
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(MAX_ALLOWED_MEMORY,
+                MEMORY_LIMIT_MULTIPLIER);
     assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
+
+    // User requested memory of different unit, e.g. Ti, Mi
+    final String MemoryRequestedInFlowParam1 = "330Mi";
+    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
+        MemoryRequestedInFlowParam1);
+    // 330 Mi = 0.33 Gi < max allowed memory 32 Gi, user requested memory should be used
+    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
+        .equals(MemoryRequestedInFlowParam1);
+    final String MemoryRequestedInFlowParam2 = "0.1Ti";
+    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
+        MemoryRequestedInFlowParam2);
+    // 0.1 Ti = 100 Gi > max allowed memory 32 Gi, user requested memory is replaced by max
+    // allowed memory
+    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
+        .equals(MAX_ALLOWED_MEMORY);
   }
 
   /**
@@ -225,9 +253,15 @@ public class KubernetesContainerizedImplTest {
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(MEMORY_REQUESTED_IN_PROPS);
     // cpu limit should be same as request cpu, memory should be twice of requested memory
-    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(CPU_REQUESTED_IN_PROPS);
+    final String expectedCPULimit =
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(CPU_REQUESTED_IN_PROPS,
+                CPU_LIMIT_MULTIPLIER);
+    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
     final String expectedMemoryLimit =
-        this.kubernetesContainerizedImpl.getMemoryLimitFromRequest(MEMORY_REQUESTED_IN_PROPS);
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(MEMORY_REQUESTED_IN_PROPS,
+                MEMORY_LIMIT_MULTIPLIER);
     assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
   }
 

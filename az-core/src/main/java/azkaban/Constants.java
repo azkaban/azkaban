@@ -628,17 +628,15 @@ public class Constants {
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT =
-        KUBERNETES_FLOW_CONTAINER_PREFIX +
-            "cpu.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.cpu";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX +
             "cpu.request";
-    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT =
-        KUBERNETES_FLOW_CONTAINER_PREFIX +
-            "memory.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
