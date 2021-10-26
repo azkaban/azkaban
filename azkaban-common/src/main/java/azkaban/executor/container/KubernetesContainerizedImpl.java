@@ -603,8 +603,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     int resourceCompare = compareResources(this.maxAllowedCPU, userCPURequest);
     if (resourceCompare < 0) { // user requested cpu exceeds max allowed cpu
       userCPURequest = this.maxAllowedCPU;
-    } else if (resourceCompare ==0) {// user requested memory has an parse error, or resource
-      // type is not correct, use memory request set in the config
+    } else if (resourceCompare ==0) {// if user requested memory has an parse error, or resource
+      // type is not correct, cpu request set in the config should be used
       userCPURequest = this.cpuRequest;
     }
     this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest, this.cpuRequest,
@@ -631,8 +631,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     int resourceCompare = compareResources(this.maxAllowedMemory, userMemoryRequest);
     if (resourceCompare < 0) { // user requested memory exceeds max allowed memory
       userMemoryRequest = this.maxAllowedMemory;
-    } else if (resourceCompare == 0) {// user requested memory has an parse error, or resource
-      // type is not correct, use memory request set in the config
+    } else if (resourceCompare == 0) {// if user requested memory has an parse error, or resource
+      // type is not correct, memory request set in the config should be used
       userMemoryRequest = this.memoryRequest;
     }
     this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest, this.memoryRequest,
@@ -645,7 +645,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * requested resource):
    * 1) if resource 1 >= resource 2, return 1;
    * 2) if resource 1 < resource 2, return -1;
-   * 3) if resource 1 cannot be compared with resource 2, e.g. parse error, different resource types
+   * 3) if resource 1 cannot be compared with resource 2, e.g. parse error, mis-matching resource
+   * types, return 0;
    * The format of a Kubernetes quantity indicates the type of resource, e.g. cpu, memory.
    * @param resource1
    * @param resource2
