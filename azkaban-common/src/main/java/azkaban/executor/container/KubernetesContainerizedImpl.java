@@ -208,7 +208,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.cpuLimitMultiplier = this.azkProps
         .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
             DEFAULT_CPU_LIMIT_MULTIPLIER);
-    this.cpuLimit = this.getResourceLimitFromResourceRequest(this.cpuRequest,
+    this.cpuLimit = this.getResourceLimitFromResourceRequest(this.cpuRequest, this.cpuRequest,
         this.cpuLimitMultiplier);
     this.maxAllowedCPU = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU
@@ -218,7 +218,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.memoryLimitMultiplier = this.azkProps
         .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
             DEFAULT_MEMORY_LIMIT_MULTIPLIER);
-    this.memoryLimit = this.getResourceLimitFromResourceRequest(this.memoryRequest,
+    this.memoryLimit = this.getResourceLimitFromResourceRequest(this.memoryRequest, this.memoryRequest,
         memoryLimitMultiplier);
     this.maxAllowedMemory = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
@@ -600,11 +600,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
     String userCPURequest =
         flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
-    if (compareResources(this.maxAllowedCPU, userCPURequest) < 0) { // user requested cpu exceeds
-      // max allowed cpu
+    int resourceCompare = compareResources(this.maxAllowedCPU, userCPURequest);
+    if (resourceCompare < 0) { // user requested cpu exceeds max allowed cpu
       userCPURequest = this.maxAllowedCPU;
+    } else if (resourceCompare ==0) {// user requested memory has an parse error, or resource
+      // type is not correct, use memory request set in the config
+      userCPURequest = this.cpuRequest;
     }
-    this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest,
+    this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest, this.cpuRequest,
         DEFAULT_CPU_LIMIT_MULTIPLIER);
     return userCPURequest;
   }
@@ -625,11 +628,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
     String userMemoryRequest =
         flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
-    if (compareResources(this.maxAllowedMemory, userMemoryRequest) < 0) { // user requested memory
-      // exceeds max allowed memory
+    int resourceCompare = compareResources(this.maxAllowedMemory, userMemoryRequest);
+    if (resourceCompare < 0) { // user requested memory exceeds max allowed memory
       userMemoryRequest = this.maxAllowedMemory;
+    } else if (resourceCompare == 0) {// user requested memory has an parse error, or resource
+      // type is not correct, use memory request set in the config
+      userMemoryRequest = this.memoryRequest;
     }
-    this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest,
+    this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest, this.memoryRequest,
         DEFAULT_MEMORY_LIMIT_MULTIPLIER);
     return userMemoryRequest;
   }
@@ -663,11 +669,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * This method returns resource limit as a multiplier of requested resource
    * @param resourceRequest
+   * @param defaultResourceRequest
    * @return resource limit based on requested resource
    */
   @VisibleForTesting
-  String getResourceLimitFromResourceRequest(final String resourceRequest, int multiplier) {
-    String resourceLimit = resourceRequest;
+  String getResourceLimitFromResourceRequest(final String resourceRequest,
+      final String defaultResourceRequest, int multiplier) {
+    String resourceLimit = defaultResourceRequest;
     try {
       final String PARTS_RE = "[eEinumkKMGTP]+";
       final String[] parts = resourceRequest.split(PARTS_RE);
