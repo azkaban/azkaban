@@ -665,7 +665,7 @@ public class JobTypeManager {
   /**
    +   * Get the keystore load props
    +   */
-  public Props    getCommonPluginLoadProps() {
+  public Props getCommonPluginLoadProps() {
     return this.cachedCommonPluginLoadProps;
   }
 
