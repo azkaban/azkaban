@@ -618,12 +618,6 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
-    public static final String KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH =
-        KUBERNETES_POD_PREFIX + "nscd.socket.volume.mount.path";
-    public static final String KUBERNETES_POD_NSCD_SOCKET_HOST_PATH =
-        KUBERNETES_POD_PREFIX + "nscd.socket.host.path";
-    public static final String KUBERNETES_POD_NSCD_MOUNT_READ_ONLY =
-        KUBERNETES_POD_PREFIX + "nscd.mount.read.only";
     public static final String KUBERNETES_POD_AZKABAN_BASE_IMAGE_NAME = AZKABAN_KUBERNETES_PREFIX +
         "azkaban-base.image.name";
     public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
@@ -634,15 +628,17 @@ public class Constants {
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT =
-        KUBERNETES_FLOW_CONTAINER_PREFIX +
-            "cpu.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
+    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.cpu";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX +
             "cpu.request";
-    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT =
-        KUBERNETES_FLOW_CONTAINER_PREFIX +
-            "memory.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
+    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_NAME =
