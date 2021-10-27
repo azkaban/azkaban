@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
@@ -46,6 +47,9 @@ public enum Status {
 
   public static final Set<Status> nonFinishingStatusAfterFlowStartsSet = new TreeSet<>(
       Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
+
+  public static final ImmutableSet<Status> RESTARTABLE_STATUSES =
+      ImmutableSet.of(Status.READY, Status.DISPATCHING, Status.PREPARING, Status.EXECUTION_STOPPED);
 
   private final int numVal;
 
