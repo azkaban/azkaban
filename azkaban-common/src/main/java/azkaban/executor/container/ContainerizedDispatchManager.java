@@ -26,6 +26,7 @@ import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
@@ -38,6 +39,7 @@ import azkaban.metrics.ContainerizationMetrics;
 import azkaban.spi.EventType;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -414,6 +416,11 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     }
   }
 
+  @VisibleForTesting
+  public ExecutionDispatcher getExecutionDispatcher(int execId) {
+    return new ExecutionDispatcher(execId);
+  }
+
   /**
    * This class is a worker class to dispatch execution in container.
    */
@@ -439,20 +446,21 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       } catch (ExecutorManagerException e) {
         logger.info("Unable to dispatch container in Kubernetes for : {}", executionId);
         logger.info("Reason for dispatch failure: {}", e.getMessage());
-        // Set the status of an execution to FAILED if dispatched failed.
-        final ExecutableFlow dsFlow;
+        // Finalize the flow if the dispatch failed.
         try {
-          dsFlow =
-              ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
-          dsFlow.setStatus(Status.FAILED);
-          dsFlow.setUpdateTime(System.currentTimeMillis());
-          ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
           ContainerizedDispatchManager.this.containerizationMetrics.markContainerDispatchFail();
-          // Emit failed flow event
-          ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
-              new EventData(dsFlow)));
+          ExecutableFlow execFlow =
+              ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
+          Status originalStatus = execFlow.getStatus();
+          ExecutionControllerUtils.finalizeFlow(ContainerizedDispatchManager.this.executorLoader,
+              ContainerizedDispatchManager.this.alerterHolder, execFlow, "Failed to dispatch", e,
+              Status.FAILED);
+          logger.info("Finalizing the flow execution ", executionId);
+          ExecutionControllerUtils.restartFlow(execFlow, originalStatus);
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to FAILED for : {}", executionId);
+        } catch (RuntimeException re) {
+          logger.error("Unexpected RuntimeException in ExecutionDispatcher", re);
         }
       }
     }

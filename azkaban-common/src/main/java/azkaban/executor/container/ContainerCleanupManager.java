@@ -20,6 +20,7 @@ import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -171,10 +172,12 @@ public class ContainerCleanupManager {
    */
   private void cancelFlowQuietly(ExecutableFlow flow) {
     try {
+      Status originalStatus = flow.getStatus();
       logger.info(
-          "Cleaning up stale flow " + flow.getExecutionId() + " in state " + flow.getStatus()
+          "Cleaning up stale flow " + flow.getExecutionId() + " in state " + originalStatus
               .name());
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
+      ExecutionControllerUtils.restartFlow(flow, originalStatus);
     } catch (ExecutorManagerException eme) {
       logger.error("ExecutorManagerException while cancelling flow.", eme);
     } catch (RuntimeException re) {

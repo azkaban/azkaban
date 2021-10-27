@@ -24,14 +24,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,7 +92,7 @@ public class ContainerCleanupManagerTest {
   }
 
   @Test
-  public void testCleanUpPreparingFlows() throws ExecutorManagerException {
+  public void testCleanUpPreparingFlows() throws Exception {
     ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
     ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(1000);
@@ -111,8 +113,15 @@ public class ContainerCleanupManagerTest {
       return null;
     }).when(this.containerizedDispatchManager).cancelFlow(flow, flow.getSubmitUser());
 
+    OnContainerizedExecutionEventListener onExecutionEventListener = mock(
+        OnContainerizedExecutionEventListener.class);
+    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+
     this.cleaner.cleanUpStaleFlows(Status.PREPARING);
+    TimeUnit.MILLISECONDS.sleep(10);
     Assert.assertEquals(Status.KILLED, flow.getStatus());
     verify(this.containerImpl).deleteContainer(flow.getExecutionId());
+    // Verify that the flow is indeed retried.
+    verify(onExecutionEventListener).onExecutionEvent(flow, Constants.RESTART_FLOW);
   }
 }
