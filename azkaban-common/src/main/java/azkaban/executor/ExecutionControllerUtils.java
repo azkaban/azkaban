@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.Status.RESTARTABLE_STATUSES;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -24,7 +25,6 @@ import azkaban.Constants.FlowParameters;
 import azkaban.alert.Alerter;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -69,8 +69,6 @@ public class ExecutionControllerUtils {
   public static OnExecutionEventListener onExecutionEventListener;
   public static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(
       new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
-  public static final ImmutableSet<Status> RESTARTABLE_STATUSES =
-      ImmutableSet.of(Status.READY, Status.DISPATCHING, Status.PREPARING, Status.EXECUTION_STOPPED);
 
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
@@ -137,7 +135,7 @@ public class ExecutionControllerUtils {
       return;
     }
     if (originalStatus != Status.EXECUTION_STOPPED) {
-      logger.info("ContainerCleanupManager submitted flow for restart: " + flow.getExecutionId());
+      logger.info("Submitted flow for restart: " + flow.getExecutionId());
       ExecutionControllerUtils.submitRestartFlow(flow);
       return;
     }
@@ -147,7 +145,7 @@ public class ExecutionControllerUtils {
     }
     if (Boolean.parseBoolean(flowParams.getOrDefault(FlowParameters
         .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
-      logger.info("ContainerCleanupManager submitted flow for restart: " + flow.getExecutionId());
+      logger.info("Submitted flow for restart: " + flow.getExecutionId());
       ExecutionControllerUtils.submitRestartFlow(flow);
     }
   }

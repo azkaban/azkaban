@@ -455,6 +455,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           ExecutionControllerUtils.finalizeFlow(ContainerizedDispatchManager.this.executorLoader,
               ContainerizedDispatchManager.this.alerterHolder, execFlow, "Failed to dispatch", e,
               Status.FAILED);
+          logger.info("Finalizing the flow execution ", executionId);
           ExecutionControllerUtils.restartFlow(execFlow, originalStatus);
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to FAILED for : {}", executionId);
