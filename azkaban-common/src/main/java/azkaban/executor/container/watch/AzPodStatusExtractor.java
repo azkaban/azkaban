@@ -230,6 +230,10 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodRequested() {
+    if (isPodCompleted()) {
+      logger.debug("PodRequested is false as podPhase is in completion state");
+      return false;
+    }
     // Scheduled conditions should either not be present or be false
     if (this.scheduledConditionStatus.isPresent() &&
         this.scheduledConditionStatus.get() == PodConditionStatus.True) {
@@ -245,6 +249,10 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodScheduled() {
+    if (isPodCompleted()) {
+      logger.debug("PodScheduled is false as podPhase is in completion state");
+      return false;
+    }
     // Pod must have been scheduled
     if (!this.scheduledConditionStatus.isPresent()) {
       logger.debug("PodScheduled false as scheduled condition is not present");
@@ -290,11 +298,7 @@ public class AzPodStatusExtractor {
       logger.debug("AnyInitContainerFailed is false as init container status is null or empty");
       return false;
     }
-    boolean anyContainerFailed = initContainerStatuses.stream().anyMatch(status ->
-        status.getState().getTerminated() != null &&
-            (status.getState().getTerminated().getExitCode() == null ||
-                status.getState().getTerminated().getExitCode() != 0));
-    return anyContainerFailed;
+    return anyContainerFailed(initContainerStatuses);
   }
 
   /**
@@ -303,6 +307,10 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodInitContainersRunning() {
+    if (isPodCompleted()) {
+      logger.debug("InitRunning is false as podPhase is in completion state");
+      return false;
+    }
     // Pod must have scheduled
     if (!this.scheduledConditionStatus.isPresent() ||
         this.scheduledConditionStatus.get() != PodConditionStatus.True) {
@@ -334,6 +342,10 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodAppContainerStarting() {
+    if (isPodCompleted()) {
+      logger.debug("ContainerStarting is false as podPhase is in completion state");
+      return false;
+    }
     // Pod must have been initialized
     if (!this.initializedConditionStatus.isPresent() ||
         this.initializedConditionStatus.get() != PodConditionStatus.True) {
@@ -363,11 +375,33 @@ public class AzPodStatusExtractor {
       logger.debug("AnyAppContainerFailed is false as container status is null or empty");
       return false;
     }
-    boolean anyContainerFailed = containerStatuses.stream().anyMatch(status ->
-        status.getState().getTerminated() != null &&
-            (status.getState().getTerminated().getExitCode() == null ||
-                status.getState().getTerminated().getExitCode() != 0));
-    return anyContainerFailed;
+    return anyContainerFailed(containerStatuses);
+  }
+
+  /**
+   * This method can be utilized to check for any failed container among the list provided. The
+   * containers can be init or app containers.
+   *
+   * @param containerStatuses
+   * @return true if any of the container failed, otherwise false.
+   */
+  private boolean anyContainerFailed(List<V1ContainerStatus> containerStatuses) {
+    return containerStatuses.stream().anyMatch(status ->
+    {
+      if (status.getState().getTerminated() != null) {
+        return status.getState().getTerminated().getExitCode() == null ||
+            status.getState().getTerminated().getExitCode() != 0;
+      }
+      // If the current state is waiting and the last state was terminated, then the
+      // container has most likely failed.
+      else if (status.getState().getWaiting() != null
+          && status.getLastState().getTerminated() != null) {
+        logger.debug("Container failed as state is Waiting and last state is Terminated.");
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 
   /**
@@ -375,6 +409,10 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodReady() {
+    if (isPodCompleted()) {
+      logger.debug("PodReady is false as podPhase is in completion state");
+      return false;
+    }
     // ContainersReady condition must be True
     if (!this.containersReadyConditionStatus.isPresent() ||
         this.containersReadyConditionStatus.get() != PodConditionStatus.True) {
@@ -466,6 +504,10 @@ public class AzPodStatusExtractor {
     }
     logger.debug("AppFailed is true");
     return true;
+  }
+
+  private boolean isPodCompleted() {
+    return this.podPhase == PodPhase.Succeeded || this.podPhase == PodPhase.Failed;
   }
 
   /**
