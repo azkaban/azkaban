@@ -1720,13 +1720,13 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       if (event.getType().isFlowEventType()) {
         final FlowRunner flowRunner = (FlowRunner) event.getRunner();
         final ExecutableFlow flow = flowRunner.getExecutableFlow();
-        // Estimate flow wait time duration including time taken to create pod (for containerized
-        // executions) and submit flowRunner, discrepancy caused by different system time in web
-        // server (when executable flow is submitted) and executor/container.
-        if (flow.getSubmitTime() > 0 ) {
-          flowRunner.setFlowCreateTime(System.currentTimeMillis() - flow.getSubmitTime());
-        }
         if (event.getType() == EventType.FLOW_STARTED) {
+          // Estimate flow wait time duration including time taken to create pod (for containerized
+          // executions) and submit flowRunner, discrepancy caused by different system time in web
+          // server (where executable flow is submitted) and executor/container.
+          if (flow.getSubmitTime() > 0 ) {
+            flowRunner.setFlowCreateTime(System.currentTimeMillis() - flow.getSubmitTime());
+          }
           FlowRunner.this.logger.info("Flow started: " + flow.getId());
           FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
         } else if (event.getType() == EventType.FLOW_STATUS_CHANGED) {
