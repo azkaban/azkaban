@@ -426,9 +426,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     if (isAlreadyRunning(execId)) {
       return;
     }
-    final long tsBeforeFlowRunnerCreation = System.currentTimeMillis();
     final FlowRunner runner = createFlowRunner(execId);
-    runner.setFlowCreateTime(System.currentTimeMillis() - tsBeforeFlowRunnerCreation);
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
