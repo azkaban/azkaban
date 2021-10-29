@@ -425,6 +425,11 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    * Submits the flow to executorService for execution.
    */
   private void submitFlowRunner() throws ExecutorManagerException {
+    // calculate flow wait time duration in containerized executions
+    final ExecutableFlow flow = this.flowRunner.getExecutableFlow();
+    if (flow.getSubmitTime() > 0) {
+      this.flowRunner.setFlowCreateTime(System.currentTimeMillis() - flow.getSubmitTime());
+    }
     // set running flow, put it in DB
     logger.info("Submitting flow with execution Id " + this.flowRunner.getExecutionId());
     this.flowFuture = this.executorService.submit(this.flowRunner);
