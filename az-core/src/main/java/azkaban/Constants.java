@@ -153,6 +153,9 @@ public class Constants {
   // Overridable plugin load properties
   public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
 
+  // File containing param override configs
+  public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
+
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 
