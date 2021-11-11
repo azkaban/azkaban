@@ -526,9 +526,8 @@ public class KubernetesContainerizedImplTest {
     final Props flowProps = new Props();
     flowProps.put("param.override.image.version", "1.2.3");
     flowProps.put("regular.param", "4.5.6"); // Should be filtered out.
-    final Map<String, Props> propsMap = new HashMap<>();
-    propsMap.put("test", flowProps);
-    when(this.projectLoader.fetchProjectProperties(flow.getProjectId(), flow.getVersion())).thenReturn(propsMap);
+    when(this.projectLoader.fetchProjectProperty(
+        flow.getProjectId(), flow.getVersion(), Constants.PARAM_OVERRIDE_FILE)).thenReturn(flowProps);
     final ExecutionOptions executionOptions = new ExecutionOptions();
     flow.setExecutionOptions(executionOptions);
     final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
@@ -552,9 +551,8 @@ public class KubernetesContainerizedImplTest {
     final Props flowProps = new Props();
     flowProps.put("param.override.image.version", "1.2.3");
     flowProps.put("regular.param", "4.5.6"); // Should be filtered out.
-    final Map<String, Props> propsMap = new HashMap<>();
-    propsMap.put("test", flowProps);
-    when(this.projectLoader.fetchProjectProperties(flow.getProjectId(), flow.getVersion())).thenReturn(propsMap);
+    when(this.projectLoader.fetchProjectProperty(
+        flow.getProjectId(), flow.getVersion(), Constants.PARAM_OVERRIDE_FILE)).thenReturn(flowProps);
     final ExecutionOptions executionOptions = new ExecutionOptions();
     flow.setExecutionOptions(executionOptions);
     final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
