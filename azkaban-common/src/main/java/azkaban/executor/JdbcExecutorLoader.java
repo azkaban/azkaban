@@ -86,7 +86,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
     final ExecutableFlow flow = this.executionFlowDao.fetchExecutableFlow(id);
-    flow.setFlowPropsAndParams(this.projectLoader);
+    if (null != flow) {
+      flow.setFlowPropsAndParams(this.projectLoader);
+    }
     return flow;
   }
 
