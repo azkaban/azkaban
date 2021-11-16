@@ -516,7 +516,7 @@ public class KubernetesContainerizedImplTest {
   }
 
   /**
-   * Test merging of flow properties and flor params.
+   * Test merging of flow properties and flow params.
    * @throws Exception
    */
   @Test
@@ -541,7 +541,7 @@ public class KubernetesContainerizedImplTest {
   }
 
   /**
-   * Test merging of flow properties and flow params where flor params override the flow property.
+   * Test merging of flow properties and flow params where flow params override the flow property.
    * @throws Exception
    */
   @Test
@@ -565,6 +565,30 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
+  }
+
+  /**
+   * Test merging of flow properties and flow params where props in null.
+   * @throws Exception
+   */
+  @Test
+  public void testFlowPropertyAndParamsMergeNull() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    flow.setExecutionId(3);
+    when(this.projectLoader.fetchProjectProperty(
+        flow.getProjectId(), flow.getVersion(), Constants.PARAM_OVERRIDE_FILE)).thenReturn(null);
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    flow.setExecutionOptions(executionOptions);
+    final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
+    Assert.assertEquals(0, flowParams.size());
+    // flow params take priority.
+    flowParams.put("image.version", "2.3.4");
+    // Merge the flow props and flow params
+    flow.setFlowPropsAndParams(this.projectLoader);
+    final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
+    Assert.assertEquals(1, mergedFlowPropsAndParams.size());
+    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
+    Assert.assertEquals("2.3.4", mergedFlowPropsAndParams.get("image.version"));
   }
 
   private ExecutableFlow createTestFlow() throws Exception {

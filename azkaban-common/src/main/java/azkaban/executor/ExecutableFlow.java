@@ -491,6 +491,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
         FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, this, null) :
         projectLoader.fetchProjectProperty(projectId, version, Constants.PARAM_OVERRIDE_FILE);
 
+    if (null == props) {
+      return;
+    }
     // Clone the props object and filter out the properties to keep only the override ones.
     Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(PARAM_OVERRIDE);
 

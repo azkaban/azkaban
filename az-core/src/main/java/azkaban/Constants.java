@@ -153,7 +153,22 @@ public class Constants {
   // Overridable plugin load properties
   public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
 
-  // File containing param override configs
+  /**
+   * File containing param override configs
+   * For a directory structure, property files in Proj_Dir used to have lower precedence than A.
+   * For the newly introduced file, this will no longer be true
+
+   * Proj_Dir
+   * basic.properties
+   * param_override.properties
+   * A/
+   * foo_a.properties
+   * foo.job
+
+   * i.e.
+   * (a). param_override.properties precedence will be higher than foo_a.properties.
+   * (b). foo_a.properties precedence will be higher than that of basic.properties.
+   */
   public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
 
   // Azkaban event reporter constants
