@@ -1,2 +1,2 @@
-owners: [ ypadron, ygerchik, djaiswal, gsalia, sshardoo ]
+owners: [ ypadron, djaiswal, gsalia, sshardoo ]
 paths: ['.*']
