@@ -549,7 +549,7 @@ public class ContainerizedDispatchManagerTest {
         this.containerizedDispatchManager.getExecutionDispatcher(this.flow1.getExecutionId()));
     thread.start();
     synchronized (thread) {
-      thread.wait();
+      thread.join();
     }
     assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
     verify(onExecutionEventListener).onExecutionEvent(this.flow1, Constants.RESTART_FLOW);
