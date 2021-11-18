@@ -149,13 +149,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
               event.getAzPodStatus(),
               event.getPodName()));
       logger.error("Unsupported state transition.", transitionException);
-      if (containerizationMetrics.isInitialized()) {
-        containerizationMetrics.markExecutionStopped();
-      } else {
-        logger.warn ("Containerization metrics are not initialized");
-      }
       try {
-        finalizeFlowAndDeleteContainer(event, Optional.of(Status.EXECUTION_STOPPED));
+        finalizeFlowAndDeleteContainer(event);
       } catch (Exception deletionException) {
         transitionException.addSuppressed(deletionException);
       }
@@ -236,11 +231,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    *
    * @implNote Flow status check and update is not atomic, details above.
    * @param event pod event
-   * @param finalStatus
    * @return
    */
-  private Optional<Status> compareAndFinalizeFlowStatus(AzPodStatusMetadata event,
-      Optional<Status> finalStatus) {
+  private Optional<Status> compareAndFinalizeFlowStatus(AzPodStatusMetadata event) {
     requireNonNull(event, "event must not be null");
 
     int executionId = Integer.parseInt(event.getFlowPodMetadata().get().getExecutionId());
@@ -264,11 +257,16 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
           "Flow execution-id %d for pod %s does not have a final status in database and will be "
               + "finalized.", executionId, event.getPodName()));
       final String reason = "Flow pod execution was completed.";
-      if (finalStatus.isPresent()) {
-        executableFlow.setStatus(finalStatus.get());
+      // Flow status is marked as EXECUTION_STOPPED in case of infra failure, e.g. invalid pod
+      // transitions, init container failure, create container error etc.
+      if (containerizationMetrics.isInitialized()) {
+        containerizationMetrics.markExecutionStopped();
+      } else {
+        logger.warn ("Containerization metrics are not initialized");
       }
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
-          null, Status.FAILED);
+          null, Status.EXECUTION_STOPPED);
+      executableFlow.setStatus(Status.EXECUTION_STOPPED);
       ExecutionControllerUtils.restartFlow(executableFlow, originalStatus);
       // Log event for cases where the flow was not already in a final state
       WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
@@ -306,11 +304,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   /**
    * Finalize the flow for the given event and delete its container.
    * @param event
-   * @param finalStatus
    */
-  private void finalizeFlowAndDeleteContainer(AzPodStatusMetadata event,
-      Optional<Status> finalStatus) {
-    Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event, finalStatus);
+  private void finalizeFlowAndDeleteContainer(AzPodStatusMetadata event) {
+    Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event);
     if (originalFlowStatus.isPresent() &&
         !Status.isStatusFinished(originalFlowStatus.get())) {
       logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
@@ -332,7 +328,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     boolean skipUpdates = !isUpdatedPodStatusDistinct(event);
     postProcess(event);
     if (!skipUpdates) {
-      finalizeFlowAndDeleteContainer(event, Optional.empty());
+      finalizeFlowAndDeleteContainer(event);
     }
   }
 

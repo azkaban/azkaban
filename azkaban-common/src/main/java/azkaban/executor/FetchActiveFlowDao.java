@@ -182,6 +182,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")";
@@ -194,6 +195,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")"
@@ -239,6 +241,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")";
@@ -275,6 +278,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
             + Status.SUCCEEDED.getNumVal() + ", "
             + Status.KILLED.getNumVal() + ", "
             + Status.FAILED.getNumVal() + ")"
