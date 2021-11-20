@@ -195,7 +195,10 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")";
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
+            + Status.SUCCEEDED.getNumVal() + ", "
+            + Status.KILLED.getNumVal() + ", "
+            + Status.FAILED.getNumVal() + ")";
 
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =
@@ -205,7 +208,10 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")"
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
+            + Status.SUCCEEDED.getNumVal() + ", "
+            + Status.KILLED.getNumVal() + ", "
+            + Status.FAILED.getNumVal() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
@@ -248,7 +254,10 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")";
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
+            + Status.SUCCEEDED.getNumVal() + ", "
+            + Status.KILLED.getNumVal() + ", "
+            + Status.FAILED.getNumVal() + ")";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -282,7 +291,10 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")"
+            + Status.EXECUTION_STOPPED.getNumVal() + ", "
+            + Status.SUCCEEDED.getNumVal() + ", "
+            + Status.KILLED.getNumVal() + ", "
+            + Status.FAILED.getNumVal() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
