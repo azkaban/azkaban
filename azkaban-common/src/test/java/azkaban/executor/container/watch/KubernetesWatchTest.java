@@ -117,6 +117,8 @@ public class KubernetesWatchTest {
 
   private ApiClient defaultApiClient;
   private ContainerizationMetrics containerizationMetrics = new DummyContainerizationMetricsImpl();
+  private OnContainerizedExecutionEventListener onExecutionEventListener = mock(
+      OnContainerizedExecutionEventListener.class);
 
   @Before
   public void setUp() throws Exception {
@@ -274,7 +276,7 @@ public class KubernetesWatchTest {
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
@@ -292,9 +294,10 @@ public class KubernetesWatchTest {
     statusDriver.registerAzPodStatusListener(updatingListener);
 
     // Mocked flow in RUNNING state. Init failure event will be processed for this execution.
-    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE, Status.RUNNING);
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE, Status.PREPARING);
     when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE))
         .thenReturn(flow1);
+    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
 
     // Run events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
@@ -304,10 +307,13 @@ public class KubernetesWatchTest {
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INIT_FAILURE);
+
+    // Verify that the flow is restarted.
+    verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
   }
 
   @Test
@@ -325,8 +331,6 @@ public class KubernetesWatchTest {
     when(updatingListener.getExecutorLoader()
         .fetchExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR))
         .thenReturn(flow1);
-    OnContainerizedExecutionEventListener onExecutionEventListener = mock(
-        OnContainerizedExecutionEventListener.class);
     ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
 
     // Run events through the registered listeners.
@@ -337,7 +341,7 @@ public class KubernetesWatchTest {
 
     // Verify that the previously DISPATCHING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl())
@@ -401,30 +405,30 @@ public class KubernetesWatchTest {
         1);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
-    // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
-    // nodes set to terminal state, too.
-    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    Queue<ExecutableNode> queue = new LinkedList<>();
-    queue.add(flow1);
-    // traverse through every node in flow1
-    while(!queue.isEmpty()) {
-      ExecutableNode node = queue.poll();
-      if (node==flow1) {
-        assertThat(node.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
-      } else {
-        assertThat(node.getStatus()).isEqualTo(Status.KILLED);
-      }
-      if (node instanceof ExecutableFlowBase) {
-        final ExecutableFlowBase base = (ExecutableFlowBase) node;
-        for (final ExecutableNode subNode : base.getExecutableNodes()) {
-          queue.add(subNode);
-        }
-      }
-    }
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
   }
+
+  /**
+   * validate flow status is finalized to EXECUTION_STOPPED, all sub nodes are set to KILLED
+   * @param flow
+   */
+  private void assertFlowExecutionStopped(final ExecutableFlow flow) {
+    final Queue<ExecutableNode> queue = new LinkedList<>();
+    queue.add(flow);
+    // traverse through every node in flow1
+    while (!queue.isEmpty()) {
+      ExecutableNode node = queue.poll();
+      if (node == flow) {
+        assertThat(node.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
+      } else {
+        assertThat(node.getStatus()).isEqualTo(Status.KILLED);
+      }
+    }
+  }
+
 
   @Test
   @Ignore("Blocking watch execution, useful only for development")

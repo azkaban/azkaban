@@ -940,6 +940,16 @@ public class ExecutionFlowDaoTest {
     assertThat(flow.getVersionSet().getImageToVersionMap()).isEqualTo(fetchFlow.getVersionSet().getImageToVersionMap());
   }
 
+  /**
+   * Test generating a string representing terminating flow statuses
+   * @throws Exception
+   */
+  @Test
+  public void testGetTerminatingStatusesString() throws Exception {
+    final String target = "50, 60, 65, 70";
+    Assert.assertTrue(this.fetchActiveFlowDao.getTerminatingStatusesString().equals(target));
+  }
+
   /*
    * Updates flow execution status in the DB. After this the value of the status column will be
    * different from the status property in the flow data blob.

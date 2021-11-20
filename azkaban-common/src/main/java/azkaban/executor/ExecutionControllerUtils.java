@@ -303,7 +303,7 @@ public class ExecutionControllerUtils {
             if (finalFlowStatus == Status.KILLED) {
               // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
               node.setStatus(Status.KILLED);
-            } else if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
+            } else if (finalFlowStatus == Status.EXECUTION_STOPPED) {
               // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to
               // KILLED.
               node.setStatus(Status.KILLED);
