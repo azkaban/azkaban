@@ -26,12 +26,15 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -170,6 +173,16 @@ public class FetchActiveFlowDao {
     }
   }
 
+  /**
+   * Generates a string representing terminating flow status num values: "50, 60, 65, 70"
+   * @return
+   */
+  static String getTerminatingStatusesString () {
+    final List<Integer> list = Arrays.asList(Status.SUCCEEDED.getNumVal(),
+        Status.KILLED.getNumVal(), Status.EXECUTION_STOPPED.getNumVal(), Status.FAILED.getNumVal());
+    return StringUtils.join(list, ", ");
+  }
+
   @VisibleForTesting
   static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
@@ -182,9 +195,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")";
+            + getTerminatingStatusesString() + ")";
 
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =
@@ -194,9 +205,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")"
+            + getTerminatingStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
@@ -239,9 +248,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")";
+            + getTerminatingStatusesString() + ")";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -275,9 +282,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")"
+            + getTerminatingStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
