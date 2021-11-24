@@ -535,6 +535,7 @@ public class ContainerizedDispatchManagerTest {
    * This test tries to verify the the flow is finalized and restarted if the dispatch fails.
    * @throws Exception
    */
+  /* Disable testRestartFlow()
   @Test
   public void testRestartFlow() throws Exception {
     initializeContainerizedDispatchImpl();
@@ -554,6 +555,7 @@ public class ContainerizedDispatchManagerTest {
     assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
     verify(onExecutionEventListener).onExecutionEvent(this.flow1, Constants.RESTART_FLOW);
   }
+  */
 
   @NotThreadSafe
   private static class WrappedExecutorApiClient extends ExecutorApiClient {
