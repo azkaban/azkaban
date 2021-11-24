@@ -61,7 +61,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ContainerizedDispatchManagerTest {
@@ -536,7 +535,6 @@ public class ContainerizedDispatchManagerTest {
    * This test tries to verify the the flow is finalized and restarted if the dispatch fails.
    * @throws Exception
    */
-  @Ignore
   @Test
   public void testRestartFlow() throws Exception {
     initializeContainerizedDispatchImpl();

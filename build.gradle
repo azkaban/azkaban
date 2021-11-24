@@ -202,7 +202,6 @@ subprojects {
       // NOTE! For some reason anything more than 1 doesn't work well for azkaban build:
       // any maxParallelForks > 1 seems to make `./gradlew cleanTest test` ~4 times slower
       maxParallelForks = 1
-      maxHeapSize '2g'
     }
   }
 
@@ -255,7 +254,6 @@ if (System.env.TRAVIS == 'true') {
       // Reduce the memory pressure on the Travis CI to reduce build failures.
       maxParallelForks = 2
       minHeapSize = '128m'
-      maxHeapSize '2g'
     }
   }
 }
