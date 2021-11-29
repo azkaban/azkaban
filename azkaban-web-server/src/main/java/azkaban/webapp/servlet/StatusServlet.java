@@ -19,17 +19,13 @@ package azkaban.webapp.servlet;
 
 import azkaban.server.AzkabanAPI;
 import azkaban.webapp.StatusService;
-import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.introspect.VisibilityChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +45,12 @@ public class StatusServlet extends AbstractAzkabanServlet {
   protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
     try {
-      ObjectMapper objectMapper = getObjectMapper();
-      String status = objectMapper.writerWithDefaultPrettyPrinter()
-          .writeValueAsString(this.statusService.getStatus());
       resp.setContentType(AbstractAzkabanServlet.JSON_MIME_TYPE);
-      resp.getOutputStream().println(status);
+      resp.getOutputStream()
+          .println(new GsonBuilder()
+              .setPrettyPrinting()
+              .create()
+              .toJson(this.statusService.getStatus()));
       resp.setStatus(HttpServletResponse.SC_OK);
     } catch (final Exception e) {
       logger.error("Error!! while reporting status: ", e);
@@ -61,21 +58,6 @@ public class StatusServlet extends AbstractAzkabanServlet {
     } finally {
       resp.getOutputStream().close();
     }
-  }
-
-  @VisibleForTesting
-  public static ObjectMapper getObjectMapper() {
-    ObjectMapper objectMapper = new ObjectMapper();
-    VisibilityChecker<?> visibilityChecker = objectMapper.getDeserializationConfig()
-        .getDefaultVisibilityChecker()
-        .withCreatorVisibility(JsonAutoDetect.Visibility.NONE)
-        .withFieldVisibility(JsonAutoDetect.Visibility.NONE)
-        .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-        .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
-        .withSetterVisibility(JsonAutoDetect.Visibility.NONE);
-    objectMapper.setVisibilityChecker(visibilityChecker);
-    objectMapper.configure(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS, false);
-    return objectMapper;
   }
 
   @Override

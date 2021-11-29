@@ -13,7 +13,7 @@ Image Management API
 `Deepak Jaiswal <https://github.com/orgs/azkaban/people/djaiswal83>`_ ,
 `Aditya Sharma <https://github.com/orgs/azkaban/people/aditya1105>`_
 
-Ref: :ref:`ContainerizationDesignDoc`
+Ref: :ref:`containerization-design.rst`
 
 .. contents:: Table of Contents
   :local:
@@ -78,7 +78,7 @@ owner (these APIs will be provided later). ``GUEST`` role can have only read/get
 
 **Response:**
 
-.. code-block:: guess
+.. code-block::
 
   Status: 201 Created
   Header -> Location: /imageTypes/{id}
@@ -134,7 +134,7 @@ Following is the description of the versionState fields:
 
 **Response:**
 
-.. code-block:: guess
+.. code-block::
 
      Status: 201 Created
      Header -> Location: /imageVersions/{id}
@@ -179,13 +179,13 @@ should populate the optional parameter: **versionState**.
 
 **Example:**
 
-.. code-block:: guess
+.. code-block::
 
      GET /imageVersions?imageType=spark_job&imageVersion=1.1.0
 
 **Response:**
 
-.. code-block:: guess
+.. code-block::
 
      Status: 200 OK
      Returns the matching records
@@ -216,7 +216,7 @@ Update Image Version Metadata
 Update image version metadata such as state, path and description. Possible values for ``state`` are:
 ``NEW``, ``ACTIVE``, ``UNSTABLE`` or ``DEPRECATED``. The state will be updated during the process of ramp up.
 
-- **Method:** POST
+- **Method:** PATCH
 - **Request URL:** /imageVersions/{versionId}
 - **Request Body:**
 
@@ -248,17 +248,6 @@ Delete the image metadata for the given image version id. This API can be used t
 
 - **Method:** DELETE
 - **Request URL:** /imageVersions/{versionId}
-- **Request Parameters:**
-
-+-----------------+-------------+-------------------------------------------------------+
-|   Field Name    |     Type    |            Description                                |
-+=================+=============+=======================================================+
-| ``imageType``   | ``String``  | A registered imageType with Azkaban                   |
-+-----------------+-------------+-------------------------------------------------------+
-| ``forceDelete`` | ``Boolean`` | OPTIONAL Parameter. When set to ``true``, forcefully  |
-|                 |             | deletes image version and associated rampup plans.    |
-+-----------------+-------------+-------------------------------------------------------+
-
 
 /imageRampup
 ************
@@ -294,7 +283,7 @@ Create new Ramp-Up Plan
 
 .. _rampup-definition:
 
-.. code-block:: guess
+.. code-block::
 
    {
       "imageVersion": <major>.<minor>.<patch>,
@@ -338,7 +327,7 @@ Returns an active ramp-up plan for the specified image type if there is one.
 
 **Example:**
 
-.. code-block:: guess
+.. code-block::
 
      GET /imageRampup?imageType=spark
 
@@ -352,7 +341,7 @@ Only 1 active ramp-up plan is allowed per imageType at any given time. Hence, if
 has ``activatePlan`` set to false, the plan will be deactivated. If true, the plan is left active.
 Similarly, if ``forceActivatePlan`` is set to false, the plan will be deactivated.
 
-- **Method:** POST
+- **Method:** PATCH
 - **Request URL:** /imageRampup/{imageType}
 - **Request Body:**
 
@@ -419,7 +408,7 @@ imageType. Here is the ramp-up process:
    `Update ramp-up plan API <#update-rampup-plan>`_.
 #. The following flowchart ties in the ramp-up process.
 
-.. image:: figures/ImageMgmtFlowchart.jpeg
+.. image:: docs/figures/ImageMgmtFlowchart.jpeg
 
 Image owner wants to Ramp-up/Ramp-down an image version
 *******************************************************
@@ -431,7 +420,7 @@ The rules defined in `Create Ramp-up plan use case <#use-case-image-rammpup>`_ s
 **Example:** The following API call will change the ramp-up plan so that Azkaban will pick version: ``1.3``, 40%
 of the times and ``1.2.1``, 60% of the times.
 
-.. code-block:: guess
+.. code-block::
 
   PATCH /image_rampup/SparkJobRampupPlan --body
     {

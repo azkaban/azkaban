@@ -16,7 +16,6 @@
 
 package azkaban.utils;
 
-import azkaban.DispatchMethod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryYamlFlowLoader;
@@ -43,7 +42,7 @@ public class TestUtils {
 
   /* Helper method to create an ExecutableFlow from serialized description */
   public static ExecutableFlow createTestExecutableFlow(final String projectName,
-      final String flowName, final DispatchMethod dispatchMethod) throws IOException {
+      final String flowName) throws IOException {
     final File jsonFlowFile = ExecutionsTestUtil.getFlowFile(projectName, flowName + ".flow");
     final HashMap<String, Object> flowObj =
         (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
@@ -54,7 +53,7 @@ public class TestUtils {
     flowMap.put(flow.getId(), flow);
     project.setFlows(flowMap);
     final ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-    execFlow.setDispatchMethod(dispatchMethod);
+
     return execFlow;
   }
 

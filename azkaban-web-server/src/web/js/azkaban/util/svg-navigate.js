@@ -23,7 +23,7 @@
     target.mx = evt.clientX;
     target.my = evt.clientY;
     target.mDown = false;
-  };
+  }
 
   var mouseDown = function (evt) {
     if (evt.button > 1) {
@@ -34,14 +34,14 @@
     target.mx = evt.clientX;
     target.my = evt.clientY;
     target.mDown = true;
-  };
+  }
 
   var mouseOut = function (evt) {
     var target = evt.target;
     target.mx = evt.clientX;
     target.my = evt.clientY;
     target.mDown = false;
-  };
+  }
 
   var mouseMove = function (evt) {
     var target = evt.target;
@@ -56,11 +56,11 @@
 
     target.mx = evt.clientX;
     target.my = evt.clientY;
-  };
+  }
 
   var mouseDrag = function (evt) {
     translateDeltaGraph(evt.target, evt.dragX, evt.dragY);
-  };
+  }
 
   var mouseScrolled = function (evt) {
     if (!evt) {
@@ -113,7 +113,7 @@
     evt.preventDefault();
 
     scaleGraph(target, scale, x, y);
-  };
+  }
 
   this.boundZoomLevel = function (target, level) {
     if (level >= target.settings.zoomNumLevels) {
@@ -122,8 +122,9 @@
     else if (level <= 0) {
       return 0;
     }
+
     return level;
-  };
+  }
 
   this.scaleGraph = function (target, scale, x, y) {
     var sfactor = scale / target.scale;
@@ -136,7 +137,7 @@
       target.model.trigger("scaled");
     }
     retransform(target);
-  };
+  }
 
   this.translateDeltaGraph = function (target, x, y) {
     target.translateX += x;
@@ -145,12 +146,13 @@
       target.model.trigger("panned");
     }
     retransform(target);
-  };
+  }
 
   this.retransform = function (target) {
     var gs = target.childNodes;
 
-    var transformString = "translate(" + target.translateX + "," + target.translateY +
+    var transformString = "translate(" + target.translateX + ","
+        + target.translateY +
         ") scale(" + target.scale + ")";
 
     for (var i = 0; i < gs.length; ++i) {
@@ -173,7 +175,7 @@
         obj.y2 = obj.y1 + obj.height * obj.scale;
       }
     }
-  };
+  }
 
   this.resetTransform = function (target) {
     var settings = target.settings;
@@ -201,7 +203,7 @@
       target.zoomIndex = boundZoomLevel(target, settings.zoomIndex);
       target.scale = target.zoomLevels[target.zoomIndex];
     }
-  };
+  }
 
   this.animateTransform = function (target, scale, x, y, duration) {
     var zoomLevel = calculateZoomLevel(scale, target.zoomLevels);
@@ -217,7 +219,7 @@
     target.endTime = target.startTime + duration;
 
     this.animateTick(target);
-  };
+  }
 
   this.animateTick = function (target) {
     var time = new Date().getTime();
@@ -225,7 +227,8 @@
       var timeDiff = time - target.startTime;
       var progress = timeDiff / (target.endTime - target.startTime);
 
-      target.scale = (target.toScale - target.fromScale) * progress + target.fromScale;
+      target.scale = (target.toScale - target.fromScale) * progress
+          + target.fromScale;
       target.translateX = (target.toX - target.fromX) * progress + target.fromX;
       target.translateY = (target.toY - target.fromY) * progress + target.fromY;
       retransform(target);
@@ -240,7 +243,7 @@
       target.translateY = target.toY;
       retransform(target);
     }
-  };
+  }
 
   this.calculateZoomScale = function (scaleLevel, numLevels, points) {
     if (scaleLevel <= 0) {
@@ -256,7 +259,7 @@
     var b = factor - floorIdx;
 
     return b * (points[ceilingIdx] - points[floorIdx]) + points[floorIdx];
-  };
+  }
 
   this.calculateZoomLevel = function (scale, zoomLevels) {
     if (scale >= zoomLevels[zoomLevels.length - 1]) {
@@ -280,7 +283,7 @@
     }
 
     return i;
-  };
+  }
 
   var methods = {
     init: function (options) {
@@ -330,7 +333,6 @@
       var y = arguments.y;
       var factor = 0.9;
       var duration = arguments.duration;
-      if (typeof duration === 'undefined') duration = 500;
 
       var width = arguments.width ? arguments.width : 1;
       var height = arguments.height ? arguments.height : 1;
@@ -341,8 +343,9 @@
       var aspectRatioGraph = height / width;
       var aspectRatioDiv = divHeight / divWidth;
 
-      var scale = aspectRatioGraph > aspectRatioDiv ?
-        (divHeight / height) * factor : (divWidth / width) * factor;
+      var scale = aspectRatioGraph > aspectRatioDiv
+          ? (divHeight / height) * factor
+          : (divWidth / width) * factor;
 
       if (arguments.maxScale) {
         if (scale > arguments.maxScale) {
@@ -361,6 +364,11 @@
 
       var sx = (divWidth - scaledWidth) / 2 - scale * x;
       var sy = (divHeight - scaledHeight) / 2 - scale * y;
+      console.log("sx,sy:" + sx + "," + sy);
+
+      if (duration != 0 && !duration) {
+        duration = 500;
+      }
 
       animateTransform(target, scale, sx, sy, duration);
     },

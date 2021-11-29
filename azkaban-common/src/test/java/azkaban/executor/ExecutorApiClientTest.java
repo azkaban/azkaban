@@ -18,11 +18,10 @@ package azkaban.executor;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_PORT;
-import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TLS_ENABLED;
-import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD;
-import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PATH;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CONNECTION_TLS_ENABLED;
+import static azkaban.Constants.JETTY_TRUSTSTORE_PASSWORD;
+import static azkaban.Constants.JETTY_TRUSTSTORE_PATH;
 
-import azkaban.DispatchMethod;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
@@ -37,11 +36,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
@@ -61,13 +58,12 @@ import org.mortbay.thread.QueuedThreadPool;
  */
 public class ExecutorApiClientTest {
 
-  public static final int JETTY_TLS_PORT = 31311;
-  public static final int JETTY_PORT = 54321;
-  public static final String TRUSTSTORE_PATH =
+  private static final int JETTY_TLS_PORT = 31311;
+  private static final String TRUSTSTORE_PATH =
       ExecutorApiClient.class.getResource("test-cacerts").getPath();
-  public static final String KEYSTORE_PATH =
+  private static final String KEYSTORE_PATH =
       ExecutorApiClient.class.getResource("test-keystore").getPath();
-  public static final String DEFAULT_PASSWORD = "changeit"; //for key, keystore and truststore
+  private static final String DEFAULT_PASSWORD = "changeit"; //for key, keystore and truststore
 
   public static final String REVERSE_PROXY_HOST = "reversehost";
   public static final int REVERSE_PROXY_PORT = 31234;
@@ -107,10 +103,10 @@ public class ExecutorApiClientTest {
   @BeforeClass
   public static void setUp() throws Exception {
     tlsEnabledProps = new Props();
-    tlsEnabledProps.put(EXECUTOR_CLIENT_TLS_ENABLED, "true");
+    tlsEnabledProps.put(EXECUTOR_CONNECTION_TLS_ENABLED, "true");
     tlsEnabledProps
-        .put(EXECUTOR_CLIENT_TRUSTSTORE_PATH, ExecutorApiClient.class.getResource("test-cacerts").getPath());
-    tlsEnabledProps.put(EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD, "changeit");
+        .put(JETTY_TRUSTSTORE_PATH, ExecutorApiClient.class.getResource("test-cacerts").getPath());
+    tlsEnabledProps.put(JETTY_TRUSTSTORE_PASSWORD, "changeit");
     setupTlsEnabledServer();
 
     validReverseProxyProps = new Props();
@@ -130,19 +126,8 @@ public class ExecutorApiClientTest {
   public void testPostResponse() throws Exception {
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
     final String postResponse = tlsEnabledClient
-        .doPost(new URI(SimpleServlet.TLS_ENABLED_URI), DispatchMethod.CONTAINERIZED, null);
+        .httpPost(new URI(SimpleServlet.TLS_ENABLED_URI), null);
     Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
-  }
-
-  @Test
-  public void testDoPostCall() throws Exception {
-    final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
-    ExecutorApiClient spyTlsEnabledClient = Mockito.spy(tlsEnabledClient);
-    final String postResponse = spyTlsEnabledClient
-            .doPost(new URI(SimpleServlet.TLS_ENABLED_URI), DispatchMethod.CONTAINERIZED, null);
-    Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
-    Mockito.verify(spyTlsEnabledClient, Mockito.times(1)).httpsPost(Mockito.any(), Mockito.any());
-    Mockito.verify(spyTlsEnabledClient, Mockito.times(0)).httpPost(Mockito.any(), Mockito.any());
   }
 
   @Test
@@ -151,7 +136,7 @@ public class ExecutorApiClientTest {
     // This is for sanity testing that TLS enabled http-client continues working as expected with
     // GET requests as well.
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
-    final HttpClient httpClient = tlsEnabledClient.createHttpsClient();
+    final HttpClient httpClient = tlsEnabledClient.createHttpClient();
     final HttpGet httpGet = new HttpGet(SimpleServlet.TLS_ENABLED_URI);
     final HttpResponse httpResponse = httpClient.execute(httpGet);
     Assert.assertNotNull(httpResponse);
@@ -179,7 +164,7 @@ public class ExecutorApiClientTest {
   @Test(expected = SSLHandshakeException.class)
   public void testFailureWithInvalidCerts() throws Exception {
     final Props tlsPropsWithInvalidCert = new Props(tlsEnabledProps);
-    tlsPropsWithInvalidCert.put(EXECUTOR_CLIENT_TRUSTSTORE_PATH,
+    tlsPropsWithInvalidCert.put(JETTY_TRUSTSTORE_PATH,
         ExecutorApiClient.class.getResource("invalid-cacerts").getPath());
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(tlsPropsWithInvalidCert);
 
@@ -232,7 +217,7 @@ public class ExecutorApiClientTest {
   @Test
   public void testBuildUriWithoutReverseProxy() throws  Exception {
     final ExecutorApiClient client = new ExecutorApiClient(new Props());
-    URI uri = client.buildExecutorUri("localhost", JETTY_TLS_PORT, "executor",true, null,
+    URI uri = client.buildExecutorUri("localhost", JETTY_TLS_PORT, "executor",true,
         (Pair<String,String>[])null);
     Assert.assertEquals("http://localhost:" + JETTY_TLS_PORT+ "/executor", uri.toString());
   }
@@ -240,20 +225,18 @@ public class ExecutorApiClientTest {
   @Test
   public void testBuildUriWithReverseProxy() throws Exception {
     final ExecutorApiClient client = new ExecutorApiClient(validReverseProxyProps);
-    URI uri = client.buildExecutorUri(null, 0, "execid-101/container",false, DispatchMethod.CONTAINERIZED,
+    URI uri = client.buildExecutorUri(null, 0, "execid-101/container",false,
         (Pair<String,String>[])null);
-    Assert.assertEquals("http://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
+    Assert.assertEquals("https://" + REVERSE_PROXY_HOST + ":" + REVERSE_PROXY_PORT +
             "/execid-101/container",
         uri.toString());
   }
 
-  public static class SimpleServlet extends HttpServlet {
+  private static class SimpleServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1520347403053074355L;
     public static final String TLS_ENABLED_URI =
         "https://localhost:" + ExecutorApiClientTest.JETTY_TLS_PORT + "/simple";
-    public static final String TLS_DISABLED_URI =
-        "http://localhost:" + ExecutorApiClientTest.JETTY_PORT + "/simple";
     public static final String GET_RESPONSE_STRING = "{type: 'GET'}";
     public static final String POST_RESPONSE_STRING = "{type: 'POST'}";
 
@@ -268,15 +251,5 @@ public class ExecutorApiClientTest {
         throws ServletException, IOException {
       resp.getWriter().print(this.POST_RESPONSE_STRING);
     }
-  }
-
-  /**
-   * This method is used to stop tls enabled jetty server.
-   *
-   * @throws Exception
-   */
-  @AfterClass
-  public static void stop() throws Exception {
-    tlsEnabledServer.stop();
   }
 }

@@ -194,14 +194,7 @@ public class Permission {
     // Users with this permission can upload projects when the property "lockdown.upload.projects"
     // is turned on
     UPLOADPROJECTS(0x0008000),
-    ADMIN(0x8000000),
-    // Permissions for image management APIs.
-    CREATE(0x0000100),
-    GET(0x0000200),
-    UPDATE(0x0000300),
-    DELETE(0x0000400),
-    IMAGE_TYPE_ADD_MEMBER(0x0000500),
-    IMAGE_TYPE_DELETE_MEMBER(0x0000600);
+    ADMIN(0x8000000);
 
     private final int numVal;
 

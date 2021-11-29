@@ -1,8 +1,0 @@
-{
-  "imagePath": "path_spark_job",
-  "imageVersion": "1.1.1",
-  "imageType": "spark_job",
-  "description": "spark job new version",
-  "versionState": "NEW",
-  "releaseTag": "1.2.0"
-}

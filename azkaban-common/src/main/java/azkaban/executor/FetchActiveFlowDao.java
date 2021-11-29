@@ -85,7 +85,7 @@ public class FetchActiveFlowDao {
       final boolean executorStatus = rs.getBoolean("executorStatus");
       executor = new Executor(executorId, host, port, executorStatus);
     }
-    final ExecutionReference ref = new ExecutionReference(exFlow.getExecutionId(), executor, exFlow.getDispatchMethod());
+    final ExecutionReference ref = new ExecutionReference(exFlow.getExecutionId(), executor);
     return new Pair<>(ref, exFlow);
   }
 

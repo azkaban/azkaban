@@ -17,60 +17,37 @@
 
 package azkaban.webapp;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import azkaban.executor.Executor;
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 
 /**
- * This is an abstract class for representing azkaban common status.
+ * This POJO is used by GSON library to create a status JSON object. Certain warnings do not apply
+ * here.
  */
-public abstract class Status {
-  @JsonProperty("version")
-  private final String version;
-  @JsonProperty("pid")
-  private final String pid;
-  @JsonProperty("installationPath")
-  private final String installationPath;
-  @JsonProperty("usedMemory")
-  private final long usedMemory;
-  @JsonProperty("xmx")
-  private final long xmx;
-  @JsonProperty("isDatabaseUp")
-  private final boolean isDatabaseUp;
+@SuppressWarnings({"FieldCanBeLocal", "unused"})
+public class Status {
 
-  public Status(final String version,
+  private final String version;
+  private final String pid;
+  private final String installationPath;
+  private final long usedMemory, xmx;
+  private final boolean isDatabaseUp;
+  private final Map<Integer, Executor> executorStatusMap;
+
+  Status(final String version,
       final String pid,
       final String installationPath,
       final long usedMemory,
       final long xmx,
-      final boolean isDatabaseUp) {
+      final boolean isDatabaseUp,
+      final Map<Integer, Executor> executorStatusMap) {
     this.version = version;
     this.pid = pid;
     this.installationPath = installationPath;
     this.usedMemory = usedMemory;
     this.xmx = xmx;
     this.isDatabaseUp = isDatabaseUp;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
-  public String getPid() {
-    return pid;
-  }
-
-  public String getInstallationPath() {
-    return installationPath;
-  }
-
-  public long getUsedMemory() {
-    return usedMemory;
-  }
-
-  public long getXmx() {
-    return xmx;
-  }
-
-  public boolean isDatabaseUp() {
-    return isDatabaseUp;
+    this.executorStatusMap = ImmutableMap.copyOf(executorStatusMap);
   }
 }

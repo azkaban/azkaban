@@ -65,6 +65,7 @@ azkaban.FlowTabView = Backbone.View.extend({
   },
 
   render: function () {
+    console.log("render graph");
   },
 
   handleGraphLinkClick: function () {
@@ -387,6 +388,7 @@ azkaban.SummaryView = Backbone.View.extend({
     };
 
     var successHandler = function (data) {
+      console.log(data);
       model.set({
         jobTypes: data.jobTypes,
         condition: data.condition
@@ -601,6 +603,7 @@ var initFlowPage = function (settings) {
     "flow": settings.flowId
   };
   var successHandler = function (data) {
+    console.log("data fetched");
     graphModel.addFlow(data);
     graphModel.trigger("change:graph");
 

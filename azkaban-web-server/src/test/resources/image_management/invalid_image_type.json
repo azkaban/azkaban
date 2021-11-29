@@ -1,6 +1,0 @@
-{
-  "imageType": "",
-  "description": "kafka push job",
-  "deployable": "IMAGE",
-  "ownerships":[{"owner":  "anath1", "role": "ADMIN"}]
-}

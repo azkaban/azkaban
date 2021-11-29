@@ -29,29 +29,28 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class VersionSetBuilder {
 
-  private final Map<String, VersionInfo> versionSetElements =
-      new TreeMap(String.CASE_INSENSITIVE_ORDER);
+  private final Map<String, String> versionSetElements = new TreeMap();
   private final VersionSetLoader loader;
 
-  public VersionSetBuilder(final VersionSetLoader loader) {
+  public VersionSetBuilder(VersionSetLoader loader) {
     this.loader = loader;
   }
 
-  public VersionSetBuilder addElement(final String key, final VersionInfo versionInfo) {
-    this.versionSetElements.put(key, versionInfo);
+  public VersionSetBuilder addElement(String key, String version) {
+    this.versionSetElements.put(key, version);
     return this;
   }
 
-  public VersionSetBuilder addElements(final Map<String, VersionInfo> keyVals) {
+  public VersionSetBuilder addElements(Map<String, String> keyVals) {
     this.versionSetElements.putAll(keyVals);
     return this;
   }
 
   public VersionSet build() throws IOException {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    final String versionSetJsonString = objectMapper.writeValueAsString(this.versionSetElements);
-    final String versionSetMd5Hex = DigestUtils.md5Hex(versionSetJsonString);
-    return this.loader.getVersionSet(versionSetMd5Hex, versionSetJsonString)
-        .orElse(null);  // null implies Exception was thrown by the Dao Layer
+    ObjectMapper objectMapper = new ObjectMapper();
+    String versionSetJsonString = objectMapper.writeValueAsString(versionSetElements);
+    String versionSetMd5Hex = DigestUtils.md5Hex(versionSetJsonString);
+    int versionSetId = this.loader.getVersionSetId(versionSetMd5Hex, versionSetJsonString);
+    return new VersionSet(versionSetJsonString, versionSetMd5Hex, versionSetId);
   }
 }

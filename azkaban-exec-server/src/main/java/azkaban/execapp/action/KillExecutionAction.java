@@ -17,9 +17,7 @@
 package azkaban.execapp.action;
 
 import azkaban.Constants;
-import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
-import azkaban.container.FlowContainer;
 import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.TriggerAction;
 import java.util.HashMap;
@@ -36,27 +34,10 @@ public class KillExecutionAction implements TriggerAction {
 
   private final String actionId;
   private final int execId;
-  private final DispatchMethod dispatchMethod;
 
-  @Deprecated
   public KillExecutionAction(final String actionId, final int execId) {
     this.execId = execId;
     this.actionId = actionId;
-    // If no dispatch method is provided then fallback to push
-    this.dispatchMethod = DispatchMethod.PUSH;
-  }
-
-  /**
-   * Constructor with dispatchMethod
-   * @param actionId the type of action
-   * @param execId the flow execution id
-   * @param dispatchMethod the dispatch method used
-   */
-  public KillExecutionAction(final String actionId, final int execId,
-      final DispatchMethod dispatchMethod) {
-    this.execId = execId;
-    this.actionId = actionId;
-    this.dispatchMethod = dispatchMethod;
   }
 
   public static KillExecutionAction createFromJson(final Object obj) {
@@ -102,14 +83,8 @@ public class KillExecutionAction implements TriggerAction {
   @Override
   public void doAction() throws Exception {
     logger.info("ready to kill execution " + this.execId);
-    if (dispatchMethod == DispatchMethod.CONTAINERIZED) {
-      ServiceProvider.SERVICE_PROVIDER.getInstance(FlowContainer.class)
-          .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
-    } else {
-      // Regular execution
-      ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class)
-          .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
-    }
+    ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class)
+        .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
   }
 
   @Override

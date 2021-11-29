@@ -20,27 +20,6 @@
   -khtml-user-select: none;
   -webkit-user-select: none;
   user-select: none;
-
-
-  .btn-external {
-    padding: 5px 10px;
-    margin: 0 5px;
-    word-break: break-all;
-    font-size: 12px;
-    line-height: 1.5;
-    border-radius: 3px;
-    &:hover, &:focus {
-      color: #ffffff;
-      text-decoration: none;
-      border-color: #39b3d7;
-      background-color: #269abc;
-    }
-  }
-
-  .btn-external.disabled {
-    pointer-events: auto;
-    cursor: not-allowed;
-  }
 }
 
 #flow-executing-graph {
@@ -76,10 +55,6 @@
 
   &.SUCCEEDED {
     background-color: @flow-succeeded-color;
-  }
-
-  &.EXECUTION_STOPPED {
-    background-color: @flow-failed-color;
   }
 
   &.FAILED {
@@ -148,10 +123,6 @@ td {
       background-color: @flow-succeeded-color;
     }
 
-    &.EXECUTION_STOPPED {
-      background-color: @flow-failed-color;
-    }
-
     &.FAILED {
       background-color: @flow-failed-color;
     }
@@ -217,10 +188,6 @@ td {
 
   &.PAUSED {
     color: @flow-paused-color;
-  }
-
-  &.EXECUTION_STOPPED {
-    color: @flow-failed-color;
   }
 
   &.FAILED {
@@ -376,10 +343,6 @@ li.tree-list-item {
       background-position: 48px 0px;
     }
 
-    &.EXECUTION_STOPPED .icon {
-      background-position: 0px 0px;
-    }
-
     &.FAILED .icon {
       background-position: 0px 0px;
     }
@@ -445,4 +408,18 @@ li.tree-list-item {
 .expandallarrow .glyphicon-chevron-down:first-child {
   position: absolute;
   top: -3px;
+}
+
+#analyzerButton {
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+
+  &:hover, &:focus {
+    color: #ffffff;
+    text-decoration: none;
+    border-color: #39b3d7;
+    background-color: #269abc;
+  }
 }

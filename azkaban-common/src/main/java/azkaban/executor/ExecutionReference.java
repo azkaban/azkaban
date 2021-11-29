@@ -16,15 +16,12 @@
 
 package azkaban.executor;
 
-import azkaban.DispatchMethod;
-
 import java.util.Optional;
 import javax.annotation.Nullable;
 
 public class ExecutionReference {
 
   private final int execId;
-  private final DispatchMethod dispatchMethod;
   private Executor executor;
   //Todo jamiesjc: deprecate updateTime in ExecutionReference class gradually.
   private long updateTime;
@@ -32,15 +29,13 @@ public class ExecutionReference {
   private int numErrors = 0;
 
 
-  public ExecutionReference(final int execId, final DispatchMethod dispatchMethod) {
+  public ExecutionReference(final int execId) {
     this.execId = execId;
-    this.dispatchMethod = dispatchMethod;
   }
 
-  public ExecutionReference(final int execId, @Nullable final Executor executor, final DispatchMethod dispatchMethod) {
+  public ExecutionReference(final int execId, @Nullable final Executor executor) {
     this.execId = execId;
     this.executor = executor;
-    this.dispatchMethod = dispatchMethod;
   }
 
   public long getUpdateTime() {
@@ -77,9 +72,5 @@ public class ExecutionReference {
 
   public void setExecutor(final @Nullable Executor executor) {
     this.executor = executor;
-  }
-
-  public DispatchMethod getDispatchMethod() {
-    return this.dispatchMethod;
   }
 }

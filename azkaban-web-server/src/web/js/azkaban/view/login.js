@@ -25,7 +25,6 @@ azkaban.LoginView = Backbone.View.extend({
 
   initialize: function (settings) {
     $('#error-msg').hide();
-    $('#username').focus();
   },
 
   handleLogin: function (evt) {

@@ -21,9 +21,5 @@ public enum EventType {
   JOB_PROPERTY_OVERRIDDEN,
   // User login/logout event types:
   USER_LOGIN,
-  USER_LOGOUT;
-
-  public boolean isFlowEventType() {
-    return this == FLOW_STARTED || this == FLOW_FINISHED || this == FLOW_STATUS_CHANGED;
-  }
+  USER_LOGOUT
 }

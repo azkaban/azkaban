@@ -83,7 +83,7 @@ public abstract class RestfulApiClient<T> {
   /**
    * helper function to fill  the request with header entries and posting body .
    */
-  protected static HttpEntityEnclosingRequestBase completeRequest(
+  private static HttpEntityEnclosingRequestBase completeRequest(
       final HttpEntityEnclosingRequestBase request,
       final List<Pair<String, String>> params) throws UnsupportedEncodingException {
     if (request != null) {

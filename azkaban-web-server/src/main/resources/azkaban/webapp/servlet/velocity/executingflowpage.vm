@@ -33,7 +33,7 @@
   <script type="text/javascript" src="${context}/js/azkaban/util/job-list-common.js?v=1570835891"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js?v=1570835891"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-trigger-list.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1624913123"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1569610022"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/exflow.js?v=1579310616"></script>
   <script type="text/javascript">
@@ -47,7 +47,6 @@
     var flowId = "${flowid}";
     var execId = "${execid}";
     var triggerInstanceId = "${triggerInstanceId}";
-    var graphDepth = "${azkaban_depth}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
@@ -98,25 +97,13 @@
   <div class="page-breadcrumb">
     <div class="container-full">
       <ol class="breadcrumb">
-        <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
-
-        #set($ref = "${context}/manager?project=${projectName}&flow=")
-        #foreach( $flow in ${flowlist} )
-          #set($ref = $ref + $flow)
-
-          #if( $foreach.first )
-            #set($flowlabel = "Flow")
-            #set($linkclass = "")
-          #else
-            #set($flowlabel = "")
-            #set($linkclass = "flowlink")
-          #end
-
-          <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
-
-          #set($ref = $ref + ${pathDelimiter})
-        #end
-
+        <li><a
+            href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName
+        </a></li>
+        <li><a
+            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong>
+          $flowid
+        </a></li>
         <li class="active"><strong>Execution</strong> $execid</li>
       </ol>
     </div>
@@ -134,19 +121,10 @@
       <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
       <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
       <li id="statsViewLink"><a href="#stats">Stats</a></li>
-      #foreach ($analyzer in $externalAnalyzers)
-        #if (!${analyzer.isLinkUrlValid()})
-          #set($title = "Execution is not analyzable in ${analyzer.getLabel()} at the moment.")
-          #set($isDisabled = "disabled")
-        #else
-          #set($title = "Analyze execution in ${analyzer.getLabel()}")
-          #set($isDisabled = "")
-        #end
-        #set($id = "analyzerButton${analyzer.getTopic()}")
-        <li><a id="${id}" href="${analyzer.getLinkUrl()}"
-               class="btn btn-info btn-sm btn-external ${isDisabled}"
+      #if ($executionExternalLinkURL)
+        <li><a id="analyzerButton" href="${executionExternalLinkURL}" class="btn btn-info btn-sm"
                type="button" target="_blank"
-               title="${title}">${analyzer.getLabel()}</a>
+               title="Analyze job in ${executionExternalLinkLabel}">${executionExternalLinkLabel}</a>
         </li>
       #end
       <li class="nav-button pull-right">

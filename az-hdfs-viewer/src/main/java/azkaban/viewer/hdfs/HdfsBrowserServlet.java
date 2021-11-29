@@ -133,17 +133,9 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     return hadoopSecurityManager;
   }
 
-  /**
-   * This method is used to get file system as proxy user. Real Identity is passed for audit
-   * purpose.
-   * @param realIdentity
-   * @param proxyUser
-   * @return
-   * @throws HadoopSecurityManagerException
-   */
-  private FileSystem getFileSystem(final String realIdentity, final String proxyUser)
+  private FileSystem getFileSystem(final String username)
       throws HadoopSecurityManagerException {
-    return this.hadoopSecurityManager.getFSAsUser(realIdentity, proxyUser);
+    return this.hadoopSecurityManager.getFSAsUser(username);
   }
 
   private void errorPage(final String user, final HttpServletRequest req,
@@ -165,16 +157,10 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     this.writeJSON(resp, ret);
   }
 
-  /**
-   * This method will give proxy user if it is set otherwise logged in user from session.
-   * @param req
-   * @param session
-   * @return
-   * @throws ServletException
-   */
   private String getUsername(final HttpServletRequest req, final Session session)
       throws ServletException {
-    String username = getLoggedInUser(session);
+    final User user = session.getUser();
+    String username = user.getUserId();
     if (this.allowGroupProxy) {
       final String proxyName =
           (String) session.getSessionData(PROXY_USER_SESSION_KEY);
@@ -188,29 +174,18 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
-    final String proxyUser = getUsername(req, session);
-    String loggedInUser = getLoggedInUser(session);
+    final String username = getUsername(req, session);
     final boolean ajax = hasParam(req, "ajax");
     try {
       if (ajax) {
-        handleAjaxAction(loggedInUser, proxyUser, req, resp, session);
+        handleAjaxAction(username, req, resp, session);
       } else {
-        handleFsDisplay(loggedInUser, proxyUser, req, resp, session);
+        handleFsDisplay(username, req, resp, session);
       }
     } catch (final Exception e) {
       throw new IllegalStateException("Error processing request: "
           + e.getMessage(), e);
     }
-  }
-
-  /**
-   * This method will return logged in user from session.
-   * @param session
-   * @return
-   */
-  private String getLoggedInUser(Session session) {
-    final User user = session.getUser();
-    return user.getUserId();
   }
 
   @Override
@@ -271,15 +246,14 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     return homeDirString.substring(fs.getUri().toString().length());
   }
 
-  private void handleFsDisplay(final String loggedInUser, final String proxyUser,
-      final HttpServletRequest req,
+  private void handleFsDisplay(final String user, final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws IOException,
       ServletException, IllegalArgumentException, IllegalStateException {
     FileSystem fs = null;
     try {
-      fs = getFileSystem( loggedInUser, proxyUser);
+      fs = getFileSystem(user);
     } catch (final HadoopSecurityManagerException e) {
-      errorPage(proxyUser, req, resp, session, "Cannot get FileSystem.");
+      errorPage(user, req, resp, session, "Cannot get FileSystem.");
       return;
     }
 
@@ -290,7 +264,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
 
     try {
       if (!fs.exists(path)) {
-        errorPage(proxyUser, req, resp, session, path.toUri().getPath()
+        errorPage(user, req, resp, session, path.toUri().getPath()
             + " does not exist.");
         fs.close();
         return;
@@ -298,7 +272,7 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     } catch (final IOException ioe) {
       logger.error("Got exception while checking for existence of path '"
           + path + "'", ioe);
-      errorPage(proxyUser, req, resp, session, path.toUri().getPath()
+      errorPage(user, req, resp, session, path.toUri().getPath()
           + " Encountered error while trying to detect if path '" + path
           + "' exists. Reason: " + ioe.getMessage());
       fs.close();
@@ -306,11 +280,11 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     }
 
     if (fs.isFile(path)) {
-      displayFilePage(fs, proxyUser, req, resp, session, path);
+      displayFilePage(fs, user, req, resp, session, path);
     } else if (fs.getFileStatus(path).isDir()) {
-      displayDirPage(fs, proxyUser, req, resp, session, path);
+      displayDirPage(fs, user, req, resp, session, path);
     } else {
-      errorPage(proxyUser, req, resp, session,
+      errorPage(user, req, resp, session,
           "It exists, it is not a file, and it is not a directory, what "
               + "is it precious?");
     }
@@ -407,15 +381,14 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleAjaxAction(final String loggedInUser, final String proxyUser,
-      final HttpServletRequest request,
+  private void handleAjaxAction(final String username, final HttpServletRequest request,
       final HttpServletResponse response, final Session session) throws ServletException,
       IOException {
     Map<String, Object> ret = new HashMap<>();
     FileSystem fs = null;
     try {
       try {
-        fs = getFileSystem( loggedInUser, proxyUser);
+        fs = getFileSystem(username);
       } catch (final HadoopSecurityManagerException e) {
         errorAjax(response, ret, "Cannot get FileSystem.");
         return;

@@ -15,12 +15,10 @@
  */
 package azkaban.executor;
 
-import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -243,14 +241,14 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to get those flows which are stale. Staleness is determined based on the
-   * validity of the status.
-   * @param status
+   * Fetch stale flows. A flow is considered stale if it was started more than {@code
+   * executionDuration} ago and is not yet in a final state.
+   *
+   * @param executionDuration
    * @return
    * @throws ExecutorManagerException
    */
-  List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status, final ImmutableMap<Status, Pair<Duration,
-      String>> validityMap)
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
       throws ExecutorManagerException;
 
   List<ExecutableFlow> fetchAgedQueuedFlows(
@@ -311,10 +309,10 @@ public interface ExecutorLoader {
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
 
-  int selectAndUpdateExecution(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
+  int selectAndUpdateExecution(final int executorId, boolean isActive)
       throws ExecutorManagerException;
 
-  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
+  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
       throws ExecutorManagerException;
 
   /**
@@ -330,7 +328,7 @@ public interface ExecutorLoader {
    * @throws ExecutorManagerException
    */
   Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, final int limit,
-      Status updatedStatus, final DispatchMethod dispatchMethod) throws ExecutorManagerException;
+      Status updatedStatus) throws ExecutorManagerException;
 
   ExecutableRampMap fetchExecutableRampMap()
       throws ExecutorManagerException;
@@ -355,14 +353,4 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException;
-
-  /**
-   * Update version set id for the given execution id.
-   * @param executionId
-   * @param versionSetId
-   * @return int
-   * @throws ExecutorManagerException
-   */
-  int updateVersionSetId(final int executionId, final int versionSetId)
-      throws ExecutorManagerException;
 }

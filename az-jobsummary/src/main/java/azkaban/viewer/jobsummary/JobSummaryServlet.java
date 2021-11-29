@@ -38,7 +38,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
-import azkaban.Constants;
 
 
 public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
@@ -131,8 +130,6 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
 
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
-    page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
-    page.add("pathDelimiter", Constants.PATH_DELIMITER);
     page.add("parentflowid", node.getParentFlow().getFlowId());
     page.add("jobname", node.getId());
     page.add("attemptStatus", attempt == node.getAttempt() ?

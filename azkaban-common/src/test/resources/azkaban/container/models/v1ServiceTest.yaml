@@ -7,7 +7,7 @@ metadata:
       apiVersion: ambassador/v2
       kind:  Mapping
       name: fc-mapping-12345
-      prefix: /12345/
+      prefix: /12345
       service: fc-svc-12345:54343
       rewrite: /
       timeout_ms: 60000
@@ -17,6 +17,6 @@ spec:
   ports:
   - name: flowport
     port: 54343
-    targetPort: 54343
+    targetPort: flowport
   selector:
     service: flow-12345

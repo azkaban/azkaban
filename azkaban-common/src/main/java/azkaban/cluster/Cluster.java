@@ -18,10 +18,9 @@ package azkaban.cluster;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
-import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -106,7 +105,7 @@ public class Cluster {
           final List<URL> clusterUrls;
           try {
             clusterUrls = getClusterComponentURLs(hadoopSecurityManagerDependencyComponents);
-          } catch (final IOException e) {
+          } catch (MalformedURLException e) {
             throw new IllegalArgumentException(
                 String.format("Invalid dependency components for " +
                     HadoopSecurityManagerClassLoader.class.getName() + " of cluster %s", clusterId));
@@ -157,7 +156,7 @@ public class Cluster {
    * Get library URLs for a given set of components.
    */
   public List<URL> getClusterComponentURLs(final Collection<String> components)
-      throws IOException {
+      throws MalformedURLException {
     final List<URL> urls = new ArrayList<>();
     final Map<String, String> componentClasspath = this.properties.getMapByPrefix(
         Cluster.LIBRARY_PATH_PREFIX);
@@ -177,30 +176,23 @@ public class Cluster {
   }
 
   private List<URL> getResourcesFromClasspath(final String clusterLibraryPath)
-      throws IOException {
+      throws MalformedURLException {
     final List<URL> resources = new ArrayList<>();
 
     if (Strings.isNullOrEmpty(clusterLibraryPath)) {
       return resources;
     }
 
-    // The syntax of a library path follows the pattern allowed by java's -cp option
-    // (e.g. /export/apps/A/*:/export/apps/A/conf:/export/apps/B/x.jar). Paths to
-    // individual jar files (e.g. /export/apps/B/x.jar) are resolved if they are symlinks.
-    // Paths to directories (e.g. /export/apps/A/conf, /export/apps/A/*) are expanded
-    // to include every jars files directly underneath the directory (not recursively
-    // expanded) and resolved from symlinks.
     for (String path : clusterLibraryPath.split(PATH_DELIMITER)) {
-      // strip the trailing * character from the path, if any
-      path = path.replaceAll("\\*$", "");
-      // remove any symbolic links on the path
-      final File file = Paths.get(path).toFile().getCanonicalFile();
+      final File file = new File(path);
       if (file.isFile()) {
         if (!shouldBeExcluded(file)) {
           resources.add(file.toURI().toURL());
         }
       } else {
-        final File folder = file;
+        // strip the trailing * character from the path
+        path = path.replaceAll("\\*$", "");
+        final File folder = new File(path);
         if (folder.exists()) {
           resources.add(folder.toURI().toURL());
           for (final File jar : folder.listFiles()) {

@@ -27,18 +27,15 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '3.2'
+  id 'com.gradle.build-scan' version '1.9'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
 
-// https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-    }
+buildScan {
+  licenseAgreementUrl = 'https://gradle.com/terms-of-service'
+  licenseAgree = 'yes'
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
@@ -57,7 +54,7 @@ allprojects {
     mavenLocal()
 //  need this for rest.li/pegasus 28.* artifacts until they are in Maven Central:
     maven {
-      url 'https://linkedin.jfrog.io/artifactory/open-source/'
+      url 'https://linkedin.bintray.com/maven'
     }
   }
 }
@@ -65,7 +62,7 @@ allprojects {
 ext.versions = [hadoop: '2.10.0',
                 hive  : '1.1.0',
                 pig   : '0.11.0',
-                restli: '29.16.0',
+                restli: '28.3.11',
                 slf4j : '1.7.18',]
 
 ext.deps = [
@@ -99,8 +96,6 @@ ext.deps = [
     io                   : 'commons-io:commons-io:2.4',
     jacksonCoreAsl       : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
     jacksonMapperAsl     : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
-    javaxElApi           : 'javax.el:javax.el-api:3.0.0',
-    javaxEl              : 'org.glassfish:javax.el:3.0.0',
     jetty                : 'org.mortbay.jetty:jetty:6.1.26',
     jettyUtil            : 'org.mortbay.jetty:jetty-util:6.1.26',
     jexl                 : 'org.apache.commons:commons-jexl:2.1.1',
@@ -113,13 +108,13 @@ ext.deps = [
     log4j                : 'log4j:log4j:1.2.16',
     mail                 : 'javax.mail:mail:1.4.5',
     math3                : 'org.apache.commons:commons-math3:3.0',
-    metricsCore          : 'io.dropwizard.metrics:metrics-core:3.2.6',
-    metricsJvm           : 'io.dropwizard.metrics:metrics-jvm:3.2.6',
+    metricsCore          : 'io.dropwizard.metrics:metrics-core:3.1.0',
+    metricsJvm           : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
     mockito              : 'org.mockito:mockito-core:2.28.2',
     mongoDriver          : 'org.mongodb:mongo-java-driver:2.14.0',
-    mysqlConnector       : 'mysql:mysql-connector-java:8.0.20',
+    mysqlConnector       : 'mysql:mysql-connector-java:5.1.28',
     pig                  : 'org.apache.pig:pig:' + versions.pig,
-    parquetAvro          : 'com.twitter:parquet-avro:1.6.0',
+    parquetAvro          : 'com.twitter:parquet-avro:1.3.2',
     parquetBundle        : 'com.twitter:parquet-hadoop-bundle:1.3.2',
     powermock            : 'org.powermock:powermock-api-mockito2:2.0.2',
     powermockmodulejunit4: 'org.powermock:powermock-module-junit4:2.0.2',
@@ -139,10 +134,7 @@ ext.deps = [
     jacksonDatabind      : 'com.fasterxml.jackson.core:jackson-databind:2.7.4',
     jasypt               : 'org.jasypt:jasypt:1.9.2',
     jacksonCore          : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
-    jsonassert           : 'org.skyscreamer:jsonassert:1.5.0',
-    systemRules         : 'com.github.stefanbirkner:system-rules:1.19.0',
-    javaxValidation      : 'javax.validation:validation-api:2.0.1.Final',
-    hibernateValidator   : 'org.hibernate:hibernate-validator:6.1.5.Final']
+    jsonassert           : 'org.skyscreamer:jsonassert:1.5.0']
 
 subprojects {
   apply plugin: 'java'
@@ -202,7 +194,6 @@ subprojects {
       // NOTE! For some reason anything more than 1 doesn't work well for azkaban build:
       // any maxParallelForks > 1 seems to make `./gradlew cleanTest test` ~4 times slower
       maxParallelForks = 1
-      maxHeapSize '2g'
     }
   }
 
@@ -241,11 +232,8 @@ subprojects {
 }
 
 /**
- * Gradle wrapper task.
- * https://docs.gradle.org/5.2.1/userguide/gradle_wrapper.html#customizing_wrapper
- * https://stackoverflow.com/questions/53709282/cannot-add-task-wrapper-as-a-task-with-that-name-already-exists
- **/
-wrapper {
+ * Gradle wrapper task.*/
+task wrapper(type: Wrapper) {
   distributionType('ALL')
 }
 
@@ -255,7 +243,6 @@ if (System.env.TRAVIS == 'true') {
       // Reduce the memory pressure on the Travis CI to reduce build failures.
       maxParallelForks = 2
       minHeapSize = '128m'
-      maxHeapSize '2g'
     }
   }
 }

@@ -138,7 +138,7 @@ public class ExecutorHealthChecker {
         // Todo jamiesjc: add metrics to monitor the http call return time
         results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
-                ConnectorParams.PING_ACTION, null, null, null);
+                ConnectorParams.PING_ACTION, null, null);
       } catch (final ExecutorManagerException e) {
         healthcheckException = Optional.of(e);
       } catch (final RuntimeException re) {
@@ -184,8 +184,7 @@ public class ExecutorHealthChecker {
           String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
       try {
         ExecutionControllerUtils
-            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null,
-                Status.FAILED);
+            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
       } catch (RuntimeException e) {
         logger.error("Unchecked exception while finalizing execution: " + flow.getExecutionId(), e);
       }

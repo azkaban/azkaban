@@ -32,7 +32,6 @@ import azkaban.webapp.plugin.ViewerPlugin;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +70,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private String name;
   private String label;
   private String color;
-  private String depth;
 
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
@@ -116,7 +114,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     this.name = props.getString("azkaban.name", "");
     this.label = props.getString("azkaban.label", "");
     this.color = props.getString("azkaban.color", "#FF0000");
-    this.depth = props.getString("azkaban.depth", "2");
     this.passwordPlaceholder = props.getString("azkaban.password.placeholder", "Password");
     this.displayExecutionPageSize = props.getInt(ConfigurationKeys.DISPLAY_EXECUTION_PAGE_SIZE, 16);
 
@@ -293,7 +290,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
-    page.add("azkaban_depth", this.depth);
     page.add("note_type", NoteServlet.type);
     page.add("note_message", NoteServlet.message);
     page.add("note_url", NoteServlet.url);
@@ -346,7 +342,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", this.name);
     page.add("azkaban_label", this.label);
     page.add("azkaban_color", this.color);
-    page.add("azkaban_depth", this.depth);
     page.add("note_type", NoteServlet.type);
     page.add("note_message", NoteServlet.message);
     page.add("note_url", NoteServlet.url);
@@ -434,30 +429,4 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     }
     return Optional.empty();
   }
-
-  protected void sendErrorResponse (HttpServletResponse httpServletResponse, int status,
-      String errorMessage) throws IOException {
-    final Map<String, Object> responseObj = new HashMap<>();
-    responseObj.put("error", status);
-    responseObj.put("message", errorMessage);
-    httpServletResponse.setStatus(status);
-    writeJSON(httpServletResponse, responseObj, true);
-  }
-
-  protected void sendResponse(HttpServletResponse httpServletResponse, int status,
-      Object responseObj) throws IOException {
-    httpServletResponse.setStatus(status);
-    writeJSON(httpServletResponse, responseObj, true);
-  }
-
-  protected void sendResponse (HttpServletResponse httpServletResponse, int status,
-      String errorMessage, Object response) throws IOException {
-    final Map<String, Object> responseObj = new LinkedHashMap<>();
-    responseObj.put("error", status);
-    responseObj.put("message", errorMessage);
-    responseObj.put("response", response);
-    httpServletResponse.setStatus(status);
-    writeJSON(httpServletResponse, responseObj, true);
-  }
-
 }

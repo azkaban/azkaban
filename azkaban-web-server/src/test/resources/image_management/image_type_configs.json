@@ -1,7 +1,0 @@
-{
-  "imageType": "configs",
-  "description": "configs",
-  "deployable": "TAR",
-  "ownerships":[{"owner":  "anath1", "role": "ADMIN"},
-                {"owner":  "apruthi", "role": "ADMIN"}]
-}

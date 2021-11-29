@@ -27,7 +27,7 @@ Authenticate
 
 -  **Method:** POST
 -  **Request URL:** /?action=login
--  **Parameter Location:** Request body
+-  **Parameter Location:** Request Query String
 
 This API helps authenticate a user and provides a ``session.id`` in
 response.
@@ -93,131 +93,6 @@ A sample response:
      "session.id" : "c001aba5-a90f-4daf-8f11-62330d034c0a"
    }
 
-.. _api-fetch-user-projects:
-
-Fetch user Projects
--------------------
-
-| The ajax API for listing all existing projects for a user, which is the
-  current user by default.
-| **Notice:** If the user name supplied does not exist, the call will
-  succeed and return a document where the projects value is an empty
-  list.
-
--  **Method:** GET
--  **Request URL:** /index?ajax=fetchuserprojects
--  **Parameter Location:** Request Query
-
-.. _request-parameters-1:
-
-**Request Parameters**
-~~~~~~~~~~~~~~~~~~~~~~
-
-+-----------------------------------+-----------------------------------+
-| Parameter                         | Description                       |
-+===================================+===================================+
-| session.id                        | The user session id.              |
-+-----------------------------------+-----------------------------------+
-| ajax=fetchuserprojects            | The fixed parameter indicating    |
-|                                   | the fetch user projects action.   |
-+-----------------------------------+-----------------------------------+
-| user (optional)                   | The user name for which to list   |
-|                                   | projects. By default, the user    |
-|                                   | for the session.id value.         |
-+-----------------------------------+-----------------------------------+
-
-**Response Object 1. (if the request succeeds):**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-+-----------------------------------+-----------------------------------+
-| Parameter                         | Description                       |
-+===================================+===================================+
-| projects                          | A list of project details.        |
-|                                   | **Structure:**                    |
-|                                   |                                   |
-|                                   | ::                                |
-|                                   |                                   |
-|                                   |    {                              |
-|                                   |      "projectId": numeric,        |
-|                                   |      "projectName": string,       |
-|                                   |      "createdBy": stringUserName, |
-|                                   |      "createdTime": numericMillis,|
-|                                   |      "userPermissions": {},       |
-|                                   |      "groupPermissions": {}       |
-|                                   |    }                              |
-|                                   |                                   |
-|                                   |                                   |
-|                                   | **Example values:** [{"projectId":|
-|                                   | 123, "projectName": "my_project", |
-|                                   | "createdBy" : "username",         |
-|                                   | "createdTime" : 1500671590922,    |
-|                                   | "userPermissions": {},            |
-|                                   | "groupPermissions": {}}]          |
-+-----------------------------------+-----------------------------------+
-
-
-**Response Object 2. (if the request fails):**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-+-----------+--------------------+
-| Parameter | Description        |
-+===========+====================+
-| message   | The error message. |
-+-----------+--------------------+
-| error     | The error name.    |
-+-----------+--------------------+
-
-Here's a curl command sample:
-
-.. code-block:: guess
-
-   curl -k -X GET https://localhost:8443/index?ajax=fetchuserprojects&user=alice&session.id=9089beb2-576d-47e3-b040-86dbdc7f523e
-
-A sample response:
-
-.. code-block:: guess
-
-   {
-     "projects": [
-       {
-         "projectId" : 123,
-         "projectName" : "alice-project",
-         "createdBy" : "alice",
-         "createdTime" : 1500671590922,
-         "userPermissions" : [ {
-           "first" : "alice",
-           "second" : {
-             "types" : [ "ADMIN" ]
-           }
-         } ],
-         "groupPermissions" : [ ]
-       },
-       {
-         "projectId" : 456,
-         "projectName" : "bob-project",
-         "createdBy" : "bob",
-         "createdTime" : 1566255237373,
-         "userPermissions" : [ {
-           "first" : "bob",
-           "second" : {
-             "types" : [ "ADMIN" ]
-           }
-         }, {
-           "first" : "alice",
-           "second" : {
-             "types" : [ "WRITE", "READ" ]
-           }
-         }, {
-           "first" : "carol",
-           "second" : {
-             "types" : [ "SCHEDULE", "EXECUTE", "WRITE", "READ" ]
-           }
-         } ],
-         "groupPermissions" : [ ]
-       }
-     ]
-   }
-
 .. _api-create-a-project:
 
 Create a Project
@@ -231,7 +106,7 @@ Create a Project
 -  **Request URL:** /manager?action=create
 -  **Parameter Location:** Request Query
 
-.. _request-parameters-2:
+.. _request-parameters-1:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -309,7 +184,7 @@ Delete a Project
 -  **Request URL:** /manager?delete=true
 -  **Parameter Location:** Request Query
 
-.. _request-parameters-3:
+.. _request-parameters-2:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -347,7 +222,7 @@ Upload a Project Zip
 -  **Request URL:** /manager?ajax=upload
 -  **Parameter Location:** Request Body
 
-.. _request-parameters-4:
+.. _request-parameters-3:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -411,7 +286,7 @@ project.
 -  **Request URL:** /manager?ajax=fetchprojectflows
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-5:
+.. _request-parameters-4:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -477,7 +352,7 @@ structure of those jobs.
 -  **Request URL:** /manager?ajax=fetchflowgraph
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-6:
+.. _request-parameters-5:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -578,7 +453,7 @@ pagination.
 -  **Request URL:** /manager?ajax=fetchFlowExecutions
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-7:
+.. _request-parameters-6:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -693,7 +568,7 @@ executions that are currently running.
 -  **Request URL:** /executor?ajax=getRunning
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-8:
+.. _request-parameters-7:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -747,11 +622,11 @@ This API executes a flow via an ajax call, supporting a rich selection
 of different options. Running an individual job can also be achieved via
 this API by disabling all other jobs in the same flow.
 
--  **Method:** POST
+-  **Method:** GET
 -  **Request URL:** /executor?ajax=executeFlow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-9:
+.. _request-parameters-8:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -867,7 +742,7 @@ Here is a curl command example:
 
 .. code-block:: guess
 
-   curl -k -X POST --data "session.id=189b956b-f39f-421e-9a95-e3117e7543c9&ajax=executeFlow&project=azkaban-test-project&flow=test" https://localhost:8443/executor
+   curl -k --get --data 'session.id=189b956b-f39f-421e-9a95-e3117e7543c9' --data 'ajax=executeFlow' --data 'project=azkaban-test-project' --data 'flow=test' https://localhost:8443/executor
 
 Sample response:
 
@@ -892,7 +767,7 @@ is not running, it will return an error message.
 -  **Request URL:** /executor?ajax=cancelFlow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-10:
+.. _request-parameters-9:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -940,7 +815,7 @@ This API call schedules a period-based flow.
 -  **Request URL:** /schedule?ajax=scheduleFlow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-11:
+.. _request-parameters-10:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1049,7 +924,7 @@ All cron schedules follow the timezone defined in azkaban web server
 -  **Request URL:** /schedule?ajax=scheduleCronFlow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-12:
+.. _request-parameters-11:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1129,7 +1004,7 @@ Given a project id and a flow id, this API call fetches the schedule.
 -  **Request URL:** /schedule?ajax=fetchSchedule
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-13:
+.. _request-parameters-12:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1202,7 +1077,7 @@ This API call unschedules a flow.
 -  **Request URL:** /schedule?action=removeSched
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-14:
+.. _request-parameters-13:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1256,7 +1131,7 @@ This API call sets a SLA.
 -  **Request URL:** /schedule?ajax=setSla
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-15:
+.. _request-parameters-14:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1318,7 +1193,7 @@ Given a schedule id, this API call fetches the SLA.
 -  **Request URL:** /schedule?ajax=slaInfo
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-16:
+.. _request-parameters-15:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1376,7 +1251,7 @@ is not running, it will return an error message.
 -  **Request URL:** /executor?ajax=pauseFlow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-17:
+.. _request-parameters-16:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1427,7 +1302,7 @@ execution is not running, it will return an error message.
 -  **Request URL:** /executor?ajax=resumeFlow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-18:
+.. _request-parameters-17:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1478,7 +1353,7 @@ executions.
 -  **Request URL:** /executor?ajax=fetchexecflow
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-19:
+.. _request-parameters-18:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1585,7 +1460,7 @@ be specified.
 -  **Request URL:** /executor?ajax=fetchExecJobLogs
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-20:
+.. _request-parameters-19:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1658,7 +1533,7 @@ afterwards.
 -  **Request URL:** /executor?ajax=fetchexecflowupdate
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-21:
+.. _request-parameters-20:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1780,7 +1655,7 @@ Given a project name, this API call fetches all logs of a project.
 -  **Request URL:** /manager?ajax=fetchProjectLogs
 -  **Parameter Location:** Request Query String
 
-.. _request-parameters-22:
+.. _request-parameters-4:
 
 **Request Parameters**
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1841,11 +1716,3 @@ A response sample:
   "project" : "azkaban-test-project",
   "projectId" : 1
 }
-
-.. _api-image-management-api:
-
-Image Management APIs
----------------------
-
-:ref:`image-mgmt-api`
-

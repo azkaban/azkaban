@@ -15,13 +15,8 @@
  */
 package azkaban.executor;
 
-import azkaban.Constants;
-import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
-import azkaban.imagemgmt.version.VersionSet;
-import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
-import azkaban.project.ProjectLoader;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
@@ -56,12 +51,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String EXECUTION_SOURCE = "executionSource";
-  public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
-  public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
-  public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
-  public static final String VERSIONSET_ID_PARAM = "versionSetId";
-  private static final String PARAM_OVERRIDE = "param.override.";
-
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -83,13 +72,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
   // For Flow_Status_Changed event
   private String failedJobId = "unknown";
   private String modifiedBy = "unknown";
-  private DispatchMethod dispatchMethod;
 
   // For slaOption information
   private String slaOptionStr = "null";
-
-  // For Flows dispatched from a k8s pod
-  private VersionSet versionSet;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -114,14 +99,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
     // overwrite status from the flow data blob as that one should NOT be used
     exFlow.setStatus(status);
     return exFlow;
-  }
-
-  public DispatchMethod getDispatchMethod() {
-    return this.dispatchMethod;
-  }
-
-  public void setDispatchMethod(final DispatchMethod dispatchMethod) {
-    this.dispatchMethod = dispatchMethod;
   }
 
   @Override
@@ -319,14 +296,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
-    flowObj.put(FLOW_DISPATCH_METHOD, getDispatchMethod().getNumVal());
-
-    if (this.versionSet != null) { //flow has version set information when the flow is executed
-      // in a container
-      flowObj.put(VERSIONSET_JSON_PARAM, this.versionSet.getVersionSetJsonString());
-      flowObj.put(VERSIONSET_MD5HEX_PARAM, this.versionSet.getVersionSetMd5Hex());
-      flowObj.put(VERSIONSET_ID_PARAM, this.versionSet.getVersionSetId());
-    }
 
     return flowObj;
   }
@@ -378,21 +347,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       this.slaOptionStr = slaBuilder.toString();
     }
 
-    if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
-      // Checks if flow contains version set information
-      final String versionSetJsonString = flowObj.getString(VERSIONSET_JSON_PARAM);
-      final String versionSetMd5Hex = flowObj.getString(VERSIONSET_MD5HEX_PARAM);
-      final int versionSetId = flowObj.getInt(VERSIONSET_ID_PARAM);
-      final VersionSet versionSet = new VersionSet(versionSetJsonString, versionSetMd5Hex,
-          versionSetId);
-      setVersionSet(versionSet);
-    }
-
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
-    // Dispatch Method default is POLL
-    this.setDispatchMethod(DispatchMethod.fromNumVal(flowObj.getInt(FLOW_DISPATCH_METHOD,
-        DispatchMethod.POLL.getNumVal())));
   }
 
   @Override
@@ -435,71 +391,17 @@ public class ExecutableFlow extends ExecutableFlowBase {
         .orElse(null);
   }
 
-  /**
-   * Setter of failed job id in the flow
-   * @param id
-   */
-  public void setFailedJobId(final String id) {
+  public void setFailedJobId(String id) {
      this.failedJobId = id;
   }
 
-  /**
-   * Getter of failed job id in the flow
-   * @return failedJobId
-   */
   public String getFailedJobId() {
     return failedJobId;
   }
 
-  /**
-   * Getter of user who modified the flow
-   * @return modifiedBy
-   */
   @Override
   public String getModifiedBy() { return modifiedBy; }
 
-  /**
-   * Setter of user who modified the flow
-   * @param id
-   */
   @Override
-  public void setModifiedBy(final String id) { this.modifiedBy = id; }
-
-  /**
-   * Getter of flow versionSet
-   * @return versionSet
-   */
-  public VersionSet getVersionSet() {
-    return this.versionSet;
-  }
-
-  /**
-   * Setter of flow versionSet
-   * @param versionSet
-   */
-  public void setVersionSet(final VersionSet versionSet) {
-    this.versionSet = versionSet;
-  }
-
-  /**
-   * Getter of flattened flow properties and flow params. This API takes lazy
-   * loading approach. If the properties are not set, then they are first set.
-   * @return Returns the flattened flow props overridden by flow params.
-   */
-  public void setFlowPropsAndParams(final ProjectLoader projectLoader) {
-    Props props = FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion) ?
-        FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, this, null) :
-        projectLoader.fetchProjectProperty(projectId, version, Constants.PARAM_OVERRIDE_FILE);
-
-    if (null == props) {
-      return;
-    }
-    // Clone the props object and filter out the properties to keep only the override ones.
-    Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(PARAM_OVERRIDE);
-
-    // Update the flow params with override props
-    if (this.executionOptions != null) {
-      this.executionOptions.addAllFlowParameters(flowOverridePropsMap);
-    }
-  }
+  public void setModifiedBy(String id) { this.modifiedBy = id; }
 }

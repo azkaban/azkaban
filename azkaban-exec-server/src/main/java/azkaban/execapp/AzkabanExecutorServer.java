@@ -25,7 +25,6 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
-import azkaban.common.ServerUtils;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRampManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
@@ -61,10 +60,7 @@ import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.security.CodeSource;
 import java.security.Permission;
-import java.security.PermissionCollection;
-import java.security.Permissions;
 import java.security.Policy;
 import java.security.ProtectionDomain;
 import java.time.Duration;
@@ -138,7 +134,15 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
     logger.info("Starting Jetty Azkaban Executor...");
 
-    setSecurityPolicy();
+    if (System.getSecurityManager() == null) {
+      Policy.setPolicy(new Policy() {
+        @Override
+        public boolean implies(final ProtectionDomain domain, final Permission permission) {
+          return true; // allow all
+        }
+      });
+      System.setSecurityManager(new SecurityManager());
+    }
 
     final Props props = AzkabanServer.loadProps(args);
 
@@ -156,31 +160,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     SERVICE_PROVIDER.setInjector(injector);
 
     launch(injector.getInstance(AzkabanExecutorServer.class));
-  }
-
-  public static void setSecurityPolicy() {
-    if (System.getSecurityManager() == null) {
-      Policy.setPolicy(new Policy() {
-        @Override
-        public boolean implies(final ProtectionDomain domain, final Permission permission) {
-          return true; // allow all
-        }
-        // This is to fix JMX connection error.
-        // See https://github.com/elastic/elasticsearch/pull/14274
-        // and https://bugs.openjdk.java.net/browse/JDK-8014008
-        @Override
-        public PermissionCollection getPermissions(CodeSource codesource) {
-          for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-            if ("sun.rmi.server.LoaderHandler".equals(element.getClassName()) &&
-                "loadClass".equals(element.getMethodName())) {
-              return new Permissions();
-            }
-          }
-          return super.getPermissions(codesource);
-        }
-      });
-      System.setSecurityManager(new SecurityManager());
-    }
   }
 
   public static void launch(final AzkabanExecutorServer azkabanExecutorServer) throws Exception {
@@ -260,7 +239,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     JmxJobMBeanManager.getInstance().initialize(this.props);
 
     // make sure this happens before
-    ServerUtils.configureJobCallback(logger, this.props);
+    configureJobCallback(this.props);
 
     configureMBeanServer();
     configureMetricReports();
@@ -294,13 +273,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private void initActive() throws ExecutorManagerException {
     final Executor executor;
-    final int port;
-    final boolean useSsl = props.getBoolean(ConfigurationKeys.JETTY_USE_SSL, true);
-    if (useSsl) {
-      port = this.props.getInt(ConfigurationKeys.EXECUTOR_SSL_PORT, -1);
-    } else {
-      port = this.props.getInt(ConfigurationKeys.EXECUTOR_PORT, -1);
-    }
+    final int port = this.props.getInt(ConfigurationKeys.EXECUTOR_PORT, -1);
     if (port != -1) {
       final String host = requireNonNull(getHost());
       // Check if this executor exists previously in the DB
@@ -352,6 +325,16 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     FileIOUtils.dumpNumberToFile(Paths.get(portFileName), getPort());
   }
 
+  private void configureJobCallback(final Props props) {
+    final boolean jobCallbackEnabled =
+        props.getBoolean("azkaban.executor.jobcallback.enabled", true);
+
+    logger.info("Job callback enabled? " + jobCallbackEnabled);
+
+    if (jobCallbackEnabled) {
+      JobCallbackManager.initialize(props);
+    }
+  }
 
   /**
    * Configure Metric Reporting as per azkaban.properties settings

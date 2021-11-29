@@ -16,7 +16,6 @@
 
 package azkaban.execapp;
 
-import azkaban.DispatchMethod;
 import azkaban.execapp.action.KillExecutionAction;
 import azkaban.execapp.action.KillJobAction;
 import azkaban.sla.SlaOption;
@@ -45,7 +44,6 @@ public class TriggerManager {
   private static final int SCHEDULED_THREAD_POOL_SIZE = 4;
   private static final Logger logger = Logger.getLogger(TriggerManager.class);
   private final ScheduledExecutorService scheduledService;
-  private DispatchMethod dispatchMethod;
 
   @Inject
   public TriggerManager() {
@@ -73,7 +71,7 @@ public class TriggerManager {
     if(sla.hasKill()) {
       switch(sla.getType().getComponent()) {
         case FLOW:
-         actions.add(new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId, dispatchMethod));
+         actions.add(new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId));
          break;
         case JOB:
         actions.add(new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, sla.getJobName()));
@@ -105,10 +103,6 @@ public class TriggerManager {
           + ", scheduled to trigger in " + durationInMillis / 1000 + " seconds");
       this.scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
     }
-  }
-
-  public void setDispatchMethod(final DispatchMethod dispatchMethod) {
-    this.dispatchMethod = dispatchMethod;
   }
 
   public void shutdown() {

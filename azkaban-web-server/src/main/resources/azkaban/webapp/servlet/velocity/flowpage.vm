@@ -36,8 +36,8 @@
   <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js?v=1588045179"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1624913123"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow.js?v=1620232349"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1569610022"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
     var currentTime = ${currentTime};
@@ -50,7 +50,6 @@
     var flowId = "${flowid}";
     var execId = null;
     var pageSize = "${size}";
-    var graphDepth = "${azkaban_depth}";
 
     var flowPageSettings = {
       projectId: ${project.id},
@@ -110,29 +109,10 @@
   <div class="page-breadcrumb">
     <div class="container-full">
       <ol class="breadcrumb">
-
-        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-
-        #set($ref = "${context}/manager?project=${project.name}&flow=")
-        #foreach( $flow in ${flowlist} )
-          #set($ref = $ref + $flow)
-          #set($linkclass = "active")
-
-          #if( $foreach.first )
-            #set($flowlabel = "Flow")
-          #else
-            #set($flowlabel = "")
-            #set($linkclass = $linkclass + " flowlink")
-          #end
-
-          #if( $foreach.hasNext )
-            <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
-          #else
-            <li class="${linkclass}"><strong>$flowlabel</strong> $flow</li>
-          #end
-
-          #set($ref = $ref + ${pathDelimiter})
-        #end
+        <li><a
+            href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
+        </a></li>
+        <li class="active"><strong>Flow</strong> $flowid</li>
       </ol>
     </div>
   </div>

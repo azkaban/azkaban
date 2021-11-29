@@ -1,5 +1,3 @@
-.. _ContainerizationDesignDoc:
-
 Azkaban Containerized Executions - Design Doc
 =============================================
 
@@ -253,10 +251,6 @@ Dispatch Logic
 
    * Finally, a YAML file is constructed on the fly for all parameters necessary to create the execution
      environment for the pod. This YAML is then used to launch the Pod in the kubernetes namespace.
-
-   * The execution will be marked as PREPARING the moment execution environment creation request is
-     sent. In case of any failure in creating the pod, execution will be marked as READY and move
-     back to queue.
 
 .. image:: figures/VersionSetUsageFlowchart.jpeg
 

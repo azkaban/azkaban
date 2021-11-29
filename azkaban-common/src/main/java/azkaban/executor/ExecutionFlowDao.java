@@ -16,14 +16,12 @@
 
 package azkaban.executor;
 
-import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -34,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
@@ -72,11 +71,9 @@ public class ExecutionFlowDao {
 
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
-        + "use_executor, flow_priority, execution_source, dispatch_method) values (?,?,?,?,?,?,?,"
-        + "?,?,?,?)";
+        + "use_executor, flow_priority, execution_source) values (?,?,?,?,?,?,?,?,?,?)";
     final long submitTime = flow.getSubmitTime();
     final String executionSource = flow.getExecutionSource();
-    final DispatchMethod dispatchMethod = flow.getDispatchMethod();
 
     /**
      * Why we need a transaction to get last insert ID?
@@ -87,8 +84,7 @@ public class ExecutionFlowDao {
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), flow.getStatus().getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority, executionSource
-          , dispatchMethod.getNumVal());
+          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority, executionSource);
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -144,32 +140,29 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
-      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMillis)
       throws ExecutorManagerException {
-    if (!validityMap.containsKey(status)) {
-      throw new ExecutorManagerException(
-          "Validity duration is not defined for status: " + status.name());
-    }
-    final Pair<Duration, String> validity = validityMap.get(status);
-    final Duration validityDuration = validity.getFirst();
-    final String validityFrom = validity.getSecond();
-    final long beforeInMillis = System.currentTimeMillis() - validityDuration.toMillis();
+    // Sample query created by the string builder:
+    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE
+    //   start_time < ? AND status IN (30, 40, 80, 110)
+    final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
+    query.append(" AND status IN (");
+    query.append(
+        Status.nonFinishingStatusAfterFlowStartsSet.stream()
+            .map(s -> String.valueOf(s.getNumVal()))
+            .collect(Collectors.joining(", ")));
+    query.append(")");
 
-    // For status PREPARING (20), validityDuration is 15 Mins and validityFrom is "submit_time"
-    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef
-    // WHERE status=20 AND submit_time>0 AND submit_time<beforeInMillis
-    final StringBuilder query = new StringBuilder()
-        .append(FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY)
-        .append(" WHERE status=? ")
-        .append(" AND " + validityFrom + ">0")
-        .append(" AND " + validityFrom + "<?");
     try {
-      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(),
-          status.getNumVal(), beforeInMillis);
+      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMillis);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching stale flows", e);
     }
+  }
+
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+      throws ExecutorManagerException {
+    return fetchStaleFlows(System.currentTimeMillis() - executionDuration.toMillis());
   }
 
   /**
@@ -387,8 +380,7 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
-      final DispatchMethod dispatchMethod)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
         + "where exec_id = ?";
@@ -400,8 +392,7 @@ public class ExecutionFlowDao {
       transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), dispatchMethod.getNumVal(),
-              executorId);
+          new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
@@ -420,8 +411,7 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
-      final DispatchMethod dispatchMethod)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
         + "where exec_id = ?";
@@ -436,8 +426,7 @@ public class ExecutionFlowDao {
       if (hasLocked) {
         try {
           final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-              new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), dispatchMethod.getNumVal(),
-              executorId);
+              new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), executorId);
           if (CollectionUtils.isNotEmpty(execIds)) {
             execId = execIds.get(0);
             transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
@@ -473,8 +462,7 @@ public class ExecutionFlowDao {
    */
   public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
       final int limit,
-      final Status updatedStatus,
-      final DispatchMethod dispatchMethod)
+      final Status updatedStatus)
       throws ExecutorManagerException {
     final String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
         + "where exec_id = ?";
@@ -489,11 +477,11 @@ public class ExecutionFlowDao {
           if (batchEnabled) {
             execIds = transOperator.query(String
                     .format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), limit);
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), limit);
           } else {
             execIds = transOperator.query(
                 String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal());
+                new SelectFromExecutionFlows(), Status.READY.getNumVal());
           }
           if (CollectionUtils.isNotEmpty(execIds)) {
             executions.addAll(execIds);
@@ -529,39 +517,19 @@ public class ExecutionFlowDao {
     }
   }
 
-  /**
-   * Updates version set id for the given executionId
-   * @param executionId
-   * @param versionSetId
-   * @return int
-   * @throws ExecutorManagerException
-   */
-  public int updateVersionSetId(final int executionId, final int versionSetId)
-      throws ExecutorManagerException {
-    final String UPDATE_VERSION_SET_ID = "UPDATE execution_flows SET version_set_id = ?, "
-        + "update_time = ? where exec_id = ?";
-    try {
-      return this.dbOperator.update(UPDATE_VERSION_SET_ID, versionSetId,
-          System.currentTimeMillis(), executionId);
-    } catch (final SQLException e) {
-      throw new ExecutorManagerException(String.format("Error while updating version set id for "
-          + "execId: %d", executionId), e);
-    }
-  }
-
   public static class SelectFromExecutionFlows implements
       ResultSetHandler<List<Integer>> {
 
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE exec_id = (SELECT exec_id from execution_flows"
-            + " WHERE status = ? and dispatch_method = ?"
+            + " WHERE status = ?"
             + " and executor_id is NULL and flow_data is NOT NULL %s"
             + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and "
             + "executor_id is NULL FOR UPDATE";
 
     private static final String SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE exec_id in (SELECT exec_id from execution_flows"
-            + " WHERE status = ? and dispatch_method = ?"
+            + " WHERE status = ?"
             + " and executor_id is NULL and flow_data is NOT NULL %s ) "
             + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC "
             + " LIMIT ? FOR UPDATE";
@@ -682,7 +650,7 @@ public class ExecutionFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlow(
                     GZIPUtils.transformBytesToObject(data, encType), status);
-            final ExecutionReference ref = new ExecutionReference(id, exFlow.getDispatchMethod());
+            final ExecutionReference ref = new ExecutionReference(id);
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);

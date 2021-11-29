@@ -25,7 +25,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.ImmutableFlowProps;
+import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
@@ -86,7 +86,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Triple;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,7 +151,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   @VisibleForTesting
-  void setProjectManager(final ProjectManager projectManager) {
+  void setProjectManager(ProjectManager projectManager) {
     this.projectManager = projectManager;
   }
 
@@ -202,8 +201,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_PROXY_USER));
     apiEndpoints.add(new AzkabanAPI("ajax", API_REMOVE_PROXY_USER));
     apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_FLOW_EXECUTIONS));
-    apiEndpoints.add(new AzkabanAPI("ajax",
-        API_FETCH_LAST_SUCCESSFUL_FLOW_EXECUTION));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_LAST_SUCCESSFUL_FLOW_EXECUTION));
     apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_JOB_INFO));
     apiEndpoints.add(new AzkabanAPI("ajax", API_SET_JOB_OVERRIDE_PROPERTY));
     apiEndpoints.add(new AzkabanAPI("ajax", API_CHECK_FOR_WRITE_PERMISSION));
@@ -1475,14 +1473,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private void handleJobPage(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException {
-    final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobpage.vm");
+    final Page page =
+        newPage(req, resp, session,
+            "azkaban/webapp/servlet/velocity/jobpage.vm");
     final String projectName = getParam(req, "project");
-    final String flowNodePath = getParam(req, "flow");
+    final String flowName = getParam(req, "flow");
     final String jobName = getParam(req, "job");
 
     final User user = session.getUser();
+    Project project = null;
+    Flow flow = null;
     try {
-      final Project project = this.projectManager.getProject(projectName);
+      project = this.projectManager.getProject(projectName);
       logger.info("JobPage: project " + projectName + " version is " + project.getVersion()
           + ", reference is " + System.identityHashCode(project));
       if (project == null) {
@@ -1491,31 +1493,24 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         return;
       }
       if (!hasPermission(project, user, Type.READ)) {
-        throw new AccessControlException("No permission to view project " + projectName + ".");
+        throw new AccessControlException("No permission to view project "
+            + projectName + ".");
       }
-      page.add("project", project);
 
-      final Flow flow = project.getFlow(flowNodePath);
+      page.add("project", project);
+      flow = project.getFlow(flowName);
       if (flow == null) {
-        page.add("errorMsg", "Flow " + flowNodePath + " not found.");
+        page.add("errorMsg", "Flow " + flowName + " not found.");
         page.render();
         return;
       }
-      final String flowId = flow.getId();
-      page.add("flowid", flowId);
-      page.add("flowlist", flowId.split(Constants.PATH_DELIMITER, 0));
-      page.add("pathDelimiter", Constants.PATH_DELIMITER);
 
+      page.add("flowid", flow.getId());
       final Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
         page.render();
         return;
-      }
-      page.add("jobid", node.getId());
-      page.add("jobtype", node.getType());
-      if (node.getCondition() != null) {
-        page.add("condition", node.getCondition());
       }
 
       Props jobProp = this.projectManager
@@ -1523,53 +1518,62 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (jobProp == null) {
         jobProp = this.projectManager.getProperties(project, flow, jobName, node.getJobSource());
       }
-      final List<Pair<String, String>> jobProperties = new ArrayList<>();
-      for (final String key : jobProp.getKeySet()) {
-        final String value = jobProp.get(key);
-        jobProperties.add(new Pair<>(key, value));
-      }
-      page.add("jobProperties", jobProperties);
 
-      final List<String> dependencies = new ArrayList<>();
+      page.add("jobid", node.getId());
+      page.add("jobtype", node.getType());
+      if (node.getCondition() != null) {
+        page.add("condition", node.getCondition());
+      }
+
+      final ArrayList<String> dependencies = new ArrayList<>();
       final Set<Edge> inEdges = flow.getInEdges(node.getId());
       if (inEdges != null) {
         for (final Edge dependency : inEdges) {
           dependencies.add(dependency.getSourceId());
         }
       }
-      page.add("dependencies", dependencies);
+      if (!dependencies.isEmpty()) {
+        page.add("dependencies", dependencies);
+      }
 
-      final List<String> dependents = new ArrayList<>();
+      final ArrayList<String> dependents = new ArrayList<>();
       final Set<Edge> outEdges = flow.getOutEdges(node.getId());
       if (outEdges != null) {
         for (final Edge dependent : outEdges) {
           dependents.add(dependent.getTargetId());
         }
       }
-      page.add("dependents", dependents);
+      if (!dependents.isEmpty()) {
+        page.add("dependents", dependents);
+      }
 
-      // Resolve inherited properties
-      final List<Pair<String, String>> allParentFlows = flow.getParents();
-      // List of triplets of NAME and NODE PATH of flows from which properties are
-      // inherited as well as the FILE NAME where they are to be found.
-      final List<Triple<String, String, String>> inheritedProperties = new ArrayList<>();
-      final String nodePropsSource = node.getPropsSource();
-      if (nodePropsSource != null) {
-        if (flow.getAzkabanFlowVersion() == Constants.AZKABAN_FLOW_VERSION_2_0) {
-          allParentFlows.stream().forEach(p -> inheritedProperties
-              .add(Triple.of(p.getFirst(), p.getSecond(), nodePropsSource)));
-        } else {
-          inheritedProperties.add(Triple.of(nodePropsSource, flowId, nodePropsSource));
-          ImmutableFlowProps parent = flow.getFlowProps(nodePropsSource);
-          while (parent.getInheritedSource() != null) {
-            final String inheritedSource = parent.getInheritedSource();
-            inheritedProperties.add(Triple.of(inheritedSource, flowId, inheritedSource));
-            parent = flow.getFlowProps(parent.getInheritedSource());
-          }
+      // Resolve property dependencies
+      final ArrayList<String> source = new ArrayList<>();
+      final String nodeSource = node.getPropsSource();
+      if (nodeSource != null) {
+        source.add(nodeSource);
+        FlowProps parent = flow.getFlowProps(nodeSource);
+        while (parent.getInheritedSource() != null) {
+          source.add(parent.getInheritedSource());
+          parent = flow.getFlowProps(parent.getInheritedSource());
         }
       }
-      page.add("inheritedProperties", inheritedProperties);
-    } catch (final AccessControlException | ProjectManagerException e) {
+      if (!source.isEmpty()) {
+        page.add("properties", source);
+      }
+
+      final ArrayList<Pair<String, String>> parameters =
+          new ArrayList<>();
+      // Parameter
+      for (final String key : jobProp.getKeySet()) {
+        final String value = jobProp.get(key);
+        parameters.add(new Pair<>(key, value));
+      }
+
+      page.add("parameters", parameters);
+    } catch (final AccessControlException e) {
+      page.add("errorMsg", e.getMessage());
+    } catch (final ProjectManagerException e) {
       page.add("errorMsg", e.getMessage());
     }
     page.render();
@@ -1578,110 +1582,97 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void handlePropertyPage(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session) throws ServletException {
     final Page page =
-        newPage(req, resp, session, "azkaban/webapp/servlet/velocity/propertypage.vm");
+        newPage(req, resp, session,
+            "azkaban/webapp/servlet/velocity/propertypage.vm");
     final String projectName = getParam(req, "project");
-
-    // flow and job parameters are mainly used to build the breadcrumb.
-    final String flowNodePath = getParam(req, "flow");
+    final String flowName = getParam(req, "flow");
     final String jobName = getParam(req, "job");
-
-    // The name of the file where properties are located
-    final String propsSource = getParam(req, "prop");
-    // The properties that should be retrieved:
-    // In Flow 1.0 is the entire .properties file. Flow and proNode parameters have same value
-    // In Flow 2.0 is just the properties of provided node.
-    final String propsNodePath = getParam(req, "propNode");
+    final String propSource = getParam(req, "prop");
 
     final User user = session.getUser();
+    Project project = null;
+    Flow flow = null;
     try {
-      final Project project = this.projectManager.getProject(projectName);
+      project = this.projectManager.getProject(projectName);
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
-        logger
-            .info("Display inherited job properties. Project " + projectName + " not found.");
+        logger.info("Display project property. Project " + projectName + " not found.");
         page.render();
         return;
       }
 
       if (!hasPermission(project, user, Type.READ)) {
-        throw new AccessControlException("No permission to view project " + projectName + ".");
+        throw new AccessControlException("No permission to view project "
+            + projectName + ".");
       }
       page.add("project", project);
 
-      final Flow flow = project.getFlow(flowNodePath);
+      flow = project.getFlow(flowName);
       if (flow == null) {
-        page.add("errorMsg", "Flow " + flowNodePath + " not found.");
-        logger.info("Display inherited job properties. Flow " + flowNodePath +
-            " not found in Project " + projectName + ".");
+        page.add("errorMsg", "Flow " + flowName + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " not found.");
         page.render();
         return;
       }
+
       page.add("flowid", flow.getId());
-      page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
-      page.add("pathDelimiter", Constants.PATH_DELIMITER);
-
-      final Node job = flow.getNode(jobName);
-      if (job == null) {
+      final Node node = flow.getNode(jobName);
+      if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
-        logger.info("Display inherited job properties. Job " + jobName +
-            " not found in Flow " + flowNodePath + " and Project " + projectName + ".");
-        page.render();
-        return;
-      }
-      page.add("jobid", job.getId());
-
-      final Flow propsNode = project.getFlow(propsNodePath);
-      if (propsNode == null) {
-        page.add("errorMsg",
-            "Nested Flow " + propsNodePath + " not found in Flow " + flowNodePath + ".");
-        logger.info("Display inherited job properties. Nested Flow " + propsNodePath +
-            " not found in Flow " + flowNodePath + " and Project " + projectName + ".");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " Job " + jobName + " not found.");
         page.render();
         return;
       }
 
-      final Props propertiesProps = this.projectManager.getProperties(project, propsNode, null,
-          propsSource);
-      if (propertiesProps == null) {
-        page.add("errorMsg", "Property file " + propsSource + " not found.");
-        logger.info("Display inherited job properties. Property file " + propsSource
-                + " not found in Project " + projectName + " and Flow " + flowNodePath + ".");
+      final Props prop = this.projectManager.getProperties(project, flow, null, propSource);
+      if (prop == null) {
+        page.add("errorMsg", "Property " + propSource + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " Job " + jobName +
+            " Property " + propSource + " not found.");
         page.render();
         return;
 
       }
-      final List<Pair<String, String>> propertiesPair = new ArrayList<>();
-      for (final String key : propertiesProps.getKeySet()) {
-        final String value = propertiesProps.get(key);
-        propertiesPair.add(new Pair<>(key, value));
-      }
-      page.add("properties", propertiesPair);
-
-      String propsSourceLabel = propsSource;
-      if (flow.getAzkabanFlowVersion() == Constants.AZKABAN_FLOW_VERSION_2_0) {
-        propsSourceLabel = propsNodePath;
-      }
-      page.add("propsSourceLabel", propsSourceLabel);
-      page.add("propsSource", propsSource);
-      page.add("propsNodePath", propsNodePath);
+      page.add("property", propSource);
+      page.add("jobid", node.getId());
 
       // Resolve property dependencies
-      final List<String> inheritProps = new ArrayList<>();
-      ImmutableFlowProps parent = flow.getFlowProps(propsSource);
+      final ArrayList<String> inheritProps = new ArrayList<>();
+      FlowProps parent = flow.getFlowProps(propSource);
       while (parent.getInheritedSource() != null) {
         inheritProps.add(parent.getInheritedSource());
         parent = flow.getFlowProps(parent.getInheritedSource());
       }
-      page.add("inheritedproperties", inheritProps);
+      if (!inheritProps.isEmpty()) {
+        page.add("inheritedproperties", inheritProps);
+      }
 
-      final List<String> dependingProps = new ArrayList<>();
-      ImmutableFlowProps child = flow.getFlowProps(flow.getNode(jobName).getPropsSource());
-      while (!child.getSource().equals(propsSource)) {
+      final ArrayList<String> dependingProps = new ArrayList<>();
+      FlowProps child =
+          flow.getFlowProps(flow.getNode(jobName).getPropsSource());
+      while (!child.getSource().equals(propSource)) {
         dependingProps.add(child.getSource());
         child = flow.getFlowProps(child.getInheritedSource());
       }
-      page.add("dependingproperties", dependingProps);
-    } catch (final AccessControlException | ProjectManagerException e) {
+      if (!dependingProps.isEmpty()) {
+        page.add("dependingproperties", dependingProps);
+      }
+
+      final ArrayList<Pair<String, String>> parameters =
+          new ArrayList<>();
+      // Parameter
+      for (final String key : prop.getKeySet()) {
+        final String value = prop.get(key);
+        parameters.add(new Pair<>(key, value));
+      }
+
+      page.add("parameters", parameters);
+    } catch (final AccessControlException e) {
+      page.add("errorMsg", e.getMessage());
+    } catch (final ProjectManagerException e) {
       page.add("errorMsg", e.getMessage());
     }
 
@@ -1691,7 +1682,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private void handleFlowPage(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException {
     final Page page =
-        newPage(req, resp, session, "azkaban/webapp/servlet/velocity/flowpage.vm");
+        newPage(req, resp, session,
+            "azkaban/webapp/servlet/velocity/flowpage.vm");
     final String projectName = getParam(req, "project");
     final String flowName = getParam(req, "flow");
 
@@ -1718,8 +1710,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("errorMsg", "Flow " + flowName + " not found.");
       } else {
         page.add("flowid", flow.getId());
-        page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
-        page.add("pathDelimiter", Constants.PATH_DELIMITER);
         page.add("isLocked", flow.isLocked());
         if (flow.isLocked()) {
           final Props props = this.projectManager.getProps();
@@ -1926,10 +1916,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       // remove schedule of renamed/deleted flows
       removeScheduleOfDeletedFlows(project, this.scheduleManager, (schedule) -> {
-        logger.info("Removed schedule with id {} of renamed/deleted flow: {} from project: {}.",
-                schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
+        logger.info(
+            "Removed schedule with id {} of renamed/deleted flow: {} from project: {}.",
+            schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
         this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
-                "Schedule " + schedule.toString() + " has been removed.");
+            "Schedule " + schedule.toString() + " has been removed.");
       });
 
       registerErrorsAndWarningsFromValidationReport(resp, ret, reports);

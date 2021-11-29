@@ -20,27 +20,20 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JSONUtils {
-
-  private static final Logger log = LoggerFactory.getLogger(JSONUtils.class);
 
   /**
    * The constructor. Cannot construct this class.
@@ -277,70 +270,5 @@ public class JSONUtils {
     }
 
     return false;
-  }
-
-  /**
-   * Reads json file from the classpath placed in the resources folder and returns as string
-   *
-   * @param filePath
-   * @return String json as string
-   */
-  public static String readJsonFileAsString(final String filePath) {
-    InputStream is = null;
-    try {
-      is = JSONUtils.class.getClassLoader().getResourceAsStream(filePath);
-      return IOUtils.toString(is, StandardCharsets.UTF_8);
-    } catch (final IOException e) {
-      log.error("Exception while reading input file.", e);
-      throw new RuntimeException("Exception while reading input file : " + filePath);
-    } catch (final Exception ex) {
-      log.error("Exception while reading input file.", ex);
-      throw new RuntimeException("Exception while reading input file : " + filePath);
-    } finally {
-      if(is!=null) {
-        IOUtils.closeQuietly(is);
-      }
-    }
-  }
-
-  /**
-   * Reads json string and returns JsonNode.
-   *
-   * @param json
-   * @return JsonNode
-   * @throws IOException
-   */
-  public static JsonNode readJsonString(final String json) throws IOException {
-    final ObjectMapper mapper = new ObjectMapper();
-    final JsonFactory factory = new JsonFactory();
-    final JsonParser parser = factory.createJsonParser(json);
-    final JsonNode node = mapper.readTree(parser);
-    return node;
-  }
-
-  /**
-   * Extract text field value from JsonNode.
-   *
-   * @param jsonNode
-   * @param key
-   * @return String
-   * @throws IOException
-   */
-  public static String extractTextFieldValueFromJsonNode(final JsonNode jsonNode, final String key)
-      throws IOException {
-    return jsonNode.get(key).asText();
-  }
-
-  /**
-   * Extract text field value from given json string.
-   *
-   * @param json
-   * @param key
-   * @return String
-   * @throws IOException
-   */
-  public static String extractTextFieldValueFromJsonString(final String json, final String key)
-      throws IOException {
-    return extractTextFieldValueFromJsonNode(readJsonString(json), key);
   }
 }

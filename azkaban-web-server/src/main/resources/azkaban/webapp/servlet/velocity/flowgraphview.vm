@@ -31,9 +31,11 @@
       </div>
       <div id="joblist" class="graph-sidebar-list"></div>
       <div class="panel-footer">
-        <button type="button" class="btn btn-sm btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
-        <button type="button" class="btn btn-sm btn-info" id="autoPanZoomBtn" data-toggle="button">Auto Pan Zoom</button>
-        <button type="button" class="btn btn-sm btn-info" id="autoExpandFlowsBtn" data-toggle="button">Auto Expand Flows</button>
+        <button type="button" class="btn btn-sm btn-default" id="resetPanZoomBtn">Reset Pan Zoom
+        </button>
+        <button type="button" class="btn btn-sm btn-default" id="autoPanZoomBtn"
+                data-toggle="button">Auto Pan Zoom
+        </button>
       </div>
     </div><!-- /.panel -->
   </div>

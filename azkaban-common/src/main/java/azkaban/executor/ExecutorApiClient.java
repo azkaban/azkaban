@@ -16,11 +16,11 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CLIENT_TLS_ENABLED;
+import static azkaban.Constants.ConfigurationKeys.EXECUTOR_CONNECTION_TLS_ENABLED;
 import static com.google.common.base.Preconditions.checkState;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.DispatchMethod;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.RestfulApiClient;
@@ -28,13 +28,11 @@ import azkaban.utils.UndefinedPropertyException;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,8 +40,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -63,8 +60,8 @@ import org.slf4j.LoggerFactory;
 public class ExecutorApiClient extends RestfulApiClient<String> {
 
   private final static Logger logger = LoggerFactory.getLogger(ExecutorApiClient.class);
-  private final static String DEFAULT_CLIENT_TRUSTSTORE_PATH = "keystore";
-  private final static String DEFAULT_CLIENT_TRUSTSTORE_PASSWORD = "changeit";
+  private final static String DEFAULT_TRUSTSTORE_PATH = "keystore";
+  private final static String DEFAULT_TRUSTSTORE_PASSWORD = "changeit";
 
   private final boolean isReverseProxyEnabled;
   private final Optional<String> reverseProxyHost;
@@ -105,11 +102,11 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     this.reverseProxyHost = Optional.ofNullable(reverseProxyHost);
     this.reverseProxyPort = Optional.ofNullable(reverseProxyPort);
 
-    this.isTlsEnabled = azkProps.getBoolean(EXECUTOR_CLIENT_TLS_ENABLED, false);
+    this.isTlsEnabled = azkProps.getBoolean(EXECUTOR_CONNECTION_TLS_ENABLED, false);
     this.truststorePath = azkProps
-        .getString(ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PATH, this.DEFAULT_CLIENT_TRUSTSTORE_PATH);
-    this.truststorePassword = azkProps.getString(ConfigurationKeys.EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD,
-        this.DEFAULT_CLIENT_TRUSTSTORE_PASSWORD);
+        .getString(Constants.JETTY_TRUSTSTORE_PATH, this.DEFAULT_TRUSTSTORE_PATH);
+    this.truststorePassword = azkProps.getString(Constants.JETTY_TRUSTSTORE_PASSWORD,
+        this.DEFAULT_TRUSTSTORE_PASSWORD);
     if (this.isTlsEnabled) {
       setupTlsSocketFactory();
     }
@@ -128,17 +125,14 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
    * @return the URI built from the inputs.
    */
   public URI buildExecutorUri(final String host, final int port, final String path,
-      final boolean isHttp, final DispatchMethod dispatchMethod,
-      final Pair<String, String>... params) throws IOException {
-    if (null != dispatchMethod && dispatchMethod == DispatchMethod.CONTAINERIZED
-        && isReverseProxyEnabled) {
-      checkState(reverseProxyHost.isPresent());
-      checkState(reverseProxyPort.isPresent());
-      return RestfulApiClient.buildUri(reverseProxyHost.get(), reverseProxyPort.get(), path,
-              !isTlsEnabled, params);
-    } else {
-      return RestfulApiClient.buildUri(host, port, path, isHttp, params);
+      final boolean isHttp, final Pair<String, String>... params) throws IOException {
+    if (!isReverseProxyEnabled) {
+      return  RestfulApiClient.buildUri(host, port, path, isHttp, params);
     }
+    checkState(reverseProxyHost.isPresent());
+    checkState(reverseProxyPort.isPresent());
+    return RestfulApiClient.buildUri(reverseProxyHost.get(), reverseProxyPort.get(), path,
+        isTlsEnabled, params);
   }
 
   private void setupTlsSocketFactory() {
@@ -182,51 +176,14 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
    *
    * @return http client
    */
-  protected CloseableHttpClient createHttpsClient() {
+  @Override
+  protected CloseableHttpClient createHttpClient() {
+    if (!this.isTlsEnabled) {
+      return super.createHttpClient();
+    }
     final HttpClientBuilder httpClientBuilder = HttpClients.custom()
         .setSSLSocketFactory(this.tlsSocketFactory);
     return httpClientBuilder.build();
-  }
-
-  /**
-   * function to perform a Post https method.
-   *
-   * @param uri    the URI of the request.
-   * @param params the form params to be posted, optional.
-   * @return the response object type of which is specified by user.
-   * @throws UnsupportedEncodingException, IOException.
-   */
-  public String httpsPost(final URI uri, final List<Pair<String, String>> params)
-          throws IOException {
-    // shortcut if the passed url is invalid.
-    if (null == uri) {
-      logger.error(" unable to perform httpPost as the passed uri is null.");
-      return null;
-    }
-
-    final HttpPost post = new HttpPost(uri);
-    return this.sendAndReturnHttps(completeRequest(post, params));
-  }
-
-  public String doPost(final URI uri, final DispatchMethod dispatchMethod, final List<Pair<String, String>> params)
-          throws IOException {
-    // If in future tls support is added for POLL based model, then following condition
-    // can be simplified
-    if (isTlsEnabled && null != dispatchMethod && dispatchMethod == DispatchMethod.CONTAINERIZED) {
-      return this.httpsPost(uri, params);
-    } else {
-      return this.httpPost(uri, params);
-    }
-  }
-
-  /**
-   * function to dispatch the https request and pass back the response.
-   */
-  protected String sendAndReturnHttps(final HttpUriRequest request)
-          throws IOException {
-    try (final CloseableHttpClient client = this.createHttpsClient()) {
-      return this.parseResponse(client.execute(request));
-    }
   }
 
   /**

@@ -18,7 +18,6 @@ package azkaban.execapp;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
-import static azkaban.Constants.EventReporterConstants;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -29,7 +28,6 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
-import azkaban.common.ServerUtils;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
@@ -50,9 +48,8 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.ConditionOnJobStatus;
-import azkaban.flow.ImmutableFlowProps;
+import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
-import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
@@ -64,14 +61,15 @@ import azkaban.project.ProjectManagerException;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
-import azkaban.spi.ExecutorType;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
@@ -96,7 +94,7 @@ import java.util.regex.Matcher;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -134,14 +132,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       .newSetFromMap(new ConcurrentHashMap<>());
   // Thread safe swap queue for finishedExecutions.
   private final SwapQueue<ExecutableNode> finishedNodes;
-  private final ConcurrentHashMap<String, String> jobEffectiveUsers = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, String> ignoredJobEffectiveUsers =
-      new ConcurrentHashMap<>();
-  private final FlowRunnerProxy flowRunnerProxy;
   private final AzkabanEventReporter azkabanEventReporter;
   private final AlerterHolder alerterHolder;
-  private Optional<Double> cpuUtilized = Optional.empty();
-  private Optional<Long> memoryUtilizedInBytes = Optional.empty();
   private Logger logger;
   private Appender flowAppender;
   private File logFile;
@@ -266,20 +258,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     this.projectFileHandler =
         this.projectLoader.fetchProjectMetaData(this.flow.getProjectId(), this.flow.getVersion());
-    this.flowRunnerProxy = new FlowRunnerProxy();
-  }
-
-  /**
-   * @return the proxy class object associated with this instance.
-   */
-  @VisibleForTesting
-  public FlowRunnerProxy getProxy() {
-    return this.flowRunnerProxy;
-  }
-
-  @VisibleForTesting
-  ConcurrentHashMap<String, String> getJobEffectiveUsers() {
-    return this.jobEffectiveUsers;
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -363,12 +341,11 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         this.fireEventListeners(
             Event.create(this, EventType.FLOW_FINISHED, new EventData(this.flow)));
         this.logger
-            .info(
-                "Created " + EventType.FLOW_FINISHED + " event for " + this.flow.getExecutionId());
+            .info("Created " + EventType.FLOW_FINISHED + " event for " + this.flow.getExecutionId());
         // In polling model, executor will be responsible for sending alerting emails when a flow
         // finishes.
         // Todo jamiesjc: switch to event driven model and alert on FLOW_FINISHED event.
-        if (isPollDispatchMethodEnabled() || isContainerizedDispatchMethodEnabled()) {
+        if (isPollDispatchMethodEnabled()) {
           ExecutionControllerUtils.alertUserOnFlowFinished(this.flow, this.alerterHolder,
               ExecutionControllerUtils.getFinalizeFlowReasons("Flow finished", null));
         }
@@ -377,13 +354,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   private boolean isPollDispatchMethodEnabled() {
-    return DispatchMethod.isPollMethodEnabled(this.azkabanProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
-            DispatchMethod.PUSH.name()));
-  }
-
-  private boolean isContainerizedDispatchMethodEnabled() {
-    return DispatchMethod.isContainerizedMethodEnabled(this.azkabanProps
+    return DispatchMethod.isPollMethodEnabled(azkabanProps
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()));
   }
@@ -419,8 +390,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     Props commonFlowProps = FlowUtils.addCommonFlowProperties(null, this.flow);
 
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
-      final Props flowProps = FlowLoaderUtils.loadPropsFromYamlFile(
-          this.projectLoader, this.flow, null);
+      final Props flowProps = loadPropsFromYamlFile(this.flow.getId());
       if (flowProps != null) {
         flowProps.setParent(commonFlowProps);
         commonFlowProps = flowProps;
@@ -434,21 +404,13 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       }
     }
 
-    // If there are flow overrides, we log them & apply them on the flow node.
+    // If there are flow overrides, we apply them now.
     final Map<String, String> flowParam =
         this.flow.getExecutionOptions().getFlowParameters();
     if (flowParam != null && !flowParam.isEmpty()) {
-      this.logger.info("ROOT Runtime Props: " + flowParam);
       commonFlowProps = new Props(commonFlowProps, flowParam);
     }
     this.flow.setInputProps(commonFlowProps);
-
-    // If there are runtime properties, we log them now.
-    final Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
-        .getRuntimeProperties();
-    if (runtimeProperties != null && !runtimeProperties.isEmpty()) {
-      this.logger.info("Other Runtime Props: " + runtimeProperties);
-    }
 
     if (this.watcher != null) {
       this.watcher.setLogger(this.logger);
@@ -489,14 +451,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
    */
   private void createLogger(final String flowId) {
     // Create logger
-    // If this is a containerized execution then there is no need for a custom logger.
-    // The logs would be appended to server logs and persisted from FlowContainer.
-    if (isContainerizedDispatchMethodEnabled()) {
-      this.logger = Logger.getLogger(FlowRunner.class);
-      return;
-    }
-
-    // Not containerized execution, fallback to existing logic.
     final String loggerName = this.execId + "." + flowId;
     this.logger = Logger.getLogger(loggerName);
 
@@ -515,7 +469,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   private void closeLogger() {
-    if (!isContainerizedDispatchMethodEnabled() && this.logger != null) {
+    if (this.logger != null) {
       this.logger.removeAppender(this.flowAppender);
       this.flowAppender.close();
 
@@ -529,7 +483,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private void loadAllProperties() throws IOException {
     // First load all the properties
-    for (final ImmutableFlowProps fprops : this.flow.getFlowProps()) {
+    for (final FlowProps fprops : this.flow.getFlowProps()) {
       final String source = fprops.getSource();
       final File propsPath = new File(this.execDir, source);
       final Props props = new Props(null, propsPath);
@@ -537,7 +491,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     }
 
     // Resolve parents
-    for (final ImmutableFlowProps fprops : this.flow.getFlowProps()) {
+    for (final FlowProps fprops : this.flow.getFlowProps()) {
       if (fprops.getInheritedSource() != null) {
         final String source = fprops.getSource();
         final String inherit = fprops.getInheritedSource();
@@ -920,7 +874,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     // 2. Parent Flow Properties
     final ExecutableFlowBase parentFlow = node.getParentFlow();
     if (parentFlow != null) {
-      // flow level runtime props have been already applied on parent input props
       final Props flowProps = Props.clone(parentFlow.getInputProps());
       flowProps.setEarliestAncestor(props);
       props = flowProps;
@@ -940,53 +893,19 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       props = jobSource;
     }
 
-    // 5. Runtime properties
-    Map<String, Map<String, String>> runtimeProperties = this.flow.getExecutionOptions()
-        .getRuntimeProperties();
-    if (runtimeProperties == null) {
-      runtimeProperties = new HashMap<>();
-    }
-    if (isOverrideExistingEnabled()) {
-      // 5.a.1. apply flow level runtime props
+    if (this.azkabanProps.getBoolean(
+        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false)) {
+      // Flow override props are configured to also override existing job props
+      // =>
+      // 5. If there are any runtime flow overrides, we apply them now.
       final Map<String, String> flowParam =
           this.flow.getExecutionOptions().getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
-        props = new Props(props, flowParam);
+        props.putAll(flowParam);
       }
-      // 5.a.2. apply node-specific runtime props recursively
-      props = applyRuntimeProperties(node, runtimeProperties, props);
-    } else if (runtimeProperties.containsKey(node.getNestedId())) {
-      // 5.b. apply node-specific runtime props (current node only)
-      props = new Props(props, runtimeProperties.get(node.getNestedId()));
     }
 
     node.setInputProps(props);
-  }
-
-  private boolean isOverrideExistingEnabled() {
-    return this.azkabanProps.getBoolean(
-        ConfigurationKeys.AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER, false);
-  }
-
-  private Props applyRuntimeProperties(final ExecutableNode node,
-      final Map<String, Map<String, String>> runtimeProperties, final Props props) {
-    Props propsWithOverides = props;
-    if (node.getParentFlow() != null && !parentIsOnTheSameLevel(node)) {
-      // apply recursively top->down
-      propsWithOverides = applyRuntimeProperties(node.getParentFlow(), runtimeProperties, props);
-    }
-    if (runtimeProperties.containsKey(node.getNestedId())) {
-      // runtime props override any existing props
-      propsWithOverides = new Props(propsWithOverides, runtimeProperties.get(node.getNestedId()));
-    }
-    return propsWithOverides;
-  }
-
-  /**
-   * Detects if the "parent" is actually the root job node.
-   */
-  private boolean parentIsOnTheSameLevel(final ExecutableNode node) {
-    return node.getParentFlow() instanceof ExecutableFlow;
   }
 
   /**
@@ -1003,8 +922,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     if (FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
       final String jobPath =
           node.getParentFlow().getFlowId() + Constants.PATH_DELIMITER + node.getId();
-      props = FlowLoaderUtils.loadPropsFromYamlFile(this.projectLoader,
-          this.flow, jobPath);
+      props = loadPropsFromYamlFile(jobPath);
       if (props == null) {
         this.logger.info("Job props loaded from yaml file is empty for job " + node.getId());
         return props;
@@ -1049,6 +967,44 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return props;
   }
 
+  private Props loadPropsFromYamlFile(final String path) {
+    File tempDir = null;
+    Props props = null;
+    try {
+      tempDir = Files.createTempDir();
+      props = FlowLoaderUtils.getPropsFromYamlFile(path, getFlowFile(tempDir));
+    } catch (final Exception e) {
+      this.logger.error("Failed to get props from flow file. " + e);
+    } finally {
+      if (tempDir != null && tempDir.exists()) {
+        try {
+          FileUtils.deleteDirectory(tempDir);
+        } catch (final IOException e) {
+          this.logger.error("Failed to delete temp directory." + e);
+          tempDir.deleteOnExit();
+        }
+      }
+    }
+    return props;
+  }
+
+  private File getFlowFile(final File tempDir) throws Exception {
+    final List<FlowProps> flowPropsList = ImmutableList.copyOf(this.flow.getFlowProps());
+    // There should be exact one source (file name) for each flow file.
+    if (flowPropsList.isEmpty() || flowPropsList.get(0) == null) {
+      throw new ProjectManagerException(
+          "Failed to get flow file source. Flow props is empty for " + this.flow.getId());
+    }
+    final String source = flowPropsList.get(0).getSource();
+    final int flowVersion = this.projectLoader
+        .getLatestFlowVersion(this.flow.getProjectId(), this.flow.getVersion(), source);
+    final File flowFile = this.projectLoader
+        .getUploadedFlowFile(this.flow.getProjectId(), this.flow.getVersion(), source,
+            flowVersion, tempDir);
+
+    return flowFile;
+  }
+
   @SuppressWarnings("FutureReturnValueIgnored")
   private void runExecutableNode(final ExecutableNode node) throws IOException {
     // Collect output props from the job's dependencies.
@@ -1058,8 +1014,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     // Attach Ramp Props if there is any desired properties
     final String jobId = node.getId();
-    final String jobType = Optional.ofNullable(node.getInputProps())
-        .map(props -> props.getString("type"))
+    final String jobType = Optional.ofNullable(node.getInputProps()).map(props -> props.getString("type"))
         .orElse(null);
     if (jobType != null && jobId != null) {
       final Props rampProps = this.flow.getRampPropsForJob(jobId, jobType);
@@ -1242,7 +1197,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     final JobRunner jobRunner =
         new JobRunner(node, path.getParentFile(), this.executorLoader,
-            this.jobtypeManager, this.azkabanProps, this.flowRunnerProxy);
+            this.jobtypeManager, this.azkabanProps);
 
     if (this.watcher != null) {
       jobRunner.setPipeline(this.watcher, this.pipelineLevel);
@@ -1397,18 +1352,19 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     long maxStartTime = -1;
     while (!queue.isEmpty()) {
       final ExecutableNode node = queue.poll();
-      final Status initStatus = node.getStatus();
+      final Status oldStatus = node.getStatus();
       maxStartTime = Math.max(node.getStartTime(), maxStartTime);
+
       final long currentTime = System.currentTimeMillis();
-      if (initStatus == Status.SUCCEEDED) {
+      if (node.getStatus() == Status.SUCCEEDED) {
         // This is a candidate parent for restart
         nodesToRetry.add(node);
         continue;
-      } else if (initStatus == Status.RUNNING) {
+      } else if (node.getStatus() == Status.RUNNING) {
         continue;
-      } else if (initStatus == Status.KILLING) {
+      } else if (node.getStatus() == Status.KILLING) {
         continue;
-      } else if (initStatus == Status.SKIPPED || initStatus == Status.DISABLED) {
+      } else if (node.getStatus() == Status.SKIPPED) {
         node.setStatus(Status.DISABLED);
         node.setEndTime(-1);
         node.setStartTime(-1);
@@ -1416,15 +1372,13 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       } else if (node instanceof ExecutableFlowBase) {
         final ExecutableFlowBase base = (ExecutableFlowBase) node;
         switch (base.getStatus()) {
-          case READY:
-            // Node hasn't run yet, continue analyzing its IN nodes
-            break;
           case CANCELLED:
             node.setStatus(Status.READY);
             node.setEndTime(-1);
             node.setStartTime(-1);
             node.setUpdateTime(currentTime);
-            // Break out of the switch. We'll reset the flow just like a normal node.
+            // Break out of the switch. We'll reset the flow just like a normal
+            // node
             break;
           case KILLED:
           case FAILED:
@@ -1432,24 +1386,27 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
             resetFailedState(base, nodesToRetry);
             continue;
           default:
-            // Continue the while loop. If the job is in a finished state that's not a failure, we
-            // don't want to reset the job.
+            // Continue the while loop. If the job is in a finished state that's
+            // not
+            // a failure, we don't want to reset the job.
             continue;
         }
-      } else if (initStatus == Status.CANCELLED) {
+      } else if (node.getStatus() == Status.CANCELLED) {
         // Not a flow, but killed
         node.setStatus(Status.READY);
         node.setStartTime(-1);
         node.setEndTime(-1);
         node.setUpdateTime(currentTime);
-      } else if (initStatus == Status.FAILED || initStatus == Status.KILLED) {
+      } else if (node.getStatus() == Status.FAILED
+          || node.getStatus() == Status.KILLED) {
         node.resetForRetry();
         nodesToRetry.add(node);
       }
 
-      if (!(node instanceof ExecutableFlowBase) && node.getStatus() != initStatus) {
+      if (!(node instanceof ExecutableFlowBase)
+          && node.getStatus() != oldStatus) {
         this.logger.info("Resetting job '" + node.getNestedId() + "' from "
-            + initStatus + " to " + node.getStatus());
+            + oldStatus + " to " + node.getStatus());
       }
 
       for (final String inId : node.getInNodes()) {
@@ -1461,7 +1418,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     // At this point, the following code will reset the flow
     final Status oldFlowState = flow.getStatus();
     if (maxStartTime == -1) {
-      // Nothing has run inside the flow, so we assume the flow hasn't even started running yet.
+      // Nothing has run inside the flow, so we assume the flow hasn't even
+      // started running yet.
       flow.setStatus(Status.READY);
     } else {
       flow.setStatus(Status.RUNNING);
@@ -1470,15 +1428,16 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // start node has not.
       for (final String id : flow.getStartNodes()) {
         final ExecutableNode node = flow.getExecutableNode(id);
-        if (node.getStatus() == Status.READY || node.getStatus() == Status.DISABLED) {
+        if (node.getStatus() == Status.READY
+            || node.getStatus() == Status.DISABLED) {
           nodesToRetry.add(node);
         }
       }
     }
     flow.setUpdateTime(System.currentTimeMillis());
     flow.setEndTime(-1);
-    this.logger.info("Resetting flow '" + flow.getNestedId() + "' from " + oldFlowState + " to "
-        + flow.getStatus());
+    this.logger.info("Resetting flow '" + flow.getNestedId() + "' from "
+        + oldFlowState + " to " + flow.getStatus());
   }
 
   private void interrupt() {
@@ -1563,73 +1522,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return this.flowListener;
   }
 
-  /**
-   * This class is responsible to making changes to the {@link FlowRunner} object. This proxy class
-   * object can be passed to other class objects without risking the flowRunner object itself.
-   * <p>
-   * Example: This proxy class object can be passed to JobRunner class object for setting
-   * effectiveUsers in the FlowRunner which doesn't have a direct reference to FlowRunner class
-   * object.
-   */
-  public class FlowRunnerProxy {
-
-    /**
-     *
-     * @param jobId
-     * @param effectiveUser
-     * @param jobType
-     */
-    public void setEffectiveUser(final String jobId, final String effectiveUser,
-        final Optional<String> jobType) {
-      if (StringUtils.isBlank(jobId)) {
-        logger.error("Job effective user can't be set as jobId string is blank.");
-        return;
-      }
-      if (StringUtils.isBlank(effectiveUser)) {
-        logger.error("Job effective user can't be set as effectiveUser string is blank.");
-        return;
-      }
-      final String previousVal;
-      if (!jobType.isPresent()) {
-        logger.error("Job effective user can't be set as jobType is absent.");
-        return;
-      }
-      // Currently noop is the only jobtype for ignoredJobEffectiveUsers, but in future there can
-      // be more.
-      if (jobType.get().equals("noop")) {
-        previousVal = FlowRunner.this.ignoredJobEffectiveUsers.put(jobId, effectiveUser);
-      } else {
-        previousVal = FlowRunner.this.jobEffectiveUsers.put(jobId, effectiveUser);
-      }
-      if (null != previousVal) {
-        logger.info(
-            String.format("Updated effectiveUser map for id: %s, prevVal: %s, newVal: %s", jobId,
-                previousVal, effectiveUser));
-      } else {
-        logger.info(String
-            .format("Updated effectiveUser map for id: %s, val: %s", jobId, effectiveUser));
-      }
-    }
-
-    /**
-     *
-     * @param cpuUtilized measured in cpu Units. One cpu is equivalent to 1 vCPU/Core for
-     *            cloud providers and 1 hyperthread on bare-metal Intel processors. Fractional
-     *            values are allowed.
-     */
-    public void setCpuUtilization(final Double cpuUtilized) {
-      FlowRunner.this.cpuUtilized = Optional.ofNullable(cpuUtilized);
-    }
-
-    /**
-     *
-     * @param memoryUtilizedInBytes by the Azkaban flow.
-     */
-    public void setMemoryUtilization(final Long memoryUtilizedInBytes) {
-      FlowRunner.this.memoryUtilizedInBytes = Optional.ofNullable(memoryUtilizedInBytes);
-    }
-  }
-
   // Class helps report the flow start and stop events.
   @VisibleForTesting
   class FlowRunnerEventListener implements EventListener<Event> {
@@ -1642,54 +1534,35 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
-      metaData.put(EventReporterConstants.FLOW_NAME, flow.getId());
+      metaData.put("flowName", flow.getId());
       // Azkaban executor hostname
-      metaData.put(EventReporterConstants.AZ_HOST, props.getString(AZKABAN_SERVER_HOST_NAME,
-          "unknown"));
+      metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
       // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
       // or else use jetty.hostname
-      metaData.put(EventReporterConstants.AZ_WEBSERVER,
-          props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-              props.getString("jetty.hostname", "localhost")));
-      metaData.put(EventReporterConstants.PROJECT_NAME, flow.getProjectName());
-      metaData.put(EventReporterConstants.SUBMIT_USER, flow.getSubmitUser());
-      metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(flow.getExecutionId()));
-      metaData.put(EventReporterConstants.START_TIME, String.valueOf(flow.getStartTime()));
-      metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
+      metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+          props.getString("jetty.hostname", "localhost")));
+      metaData.put("projectName", flow.getProjectName());
+      metaData.put("submitUser", flow.getSubmitUser());
+      metaData.put("executionId", String.valueOf(flow.getExecutionId()));
+      metaData.put("startTime", String.valueOf(flow.getStartTime()));
+      metaData.put("submitTime", String.valueOf(flow.getSubmitTime()));
       // Flow_Status_Changed event attributes: flowVersion, failedJobId, modifiedBy
-      metaData.put(EventReporterConstants.FLOW_VERSION,
-          String.valueOf(flow.getAzkabanFlowVersion()));
-      metaData.put(EventReporterConstants.FAILED_JOB_ID, flow.getFailedJobId());
-      metaData.put(EventReporterConstants.MODIFIED_BY, flow.getModifiedBy());
+      metaData.put("flowVersion", String.valueOf(flow.getAzkabanFlowVersion()));
+      metaData.put("failedJobId", flow.getFailedJobId());
+      metaData.put("modifiedBy", flow.getModifiedBy());
       // Flow_Status_Changed event elapsed time
-      metaData.put(EventReporterConstants.FLOW_KILL_DURATION,
-          String.valueOf(flowRunner.getFlowKillDuration()));
-      metaData.put(EventReporterConstants.FLOW_PAUSE_DURATION,
-          String.valueOf(flowRunner.getFlowPauseDuration()));
-      metaData.put(EventReporterConstants.FLOW_PREPARATION_DURATION,
-          String.valueOf(flowRunner.getFlowCreateTime()));
+      metaData.put("flowKillDuration", String.valueOf(flowRunner.getFlowKillDuration()));
+      metaData.put("flowPauseDuration", String.valueOf(flowRunner.getFlowPauseDuration()));
+      metaData.put("flowPreparationDuration", String.valueOf(flowRunner.flowCreateTime));
       // FLow SLA option string
-      metaData.put(EventReporterConstants.SLA_OPTIONS, flow.getSlaOptionStr());
-      // Flow executor type by versionSet
-      if (flow.getVersionSet() != null) { // Flow version set is set when flow is
-        // executed in a container
-        metaData.put(EventReporterConstants.VERSION_SET,
-            ServerUtils.getVersionSetJsonString(flow.getVersionSet()));
-      }
-      if (flow.getDispatchMethod() == DispatchMethod.CONTAINERIZED) { // Determine executor type
-        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
-      } else {
-        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
-      }
+      metaData.put("slaOptions", flow.getSlaOptionStr());
 
       // Project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
-      metaData.put(EventReporterConstants.PROJECT_FILE_UPLOAD_USER, handler.getUploader());
-      metaData.put(EventReporterConstants.PROJECT_FILE_UPLOADER_IP_ADDR,
-          handler.getUploaderIpAddr());
-      metaData.put(EventReporterConstants.PROJECT_FILE_NAME, handler.getFileName());
-      metaData.put(EventReporterConstants.PROJECT_FILE_UPLOAD_TIME,
-          String.valueOf(handler.getUploadTime()));
+      metaData.put("projectFileUploadUser", handler.getUploader());
+      metaData.put("projectFileUploaderIpAddr", handler.getUploaderIpAddr());
+      metaData.put("projectFileName", handler.getFileName());
+      metaData.put("projectFileUploadTime", String.valueOf(handler.getUploadTime()));
 
       // Propagate flow properties to Event Reporter
       if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
@@ -1717,67 +1590,29 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     @Override
     public synchronized void handleEvent(final Event event) {
-      if (event.getType().isFlowEventType()) {
+      if (event.getType() == EventType.FLOW_STARTED) {
         final FlowRunner flowRunner = (FlowRunner) event.getRunner();
         final ExecutableFlow flow = flowRunner.getExecutableFlow();
-        if (event.getType() == EventType.FLOW_STARTED) {
-          // Estimate flow wait time duration including time taken to create pod (for containerized
-          // executions) and submit flowRunner, discrepancy caused by different system time in web
-          // server (where executable flow is submitted) and executor/container.
-          if (flow.getSubmitTime() > 0 ) {
-            flowRunner.setFlowCreateTime(System.currentTimeMillis() - flow.getSubmitTime());
-          }
-          FlowRunner.this.logger.info("Flow started: " + flow.getId());
-          FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
-        } else if (event.getType() == EventType.FLOW_STATUS_CHANGED) {
-          if (flow.getStatus() == Status.KILLING || flow.getStatus() == Status.KILLED) {
-            FlowRunner.this.logger
-                .info("Flow is killed by " + flow.getModifiedBy() + ": " + flow.getId());
-          }
-          final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
-          flowMetadata.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
-          FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
-        } else if (event.getType() == EventType.FLOW_FINISHED) {
-          FlowRunner.this.logger.info("Flow ended: " + flow.getId());
-          final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
-          flowMetadata.put(EventReporterConstants.END_TIME, String.valueOf(flow.getEndTime()));
-          flowMetadata.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
-
-          // Add the unique effectiveUsers across all jobs as a comma separated string.
-          setEffectiveUsers(flowRunner, flowMetadata);
-
-          // Add resource utilization if they are present
-          cpuUtilized.ifPresent(val -> flowMetadata.put(EventReporterConstants.CPU_UTILIZED,
-              Double.toString(val)));
-          memoryUtilizedInBytes
-              .ifPresent(val -> flowMetadata.put(EventReporterConstants.MEMORY_UTILIZED_IN_BYTES,
-                  Long.toString(val)));
-          logger.info("FLOW_FINISHED metadata: \n" + flowMetadata);
-          FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
+        FlowRunner.this.logger.info("Flow started: " + flow.getId());
+        FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
+      } else if (event.getType() == EventType.FLOW_STATUS_CHANGED) {
+        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+        final ExecutableFlow flow = flowRunner.getExecutableFlow();
+        if (flow.getStatus() == Status.KILLING || flow.getStatus() == Status.KILLED) {
+          FlowRunner.this.logger
+              .info("Flow is killed by " + flow.getModifiedBy() + ": " + flow.getId());
         }
-      }
-    }
-
-    /**
-     * @param flowRunner
-     * @param flowMetadata
-     */
-    private void setEffectiveUsers(final FlowRunner flowRunner,
-        final Map<String, String> flowMetadata) {
-      final HashSet<String> effectiveUsers = new HashSet<>();
-
-      // Utilize effectiveUsers for ignored jobtypes only when effectiveUsers for other
-      // jobtypes are not present. Hence if a flow has only one job which is noop, then the
-      // effectiveUsers of flow will have the effectiveUser of the noop job.
-      if (flowRunner.jobEffectiveUsers.isEmpty()) {
-        effectiveUsers.addAll(new HashSet<>(flowRunner.ignoredJobEffectiveUsers.values()));
-      } else {
-        effectiveUsers.addAll(new HashSet<>(flowRunner.jobEffectiveUsers.values()));
-      }
-      if (!effectiveUsers.isEmpty()) {
-        final String effectiveUsersString = String.join(",", effectiveUsers);
-        flowRunner.logger.info("All EffectiveUsers: " + effectiveUsersString);
-        flowMetadata.put(EventReporterConstants.EFFECTIVE_USERS, effectiveUsersString);
+        final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
+        flowMetadata.put("flowStatus", flow.getStatus().name());
+        FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
+      } else if (event.getType() == EventType.FLOW_FINISHED) {
+        final FlowRunner flowRunner = (FlowRunner) event.getRunner();
+        final ExecutableFlow flow = flowRunner.getExecutableFlow();
+        FlowRunner.this.logger.info("Flow ended: " + flow.getId());
+        final Map<String, String> flowMetadata = getFlowMetadata(flowRunner);
+        flowMetadata.put("endTime", String.valueOf(flow.getEndTime()));
+        flowMetadata.put("flowStatus", flow.getStatus().name());
+        FlowRunner.this.azkabanEventReporter.report(event.getType(), flowMetadata);
       }
     }
   }
@@ -1793,52 +1628,29 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       final ExecutableNode node = jobRunner.getNode();
       final Props props = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
       final Map<String, String> metaData = new HashMap<>();
-      metaData.put(EventReporterConstants.JOB_ID, node.getId());
+      metaData.put("jobId", node.getId());
       // Flow specific properties
       final ExecutableFlow executableFlow = node.getExecutableFlow();
-      metaData.put(EventReporterConstants.EXECUTION_ID,
-          String.valueOf(executableFlow.getExecutionId()));
-      metaData.put(EventReporterConstants.FLOW_NAME, executableFlow.getId());
-      metaData.put(EventReporterConstants.PROJECT_NAME, executableFlow.getProjectName());
+      metaData.put("executionId", String.valueOf(executableFlow.getExecutionId()));
+      metaData.put("flowName", executableFlow.getId());
+      metaData.put("projectName", executableFlow.getProjectName());
 
-      metaData.put(EventReporterConstants.START_TIME, String.valueOf(node.getStartTime()));
-      metaData.put(EventReporterConstants.JOB_TYPE, String.valueOf(node.getType()));
-      // Add version of the job type
-      if (executableFlow.getVersionSet() != null) { // Flow version set is set when flow is
-        // executed in a container, which also indicates executor type is Kubernetes.
-        final VersionInfo versionInfo =
-            executableFlow.getVersionSet().getImageToVersionMap()
-                .getOrDefault(node.getType(), null);
-        if (versionInfo != null) {
-          // Add job type image version number
-          metaData.put(EventReporterConstants.VERSION, versionInfo.getVersion());
-        }
-      }
-      if (executableFlow.getDispatchMethod()
-          == DispatchMethod.CONTAINERIZED) { // Determine executor type
-        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.KUBERNETES));
-      } else {
-        metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
-      }
-
+      metaData.put("startTime", String.valueOf(node.getStartTime()));
+      metaData.put("jobType", String.valueOf(node.getType()));
       // Azkaban executor hostname
-      metaData.put(EventReporterConstants.AZ_HOST, props.getString(AZKABAN_SERVER_HOST_NAME,
-          "unknown"));
+      metaData.put("azkabanHost", props.getString(AZKABAN_SERVER_HOST_NAME, "unknown"));
       // As per web server construct, When AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME is set use that,
       // or else use jetty.hostname
-      metaData.put(EventReporterConstants.AZ_WEBSERVER,
-          props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-              props.getString("jetty.hostname", "localhost")));
-      metaData.put(EventReporterConstants.JOB_PROXY_USER, jobRunner.getEffectiveUser());
+      metaData.put("azkabanWebserver", props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
+          props.getString("jetty.hostname", "localhost")));
+      metaData.put("jobProxyUser", jobRunner.getEffectiveUser());
       // attempt id
-      metaData.put(EventReporterConstants.ATTEMPT_ID, String.valueOf(node.getAttempt()));
+      metaData.put("attemptId", String.valueOf(node.getAttempt()));
       // Job time in queue, kill time, killed by, and failure Message
-      metaData.put(EventReporterConstants.MODIFIED_BY, node.getModifiedBy());
-      metaData.put(EventReporterConstants.JOB_KILL_DURATION,
-          String.valueOf(jobRunner.getKillDuration()));
-      metaData.put(EventReporterConstants.QUEUE_DURATION,
-          String.valueOf(jobRunner.getQueueDuration()));
-      metaData.put(EventReporterConstants.FAILURE_MESSAGE, node.getFailureMessage());
+      metaData.put("modifiedBy", node.getModifiedBy());
+      metaData.put("jobKillDuration", String.valueOf(jobRunner.getKillDuration()));
+      metaData.put("queueDuration", String.valueOf(jobRunner.getQueueDuration()));
+      metaData.put("failureMessage", node.getFailureMessage());
 
       // Propagate job properties to Event Reporter
       FlowRunner.propagateMetadataFromProps(metaData, node.getInputProps(), "job", node.getId(),
@@ -1860,8 +1672,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
         if (FlowRunner.this.azkabanEventReporter != null) {
           final Map<String, String> jobMetadata = getJobMetadata(jobRunner);
-          jobMetadata.put(EventReporterConstants.JOB_STATUS, node.getStatus().name());
-          jobMetadata.put(EventReporterConstants.END_TIME, String.valueOf(node.getEndTime()));
+          jobMetadata.put("jobStatus", node.getStatus().name());
+          jobMetadata.put("endTime", String.valueOf(node.getEndTime()));
           FlowRunner.this.azkabanEventReporter.report(event.getType(), jobMetadata);
         }
         final long seconds = (node.getEndTime() - node.getStartTime()) / 1000;

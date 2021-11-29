@@ -48,15 +48,14 @@
     <div class="container-full">
       <div class="row">
         <div class="header-title">
-          <h1>
-            <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">
-              Job <small>$jobid</small>
-            </a>
-          </h1>
+          <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job
+            <small>$jobid</small>
+          </a></h1>
         </div>
         <div class="header-control">
           <div class="pull-right header-form">
-            <a href="${context}/manager?project=${project.name}&job=$jobid&history" class="btn btn-info btn-sm">History</a>
+            <a href="${context}/manager?project=${project.name}&job=$jobid&history"
+               class="btn btn-info btn-sm">History</a>
           </div>
           <div class="clearfix"></div>
         </div>
@@ -66,25 +65,12 @@
   <div class="page-breadcrumb">
     <div class="container-full">
       <ol class="breadcrumb">
-        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-
-        #set($ref = "${context}/manager?project=${project.name}&flow=")
-        #foreach( $flow in ${flowlist} )
-          #set($ref = $ref + $flow)
-
-          #if( $foreach.first )
-            #set($flowlabel = "Flow")
-            #set($linkclass = "")
-          #else
-            #set($flowlabel = "")
-            #set($linkclass = "flowlink")
-          #end
-
-          <li class="${linkclass}"><a href="${ref}"><strong>$flowlabel</strong> $flow</a></li>
-
-          #set($ref = $ref + ${pathDelimiter})
-        #end
-
+        <li><a
+            href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
+        </a></li>
+        <li><a
+            href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid
+        </a></li>
         <li class="active"><strong>Job</strong> $jobid</li>
       </ol>
     </div>
@@ -102,7 +88,8 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <div class="pull-right">
-              <button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${project.name}", "${flowid}", "${jobid}")'>Edit
+              <button id="edit-job-btn" class="btn btn-xs btn-primary"
+                      onclick='jobEditView.show("${project.name}", "${flowid}", "${jobid}")'>Edit
               </button>
             </div>
             Job Properties
@@ -111,16 +98,16 @@
           <table class="table table-striped table-bordered properties-table">
             <thead>
             <tr>
-              <th class="tb-pname">Property Name</th>
+              <th class="tb-pname">Parameter Name</th>
               <th class="tb-pvalue">Value</th>
             </tr>
             </thead>
             <tbody>
-              #foreach ($prop in $jobProperties)
-                <tr>
-                  <td class="property-key">$prop.first</td>
-                  <td class="property-value">$prop.second</td>
-                </tr>
+              #foreach ($parameter in $parameters)
+              <tr>
+                <td class="property-key">$parameter.first</td>
+                <td class="property-value">$parameter.second</td>
+              </tr>
               #end
             </tbody>
           </table>
@@ -142,57 +129,57 @@
             #if ($condition)
               <li class="list-group-item">$condition</li>
             #else
-              <li class="list-group-item">No conditions.</li>
+              <li class="list-group-item">No Condition</li>
             #end
           </ul>
         </div><!-- /panel -->
 
-        ## Dependencies
+      ## Dependencies
 
         <div class="panel panel-default">
           <div class="panel-heading">Dependencies</div>
           <ul class="list-group">
-            #if (${dependencies.isEmpty()})
-              <li class="list-group-item">No dependencies.</li>
-            #else
+            #if ($dependencies)
               #foreach($dependency in $dependencies)
                 <li class="list-group-item">
                   <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependency">$dependency</a>
                 </li>
               #end
+            #else
+              <li class="list-group-item">No Dependencies</li>
             #end
           </ul>
         </div><!-- /panel -->
 
-        ## Dependents
+      ## Dependents
 
         <div class="panel panel-default">
           <div class="panel-heading">Dependents</div>
           <ul class="list-group">
-            #if (${dependents.isEmpty()})
-              <li class="list-group-item">No dependents.</li>
-            #else
+            #if ($dependents)
               #foreach($dependent in $dependents)
                 <li class="list-group-item">
                   <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependent">$dependent</a>
                 </li>
               #end
+            #else
+              <li class="list-group-item">No Dependencies</li>
             #end
 
           </ul>
         </div><!-- /panel -->
 
         <div class="panel panel-default">
-          <div class="panel-heading">Inherited Properties</div>
+          <div class="panel-heading">Properties</div>
           <ul class="list-group">
-            #if (${inheritedProperties.isEmpty})
-              <li class="list-group-item">No inherited properties.</li>
-            #else
-              #foreach($prop in ${inheritedProperties})
+            #if ($properties)
+              #foreach($property in $properties)
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${prop.right}&propNode=${prop.middle}">${prop.left}</a>
+                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$property">$property</a>
                 </li>
               #end
+            #else
+              <li class="list-group-item">No Property Files For This Job</li>
             #end
           </ul>
         </div><!-- /panel -->
@@ -205,7 +192,8 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true" id="close-btn">&times;
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true"
+                    id="close-btn">&times;
             </button>
             <h4 class="modal-title">Edit Job</h4>
           </div>
@@ -222,28 +210,33 @@
                 <td id="jobType"></td>
               </tr>
               </tbody>
-            </table>
-            <h4>General Job Settings</h4>
-            <p><strong>Be Aware:</strong> A job may be shared by multiple flows. The change will be global!</p>
-            <table id="generalProps" class="table table-striped table-bordered">
-              <thead>
-              <tr>
-                <th class="property-key">Name</th>
-                <th>Value</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr id="addRow">
-                <td id="addRow-col" colspan="2">
-                  <button type="button" class="btn btn-xs btn-success" id="add-btn">Add Row</button>
-                </td>
-              </tr>
-              </tbody>
-            </table>
+              <table>
+                <h4>General Job Settings</h4>
+                <p><strong>Be Aware:</strong> A job may be shared by multiple flows. The change will
+                  be global!</p>
+                <table id="generalProps" class="table table-striped table-bordered">
+                  <thead>
+                  <tr>
+                    <th class="property-key">Name</th>
+                    <th>Value</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr id="addRow">
+                    <td id="addRow-col" colspan="2">
+                      <button type="button" class="btn btn-xs btn-success" id="add-btn">Add Row
+                      </button>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" id="cancel-btn" data-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="set-btn">Set/Change Job Description</button>
+            <button type="button" class="btn btn-default" id="cancel-btn" data-dismiss="modal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="set-btn">Set/Change Job Description
+            </button>
           </div>
         </div>
       </div>

@@ -3,7 +3,6 @@ package azkaban.executor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import azkaban.DispatchMethod;
 import azkaban.db.EncodingType;
 import azkaban.executor.FetchActiveFlowDao.FetchActiveExecutableFlows;
 import azkaban.utils.JSONUtils;
@@ -48,7 +47,7 @@ public class FetchActiveFlowDaoTest {
   }
 
   private void mockResultWithData() throws Exception {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     final String json = JSONUtils.toJSON(flow.toObject());
     final byte[] data = json.getBytes("UTF-8");
     mockExecution(EncodingType.PLAIN.getNumVal(), data);

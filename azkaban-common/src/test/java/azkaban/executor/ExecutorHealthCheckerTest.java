@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.DispatchMethod;
 import azkaban.alert.Alerter;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -70,11 +69,11 @@ public class ExecutorHealthCheckerTest {
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.executorHealthChecker = new ExecutorHealthChecker(this.props, this.loader, this
         .apiGateway, this.alerterHolder);
-    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
+    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     this.flow1.getExecutionOptions().setFailureEmails(Arrays.asList(FLOW_ADMIN_EMAIL.split(",")));
     this.flow1.setExecutionId(EXECUTION_ID_11);
     this.flow1.setStatus(Status.RUNNING);
-    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     this.flow2.setExecutionId(EXECUTION_ID_12);
     this.flow2.setStatus(Status.RUNNING);
 
@@ -90,9 +89,9 @@ public class ExecutorHealthCheckerTest {
   @Test
   public void checkExecutorHealthAlive() throws Exception {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
     assertThat(this.flow1.getStatus()).isEqualTo(Status.RUNNING);
@@ -105,7 +104,7 @@ public class ExecutorHealthCheckerTest {
   @Test
   public void checkExecutorHealthExecutorIdRemoved() throws Exception {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, null, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, null), this.flow1));
     when(this.loader.fetchExecutableFlow(EXECUTION_ID_11)).thenReturn(this.flow1);
     this.executorHealthChecker.checkExecutorHealth();
     verify(this.loader).updateExecutableFlow(this.flow1);
@@ -121,23 +120,23 @@ public class ExecutorHealthCheckerTest {
     // Therefore underlying call to apiGateway.callWithExecutionId returns an empty Map for all
     // invocations of executorHealthChecker.checkExecutorHealth() in this test.
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     this.executorHealthChecker.checkExecutorHealth();
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null);
+        ConnectorParams.PING_ACTION, null, null);
     verifyZeroInteractions(this.alerterHolder);
 
     // Pinged executor successfully. Failure count (=0) < MAX_FAILURE_COUNT (=2). Do not alert.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
     verifyZeroInteractions(this.alerterHolder);
 
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenReturn(null);
+        ConnectorParams.PING_ACTION, null, null)).thenReturn(null);
     this.executorHealthChecker.checkExecutorHealth();
     verifyZeroInteractions(this.alerterHolder);
 
@@ -163,9 +162,9 @@ public class ExecutorHealthCheckerTest {
   @Test
   public void testCheckExecutorHealthWrapperExceptionHandling() throws Exception {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenThrow(new RuntimeException("test exception"));
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
 
     // this will throw, causing the test to fail in case the error is not caught correctly
     this.executorHealthChecker.checkExecutorHealthQuietly();
@@ -179,23 +178,23 @@ public class ExecutorHealthCheckerTest {
   @Test
   public void testFailureDuringExecutorPing() throws Exception {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     this.activeFlows.put(EXECUTION_ID_12, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_12, this.executor2, DispatchMethod.POLL), this.flow2));
+        new ExecutionReference(EXECUTION_ID_12, this.executor2), this.flow2));
 
     // Throw a runtime exception for both executors.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenThrow(new RuntimeException("test exception"));
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
     when(this.apiGateway.callWithExecutionId(this.executor2.getHost(), this.executor2.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenThrow(new RuntimeException("test exception"));
+        ConnectorParams.PING_ACTION, null, null)).thenThrow(new RuntimeException("test exception"));
     this.executorHealthChecker.checkExecutorHealth();
 
     // Verify ping API is called for both executors. Implying that runtime exception for one of the
     // executors did not prevent the check on other executor.
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(),
-        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null, null);
+        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null);
     verify(this.apiGateway).callWithExecutionId(this.executor2.getHost(),
-        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null, null);
+        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null);
     verifyZeroInteractions(this.alerterHolder);
   }
 
@@ -207,14 +206,14 @@ public class ExecutorHealthCheckerTest {
   public void testFailureDuringAlerting() throws Exception {
     this.activeFlows.clear();
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
 
     // Force a failure of the executor ping API
     ExecutorManagerException healthcheckException = new ExecutorManagerException("test exception");
     when(this.apiGateway.callWithExecutionId(
         this.executor1.getHost(),
         this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null))
+        ConnectorParams.PING_ACTION, null, null))
         .thenThrow(healthcheckException);
 
     // Force an unchecked exception when sending alert emails for the healthcheck failure
@@ -250,9 +249,9 @@ public class ExecutorHealthCheckerTest {
   @Test
   public void testFailureDuringFinalization() throws Exception {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
+        new ExecutionReference(EXECUTION_ID_11, this.executor1), this.flow1));
     this.activeFlows.put(EXECUTION_ID_12, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_12, this.executor1, DispatchMethod.POLL), this.flow2));
+        new ExecutionReference(EXECUTION_ID_12, this.executor1), this.flow2));
 
     when(this.loader.fetchExecutableFlow(EXECUTION_ID_11)).thenThrow(new RuntimeException(
         "test runtime exception"));

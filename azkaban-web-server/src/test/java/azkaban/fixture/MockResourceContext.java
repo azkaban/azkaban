@@ -27,7 +27,6 @@ import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 
 public class MockResourceContext implements ResourceContext {
@@ -192,21 +191,6 @@ public class MockResourceContext implements ResourceContext {
   @Override
   public boolean isReturnEntityRequested() {
     return false;
-  }
-
-  @Override
-  public Set<String> getAlwaysProjectedFields() {
-    return null;
-  }
-
-  @Override
-  public boolean isFillInDefaultsRequested() {
-    return false;
-  }
-
-  @Override
-  public void setFillInDefaultValues(boolean fillInDefaultValues) {
-
   }
 
   public void setLocalAttr(final String name, final String value) {

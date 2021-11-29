@@ -1,7 +1,0 @@
-{
-  "imageType": "hadoopJava",
-  "description": "Hadoop Java Job",
-  "deployable": "IMAGE",
-  "ownerships":[{"owner":  "anath1", "role": "ADMIN"},
-                {"owner":  "apruthi", "role": "ADMIN"}]
-}

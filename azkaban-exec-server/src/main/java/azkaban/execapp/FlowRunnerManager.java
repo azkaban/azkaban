@@ -229,8 +229,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.jobtypeManager =
         new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             Constants.PluginManager.JOBTYPE_DEFAULTDIR), this.globalProps,
-            getClass().getClassLoader(), this.clusterRouter,
-            props.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
+            getClass().getClassLoader(), this.clusterRouter);
 
     ProjectCacheCleaner cleaner = null;
     this.LOGGER.info("Configuring Project Cache");
@@ -281,9 +280,6 @@ public class FlowRunnerManager implements EventListener<Event>,
       this.pollingService = new PollingService(pollingIntervalMillis,
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
-      this.triggerManager.setDispatchMethod(DispatchMethod.POLL);
-    } else {
-      this.triggerManager.setDispatchMethod(DispatchMethod.PUSH);
     }
   }
 
@@ -426,7 +422,9 @@ public class FlowRunnerManager implements EventListener<Event>,
     if (isAlreadyRunning(execId)) {
       return;
     }
+    final long tsBeforeFlowRunnerCreation = System.currentTimeMillis();
     final FlowRunner runner = createFlowRunner(execId);
+    runner.setFlowCreateTime(System.currentTimeMillis() - tsBeforeFlowRunnerCreation);
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -503,13 +501,9 @@ public class FlowRunnerManager implements EventListener<Event>,
     int numJobThreads = this.numJobThreadPerFlow;
     if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
       try {
-        if (!ProjectWhitelist.isXmlFileLoaded()) {
-          ProjectWhitelist.load(azkabanProps);
-        }
         final int numJobs =
             Integer.valueOf(options.getFlowParameters().get(
                 FLOW_NUM_JOB_THREADS));
-        LOGGER.info("Num of job threads read from flow parameter is " + numJobs);
         if (numJobs > 0 && (numJobs <= numJobThreads || ProjectWhitelist
             .isProjectWhitelisted(flow.getProjectId(),
                 WhitelistType.NumJobPerFlow))) {
@@ -1156,10 +1150,10 @@ public class FlowRunnerManager implements EventListener<Event>,
           if (FlowRunnerManager.this.azkabanProps
               .getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecutionWithLocking(
-                this.executorId, FlowRunnerManager.this.active, DispatchMethod.POLL);
+                this.executorId, FlowRunnerManager.this.active);
           } else {
             execId = FlowRunnerManager.this.executorLoader.selectAndUpdateExecution(this.executorId,
-                FlowRunnerManager.this.active, DispatchMethod.POLL);
+                FlowRunnerManager.this.active);
           }
           FlowRunnerManager.this.execMetrics.markOnePoll();
           if (execId == -1) {

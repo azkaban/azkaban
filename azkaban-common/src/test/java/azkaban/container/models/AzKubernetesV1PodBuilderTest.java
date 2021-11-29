@@ -43,49 +43,24 @@ public class AzKubernetesV1PodBuilderTest {
         String flowContainerImage = "path/azkaban-base-image:0.0.5";
         String azConfVer = "0.0.3";
         V1PodSpec podSpec = new AzKubernetesV1SpecBuilder(clusterName, Optional.empty())
-            .addInitContainerType(jobTypeName, jobTypeImage, ImagePullPolicy.IF_NOT_PRESENT,
-                jobTypeInitMountPath, jobTypeFlowMountPath, InitContainerType.JOBTYPE)
+            .addJobType(jobTypeName, jobTypeImage, ImagePullPolicy.IF_NOT_PRESENT,
+                jobTypeInitMountPath, jobTypeFlowMountPath)
             .addFlowContainer(flowContainerName, flowContainerImage, ImagePullPolicy.IF_NOT_PRESENT,
                 azConfVer)
             .addHostPathVolume("nscd-socket", "/var/run/nscd/socket", "Socket",
-                "/var/run/nscd/socket", true)
+                "/var/run/nscd/socket")
             .addSecretVolume("azkaban-private-properties", "azkaban-private-properties",
                 "/var/azkaban/private/conf")
             .addEnvVarToFlowContainer("envKey", "envValue")
             .withResources("500m", "500m", "500Mi", "500Mi")
             .build();
-        V1Pod pod1 = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
-            .withPodLabels(labels)
-            .withPodAnnotations(annotations)
-            .build();
-        String createdPodSpec1 = Yaml.dump(pod1).trim();
-        String readPodSpec1 = TestUtils.readResource("v1PodTest1.yaml", this).trim();
-        Assert.assertEquals(readPodSpec1, createdPodSpec1);
 
-        // Merge the podSpec created earlier with the pod from the template
-        AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate.getInstance(
-            this.getClass().getResource("v1PodTestTemplate1.yaml").getFile());
-        V1PodSpec podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
-        PodTemplateMergeUtils.mergePodSpec(podSpec, podSpecFromTemplate);
-        V1Pod pod2 = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
-            .withPodLabels(labels)
-            .withPodAnnotations(annotations)
-            .build();
-        String createdPodSpec2 = Yaml.dump(pod2).trim();
-        String readPodSpec2 = TestUtils.readResource("v1PodTest2.yaml", this).trim();
-        Assert.assertEquals(readPodSpec2, createdPodSpec2);
-
-        // Verify that the number of volumeMounts to flow container after Merge is five in the
-        // podSpecFromTemplate
-        Assert.assertEquals(5, podSpecFromTemplate.getContainers().get(0)
-            .getVolumeMounts().size());
-
-        // Verify that the number of volumeMounts in a new podSpecFromTemplate is two and hence
-        // it is not corrupted by the previous Merge
-        podTemplate = AzKubernetesV1PodTemplate.getInstance(
-            this.getClass().getResource("v1PodTestTemplate1.yaml").getFile());
-        podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
-        Assert.assertEquals(2, podSpecFromTemplate.getContainers().get(0)
-            .getVolumeMounts().size());
+        V1Pod pod = new AzKubernetesV1PodBuilder(podName, podNameSpace, podSpec)
+                .withPodLabels(labels)
+                .withPodAnnotations(annotations)
+                .build();
+        String createdPodSpec = Yaml.dump(pod).trim();
+        String readPodSpec = TestUtils.readResource("v1PodTest1.yaml", this).trim();
+        Assert.assertEquals(readPodSpec, createdPodSpec);
     }
 }

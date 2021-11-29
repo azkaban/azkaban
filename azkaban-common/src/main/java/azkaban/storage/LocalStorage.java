@@ -18,36 +18,33 @@
 package azkaban.storage;
 
 
-import static azkaban.utils.StorageUtils.getTargetProjectFilename;
+import static azkaban.utils.StorageUtils.*;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Dependency;
-import azkaban.spi.ProjectStorageMetadata;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
+import azkaban.spi.ProjectStorageMetadata;
 import azkaban.utils.FileIOUtils;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 @Singleton
 public class LocalStorage implements Storage {
-
-  private static final Logger log = LoggerFactory.getLogger(LocalStorage.class);
+  private static final Logger log = Logger.getLogger(LocalStorage.class);
 
   final File rootDirectory;
 
   @Inject
   public LocalStorage(final AzkabanCommonModuleConfig config) {
-    this.rootDirectory = validateDirectory(
-        createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
+    this.rootDirectory = validateDirectory(createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
   }
 
   private static File createIfDoesNotExist(final File baseDirectory) {
@@ -111,8 +108,7 @@ public class LocalStorage implements Storage {
   // Use LocalHadoopStorage or HdfsStorage instead for thin archive support.
   @Override
   public InputStream getDependency(final Dependency dep) throws IOException {
-    throw new UnsupportedOperationException(
-        "Dependency fetching is not supported with LocalStorage.");
+    throw new UnsupportedOperationException("Dependency fetching is not supported with LocalStorage.");
   }
 
   @Override

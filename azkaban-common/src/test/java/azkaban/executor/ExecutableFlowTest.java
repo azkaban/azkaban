@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.DispatchMethod;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
@@ -282,7 +281,6 @@ public class ExecutableFlowTest {
     Assert.assertNotNull(flow);
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    exFlow.setDispatchMethod(DispatchMethod.POLL);
 
     final Object obj = exFlow.toObject();
     final String exFlowJSON = JSONUtils.toJSON(obj);
@@ -300,7 +298,6 @@ public class ExecutableFlowTest {
     Assert.assertNotNull(flow);
 
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
-    exFlow.setDispatchMethod(DispatchMethod.POLL);
     exFlow.setExecutionId(101);
     // reset twice so that attempt = 2
     exFlow.resetForRetry();
@@ -359,7 +356,6 @@ public class ExecutableFlowTest {
     final Flow flow = this.project.getFlow("jobe");
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     exFlow.setExecutionId(101);
-    exFlow.setDispatchMethod(DispatchMethod.POLL);
 
     // Create copy of flow
     final Object obj = exFlow.toObject();

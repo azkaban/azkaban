@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
-import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -30,7 +29,6 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
-import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobExecutor.JobClassLoader;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
@@ -48,7 +46,6 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -56,7 +53,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public class JobRunnerTest {
 
@@ -93,31 +89,6 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testEffectiveUser() throws Exception {
-    final MockExecutorLoader loader = new MockExecutorLoader();
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    JobRunner runner =
-        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
-    runner.run();
-    String effectiveUser = runner.getEffectiveUser();
-    Assert.assertEquals(SUBMIT_USER, effectiveUser);
-    Assert.assertEquals(effectiveUser, runner.getProps().get("user.to.proxy"));
-
-    this.jobtypeManager.getJobTypePluginSet()
-        .addDefaultProxyUsersJobTypeClasses(InteractiveTestJob.class.getName());
-    this.jobtypeManager.getJobTypePluginSet().addDefaultProxyUser("test", "defaultTestUser");
-
-    runner =
-        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
-    runner.run();
-    effectiveUser = runner.getEffectiveUser();
-    Mockito.verify(runner.getFlowRunnerProxy(), Mockito.times(1)).setEffectiveUser(runner.getJobId(),
-        runner.getEffectiveUser(), Optional.of("test"));
-    Assert.assertEquals("defaultTestUser", effectiveUser);
-    Assert.assertEquals(effectiveUser, runner.getProps().get("user.to.proxy"));
-  }
-
-  @Test
   public void testBasicRun() throws Exception {
     final MockExecutorLoader loader = new MockExecutorLoader();
     final EventCollectorListener eventCollector = new EventCollectorListener();
@@ -132,10 +103,6 @@ public class JobRunnerTest {
     eventCollector.handleEvent(Event.create(null, EventType.JOB_STARTED, new EventData(node)));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
         && runner.getStatus() != Status.FAILED);
-    // Check flow version set and job type image version
-    final ExecutableFlow flow = node.getExecutableFlow();
-    Assert.assertTrue(flow.getVersionSet().getImageToVersionMap().getOrDefault(node.getType(),
-        null).getVersion().equals("8.0"));
 
     runner.run();
     eventCollector.handleEvent(Event.create(null, EventType.JOB_FINISHED, new EventData(node)));
@@ -469,21 +436,16 @@ public class JobRunnerTest {
     final ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(execId);
     flow.setSubmitUser(SUBMIT_USER);
-    // Test version
-    flow.setVersionSet(createVersionSet());
     final ExecutableNode node = new ExecutableNode();
     node.setId(name);
     node.setParentFlow(flow);
-    // Test version info
-    node.setType("spark");
 
     final Props props = createProps(time, fail, jobProps);
     node.setInputProps(props);
     final HashSet<String> proxyUsers = new HashSet<>();
     proxyUsers.add(flow.getSubmitUser());
-    FlowRunnerProxy flowRunnerProxy = Mockito.mock(FlowRunnerProxy.class);
     final JobRunner runner = new JobRunner(node, this.workingDir, loader, this.jobtypeManager,
-        azkabanProps, flowRunnerProxy);
+        azkabanProps);
     runner.setLogSettings(this.logger, "5MB", 4);
 
     runner.addListener(listener);
@@ -510,18 +472,5 @@ public class JobRunnerTest {
     final Thread thread = new Thread(runner);
     thread.start();
     return thread;
-  }
-
-  /**
-   * Creates a new version set from scratch
-   * @return a new version set
-   */
-  private VersionSet createVersionSet(){
-    final String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
-        + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
-        + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","
-        + "\"state\":\"ACTIVE\"}}";
-    final String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
-    return new VersionSet(testJsonString1, testMd5Hex1, 1);
   }
 }

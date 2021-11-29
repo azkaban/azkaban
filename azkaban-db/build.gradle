@@ -48,7 +48,7 @@ dependencies {
  */
 task concat() {
     doLast {
-        ext.destFile = "$buildDir/sql/create-all-sql-" + version + '.sql';
+        ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
         ant.concat(destfile: destFile, fixlastline: 'yes') {
             logger.info('Concating create scripts to ' + destFile)
             fileset(dir: 'src/main/sql') {

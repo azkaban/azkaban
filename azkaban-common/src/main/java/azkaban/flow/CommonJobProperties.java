@@ -154,12 +154,6 @@ public class CommonJobProperties {
    */
   public static final String FLOW_UUID = "azkaban.flow.uuid";
 
-  /**
-   * An optional config specified from the DSL to override the default
-   * failure options
-   */
-  public static final String FAILURE_ACTION_PROPERTY = "failure.action";
-
   public static final String JOB_LINK = "azkaban.link.job.url";
   public static final String WORKFLOW_LINK = "azkaban.link.workflow.url";
   public static final String EXECUTION_LINK = "azkaban.link.execution.url";

@@ -15,7 +15,6 @@ CREATE TABLE execution_flows (
   use_executor INT                  DEFAULT NULL,
   flow_priority TINYINT    NOT NULL DEFAULT 5,
   execution_source VARCHAR(32)        DEFAULT NULL,
-  dispatch_method TINYINT        DEFAULT 1,
   PRIMARY KEY (exec_id)
 );
 
@@ -31,5 +30,3 @@ CREATE INDEX executor_id
   ON execution_flows (executor_id);
 CREATE INDEX ex_flows_staus
   ON execution_flows (status);
-CREATE INDEX ex_flows_dispatch_method
-  ON execution_flows (dispatch_method);

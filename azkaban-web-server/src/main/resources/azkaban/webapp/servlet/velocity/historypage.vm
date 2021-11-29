@@ -249,7 +249,6 @@
                     <option value=50>Succeed</option>
                     <option value=55>Killing</option>
                     <option value=60>Killed</option>
-                    <option value=65>Execution Stopped</option>
                     <option value=70>Failed</option>
                     <option value=80>Failed Finishing</option>
                     <option value=90>Skipped</option>

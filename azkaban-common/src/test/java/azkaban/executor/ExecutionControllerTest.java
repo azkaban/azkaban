@@ -25,15 +25,8 @@ import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.DispatchMethod;
-import azkaban.event.Event;
-import azkaban.event.EventData;
-import azkaban.event.EventListener;
 import azkaban.metrics.CommonMetrics;
-import azkaban.metrics.ContainerizationMetrics;
-import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.metrics.MetricsManager;
-import azkaban.spi.EventType;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -78,8 +71,6 @@ public class ExecutionControllerTest {
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
-  private EventListener eventListener = new DummyEventListener();
-  private ContainerizationMetrics containerizationMetrics= new DummyContainerizationMetricsImpl();
 
   @Before
   public void setup() throws Exception {
@@ -91,7 +82,7 @@ public class ExecutionControllerTest {
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
     this.controller = new ExecutionController(this.props, this.loader, this.commonMetrics,
-        this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener, this.containerizationMetrics);
+        this.apiGateway, this.alertHolder, this.executorHealthChecker);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
@@ -100,17 +91,17 @@ public class ExecutionControllerTest {
     this.allExecutors = ImmutableList.of(executor1, executor2, executor3);
     when(this.loader.fetchActiveExecutors()).thenReturn(this.activeExecutors);
 
-    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
-    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
-    this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
-    this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
+    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     this.flow3.setExecutionId(3);
     this.flow4.setExecutionId(4);
-    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null, DispatchMethod.POLL);
-    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2, DispatchMethod.POLL);
-    this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), executor3, DispatchMethod.POLL);
+    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null);
+    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2);
+    this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), executor3);
 
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
@@ -181,10 +172,6 @@ public class ExecutionControllerTest {
   public void testSubmitFlows() throws Exception {
     this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
     verify(this.loader).uploadExecutableFlow(this.flow1);
-    Assert.assertEquals(this.controller.eventListener, this.eventListener);
-    this.controller.fireEventListeners(Event.create(flow1,
-        EventType.FLOW_STATUS_CHANGED,
-        new EventData(this.flow1)));
   }
 
   @Test
@@ -224,11 +211,7 @@ public class ExecutionControllerTest {
     // Flow1 is not assigned to any executor and is in PREPARING status.
     submitFlow(this.flow1, this.ref1);
     this.flow1.setStatus(Status.PREPARING);
-    try {
-      this.controller.cancelFlow(this.flow1, this.user.getUserId());
-    } catch (ExecutorManagerException e) {
-      // Ignore if there is an exception.
-    }
+    this.controller.cancelFlow(this.flow1, this.user.getUserId());
     // Verify that the status of flow1 is finalized.
     assertThat(this.flow1.getStatus()).isEqualTo(Status.FAILED);
     this.flow1.getExecutableNodes().forEach(node -> {

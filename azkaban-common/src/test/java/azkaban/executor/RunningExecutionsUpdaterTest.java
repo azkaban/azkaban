@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import azkaban.DispatchMethod;
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Pair;
@@ -59,7 +58,7 @@ public class RunningExecutionsUpdaterTest {
     this.activeExecutor = new Executor(1, "activeExecutor-1", 9999, true);
     this.runningExecutions = new RunningExecutions();
     this.runningExecutions.get().put(EXECUTION_ID_77, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_77, this.activeExecutor, DispatchMethod.PUSH), this.execution));
+        new ExecutionReference(EXECUTION_ID_77, this.activeExecutor), this.execution));
     this.updater = new RunningExecutionsUpdater(this.updaterStage, this.alerterHolder,
         this.commonMetrics, this.apiGateway, this.runningExecutions, this.executionFinalizer,
         this.executorLoader);
@@ -154,7 +153,7 @@ public class RunningExecutionsUpdaterTest {
 
   private void mockExecutorDoesNotExist() {
     this.runningExecutions.get().put(EXECUTION_ID_77, new Pair<>(
-        new ExecutionReference(EXECUTION_ID_77, null, DispatchMethod.PUSH), this.execution));
+        new ExecutionReference(EXECUTION_ID_77, null), this.execution));
   }
 
   private void mockUpdateCallFails() throws ExecutorManagerException {

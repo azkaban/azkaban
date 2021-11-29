@@ -23,7 +23,6 @@ import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
 import azkaban.metrics.CommonMetrics;
-import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -90,8 +89,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener(),
-        new DummyContainerizationMetricsImpl());
+    super(azkProps, executorLoader, commonMetrics, apiGateway, null);
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;
@@ -201,7 +199,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final Future<ExecutorInfo> fetchExecutionInfo =
           this.executorInfoRefresherService.submit(
               () -> this.apiGateway.callForJsonType(executor.getHost(),
-                  executor.getPort(), "/serverStatistics", DispatchMethod.PUSH, null, ExecutorInfo.class));
+                  executor.getPort(), "/serverStatistics", null, ExecutorInfo.class));
       futures.add(new Pair<>(executor,
           fetchExecutionInfo));
     }
@@ -641,7 +639,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
         // We create an active flow reference in the datastore. If the upload
         // fails, we remove the reference.
         final ExecutionReference reference =
-            new ExecutionReference(exflow.getExecutionId(), exflow.getDispatchMethod());
+            new ExecutionReference(exflow.getExecutionId());
 
         this.executorLoader.addActiveExecutableReference(reference);
         this.queuedFlows.enqueue(exflow, reference);

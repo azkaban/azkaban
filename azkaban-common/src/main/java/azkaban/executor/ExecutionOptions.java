@@ -19,7 +19,6 @@ package azkaban.executor;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +41,6 @@ public class ExecutionOptions {
   public static final int DEFAULT_FLOW_PRIORITY = 5;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
-  private static final String RUNTIME_PROPERTIES = "runtimeProperties";
   private static final String NOTIFY_ON_FIRST_FAILURE = "notifyOnFirstFailure";
   private static final String NOTIFY_ON_LAST_FAILURE = "notifyOnLastFailure";
   private static final String SUCCESS_EMAILS = "successEmails";
@@ -55,23 +53,13 @@ public class ExecutionOptions {
   private static final String DISABLE = "disabled";
   private static final String FAILURE_EMAILS_OVERRIDE = "failureEmailsOverride";
   private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
-  /**
-   * Setting value to true would mean that we should consider the user
-   * specified failure.action (through API or UI) than failure.action specified
-   * in the flow file.
-   */
-  public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
-  // Flow restartability check
-  private static final String EXECUTION_RETRY = "executionRetryByAzkaban";
-  private boolean isExecutionRetried = false;
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
   private boolean failureEmailsOverride = false;
   private boolean successEmailsOverride = false;
-  private boolean failureActionOverride = false;
   private ArrayList<String> failureEmails = new ArrayList<>();
   private ArrayList<String> successEmails = new ArrayList<>();
 
@@ -82,16 +70,10 @@ public class ExecutionOptions {
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<>();
-  private Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
   private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
   private List<SlaOption> slaOptions = new ArrayList<>();
-  private Map<String, FailureAction> FAILURE_OPTION_TO_FAILURE_ACTION_MAP =
-      ImmutableMap.of(
-          "finish_currently_running", FailureAction.FINISH_CURRENTLY_RUNNING,
-          "cancel_all", FailureAction.CANCEL_ALL,
-          "finish_all_possible", FailureAction.FINISH_ALL_POSSIBLE
-      );
+
 
   public static ExecutionOptions createFromObject(final Object obj) {
     if (obj == null || !(obj instanceof Map)) {
@@ -107,10 +89,6 @@ public class ExecutionOptions {
       options.flowParameters = new HashMap<>();
       options.flowParameters.putAll(wrapper
           .<String, String>getMap(FLOW_PARAMETERS));
-    }
-    if (optionsMap.containsKey(RUNTIME_PROPERTIES)) {
-      options.runtimeProperties = new HashMap<>();
-      options.runtimeProperties.putAll(wrapper.getMap(RUNTIME_PROPERTIES));
     }
     // Failure notification
     options.notifyOnFirstFailure =
@@ -149,15 +127,12 @@ public class ExecutionOptions {
         false));
     options.setFailureEmailsOverridden(wrapper.getBool(FAILURE_EMAILS_OVERRIDE,
         false));
-    options.setFailureActionOverride(wrapper.getBool(FAILURE_ACTION_OVERRIDE,
-        false));
+
     options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
 
     // Note: slaOptions was originally outside of execution options, so it parsed and set
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
-
-    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRY, false));
 
     return options;
   }
@@ -166,16 +141,8 @@ public class ExecutionOptions {
     this.flowParameters.putAll(flowParam);
   }
 
-  public void addAllRuntimeProperties(final Map<String, Map<String, String>> runtimeProperties) {
-    this.runtimeProperties.putAll(runtimeProperties);
-  }
-
   public Map<String, String> getFlowParameters() {
     return this.flowParameters;
-  }
-
-  public Map<String, Map<String, String>> getRuntimeProperties() {
-    return this.runtimeProperties;
   }
 
   public boolean isFailureEmailsOverridden() {
@@ -193,15 +160,6 @@ public class ExecutionOptions {
   public void setSuccessEmailsOverridden(final boolean override) {
     this.successEmailsOverride = override;
   }
-
-  public boolean isFailureActionOverridden() {
-    return failureActionOverride;
-  }
-
-  public void setFailureActionOverride(final boolean failureActionOverride) {
-    this.failureActionOverride = failureActionOverride;
-  }
-
 
   public List<String> getFailureEmails() {
     return this.failureEmails;
@@ -303,16 +261,10 @@ public class ExecutionOptions {
     this.slaOptions = slaOptions;
   }
 
-  public boolean isExecutionRetried() { return this.isExecutionRetried; }
-
-  public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
-      executionRetried; }
-
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
     flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
-    flowOptionObj.put(RUNTIME_PROPERTIES, this.runtimeProperties);
     flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
     flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
     flowOptionObj.put(SUCCESS_EMAILS, this.successEmails);
@@ -325,10 +277,8 @@ public class ExecutionOptions {
     flowOptionObj.put(DISABLE, DisabledJob.toDeprecatedObjectList(this.initiallyDisabledJobs));
     flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, this.failureEmailsOverride);
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, this.successEmailsOverride);
-    flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
-    flowOptionObj.put(EXECUTION_RETRY, this.isExecutionRetried);
     return flowOptionObj;
   }
 
@@ -336,19 +286,7 @@ public class ExecutionOptions {
     return new GsonBuilder().setPrettyPrinting().create().toJson(toObject());
   }
 
-  /**
-   * Read the failure option value and return the corresponding
-   * Enum object.
-   * @param failureAction this value is passed from the DSL/Yaml file
-   * @return Azkaban understood FailureAction object
-   */
-  public FailureAction mapToFailureAction(final String failureAction) {
-    return FAILURE_OPTION_TO_FAILURE_ACTION_MAP.getOrDefault(
-        failureAction, FailureAction.FINISH_CURRENTLY_RUNNING
-    );
-  }
-
   public enum FailureAction {
-    FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE;
+    FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
   }
 }

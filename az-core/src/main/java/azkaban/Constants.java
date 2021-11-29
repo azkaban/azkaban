@@ -54,9 +54,6 @@ public class Constants {
   // Job properties override suffix
   public static final String JOB_OVERRIDE_SUFFIX = ".jor";
 
-  // Key for the root node of the DAG in runtime properties
-  public static final String ROOT_NODE_IDENTIFIER = "ROOT";
-
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -137,6 +134,8 @@ public class Constants {
   public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
+  public static final String JETTY_TRUSTSTORE_PATH = "jetty.truststore";
+  public static final String JETTY_TRUSTSTORE_PASSWORD = "jetty.trustpassword";
 
   public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
   public static final String CHARACTER_ENCODING_UTF_8 = "utf-8";
@@ -147,74 +146,10 @@ public class Constants {
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
 
-  // Flow restart action on EXECUTION_STOPPED
-  public static final String RESTART_FLOW = "Restart Flow";
-
-  // Overridable plugin load properties
-  public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
-
-  /**
-   * File containing param override configs
-   * For a directory structure, property files in Proj_Dir used to have lower precedence than A.
-   * For the newly introduced file, this will no longer be true
-
-   * Proj_Dir
-   * basic.properties
-   * param_override.properties
-   * A/
-   * foo_a.properties
-   * foo.job
-
-   * i.e.
-   * (a). param_override.properties precedence will be higher than foo_a.properties.
-   * (b). foo_a.properties precedence will be higher than that of basic.properties.
-   */
-  public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
-
-  // Azkaban event reporter constants
-  public static class EventReporterConstants {
-
-    public static final String FLOW_NAME = "flowName";
-    public static final String AZ_HOST = "azkabanHost";
-    public static final String AZ_WEBSERVER = "azkabanWebserver";
-    public static final String PROJECT_NAME = "projectName";
-    public static final String SUBMIT_USER = "submitUser";
-    public static final String START_TIME = "startTime";
-    public static final String END_TIME = "endTime";
-    public static final String FLOW_STATUS = "flowStatus";
-    public static final String EXECUTION_ID = "executionId";
-    public static final String SUBMIT_TIME = "submitTime";
-    public static final String FLOW_VERSION = "flowVersion";
-    public static final String FAILED_JOB_ID = "failedJobId";
-    public static final String MODIFIED_BY = "modifiedBy";
-    public static final String FLOW_KILL_DURATION = "flowKillDuration";
-    public static final String FLOW_PAUSE_DURATION = "flowPauseDuration";
-    public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
-    public static final String SLA_OPTIONS = "slaOptions";
-    public static final String VERSION_SET = "versionSet";
-    public static final String EXECUTOR_TYPE = "executorType";
-    public static final String PROJECT_FILE_UPLOAD_USER = "projectFileUploadUser";
-    public static final String PROJECT_FILE_UPLOADER_IP_ADDR = "projectFileUploaderIpAddr";
-    public static final String PROJECT_FILE_NAME = "projectFileName";
-    public static final String PROJECT_FILE_UPLOAD_TIME = "projectFileUploadTime";
-    public static final String JOB_ID = "jobId";
-    public static final String JOB_TYPE = "jobType";
-    public static final String VERSION = "version";
-    public static final String JOB_PROXY_USER = "jobProxyUser";
-    public static final String ATTEMPT_ID = "attemptId";
-    public static final String JOB_KILL_DURATION = "jobKillDuration";
-    public static final String QUEUE_DURATION = "queueDuration";
-    public static final String FAILURE_MESSAGE = "failureMessage";
-    public static final String JOB_STATUS = "jobStatus";
-    public static final String EFFECTIVE_USERS = "effectiveUsers";
-    public static final String CPU_UTILIZED = "cpuUtilized";
-    public static final String MEMORY_UTILIZED_IN_BYTES = "memoryUtilizedInBytes";
-  }
 
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
-    public static final String AZKABAN_CLUSTER_ENV = "azkaban.cluster.env";
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
     // Property to enable appropriate dispatch model
     public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
@@ -241,31 +176,15 @@ public class Constants {
     // These properties are configurable through azkaban.properties
     public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";
 
+    // Defines a list of external links, each referred to as a topic
+    public static final String AZKABAN_SERVER_EXTERNAL_TOPICS = "azkaban.server.external.topics";
+
     // External URL template of a given topic, specified in the list defined above
-    //Deprecated, it is replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL
     public static final String AZKABAN_SERVER_EXTERNAL_TOPIC_URL = "azkaban.server.external.${topic}.url";
 
     // Designates one of the external link topics to correspond to an execution analyzer
-    //Deprecated, replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS
     public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC = "azkaban.server.external.analyzer.topic";
-    //Deprecated, it is replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL
     public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL = "azkaban.server.external.analyzer.label";
-
-    // Defines a list of external links, each referred to as a topic
-    // external links defined here will be translated into buttons and rendered in the Flow Execution page
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS = "azkaban.server.external.analyzer.topics";
-
-    // Defines timeout in milliseconds for azkaban to validate external links
-    // If this config is missing, azkaban will use default 3000 milliseconds as timeout.
-    // If validation fails, buttons is disabled in Flow Execution page.
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = "azkaban.server.external.analyzer.timeout.ms";
-
-    // Designates one of the external link topics to correspond to an execution analyzer
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL = "azkaban.server"
-        + ".external.analyzer.${topic}.label";
-    // External URL template of a given topic, specified in the list defined above
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL = "azkaban.server"
-        + ".external.analyzer.${topic}.url";
 
     // Designates one of the external link topics to correspond to a job log viewer
     public static final String AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC = "azkaban.server.external.logviewer.topic";
@@ -328,7 +247,6 @@ public class Constants {
     public static final String EXECUTOR_PORT_FILE = "executor.portfile";
     // To set a fixed port for executor-server. Otherwise some available port is used.
     public static final String EXECUTOR_PORT = "executor.port";
-    public static final String EXECUTOR_SSL_PORT = "executor.ssl.port";
 
     public static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
 
@@ -491,13 +409,10 @@ public class Constants {
 
     // By default job props always win over flow override props.
     // If this flag is set to true, then override props override also override existing job props.
-    public static final String AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER =
-        "azkaban.executor.runtimeProps.override.eager";
+    public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
+        "executor.props.resolve.overrideExisting.enabled";
 
-    // Executor client TLS properties
-    public static final String EXECUTOR_CLIENT_TLS_ENABLED = "azkaban.executor.client.tls.enabled";
-    public static final String EXECUTOR_CLIENT_TRUSTSTORE_PATH = "azkaban.executor.client.truststore";
-    public static final String EXECUTOR_CLIENT_TRUSTSTORE_PASSWORD = "azkaban.executor.client.trustpassword";
+    public static final String EXECUTOR_CONNECTION_TLS_ENABLED = "executor.connection.tls.enabled";
 
     public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED =
         "azkaban.executor.reverse.proxy.enabled";
@@ -505,10 +420,6 @@ public class Constants {
         "azkaban.executor.reverse.proxy.hostname";
     public static final String AZKABAN_EXECUTOR_REVERSE_PROXY_PORT =
         "azkaban.executor.reverse.proxy.port";
-
-    // Job callback
-    public static final String AZKABAN_EXECUTOR_JOBCALLBACK_ENABLED =
-        "azkaban.executor.jobcallback.enabled";
   }
 
   public static class FlowProperties {
@@ -599,17 +510,9 @@ public class Constants {
     public static final String COMMONCONFFILE = "common.properties";
     // common private properties for multiple plugins
     public static final String COMMONSYSCONFFILE = "commonprivate.properties";
-    // mapping for the jobType to default proxy user
-    public static final String DEFAULT_PROXY_USERS_FILE = "default-proxy-users.properties";
-    // allowed jobType classes for default proxy user
-    public static final String DEFAULT_PROXY_USERS_JOBTYPE_CLASSES = "default.proxyusers.jobtype"
-        + ".classes";
-    // users not allowed as default proxy user
-    public static final String DEFAULT_PROXY_USERS_FILTER = "default.proxyusers.filter";
   }
 
   public static class ContainerizedDispatchManagerProperties {
-
     public static final String AZKABAN_CONTAINERIZED_PREFIX = "azkaban.containerized.";
     public static final String CONTAINERIZED_IMPL_TYPE = AZKABAN_CONTAINERIZED_PREFIX + "impl.type";
     public static final String CONTAINERIZED_EXECUTION_BATCH_ENABLED =
@@ -620,12 +523,6 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "execution.processing.thread.pool.size";
     public static final String CONTAINERIZED_CREATION_RATE_LIMIT =
         AZKABAN_CONTAINERIZED_PREFIX + "creation.rate.limit";
-    public static final String CONTAINERIZED_RAMPUP =
-        AZKABAN_CONTAINERIZED_PREFIX + "rampup";
-    public static final String CONTAINERIZED_JOBTYPE_ALLOWLIST =
-        AZKABAN_CONTAINERIZED_PREFIX + "jobtype.allowlist";
-    public static final String CONTAINERIZED_PROXY_USER_DENYLIST =
-        AZKABAN_CONTAINERIZED_PREFIX + "proxy.user.denylist";
 
     // Kubernetes related properties
     public static final String AZKABAN_KUBERNETES_PREFIX = "azkaban.kubernetes.";
@@ -636,27 +533,21 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
-    public static final String KUBERNETES_POD_AZKABAN_BASE_IMAGE_NAME = AZKABAN_KUBERNETES_PREFIX +
-        "azkaban-base.image.name";
-    public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
-        AZKABAN_KUBERNETES_PREFIX + "azkaban-config.image.name";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
-    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.cpu";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "cpu.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX +
             "cpu.request";
-    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
-    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "memory.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_NAME =
@@ -665,20 +556,6 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.volume";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_MOUNTPATH =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.mountpath";
-
-    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
-    public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
-    public static final String KUBERNETES_POD_TEMPLATE_PATH =
-        KUBERNETES_POD_PREFIX + "template.path";
-
-    public static final String KUBERNETES_DEPENDENCY_TYPES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "dependencyTypes";
-    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_DEPENDENCIES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.dependencies.mount.path";
-    public static final String KUBERNETES_MOUNT_PATH_FOR_DEPENDENCIES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "dependencies.mount.path";
 
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
@@ -690,65 +567,11 @@ public class Constants {
     public static final String KUBERNETES_SERVICE_CREATION_TIMEOUT_MS = KUBERNETES_SERVICE_PREFIX +
         "creation.timeout.ms";
 
-    // Kubernetes Watch related properties
-    public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";
-    public static final String KUBERNETES_WATCH_ENABLED = KUBERNETES_WATCH_PREFIX + "enabled";
-    public static final String KUBERNETES_WATCH_EVENT_CACHE_MAX_ENTRIES =
-        KUBERNETES_WATCH_PREFIX + "cache.max.entries";
-
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
         AZKABAN_CONTAINERIZED_PREFIX + "stale.execution.cleanup.interval.min";
 
     public static final String ENV_VERSION_SET_ID = "VERSION_SET_ID";
     public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
-    public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
-    public static final String ENV_ENABLE_DEV_POD = "ENABLE_DEV_POD";
-    public static final String ENV_CPU_REQUEST = "CPU_REQUEST";
-    public static final String ENV_MEMORY_REQUEST = "MEMORY_REQUEST";
-  }
-
-  public static class ImageMgmtConstants {
-
-    public static final String IMAGE_TYPE = "imageType";
-    public static final String IMAGE_VERSION = "imageVersion";
-    public static final String VERSION_STATE = "versionState";
-    public static final String ID_KEY = "id";
-    public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
-  }
-
-  public static class FlowParameters {
-
-    // Constants for Flow parameters
-    public static final String FLOW_PARAM_VERSION_SET_ID = "azkaban.version-set.id";
-
-    // Constant to enable java remote debug for Flow Container
-    public static final String FLOW_PARAM_JAVA_ENABLE_DEBUG = "java.enable.debug";
-
-    // Constant to enable pod for developer testing
-    public static final String FLOW_PARAM_ENABLE_DEV_POD = "enable.dev.pod";
-
-    // Constant to disable pod cleanup through the kubernetes watch
-    public static final String FLOW_PARAM_DISABLE_POD_CLEANUP = "disable.pod.cleanup";
-
-    // Constant to dispatch execution to Containerization
-    public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER =
-        "dispatch.execution.to.container";
-
-    // Constant for cpu request for flow container
-    public static final String FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST = "flow.container.cpu.request";
-
-    // Constant for memory request for flow container
-    public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST =
-        "flow.container.memory.request";
-
-    public static final String FLOW_PARAM_POD_ENV_VAR = "pod.env.var.";
-
-    // Constant to allow test version to be passed as flow parameter. Passing test version will be
-    // allowed for Azkaban ADMIN role only
-    public static final String FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION = "allow.image.test.version";
-
-    public static final String FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED =
-        "allow.restart.on.execution.stopped";
   }
 }

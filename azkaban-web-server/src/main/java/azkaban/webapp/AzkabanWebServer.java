@@ -25,32 +25,19 @@ import static java.util.Objects.requireNonNull;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.DispatchMethod;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
-import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
-import azkaban.imagemgmt.permission.PermissionManager;
-import azkaban.imagemgmt.services.ImageMgmtCommonService;
-import azkaban.imagemgmt.services.ImageRampupService;
-import azkaban.imagemgmt.services.ImageTypeService;
-import azkaban.imagemgmt.services.ImageVersionService;
-import azkaban.imagemgmt.servlets.ImageRampupServlet;
-import azkaban.imagemgmt.servlets.ImageTypeServlet;
-import azkaban.imagemgmt.servlets.ImageVersionServlet;
-import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.jmx.JmxContainerizedDispatchManager;
 import azkaban.jmx.JmxExecutionController;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.AzkabanAPIMetrics;
-import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanAPI;
@@ -93,7 +80,6 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
@@ -109,9 +95,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.TimeZone;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.management.ObjectName;
@@ -119,7 +103,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -173,9 +156,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
-  private final ObjectMapper objectMapper;
-  private final ContainerizationMetrics containerizationMetrics;
-  private final Optional<ContainerCleanupManager> containerCleanupManager;
 
   @Inject
   public AzkabanWebServer(final Props props,
@@ -191,10 +171,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final FlowTriggerScheduler flowTriggerScheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
-      final ExecutionLogsCleaner executionLogsCleaner,
-      final ObjectMapper objectMapper,
-      final ContainerizationMetrics containerizationMetrics,
-      @Nullable final ContainerCleanupManager containerCleanupManager) {
+      final ExecutionLogsCleaner executionLogsCleaner) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -210,10 +187,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
-    this.objectMapper = objectMapper;
-    this.containerizationMetrics = containerizationMetrics;
-    this.containerCleanupManager = Optional.ofNullable(containerCleanupManager);
-
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
@@ -451,7 +424,24 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.addServlet(staticServlet, "/fonts/*");
     root.addServlet(staticServlet, "/favicon.ico");
 
-    final Map<String, AbstractAzkabanServlet> routesMap = getRoutesMap();
+    final String defaultServletPath =
+        this.props.getString("azkaban.default.servlet.path", "/index");
+
+    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
+    routesMap.put("/index", new ProjectServlet());
+    routesMap.put("/manager", new ProjectManagerServlet());
+    routesMap.put("/executor", new ExecutorServlet());
+    routesMap.put("/schedule", new ScheduleServlet());
+    routesMap.put("/triggers", new TriggerManagerServlet());
+    routesMap.put("/flowtrigger", new FlowTriggerServlet());
+    routesMap.put("/flowtriggerinstance", new FlowTriggerInstanceServlet());
+    routesMap.put("/history", new HistoryServlet());
+    routesMap.put("/jmx", new JMXHttpServlet());
+    routesMap.put("/stats", new StatsServlet());
+    routesMap.put("/notes", new NoteServlet());
+    routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
+
+    routesMap.put("/status", new StatusServlet(this.statusService));
 
     // Configure core routes
     for (final Entry<String, AbstractAzkabanServlet> entry : routesMap.entrySet()) {
@@ -501,56 +491,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     root.getServletHandler().addFilter(metricsFilter, metricsFilterMapping);
   }
 
-  /**
-   * @return The routing map of path to servlets.
-   */
-  @VisibleForTesting
-  protected Map<String, AbstractAzkabanServlet> getRoutesMap() {
-    final String defaultServletPath =
-        this.props.getString("azkaban.default.servlet.path", "/index");
-
-    final Map<String, AbstractAzkabanServlet> routesMap = new HashMap<>();
-    routesMap.put("/index", new ProjectServlet());
-    routesMap.put("/manager", new ProjectManagerServlet());
-    routesMap.put("/executor", new ExecutorServlet());
-    routesMap.put("/schedule", new ScheduleServlet());
-    routesMap.put("/triggers", new TriggerManagerServlet());
-    routesMap.put("/flowtrigger", new FlowTriggerServlet());
-    routesMap.put("/flowtriggerinstance", new FlowTriggerInstanceServlet());
-    routesMap.put("/history", new HistoryServlet());
-    routesMap.put("/jmx", new JMXHttpServlet());
-    routesMap.put("/stats", new StatsServlet());
-    routesMap.put("/notes", new NoteServlet());
-    routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
-
-    routesMap.put("/status", new StatusServlet(this.statusService));
-
-    if (isContainerizedDispatchMethodEnabled()) {
-      routesMap.put("/imageTypes/*", new ImageTypeServlet());
-      routesMap.put("/imageVersions/*", new ImageVersionServlet());
-      routesMap.put("/imageRampup/*", new ImageRampupServlet());
-    }
-    return routesMap;
-  }
-
-  /**
-   * @return True if the Containerization is enabled, otherwise false.
-   */
-  private boolean isContainerizedDispatchMethodEnabled() {
-    return DispatchMethod.isContainerizedMethodEnabled(this.props
-        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
-            DispatchMethod.PUSH.name()));
-  }
-
   private void prepareAndStartServer() throws Exception {
     this.executorManagerAdapter.start();
     this.executionLogsCleaner.start();
 
     configureRoutes();
     startWebMetrics();
-    startContainerMetrics();
-    this.containerCleanupManager.ifPresent(ContainerCleanupManager::start);
-
 
     if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
@@ -638,14 +584,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     });
 
     this.webMetrics.startReporting(this.props);
-  }
-
-  /**
-   * Set up and start reporting container metrics
-   */
-  private void startContainerMetrics() {
-    this.containerizationMetrics.setUp();
-    this.containerizationMetrics.startReporting(this.props);
   }
 
   private void loadBuiltinCheckersAndActions() {
@@ -742,10 +680,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     } else if (this.executorManagerAdapter instanceof ExecutionController) {
       this.mbeanRegistrationManager.registerMBean("executionController",
           new JmxExecutionController((ExecutionController) this.executorManagerAdapter));
-    } else if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+    }
+    else if(this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
       this.mbeanRegistrationManager.registerMBean("containerizedExecutionManager",
-          new JmxContainerizedDispatchManager(
-              (ContainerizedDispatchManager) this.executorManagerAdapter));
+          new JmxContainerizedDispatchManager((ContainerizedDispatchManager) this.executorManagerAdapter));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
@@ -770,7 +708,6 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.mbeanRegistrationManager.closeMBeans();
     this.scheduleManager.shutdown();
     this.executorManagerAdapter.shutdown();
-    this.containerCleanupManager.ifPresent(ContainerCleanupManager::shutdown);
     try {
       this.server.stop();
     } catch (final Exception e) {
@@ -778,33 +715,5 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       logger.error(e);
     }
     this.server.destroy();
-  }
-
-  public ObjectMapper getObjectMapper() {
-    return this.objectMapper;
-  }
-
-  public ImageTypeService getImageTypeService() {
-    return SERVICE_PROVIDER.getInstance(ImageTypeService.class);
-  }
-
-  public ImageVersionService getImageVersionsService() {
-    return SERVICE_PROVIDER.getInstance(ImageVersionService.class);
-  }
-
-  public ImageRampupService getImageRampupService() {
-    return SERVICE_PROVIDER.getInstance(ImageRampupService.class);
-  }
-
-  public PermissionManager getPermissionManager() {
-    return SERVICE_PROVIDER.getInstance(PermissionManager.class);
-  }
-
-  public ConverterUtils getConverterUtils() {
-    return SERVICE_PROVIDER.getInstance(ConverterUtils.class);
-  }
-
-  public ImageMgmtCommonService getImageMgmtCommonService() {
-    return SERVICE_PROVIDER.getInstance(ImageMgmtCommonService.class);
   }
 }

@@ -88,7 +88,6 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  @Override
   public String getAzkabanURL() {
     return this.scheme + "://" + this.clientHostname + ":" + this.clientPortNumber;
   }

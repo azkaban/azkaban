@@ -71,7 +71,7 @@ function executeFlow(executingData) {
     }
   };
 
-  $.post(executeURL, executingData, successHandler, "json");
+  $.get(executeURL, executingData, successHandler, "json");
 }
 
 function fetchFlowInfo(model, projectName, flowId, execId) {
@@ -93,7 +93,7 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
           "first": data.notifyFailureFirst,
           "last": data.notifyFailureLast
         },
-        "runtimeProperties": data.runtimeProperties,
+        "flowParams": data.flowParam,
         "isRunning": data.running,
         "nodeStatus": data.nodeStatus,
         "concurrentOption": data.concurrentOptions,

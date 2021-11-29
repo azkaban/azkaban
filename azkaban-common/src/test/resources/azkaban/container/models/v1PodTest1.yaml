@@ -31,7 +31,6 @@ spec:
       name: jobtype-volume-spark
     - mountPath: /var/run/nscd/socket
       name: nscd-socket
-      readOnly: true
     - mountPath: /var/azkaban/private/conf
       name: azkaban-private-properties
   initContainers:

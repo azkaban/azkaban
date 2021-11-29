@@ -15,14 +15,12 @@
  */
 package azkaban.executor;
 
-import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -451,8 +449,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
-      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
       throws ExecutorManagerException {
     throw new ExecutorManagerException("Method Not Implemented!");
   }
@@ -489,15 +486,13 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
-      final DispatchMethod dispatchMethod)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     return 1;
   }
 
   @Override
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
-      final DispatchMethod dispatchMethod)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
       throws ExecutorManagerException {
     return 1;
   }
@@ -505,8 +500,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
       final int limit,
-      final Status updatedStatus,
-      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
+      final Status updatedStatus) throws ExecutorManagerException {
     final Set<Integer> executions = new HashSet<>();
     executions.add(1);
     return executions;
@@ -577,11 +571,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException {
 
-  }
-
-  @Override
-  public int updateVersionSetId(int executionId, int versionSetId) throws ExecutorManagerException {
-    return 0;
   }
 
   @Override

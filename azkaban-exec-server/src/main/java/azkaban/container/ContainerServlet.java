@@ -16,17 +16,13 @@
 
 package azkaban.container;
 
-import static azkaban.common.ServletUtils.writeJSON;
-import static azkaban.server.HttpRequestUtils.getIntParam;
-import static azkaban.server.HttpRequestUtils.getParam;
-import static azkaban.server.HttpRequestUtils.hasParam;
-
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.server.HttpRequestUtils;
 import azkaban.utils.FileIOUtils;
-import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletConfig;
@@ -36,6 +32,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import static azkaban.common.ServletUtils.writeJSON;
+import static azkaban.server.HttpRequestUtils.hasParam;
+import static azkaban.server.HttpRequestUtils.getParam;
+import static azkaban.server.HttpRequestUtils.getIntParam;
 
 
 public class ContainerServlet extends HttpServlet implements ConnectorParams {
@@ -44,9 +46,7 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
   private static final Logger logger = LoggerFactory.getLogger(ContainerServlet.class);
   private FlowContainer flowContainer;
 
-  public ContainerServlet() {
-    super();
-  }
+  public ContainerServlet() { super(); }
 
   @Override
   public void init(final ServletConfig config) {
@@ -60,11 +60,6 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
-  @VisibleForTesting
-  void setFlowContainer(FlowContainer flowContainer) {
-    this.flowContainer = flowContainer;
-  }
-
   @Override
   public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
@@ -73,12 +68,12 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
 
   @Override
   public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
-      throws IOException {
+    throws IOException {
     handleRequest(req, resp);
   }
 
   public void handleRequest(final HttpServletRequest req, final HttpServletResponse resp)
-      throws IOException {
+    throws IOException {
     final HashMap<String, Object> respMap = new HashMap<>();
     try {
       if (!hasParam(req, ConnectorParams.ACTION_PARAM)) {
@@ -89,29 +84,25 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
         respMap.put(ConnectorParams.RESPONSE_ERROR, "Parameter execId not provided");
       } else {
         final String action = getParam(req, ConnectorParams.ACTION_PARAM);
-        final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
-        final String user = getParam(req, ConnectorParams.USER_PARAM, null);
+        if (!(action.equals(ConnectorParams.CANCEL_ACTION) ||
+              action.equals(ConnectorParams.LOG_ACTION)) ||
+              action.equals(ConnectorParams.METADATA_ACTION)) {
+          // Only the above 3 actions are supported for Containerized ecosystem
+          respMap.put(ConnectorParams.RESPONSE_ERROR, "Unsupported action type: " + action);
+        } else {
+          final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
+          final String user = getParam(req, ConnectorParams.USER_PARAM, null);
 
-        logger.info("User " + user + " has called action " + action + " on " + execid);
-        switch (action) {
-          case ConnectorParams.CANCEL_ACTION:
+          logger.info("User " + user + " has called action " + action + " on " + execid);
+
+          if (action.equals(ConnectorParams.CANCEL_ACTION)) {
             handleAjaxCancel(respMap, execid, user);
-            break;
-          case ConnectorParams.METADATA_ACTION:
+          } else if (action.equals(ConnectorParams.METADATA_ACTION)) {
             handleFetchMetaDataEvent(execid, req, resp, respMap);
-            break;
-          case ConnectorParams.PING_ACTION:
-            handlePing(respMap);
-            break;
-          case ConnectorParams.LOG_ACTION:
+          } else {
+            // action == LOG_ACTION
             handleFetchLogEvent(execid, req, resp, respMap);
-            break;
-          case ConnectorParams.MODIFY_EXECUTION_ACTION:
-            handleModifyExecutionRequest(respMap, execid, user, req);
-            break;
-          default:
-            respMap.put(ConnectorParams.RESPONSE_ERROR, "Unsupported action type: " + action);
-            break;
+          }
         }
       }
     } catch (Exception e) {
@@ -120,45 +111,6 @@ public class ContainerServlet extends HttpServlet implements ConnectorParams {
     }
     writeJSON(resp, respMap);
     resp.flushBuffer();
-  }
-
-  /**
-   * This method checks if the modifyExecution request also has param modifyType with value
-   * retryFailures, then it attempts to retry the failed jobs in the running execution.
-   *
-   * @param respMap
-   * @param execId
-   * @param user
-   * @param req
-   * @throws ServletException
-   */
-  @VisibleForTesting
-  void handleModifyExecutionRequest(final Map<String, Object> respMap, final int execId,
-      final String user, final HttpServletRequest req) throws ServletException {
-    if (user == null) {
-      respMap.put(ConnectorParams.RESPONSE_ERROR, "user has not been set");
-      return;
-    }
-
-    if (!hasParam(req, ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE)) {
-      respMap.put(ConnectorParams.RESPONSE_ERROR, "Modification type not set.");
-      return;
-    }
-    final String modificationType = getParam(req, ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE);
-
-    try {
-      if (ConnectorParams.MODIFY_RETRY_FAILURES.equals(modificationType)) {
-        this.flowContainer.retryFailures(execId, user);
-      }
-    } catch (final ExecutorManagerException e) {
-      logger.error(e.getMessage(), e);
-      respMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
-    }
-  }
-
-  @VisibleForTesting
-  void handlePing(HashMap<String, Object> respMap) {
-    respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE);
   }
 
   private void handleAjaxCancel(final Map<String, Object> respMap, final int execid,

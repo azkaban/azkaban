@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.DispatchMethod;
 import azkaban.utils.Pair;
 import azkaban.utils.TestUtils;
 import java.io.IOException;
@@ -35,7 +34,7 @@ public class ExecutableFlowPriorityComparatorTest {
   private ExecutableFlow createExecutableFlow(final String flowName, final int priority,
       final long updateTime, final int executionId) throws IOException {
     final ExecutableFlow execFlow =
-        TestUtils.createTestExecutableFlow("exectest1", flowName, DispatchMethod.POLL);
+        TestUtils.createTestExecutableFlow("exectest1", flowName);
 
     execFlow.setUpdateTime(updateTime);
     execFlow.setExecutionId(executionId);
@@ -53,7 +52,7 @@ public class ExecutableFlowPriorityComparatorTest {
     final ExecutableFlow flow1 = createExecutableFlow("exec1", 5, 3, 1);
     final ExecutableFlow flow2 = createExecutableFlow("exec2", 6, 3, 2);
     final ExecutableFlow flow3 = createExecutableFlow("exec3", 2, 3, 3);
-    final ExecutionReference dummyRef = new ExecutionReference(0, DispatchMethod.PUSH);
+    final ExecutionReference dummyRef = new ExecutionReference(0);
 
     final BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =
         new PriorityBlockingQueue<>(10,
@@ -74,7 +73,7 @@ public class ExecutableFlowPriorityComparatorTest {
     final ExecutableFlow flow1 = createExecutableFlow("exec1", 3, 3, 1);
     final ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 3, 2);
     final ExecutableFlow flow3 = createExecutableFlow("exec3", -2, 3, 3);
-    final ExecutionReference dummyRef = new ExecutionReference(0, DispatchMethod.PUSH);
+    final ExecutionReference dummyRef = new ExecutionReference(0);
 
     final BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =
         new PriorityBlockingQueue<>(10,
@@ -98,7 +97,7 @@ public class ExecutableFlowPriorityComparatorTest {
     final ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 2, 2);
     final ExecutableFlow flow3 = createExecutableFlow("exec3", -2, 3, 3);
     final ExecutableFlow flow4 = createExecutableFlow("exec3", 3, 4, 4);
-    final ExecutionReference dummyRef = new ExecutionReference(0, DispatchMethod.PUSH);
+    final ExecutionReference dummyRef = new ExecutionReference(0);
 
     final BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =
         new PriorityBlockingQueue<>(10,
@@ -126,7 +125,7 @@ public class ExecutableFlowPriorityComparatorTest {
     final ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 2, 2);
     final ExecutableFlow flow3 = createExecutableFlow("exec3", -2, 2, 3);
     final ExecutableFlow flow4 = createExecutableFlow("exec3", 3, 4, 4);
-    final ExecutionReference dummyRef = new ExecutionReference(0, DispatchMethod.PUSH);
+    final ExecutionReference dummyRef = new ExecutionReference(0);
 
     final BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =
         new PriorityBlockingQueue<>(10,

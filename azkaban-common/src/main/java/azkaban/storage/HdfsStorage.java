@@ -17,9 +17,6 @@
 
 package azkaban.storage;
 
-import static azkaban.HadoopModule.HADOOP_FS_AUTH;
-import static azkaban.HadoopModule.HDFS_CACHED_HTTP_FS;
-import static azkaban.HadoopModule.HADOOP_FILE_CONTEXT;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModuleConfig;
@@ -49,15 +46,13 @@ import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 
 @Singleton
 public class HdfsStorage implements Storage {
-
   private static final String TMP_PROJECT_UPLOAD_FILENAME = "upload.tmp";
-  private static final Logger log = LoggerFactory.getLogger(HdfsStorage.class);
+  private static final Logger log = Logger.getLogger(HdfsStorage.class);
 
   // Size of the buffer used while transferring data upstream. Value is based on the default
   // value used in FileSystem.copyFromLocalFile().
@@ -81,9 +76,9 @@ public class HdfsStorage implements Storage {
 
   @Inject
   public HdfsStorage(final AzkabanCommonModuleConfig config,
-      @Named(HADOOP_FS_AUTH) final AbstractHdfsAuth hdfsAuth,
-      @Named(HADOOP_FILE_CONTEXT) final FileContext hdfsFileContext,
-      @Named(HDFS_CACHED_HTTP_FS) @Nullable final FileSystem http) {
+      @Named("hdfsAuth") final AbstractHdfsAuth hdfsAuth,
+      @Named("hdfsFileContext") final FileContext hdfsFileContext,
+      @Named("hdfs_cached_httpFS") @Nullable final FileSystem http) {
     this.hdfsAuth = requireNonNull(hdfsAuth);
     this.hdfsFileContext = requireNonNull(hdfsFileContext);
     this.http = http; // May be null if thin archives is not enabled
@@ -95,7 +90,7 @@ public class HdfsStorage implements Storage {
   @Override
   public InputStream getProject(final String key) throws IOException {
     this.hdfsAuth.authorize();
-    final Path projectFilePath = fullProjectPath(key);
+    Path projectFilePath = fullProjectPath(key);
     log.info("Opening for reading, project file " + projectFilePath);
     return this.hdfsFileContext.open(projectFilePath);
   }
@@ -116,16 +111,17 @@ public class HdfsStorage implements Storage {
   }
 
   /**
-   * Copy a file from the local file system to a location given by the file context. {@code
-   * remotePath and remoteFileContext} will typically point to an external location but don't have
-   * to. If {@code remotePath} already exists, it will be overwritten.
-   * <p>
-   * Note that FileSystem includes a convenient {@code copyFromLocalFile} method that can be
-   * directly used in place of this. FileContext does not appear to have a similar functionality
+   * Copy a file from the local file system to a location given by the file context.
+   * {@code remotePath and remoteFileContext} will typically point to an external location
+   * but don't have to.
+   * If {@code remotePath} already exists, it will be overwritten.
+   *
+   * Note that FileSystem includes a convenient {@code copyFromLocalFile} method that can
+   * be directly used in place of this. FileContext does not appear to have a similar functionality
    * built-in, requiring this implementation.
    *
-   * @param localPath         location on local disk
-   * @param remotePath        location where the file will be copied to
+   * @param localPath location on local disk
+   * @param remotePath location where the file will be copied to
    * @param remoteFileContext file context for the remote file path
    * @throws IOException
    */
@@ -173,7 +169,7 @@ public class HdfsStorage implements Storage {
 
       // Copy file to HDFS
       log.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
-      uploadLocalFile(localFilePath, tmpPath, this.hdfsFileContext);
+      uploadLocalFile(localFilePath, tmpPath, hdfsFileContext);
 
       // Rename the tmp file to the final file and overwrite the final file if it already exists
       // (i.e. if the hash is the same).
@@ -227,7 +223,7 @@ public class HdfsStorage implements Storage {
     return new Path(this.projectRootUri.toString(), key);
   }
 
-  private Path resolveAbsoluteDependencyURI(final Dependency dep) {
+  private Path resolveAbsoluteDependencyURI(Dependency dep) {
     return new Path(this.dependencyRootUri.toString(), StorageUtils.getTargetDependencyPath(dep));
   }
 

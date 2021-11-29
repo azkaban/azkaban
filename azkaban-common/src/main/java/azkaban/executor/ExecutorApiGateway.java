@@ -16,9 +16,6 @@
 
 package azkaban.executor;
 
-import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
-import static java.util.Objects.requireNonNull;
-
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
@@ -33,17 +30,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.inject.Singleton;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ExecutorApiGateway {
-  private final static Logger logger = LoggerFactory.getLogger(ExecutorApiGateway.class);
-  public static final String DEFAULT_CLUSTER_NAME = "azkaban";
   public final static String DEFAULT_EXECUTION_RESOURCE = "executor";
   public final static String CONTAINERIZED_EXECUTION_RESOURCE = "container";
 
@@ -54,69 +46,60 @@ public class ExecutorApiGateway {
   //   - In future this implementation could be guice-injected (possibly based on a config property)
   //   - This implementation simply prefixes resource name with the execution-id and assumes that
   //     that a reverse proxy can route the request correctly based on this prefix.
-  private final static BiFunction<String, String, String> executionResourceNameModifier =
-      ((e,r) -> String.join("/",  e, r));
+  private final static BiFunction<Integer, String, String> executionResourceNameModifier =
+      ((e,r) -> String.join("/",  e.toString(), r));
 
   private final static Executor defaultEmptyExecutor = new Executor(-1, "", 1, false);
   private final ExecutorApiClient apiClient;
-  private final String clusterName;
+  private final String executionResourceName;
+  private final boolean isReverseProxyEnabled;
 
   @Inject
   public ExecutorApiGateway(final ExecutorApiClient apiClient, Props azkProps) {
-    requireNonNull(apiClient, "api client must not be null");
-    requireNonNull(azkProps, "azkaban properties must not be null");
     this.apiClient = apiClient;
-    this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
-        DEFAULT_CLUSTER_NAME);
+    isReverseProxyEnabled =
+        azkProps.getBoolean(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED,
+            false);
+    String executionResourceName = DEFAULT_EXECUTION_RESOURCE;
+    if (DispatchMethod.getDispatchMethod(azkProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name())) == DispatchMethod.CONTAINERIZED) {
+      executionResourceName = CONTAINERIZED_EXECUTION_RESOURCE;
+    }
+    this.executionResourceName = executionResourceName;
   }
 
   Map<String, Object> callWithExecutable(final ExecutableFlow exflow,
       final Executor executor, final String action) throws ExecutorManagerException {
     return callWithExecutionId(executor.getHost(), executor.getPort(), action,
-        exflow.getExecutionId(), null, exflow.getDispatchMethod(), (Pair<String, String>[]) null);
+        exflow.getExecutionId(), null, (Pair<String, String>[]) null);
   }
 
   Map<String, Object> callWithReference(final ExecutionReference ref, final String action,
       final Pair<String, String>... params) throws ExecutorManagerException {
-    final Executor executor = (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED
-        ? defaultEmptyExecutor : ref.getExecutor().get());
+    final Executor executor = (isReverseProxyEnabled ? defaultEmptyExecutor : ref.getExecutor().get());
     return callWithExecutionId(executor.getHost(), executor.getPort(), action, ref.getExecId(),
-        null, ref.getDispatchMethod(), params);
+        null, params);
   }
 
-  public Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
+  Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
       final String action, final String user, final Pair<String, String>... params)
       throws ExecutorManagerException {
-    final Executor executor = (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED
-        ? defaultEmptyExecutor : ref.getExecutor().get());
+    final Executor executor = (isReverseProxyEnabled ? defaultEmptyExecutor : ref.getExecutor().get());
     return callWithExecutionId(executor.getHost(), executor.getPort(), action,
-        ref.getExecId(), user, ref.getDispatchMethod(), params);
+        ref.getExecId(), user, params);
   }
 
   @VisibleForTesting
-  public String getClusterName() {
-    return this.clusterName;
-  }
-
-  @VisibleForTesting
-  String createExecutionPath(final Optional<Integer> executionId, DispatchMethod dispatchMethod) throws ExecutorManagerException {
-    if (null == dispatchMethod || dispatchMethod != DispatchMethod.CONTAINERIZED) {
-      return "/" + DEFAULT_EXECUTION_RESOURCE;
+  String createExecutionPath(int execId) {
+    if (!isReverseProxyEnabled) {
+      return "/" + executionResourceName;
     }
-
-    if(!executionId.isPresent()) {
-      final String errorMessage = "Execution Id must be provided when reverse-proxy is enabled";
-      logger.error(errorMessage);
-      throw new ExecutorManagerException(errorMessage);
-    }
-    return "/" + executionResourceNameModifier.apply(
-        clusterQualifiedExecId(clusterName, executionId.get()),
-        CONTAINERIZED_EXECUTION_RESOURCE);
+    return "/" + executionResourceNameModifier.apply(execId, executionResourceName);
   }
 
   Map<String, Object> callWithExecutionId(final String host, final int port,
       final String action, final Integer executionId, final String user,
-      final DispatchMethod dispatchMethod,
       final Pair<String, String>... params) throws ExecutorManagerException {
     try {
       final List<Pair<String, String>> paramList = new ArrayList<>();
@@ -133,8 +116,8 @@ public class ExecutorApiGateway {
 
       // Ideally we should throw an exception if executionId is null but some existing code
       // (updateExecutions()) expects to call this method with a null executionId.
-      String executionPath = createExecutionPath(Optional.ofNullable(executionId), dispatchMethod);
-      return callForJsonObjectMap(host, port, executionPath, dispatchMethod, paramList);
+      String executionPath = (executionId == null) ? null : createExecutionPath(executionId);
+      return callForJsonObjectMap(host, port, executionPath, paramList);
     } catch (final IOException e) {
       throw new ExecutorManagerException(e.getMessage(), e);
     }
@@ -144,9 +127,8 @@ public class ExecutorApiGateway {
    * Call executor and parse the JSON response as an instance of the class given as an argument.
    */
   <T> T callForJsonType(final String host, final int port, final String path,
-      final DispatchMethod dispatchMethod,
       final List<Pair<String, String>> paramList, final Class<T> valueType) throws IOException {
-    final String responseString = callForJsonString(host, port, path, dispatchMethod, paramList);
+    final String responseString = callForJsonString(host, port, path, paramList);
     if (null == responseString || responseString.length() == 0) {
       return null;
     }
@@ -157,9 +139,9 @@ public class ExecutorApiGateway {
    * Call executor and return json object map.
    */
   Map<String, Object> callForJsonObjectMap(final String host, final int port,
-      final String path, final DispatchMethod dispatchMethod, final List<Pair<String, String>> paramList) throws IOException {
+      final String path, final List<Pair<String, String>> paramList) throws IOException {
     final String responseString =
-        callForJsonString(host, port, path, dispatchMethod, paramList);
+        callForJsonString(host, port, path, paramList);
 
     @SuppressWarnings("unchecked") final Map<String, Object> jsonResponse =
         (Map<String, Object>) JSONUtils.parseJSONFromString(responseString);
@@ -173,16 +155,16 @@ public class ExecutorApiGateway {
   /*
    * Call executor and return raw json string.
    */
-  private String callForJsonString(final String host, final int port, final String path, final DispatchMethod dispatchMethod,
+  private String callForJsonString(final String host, final int port, final String path,
       List<Pair<String, String>> paramList) throws IOException {
     if (paramList == null) {
       paramList = new ArrayList<>();
     }
 
     @SuppressWarnings("unchecked") final URI uri =
-        apiClient.buildExecutorUri(host, port, path, true, dispatchMethod);
+        apiClient.buildExecutorUri(host, port, path, true);
 
-    return this.apiClient.doPost(uri, dispatchMethod, paramList);
+    return this.apiClient.httpPost(uri, paramList);
   }
 
   public Map<String, Object> updateExecutions(final Executor executor,
@@ -202,7 +184,7 @@ public class ExecutorApiGateway {
         JSONUtils.toJSON(executionIdsList));
 
     return callWithExecutionId(executor.getHost(), executor.getPort(),
-        ConnectorParams.UPDATE_ACTION, null, null, null, executionIds, updateTimes);
+        ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
   }
 
 }

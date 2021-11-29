@@ -17,7 +17,6 @@ package azkaban.server;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import azkaban.DispatchMethod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
@@ -57,7 +56,7 @@ public final class HttpRequestUtilsTest {
 
   /* Helper method to get a test flow and add required properties */
   public static ExecutableFlow createExecutableFlow() throws IOException {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1");
     flow.getExecutionOptions().getFlowParameters()
         .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()
@@ -208,45 +207,9 @@ public final class HttpRequestUtilsTest {
     Assert.assertEquals(expected, slaOptions);
   }
 
-  @Test
-  public void testParseFlowOptionsFlowOverride() throws Exception {
-    final HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
-        "flowOverride[key1]", "val1",
-        "flowOverride[key.2]", "val.2"));
-    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
-    final Map<String, String> expected = ImmutableMap.of(
-        "key1", "val1",
-        "key.2", "val.2");
-    Assert.assertEquals(expected, options.getFlowParameters());
-  }
-
-  @Test
-  public void testParseFlowOptionsRuntimeProperty() throws Exception {
-    final HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
-        "runtimeProperty[ROOT][key1]", "val1",
-        "runtimeProperty[ROOT][key.2]", "val.2",
-        "runtimeProperty[job-1][job.key]", "job-val",
-        "runtimeProperty[job-1][job.key2]", "job-val2",
-        "runtimeProperty[job-2][job.key]", "job-2-val"));
-    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
-    Assert.assertEquals(ImmutableMap.of(
-        "key1", "val1",
-        "key.2", "val.2"
-    ), options.getFlowParameters());
-    Assert.assertEquals(ImmutableMap.of(
-        "job-1", ImmutableMap.of(
-            "job.key", "job-val",
-            "job.key2", "job-val2"),
-        "job-2", ImmutableMap.of(
-            "job.key", "job-2-val")
-    ), options.getRuntimeProperties());
-  }
-
   private static HttpServletRequest mockRequestWithSla(final Map<String, String> params) {
     final HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
-    Mockito.when(req.getParameterNames()).thenAnswer(i ->
-        // Enumeration is "consumed", so must create a new instance on every call
-        Collections.enumeration(params.keySet()));
+    Mockito.when(req.getParameterNames()).thenReturn(Collections.enumeration(params.keySet()));
     Mockito.when(req.getParameter(Mockito.anyString()))
         .thenAnswer(i -> params.get(i.getArgument(0, String.class)));
     return req;

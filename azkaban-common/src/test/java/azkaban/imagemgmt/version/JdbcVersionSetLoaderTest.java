@@ -61,10 +61,7 @@ public class JdbcVersionSetLoaderTest {
   public void test() throws IOException {
     VersionSetLoader loaderSpy = Mockito.spy(this.loader);
 
-    String testJsonString1 = "{\"key1\":{\"version\":\"value1\",\"path\":\"path1\","
-        + "\"state\":\"ACTIVE\"},\"key2\":{\"version\":\"value2\",\"path\":\"path2\","
-        + "\"state\":\"ACTIVE\"},\"key3\":{\"version\":\"value3\",\"path\":\"path3\","
-        + "\"state\":\"ACTIVE\"}}";
+    String testJsonString1 = "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}";
     String testMd5Hex1 = "43966138aebfdc4438520cc5cd2aefa8";
 
     // Assert that it doesn't exist before
@@ -76,16 +73,16 @@ public class JdbcVersionSetLoaderTest {
     Assert.assertFalse(versionSet.isPresent());
 
     // Try to get versionSetId which internally inserts if it doesn't exist
-    int versionSetId = loaderSpy.getVersionSet(testMd5Hex1, testJsonString1).get().getVersionSetId();
+    int versionSetId = loaderSpy.getVersionSetId(testMd5Hex1, testJsonString1);
     Assert.assertEquals(1, versionSetId);
     Mockito.verify(loaderSpy, Mockito.times(1))
-        .insertAndGetVersionSet(Mockito.anyString(), Mockito.anyString());
+        .insertAndGetVersionSetId(Mockito.anyString(), Mockito.anyString());
 
     // Try to get versionSetId again which will return from the local copy
-    versionSetId = loaderSpy.getVersionSet(testMd5Hex1, testJsonString1).get().getVersionSetId();
+    versionSetId = loaderSpy.getVersionSetId(testMd5Hex1, testJsonString1);
     Assert.assertEquals(1, versionSetId);
     Mockito.verify(loaderSpy, Mockito.times(1))
-        .insertAndGetVersionSet(Mockito.anyString(), Mockito.anyString());
+        .insertAndGetVersionSetId(Mockito.anyString(), Mockito.anyString());
 
     // Try getting it again using md5
     versionSet = loaderSpy.getVersionSet("43966138aebfdc4438520cc5cd2aefa8");
@@ -110,12 +107,12 @@ public class JdbcVersionSetLoaderTest {
     Assert.assertTrue(versionSets.isEmpty());
 
     // Try to get versionSetId which internally inserts if it doesn't exist
-    versionSetId = loaderSpy.getVersionSet(testMd5Hex1, testJsonString1).get().getVersionSetId();
+    versionSetId = loaderSpy.getVersionSetId(testMd5Hex1, testJsonString1);
     // This time Id will be 2 due to autoincrement field
     Assert.assertEquals(2, versionSetId);
     // Twice total number of invocations of insertAndGetVersionSetId method
     Mockito.verify(loaderSpy, Mockito.times(2))
-        .insertAndGetVersionSet(Mockito.anyString(), Mockito.anyString());
+        .insertAndGetVersionSetId(Mockito.anyString(), Mockito.anyString());
 
     // Verify that fetch returns one record
     versionSets = loaderSpy.fetchAllVersionSets();
