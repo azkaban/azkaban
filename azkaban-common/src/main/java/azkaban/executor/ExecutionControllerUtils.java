@@ -16,16 +16,12 @@
 
 package azkaban.executor;
 
-import static azkaban.executor.Status.RESTARTABLE_STATUSES;
 import static java.util.Objects.requireNonNull;
 
-import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.Constants.FlowParameters;
 import azkaban.alert.Alerter;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -34,11 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -66,10 +58,6 @@ public class ExecutionControllerUtils {
   private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
       .compile("Invalid Application ID");
 
-  public static OnExecutionEventListener onExecutionEventListener;
-  public static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(
-      new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
-
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
    * as failed in the DB.
@@ -79,11 +67,10 @@ public class ExecutionControllerUtils {
    * @param flow the execution
    * @param reason reason for finalizing the execution
    * @param originalError the cause, if execution is being finalized because of an error
-   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void finalizeFlow(final ExecutorLoader executorLoader, @Nullable final AlerterHolder
+  public static void finalizeFlow(final ExecutorLoader executorLoader, final AlerterHolder
       alerterHolder, final ExecutableFlow flow, final String reason,
-      @Nullable final Throwable originalError, final Status finalFlowStatus) {
+      @Nullable final Throwable originalError) {
     boolean alertUser = true;
 
     // First check if the execution in the datastore is finished.
@@ -97,7 +84,7 @@ public class ExecutionControllerUtils {
         // If it's marked finished, we're good. If not, we fail everything and then mark it
         // finished.
         if (!isFinished(dsFlow)) {
-          failEverything(dsFlow, finalFlowStatus);
+          failEverything(dsFlow);
           executorLoader.updateExecutableFlow(dsFlow);
         }
       }
@@ -112,54 +99,9 @@ public class ExecutionControllerUtils {
       logger.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
     }
 
-    if (null != alerterHolder && alertUser) {
+    if (alertUser) {
       alertUserOnFlowFinished(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
     }
-  }
-
-  /**
-   * This method tries to restart the flow for certain statuses otherwise simply return.
-   * If the flow is already retried once, then it won't be retried again.
-   * If the status is EXECUTION_STOPPED, then it will be retried only if
-   * allow.restart.on.execution.stopped is set to true
-   *
-   * @param flow
-   * @param originalStatus
-   */
-  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
-    if (!RESTARTABLE_STATUSES.contains(originalStatus)) {
-      return;
-    }
-    final ExecutionOptions options = flow.getExecutionOptions();
-    if (options == null || options.isExecutionRetried()) {
-      return;
-    }
-    if (originalStatus != Status.EXECUTION_STOPPED) {
-      logger.info("Submitted flow for restart: " + flow.getExecutionId());
-      ExecutionControllerUtils.submitRestartFlow(flow);
-      return;
-    }
-    final Map<String, String> flowParams = options.getFlowParameters();
-    if (flowParams == null || flowParams.isEmpty()) {
-      return;
-    }
-    if (Boolean.parseBoolean(flowParams.getOrDefault(FlowParameters
-        .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
-      logger.info("Submitted flow for restart: " + flow.getExecutionId());
-      ExecutionControllerUtils.submitRestartFlow(flow);
-    }
-  }
-
-  private static void submitRestartFlow(ExecutableFlow flow) {
-    EXECUTOR_SERVICE.execute(() -> restartFlow(flow));
-  }
-
-  /**
-   * This method invokes a callback to submit the flow with a new execution id
-   * @param flow
-   */
-  protected static void restartFlow(ExecutableFlow flow) {
-    onExecutionEventListener.onExecutionEvent(flow, Constants.RESTART_FLOW);
   }
 
   /**
@@ -275,54 +217,31 @@ public class ExecutionControllerUtils {
    * Set the flow status to failed and fail every node inside the flow.
    *
    * @param exFlow the executable flow
-   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void failEverything(final ExecutableFlow exFlow, final Status finalFlowStatus) {
+  public static void failEverything(final ExecutableFlow exFlow) {
     final long time = System.currentTimeMillis();
-    final Queue<ExecutableNode> queue = new LinkedList<>();
-    queue.add(exFlow);
-    // Traverse the DAG and fail every node that's not in a terminal state
-    while (!queue.isEmpty()) {
-      final ExecutableNode node = queue.poll();
-      if (node instanceof ExecutableFlowBase) {
-        final ExecutableFlowBase base = (ExecutableFlowBase) node;
-        for (final ExecutableNode subNode : base.getExecutableNodes()) {
-          queue.add(subNode);
-        }
+    for (final ExecutableNode node : exFlow.getExecutableNodes()) {
+      switch (node.getStatus()) {
+        case SUCCEEDED:
+        case FAILED:
+        case KILLED:
+        case SKIPPED:
+        case DISABLED:
+          continue;
+          // case UNKNOWN:
+        case READY:
+          node.setStatus(Status.KILLING);
+          break;
+        default:
+          node.setStatus(Status.FAILED);
+          break;
       }
-      if (node != exFlow) {
-        switch (node.getStatus()) {
-          case SUCCEEDED:
-          case FAILED:
-          case KILLED:
-          case SKIPPED:
-          case DISABLED:
-            continue;
-            // case UNKNOWN:
-          case READY:
-            if (finalFlowStatus == Status.KILLED) {
-              // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
-              node.setStatus(Status.KILLED);
-            } else if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
-              // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to
-              // KILLED.
-              node.setStatus(Status.KILLED);
-            } else {
-              node.setStatus(Status.KILLING);
-            }
-            break;
-          default:
-            // Set the default job/node status as the finalFlowStatus
-            node.setStatus(finalFlowStatus);
-            break;
-        }
 
-        if (node.getStartTime() == -1) {
-          node.setStartTime(time);
-        }
-        if (node.getEndTime() == -1) {
-          node.setEndTime(time);
-        }
+      if (node.getStartTime() == -1) {
+        node.setStartTime(time);
+      }
+      if (node.getEndTime() == -1) {
+        node.setEndTime(time);
       }
     }
 
@@ -330,9 +249,7 @@ public class ExecutionControllerUtils {
       exFlow.setEndTime(time);
     }
 
-    if (!Status.isStatusFinished(exFlow.getStatus())) {
-      exFlow.setStatus(finalFlowStatus);
-    }
+    exFlow.setStatus(Status.FAILED);
   }
 
   /**

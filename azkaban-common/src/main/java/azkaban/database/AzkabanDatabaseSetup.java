@@ -239,19 +239,7 @@ public class AzkabanDatabaseSetup {
         // pattern doesn't match with any of those. Until this new file the convention has been that
         // each file has a single table and the file name matches the table name.
         if ("quartz-tables-all".equals(tableName)) {
-          if (!this.installedVersions.containsKey("quartz-tables-all")) {
-            this.missingTables.add(tableName);
-          } else {
-            continue;
-          }
-        }
-        // TODO same as above
-        if ("containerization-tables-all".equals(tableName)) {
-          if (!this.installedVersions.containsKey("containerization-tables-all")) {
-            this.missingTables.add(tableName);
-          } else {
-            continue;
-          }
+          continue;
         }
         if (!this.tables.containsKey(tableName)) {
           this.missingTables.add(tableName);

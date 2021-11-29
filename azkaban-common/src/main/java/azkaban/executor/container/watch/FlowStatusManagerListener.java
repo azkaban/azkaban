@@ -1,20 +1,6 @@
-/*
- * Copyright 2021 LinkedIn Corp.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package azkaban.executor.container.watch;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -27,7 +13,6 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.AzPodStatus.TransitionValidator;
-import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -63,8 +48,6 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   private final Cache<String, AzPodStatusMetadata> podStatusCache;
   private final ExecutorService executor;
 
-  private final ContainerizationMetrics containerizationMetrics;
-
   // Note about the cache size.
   // Each incoming event is expected to be less than 5KB in size and the maximum cache size will be
   // about 5KB * maxCacheEntries.
@@ -76,8 +59,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   public FlowStatusManagerListener(Props azkProps,
       ContainerizedImpl containerizedImpl,
       ExecutorLoader executorLoader,
-      AlerterHolder alerterHolder, ContainerizationMetrics containerizationMetrics) {
-    this.containerizationMetrics = containerizationMetrics;
+      AlerterHolder alerterHolder) {
     requireNonNull(azkProps, "azkaban properties must not be null");
     requireNonNull(containerizedImpl, "container implementation must not be null");
     requireNonNull(executorLoader, "executor loader must not be null");
@@ -149,13 +131,8 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
               event.getAzPodStatus(),
               event.getPodName()));
       logger.error("Unsupported state transition.", transitionException);
-      if (containerizationMetrics.isInitialized()) {
-        containerizationMetrics.markExecutionStopped();
-      } else {
-        logger.warn ("Containerization metrics are not initialized");
-      }
       try {
-        finalizeFlowAndDeleteContainer(event, Optional.of(Status.EXECUTION_STOPPED));
+        finalizeFlowAndDeleteContainer(event);
       } catch (Exception deletionException) {
         transitionException.addSuppressed(deletionException);
       }
@@ -236,11 +213,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
    *
    * @implNote Flow status check and update is not atomic, details above.
    * @param event pod event
-   * @param finalStatus
    * @return
    */
-  private Optional<Status> compareAndFinalizeFlowStatus(AzPodStatusMetadata event,
-      Optional<Status> finalStatus) {
+  private Optional<Status> compareAndFinalizeFlowStatus(AzPodStatusMetadata event) {
     requireNonNull(event, "event must not be null");
 
     int executionId = Integer.parseInt(event.getFlowPodMetadata().get().getExecutionId());
@@ -263,17 +238,25 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
       logger.info(format(
           "Flow execution-id %d for pod %s does not have a final status in database and will be "
               + "finalized.", executionId, event.getPodName()));
-      final String reason = "Flow pod execution was completed.";
-      if (finalStatus.isPresent()) {
-        executableFlow.setStatus(finalStatus.get());
-      }
+      final String reason = "Flow Pod execution was completed.";
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
-          null, Status.FAILED);
-      ExecutionControllerUtils.restartFlow(executableFlow, originalStatus);
+          null);
       // Log event for cases where the flow was not already in a final state
-      WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
+      logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }
     return Optional.of(originalStatus);
+  }
+
+  private void logWatchEvent(AzPodStatusMetadata event, String message) {
+    try {
+      logger.warn(new StringBuffer(message)
+          .append(System.lineSeparator())
+          .append(event.getPodWatchEvent().object.toString())
+          .toString());
+    } catch (Exception e) {
+      logger.error("Unexpected exception while logging watch event for pod " + event.getPodName()
+          , e);
+    }
   }
 
   /**
@@ -305,12 +288,11 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
 
   /**
    * Finalize the flow for the given event and delete its container.
+   *
    * @param event
-   * @param finalStatus
    */
-  private void finalizeFlowAndDeleteContainer(AzPodStatusMetadata event,
-      Optional<Status> finalStatus) {
-    Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event, finalStatus);
+  private void finalizeFlowAndDeleteContainer(AzPodStatusMetadata event) {
+    Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event);
     if (originalFlowStatus.isPresent() &&
         !Status.isStatusFinished(originalFlowStatus.get())) {
       logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
@@ -332,7 +314,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     boolean skipUpdates = !isUpdatedPodStatusDistinct(event);
     postProcess(event);
     if (!skipUpdates) {
-      finalizeFlowAndDeleteContainer(event, Optional.empty());
+      finalizeFlowAndDeleteContainer(event);
     }
   }
 

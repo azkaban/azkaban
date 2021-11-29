@@ -28,11 +28,9 @@ import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageType.Deployable;
 import azkaban.imagemgmt.utils.ValidatorUtils;
-import java.awt.Image;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -60,35 +58,6 @@ public class ImageTypeServiceImpl implements ImageTypeService {
       @Named(IMAGE_TYPE) final Converter converter) {
     this.imageTypeDao = imageTypeDao;
     this.converter = converter;
-  }
-
-  @Override
-  public List<ImageTypeDTO> getAllImageTypesWithOwnerships() {
-    List<ImageType> imageTypes = this.imageTypeDao.getAllImageTypesWithOwnerships();
-    List<ImageTypeDTO> imageTypeDTOs =
-        imageTypes.stream().map(i -> this.converter.convertToApiResponseDTO(i))
-            .collect(Collectors.toList());
-    return imageTypeDTOs;
-  }
-
-  @Override
-  public ImageTypeDTO findImageTypeWithOwnershipsById(String id) {
-    ImageType imageType = this.imageTypeDao.getImageTypeWithOwnershipsById(id);
-    return this.converter.convertToApiResponseDTO(imageType);
-  }
-
-  @Override
-  public ImageTypeDTO findImageTypeWithOwnershipsByName(String imageTypeName)
-      throws ImageMgmtException {
-    Optional<ImageType> imageType =
-        this.imageTypeDao.getImageTypeWithOwnershipsByName(imageTypeName);
-    if (imageType.isPresent()) {
-      return this.converter.convertToApiResponseDTO(imageType.get());
-    } else {
-      log.info("No Image Type Exists for ImageType name " + imageTypeName);
-      throw new ImageMgmtException(ErrorCode.NOT_FOUND, "No Image Type Exists for ImageType name "
-          + imageTypeName);
-    }
   }
 
   @Override

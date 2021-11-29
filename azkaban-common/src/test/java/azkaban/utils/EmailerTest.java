@@ -116,7 +116,7 @@ public class EmailerTest {
         this.executorLoader);
     emailer.alertOnError(exFlow);
     verify(this.message).addAllToAddress(this.receiveAddrList);
-    verify(this.message).setSubject("Flow 'jobe' has FAILED on azkaban");
+    verify(this.message).setSubject("Flow 'jobe' has failed on azkaban");
     assertThat(TestUtils.readResource("errorEmail2.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
   }

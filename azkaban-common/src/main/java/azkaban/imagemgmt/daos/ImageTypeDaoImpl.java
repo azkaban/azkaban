@@ -123,32 +123,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   }
 
   @Override
-  public ImageType getImageTypeWithOwnershipsById(final String id) {
-    final FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
-    List<ImageType> imageTypes = new ArrayList<>();
-    try {
-      imageTypes = this.databaseOperator.query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID,
-          fetchImageTypeHandler, id);
-      if (imageTypes == null || imageTypes.isEmpty()) {
-        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
-            "Failed to find image type for " + id);
-      }
-      if (imageTypes.size() > 1) {
-        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "The request for image "
-            + "type with id " + id + " unexpectedly returned more than one result!");
-      }
-    } catch (final SQLException ex) {
-      log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
-          "Unable to get image type for : " + id);
-    }
-    ImageType imageType = imageTypes.get(0);
-    imageType.setOwnerships(getImageTypeOwnership(imageType.getName()));
-    return imageType;
-  }
-
-
-  @Override
   public Optional<ImageType> getImageTypeByName(final String name) {
     final FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
     List<ImageType> imageTypes = new ArrayList<>();
@@ -157,15 +131,14 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
               name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
-      if (imageTypes.size() > 1) {
-        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY,
-            "Failed to get image type by "
-                + "name. Can't have more that one image type record for a given type with name : "
-                + name);
+      if (imageTypes != null && imageTypes.size() > 1) {
+        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type by "
+            + "name. Can't have more that one image type record for a given type with name : "
+            + name);
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
           "Unable to get image type metadata for image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
@@ -182,11 +155,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
               name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
-        log.error(
-            "Failed to get image type with ownerships by name. Can't have more that one image type"
-                + " record for a given type with name : " + name);
-        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "Failed to get image type"
-            + " with "
+        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type with "
             + "ownerships by name. Can't have more that one image type record for a given type "
             + "with name : " + name);
       }
@@ -196,8 +165,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
-          "Unable to fetch image type metadata for image type : " + name);
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+          "Unable to fetch image type metadata from image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
   }
@@ -250,7 +219,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
           "Unable to fetch all image type metadata ");
     }
     return imageTypes;
@@ -271,7 +240,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME + " failed.",
           ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
           "Unable to fetch ownership for image type : " + imageTypeName);
     }
   }
@@ -294,7 +263,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID
           + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR, String.format(
+      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format(
           "Unable to fetch ownership for image type: %s, user id: %s. ", imageTypeName, userId));
     }
     return imageOwnerships.isEmpty() ? Optional.empty() : Optional.of(imageOwnerships.get(0));
@@ -311,10 +280,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     private static final String FETCH_ALL_IMAGE_TYPES =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
             + "modified_by FROM image_types where active = ?";
-
-    private static final String FETCH_IMAGE_TYPE_BY_ID =
-        "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
-            + "modified_by FROM image_types WHERE id = ?";
 
     @Override
     public List<ImageType> handle(final ResultSet rs) throws SQLException {

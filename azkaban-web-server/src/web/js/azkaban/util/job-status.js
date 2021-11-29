@@ -16,7 +16,7 @@
 
 var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING",
   "WAITING", "KILLED", "DISABLED", "READY", "CANCELLED", "UNKNOWN", "PAUSED",
-  "SKIPPED", "QUEUED", "FAILED_SUCCEEDED", "DISPATCHING", "EXECUTION_STOPPED"];
+  "SKIPPED", "QUEUED", "FAILED_SUCCEEDED", "DISPATCHING"];
 var statusStringMap = {
   "QUEUED": "Queued",
   "SKIPPED": "Skipped",
@@ -34,6 +34,5 @@ var statusStringMap = {
   "UNKNOWN": "Unknown",
   "PAUSED": "Paused",
   "FAILED_SUCCEEDED": "Failed, treated as success",
-  "DISPATCHING": "Dispatching",
-  "EXECUTION_STOPPED": "Execution stopped"
+  "DISPATCHING": "Dispatching"
 };

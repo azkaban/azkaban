@@ -5,17 +5,6 @@ metadata:
   namespace: "az-team"
 spec:
   initContainers:
-    - env:
-        - name: CUSTOM_ENV
-          value: customVal
-      image: path/spark-jobtype:0.0.4
-      imagePullPolicy: IfNotPresent
-      name: jobtype-init-spark
-      volumeMounts:
-        - mountPath: /data/jobtypes/spark2
-          name: jobtype-volume-spark
-        - mountPath: /data/jobtypes/custom-spark
-          name: jobtype-volume-custom-spark
     - name: chown-kubelet
       image: path/my-image:0.0.5
       command:
@@ -49,13 +38,9 @@ spec:
       volumeMounts:
         - name: kubelet
           mountPath: "/var/run/kubelet"
-        - name: jobtype-volume-custom-spark
-          mountPath: "azBasePath/plugins/jobtypes/custom-spark"
   volumes:
     - emptyDir: {}
       name: jobtype-volume-spark
-    - emptyDir: {}
-      name: jobtype-volume-custom-spark
     - name: kubelet
       hostPath:
         path: /export/content/lid/apps/kubelet/i002/var
