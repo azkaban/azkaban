@@ -67,7 +67,7 @@ public class FlowRunnerTestBase {
 
   public void waitFlowRunner(final FlowRunner runner,
       final Function<FlowRunner, Boolean> statusCheck) {
-    for (int i = 0; i < 3000; i++) {
+    for (int i = 0; i < 1000; i++) {
       if (statusCheck.apply(runner)) {
         return;
       }

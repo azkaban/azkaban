@@ -184,8 +184,7 @@ public class ExecutorHealthChecker {
           String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
       try {
         ExecutionControllerUtils
-            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null,
-                Status.FAILED);
+            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
       } catch (RuntimeException e) {
         logger.error("Unchecked exception while finalizing execution: " + flow.getExecutionId(), e);
       }

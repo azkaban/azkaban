@@ -199,7 +199,8 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
 
   private void handleUpdateImageVersion(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session,
-      final Map<String, String> templateVariableToValue) throws IOException {
+      final Map<String, String> templateVariableToValue) throws ServletException,
+      IOException {
     try {
       final String idString = templateVariableToValue.get(IMAGE_VERSION_ID_KEY);
       final Integer id = Ints.tryParse(idString);
