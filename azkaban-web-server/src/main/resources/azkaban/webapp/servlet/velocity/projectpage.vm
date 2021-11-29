@@ -23,7 +23,7 @@
   #parse ("azkaban/webapp/servlet/velocity/svgflowincludes.vm")
   <script type="text/javascript" src="${context}/js/moment.min.js"></script>
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1624913123"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1620232349"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project.js?v=1556216524794"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">

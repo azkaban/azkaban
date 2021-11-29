@@ -22,7 +22,7 @@
   #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
   <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1611955192"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js?v=1579310616"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-logs.js?v=1576606441"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">

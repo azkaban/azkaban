@@ -17,11 +17,9 @@ package azkaban.executor;
 
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
-import azkaban.project.ProjectLoader;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -43,7 +41,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   private final AssignExecutorDao assignExecutorDao;
   private final NumExecutionsDao numExecutionsDao;
   private final ExecutionRampDao executionRampDao;
-  private final ProjectLoader projectLoader;
 
   @Inject
   public JdbcExecutorLoader(final ExecutionFlowDao executionFlowDao,
@@ -55,8 +52,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       final FetchActiveFlowDao fetchActiveFlowDao,
       final AssignExecutorDao assignExecutorDao,
       final NumExecutionsDao numExecutionsDao,
-      final ExecutionRampDao executionRampDao,
-      final ProjectLoader projectLoader) {
+      final ExecutionRampDao executionRampDao) {
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
@@ -67,7 +63,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.numExecutionsDao = numExecutionsDao;
     this.assignExecutorDao = assignExecutorDao;
     this.executionRampDao = executionRampDao;
-    this.projectLoader = projectLoader;
   }
 
   @Override
@@ -85,11 +80,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
-    final ExecutableFlow flow = this.executionFlowDao.fetchExecutableFlow(id);
-    if (null != flow) {
-      flow.setFlowPropsAndParams(this.projectLoader);
-    }
-    return flow;
+    return this.executionFlowDao.fetchExecutableFlow(id);
   }
 
   @Override
@@ -105,10 +96,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
-      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchStaleFlowsForStatus(status, validityMap);
+    return this.executionFlowDao.fetchStaleFlows(executionDuration);
   }
 
   @Override

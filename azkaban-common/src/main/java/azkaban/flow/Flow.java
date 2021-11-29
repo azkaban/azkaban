@@ -16,11 +16,8 @@
 
 package azkaban.flow;
 
-import static azkaban.flow.CommonJobProperties.FAILURE_ACTION_PROPERTY;
-
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
-import azkaban.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,29 +47,19 @@ public class Flow {
   private static final String IS_LOCKED_PROPERTY = "isLocked";
   private static final String FLOW_LOCK_ERROR_MESSAGE_PROPERTY = "flowLockErrorMessage";
 
-  private final String id;  // This is actually the node path. I.e. rootFlow:subFlow1:subFlow2
+  private final String id;  // This is actually the flow name
   private int projectId;
   private int version = -1; // This is actually the project version
   private final HashMap<String, Node> nodes = new HashMap<>();
   private final HashMap<String, Edge> edges = new HashMap<>();
   private final HashMap<String, Set<Edge>> outEdges = new HashMap<>();
   private final HashMap<String, Set<Edge>> inEdges = new HashMap<>();
-  private final HashMap<String, ImmutableFlowProps> flowProps = new HashMap<>();
+  private final HashMap<String, FlowProps> flowProps = new HashMap<>();
   private ArrayList<Node> startNodes = null;
   private ArrayList<Node> endNodes = null;
   private int numLevels = -1;
   private final List<String> failureEmail = new ArrayList<>();
   private final List<String> successEmail = new ArrayList<>();
-
-  public String getFailureAction() {
-    return failureAction;
-  }
-
-  public void setFailureAction(final String failureAction) {
-    this.failureAction = failureAction;
-  }
-
-  private String failureAction;
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private ArrayList<String> errors;
   private Map<String, Object> metadata = new HashMap<>();
@@ -123,9 +110,7 @@ public class Flow {
         .getOrDefault(SUCCESS_EMAIL_PROPERTY, flow.getSuccessEmails());
     final String mailCreator = (String) flowObject
         .getOrDefault(MAIL_CREATOR_PROPERTY, flow.getMailCreator());
-    final String failureAction = (String) flowObject.getOrDefault(
-        FAILURE_ACTION_PROPERTY, flow.getFailureAction()
-    );
+
     flow.setLayedOut(layedout);
     flow.setEmbeddedFlow(isEmbeddedFlow);
     flow.setAzkabanFlowVersion(azkabanFlowVersion);
@@ -138,9 +123,9 @@ public class Flow {
     flow.addFailureEmails(failureEmails);
     flow.addSuccessEmails(successEmails);
     flow.setMailCreator(mailCreator);
-    flow.setFailureAction(failureAction);
+
     // Loading projects
-    final Map<String, ImmutableFlowProps> properties = loadPropertiesFromObject(propertiesList);
+    final Map<String, FlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
 
     // Loading nodes
@@ -176,12 +161,12 @@ public class Flow {
     return edgeResult;
   }
 
-  private static Map<String, ImmutableFlowProps> loadPropertiesFromObject(
+  private static Map<String, FlowProps> loadPropertiesFromObject(
       final List<Object> propertyObjectList) {
-    final Map<String, ImmutableFlowProps> properties = new HashMap<>();
+    final Map<String, FlowProps> properties = new HashMap<>();
 
     for (final Object propObj : propertyObjectList) {
-      final ImmutableFlowProps prop = ImmutableFlowProps.fromObject(propObj);
+      final FlowProps prop = FlowProps.fromObject(propObj);
       properties.put(prop.getSource(), prop);
     }
 
@@ -298,32 +283,14 @@ public class Flow {
     this.nodes.put(node.getId(), node);
   }
 
-  public void addAllFlowProperties(final Collection<ImmutableFlowProps> props) {
-    for (final ImmutableFlowProps prop : props) {
+  public void addAllFlowProperties(final Collection<FlowProps> props) {
+    for (final FlowProps prop : props) {
       this.flowProps.put(prop.getSource(), prop);
     }
   }
 
   public String getId() {
     return this.id;
-  }
-
-  /**
-   * Return all flow parents of this flow. From each parent its name and node path are returned.
-   *
-   * @return the list of parents
-   */
-  public List<Pair<String, String>> getParents() {
-    final List<Pair<String, String>> parents = new ArrayList<>(); // Tuple (flow name, node path)
-    final String[] parentNames = getId().split(Constants.PATH_DELIMITER, 0);
-    parents.add(new Pair<>(parentNames[0], parentNames[0])); // root flow is first element
-    for (int i = 1; i < parentNames.length; i++) {
-      final String nodePath = String
-          .join(Constants.PATH_DELIMITER, parents.get(parents.size() - 1).getSecond(),
-              parentNames[i]);
-      parents.add(new Pair<>(parentNames[i], nodePath));
-    }
-    return parents;
   }
 
   public void addError(final String error) {
@@ -402,9 +369,6 @@ public class Flow {
     flowObj.put(IS_LOCKED_PROPERTY, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PROPERTY, this.flowLockErrorMessage);
 
-    if (this.failureAction != null) {
-      flowObj.put(FAILURE_ACTION_PROPERTY, this.failureAction);
-    }
     if (this.errors != null) {
       flowObj.put(ERRORS_PROPERTY, this.errors);
     }
@@ -418,7 +382,7 @@ public class Flow {
 
   private List<Object> objectizeProperties() {
     final ArrayList<Object> result = new ArrayList<>();
-    for (final ImmutableFlowProps props : this.flowProps.values()) {
+    for (final FlowProps props : this.flowProps.values()) {
       final Object objProps = props.toObject();
       result.add(objProps);
     }
@@ -501,11 +465,11 @@ public class Flow {
     return this.inEdges;
   }
 
-  public ImmutableFlowProps getFlowProps(final String propSource) {
+  public FlowProps getFlowProps(final String propSource) {
     return this.flowProps.get(propSource);
   }
 
-  public Map<String, ImmutableFlowProps> getAllFlowProps() {
+  public Map<String, FlowProps> getAllFlowProps() {
     return this.flowProps;
   }
 
@@ -521,7 +485,7 @@ public class Flow {
     return this.isLocked;
   }
 
-  public void setLocked(final boolean locked) {
+  public void setLocked(boolean locked) {
     this.isLocked = locked;
   }
 

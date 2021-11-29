@@ -17,7 +17,6 @@
 package azkaban.jobtype;
 
 import azkaban.Constants;
-import azkaban.Constants.PluginManager;
 import azkaban.cluster.Cluster;
 import azkaban.cluster.ClusterRouter;
 import azkaban.cluster.DisabledClusterRouter;
@@ -43,19 +42,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 public class JobTypeManager {
   private static final Logger LOGGER = Logger.getLogger(JobTypeManager.class);
-  private static final String[] NON_OVERRIDABLE_PROPS =
-      { CommonJobProperties.TARGET_CLUSTER_CLASSPATH,
-        CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB,
-        "env.HADOOP_HOME", "env.HADOOP_COMMON_HOME", "env.HADOOP_YARN_HOME", "env.HADOOP_HDFS_HOME",
-        "env.HADOOP_MAPRED_HOME", "env.HADOOP_CONF_DIR", "env.YARN_CONF_DIR" };
 
   private final String jobTypePluginDir; // the dir for jobtype plugins
   private final ClassLoader parentLoader;
@@ -64,23 +56,19 @@ public class JobTypeManager {
   private JobTypePluginSet pluginSet;
   // Only used to load keyStore.
   private Props cachedCommonPluginLoadProps;
-  // Overridable plugin load properties
-  private final String pluginLoadOverrideProps;
 
   @VisibleForTesting
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
       final ClassLoader parentClassLoader) {
-    this(jobtypePluginDir, globalProperties, parentClassLoader, new DisabledClusterRouter(), null);
+    this(jobtypePluginDir, globalProperties, parentClassLoader, new DisabledClusterRouter());
   }
 
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
-    final ClassLoader parentClassLoader, final ClusterRouter clusterRouter,
-    final String pluginLoadOverrideProps  ) {
+    final ClassLoader parentClassLoader, ClusterRouter clusterRouter) {
     this.jobTypePluginDir = jobtypePluginDir;
     this.parentLoader = parentClassLoader;
     this.globalProperties = globalProperties;
     this.clusterRouter = clusterRouter;
-    this.pluginLoadOverrideProps = pluginLoadOverrideProps;
     loadPlugins();
   }
 
@@ -171,38 +159,6 @@ public class JobTypeManager {
 
     plugins.setCommonPluginJobProps(commonPluginJobProps);
     plugins.setCommonPluginLoadProps(commonPluginLoadProps);
-
-    if (commonPluginLoadProps
-        .containsKey(Constants.PluginManager.DEFAULT_PROXY_USERS_JOBTYPE_CLASSES)) {
-      plugins.addDefaultProxyUsersJobTypeClasses(commonPluginLoadProps
-          .getStringList(Constants.PluginManager.DEFAULT_PROXY_USERS_JOBTYPE_CLASSES));
-    }
-
-    if (commonPluginLoadProps.containsKey(PluginManager.DEFAULT_PROXY_USERS_FILTER)) {
-      plugins.addDefaultProxyUsersFilter(
-          commonPluginLoadProps.getStringList(PluginManager.DEFAULT_PROXY_USERS_FILTER));
-    }
-
-    // Loads the default-proxy-users mappings for all job types.
-    final File defaultProxyUsersFile = new File(jobPluginsDir,
-        Constants.PluginManager.DEFAULT_PROXY_USERS_FILE);
-    if (!defaultProxyUsersFile.exists()) {
-      LOGGER.info("Default proxy users file " + defaultProxyUsersFile
-          + " not found.");
-    } else {
-      LOGGER.info("Default proxy users file " + defaultProxyUsersFile
-          + " found. Attempting to load.");
-      try {
-        final Props defaultProxyUsers = new Props(null, defaultProxyUsersFile);
-        for (String jobType : defaultProxyUsers.getKeySet()) {
-          plugins.addDefaultProxyUser(jobType, defaultProxyUsers.getString(jobType,
-              StringUtils.EMPTY));
-        }
-      } catch (final IOException e) {
-        throw new JobTypeManagerException(
-            "Failed to load common plugin loader properties" + e.getCause());
-      }
-    }
 
     // Loading job types
     for (final File dir : jobPluginsDir.listFiles()) {
@@ -382,12 +338,12 @@ public class JobTypeManager {
     final JobTypePluginSet pluginSet = getJobTypePluginSet();
 
     try {
-      final Optional<String> jobTypeOptional = getJobType(jobProps);
-      if (!jobTypeOptional.isPresent()) {
+      final String jobType = jobProps.getString("type");
+      if (jobType == null || jobType.length() == 0) {
+        /* throw an exception when job name is null or empty */
         throw new JobExecutionException(String.format(
-            "The 'type' parameter for job[%s] is missing or null or empty", jobProps));
+            "The 'type' parameter for job[%s] is null or empty", jobProps));
       }
-      final String jobType = jobTypeOptional.get();
 
       logger.info("Building " + jobType + " job executor. ");
 
@@ -430,40 +386,17 @@ public class JobTypeManager {
       }
 
       // inject cluster jars and native libraries into jobs through properties
-      Props clusterSpecificProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
-      for (final String key : clusterSpecificProps.getKeySet()) {
-        // User's job props should take precedence over cluster props
-        if (!jobProps.containsKey(key)) {
-          jobProps.put(key, clusterSpecificProps.get(key));
-        }
-      }
-
-      // Override any plugin load props if specified.
-      // Make a clone of pluginLoadProps to ensure the original object is not corrupted.
-      // Use the cloned object from here on.
-      final Props pluginLoadPropsCopy = Props.clone(pluginLoadProps);
-      if (pluginLoadOverrideProps != null) {
-        final String[] propsList = pluginLoadOverrideProps.split(",");
-        for (final String prop : propsList) {
-          final String value = clusterSpecificProps.getString(prop, null);
-          if (value == null) {
-            // The property must be present in cluster specific props
-            logger.warn(String.format("Expected override property %s is not "
-            + " present in ClusterSpecific Properties, ignoring it.", prop));
-            continue;
-          }
-          pluginLoadPropsCopy.put(prop, value);
-        }
-      }
-
-      Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(clusterSpecificProps);
+      // User's job props should take precedence over cluster props
+      Props finalProps = getClusterSpecificJobProps(targetCluster, jobProps, pluginLoadProps);
+      Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(finalProps);
+      finalProps.putAll(jobProps);
       // CAUTION: ADD ROUTER-SPECIFIC PROPERTIES THAT ARE CRITICAL FOR JOB EXECUTION AS THE LAST
       // STEP TO STOP THEM FROM BEING ACCIDENTALLY OVERRIDDEN BY JOB PROPERTIES
-      jobProps.putAll(nonOverriddableClusterProps);
-      jobProps = PropsUtils.resolveProps(jobProps);
+      finalProps.putAll(nonOverriddableClusterProps);
+      finalProps = PropsUtils.resolveProps(finalProps);
 
-      return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
-          pluginLoadPropsCopy, jobContextClassLoader);
+      return new JobParams(jobTypeClass, finalProps, pluginSet.getPluginPrivateProps(jobType),
+          pluginLoadProps, jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());
@@ -477,22 +410,17 @@ public class JobTypeManager {
     }
   }
 
-  /**
-   * @param jobProps Properties for an Azkaban Job
-   * @return The {@link Optional} jobType for the Azkaban Job.
-   */
-  public static Optional<String> getJobType(Props jobProps) {
-    final String jobType = jobProps.getString("type", StringUtils.EMPTY);
-    return StringUtils.isNotBlank(jobType) ? Optional.of(jobType) : Optional.empty();
-  }
-
   private static Props getClusterSpecificNonOverridableJobProps(final Props clusterSpecificJobProp) {
     final Props props = new Props();
-    for (String prop : NON_OVERRIDABLE_PROPS) {
-      final String value = clusterSpecificJobProp.get(prop);
-      if (value != null) {
-        props.put(prop, value);
-      }
+    final String clusterClasspath =
+        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);
+    if (clusterClasspath != null) {
+      props.put(CommonJobProperties.TARGET_CLUSTER_CLASSPATH, clusterClasspath);
+    }
+    final String clusterNativeLib =
+        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB);
+    if (clusterNativeLib != null) {
+      props.put(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB, clusterNativeLib);
     }
     return props;
   }
@@ -520,7 +448,7 @@ public class JobTypeManager {
     return jobProps;
   }
 
-  static Props getPluginLoadProps(JobTypePluginSet pluginSet, String jobType) {
+  private static Props getPluginLoadProps(JobTypePluginSet pluginSet, String jobType) {
     Props pluginLoadProps = pluginSet.getPluginLoaderProps(jobType);
     if (pluginLoadProps != null) {
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
@@ -539,30 +467,27 @@ public class JobTypeManager {
    * Create an instance of Job with the given parameters, job id and job logger.
    */
   public static Job createJob(final String jobId, final JobParams jobParams, final Logger logger) {
+    Job job;
     try {
-      return
-          (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
-              jobParams.jobProps, jobParams.pluginPrivateProps, logger);
-    } catch (final Throwable e) {
-      final String message = "Ctor with private properties %s, will try one without. e = ";
-      if (e instanceof IllegalStateException && e.getCause() instanceof NoSuchMethodException) {
-        // expected, message quietly, don't confuse users
-        logger.debug(String.format(message, "not defined") + e.getMessage());
-      } else {
-        // unexpected, message loudly
-        logger.warn(String.format(message, "failed"), e);
+      try {
+        job =
+            (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
+                jobParams.jobProps, jobParams.pluginPrivateProps, logger);
+      } catch (final Exception e) {
+        logger.info("Failed with 6 inputs with exception e = "
+            + e.getMessage());
+        job =
+            (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
+                jobParams.jobProps, logger);
       }
+    } catch (final Exception e) {
+      logger.error(String.format("Failed to build job: %s", jobId), e);
+      throw new JobTypeManagerException(String.format("Failed to build job %s", jobId), e);
+    } catch (final Throwable t) {
+      logger.error(String.format("Failed to build job: %s", jobId), t);
+      throw new JobTypeManagerException(String.format("Failed to build job %s", jobId), t);
     }
-
-    try {
-      return
-          (Job) Utils.callConstructor(jobParams.jobClass, jobId, jobParams.pluginLoadProps,
-              jobParams.jobProps, logger);
-    } catch (final Throwable e) {
-      final String message = String.format("Failed to build job: %s", jobId);
-      logger.error(message, e);
-      throw new JobTypeManagerException(message, e);
-    }
+    return job;
   }
 
   public static final class JobParams {

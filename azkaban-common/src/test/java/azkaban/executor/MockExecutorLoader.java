@@ -22,7 +22,6 @@ import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -451,8 +450,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
-      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
       throws ExecutorManagerException {
     throw new ExecutorManagerException("Method Not Implemented!");
   }

@@ -21,22 +21,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
-import azkaban.metrics.ContainerizationMetrics;
-import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
@@ -54,7 +47,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,7 +66,7 @@ public class KubernetesWatchTest {
   private static String LOCAL_KUBE_CONFIG_PATH = "/path/to/valid/kube-config";
   private static final int DEFAULT_MAX_INIT_COUNT = 3;
   private static final int DEFAULT_WATCH_RESET_DELAY_MILLIS = 100;
-  private static final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 10000;
+  private static final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 5000;
 
   /**
    * File containing a mock sequence of events, this is expected to be reflective of actual events
@@ -98,11 +90,8 @@ public class KubernetesWatchTest {
   private static final String DEFAULT_CLUSTER = "cluster1";
   private static String PODNAME_WITH_SUCCESS = "flow-pod-cluster1-280";
   private static String PODNAME_WITH_INIT_FAILURE = "flow-pod-cluster1-740";
-  private static String PODNAME_WITH_INVALID_TRANSITIONS = "flow-pod-cluster1-999";
   private static int EXECUTION_ID_WITH_SUCCEESS = 280;
   private static int EXECUTION_ID_WITH_INIT_FAILURE = 740;
-  private static int EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR = 420;
-  private static int EXECUTION_ID_WITH_INVALID_TRANSITIONS = 999;
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
   private static final String DEFAULT_FLOW_NAME = "exec1";
@@ -116,7 +105,6 @@ public class KubernetesWatchTest {
       AzPodStatus.AZ_POD_COMPLETED);
 
   private ApiClient defaultApiClient;
-  private ContainerizationMetrics containerizationMetrics = new DummyContainerizationMetricsImpl();
 
   @Before
   public void setUp() throws Exception {
@@ -170,7 +158,7 @@ public class KubernetesWatchTest {
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
     return new FlowStatusManagerListener(azkProps, mockedContainerizedImpl(),
-        mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics);
+        mockedExecutorLoader(), mock(AlerterHolder.class));
   }
 
   private AzPodStatusDrivingListener statusDriverWithListener(AzPodStatusListener listener) {
@@ -308,122 +296,6 @@ public class KubernetesWatchTest {
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INIT_FAILURE);
-  }
-
-  @Test
-  public void testFlowManagerListenerCreateContainerError() throws Exception {
-    // Setup a FlowUpdatingListener
-    Props azkProps = new Props();
-    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
-    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
-    statusDriver.registerAzPodStatusListener(updatingListener);
-
-    // Mocked flow in DISPATCHING state. CreateContainerError event will be processed for this
-    // execution. The extracted AzPodStatus will be AZ_POD_APP_FAILURE.
-    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR,
-        Status.DISPATCHING);
-    when(updatingListener.getExecutorLoader()
-        .fetchExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR))
-        .thenReturn(flow1);
-    OnContainerizedExecutionEventListener onExecutionEventListener = mock(
-        OnContainerizedExecutionEventListener.class);
-    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
-
-    // Run events through the registered listeners.
-    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
-    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
-    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
-
-    // Verify that the previously DISPATCHING flow has been finalized to a failure state.
-    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
-
-    // Verify the Pod deletion API is invoked.
-    verify(updatingListener.getContainerizedImpl())
-        .deleteContainer(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR);
-
-    // Verify that the flow is restarted.
-    verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
-  }
-
-  // Validates that the callbacks are processed in ContainerStatusMetricsHandlerListener
-  @Test
-  public void testContainerStatusMetricsListener() throws Exception {
-    // Setup a ContainerStatusMetricsHandlerListener
-    Props azkProps = new Props();
-    AzPodStatusMetricsListener recordHandlerListener =
-        new AzPodStatusMetricsListener(new DummyContainerizationMetricsImpl());
-
-    // Register ContainerStatusMetricsHandlerListener
-    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
-    statusDriver.registerAzPodStatusListener(recordHandlerListener);
-
-    // Run all the events through the registered listeners.
-    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
-    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
-    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
-
-    // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
-    //metrics. In total there are 15 events, of which some Scheduled and InitContainersRunning are
-    //duplicated event statuses.
-    assertThat(recordHandlerListener.getPodRequestedCounter()).isEqualTo(2);
-    assertThat(recordHandlerListener.getPodScheduledCounter()).isEqualTo(3);
-    assertThat(recordHandlerListener.getPodInitContainersRunningCounter()).isEqualTo(2);
-    assertThat(recordHandlerListener.getPodAppContainersStartingCounter()).isEqualTo(2);
-    assertThat(recordHandlerListener.getPodReadyCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodCompletedCounter()).isEqualTo(1);
-    assertThat(recordHandlerListener.getPodInitFailureCounter()).isEqualTo(1);
-  }
-
-  // Validate that for invalid pod transitions corresponding flows are finalized and containers
-  // are deleted.
-  @Test
-  public void testFlowManagerListenerInvalidTransition() throws Exception {
-    // Setup a FlowUpdatingListener
-    Props azkProps = new Props();
-    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
-    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
-    statusDriver.registerAzPodStatusListener(updatingListener);
-
-    // Mocked flow in RUNNING state.
-    ExecutableFlow flow1 = TestUtils.createTestExecutableFlowFromYaml("embeddedflowyamltest",
-        "embedded_flow");
-    flow1.setExecutionId(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
-    flow1.setStatus(Status.RUNNING);
-    when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INVALID_TRANSITIONS))
-        .thenReturn(flow1);
-
-    // Process events through the registered listeners.
-    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
-    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
-    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
-
-    // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
-    // nodes set to terminal state, too.
-    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    Queue<ExecutableNode> queue = new LinkedList<>();
-    queue.add(flow1);
-    // traverse through every node in flow1
-    while(!queue.isEmpty()) {
-      ExecutableNode node = queue.poll();
-      if (node==flow1) {
-        assertThat(node.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
-      } else {
-        assertThat(node.getStatus()).isEqualTo(Status.KILLED);
-      }
-      if (node instanceof ExecutableFlowBase) {
-        final ExecutableFlowBase base = (ExecutableFlowBase) node;
-        for (final ExecutableNode subNode : base.getExecutableNodes()) {
-          queue.add(subNode);
-        }
-      }
-    }
-
-    // Verify the Pod deletion API is invoked.
-    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
   }
 
   @Test
@@ -630,119 +502,6 @@ public class KubernetesWatchTest {
           watchEvent.object.getStatus().getMessage(), watchEvent.object.getStatus().getPhase()));
       AzPodStatus azPodStatus = AzPodStatusExtractor.getAzPodStatusFromEvent(watchEvent).getAzPodStatus();
       logger.debug("AZ_POD_STATUS: " + azPodStatus);
-    }
-  }
-
-  /**
-   * A class extends {@link ContainerStatusMetricsListener} that can be tested for metrics
-   * updating
-   */
-  private static class AzPodStatusMetricsListener extends ContainerStatusMetricsListener {
-    private int podRequestedCounter =0, podScheduledCounter = 0, podInitContainersRunningCounter = 0,
-        PodAppContainersStartingCounter = 0, podReadyCounter = 0, podCompletedCounter = 0,
-        podInitFailureCounter = 0, podAppFailureCounter = 0, podUnexpectedCounter = 0;
-    public AzPodStatusMetricsListener(
-        ContainerizationMetrics containerizationMetrics) {
-      super(containerizationMetrics);
-    }
-
-    @Override
-    public synchronized void onPodRequested(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podRequestedCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodScheduled(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podScheduledCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodInitContainersRunning(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podInitContainersRunningCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodAppContainersStarting(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        PodAppContainersStartingCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodReady(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podReadyCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodCompleted(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podCompletedCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodInitFailure(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podInitFailureCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public synchronized void onPodAppFailure(final AzPodStatusMetadata event) {
-      if (!event.getFlowPodMetadata().isPresent() || isUpdatedPodStatusDistinct(event)) {
-        podAppFailureCounter++;
-        updatePodStatus(event);
-      }
-    }
-
-    @Override
-    public void onPodUnexpected(AzPodStatusMetadata event) {
-      super.onPodUnexpected(event);
-    }
-
-    public int getPodRequestedCounter() {
-      return podRequestedCounter;
-    }
-
-    public int getPodScheduledCounter() { return podScheduledCounter; }
-
-    public int getPodInitContainersRunningCounter() {
-      return podInitContainersRunningCounter;
-    }
-
-    public int getPodAppContainersStartingCounter() {
-      return PodAppContainersStartingCounter;
-    }
-
-    public int getPodReadyCounter() {
-      return podReadyCounter;
-    }
-
-    public int getPodCompletedCounter() {
-      return podCompletedCounter;
-    }
-
-    public int getPodInitFailureCounter() {
-      return podInitFailureCounter;
-    }
-
-    public int getPodAppFailureCounter() {
-      return podAppFailureCounter;
     }
   }
 }

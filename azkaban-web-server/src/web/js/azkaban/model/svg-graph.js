@@ -18,8 +18,7 @@ $.namespace('azkaban');
 
 azkaban.GraphModel = Backbone.Model.extend({
   initialize: function () {
-    this.set({'autoPanZoom': (localStorage.getItem("Azkaban-autoPanZoom") !== 'false')});
-    this.set({'autoExpandFlows': (localStorage.getItem("Azkaban-autoExpandFlows") !== 'false')});
+    this.set({'autoPanZoom': true});
   },
 
   /*
@@ -28,23 +27,6 @@ azkaban.GraphModel = Backbone.Model.extend({
   addFlow: function (data) {
     this.processFlowData(data);
     this.set({'data': data});
-    this.set({'nestedIds': this.getAllNestedIds(data)});
-  },
-
-  getAllNestedIds: function (rootNode) {
-    var nodes = rootNode["nodes"]
-    var nestedIds = [];
-    for (var i = 0; i < nodes.length; ++i) {
-      var node = nodes[i];
-      nestedIds.push(node.nestedId);
-      if (node.type == "flow") {
-        var childIds = this.getAllNestedIds(node);
-        if (childIds && childIds.length > 0) {
-          nestedIds.push(...childIds);
-        }
-      }
-    }
-    return [...new Set(nestedIds)].sort();
   },
 
   processFlowData: function (data) {

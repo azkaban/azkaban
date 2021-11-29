@@ -15,9 +15,6 @@
  */
 package azkaban.server;
 
-import static azkaban.executor.ExecutionOptions.FAILURE_ACTION_OVERRIDE;
-
-import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
@@ -72,11 +69,6 @@ public class HttpRequestUtils {
       execOptions.setSuccessEmailsOverridden(override);
     }
 
-    if (hasParam(req, FAILURE_ACTION_OVERRIDE)) {
-      final boolean override = getBooleanParam(req, FAILURE_ACTION_OVERRIDE, false);
-      execOptions.setFailureActionOverride(override);
-    }
-
     if (hasParam(req, "failureEmails")) {
       final String emails = getParam(req, "failureEmails");
       if (!emails.isEmpty()) {
@@ -125,32 +117,8 @@ public class HttpRequestUtils {
       execOptions.setSlaOptions(slaOptions);
     }
 
-    final Map<String, Map<String, String>> runtimePropertiesGroup = getMapParamGroup(req,
-        "runtimeProperty");
-
-    // legacy support
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
-
-    // Don't allow combining old & new in the same request:
-    // This ensures that there's no need to handle possible conflicts between flowOverride &
-    // runtimeProperty[ROOT]
-    if (!flowParamGroup.isEmpty() && !runtimePropertiesGroup.isEmpty()) {
-      throw new ServletException("The legacy param group flowOverride is not allowed in "
-          + "combination with the runtimeProperty param group. "
-          + "Migrate flowOverride to runtimeProperty[ROOT].");
-    }
-
-    // Add all flow-level props – they are accessed via ExecutionOptions#getFlowParameters.
-    final Map<String, String> rootProps = runtimePropertiesGroup
-        .remove(Constants.ROOT_NODE_IDENTIFIER);
-    if (rootProps != null) {
-      flowParamGroup.putAll(rootProps);
-    }
-
-    // The ROOT runtime properties
     execOptions.addAllFlowParameters(flowParamGroup);
-    // Any other runtime properties
-    execOptions.addAllRuntimeProperties(runtimePropertiesGroup);
 
     if (hasParam(req, "disabled")) {
       final String disabled = getParam(req, "disabled");
@@ -188,7 +156,6 @@ public class HttpRequestUtils {
       params.remove(ExecutionOptions.USE_EXECUTOR);
       params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
       params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
-      params.remove(FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP);
       // Passing test version will be allowed for Azkaban ADMIN role only
       params.remove(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
     } else {
@@ -196,7 +163,6 @@ public class HttpRequestUtils {
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
-      validateBooleanParam(params, FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP);
       // Passing of test version is allowed for azkaban admin only. Validate
       // if it is boolean param
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
@@ -342,9 +308,6 @@ public class HttpRequestUtils {
     return defaultVal;
   }
 
-  /**
-   * Read params like groupName[key]: value
-   */
   public static Map<String, String> getParamGroup(final HttpServletRequest request,
       final String groupName) throws ServletException {
     final Enumeration<String> enumerate = request.getParameterNames();
@@ -356,31 +319,6 @@ public class HttpRequestUtils {
       if (str.startsWith(matchString)) {
         groupParam.put(str.substring(matchString.length(), str.length() - 1),
             request.getParameter(str));
-      }
-
-    }
-    return groupParam;
-  }
-
-  /**
-   * Read params like groupName[level1Key][level2Key]: value
-   */
-  public static Map<String, Map<String, String>> getMapParamGroup(final HttpServletRequest request,
-      final String groupName) {
-    final Enumeration<String> enumerate = request.getParameterNames();
-    final String matchString = groupName + "[";
-
-    final Map<String, Map<String, String>> groupParam = new HashMap<>();
-    while (enumerate.hasMoreElements()) {
-      final String str = enumerate.nextElement();
-      if (str.startsWith(matchString)) {
-        final int level1KeyEnd = str.indexOf("]");
-
-        final String level1Key = str.substring(matchString.length(), level1KeyEnd);
-        groupParam.putIfAbsent(level1Key, new HashMap<>());
-
-        final String level2Key = str.substring(level1KeyEnd + 2, str.length() - 1);
-        groupParam.get(level1Key).put(level2Key, request.getParameter(str));
       }
 
     }

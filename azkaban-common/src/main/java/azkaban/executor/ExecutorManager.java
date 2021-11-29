@@ -23,7 +23,6 @@ import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
 import azkaban.metrics.CommonMetrics;
-import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -90,8 +89,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener(),
-        new DummyContainerizationMetricsImpl());
+    super(azkProps, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener());
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;

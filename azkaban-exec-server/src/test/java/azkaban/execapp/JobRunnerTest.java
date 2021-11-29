@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
-import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -48,7 +47,6 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -56,7 +54,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public class JobRunnerTest {
 
@@ -90,31 +87,6 @@ public class JobRunnerTest {
       FileUtils.deleteDirectory(this.workingDir);
       this.workingDir = null;
     }
-  }
-
-  @Test
-  public void testEffectiveUser() throws Exception {
-    final MockExecutorLoader loader = new MockExecutorLoader();
-    final EventCollectorListener eventCollector = new EventCollectorListener();
-    JobRunner runner =
-        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
-    runner.run();
-    String effectiveUser = runner.getEffectiveUser();
-    Assert.assertEquals(SUBMIT_USER, effectiveUser);
-    Assert.assertEquals(effectiveUser, runner.getProps().get("user.to.proxy"));
-
-    this.jobtypeManager.getJobTypePluginSet()
-        .addDefaultProxyUsersJobTypeClasses(InteractiveTestJob.class.getName());
-    this.jobtypeManager.getJobTypePluginSet().addDefaultProxyUser("test", "defaultTestUser");
-
-    runner =
-        createJobRunner(1, "testJob", 0, false, loader, eventCollector);
-    runner.run();
-    effectiveUser = runner.getEffectiveUser();
-    Mockito.verify(runner.getFlowRunnerProxy(), Mockito.times(1)).setEffectiveUser(runner.getJobId(),
-        runner.getEffectiveUser(), Optional.of("test"));
-    Assert.assertEquals("defaultTestUser", effectiveUser);
-    Assert.assertEquals(effectiveUser, runner.getProps().get("user.to.proxy"));
   }
 
   @Test
@@ -481,9 +453,8 @@ public class JobRunnerTest {
     node.setInputProps(props);
     final HashSet<String> proxyUsers = new HashSet<>();
     proxyUsers.add(flow.getSubmitUser());
-    FlowRunnerProxy flowRunnerProxy = Mockito.mock(FlowRunnerProxy.class);
     final JobRunner runner = new JobRunner(node, this.workingDir, loader, this.jobtypeManager,
-        azkabanProps, flowRunnerProxy);
+        azkabanProps);
     runner.setLogSettings(this.logger, "5MB", 4);
 
     runner.addListener(listener);

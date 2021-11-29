@@ -46,11 +46,9 @@
               </div>
             </li>
             <li viewpanel="flow-parameters-panel">
-              <a href="#">Runtime Properties</a>
-              <div class="menu-caption">Add temporary properties.
-                <p><small>Rows with "ROOT" Node apply to all jobs. Properties can be scoped per
-                  sub-flow as well as individual jobs. Most specific node path takes precedence.
-                </small></p>
+              <a href="#">Flow Parameters</a>
+              <div class="menu-caption">Add temporary flow parameters that are used to override
+                global settings for each job.
               </div>
             </li>
           </ul>
@@ -177,24 +175,22 @@
               </div>
             </div>
 
-              ## Runtime properties panel
+              ## Flow parameters panel
 
             <div id="flow-parameters-panel" class="side-panel">
-              <h4>Runtime Properties</h4>
+              <h4>Flow Property Override</h4>
               <hr>
               <div id="editTable">
                 <table class="table table-striped">
                   <thead>
                   <tr>
-                    <th>Node</th>
                     <th class="property-key">Name</th>
                     <th>Value</th>
-                    <th></th>
                   </tr>
                   </thead>
                   <tbody>
                   <tr id="addRow" class="addRow">
-                    <td id="addRow-col" colspan="4">
+                    <td id="addRow-col" colspan="2">
                       <button type="button" class="btn btn-success btn-xs" id="add-btn">Add Row
                       </button>
                     </td>

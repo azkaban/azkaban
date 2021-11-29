@@ -57,7 +57,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -501,7 +500,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
     page.add("flowlist", flow.getFlowId().split(Constants.PATH_DELIMITER, 0));
-    page.add("pathDelimiter", Constants.PATH_DELIMITER);
+    page.add("pathDelimiter", Constants.PATH_DELIMITER);    
 
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
@@ -729,8 +728,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", options.getSuccessEmails());
     ret.put("failureEmails", options.getFailureEmails());
-    ret.put("runtimeProperties", mergeRuntimeProperties(options));
-    // For legacy support. This is not used by the Azkaban UI any more.
     ret.put("flowParam", options.getFlowParameters());
 
     final FailureAction action = options.getFailureAction();
@@ -765,23 +762,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     ret.put("nodeStatus", nodeStatus);
     ret.put("disabled", options.getDisabledJobs());
-  }
-
-  /**
-   * Copies flowOverrides under the key "ROOT".
-   */
-  private static Map<String, Map<String, String>> mergeRuntimeProperties(
-      final ExecutionOptions options) {
-    final Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
-    if (!options.getFlowParameters().isEmpty()) {
-      runtimeProperties
-          .put(Constants.ROOT_NODE_IDENTIFIER, new HashMap<>(options.getFlowParameters()));
-    }
-    for (final Entry<String, Map<String, String>> runtimeProp :
-        options.getRuntimeProperties().entrySet()) {
-      runtimeProperties.put(runtimeProp.getKey(), new HashMap<>(runtimeProp.getValue()));
-    }
-    return runtimeProperties;
   }
 
   private void ajaxCancelFlow(final HttpServletRequest req, final HttpServletResponse resp,
@@ -927,7 +907,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       nodeObj.put("nodes", nodeList);
       nodeObj.put("flowId", base.getFlowId());
     } else {
-      final ClusterInfo cluster = node.getClusterInfo();
+      ClusterInfo cluster = node.getClusterInfo();
       if (cluster != null && cluster.hadoopClusterURL != null) {
         nodeObj.put("cluster", cluster.hadoopClusterURL);
       }
@@ -1019,16 +999,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     options.setMailCreator(flow.getMailCreator());
 
-    /**
-     * If the user has not explicitly overridden the failure action from the UI or
-     * through API, we will consider the value specified in DSL/Yaml
-     * By providing this override option, user can still choose to modify failure
-     * option.
-     */
-    if (!options.isFailureActionOverridden() && flow.getFailureAction() != null) {
-      options.setFailureAction(
-          options.mapToFailureAction(flow.getFailureAction()));
-    }
     try {
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, options, user);
       final String message =

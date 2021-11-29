@@ -93,7 +93,7 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
           "first": data.notifyFailureFirst,
           "last": data.notifyFailureLast
         },
-        "runtimeProperties": data.runtimeProperties,
+        "flowParams": data.flowParam,
         "isRunning": data.running,
         "nodeStatus": data.nodeStatus,
         "concurrentOption": data.concurrentOptions,

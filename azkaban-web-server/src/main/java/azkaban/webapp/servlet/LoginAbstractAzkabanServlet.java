@@ -738,33 +738,19 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
    */
   protected boolean hasImageManagementPermission(final String imageTypeName, final User user,
       final Permission.Type type) {
-    /**
-     * Azkaban ADMIN role must have full permission to access image management APIs. Hence, no
-     * further permission check is required.
-     */
-    if (isAzkabanAdmin(user)) {
-      return true;
+    final UserManager userManager = getApplication().getUserManager();
+    for (final String roleName : user.getRoles()) {
+      final Role role = userManager.getRole(roleName);
+      /**
+       * Azkaban ADMIN role must have full permission to access image management APIs. Hence, no
+       * further permission check is required.
+       */
+      if (role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+        return true;
+      }
     }
     // Check image management APIs access permission for other users.
     final PermissionManager permissionManager = getApplication().getPermissionManager();
     return permissionManager.hasPermission(imageTypeName, user.getUserId(), type);
   }
-
-  /**
-   * Method to check if user is Azkaban Admin.
-   *
-   * @param user
-   * @return boolean
-   */
-  protected boolean isAzkabanAdmin(final User user) {
-    final UserManager userManager = getApplication().getUserManager();
-    for (final String roleName : user.getRoles()) {
-      final Role role = userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
-      }
-    }
-    return false;
-  }
 }
-

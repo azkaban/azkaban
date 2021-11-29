@@ -27,9 +27,8 @@ import org.codehaus.jackson.annotate.JsonPropertyOrder;
 @JsonPropertyOrder({"version", "state", "path", "releaseTag", "message", "rampups"})
 public class ImageVersionMetadataResponseDTO {
 
-  // Represents version for an image type selected based on deterministic rampup or current active
-  //version.
-  @JsonProperty("latestVersion")
+  // Represents version for an image type selected based on random rampup or current active version.
+  @JsonProperty("version")
   private final String version;
   // Current state of the version.
   @JsonProperty("state")

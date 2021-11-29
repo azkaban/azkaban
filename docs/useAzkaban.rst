@@ -245,32 +245,14 @@ executing, several options can be set.
 
 .. image:: figures/executeflowconcurrent.png
 
-Runtime Properties
+Flow Parameters
 ~~~~~~~~~~~~~~~
 
-Runtime Properties allow users to override properties temporarily.
+Allows users to override flow parameters. The flow parameters override
+the global properties for a job, but not the properties of the job
+itself.
 
-Note: This feature was previously known as Flow Parameters.
-
-.. image:: figures/executeflowruntimeproperties.png
-
-..
-  How executeflowruntimeproperties.png was generated:
-  - Run tools/deploy_example_flow.py
-  - Follow the Execution link
-  - Click "Prepare Execution"
-  - Select the "Runtime Properties" tab
-  - Take a screenshot
-
-The scope of each runtime property is defined by the Node selection. Rows with `ROOT` Node apply to all jobs in the flow. Properties can be scoped per sub-flow as well as individual jobs. Most specific node path takes precedence.
-
-Overrides are applied depending on the Azkaban server configuration property `azkaban.executor.runtimeProps.override.eager`:
-
-
-+ **azkaban.executor.runtimeProps.override.eager=false (default):**
-   + Runtime properties don't override predefined properties from a more specific node path. In particular runtime properties at flow level don't override predefined properties at job level.
-+ **azkaban.executor.runtimeProps.override.eager=true:**
-   + Runtime properties (also those that are set on a parent node or at flow level) have higher precedence than predefined properties.
+.. image:: figures/executeflowparameters.png
 
 
 

@@ -15,10 +15,8 @@
  */
 package azkaban.executor.container.watch;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-import io.kubernetes.client.openapi.models.V1ContainerState;
 import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
@@ -230,10 +228,6 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodRequested() {
-    if (isPodCompleted()) {
-      logger.debug("PodRequested is false as podPhase is in completion state");
-      return false;
-    }
     // Scheduled conditions should either not be present or be false
     if (this.scheduledConditionStatus.isPresent() &&
         this.scheduledConditionStatus.get() == PodConditionStatus.True) {
@@ -249,10 +243,6 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodScheduled() {
-    if (isPodCompleted()) {
-      logger.debug("PodScheduled is false as podPhase is in completion state");
-      return false;
-    }
     // Pod must have been scheduled
     if (!this.scheduledConditionStatus.isPresent()) {
       logger.debug("PodScheduled false as scheduled condition is not present");
@@ -298,7 +288,11 @@ public class AzPodStatusExtractor {
       logger.debug("AnyInitContainerFailed is false as init container status is null or empty");
       return false;
     }
-    return anyContainerFailed(initContainerStatuses);
+    boolean anyContainerFailed = initContainerStatuses.stream().anyMatch(status ->
+        status.getState().getTerminated() != null &&
+            (status.getState().getTerminated().getExitCode() == null ||
+                status.getState().getTerminated().getExitCode() != 0));
+    return anyContainerFailed;
   }
 
   /**
@@ -307,10 +301,6 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodInitContainersRunning() {
-    if (isPodCompleted()) {
-      logger.debug("InitRunning is false as podPhase is in completion state");
-      return false;
-    }
     // Pod must have scheduled
     if (!this.scheduledConditionStatus.isPresent() ||
         this.scheduledConditionStatus.get() != PodConditionStatus.True) {
@@ -342,10 +332,6 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodAppContainerStarting() {
-    if (isPodCompleted()) {
-      logger.debug("ContainerStarting is false as podPhase is in completion state");
-      return false;
-    }
     // Pod must have been initialized
     if (!this.initializedConditionStatus.isPresent() ||
         this.initializedConditionStatus.get() != PodConditionStatus.True) {
@@ -375,33 +361,11 @@ public class AzPodStatusExtractor {
       logger.debug("AnyAppContainerFailed is false as container status is null or empty");
       return false;
     }
-    return anyContainerFailed(containerStatuses);
-  }
-
-  /**
-   * This method can be utilized to check for any failed container among the list provided. The
-   * containers can be init or app containers.
-   *
-   * @param containerStatuses
-   * @return true if any of the container failed, otherwise false.
-   */
-  private boolean anyContainerFailed(List<V1ContainerStatus> containerStatuses) {
-    return containerStatuses.stream().anyMatch(status ->
-    {
-      if (status.getState().getTerminated() != null) {
-        return status.getState().getTerminated().getExitCode() == null ||
-            status.getState().getTerminated().getExitCode() != 0;
-      }
-      // If the current state is waiting and the last state was terminated, then the
-      // container has most likely failed.
-      else if (status.getState().getWaiting() != null
-          && status.getLastState().getTerminated() != null) {
-        logger.debug("Container failed as state is Waiting and last state is Terminated.");
-        return true;
-      } else {
-        return false;
-      }
-    });
+    boolean anyContainerFailed = containerStatuses.stream().anyMatch(status ->
+        status.getState().getTerminated() != null &&
+            (status.getState().getTerminated().getExitCode() == null ||
+                status.getState().getTerminated().getExitCode() != 0));
+    return anyContainerFailed;
   }
 
   /**
@@ -409,10 +373,6 @@ public class AzPodStatusExtractor {
    * @return true if the classification succeeds, false otherwise.
    */
   private boolean checkForAzPodReady() {
-    if (isPodCompleted()) {
-      logger.debug("PodReady is false as podPhase is in completion state");
-      return false;
-    }
     // ContainersReady condition must be True
     if (!this.containersReadyConditionStatus.isPresent() ||
         this.containersReadyConditionStatus.get() != PodConditionStatus.True) {
@@ -506,63 +466,6 @@ public class AzPodStatusExtractor {
     return true;
   }
 
-  private boolean isPodCompleted() {
-    return this.podPhase == PodPhase.Succeeded || this.podPhase == PodPhase.Failed;
-  }
-
-  /**
-   * Log useful information from a container status.
-   * This will log status information for a container to help with debugging and analysis
-   * of container failures. Logging verbosity has been tuned to not log excessive messages
-   * when containers don't have any failures.
-   * @param containerStatus container status to log
-   */
-  private void logContainerStatus(V1ContainerStatus containerStatus) {
-    requireNonNull(containerStatus, "container status must not be null");
-
-    V1ContainerState containerState = containerStatus.getState();
-    if (containerState == null) {
-      logger.error("Container state is null for container " + containerStatus.getName());
-    }
-
-    // Containers in 'waiting' state which have 'reason' for the wait available are reflective of
-    // errors with the container and should be logged in detail.
-    if (containerState.getWaiting() != null) {
-      logger.debug(format("For pod %s, container %s has state %s",
-          this.podName, containerStatus.getName(), ContainerState.Waiting));
-      if (containerState.getWaiting().getMessage() != null) {
-        logger.warn(format("For Pod %s, container %s is waiting with details: %s",
-            this.podName, containerStatus.getName(), containerState.getWaiting().toString()));
-      }
-    }
-    if (containerState.getTerminated() != null) {
-      logger.debug(format("For pod %s, container %s has state %s",
-          this.podName, containerStatus.getName(), ContainerState.Terminated));
-    }
-    if (containerState.getRunning() != null) {
-        logger.debug(format("For pod %s, container %s has state %s",
-            this.podName, containerStatus.getName(), ContainerState.Running));
-    }
-  }
-
-  private void logContainerStatuses(List<V1ContainerStatus> containerStatuses) {
-    if (containerStatuses == null || containerStatuses.isEmpty()) {
-      logger.debug("No container statuses were found for logging");
-      return;
-    }
-    containerStatuses.forEach(this::logContainerStatus);
-  }
-
-  private void logInitContainerStatuses() {
-    logger.debug("Logging init container statuses");
-    logContainerStatuses(this.v1PodStatus.getInitContainerStatuses());
-  }
-
-  private void logAppContainerStatuses() {
-    logger.debug("Logging application container statuses");
-    logContainerStatuses(this.v1PodStatus.getContainerStatuses());
-  }
-
   /**
    * Return the {@link AzPodStatus} derived from given Pod watch event.
    * @return
@@ -571,11 +474,9 @@ public class AzPodStatusExtractor {
     if (checkForAzPodRequested()) {
       return AzPodStatus.AZ_POD_REQUESTED;
     }
-    logInitContainerStatuses();
     if (checkForAzPodScheduled()) {
       return AzPodStatus.AZ_POD_SCHEDULED;
     }
-    logAppContainerStatuses();
     if (checkForAzPodInitContainersRunning()) {
       return AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING;
     }
@@ -642,15 +543,5 @@ public class AzPodStatusExtractor {
     Succeeded,
     Failed,
     Unknown
-  }
-
-  /**
-   * Enum of all supported Container States.
-   * https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-and-container-status
-   */
-  private enum ContainerState {
-    Running,
-    Terminated,
-    Waiting
   }
 }

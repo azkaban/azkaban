@@ -55,20 +55,16 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var failureEmailsOverride = $("#override-failure-emails").is(':checked');
     var successEmailsOverride = $("#override-success-emails").is(':checked');
 
-    var runtimeProperty = {};
+    var flowOverride = {};
     var editRows = $(".editRow");
     for (var i = 0; i < editRows.length; ++i) {
       var row = editRows[i];
-      var node = row.cells[0].firstChild.value;
       var td = $(row).find('span');
       var key = $(td[0]).text();
       var val = $(td[1]).text();
 
       if (key && key.length > 0) {
-        if (node && node.length > 0) {
-          runtimeProperty[node] = runtimeProperty[node] || {}
-          runtimeProperty[node][key] = val;
-        }
+        flowOverride[key] = val;
       }
     }
 
@@ -88,7 +84,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       successEmails: successEmails,
       notifyFailureFirst: notifyFailureFirst,
       notifyFailureLast: notifyFailureLast,
-      runtimeProperty: runtimeProperty,
+      flowOverride: flowOverride
     };
 
     // Set concurrency option, default is skip
@@ -110,7 +106,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var failureEmails = this.model.get("failureEmails");
     var failureActions = this.model.get("failureAction");
     var notifyFailure = this.model.get("notifyFailure");
-    var runtimeProperties = this.model.get("runtimeProperties");
+    var flowParams = this.model.get("flowParams");
     var isRunning = this.model.get("isRunning");
     var concurrentOption = this.model.get("concurrentOption");
     var pipelineLevel = this.model.get("pipelineLevel");
@@ -161,17 +157,12 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       $('#queueLevel').val(queueLevel);
     }
 
-    if ($(".editRow").length == 0) {
-      if (runtimeProperties) {
-        for (var jobOrFlow in runtimeProperties) {
-          for (var key in runtimeProperties[jobOrFlow]) {
-            editTableView.handleAddRow({
-              paramJobOrFlow: jobOrFlow,
-              paramkey: key,
-              paramvalue: runtimeProperties[jobOrFlow][key]
-            });
-          }
-        }
+    if (flowParams && $(".editRow").length == 0) {
+      for (var key in flowParams) {
+        editTableView.handleAddRow({
+          paramkey: key,
+          paramvalue: flowParams[key]
+        });
       }
     }
   },
@@ -190,9 +181,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
     var self = this;
     var loadCallback = function () {
-      // loadFlowInfo needs the list of nestedIds. that's why loading
-      // it here in the callback.
-      self.loadFlowInfo(projectName, flowId, execId);
       if (jobId) {
         self.showExecuteJob(projectName, flowId, jobId, data.withDep);
       } else {
@@ -202,6 +190,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
     var loadedId = executableGraphModel.get("flowId");
     this.loadGraph(projectName, flowId, exgraph, loadCallback);
+    this.loadFlowInfo(projectName, flowId, execId);
   },
 
   showExecuteFlow: function (projectName, flowId) {
@@ -255,6 +244,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var requestURL = contextURL + "/executor";
 
     var graphModel = executableGraphModel;
+    // fetchFlow(this.model, projectName, flowId, true);
     var requestData = {
       "project": projectName,
       "ajax": "fetchscheduledflowgraph",
@@ -326,13 +316,6 @@ azkaban.EditTableView = Backbone.View.extend({
   },
 
   handleAddRow: function (data) {
-    var nestedIds = executableGraphModel.get("nestedIds");
-
-    var jobOrFlow = "";
-    if (data.paramJobOrFlow) {
-      jobOrFlow = data.paramJobOrFlow;
-    }
-
     var name = "";
     if (data.paramkey) {
       name = data.paramkey;
@@ -344,11 +327,9 @@ azkaban.EditTableView = Backbone.View.extend({
     }
 
     var tr = document.createElement("tr");
-    var tdJobOrFlow = document.createElement("td");
     var tdName = document.createElement("td");
     $(tdName).addClass('property-key');
     var tdValue = document.createElement("td");
-    var tdDelete = document.createElement("td");
 
     var remove = document.createElement("div");
     $(remove).addClass("pull-right").addClass('remove-btn');
@@ -365,34 +346,16 @@ azkaban.EditTableView = Backbone.View.extend({
     $(valueData).addClass("spanValue");
     $(valueData).text(value);
 
-    var idSelect = document.createElement("select");
-    idSelect.setAttribute("class", "form-control");
-
-    idSelect.options[0] = new Option("ROOT", "ROOT");
-
-    // runtime properties
-    for (var i = 0; i < nestedIds.length; ++i) {
-      var nestedId = nestedIds[i];
-      idSelect.options[i + 1] = new Option(nestedId, nestedId);
-      if (jobOrFlow === nestedId) {
-        idSelect.options[i + 1].selected = true;
-      }
-    }
-
-    tdJobOrFlow.appendChild(idSelect)
-
     $(tdName).append(nameData);
     $(tdName).addClass("editable");
 
     $(tdValue).append(valueData);
-    $(tdDelete).append(remove);
+    $(tdValue).append(remove);
     $(tdValue).addClass("editable").addClass('value');
 
     $(tr).addClass("editRow");
-    $(tr).append(tdJobOrFlow);
     $(tr).append(tdName);
     $(tr).append(tdValue);
-    $(tr).append(tdDelete);
 
     $(tr).insertBefore(".addRow");
     return tr;
@@ -444,6 +407,17 @@ azkaban.EditTableView = Backbone.View.extend({
     var valueData = document.createElement("span");
     $(valueData).addClass("spanValue");
     $(valueData).text(text);
+
+    if ($(parent).hasClass("value")) {
+      var remove = document.createElement("div");
+      $(remove).addClass("pull-right").addClass('remove-btn');
+      var removeBtn = document.createElement("button");
+      $(removeBtn).attr('type', 'button');
+      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+      $(removeBtn).text('Delete');
+      $(remove).append(removeBtn);
+      $(parent).append(remove);
+    }
 
     $(parent).removeClass("editing");
     $(parent).append(valueData);
