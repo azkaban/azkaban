@@ -28,11 +28,6 @@ public interface ContainerizationMetrics {
   void startReporting(final Props props);
 
   /**
-   * @return isInitialized status
-   */
-  public boolean isInitialized();
-
-  /**
    *  Record the number of pod whose application containers exited without errors
    */
   void markPodCompleted();
@@ -88,13 +83,4 @@ public interface ContainerizationMetrics {
    */
   void markFlowSubmitToContainer();
 
-  /**
-   * Record number of flow executions stopped due to container infra failure
-   */
-  void markExecutionStopped();
-
-  /**
-   * Record number of container dispatch failure
-   */
-  void markContainerDispatchFail();
 }

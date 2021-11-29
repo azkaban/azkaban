@@ -147,30 +147,6 @@ public class Constants {
   // AZ_HOME in containerized execution
   public static final String AZ_HOME = "AZ_HOME";
 
-  // Flow restart action on EXECUTION_STOPPED
-  public static final String RESTART_FLOW = "Restart Flow";
-
-  // Overridable plugin load properties
-  public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
-
-  /**
-   * File containing param override configs
-   * For a directory structure, property files in Proj_Dir used to have lower precedence than A.
-   * For the newly introduced file, this will no longer be true
-
-   * Proj_Dir
-   * basic.properties
-   * param_override.properties
-   * A/
-   * foo_a.properties
-   * foo.job
-
-   * i.e.
-   * (a). param_override.properties precedence will be higher than foo_a.properties.
-   * (b). foo_a.properties precedence will be higher than that of basic.properties.
-   */
-  public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
-
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 
@@ -206,15 +182,11 @@ public class Constants {
     public static final String QUEUE_DURATION = "queueDuration";
     public static final String FAILURE_MESSAGE = "failureMessage";
     public static final String JOB_STATUS = "jobStatus";
-    public static final String EFFECTIVE_USERS = "effectiveUsers";
-    public static final String CPU_UTILIZED = "cpuUtilized";
-    public static final String MEMORY_UTILIZED_IN_BYTES = "memoryUtilizedInBytes";
   }
 
   public static class ConfigurationKeys {
 
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
-    public static final String AZKABAN_CLUSTER_ENV = "azkaban.cluster.env";
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
     // Property to enable appropriate dispatch model
     public static final String AZKABAN_EXECUTION_DISPATCH_METHOD = "azkaban.execution.dispatch.method";
@@ -491,8 +463,8 @@ public class Constants {
 
     // By default job props always win over flow override props.
     // If this flag is set to true, then override props override also override existing job props.
-    public static final String AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER =
-        "azkaban.executor.runtimeProps.override.eager";
+    public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
+        "executor.props.resolve.overrideExisting.enabled";
 
     // Executor client TLS properties
     public static final String EXECUTOR_CLIENT_TLS_ENABLED = "azkaban.executor.client.tls.enabled";
@@ -636,27 +608,27 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
-    public static final String KUBERNETES_POD_AZKABAN_BASE_IMAGE_NAME = AZKABAN_KUBERNETES_PREFIX +
-        "azkaban-base.image.name";
-    public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
-        AZKABAN_KUBERNETES_PREFIX + "azkaban-config.image.name";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH =
+        KUBERNETES_POD_PREFIX + "nscd.socket.volume.mount.path";
+    public static final String KUBERNETES_POD_NSCD_SOCKET_HOST_PATH =
+        KUBERNETES_POD_PREFIX + "nscd.socket.host.path";
+    public static final String KUBERNETES_POD_NSCD_MOUNT_READ_ONLY =
+        KUBERNETES_POD_PREFIX + "nscd.mount.read.only";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
-    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.cpu";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "cpu.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX +
             "cpu.request";
-    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
-    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT =
+        KUBERNETES_FLOW_CONTAINER_PREFIX +
+            "memory.limit";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_NAME =
@@ -672,13 +644,6 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
     public static final String KUBERNETES_POD_TEMPLATE_PATH =
         KUBERNETES_POD_PREFIX + "template.path";
-
-    public static final String KUBERNETES_DEPENDENCY_TYPES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "dependencyTypes";
-    public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_DEPENDENCIES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "init.dependencies.mount.path";
-    public static final String KUBERNETES_MOUNT_PATH_FOR_DEPENDENCIES =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + "dependencies.mount.path";
 
     // Kubernetes service related properties
     public static final String KUBERNETES_SERVICE_PREFIX = AZKABAN_KUBERNETES_PREFIX + "service.";
@@ -704,8 +669,6 @@ public class Constants {
     public static final String ENV_FLOW_EXECUTION_ID = "FLOW_EXECUTION_ID";
     public static final String ENV_JAVA_ENABLE_DEBUG = "JAVA_ENABLE_DEBUG";
     public static final String ENV_ENABLE_DEV_POD = "ENABLE_DEV_POD";
-    public static final String ENV_CPU_REQUEST = "CPU_REQUEST";
-    public static final String ENV_MEMORY_REQUEST = "MEMORY_REQUEST";
   }
 
   public static class ImageMgmtConstants {
@@ -715,6 +678,8 @@ public class Constants {
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
     public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
+    public static final String AZKABAN_BASE_IMAGE = "azkaban-base";
+    public static final String AZKABAN_CONFIG = "azkaban-config";
   }
 
   public static class FlowParameters {
@@ -732,23 +697,20 @@ public class Constants {
     public static final String FLOW_PARAM_DISABLE_POD_CLEANUP = "disable.pod.cleanup";
 
     // Constant to dispatch execution to Containerization
-    public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER =
-        "dispatch.execution.to.container";
+    public static final String FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER = "dispatch.execution.to"
+        + ".container";
 
     // Constant for cpu request for flow container
     public static final String FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST = "flow.container.cpu.request";
 
     // Constant for memory request for flow container
-    public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST =
-        "flow.container.memory.request";
+    public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST = "flow.container.memory"
+        + ".request";
 
     public static final String FLOW_PARAM_POD_ENV_VAR = "pod.env.var.";
 
     // Constant to allow test version to be passed as flow parameter. Passing test version will be
     // allowed for Azkaban ADMIN role only
     public static final String FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION = "allow.image.test.version";
-
-    public static final String FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED =
-        "allow.restart.on.execution.stopped";
   }
 }

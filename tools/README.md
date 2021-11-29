@@ -1,5 +1,5 @@
 The python scripts in this directory require python3.
-A python virtual environment is recommended to run these scripts. See [Documentation development](../README.md#documentation-development) for the python setup.
+A python virtual environment is recommended to run these scripts.
 
 The tool assumes that the upstream remote points to the main repo.
 

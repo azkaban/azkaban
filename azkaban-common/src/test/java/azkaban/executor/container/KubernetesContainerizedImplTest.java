@@ -20,6 +20,8 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLE
 import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_BASE_IMAGE;
+import static azkaban.Constants.ImageMgmtConstants.AZKABAN_CONFIG;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
@@ -33,7 +35,6 @@ import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.Status;
@@ -64,12 +65,10 @@ import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
-import azkaban.project.ProjectLoader;
 import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -101,7 +100,6 @@ public class KubernetesContainerizedImplTest {
   private static final Props props = new Props();
   private KubernetesContainerizedImpl kubernetesContainerizedImpl;
   private ExecutorLoader executorLoader;
-  private ProjectLoader projectLoader;
   private static DatabaseOperator dbOperator;
   private VersionSetLoader loader;
   private static ImageRampupManager imageRampupManager;
@@ -111,11 +109,6 @@ public class KubernetesContainerizedImplTest {
   private static final String TEST_JSON_DIR = "image_management/k8s_dispatch_test";
   private static final String CPU_REQUESTED_IN_PROPS = "2";
   private static final String MEMORY_REQUESTED_IN_PROPS = "4Gi";
-  private static final String MAX_ALLOWED_CPU = "4";
-  private static final String MAX_ALLOWED_MEMORY = "32Gi";
-  public static final String DEPENDENCY1 = "dependency1";
-  public static final int CPU_LIMIT_MULTIPLIER = 1;
-  public static final int MEMORY_LIMIT_MULTIPLIER = 2;
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -153,12 +146,7 @@ public class KubernetesContainerizedImplTest {
         CPU_REQUESTED_IN_PROPS);
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST
         , MEMORY_REQUESTED_IN_PROPS);
-    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU,
-        MAX_ALLOWED_CPU);
-    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
-        MAX_ALLOWED_MEMORY);
     this.executorLoader = mock(ExecutorLoader.class);
-    this.projectLoader = mock(ProjectLoader.class);
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(getInjector(this.props));
@@ -166,19 +154,17 @@ public class KubernetesContainerizedImplTest {
     this.containerizationMetrics = new DummyContainerizationMetricsImpl();
     this.kubernetesContainerizedImpl = new KubernetesContainerizedImpl(this.props,
         this.executorLoader, this.loader, this.imageRampupManager, null,
-        flowStatusChangeEventListener, containerizationMetrics, null);
+        flowStatusChangeEventListener, containerizationMetrics);
   }
 
   /**
    * This test is used to verify that if cpu and memory for a flow container is requested from flow
-   * parameter then that is given more precedence over system configuration, the constraints are
-   * max allowed cpu and memory set in config.
+   * parameter then that is given more precedence over system configuration.
    *
    * @throws Exception
    */
   @Test
   public void testCPUAndMemoryRequestedInFlowParam() throws Exception {
-    // User requested cpu and memory that are below max allowed cpu and memory
     final Map<String, String> flowParam = new HashMap<>();
     final String cpuRequestedInFlowParam = "3";
     final String memoryRequestedInFlowParam = "3Gi";
@@ -189,70 +175,6 @@ public class KubernetesContainerizedImplTest {
         .equals(cpuRequestedInFlowParam);
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(memoryRequestedInFlowParam);
-    // cpu limit should be same as request cpu, memory should be twice of requested memory
-    String expectedCPULimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(cpuRequestedInFlowParam, CPU_REQUESTED_IN_PROPS,
-                CPU_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
-    String expectedMemoryLimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(memoryRequestedInFlowParam, MEMORY_REQUESTED_IN_PROPS,
-                MEMORY_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
-
-    // User requested cpu and memory that exceed max allowed cpu and memory
-    final String greaterThanMaxCPURequestedInFlowParam = "5";
-    final String greaterThanMaxMemoryRequestedInFlowParam = "80Gi";
-    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST,
-        greaterThanMaxCPURequestedInFlowParam);
-    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
-        greaterThanMaxMemoryRequestedInFlowParam);
-    assert (this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam))
-        .equals(MAX_ALLOWED_CPU);
-    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
-        .equals(MAX_ALLOWED_MEMORY);
-    // cpu limit should be same as request cpu, memory should be twice of requested memory
-    expectedCPULimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(MAX_ALLOWED_CPU, CPU_REQUESTED_IN_PROPS,
-                CPU_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
-    expectedMemoryLimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(MAX_ALLOWED_MEMORY, MEMORY_REQUESTED_IN_PROPS,
-                MEMORY_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
-
-    // User requested memory of different unit, e.g. Ti, Mi
-    final String MemoryRequestedInFlowParam1 = "330Mi";
-    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
-        MemoryRequestedInFlowParam1);
-    // 330 Mi = 0.33 Gi < max allowed memory 32 Gi, user requested memory should be used
-    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
-        .equals(MemoryRequestedInFlowParam1);
-    final String MemoryRequestedInFlowParam2 = "0.1Ti";
-    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
-        MemoryRequestedInFlowParam2);
-    // 0.1 Ti = 100 Gi > max allowed memory 32 Gi, user requested memory is replaced by max
-    // allowed memory
-    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
-        .equals(MAX_ALLOWED_MEMORY);
-
-    // User requested memory that cannot be parsed or in a different type, e.g. mistakenly
-    // requested CPU instead of memory
-    final String MemoryRequestedInFlowParam3 = "4";
-    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
-        MemoryRequestedInFlowParam3);
-    // requested memory is set to value in props
-    assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
-        .equals(MEMORY_REQUESTED_IN_PROPS);
-    // the memory request set by config should be used to get limit
-    expectedMemoryLimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(MEMORY_REQUESTED_IN_PROPS, MEMORY_REQUESTED_IN_PROPS,
-                MEMORY_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
   }
 
   /**
@@ -268,17 +190,6 @@ public class KubernetesContainerizedImplTest {
         .equals(CPU_REQUESTED_IN_PROPS);
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(MEMORY_REQUESTED_IN_PROPS);
-    // cpu limit should be same as request cpu, memory should be twice of requested memory
-    final String expectedCPULimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(CPU_REQUESTED_IN_PROPS, CPU_REQUESTED_IN_PROPS,
-                CPU_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
-    final String expectedMemoryLimit =
-        this.kubernetesContainerizedImpl
-            .getResourceLimitFromResourceRequest(MEMORY_REQUESTED_IN_PROPS, MEMORY_REQUESTED_IN_PROPS,
-                MEMORY_LIMIT_MULTIPLIER);
-    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
   }
 
   /**
@@ -335,10 +246,9 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(1);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
-    final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
     assert (jobTypes.contains("command"));
     assert (jobTypes.contains("hadoopJava"));
     assert (jobTypes.contains("spark"));
@@ -346,14 +256,13 @@ public class KubernetesContainerizedImplTest {
 
     final Map<String, String> flowParam = new HashMap<>();  // empty map
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    allImageTypes.addAll(dependencyTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
-        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, dependencyTypes, flowParam);
+        .createPodSpec(flow.getExecutionId(), versionSet, jobTypes, flowParam);
 
     assert (podSpec != null);
 
@@ -369,7 +278,7 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
     when(imageRampupManager
         .getVersionInfo(any(String.class), any(String.class), any(Set.class)))
@@ -381,8 +290,8 @@ public class KubernetesContainerizedImplTest {
     jobTypes.add("pigLi-0.11.1");
     // Add azkaban base image and config
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
     final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.loader);
     final VersionSet presetVersionSet = versionSetBuilder
@@ -439,10 +348,9 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
-    final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
     // Add included job types
     jobTypes.add("hadoopJava");
     jobTypes.add("pig");
@@ -450,10 +358,9 @@ public class KubernetesContainerizedImplTest {
     jobTypes.add("noop");
     // Add azkaban base image and config
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
-    allImageTypes.addAll(dependencyTypes);
 
     final Map<String, String> flowParam = new HashMap<>();
 
@@ -469,7 +376,6 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals("9.1.1", versionSet.getVersion("azkaban-config").get().getVersion());
     Assert.assertEquals("8.0", versionSet.getVersion("spark").get().getVersion());
     Assert.assertEquals("7.1", versionSet.getVersion("kafkaPush").get().getVersion());
-    Assert.assertEquals("6.4", versionSet.getVersion("dependency1").get().getVersion());
   }
 
   /**
@@ -483,15 +389,15 @@ public class KubernetesContainerizedImplTest {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
-    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
+    when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class)))
         .thenReturn(getVersionMap());
 
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
 
     final Map<String, String> flowParam = new HashMap<>();  // empty map
     final Set<String> allImageTypes = new TreeSet<>();
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME);
-    allImageTypes.add(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
+    allImageTypes.add(AZKABAN_BASE_IMAGE);
+    allImageTypes.add(AZKABAN_CONFIG);
     allImageTypes.addAll(jobTypes);
     final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
@@ -510,85 +416,9 @@ public class KubernetesContainerizedImplTest {
     assertThat(imageToVersionMap.keySet()).isEqualTo(versionSet.getImageToVersionMap().keySet());
     assertThat(imageToVersionMap.get("spark")).isEqualTo(versionSet.getImageToVersionMap()
         .get("spark").getVersion());
-    assertThat(imageToVersionMap.get(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME))
+    assertThat(imageToVersionMap.get(AZKABAN_BASE_IMAGE))
         .isEqualTo(versionSet.getImageToVersionMap()
-            .get(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME).getVersion());
-  }
-
-  /**
-   * Test merging of flow properties and flow params.
-   * @throws Exception
-   */
-  @Test
-  public void testFlowPropertyAndParamsMerge() throws Exception {
-    final ExecutableFlow flow = createTestFlow();
-    flow.setExecutionId(3);
-    final Props flowProps = new Props();
-    flowProps.put("param.override.image.version", "1.2.3");
-    flowProps.put("regular.param", "4.5.6"); // Should be filtered out.
-    when(this.projectLoader.fetchProjectProperty(
-        flow.getProjectId(), flow.getVersion(), Constants.PARAM_OVERRIDE_FILE)).thenReturn(flowProps);
-    final ExecutionOptions executionOptions = new ExecutionOptions();
-    flow.setExecutionOptions(executionOptions);
-    final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
-    Assert.assertEquals(0, flowParams.size());
-    // Merge the flow props and flow params
-    flow.setFlowPropsAndParams(this.projectLoader);
-    final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
-    Assert.assertEquals(1, mergedFlowPropsAndParams.size());
-    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
-    Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
-  }
-
-  /**
-   * Test merging of flow properties and flow params where flow params override the flow property.
-   * @throws Exception
-   */
-  @Test
-  public void testFlowPropertyAndParamsMergeWithOverwrite() throws Exception {
-    final ExecutableFlow flow = createTestFlow();
-    flow.setExecutionId(3);
-    final Props flowProps = new Props();
-    flowProps.put("param.override.image.version", "1.2.3");
-    flowProps.put("regular.param", "4.5.6"); // Should be filtered out.
-    when(this.projectLoader.fetchProjectProperty(
-        flow.getProjectId(), flow.getVersion(), Constants.PARAM_OVERRIDE_FILE)).thenReturn(flowProps);
-    final ExecutionOptions executionOptions = new ExecutionOptions();
-    flow.setExecutionOptions(executionOptions);
-    final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
-    Assert.assertEquals(0, flowParams.size());
-    // flow params take priority.
-    flowParams.put("image.version", "2.3.4");
-    // Merge the flow props and flow params
-    flow.setFlowPropsAndParams(this.projectLoader);
-    final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
-    Assert.assertEquals(1, mergedFlowPropsAndParams.size());
-    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
-    Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
-  }
-
-  /**
-   * Test merging of flow properties and flow params where props in null.
-   * @throws Exception
-   */
-  @Test
-  public void testFlowPropertyAndParamsMergeNull() throws Exception {
-    final ExecutableFlow flow = createTestFlow();
-    flow.setExecutionId(3);
-    when(this.projectLoader.fetchProjectProperty(
-        flow.getProjectId(), flow.getVersion(), Constants.PARAM_OVERRIDE_FILE)).thenReturn(null);
-    final ExecutionOptions executionOptions = new ExecutionOptions();
-    flow.setExecutionOptions(executionOptions);
-    final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
-    Assert.assertEquals(0, flowParams.size());
-    // flow params take priority.
-    flowParams.put("image.version", "2.3.4");
-    // Merge the flow props and flow params
-    flow.setFlowPropsAndParams(this.projectLoader);
-    final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
-    Assert.assertEquals(1, mergedFlowPropsAndParams.size());
-    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
-    Assert.assertEquals("2.3.4", mergedFlowPropsAndParams.get("image.version"));
+            .get(AZKABAN_BASE_IMAGE).getVersion());
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
@@ -683,13 +513,10 @@ public class KubernetesContainerizedImplTest {
    */
   private Map<String, VersionInfo> getVersionMap() {
     final Map<String, VersionInfo> versionMap = new TreeMap<>();
-    versionMap.put(KubernetesContainerizedImpl.DEFAULT_AZKABAN_BASE_IMAGE_NAME,
-        new VersionInfo("7.0.4", "path1", State.ACTIVE));
-    versionMap.put(KubernetesContainerizedImpl.DEFAULT_AZKABAN_CONFIG_IMAGE_NAME,
-        new VersionInfo("9.1.1", "path2", State.ACTIVE));
+    versionMap.put(AZKABAN_BASE_IMAGE, new VersionInfo("7.0.4", "path1", State.ACTIVE));
+    versionMap.put(AZKABAN_CONFIG, new VersionInfo("9.1.1", "path2", State.ACTIVE));
     versionMap.put("spark", new VersionInfo("8.0", "path3", State.ACTIVE));
     versionMap.put("kafkaPush", new VersionInfo("7.1", "path4", State.ACTIVE));
-    versionMap.put(DEPENDENCY1, new VersionInfo("6.4", "path5", State.ACTIVE));
     return versionMap;
   }
 

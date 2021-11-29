@@ -25,7 +25,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.ImmutableFlowProps;
+import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
@@ -1560,7 +1560,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               .add(Triple.of(p.getFirst(), p.getSecond(), nodePropsSource)));
         } else {
           inheritedProperties.add(Triple.of(nodePropsSource, flowId, nodePropsSource));
-          ImmutableFlowProps parent = flow.getFlowProps(nodePropsSource);
+          FlowProps parent = flow.getFlowProps(nodePropsSource);
           while (parent.getInheritedSource() != null) {
             final String inheritedSource = parent.getInheritedSource();
             inheritedProperties.add(Triple.of(inheritedSource, flowId, inheritedSource));
@@ -1667,7 +1667,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       // Resolve property dependencies
       final List<String> inheritProps = new ArrayList<>();
-      ImmutableFlowProps parent = flow.getFlowProps(propsSource);
+      FlowProps parent = flow.getFlowProps(propsSource);
       while (parent.getInheritedSource() != null) {
         inheritProps.add(parent.getInheritedSource());
         parent = flow.getFlowProps(parent.getInheritedSource());
@@ -1675,7 +1675,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       page.add("inheritedproperties", inheritProps);
 
       final List<String> dependingProps = new ArrayList<>();
-      ImmutableFlowProps child = flow.getFlowProps(flow.getNode(jobName).getPropsSource());
+      FlowProps child = flow.getFlowProps(flow.getNode(jobName).getPropsSource());
       while (!child.getSource().equals(propsSource)) {
         dependingProps.add(child.getSource());
         child = flow.getFlowProps(child.getInheritedSource());

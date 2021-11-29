@@ -21,84 +21,84 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * This class consists of various methods to merge pod-spec with the podSpecFromTemplate.
+ * This class consists of various methods to merge pod-spec with the pod template
  */
 public class PodTemplateMergeUtils {
-  private static final int FLOW_CONTAINER_INDEX = 0;
 
   private PodTemplateMergeUtils() {
     // Not to be instantiated
   }
 
   /**
-   * Items extracted from the podSpecFromTemplate will be merged with the pod-spec. Merging criteria is such
+   * Items extracted from the podTemplate will be merged with the pod-spec. Merging criteria is such
    * that, if the item, in the already created pod-spec, has the same name as of the item extracted
-   * from the podSpecFromTemplate, then it will retained.
+   * from the template, then it will retained.
    *
    * @param podSpec     Already created podSpec using the {@link AzKubernetesV1SpecBuilder}
-   * @param podSpecFromTemplate PodSpec generated from {@link AzKubernetesV1PodTemplate}
+   * @param podTemplate Instance of the class {@link AzKubernetesV1PodTemplate} to extract items
    */
-  public static void mergePodSpec(V1PodSpec podSpec, V1PodSpec podSpecFromTemplate) {
-    mergeVolumes(podSpec, podSpecFromTemplate);
-    mergeInitContainers(podSpec, podSpecFromTemplate);
-    mergeFlowContainer(podSpec, podSpecFromTemplate);
+  public static void mergePodSpec(V1PodSpec podSpec, AzKubernetesV1PodTemplate podTemplate) {
+    mergeVolumes(podSpec, podTemplate);
+    mergeInitContainers(podSpec, podTemplate);
+    mergeFlowContainer(podSpec, podTemplate);
   }
 
-  private static void mergeFlowContainer(V1PodSpec podSpec, V1PodSpec podSpecFromTemplate) {
-    V1Container podSpecFlowContainer = getFlowContainer(podSpec);
-    V1Container podTemplateFlowContainer = getFlowContainer(podSpecFromTemplate);
+  private static void mergeFlowContainer(V1PodSpec podSpec, AzKubernetesV1PodTemplate podTemplate) {
+    V1Container podSpecFlowContainer = podSpec.getContainers()
+        .get(AzKubernetesV1PodTemplate.FLOW_CONTAINER_INDEX);
+    V1Container podTemplateFlowContainer = podTemplate.getFlowContainer();
     mergeTemplateAndPodSpecContainer(podTemplateFlowContainer, podSpecFlowContainer);
-    podSpec.setContainers(podSpecFromTemplate.getContainers());
+    podSpec.setContainers(podTemplate.getAllContainers());
   }
 
   /**
-   * Merge InitContainers from the dynamically generated pod-spec and podSpecFromTemplate, such that: 1) Add
-   * all the init containers which are only part of podSpecFromTemplate. 2) Add all the init containers
+   * Merge InitContainers from the dynamically generated pod-spec and podTemplate, such that: 1) Add
+   * all the init containers which are only part of podTemplate. 2) Add all the init containers
    * which are only part of pod-spec. 3) Add the init containers which are part of both pod-spec and
-   * podSpecFromTemplate by merging them such that: a) Skeleton of templateInitContainer is utilized. b)
+   * pod-template by merging them such that: a) Skeleton of templateInitContainer is utilized. b)
    * Environment variables from podSpecInitContainer are added to corresponding
    * templateInitContainer. c) ImagePullPolicy, Image, and VolumeMounts are overridden from
    * podSpecInitContainer to templateInitContainer.
    *
-   * @param podSpec     Already created podSpec using the {@link AzKubernetesV1SpecBuilder}.
-   * @param podSpecFromTemplate PodSpec from {@link AzKubernetesV1PodTemplate}.
+   * @param podSpec     Already created podSpec using the {@link AzKubernetesV1SpecBuilder}
+   * @param podTemplate Instance of the class {@link AzKubernetesV1PodTemplate} to extract items
    */
   private static void mergeInitContainers(V1PodSpec podSpec,
-      V1PodSpec podSpecFromTemplate) {
+      AzKubernetesV1PodTemplate podTemplate) {
     List<V1Container> podSpecInitContainers = podSpec.getInitContainers();
     if (null == podSpecInitContainers) {
       return;
     }
-    // Get init containers from podSpecFromTemplate which are not part of pod-spec init containers.
-    final List<V1Container> templateOnlyInitContainers = getInitContainers(podSpecFromTemplate,
+    // Get init containers from podTemplate which are not part of pod-spec init containers.
+    final List<V1Container> templateOnlyInitContainers = podTemplate.getInitContainers(
         templateInitContainer -> podSpecInitContainers.stream().map(V1Container::getName)
-        .noneMatch(name -> name.equals(templateInitContainer.getName())));
+            .noneMatch(name -> name.equals(templateInitContainer.getName())));
 
-    // Get init containers from podSpecFromTemplate which are also part of pod-spec init containers
+    // Get init containers from podTemplate which are also part of pod-spec init containers
     // i.e. the other containers apart from the above list templateOnlyInitContainers.
-
-    final List<V1Container> templateAlsoInitContainers = getInitContainers(podSpecFromTemplate,
+    final List<V1Container> templateAlsoInitContainers = podTemplate.getInitContainers(
         templateInitContainer -> templateOnlyInitContainers.stream().map(V1Container::getName)
             .noneMatch(name -> name.equals(templateInitContainer.getName())));
 
-    // Get init containers from pod-spec which are not part of podSpecFromTemplate init containers.
-    final List<V1Container> podSpecOnlyInitContainers = getInitContainers(podSpec,
+    // Get init containers from pod-spec which are not part of podTemplate init containers.
+    final List<V1Container> podSpecOnlyInitContainers =
+        podSpec.getInitContainers().stream().filter(
             podSpecInitContainer -> templateAlsoInitContainers.stream().map(V1Container::getName)
-                .noneMatch(name -> name.equals(podSpecInitContainer.getName())));
+                .noneMatch(name -> name.equals(podSpecInitContainer.getName()))
+        ).collect(Collectors.toList());
 
-    // Get init containers from pod-spec which are also part of podSpecFromTemplate init containers
+    // Get init containers from pod-spec which are also part of podTemplate init containers
     // i.e. the other containers apart from the above list podSpecOnlyInitContainers.
-    final Map<String, V1Container> podSpecAlsoInitContainers = getInitContainers(podSpec,
-        podSpecInitContainer -> podSpecOnlyInitContainers.stream().map(V1Container::getName)
-            .noneMatch(name -> name.equals(podSpecInitContainer.getName()))).stream()
-        .collect(Collectors.toMap(V1Container::getName, e -> e));
+    final Map<String, V1Container> podSpecAlsoInitContainers =
+        podSpec.getInitContainers().stream().filter(
+            podSpecInitContainer -> podSpecOnlyInitContainers.stream().map(V1Container::getName)
+                .noneMatch(name -> name.equals(podSpecInitContainer.getName()))
+        ).collect(Collectors.toMap(V1Container::getName, e -> e));
 
     final List<V1Container> allInitContainers = new ArrayList<>();
     allInitContainers.addAll(podSpecOnlyInitContainers);
@@ -224,54 +224,17 @@ public class PodTemplateMergeUtils {
    * Add those volumes which are not already available in the podSpec
    *
    * @param podSpec     Already created podSpec using the {@link AzKubernetesV1SpecBuilder}
-   * @param podSpecFromTemplate PodSpec from {@link AzKubernetesV1PodTemplate}
+   * @param podTemplate Instance of the class {@link AzKubernetesV1PodTemplate} to extract items
    */
-  private static void mergeVolumes(V1PodSpec podSpec, V1PodSpec podSpecFromTemplate) {
+  private static void mergeVolumes(V1PodSpec podSpec, AzKubernetesV1PodTemplate podTemplate) {
     List<V1Volume> podSpecVolumes = podSpec.getVolumes();
     if (null != podSpecVolumes) {
-      List<V1Volume> templateVolumes = getVolumes(podSpecFromTemplate,
+      List<V1Volume> templateVolumes = podTemplate.getVolumes(
           tempVol -> podSpecVolumes.stream().map(V1Volume::getName)
               .noneMatch(name -> name.equals(tempVol.getName())));
       for (V1Volume volumeItem : templateVolumes) {
         podSpec.addVolumesItem(volumeItem);
       }
     }
-  }
-
-  /**
-   * @return The Flow Container which must be the first container among all app-containers
-   */
-  private static V1Container getFlowContainer(V1PodSpec podSpec) {
-    final List<V1Container> containers = podSpec.getContainers();
-    return containers.isEmpty() ? null : containers.get(FLOW_CONTAINER_INDEX);
-  }
-
-  /**
-   * @param filterPredicate Predicate to filter the init containers.
-   * @return The list of filtered init Containers derived from the pod-spec.
-   */
-  private static List<V1Container> getInitContainers(V1PodSpec podSpec, Predicate<?
-      super V1Container> filterPredicate) {
-    if (null == podSpec) {
-      return Collections.emptyList();
-    }
-    List<V1Container> initContainers = podSpec.getInitContainers();
-    return initContainers == null ? Collections.emptyList() :
-        initContainers.stream().filter(filterPredicate).collect(Collectors.toList());
-  }
-
-  /**
-   * @param filterPredicate Predicate to filter the volumes.
-   * @return The list of filtered Volumes derived from the pod-spec.
-   */
-  private static List<V1Volume> getVolumes(V1PodSpec podSpec,
-      Predicate<? super V1Volume> filterPredicate) {
-    if (null == podSpec) {
-      return Collections.emptyList();
-    }
-    List<V1Volume> volumes = podSpec.getVolumes();
-    return volumes == null ?
-        Collections.emptyList() :
-        volumes.stream().filter(filterPredicate).collect(Collectors.toList());
   }
 }

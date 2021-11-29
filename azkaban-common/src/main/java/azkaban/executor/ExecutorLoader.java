@@ -20,7 +20,6 @@ import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -243,14 +242,14 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to get those flows which are stale. Staleness is determined based on the
-   * validity of the status.
-   * @param status
+   * Fetch stale flows. A flow is considered stale if it was started more than {@code
+   * executionDuration} ago and is not yet in a final state.
+   *
+   * @param executionDuration
    * @return
    * @throws ExecutorManagerException
    */
-  List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status, final ImmutableMap<Status, Pair<Duration,
-      String>> validityMap)
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
       throws ExecutorManagerException;
 
   List<ExecutableFlow> fetchAgedQueuedFlows(

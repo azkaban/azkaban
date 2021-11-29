@@ -244,7 +244,7 @@ public class FlowRunnerPropertyResolutionTest extends FlowRunnerTestBase {
 
     final FlowRunner runner = this.testUtil.createFromFlowMap(
         FlowRunnerPropertyResolutionTest.FLOW_NAME, null, rootFlowNodeRuntimeProps,
-        Props.of(ConfigurationKeys.AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER, "true"));
+        Props.of(ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, "true"));
 
     // Set some node (root flow + other DAG nodes) runtime properties.
     runner.getExecutableFlow().getExecutionOptions().addAllRuntimeProperties(ImmutableMap.of(

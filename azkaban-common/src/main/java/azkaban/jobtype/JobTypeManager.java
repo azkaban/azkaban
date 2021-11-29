@@ -51,11 +51,6 @@ import org.apache.log4j.Logger;
 
 public class JobTypeManager {
   private static final Logger LOGGER = Logger.getLogger(JobTypeManager.class);
-  private static final String[] NON_OVERRIDABLE_PROPS =
-      { CommonJobProperties.TARGET_CLUSTER_CLASSPATH,
-        CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB,
-        "env.HADOOP_HOME", "env.HADOOP_COMMON_HOME", "env.HADOOP_YARN_HOME", "env.HADOOP_HDFS_HOME",
-        "env.HADOOP_MAPRED_HOME", "env.HADOOP_CONF_DIR", "env.YARN_CONF_DIR" };
 
   private final String jobTypePluginDir; // the dir for jobtype plugins
   private final ClassLoader parentLoader;
@@ -64,23 +59,19 @@ public class JobTypeManager {
   private JobTypePluginSet pluginSet;
   // Only used to load keyStore.
   private Props cachedCommonPluginLoadProps;
-  // Overridable plugin load properties
-  private final String pluginLoadOverrideProps;
 
   @VisibleForTesting
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
       final ClassLoader parentClassLoader) {
-    this(jobtypePluginDir, globalProperties, parentClassLoader, new DisabledClusterRouter(), null);
+    this(jobtypePluginDir, globalProperties, parentClassLoader, new DisabledClusterRouter());
   }
 
   public JobTypeManager(final String jobtypePluginDir, final Props globalProperties,
-    final ClassLoader parentClassLoader, final ClusterRouter clusterRouter,
-    final String pluginLoadOverrideProps  ) {
+    final ClassLoader parentClassLoader, ClusterRouter clusterRouter) {
     this.jobTypePluginDir = jobtypePluginDir;
     this.parentLoader = parentClassLoader;
     this.globalProperties = globalProperties;
     this.clusterRouter = clusterRouter;
-    this.pluginLoadOverrideProps = pluginLoadOverrideProps;
     loadPlugins();
   }
 
@@ -437,25 +428,6 @@ public class JobTypeManager {
           jobProps.put(key, clusterSpecificProps.get(key));
         }
       }
-
-      // Override any plugin load props if specified.
-      // Make a clone of pluginLoadProps to ensure the original object is not corrupted.
-      // Use the cloned object from here on.
-      final Props pluginLoadPropsCopy = Props.clone(pluginLoadProps);
-      if (pluginLoadOverrideProps != null) {
-        final String[] propsList = pluginLoadOverrideProps.split(",");
-        for (final String prop : propsList) {
-          final String value = clusterSpecificProps.getString(prop, null);
-          if (value == null) {
-            // The property must be present in cluster specific props
-            logger.warn(String.format("Expected override property %s is not "
-            + " present in ClusterSpecific Properties, ignoring it.", prop));
-            continue;
-          }
-          pluginLoadPropsCopy.put(prop, value);
-        }
-      }
-
       Props nonOverriddableClusterProps = getClusterSpecificNonOverridableJobProps(clusterSpecificProps);
       // CAUTION: ADD ROUTER-SPECIFIC PROPERTIES THAT ARE CRITICAL FOR JOB EXECUTION AS THE LAST
       // STEP TO STOP THEM FROM BEING ACCIDENTALLY OVERRIDDEN BY JOB PROPERTIES
@@ -463,7 +435,7 @@ public class JobTypeManager {
       jobProps = PropsUtils.resolveProps(jobProps);
 
       return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
-          pluginLoadPropsCopy, jobContextClassLoader);
+          pluginLoadProps, jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());
@@ -488,11 +460,15 @@ public class JobTypeManager {
 
   private static Props getClusterSpecificNonOverridableJobProps(final Props clusterSpecificJobProp) {
     final Props props = new Props();
-    for (String prop : NON_OVERRIDABLE_PROPS) {
-      final String value = clusterSpecificJobProp.get(prop);
-      if (value != null) {
-        props.put(prop, value);
-      }
+    final String clusterClasspath =
+        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_CLASSPATH);
+    if (clusterClasspath != null) {
+      props.put(CommonJobProperties.TARGET_CLUSTER_CLASSPATH, clusterClasspath);
+    }
+    final String clusterNativeLib =
+        clusterSpecificJobProp.get(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB);
+    if (clusterNativeLib != null) {
+      props.put(CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB, clusterNativeLib);
     }
     return props;
   }

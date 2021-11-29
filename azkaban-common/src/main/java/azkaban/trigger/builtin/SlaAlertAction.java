@@ -107,7 +107,7 @@ public class SlaAlertAction implements TriggerAction {
       if (alerter != null) {
         try {
           final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
-          alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow, alerter.getAzkabanURL()));
+          alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow));
         } catch (final Exception e) {
           e.printStackTrace();
           logger.error("Failed to alert by " + SlaOption.ALERT_TYPE_EMAIL);

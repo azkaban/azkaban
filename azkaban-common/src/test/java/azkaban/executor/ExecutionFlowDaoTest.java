@@ -36,7 +36,6 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import azkaban.utils.TimeUtils;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -260,21 +258,22 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFetchStaleFlows() throws Exception {
-    long olderThan10Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10);
-    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", olderThan10Days,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan10Days),
+    long preThresholdTimeMs = System.currentTimeMillis();
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", preThresholdTimeMs,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(preThresholdTimeMs), DispatchMethod.CONTAINERIZED);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", preThresholdTimeMs,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.SUCCEEDED, Optional.of(preThresholdTimeMs)
+        , DispatchMethod.CONTAINERIZED);
+
+    long thresholdTimeMs = preThresholdTimeMs + 1000L;
+    long postThresholdTimeMs = thresholdTimeMs + 1000L;
+    final ExecutableFlow flow3 = submitNewFlow("exectest1", "exec3", preThresholdTimeMs,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(postThresholdTimeMs),
         DispatchMethod.CONTAINERIZED);
 
-    long olderThan5Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5);
-    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec3", olderThan5Days,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan5Days),
-        DispatchMethod.CONTAINERIZED);
-
-    ImmutableMap<Status, Pair<Duration, String>> validityMap = ImmutableMap.of(Status.RUNNING,
-        new Pair<>(Duration.ofDays(10), "start_time"));
-    // Only the first flow in the RUNNING state should be returned.
+    // Only the first flow in the RUNNING state started before thresholdTime should be returned.
     final List<ExecutableFlow> fetchedStaleFlows =
-        this.executionFlowDao.fetchStaleFlowsForStatus(Status.RUNNING, validityMap);
+        this.executionFlowDao.fetchStaleFlows(thresholdTimeMs);
     assertThat(fetchedStaleFlows.size()).isEqualTo(1);
 
     final ExecutableFlow fetchedFlow1 = fetchedStaleFlows.get(0);
