@@ -189,12 +189,11 @@
                     <th>Node</th>
                     <th class="property-key">Name</th>
                     <th>Value</th>
-                    <th></th>
                   </tr>
                   </thead>
                   <tbody>
                   <tr id="addRow" class="addRow">
-                    <td id="addRow-col" colspan="4">
+                    <td id="addRow-col" colspan="3">
                       <button type="button" class="btn btn-success btn-xs" id="add-btn">Add Row
                       </button>
                     </td>

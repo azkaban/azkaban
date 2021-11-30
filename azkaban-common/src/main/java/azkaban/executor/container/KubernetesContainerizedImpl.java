@@ -45,13 +45,10 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
-import azkaban.project.ProjectLoader;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import io.kubernetes.client.custom.Quantity;
-import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
@@ -64,11 +61,11 @@ import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -93,12 +90,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
-  public static final String DEFAULT_MAX_CPU = "8";
-  public static final String DEFAULT_MAX_MEMORY = "64Gi";
+  public static final String CPU_LIMIT = "4";
   public static final String DEFAULT_CPU_REQUEST = "1";
+  public static final String MEMORY_LIMIT = "64Gi";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
-  public static final int DEFAULT_CPU_LIMIT_MULTIPLIER = 1;
-  public static final int DEFAULT_MEMORY_LIMIT_MULTIPLIER = 2;
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
   public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES = "/data/jobtypes";
@@ -109,6 +104,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       "/export/apps/azkaban/azkaban-exec-server/current/plugins/dependencies";
   public static final String IMAGE = "image";
   public static final String VERSION = "version";
+  public static final String NSCD_SOCKET_VOLUME_NAME = "nscd-socket";
+  public static final String DEFAULT_NSCD_SOCKET_HOST_PATH = "/var/run/nscd/socket";
+  public static final String HOST_PATH_TYPE = "Socket";
+  public static final String DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH = "/var/run/nscd/socket";
+  public static final boolean DEFAULT_NSCD_MOUNT_READ_ONLY = true;
   public static final String DEFAULT_SECRET_NAME = "azkaban-k8s-secret";
   public static final String DEFAULT_SECRET_VOLUME = DEFAULT_SECRET_NAME;
   public static final String DEFAULT_SECRET_MOUNTPATH = "/var/azkaban/private";
@@ -130,18 +130,16 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String podPrefix;
   private final String servicePrefix;
   private final String clusterName;
-  private final String clusterEnv;
   private final String flowContainerName;
-  private String cpuLimit;
-  private int cpuLimitMultiplier;
+  private final String cpuLimit;
   private final String cpuRequest;
-  private final String maxAllowedCPU;
-  private String memoryLimit;
-  private int memoryLimitMultiplier;
+  private final String memoryLimit;
   private final String memoryRequest;
-  private final String maxAllowedMemory;
   private final int servicePort;
   private final long serviceTimeout;
+  private final String nscdSocketHostPath;
+  private final String nscdSocketVolumeMountPath;
+  private final boolean isNscdMountReadOnly;
   private final VersionSetLoader versionSetLoader;
   private final ImageRampupManager imageRampupManager;
   private final KubernetesWatch kubernetesWatch;
@@ -160,7 +158,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ContainerizationMetrics containerizationMetrics;
   private final String azkabanBaseImageName;
   private final String azkabanConfigImageName;
-  private final ProjectLoader projectLoader;
 
 
   private static final Logger logger = LoggerFactory
@@ -173,8 +170,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final ImageRampupManager imageRampupManager,
       final KubernetesWatch kubernetesWatch,
       final EventListener eventListener,
-      final ContainerizationMetrics containerizationMetrics,
-      final ProjectLoader projectLoader)
+      final ContainerizationMetrics containerizationMetrics)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
@@ -183,7 +179,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.kubernetesWatch = kubernetesWatch;
     this.eventListener = eventListener;
     this.containerizationMetrics = containerizationMetrics;
-    this.projectLoader = projectLoader;
     this.addListener(this.eventListener);
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
@@ -199,30 +194,18 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             DEFAULT_SERVICE_NAME_PREFIX);
     this.clusterName = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
-    // This is utilized to set AZ_CLUSTER ENV variable to the POD containers.
-    this.clusterEnv = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_ENV,
-        this.clusterName);
+    this.cpuLimit = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT,
+            CPU_LIMIT);
     this.cpuRequest = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
-    this.cpuLimitMultiplier = this.azkProps
-        .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
-            DEFAULT_CPU_LIMIT_MULTIPLIER);
-    this.cpuLimit = this.getResourceLimitFromResourceRequest(this.cpuRequest, this.cpuRequest,
-        this.cpuLimitMultiplier);
-    this.maxAllowedCPU = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU
-            , DEFAULT_MAX_CPU);
-    this.memoryRequest = this.azkProps.getString(ContainerizedDispatchManagerProperties.
-            KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST, DEFAULT_MEMORY_REQUEST);
-    this.memoryLimitMultiplier = this.azkProps
-        .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
-            DEFAULT_MEMORY_LIMIT_MULTIPLIER);
-    this.memoryLimit = this.getResourceLimitFromResourceRequest(this.memoryRequest, this.memoryRequest,
-        memoryLimitMultiplier);
-    this.maxAllowedMemory = this.azkProps
-        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
-            DEFAULT_MAX_MEMORY);
+    this.memoryLimit = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT,
+            MEMORY_LIMIT);
+    this.memoryRequest = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST,
+            DEFAULT_MEMORY_REQUEST);
     this.servicePort =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
             54343);
@@ -251,6 +234,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         this.azkProps
             .getString(ContainerizedDispatchManagerProperties.KUBERNETES_MOUNT_PATH_FOR_DEPENDENCIES,
                 DEFAULT_APP_MOUNT_PATH_PREFIX_FOR_DEPENDENCIES);
+    this.nscdSocketHostPath =
+        this.azkProps
+            .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_HOST_PATH,
+                DEFAULT_NSCD_SOCKET_HOST_PATH);
+    this.nscdSocketVolumeMountPath =
+        this.azkProps.getString(
+            ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH,
+            DEFAULT_NSCD_SOCKET_VOLUME_MOUNT_PATH);
+    this.isNscdMountReadOnly = this.azkProps.getBoolean(
+        ContainerizedDispatchManagerProperties.KUBERNETES_POD_NSCD_MOUNT_READ_ONLY,
+        DEFAULT_NSCD_MOUNT_READ_ONLY);
     this.secretName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_SECRET_NAME,
             DEFAULT_SECRET_NAME);
@@ -400,7 +394,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * This method fetches the complete version set information (Map of jobs and their versions)
    * required to run the flow.
    *
-   * @param flowParams Set of flow properties and flow parameters
+   * @param flowParams
    * @param imageTypesUsedInFlow
    * @return VersionSet
    * @throws ExecutorManagerException
@@ -443,12 +437,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               // the overridden version exists/registered on Azkaban database. Hence, it follows a
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
-              final VersionInfo versionInfo = this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeOverrideParam(imageType)),
-                  State.getNewAndActiveStateFilter());
-              overlayMap.put(imageType, versionInfo);
-              logger.info("User overridden image type {} of version {} is used", imageType,
-                  versionInfo.getVersion());
+              overlayMap.put(imageType,
+                  this.imageRampupManager.getVersionInfo(imageType,
+                      flowParams.get(imageTypeOverrideParam(imageType)),
+                      State.getNewAndActiveStateFilter()));
             } else if (!(isPresentInIncludedJobTypes(imageType) || versionSet.getVersion(imageType)
                 .isPresent())) {
               logger.info("ExecId: {}, imageType: {} not found in versionSet {}",
@@ -471,8 +463,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             if (!imageVersionsNotFound.isEmpty()) {
               versionSetBuilder.addElements(
                   this.imageRampupManager
-                      .getVersionByImageTypes(executableFlow, imageVersionsNotFound,
-                          overlayMap.keySet()));
+                      .getVersionByImageTypes(executableFlow, imageVersionsNotFound));
             }
             if (!overlayMap.isEmpty()) {
               versionSetBuilder.addElements(overlayMap);
@@ -489,12 +480,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         // Need to build a version set
         // Filter all the job types available in azkaban base image from the input image types set
         imageTypesUsedInFlow = this.filterIncludedJobTypes(imageTypesUsedInFlow);
-
+        final Map<String, VersionInfo> versionMap =
+            this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow);
         // Now we will check the flow params for any override versions provided and apply them
-        final Map<String, VersionInfo> overlayMap = new HashMap<>();
         for (final String imageType : imageTypesUsedInFlow) {
           final String imageTypeVersionOverrideParam = imageTypeOverrideParam(imageType);
-          VersionInfo versionInfo;
           if (flowParams != null && flowParams.containsKey(imageTypeVersionOverrideParam)) {
             // Fetches the user overridden version from the database and this will make sure if
             // the overridden version exists/registered on Azkaban database. Hence, it follows a
@@ -504,29 +494,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             if (flowParams.containsKey(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION) &&
                 Boolean.TRUE.equals(Boolean
                     .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
-              versionInfo = this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeVersionOverrideParam),
-                  State.getNewActiveAndTestStateFilter());
-              overlayMap.put(imageType, versionInfo);
-              logger.info("User overridden image type {} of version {} is used", imageType,
-                  versionInfo.getVersion());
+              versionMap.put(imageType,
+                  this.imageRampupManager.getVersionInfo(imageType,
+                      flowParams.get(imageTypeVersionOverrideParam),
+                      State.getNewActiveAndTestStateFilter()));
             } else {
-              versionInfo = this.imageRampupManager.getVersionInfo(imageType,
-                  flowParams.get(imageTypeVersionOverrideParam),
-                  State.getNewAndActiveStateFilter());
-              overlayMap.put(imageType, versionInfo);
-              logger.info("User overridden image type {} of version {} is used", imageType,
-                  versionInfo.getVersion());
+              versionMap.put(imageType,
+                  this.imageRampupManager.getVersionInfo(imageType,
+                      flowParams.get(imageTypeVersionOverrideParam),
+                      State.getNewAndActiveStateFilter()));
             }
           }
         }
 
-        final Map<String, VersionInfo> versionMap =
-            this.imageRampupManager.getVersionByImageTypes(executableFlow, imageTypesUsedInFlow,
-                overlayMap.keySet());
         final VersionSetBuilder versionSetBuilder = new VersionSetBuilder(this.versionSetLoader);
-        versionSetBuilder.addElements(versionMap);
-        versionSet = versionSetBuilder.addElements(overlayMap).build();
+        versionSet = versionSetBuilder.addElements(versionMap).build();
       }
     } catch (final IOException e) {
       logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
@@ -556,13 +538,15 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Get CPU and memory requested for a flow container
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
-
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
-        new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
+        new AzKubernetesV1SpecBuilder(this.clusterName, Optional.empty())
             .addFlowContainer(this.flowContainerName,
                 azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit,
                 flowContainerMemoryRequest);
+
+    // Add volume for nscd-socket
+    addNscdSocketInVolume(v1SpecBuilder);
 
     final Map<String, String> envVariables = new HashMap<>();
     envVariables.put(ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID,
@@ -586,110 +570,36 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method is used to get cpu request for a flow container. Precedence is defined below. a)
-   * Use CPU request set in flow parameter constrained by max allowed cpu set in config b) Use cpu
-   * request set in system properties or default which is set in @cpuRequest.
+   * Use CPU request set in flow parameter b) Use CPU request set in system properties or default
+   * which is set in @cpuRequest.
    *
    * @param flowParam
    * @return CPU request for a flow container
    */
   @VisibleForTesting
   String getFlowContainerCPURequest(final Map<String, String> flowParam) {
-    if (flowParam == null || flowParam.isEmpty() || !flowParam
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
-      return this.cpuRequest;
+      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
     }
-    String userCPURequest =
-        flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
-    int resourceCompare = compareResources(this.maxAllowedCPU, userCPURequest);
-    if (resourceCompare < 0) { // user requested cpu exceeds max allowed cpu
-      userCPURequest = this.maxAllowedCPU;
-    } else if (resourceCompare ==0) {// if user requested memory has an parse error, or resource
-      // type is not correct, cpu request set in the config should be used
-      userCPURequest = this.cpuRequest;
-    }
-    this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest, this.cpuRequest,
-        DEFAULT_CPU_LIMIT_MULTIPLIER);
-    return userCPURequest;
+    return this.cpuRequest;
   }
 
   /**
    * This method is used to get memory request for a flow container. Precedence is defined below. a)
-   * Use memory request set in flow parameter constrained by max allowed memory set in config b) Use
-   * memory request set in system properties or default which is set in @memoryRequest
+   * Use memory request set in flow parameter b) Use memory request set in system properties or
+   * default which is set in @memoryRequest
    *
    * @param flowParam
    * @return Memory request for a flow container
    */
   @VisibleForTesting
   String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
-    if (flowParam == null || flowParam.isEmpty() || !flowParam
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
-      return this.memoryRequest;
+      return flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
     }
-    String userMemoryRequest =
-        flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
-    int resourceCompare = compareResources(this.maxAllowedMemory, userMemoryRequest);
-    if (resourceCompare < 0) { // user requested memory exceeds max allowed memory
-      userMemoryRequest = this.maxAllowedMemory;
-    } else if (resourceCompare == 0) {// if user requested memory has an parse error, or resource
-      // type is not correct, memory request set in the config should be used
-      userMemoryRequest = this.memoryRequest;
-    }
-    this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest, this.memoryRequest,
-        DEFAULT_MEMORY_LIMIT_MULTIPLIER);
-    return userMemoryRequest;
-  }
-
-  /**
-   * This method compares resource 1 (e.g. max allowed resource) with resource 2 (e.g. user
-   * requested resource):
-   * 1) if resource 1 >= resource 2, return 1;
-   * 2) if resource 1 < resource 2, return -1;
-   * 3) if resource 1 cannot be compared with resource 2, e.g. parse error, mis-matching resource
-   * types, return 0;
-   * The format of a Kubernetes quantity indicates the type of resource, e.g. cpu, memory.
-   * @param resource1
-   * @param resource2
-   * @return
-   */
-  private int compareResources (final String resource1, final String resource2) {
-    try {
-      final Quantity quantity1 = new Quantity(resource1), quantity2 = new Quantity(resource2);
-      if (quantity1.getFormat() == quantity2.getFormat()) {
-        return quantity1.getNumber().compareTo(quantity2.getNumber()) < 0 ? -1 : 1;
-      }
-    } catch (final QuantityFormatException qe) { // only user requested resource in flow
-      // parameter could result in exception
-      logger.error("QuantityFormatException while parsing user requested resource: " + resource2);
-    }
-    // Resources cannot be compared, e.g. resources are different (cpu vs. memory) or
-    // exception encountered when parsing resource string
-    return 0;
-  }
-
-  /**
-   * This method returns resource limit as a multiplier of requested resource
-   * @param resourceRequest
-   * @param defaultResourceRequest
-   * @return resource limit based on requested resource
-   */
-  @VisibleForTesting
-  String getResourceLimitFromResourceRequest(final String resourceRequest,
-      final String defaultResourceRequest, int multiplier) {
-    String resourceLimit = defaultResourceRequest;
-    try {
-      final String PARTS_RE = "[eEinumkKMGTP]+";
-      final String[] parts = resourceRequest.split(PARTS_RE);
-      final BigDecimal numericValueRequested = new BigDecimal(parts[0]);
-      final String suffix = resourceRequest.substring(parts[0].length());
-      final BigDecimal numericValueLimit =
-          numericValueRequested.multiply(new BigDecimal(multiplier));
-      resourceLimit = numericValueLimit + suffix;
-    } catch (final NumberFormatException ne) {
-      logger.error("NumberFormatException while paring user requested resource numeric value: "
-      + resourceRequest);
-    }
-    return resourceLimit;
+    return this.memoryRequest;
   }
 
   /**
@@ -759,6 +669,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
+   * This method is used to add volume for nscd socket.
+   *
+   * @param v1SpecBuilder
+   */
+  private void addNscdSocketInVolume(final AzKubernetesV1SpecBuilder v1SpecBuilder) {
+    v1SpecBuilder
+        .addHostPathVolume(NSCD_SOCKET_VOLUME_NAME, this.nscdSocketHostPath, HOST_PATH_TYPE,
+            this.nscdSocketVolumeMountPath, this.isNscdMountReadOnly);
+  }
+
+  /**
    * Disable auto-mounting of service account tokens.
    *
    * @param podSpec pod specification
@@ -823,8 +744,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.add(this.azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
-    final VersionSet versionSet = fetchVersionSet(executionId,
-        flowParam, allImageTypes, flow);
+    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
     disableSATokenAutomount(podSpec);
 
@@ -1122,13 +1042,5 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private String getPodName(final int executionId) {
     return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
-  }
-
-  public String getCpuLimit() {
-    return this.cpuLimit;
-  }
-
-  public String getMemoryLimit() {
-    return this.memoryLimit;
   }
 }

@@ -69,7 +69,7 @@ public class ExecutionFinalizer {
         // then mark it finished.
         if (!ExecutionControllerUtils.isFinished(dsFlow)) {
           this.updaterStage.set("finalizing flow " + execId + " failing the flow");
-          ExecutionControllerUtils.failEverything(dsFlow, Status.FAILED);
+          ExecutionControllerUtils.failEverything(dsFlow);
           this.executorLoader.updateExecutableFlow(dsFlow);
         }
       }
