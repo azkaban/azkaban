@@ -35,13 +35,11 @@ import azkaban.execapp.AbstractFlowPreparer;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
-import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.execapp.TriggerManager;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
-import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
@@ -55,8 +53,6 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.ProjectLoader;
-import azkaban.project.ProjectWhitelist;
-import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.IMBeanRegistrable;
@@ -75,7 +71,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.kubernetes.client.custom.Quantity;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -130,7 +125,6 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   public static final String JOB_LOG_BACKUP_INDEX = "job.log.backup.index";
   public static final String PROXY_USER_LOCK_DOWN = "proxy.user.lock.down";
   private static final int SHUTDOWN_TIMEOUT_IN_SECONDS = 10;
-  private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
 
 
   // Logging
@@ -144,12 +138,12 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
   private final ProjectLoader projectLoader;
   private final TriggerManager triggerManager;
   private final JobTypeManager jobTypeManager;
+  private final ClusterRouter clusterRouter;
   private final AbstractFlowPreparer flowPreparer;
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
   private final Props azKabanProps;
-  private final AlerterHolder alerterHolder;
   private Props globalProps;
   private final int numJobThreadPerFlow;
   private Path execDirPath;
@@ -177,7 +171,6 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
       final ProjectLoader projectLoader,
       final ClusterRouter clusterRouter,
       final TriggerManager triggerManager,
-      final AlerterHolder alerterHolder,
       @Nullable final AzkabanEventReporter eventReporter,
       @Named(EXEC_JETTY_SERVER) final Server jettyServer,
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
@@ -206,21 +199,20 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     this.containerContext = context;
 
     this.eventReporter = eventReporter;
-    this.alerterHolder = alerterHolder;
 
     this.jobLogChunkSize = this.azKabanProps.getString(JOB_LOG_CHUNK_SIZE,
         DEFAULT_LOG_CHUNK_SIZE);
     this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
         DEFAULT_VALIDATE_PROXY_USER);
+    this.clusterRouter = clusterRouter;
     this.triggerManager = triggerManager;
     this.triggerManager.setDispatchMethod(DispatchMethod.CONTAINERIZED);
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
-            this.globalProps, getClass().getClassLoader(), clusterRouter,
-            this.azKabanProps.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
+            this.globalProps, getClass().getClassLoader(), clusterRouter);
 
     this.numJobThreadPerFlow = props.getInt(JOB_THREAD_COUNT, DEFAULT_JOB_TREAD_COUNT);
     if (this.azKabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
@@ -276,11 +268,6 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     }
   }
 
-  @VisibleForTesting
-  void setFlowRunner(final FlowRunner flowRunner) {
-    this.flowRunner = flowRunner;
-  }
-
   /**
    * Set Azkaban Props
    *
@@ -330,38 +317,7 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     logVersionSet(flow);
 
     createFlowRunner(flow);
-    setResourceUtilization();
     submitFlowRunner();
-  }
-
-  /**
-   * This method reads the CPU and MEMORY REQUEST ENV variables. If they are present then they will
-   * be used to set the Resource Utilization in FlowRunner object via FlowRunnerProxy.
-   */
-  @VisibleForTesting
-  void setResourceUtilization() {
-    final FlowRunnerProxy flowRunnerProxy = this.flowRunner.getProxy();
-    final String cpuRequest = System
-        .getenv(Constants.ContainerizedDispatchManagerProperties.ENV_CPU_REQUEST);
-    final String memoryRequest = System
-        .getenv(Constants.ContainerizedDispatchManagerProperties.ENV_MEMORY_REQUEST);
-
-    // cpuRequest and memoryRequest are converted to Quantity object to get the parsed value from
-    // the human readable string. Example:
-    //   1KiB will be converted to 1024 bytes
-    //   500m will be converted to 0.500
-    if (null != cpuRequest) {
-      final Quantity cpuRequestQuantity = new Quantity(cpuRequest);
-      flowRunnerProxy.setCpuUtilization(cpuRequestQuantity.getNumber().doubleValue());
-    }
-    if (null != memoryRequest) {
-      final Quantity memoryRequestQuantity = new Quantity(memoryRequest);
-      try {
-        flowRunnerProxy.setMemoryUtilization(memoryRequestQuantity.getNumber().longValueExact());
-      } catch (ArithmeticException e) {
-        logger.info("Unable to set Memory Utilization", e);
-      }
-    }
   }
 
   /**
@@ -383,29 +339,6 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
       watcher = new RemoteFlowWatcher(pipelinedExecId, this.executorLoader);
     }
 
-    int numJobThreads = this.numJobThreadPerFlow;
-    if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
-      try {
-        if (!ProjectWhitelist.isXmlFileLoaded()) {
-          ProjectWhitelist.load(azKabanProps);
-        }
-        final int numJobs =
-            Integer.valueOf(options.getFlowParameters().get(
-                FLOW_NUM_JOB_THREADS));
-        logger.info("Num of job threads read from flow parameter is " + numJobs);
-        if (numJobs > 0 && (numJobs <= numJobThreads || ProjectWhitelist
-            .isProjectWhitelisted(flow.getProjectId(),
-                WhitelistType.NumJobPerFlow))) {
-          numJobThreads = numJobs;
-        }
-      } catch (final Exception e) {
-        throw new ExecutorManagerException(
-            "Failed to set the number of job threads "
-                + options.getFlowParameters().get(FLOW_NUM_JOB_THREADS)
-                + " for flow " + flow.getExecutionId(), e);
-      }
-    }
-
     // TODO : figure out the metrics
     // Create the FlowRunner
     final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
@@ -413,11 +346,11 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     this.flowRunner = new FlowRunner(flow, this.executorLoader,
         this.projectLoader, this.jobTypeManager, this.azKabanProps, this.eventReporter,
-        this.alerterHolder, commonMetrics, execMetrics);
+        null, commonMetrics, execMetrics);
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(numJobThreads)
+        .setNumJobThreads(this.numJobThreadPerFlow)
         .addListener(this);
   }
 

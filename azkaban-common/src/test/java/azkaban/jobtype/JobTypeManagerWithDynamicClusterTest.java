@@ -25,7 +25,6 @@ import azkaban.cluster.ClusterRouter;
 import azkaban.cluster.DefaultClusterRouter;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.Job;
-import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.jobtype.JobTypeManager.JobParams;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -80,7 +79,6 @@ public class JobTypeManagerWithDynamicClusterTest {
     clusterProps.put(PIG_HOME, "/cluster/pig/path");
     clusterProps.put("PropA", "${PropB}");
     clusterProps.put("PropB", "valB");
-    clusterProps.put("PropC", "valC");
 
     return new Cluster("default", clusterProps);
   }
@@ -110,7 +108,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test
   public void testJobTypeManagerJobSetupWithoutJobComponentDependency() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     Props jobProps = new Props();
     jobProps.put("type", "anothertestjob");
@@ -139,7 +137,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test
   public void testJobTypeManagerJobSetupWithJobComponentDependency() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     Props jobProps = new Props();
     jobProps.put("type", "anothertestjob");
@@ -170,7 +168,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test
   public void testJobTypeManagerJobSetupWithoutJobtypeComponentDependency() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     Props jobProps = new Props();
     jobProps.put("type", "testjob");
@@ -201,7 +199,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test (expected = JobTypeManagerException.class)
   public void testJobTypeManagerJobSetupWithUnknownClusterComponents() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     final Props jobProps = new Props();
     jobProps.put("type", "anothertestjob");
@@ -217,7 +215,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test
   public void testJobTypeManagerJobSetupWithoutAnyComponentDependency() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     Props jobProps = new Props();
     jobProps.put("type", "testjob");
@@ -236,7 +234,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test
   public void testJobParamsPrecedenceOverClusterParams() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     Props jobProps = new Props();
     jobProps.put("type", "testjob");
@@ -259,7 +257,7 @@ public class JobTypeManagerWithDynamicClusterTest {
   @Test
   public void testJobRunnerObservesClusterSpecificParams() {
     final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
+        this.getClass().getClassLoader(), this.clusterRouter);
 
     Props jobProps = new Props();
     jobProps.put("type", "anothertestjob");
@@ -268,61 +266,5 @@ public class JobTypeManagerWithDynamicClusterTest {
     // verify the jobProps also observe the parameters injected in JobTypeManager
     jobProps = PropsUtils.resolveProps(jobProps);
     Assert.assertEquals("valB", jobProps.getString("PropA"));
-  }
-
-  /**
-   * Verify that overidden plugin load props are indeed overridden.
-   */
-  @Test
-  public void testPluginLoadPropsOverrideByClusterSpecificParams() {
-    final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, null);
-
-    Props jobProps = new Props();
-    jobProps.put("type", "testjob");
-    jobProps.put(PIG_HOME, "/user/pig/path");
-    jobProps.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, "hadoop");
-
-    final JobParams jobParams = manager.createJobParams("testjob", jobProps, LOG);
-    Assert.assertTrue(
-        jobParams.contextClassLoader instanceof HadoopSecurityManagerClassLoader);
-
-    final Job job = JobTypeManager.createJob("testjob", jobParams, LOG);
-    Props sysProps = ((FakeJavaJob2) job).getSysProps();
-    Assert.assertEquals(null, sysProps.get("PropA"));
-
-    // Create JobTypeManager again but with pluginOverrideProps this time.
-    final String pluginLoadOverrideProps = "PropC,PropB";
-    final JobTypeManager manager1 = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, pluginLoadOverrideProps);
-    final JobParams jobParams1 = manager1.createJobParams("testjob", jobProps, LOG);
-    final Job job1 = JobTypeManager.createJob("testjob", jobParams1, LOG);
-    sysProps = ((FakeJavaJob2) job1).getSysProps();
-    Assert.assertEquals("valC", sysProps.get("PropC"));
-    Assert.assertEquals("valB", sysProps.get("PropB"));
-  }
-
-  /**
-   * Verify that overidden plugin load props and ignores if a property
-   * is missing.
-   */
-  @Test
-  public void testPluginLoadPropsOverrideByClusterSpecificParamsNegative() {
-
-    final Props jobProps = new Props();
-    jobProps.put("type", "testjob");
-    jobProps.put(PIG_HOME, "/user/pig/path");
-    jobProps.put(CommonJobProperties.JOB_CLUSTER_COMPONENTS_DEPENDENCIES, "hadoop");
-
-    // Create JobTypeManager with pluginOverrideProps, however, add propD which
-    // is not a valid property in cluster props.
-    final String pluginLoadOverrideProps = "PropC,PropD";
-    final JobTypeManager manager = new JobTypeManager(this.testPluginDirPath, null,
-        this.getClass().getClassLoader(), this.clusterRouter, pluginLoadOverrideProps);
-    final JobParams jobParams = manager.createJobParams("testjob", jobProps, LOG);
-    final Job job = JobTypeManager.createJob("testjob", jobParams, LOG);
-    final Props sysProps = ((FakeJavaJob2) job).getSysProps();
-    Assert.assertEquals("valC", sysProps.get("PropC"));
-    Assert.assertEquals(null, sysProps.get("PropD"));
   }
 }

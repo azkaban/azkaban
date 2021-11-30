@@ -60,7 +60,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   protected final ExecutorLoader executorLoader;
   protected final CommonMetrics commonMetrics;
   protected final ExecutorApiGateway apiGateway;
-  protected final AlerterHolder alerterHolder;
+  private final AlerterHolder alerterHolder;
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
@@ -510,14 +510,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   /**
-   * Cancel or kill or finalize the flow if it is not finished, and update the status in the DB.
-   *
-   * @param exFlow
-   * @param userId
-   * @throws ExecutorManagerException
+   * If a flow is already dispatched to an executor, cancel by calling Executor. Else if it's still
+   * queued in DB, remove it from DB queue and finalize. {@inheritDoc}
    */
   @Override
-  public void cancelFlow(ExecutableFlow exFlow, String userId)
+  public void cancelFlow(final ExecutableFlow exFlow, final String userId)
       throws ExecutorManagerException {
     synchronized (exFlow) {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
@@ -525,76 +522,20 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
         final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
             .get(exFlow.getExecutionId());
-        handleCancelFlow(pair.getFirst(), exFlow, userId);
+        if (pair.getFirst().getExecutor().isPresent()) {
+          // Flow is already dispatched to an executor, so call that executor to cancel the flow.
+          this.apiGateway
+              .callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
+        } else {
+          // Flow is still queued, need to finalize it and update the status in DB.
+          ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder, exFlow,
+              "Cancelled before dispatching to executor", null);
+        }
       } else {
-        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
-            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
-        logger.error("Exception while cancelling flow. ", eme);
-        throw eme;
+        throw new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
+            + " isn't running.");
       }
-    }
-  }
-
-  /**
-   * Handles the cancelling of the flow.
-   * If the flow is unreachable, then try to finalize the flow.
-   * If the flow is reachable, but cancel is not successful, then try to finalize the flow.
-   * If the flow is reachable and cancel is successful, then return.
-   *
-   * @param executionReference
-   * @param executableFlow
-   * @param userId
-   */
-  protected void handleCancelFlow(ExecutionReference executionReference,
-      ExecutableFlow executableFlow,
-      String userId) throws ExecutorManagerException {
-    final Status finalizingStatus =
-        executionReference.getDispatchMethod() == DispatchMethod.CONTAINERIZED ? Status.KILLED :
-            Status.FAILED;
-    if (!isExecutionReachable(executionReference, userId)) {
-      logger.info("Finalizing executable flow as execution is unreachable: " + executionReference
-          .getExecId());
-      ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
-          executableFlow, "Cancel action has been called but the flow is unreachable.", null,
-          finalizingStatus);
-      // Throwing exception to make the reason appear on the UI.
-      throw new ExecutorManagerException("Flow execution is unreachable. Finalizing the flow.");
-    }
-
-    try {
-      this.apiGateway.callWithReferenceByUser(executionReference, ConnectorParams.CANCEL_ACTION,
-          userId);
-    } catch (Exception e) {
-      logger
-          .error("Exception occurred while cancelling flow: " + executionReference.getExecId(), e);
-      logger.info("Finalizing executable flow: " + executionReference.getExecId());
-      final String finalizingReason = "Unable to gracefully kill the flow execution.";
-      ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
-          executableFlow, finalizingReason, e, finalizingStatus);
-      // Throwing exception to make the reason appear on the UI.
-      throw new ExecutorManagerException(finalizingReason
-          + " Finalizing the flow.");
-    }
-  }
-
-  /**
-   * @param executionReference
-   * @param userId
-   * @return True if the flow execution is reachable, i.e., ping is successful, otherwise, return
-   * False. Any exception caught will be logged and False is returned.
-   */
-  protected boolean isExecutionReachable(ExecutionReference executionReference, String userId) {
-    if (executionReference.getDispatchMethod() == DispatchMethod.POLL && !executionReference
-        .getExecutor().isPresent()) {
-      return false;
-    }
-    try {
-      this.apiGateway.callWithReferenceByUser(executionReference, ConnectorParams.PING_ACTION,
-          userId);
-      return true;
-    } catch (Exception e) {
-      logger.warn("ExecutableFlow is unreachable: " + executionReference.getExecId(), e);
-      return false;
     }
   }
 

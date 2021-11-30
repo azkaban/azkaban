@@ -31,7 +31,17 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
   @Override
   public void onExecutionEvent(final ExecutableFlow flow, final String action) {
     if (action.equals(Constants.RESTART_FLOW)) {
-      restartExecutableFlow(flow);
+      if (restartExecutableFlow(flow)) {
+        // Update the flow options so that the flow will be not retried by Azkaban
+        final ExecutionOptions options = flow.getExecutionOptions();
+        options.setExecutionRetried(true);
+        flow.setExecutionOptions(options);
+        try {
+          this.executorLoader.updateExecutableFlow(flow);
+        } catch (ExecutorManagerException e) {
+          logger.error("Unable to update flow retry value: " + e.getMessage());
+        }
+      }
     }
   }
 
@@ -39,9 +49,9 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
    * A new execution will be dispatched based on the original ExecutableFLow
    * @param exFlow original ExecutableFlow in EXECUTION_STOPPED state
    */
-  private void restartExecutableFlow(final ExecutableFlow exFlow) {
+  private boolean restartExecutableFlow(final ExecutableFlow exFlow) {
     // Enable restartability for containerized execution
-    if (exFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return;
+    if (exFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return false;
 
     // Create a new ExecutableFlow based on existing flow in EXECUTION_STOPPED state
     final Project project;
@@ -51,7 +61,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
       flow = FlowUtils.getFlow(project, exFlow.getFlowId());
     } catch (final RuntimeException e) {
       logger.error(e.getMessage());
-      return;
+      return false;
     }
     final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
     executableFlow.setSubmitUser(exFlow.getSubmitUser());
@@ -65,8 +75,6 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
       options.setSuccessEmails(flow.getSuccessEmails());
     }
     options.setMailCreator(flow.getMailCreator());
-    // Update the flow options so that the flow will be not retried again by Azkaban
-    options.setExecutionRetried(true);
     executableFlow.setExecutionOptions(options);
     // Submit new flow for execution
     try {
@@ -75,6 +83,8 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
           executableFlow.getSubmitUser());
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to restart flow "+ executableFlow.getFlowId() + ". " + e.getMessage());
+      return false;
     }
+    return true;
   }
 }

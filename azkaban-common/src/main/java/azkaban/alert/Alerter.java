@@ -38,6 +38,4 @@ public interface Alerter {
   void alertOnFailedExecutorHealthCheck(Executor executor,
       List<ExecutableFlow> executions,
       ExecutorManagerException e, List<String> alertEmails);
-
-  String getAzkabanURL();
 }

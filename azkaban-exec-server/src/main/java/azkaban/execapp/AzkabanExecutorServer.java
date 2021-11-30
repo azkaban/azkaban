@@ -61,10 +61,7 @@ import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.security.CodeSource;
 import java.security.Permission;
-import java.security.PermissionCollection;
-import java.security.Permissions;
 import java.security.Policy;
 import java.security.ProtectionDomain;
 import java.time.Duration;
@@ -138,7 +135,15 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
     logger.info("Starting Jetty Azkaban Executor...");
 
-    setSecurityPolicy();
+    if (System.getSecurityManager() == null) {
+      Policy.setPolicy(new Policy() {
+        @Override
+        public boolean implies(final ProtectionDomain domain, final Permission permission) {
+          return true; // allow all
+        }
+      });
+      System.setSecurityManager(new SecurityManager());
+    }
 
     final Props props = AzkabanServer.loadProps(args);
 
@@ -156,31 +161,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     SERVICE_PROVIDER.setInjector(injector);
 
     launch(injector.getInstance(AzkabanExecutorServer.class));
-  }
-
-  public static void setSecurityPolicy() {
-    if (System.getSecurityManager() == null) {
-      Policy.setPolicy(new Policy() {
-        @Override
-        public boolean implies(final ProtectionDomain domain, final Permission permission) {
-          return true; // allow all
-        }
-        // This is to fix JMX connection error.
-        // See https://github.com/elastic/elasticsearch/pull/14274
-        // and https://bugs.openjdk.java.net/browse/JDK-8014008
-        @Override
-        public PermissionCollection getPermissions(CodeSource codesource) {
-          for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-            if ("sun.rmi.server.LoaderHandler".equals(element.getClassName()) &&
-                "loadClass".equals(element.getMethodName())) {
-              return new Permissions();
-            }
-          }
-          return super.getPermissions(codesource);
-        }
-      });
-      System.setSecurityManager(new SecurityManager());
-    }
   }
 
   public static void launch(final AzkabanExecutorServer azkabanExecutorServer) throws Exception {

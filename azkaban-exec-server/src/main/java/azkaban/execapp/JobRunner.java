@@ -21,7 +21,6 @@ import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
-import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ClusterInfo;
@@ -42,7 +41,6 @@ import azkaban.utils.PatternLayoutEscaped;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
-import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -82,7 +80,6 @@ public class JobRunner extends EventHandler implements Runnable {
   private final Layout loggerLayout;
   private final String jobId;
   private final Set<String> pipelineJobs = new HashSet<>();
-  private final FlowRunnerProxy flowRunnerProxy;
   private Logger logger = null;
   private Logger flowLogger = null;
   private Appender jobAppender = null;
@@ -112,15 +109,13 @@ public class JobRunner extends EventHandler implements Runnable {
   private volatile long killDuration = 0;
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
-      final JobTypeManager jobtypeManager, final Props azkabanProps, final FlowRunnerProxy flowRunnerProxy) {
+      final JobTypeManager jobtypeManager, final Props azkabanProps) {
     this.props = node.getInputProps();
     this.node = node;
     this.workingDir = workingDir;
 
     this.executionId = node.getParentFlow().getExecutionId();
     this.jobId = node.getId();
-
-    this.flowRunnerProxy = flowRunnerProxy;
 
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
@@ -130,11 +125,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
     this.threadClassLoader = Thread.currentThread().getContextClassLoader();
-  }
-
-  @VisibleForTesting
-  FlowRunnerProxy getFlowRunnerProxy() {
-    return this.flowRunnerProxy;
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {
@@ -214,7 +204,8 @@ public class JobRunner extends EventHandler implements Runnable {
    *
    * @return {@link Optional} effective user for the Job
    */
-  public Optional<String> determineEffectiveUser(Optional<String> jobType) {
+  public Optional<String> determineEffectiveUser() {
+    Optional<String> jobType = JobTypeManager.getJobType(this.props);
     if (jobType.isPresent()) {
       // JobTypePluginSet is never NULL
       Optional<String> defaultProxyUser = this.jobtypeManager.getJobTypePluginSet()
@@ -790,17 +781,14 @@ public class JobRunner extends EventHandler implements Runnable {
       } else {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
-      Optional<String> jobType = JobTypeManager.getJobType(this.props);
-      Optional<String> effectiveUserOptional = determineEffectiveUser(jobType);
+
+      Optional<String> effectiveUserOptional = determineEffectiveUser();
       // Fail if the effective user is not present
       if (!effectiveUserOptional.isPresent()) {
         return false;
       }
       this.effectiveUser = effectiveUserOptional.get();
       this.props.put(JobProperties.USER_TO_PROXY, this.effectiveUser);
-      if (null != this.flowRunnerProxy) {
-        this.flowRunnerProxy.setEffectiveUser(this.jobId, this.effectiveUser, jobType);
-      }
 
       final Props props = this.node.getRampProps();
       if (props != null) {
