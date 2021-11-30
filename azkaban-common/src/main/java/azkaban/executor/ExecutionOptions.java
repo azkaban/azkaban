@@ -63,9 +63,6 @@ public class ExecutionOptions {
   public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
-  // Flow restartability check
-  private static final String EXECUTION_RETRY = "executionRetryByAzkaban";
-  private boolean isExecutionRetried = false;
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -156,8 +153,6 @@ public class ExecutionOptions {
     // Note: slaOptions was originally outside of execution options, so it parsed and set
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
-
-    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRY, false));
 
     return options;
   }
@@ -303,11 +298,6 @@ public class ExecutionOptions {
     this.slaOptions = slaOptions;
   }
 
-  public boolean isExecutionRetried() { return this.isExecutionRetried; }
-
-  public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
-      executionRetried; }
-
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -328,7 +318,6 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
-    flowOptionObj.put(EXECUTION_RETRY, this.isExecutionRetried);
     return flowOptionObj;
   }
 

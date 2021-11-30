@@ -17,7 +17,6 @@ package azkaban.executor.container;
 
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
-import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -26,7 +25,6 @@ import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
@@ -39,7 +37,6 @@ import azkaban.metrics.ContainerizationMetrics;
 import azkaban.spi.EventType;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -177,38 +174,24 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     if (executionOptions != null) {
       final Map<String, String> flowParam = executionOptions.getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
-        if (flowParam
-            .containsKey(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER)) {
-          logger.info(FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER + " flow param is"
-              + " specified for " + flow.getFlowName() + ". It's value is set to "
-              + flowParam
-              .get(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER));
-          if (Boolean.valueOf(flowParam
-              .get(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER))) {
-            return DispatchMethod.CONTAINERIZED;
-          } else {
-            return DispatchMethod.POLL;
-          }
+        if (Boolean.valueOf(flowParam
+            .getOrDefault(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER,
+                "false"))) {
+          return DispatchMethod.CONTAINERIZED;
         }
         if (flowParam.containsKey(ExecutionOptions.USE_EXECUTOR)) {
-          logger.info(ExecutionOptions.USE_EXECUTOR + " flow param is"
-              + " specified for " + flow.getFlowName() + ". It's value is set to "
-              + flowParam.get(ExecutionOptions.USE_EXECUTOR));
           return DispatchMethod.POLL;
         }
       }
     }
-
+    logger.info("dispatch method by proxy user criteria is",
+        this.containerProxyUserCriteria.getDispatchMethod(flow));
     DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
-    logger.info("Dispatch method by proxy user criteria is",
-        dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
     dispatchMethod = this.containerJobTypeCriteria.getDispatchMethod(flow);
-    logger.info("Dispatch method by job type criteria is",
-        dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
-    if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
+    if ( dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
     return this.containerProxyUserCriteria.getDispatchMethod(flow);
@@ -416,11 +399,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     }
   }
 
-  @VisibleForTesting
-  public ExecutionDispatcher getExecutionDispatcher(int execId) {
-    return new ExecutionDispatcher(execId);
-  }
-
   /**
    * This class is a worker class to dispatch execution in container.
    */
@@ -446,22 +424,42 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       } catch (ExecutorManagerException e) {
         logger.info("Unable to dispatch container in Kubernetes for : {}", executionId);
         logger.info("Reason for dispatch failure: {}", e.getMessage());
-        // Finalize the flow if the dispatch failed.
+        // Set the status of an execution to FAILED if dispatched failed.
+        final ExecutableFlow dsFlow;
         try {
-          ContainerizedDispatchManager.this.containerizationMetrics.markContainerDispatchFail();
-          ExecutableFlow execFlow =
+          dsFlow =
               ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
-          Status originalStatus = execFlow.getStatus();
-          ExecutionControllerUtils.finalizeFlow(ContainerizedDispatchManager.this.executorLoader,
-              ContainerizedDispatchManager.this.alerterHolder, execFlow, "Failed to dispatch", e,
-              Status.FAILED);
-          logger.info("Finalizing the flow execution ", executionId);
-          ExecutionControllerUtils.restartFlow(execFlow, originalStatus);
+          dsFlow.setStatus(Status.FAILED);
+          dsFlow.setUpdateTime(System.currentTimeMillis());
+          ContainerizedDispatchManager.this.executorLoader.updateExecutableFlow(dsFlow);
+          ContainerizedDispatchManager.this.containerizationMetrics.markContainerDispatchFail();
+          // Emit failed flow event
+          ContainerizedDispatchManager.this.fireEventListeners(Event.create(dsFlow, EventType.FLOW_STATUS_CHANGED,
+              new EventData(dsFlow)));
         } catch (ExecutorManagerException executorManagerException) {
           logger.error("Unable to update execution status to FAILED for : {}", executionId);
-        } catch (RuntimeException re) {
-          logger.error("Unexpected RuntimeException in ExecutionDispatcher", re);
         }
+      }
+    }
+  }
+
+  @Override
+  public void cancelFlow(ExecutableFlow exFlow, String userId)
+      throws ExecutorManagerException {
+    synchronized (exFlow) {
+      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
+          .fetchUnfinishedFlows();
+      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
+        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
+            .get(exFlow.getExecutionId());
+        // Note that ExecutionReference may have the 'executor' as null. ApiGateway call is expected
+        // to handle this scenario.
+        this.apiGateway.callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
+      } else {
+        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
+        logger.warn("Exception while cancelling flow. ", eme);
+        throw eme;
       }
     }
   }
@@ -514,6 +512,12 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   @Override
   public Map<String, Object> callExecutorJMX(String hostPort, String action, String mBean)
       throws IOException {
+    throw new UnsupportedOperationException("Unsupported Method");
+  }
+
+  @Override
+  public Map<String, String> doRampActions(List<Map<String, Object>> rampAction)
+      throws ExecutorManagerException {
     throw new UnsupportedOperationException("Unsupported Method");
   }
 

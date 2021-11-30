@@ -57,7 +57,7 @@ public class Flow {
   private final HashMap<String, Edge> edges = new HashMap<>();
   private final HashMap<String, Set<Edge>> outEdges = new HashMap<>();
   private final HashMap<String, Set<Edge>> inEdges = new HashMap<>();
-  private final HashMap<String, ImmutableFlowProps> flowProps = new HashMap<>();
+  private final HashMap<String, FlowProps> flowProps = new HashMap<>();
   private ArrayList<Node> startNodes = null;
   private ArrayList<Node> endNodes = null;
   private int numLevels = -1;
@@ -140,7 +140,7 @@ public class Flow {
     flow.setMailCreator(mailCreator);
     flow.setFailureAction(failureAction);
     // Loading projects
-    final Map<String, ImmutableFlowProps> properties = loadPropertiesFromObject(propertiesList);
+    final Map<String, FlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
 
     // Loading nodes
@@ -176,12 +176,12 @@ public class Flow {
     return edgeResult;
   }
 
-  private static Map<String, ImmutableFlowProps> loadPropertiesFromObject(
+  private static Map<String, FlowProps> loadPropertiesFromObject(
       final List<Object> propertyObjectList) {
-    final Map<String, ImmutableFlowProps> properties = new HashMap<>();
+    final Map<String, FlowProps> properties = new HashMap<>();
 
     for (final Object propObj : propertyObjectList) {
-      final ImmutableFlowProps prop = ImmutableFlowProps.fromObject(propObj);
+      final FlowProps prop = FlowProps.fromObject(propObj);
       properties.put(prop.getSource(), prop);
     }
 
@@ -298,8 +298,8 @@ public class Flow {
     this.nodes.put(node.getId(), node);
   }
 
-  public void addAllFlowProperties(final Collection<ImmutableFlowProps> props) {
-    for (final ImmutableFlowProps prop : props) {
+  public void addAllFlowProperties(final Collection<FlowProps> props) {
+    for (final FlowProps prop : props) {
       this.flowProps.put(prop.getSource(), prop);
     }
   }
@@ -418,7 +418,7 @@ public class Flow {
 
   private List<Object> objectizeProperties() {
     final ArrayList<Object> result = new ArrayList<>();
-    for (final ImmutableFlowProps props : this.flowProps.values()) {
+    for (final FlowProps props : this.flowProps.values()) {
       final Object objProps = props.toObject();
       result.add(objProps);
     }
@@ -501,11 +501,11 @@ public class Flow {
     return this.inEdges;
   }
 
-  public ImmutableFlowProps getFlowProps(final String propSource) {
+  public FlowProps getFlowProps(final String propSource) {
     return this.flowProps.get(propSource);
   }
 
-  public Map<String, ImmutableFlowProps> getAllFlowProps() {
+  public Map<String, FlowProps> getAllFlowProps() {
     return this.flowProps;
   }
 

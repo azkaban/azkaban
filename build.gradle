@@ -27,18 +27,15 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '3.2'
+  id 'com.gradle.build-scan' version '1.9'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
 
-// https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-    }
+buildScan {
+  licenseAgreementUrl = 'https://gradle.com/terms-of-service'
+  licenseAgree = 'yes'
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
@@ -140,7 +137,6 @@ ext.deps = [
     jasypt               : 'org.jasypt:jasypt:1.9.2',
     jacksonCore          : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
     jsonassert           : 'org.skyscreamer:jsonassert:1.5.0',
-    systemRules         : 'com.github.stefanbirkner:system-rules:1.19.0',
     javaxValidation      : 'javax.validation:validation-api:2.0.1.Final',
     hibernateValidator   : 'org.hibernate:hibernate-validator:6.1.5.Final']
 
@@ -202,7 +198,6 @@ subprojects {
       // NOTE! For some reason anything more than 1 doesn't work well for azkaban build:
       // any maxParallelForks > 1 seems to make `./gradlew cleanTest test` ~4 times slower
       maxParallelForks = 1
-      maxHeapSize '2g'
     }
   }
 
@@ -241,11 +236,8 @@ subprojects {
 }
 
 /**
- * Gradle wrapper task.
- * https://docs.gradle.org/5.2.1/userguide/gradle_wrapper.html#customizing_wrapper
- * https://stackoverflow.com/questions/53709282/cannot-add-task-wrapper-as-a-task-with-that-name-already-exists
- **/
-wrapper {
+ * Gradle wrapper task.*/
+task wrapper(type: Wrapper) {
   distributionType('ALL')
 }
 
@@ -255,7 +247,6 @@ if (System.env.TRAVIS == 'true') {
       // Reduce the memory pressure on the Travis CI to reduce build failures.
       maxParallelForks = 2
       minHeapSize = '128m'
-      maxHeapSize '2g'
     }
   }
 }
