@@ -59,11 +59,9 @@ See [the contribution guide](https://github.com/azkaban/azkaban/blob/master/CONT
 If you want to contribute to the documentation or the release tool (inside the `tools` folder), 
 please make sure python3 is installed in your environment. python virtual environment is recommended to run these scripts.
 
-To create a venv & install the python3 dependencies inside it, run
+To download the python3 dependencies, run 
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
 pip3 install -r requirements.txt
 ```
 After, enter the documentation folder `docs` and make the build by running
@@ -72,13 +70,6 @@ cd docs
 make html
 ```
 
-Find the built docs under `_build/html/`.
-
-For example on a Mac, open them in browser with:
-
-```bash
-open -a "Google Chrome" _build/html/index.html
-```
 
 **[July, 2018]** We are actively improving our documentation. Everyone in the AZ community is 
 welcome to submit a pull request to edit/fix the documentation.

@@ -54,17 +54,9 @@ public class DefaultMailCreator implements MailCreator {
   }
 
   private static List<String> findFailedJobs(final ExecutableFlow flow) {
-    return findJobsByStatus(flow, Status.FAILED);
-  }
-
-  private static List<String> findKilledJobs(final ExecutableFlow flow) {
-    return findJobsByStatus(flow, Status.KILLED);
-  }
-
-  private static List<String> findJobsByStatus(final ExecutableFlow flow, final Status status) {
     final ArrayList<String> failedJobs = new ArrayList<>();
     for (final ExecutableNode node : flow.getExecutableNodes()) {
-      if (node.getStatus() == status) {
+      if (node.getStatus() == Status.FAILED) {
         failedJobs.add(node.getId());
       }
     }
@@ -147,13 +139,12 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      String result = flow.getStatus() == Status.KILLED ? "was KILLED" : "has FAILED";
-      message.setSubject("Flow '" + flow.getFlowId() + "' " + result + " on "
+      message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
           + azkabanName);
 
       message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
           + "' of flow '" + flow.getFlowId() + "' of project '"
-          + flow.getProjectName() + "' " + result + " on " + azkabanName + "</h2>");
+          + flow.getProjectName() + "' has failed on " + azkabanName + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>"
           + TimeUtils.formatDateTimeZone(flow.getStartTime()) + "</td></tr>");
@@ -173,19 +164,11 @@ public class DefaultMailCreator implements MailCreator {
 
       message.println("");
       message.println("<h3>Reason</h3>");
-      String killedOrFailed;
-      final List<String> reasonJobs;
-      if (flow.getStatus() == Status.KILLED) {
-        killedOrFailed = "Killed";
-        reasonJobs = findKilledJobs(flow);
-      } else {
-        killedOrFailed = "Failed";
-        reasonJobs = findFailedJobs(flow);
-      }
+      final List<String> failedJobs = findFailedJobs(flow);
       message.println("<ul>");
-      for (final String jobId : reasonJobs) {
+      for (final String jobId : failedJobs) {
         message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
-            + "\">" + killedOrFailed + " job '" + jobId + "' Link</a></li>");
+            + "\">Failed job '" + jobId + "' Link</a></li>");
       }
       for (final String reason : reasons) {
         message.println("<li>" + reason + "</li>");

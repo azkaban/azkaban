@@ -35,11 +35,6 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
   }
 
   @Override
-  public boolean isInitialized() {
-    return false;
-  }
-
-  @Override
   public void markPodCompleted() {
   }
 
@@ -77,17 +72,11 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
 
   @Override
   public void markFlowSubmitToExecutor() {
+
   }
 
   @Override
   public void markFlowSubmitToContainer() {
-  }
 
-  @Override
-  public void markExecutionStopped() {
-  }
-
-  @Override
-  public void markContainerDispatchFail() {
   }
 }

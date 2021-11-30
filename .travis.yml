@@ -1,4 +1,4 @@
-language: java
+languages: java
 jdk:
   - openjdk8
 os: linux
