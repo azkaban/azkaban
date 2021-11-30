@@ -21,8 +21,6 @@ import azkaban.AzkabanCommonModule;
 import azkaban.common.ExecJettyServerModule;
 import azkaban.db.DatabaseOperator;
 import azkaban.execapp.AzkabanExecutorServerTest;
-import azkaban.execapp.FlowRunner;
-import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
@@ -42,10 +40,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.mockito.Mockito;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.ServiceProvider.*;
@@ -57,8 +52,6 @@ import static org.mockito.Mockito.*;
 public class FlowContainerTest {
 
   private static final Logger logger = Logger.getLogger(FlowContainerTest.class);
-  @Rule
-  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
   public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
@@ -172,37 +165,5 @@ public class FlowContainerTest {
     // Get the instance
     final JobCallbackManager jobCallbackManager = JobCallbackManager.getInstance();
     assert jobCallbackManager != null;
-  }
-
-  @Test
-  public void testSetResourceUtilization() {
-    FlowContainer flowContainerMock = mock(FlowContainer.class);
-    FlowRunner flowRunnerMock = mock(FlowRunner.class);
-    FlowRunnerProxy flowRunnerProxyMock = mock(FlowRunnerProxy.class);
-
-    Mockito.doReturn(flowRunnerProxyMock).when(flowRunnerMock).getProxy();
-    Mockito.doCallRealMethod().when(flowContainerMock).setResourceUtilization();
-    Mockito.doCallRealMethod().when(flowContainerMock).setFlowRunner(flowRunnerMock);
-
-    flowContainerMock.setFlowRunner(flowRunnerMock);
-    flowContainerMock.setResourceUtilization();
-
-    // CPU_REQUEST and MEMORY_REQUEST ENV variables are not set
-    Mockito.verify(flowRunnerProxyMock, Mockito.times(0)).setCpuUtilization(anyDouble());
-    Mockito.verify(flowRunnerProxyMock, Mockito.times(0)).setMemoryUtilization(anyLong());
-
-    // Set CPU_REQUEST ENV variable
-    environmentVariables.set("CPU_REQUEST", "500m");
-
-    flowContainerMock.setResourceUtilization();
-    Mockito.verify(flowRunnerProxyMock, Mockito.times(1)).setCpuUtilization(0.5d);
-    Mockito.verify(flowRunnerProxyMock, Mockito.times(0)).setMemoryUtilization(524288000L);
-
-    // Set MEMORY_REQUEST ENV variable
-    environmentVariables.set("MEMORY_REQUEST", "500Mi");
-    flowContainerMock.setResourceUtilization();
-    // Times will be two as it already executed once before
-    Mockito.verify(flowRunnerProxyMock, Mockito.times(2)).setCpuUtilization(0.5d);
-    Mockito.verify(flowRunnerProxyMock, Mockito.times(1)).setMemoryUtilization(524288000L);
   }
 }

@@ -15,13 +15,10 @@
  */
 package azkaban.executor;
 
-import azkaban.Constants;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
-import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
-import azkaban.project.ProjectLoader;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
@@ -60,8 +57,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
   public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
-  private static final String PARAM_OVERRIDE = "param.override.";
-
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -479,27 +474,5 @@ public class ExecutableFlow extends ExecutableFlowBase {
    */
   public void setVersionSet(final VersionSet versionSet) {
     this.versionSet = versionSet;
-  }
-
-  /**
-   * Getter of flattened flow properties and flow params. This API takes lazy
-   * loading approach. If the properties are not set, then they are first set.
-   * @return Returns the flattened flow props overridden by flow params.
-   */
-  public void setFlowPropsAndParams(final ProjectLoader projectLoader) {
-    Props props = FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion) ?
-        FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, this, null) :
-        projectLoader.fetchProjectProperty(projectId, version, Constants.PARAM_OVERRIDE_FILE);
-
-    if (null == props) {
-      return;
-    }
-    // Clone the props object and filter out the properties to keep only the override ones.
-    Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(PARAM_OVERRIDE);
-
-    // Update the flow params with override props
-    if (this.executionOptions != null) {
-      this.executionOptions.addAllFlowParameters(flowOverridePropsMap);
-    }
   }
 }
