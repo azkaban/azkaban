@@ -43,8 +43,6 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private static final int projectId = 1;
   private OnExecutionEventListener listener;
 
-  @Ignore
-  @Before
   public void setup() throws Exception {
     // Set up project and flow
     this.project = new Project(projectId, "testProject");
@@ -81,8 +79,6 @@ public class ExecutionControllerUtilsRestartFlowTest {
     ExecutionControllerUtils.onExecutionEventListener = this.listener;
   }
 
-  @Ignore
-  @Test
   public void testRestartOnExecutionStopped() throws Exception {
     this.flow1.setStatus(Status.EXECUTION_STOPPED);
 
