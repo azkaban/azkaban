@@ -272,6 +272,10 @@ class AzkabanProjectLoader {
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
       project.setFlows(flows);
 
+      // Set the project version before upload of project files happens so that the files use
+      // new version.
+      project.setVersion(newProjectVersion);
+
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
         log.info("Uploading Job properties");

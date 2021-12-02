@@ -128,7 +128,7 @@ public class AzkabanProjectLoaderTest {
     verify(this.projectStorageManager)
         .uploadProject(this.project, this.VERSION + 1, projectZipFile,
             null, uploader, IPv4);
-    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
+    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 2,
         Arrays.asList(this.VERSION));
 
     // Verify that the archiveUnthinner was never called
@@ -263,7 +263,7 @@ public class AzkabanProjectLoaderTest {
     verify(this.projectStorageManager)
         .uploadProject(eq(this.project), eq(this.VERSION + 1), eq(projectZipFile),
             any(File.class), eq(uploader), anyString());
-    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
+    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 2,
         Arrays.asList(this.VERSION));
 
     // Verify that the archiveUnthinner was called
