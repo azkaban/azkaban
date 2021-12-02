@@ -520,7 +520,6 @@ public class JdbcProjectImpl implements ProjectLoader {
           "UPDATE projects SET version=?,modified_time=?,last_modified_by=? WHERE id=?";
 
       this.dbOperator.update(UPDATE_PROJECT_VERSION, version, timestamp, user, project.getId());
-      project.setVersion(version);
       project.setLastModifiedTimestamp(timestamp);
       project.setLastModifiedUser(user);
     } catch (final SQLException e) {
