@@ -150,6 +150,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final Set<String> dependencyTypes;
   private final String initMountPathPrefixForDependencies;
   private final String appMountPathPrefixForDependencies;
+  private final boolean saTokenAutoMount;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
       String.CASE_INSENSITIVE_ORDER);
   private final String secretName;
@@ -270,6 +271,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.azkabanConfigImageName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME,
             DEFAULT_AZKABAN_CONFIG_IMAGE_NAME);
+    this.saTokenAutoMount = this.azkProps
+        .getBoolean(
+            ContainerizedDispatchManagerProperties.KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT,
+            false);
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
@@ -759,12 +764,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * Disable auto-mounting of service account tokens.
+   * Disable auto-mounting of service account tokens. Default value is false.
    *
    * @param podSpec pod specification
    */
-  private void disableSATokenAutomount(V1PodSpec podSpec) {
-    podSpec.automountServiceAccountToken(false);
+  private void setSATokenAutomount(V1PodSpec podSpec) {
+    podSpec.automountServiceAccountToken(saTokenAutoMount);
   }
 
   /**
@@ -826,7 +831,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final VersionSet versionSet = fetchVersionSet(executionId,
         flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
-    disableSATokenAutomount(podSpec);
+    setSATokenAutomount(podSpec);
 
     // If a pod-template is provided, merge its component definitions into the podSpec.
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {

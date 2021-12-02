@@ -640,6 +640,8 @@ public class Constants {
         "azkaban-base.image.name";
     public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
         AZKABAN_KUBERNETES_PREFIX + "azkaban-config.image.name";
+    public static final String KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT =
+        KUBERNETES_POD_PREFIX + "service.account.token.automount";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
