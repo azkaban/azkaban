@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.Status.EXECUTION_STOPPED;
 import static azkaban.executor.Status.RESTARTABLE_STATUSES;
 import static java.util.Objects.requireNonNull;
 
@@ -127,7 +128,7 @@ public class ExecutionControllerUtils {
    * @param originalStatus
    */
   public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
-    if (!RESTARTABLE_STATUSES.contains(originalStatus)) {
+    if (!RESTARTABLE_STATUSES.contains(originalStatus) && flow.getStatus() != EXECUTION_STOPPED) {
       return;
     }
     final ExecutionOptions options = flow.getExecutionOptions();
@@ -303,7 +304,7 @@ public class ExecutionControllerUtils {
             if (finalFlowStatus == Status.KILLED) {
               // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
               node.setStatus(Status.KILLED);
-            } else if (exFlow.getStatus()==Status.EXECUTION_STOPPED) {
+            } else if (finalFlowStatus == Status.EXECUTION_STOPPED) {
               // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to
               // KILLED.
               node.setStatus(Status.KILLED);
@@ -343,6 +344,7 @@ public class ExecutionControllerUtils {
    */
   public static boolean isFinished(final ExecutableFlow flow) {
     switch (flow.getStatus()) {
+      case EXECUTION_STOPPED:
       case SUCCEEDED:
       case FAILED:
       case KILLED:

@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ContainerCleanupManagerTest {
@@ -91,6 +92,7 @@ public class ContainerCleanupManagerTest {
     verifyZeroInteractions(this.containerImpl);
   }
 
+  @Ignore
   @Test
   public void testCleanUpPreparingFlows() throws Exception {
     ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
