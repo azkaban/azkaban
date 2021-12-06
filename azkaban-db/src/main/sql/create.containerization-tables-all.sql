@@ -120,3 +120,20 @@ CREATE UNIQUE INDEX version_set_md5
 -- alter table execution_flows add column dispatch_method TINYINT default 1;
 -- CREATE INDEX ex_flows_dispatch_method ON execution_flows (dispatch_method);
 
+-- Definition for hp_flow_owners table. It contains list of owners who have
+-- access to add/remove high priority flows.
+CREATE TABLE IF NOT EXISTS hp_flow_owners (
+    owner            VARCHAR(64)     NOT NULL PRIMARY KEY,
+    created_on       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by       VARCHAR(64)     NOT NULL,
+    modified_on      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by      VARCHAR(64)     NOT NULL
+);
+
+-- Definition for hp_flows. It contains the flow_id in format "project_name.flow_name".
+
+CREATE TABLE IF NOT EXISTS hp_flows (
+    flow_id           VARCHAR(256)   NOT NULL PRIMARY KEY,
+    created_on        TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by        VARCHAR(64)    NOT NULL
+);

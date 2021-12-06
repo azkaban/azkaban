@@ -48,6 +48,8 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
+import azkaban.imagemgmt.services.HPFlowService;
+import azkaban.imagemgmt.services.HPFlowServiceImpl;
 import azkaban.imagemgmt.services.ImageMgmtCommonService;
 import azkaban.imagemgmt.services.ImageMgmtCommonServiceImpl;
 import azkaban.imagemgmt.services.ImageRampupService;
@@ -136,6 +138,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
     bindContainerCleanupManager();
+    bindHPFlowManagementDependencies();
   }
 
   private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
@@ -223,6 +226,13 @@ public class AzkabanWebServerModule extends AbstractModule {
     }
     log.info("Binding ContainerCleanupManager");
     bind(ContainerCleanupManager.class).in(Scopes.SINGLETON);
+  }
+
+  private void bindHPFlowManagementDependencies() {
+    if (!isContainerizedDispatchMethodEnabled()) {
+      return;
+    }
+    bind(HPFlowService.class).to(HPFlowServiceImpl.class).in(Scopes.SINGLETON);
   }
 
   @Inject
