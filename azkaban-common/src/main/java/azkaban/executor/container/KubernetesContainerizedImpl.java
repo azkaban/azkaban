@@ -613,7 +613,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       userCPURequest = this.cpuRequest;
     }
     this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest, this.cpuRequest,
-        DEFAULT_CPU_LIMIT_MULTIPLIER);
+        this.cpuLimitMultiplier);
     return userCPURequest;
   }
 
@@ -641,7 +641,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       userMemoryRequest = this.memoryRequest;
     }
     this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest, this.memoryRequest,
-        DEFAULT_MEMORY_LIMIT_MULTIPLIER);
+        this.memoryLimitMultiplier);
     return userMemoryRequest;
   }
 
