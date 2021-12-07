@@ -2,21 +2,31 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    akey1: aval1
+    akey1: template-aval1
+    akey2: aval2
+    akey3: template-aval3
   labels:
-    lkey1: lvalue1
-  name: az-example
-  namespace: az-team
+    cluster: azkaban
+    execution-id: execid-1
+    app: azkaban-exec-server
+    service: flow-azkaban-1
+    lkey1: template-lvalue1
+    lkey2: lvalue2
+    lkey3: template-lvalue3
+  name: fc-dep-azkaban-1
+  namespace: dev-namespace
 spec:
   containers:
   - env:
     - name: AZ_CLUSTER
-      value: mycluster
+      value: azkaban
     - name: AZ_CONF_VERSION
-      value: 0.0.3
-    - name: envKey
-      value: envValue
-    image: path/azkaban-base-image:0.0.5
+      value: 9.1.1
+    - name: FLOW_EXECUTION_ID
+      value: '1'
+    - name: VERSION_SET_ID
+      value: '1'
+    image: path1:7.0.4
     imagePullPolicy: IfNotPresent
     livenessProbe:
       exec:
@@ -35,24 +45,32 @@ spec:
       periodSeconds: 5
     resources:
       limits:
-        cpu: 500m
-        memory: 500Mi
+        cpu: '2'
+        memory: 8Gi
       requests:
-        cpu: 500m
-        memory: 500Mi
+        cpu: '2'
+        memory: 4Gi
     volumeMounts:
-    - mountPath: azBasePath/plugins/jobtypes/spark
+    - mountPath: /export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes/spark
       name: jobtype-volume-spark
-    - mountPath: /var/run/nscd/socket
-      name: nscd-socket
-      readOnly: true
-    - mountPath: /var/azkaban/private/conf
-      name: azkaban-private-properties
+    - mountPath: /export/apps/azkaban/azkaban-exec-server/current/plugins/dependencies/dependency1
+      name: dependency-volume-dependency1
+    - mountPath: /var/azkaban/private
+      name: azkaban-k8s-secret
     - mountPath: /var/run/kubelet
       name: kubelet
-    - mountPath: azBasePath/plugins/jobtypes/custom-spark
-      name: jobtype-volume-custom-spark
   initContainers:
+  - env:
+    - name: AZ_CLUSTER
+      value: azkaban
+    - name: DEPENDENCY_MOUNT_PATH
+      value: /data/dependencies/dependency1
+    image: path5:6.4
+    imagePullPolicy: IfNotPresent
+    name: dependency-init-dependency1
+    volumeMounts:
+    - mountPath: /data/dependencies/dependency1
+      name: dependency-volume-dependency1
   - command:
     - chown
     - -R
@@ -69,10 +87,10 @@ spec:
     - name: CUSTOM_ENV
       value: customVal
     - name: AZ_CLUSTER
-      value: mycluster
+      value: azkaban
     - name: JOBTYPE_MOUNT_PATH
       value: /data/jobtypes/spark
-    image: path/spark-jobtype:0.0.5
+    image: path3:8.0
     imagePullPolicy: IfNotPresent
     name: jobtype-init-spark
     volumeMounts:
@@ -84,16 +102,12 @@ spec:
   volumes:
   - emptyDir: {}
     name: jobtype-volume-spark
-  - hostPath:
-      type: Socket
-      path: /var/run/nscd/socket
-    name: nscd-socket
-  - name: azkaban-private-properties
+  - emptyDir: {}
+    name: dependency-volume-dependency1
+  - name: azkaban-k8s-secret
     secret:
       defaultMode: 256
-      secretName: azkaban-private-properties
-  - emptyDir: {}
-    name: jobtype-volume-custom-spark
+      secretName: azkaban-k8s-secret
   - hostPath:
       type: Directory
       path: /export/content/lid/apps/kubelet/i002/var
