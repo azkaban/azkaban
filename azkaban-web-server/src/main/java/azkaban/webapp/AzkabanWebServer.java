@@ -31,6 +31,7 @@ import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.OnExecutionEventListener;
 import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
@@ -196,7 +197,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final ExecutionLogsCleaner executionLogsCleaner,
       final ObjectMapper objectMapper,
       final ContainerizationMetrics containerizationMetrics,
-      @Nullable final ContainerCleanupManager containerCleanupManager) {
+      @Nullable final ContainerCleanupManager containerCleanupManager,
+      @Nullable final OnExecutionEventListener onExecutionEventListener) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
@@ -215,6 +217,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.objectMapper = objectMapper;
     this.containerizationMetrics = containerizationMetrics;
     this.containerCleanupManager = Optional.ofNullable(containerCleanupManager);
+    if (null != onExecutionEventListener) {
+      logger.info("Initialized onExecutionEventListener");
+      ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+    }
 
     loadBuiltinCheckersAndActions();
 

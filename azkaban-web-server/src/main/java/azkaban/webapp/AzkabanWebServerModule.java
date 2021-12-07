@@ -138,6 +138,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
     bindContainerCleanupManager();
+    bindOnExecutionEventListener();
     bindHPFlowManagementDependencies();
   }
 
@@ -228,11 +229,20 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ContainerCleanupManager.class).in(Scopes.SINGLETON);
   }
 
+
+  private void bindOnExecutionEventListener() {
+    if(!isContainerizedDispatchMethodEnabled()) {
+      bind(OnExecutionEventListener.class).toProvider(Providers.of(null));
+      return;
+    }
+    log.info("Binding OnExecutionEventListener");
+    bind(OnExecutionEventListener.class).to(OnContainerizedExecutionEventListener.class).in(Scopes.SINGLETON);
+    
   private void bindHPFlowManagementDependencies() {
     if (!isContainerizedDispatchMethodEnabled()) {
       return;
     }
-    bind(HPFlowService.class).to(HPFlowServiceImpl.class).in(Scopes.SINGLETON);
+    bind(HPFlowService.class).to(HPFlowServiceImpl.class).in(Scopes.SINGLETON)
   }
 
   @Inject
@@ -338,18 +348,5 @@ public class AzkabanWebServerModule extends AbstractModule {
         Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
     return engine;
-  }
-
-  @Inject
-  @Singleton
-  @Provides
-  public OnExecutionEventListener createOnContainerizationExecutionEventListener (
-      final ExecutorLoader executorLoader,
-      final ExecutorManagerAdapter executorManagerAdapter,
-      final ProjectManager projectManager) {
-    OnExecutionEventListener listener = new OnContainerizedExecutionEventListener(executorLoader,
-        executorManagerAdapter, projectManager);
-    ExecutionControllerUtils.onExecutionEventListener = listener;
-    return listener;
   }
 }
