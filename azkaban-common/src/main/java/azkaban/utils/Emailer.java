@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -27,7 +28,9 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
+import azkaban.flow.Flow;
 import azkaban.metrics.CommonMetrics;
+import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -36,6 +39,7 @@ import com.google.common.collect.Multimaps;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -211,6 +215,26 @@ public class Emailer extends AbstractMailer implements Alerter {
             this.azkabanName, this.scheme, this.clientHostname, this.clientPortNumber, emailList);
     final List<Integer> executionIds = Lists.transform(flows, ExecutableFlow::getExecutionId);
     sendEmail(message, mailCreated, "failed health check message for executions " + executionIds);
+  }
+
+  /**
+   * Alert user when a job property is overridden in a project
+   * @param project
+   * @param flow
+   * @param eventData
+   */
+  @Override
+  public void alertOnJobPropertyOverridden(final Project project, final Flow flow,
+      final Map<String, Object> eventData) {
+    final List<String> emailList = flow.getOverrideEmails();
+    final String emailSubject = "[Project Property Overridden Alert]";
+    final String modifier = String.valueOf(eventData.get(MODIFIED_BY));
+    final String jobName = String.valueOf(eventData.get("jobOverridden"));
+    final String diffMessage = String.valueOf(eventData.get("diffMessage"));
+    final String emailBody =
+        "User " + modifier + " has overridden following job properties in project " + project.getName()
+            + " flow " + flow.getId() + " job " + jobName + ": " + "\n" + diffMessage;
+    sendEmail(emailList, emailSubject, emailBody);
   }
 
   /**

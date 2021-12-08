@@ -24,6 +24,8 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.FlowParameters;
 import azkaban.alert.Alerter;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -251,6 +253,25 @@ public class ExecutionControllerUtils {
         } else {
           logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
         }
+      }
+    }
+  }
+
+  /**
+   * Alert the user when job property is overridden in a project
+   * @param project
+   * @param flow
+   * @param eventData
+   */
+  public static void alertUserOnJobPropertyOverridden(final Project project, final Flow flow,
+      final Map<String, Object> eventData, final AlerterHolder alerterHolder) {
+    if (!flow.getOverrideEmails().isEmpty()) {
+      logger.info("Alert on job property overridden event in project: " + project.getName());
+      final Alerter mailAlter = alerterHolder.get("email");
+      try {
+        mailAlter.alertOnJobPropertyOverridden(project, flow, eventData);
+      } catch (final Exception e) {
+        logger.error("Failed to send email alert." + e.getMessage(), e);
       }
     }
   }

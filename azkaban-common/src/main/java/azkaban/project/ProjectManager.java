@@ -22,6 +22,8 @@ import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
@@ -58,18 +60,20 @@ public class ProjectManager {
   private final Props props;
   private final boolean creatorDefaultPermissions;
   private final ProjectCache cache;
+  private final AlerterHolder alerterHolder;
 
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
       final ProjectStorageManager projectStorageManager,
-      final Props props, final ProjectCache cache) {
+      final Props props, final ProjectCache cache, final AlerterHolder alerterHolder) {
     this.projectLoader = requireNonNull(loader);
     this.props = requireNonNull(props);
     this.azkabanProjectLoader = requireNonNull(azkabanProjectLoader);
     this.cache = requireNonNull(cache);
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
+    this.alerterHolder = alerterHolder;
     logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
     logger.info("ProjectManager instance created.");
@@ -371,9 +375,11 @@ public class ProjectManager {
     final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
     eventData.put("diffMessage", diffMessage);
     setProjectEventStatus(errorMessage, eventData);
+
+    // Send job property overridden alert
+    ExecutionControllerUtils.alertUserOnJobPropertyOverridden(project, flow, eventData, this.alerterHolder);
     // Fire project event listener
     project.fireEventListeners(ProjectEvent.create(project, azkaban.spi.EventType.JOB_PROPERTY_OVERRIDDEN, eventData));
-
     this.projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
         modifier.getUserId(), diffMessage);
     return;
