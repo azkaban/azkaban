@@ -16,9 +16,6 @@
 
 package azkaban.metrics;
 
-import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CLASS_NAME;
-import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
-
 import azkaban.utils.Props;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -35,6 +32,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static azkaban.Constants.ConfigurationKeys.*;
+
 
 /**
  * The singleton class, MetricsManager, is the place to have MetricRegistry and ConsoleReporter in
@@ -117,14 +117,19 @@ public class MetricsManager {
   public synchronized void startReporting(final String reporterName, final Props props) {
     final String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
     final String metricsServerURL = props.get(METRICS_SERVER_URL);
+    final String customHostNameToEmitMetrics = props.get(CUSTOM_METRICS_HOSTNAME);
     if (metricsReporterClassName != null && metricsServerURL != null) {
       try {
         log.info("metricsReporterClassName: " + metricsReporterClassName);
         final Class<?> metricsClass = Class.forName(metricsReporterClassName);
-
+        if (customHostNameToEmitMetrics != null) {
+          log.info("Using the custom hostname " + customHostNameToEmitMetrics
+              + " to emit metrics");
+        }
         final Constructor<?> ctor = metricsClass.getConstructor(reporterName.getClass(),
-            this.registry.getClass(), metricsServerURL.getClass(), boolean.class);
-        ctor.newInstance(reporterName, this.registry, metricsServerURL, true);
+            this.registry.getClass(), metricsServerURL.getClass(), boolean.class, String.class);
+        ctor.newInstance(reporterName, this.registry, metricsServerURL, true,
+            customHostNameToEmitMetrics);
 
       } catch (final Exception e) {
         log.error("Encountered error while loading and instantiating "
