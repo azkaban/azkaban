@@ -24,6 +24,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.converters.ImageTypeConverter;
 import azkaban.imagemgmt.converters.ImageVersionConverter;
+import azkaban.imagemgmt.daos.HPFlowDao;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageRampupDaoImpl;
 import azkaban.imagemgmt.daos.ImageTypeDao;
@@ -42,6 +43,8 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.TestUtils;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,7 @@ public class ImageRampupManagerImplTest {
   private ImageTypeDao imageTypeDao;
   private ImageVersionDao imageVersionDao;
   private ImageRampupDao imageRampupDao;
+  private HPFlowDao hpFlowDao;
   private ObjectMapper objectMapper;
   private ImageRampupManager imageRampupManger;
   private Converter<ImageTypeDTO, ImageTypeDTO, ImageType> imageTypeConverter;
@@ -74,11 +78,12 @@ public class ImageRampupManagerImplTest {
     this.imageTypeDao = mock(ImageTypeDaoImpl.class);
     this.imageVersionDao = mock(ImageVersionDaoImpl.class);
     this.imageRampupDao = mock(ImageRampupDaoImpl.class);
+    this.hpFlowDao = mock(HPFlowDao.class);
     this.imageTypeConverter = new ImageTypeConverter();
     this.imageVersionConverter = new ImageVersionConverter();
     this.converterUtils = new ConverterUtils(this.objectMapper);
     this.imageRampupManger = new ImageRampupManagerImpl(this.imageRampupDao, this.imageVersionDao,
-        this.imageTypeDao);
+        this.imageTypeDao, this.hpFlowDao);
   }
 
   /**
@@ -106,10 +111,12 @@ public class ImageRampupManagerImplTest {
     imageTypes.add("azkaban_exec");
     when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
     when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
+    when(this.hpFlowDao.isHPFlow(any(ExecutableFlow.class))).thenReturn(false);
 
     // Assert the for a flow, versions are always deterministic and remain the same
+    final String projectName = "exectest1", flowName = "exec1";
     final ExecutableFlow flow = TestUtils
-        .createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
+        .createTestExecutableFlow(projectName, flowName, DispatchMethod.CONTAINERIZED);
     Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
         .getVersionByImageTypes(flow, imageTypes, new HashSet<>());
     Assert.assertEquals("3.6.5", imageTypeVersionMap.get("azkaban_config").getVersion());
@@ -143,8 +150,21 @@ public class ImageRampupManagerImplTest {
         + "/all_image_types_active_version.json");
     final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
         jsonImageTypeActiveVersion, ImageVersionDTO.class);
-    final List<ImageVersion> activeImageVersions =
+    final List<ImageVersion> activeImageVersionsAll =
         this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    // Create a map of these ImageVersions and remove those which are found in imageTypes
+    // to mock remainingImages
+    Map<String, ImageVersion> activeVersionMap = new HashMap<>();
+    for (final ImageVersion imageVersion : activeImageVersionsAll) {
+      activeVersionMap.put(imageVersion.getName(), imageVersion);
+    }
+    for (final String name : imageTypeRampups.keySet()) {
+      if (activeVersionMap.containsKey(name)) {
+        activeVersionMap.remove(name);
+      }
+    }
+    final List<ImageVersion> activeImageVersions =
+        new ArrayList<>(activeVersionMap.values());
     final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
         "image_management"
             + "/all_image_types_new_and_rampup_version.json");
@@ -162,10 +182,15 @@ public class ImageRampupManagerImplTest {
     // Below image type versions are obtained from active ramp up. Version is selected randomly
     // based on rampup percentage.
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
+    Assert.assertEquals("3.6.5", imageTypeVersionMap.get("azkaban_config").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_core"));
+    Assert.assertEquals("3.6.1", imageTypeVersionMap.get("azkaban_core").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("azkaban_exec"));
+    Assert.assertEquals("1.8.1", imageTypeVersionMap.get("azkaban_exec").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("hive_job"));
+    Assert.assertEquals("2.1.1", imageTypeVersionMap.get("hive_job").getVersion());
     Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
+    Assert.assertEquals("1.1.1", imageTypeVersionMap.get("spark_job").getVersion());
     // Below two image types are from based on active image version
     Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
     Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());
@@ -352,6 +377,62 @@ public class ImageRampupManagerImplTest {
     Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job"));
     Assert.assertNotNull(imageTypeVersionMap.get("hadoop_job"));
     Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job"));
+  }
+
+  /**
+   * The test is for HP flow. If a flow is High priority, then skip ramp up.
+   */
+  @Test
+  public void testFetchVersionByImageTypesHPFlow() throws Exception {
+    final String jsonImageTypeRampups = JSONUtils.readJsonFileAsString("image_management/"
+        + "image_type_rampups.json");
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonImageTypeRampups);
+    final Set<String> imageTypes = new TreeSet<>();
+    imageTypes.add("spark_job");
+    imageTypes.add("hive_job");
+    imageTypes.add("azkaban_core");
+    imageTypes.add("azkaban_config");
+    imageTypes.add("azkaban_exec");
+    imageTypes.add("pig_job");
+    imageTypes.add("hadoop_job");
+    final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString("image_management"
+        + "/all_image_types_active_version.json");
+    final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeActiveVersion, ImageVersionDTO.class);
+    final List<ImageVersion> activeImageVersionsAll =
+        this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management"
+            + "/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
+    when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
+    // Only active versions are used.
+    when(this.imageVersionDao.getActiveVersionByImageTypes(any(Set.class)))
+        .thenReturn(activeImageVersionsAll);
+    when(this.hpFlowDao.isHPFlow(any(ExecutableFlow.class))).thenReturn(true);
+    final Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
+        .getVersionByImageTypes(null, imageTypes, new HashSet<>());
+    Assert.assertNotNull(imageTypeVersionMap);
+    // Below image type versions are obtained from active versions despite there being active ramp up.
+    Assert.assertNotNull(imageTypeVersionMap.get("azkaban_config"));
+    Assert.assertEquals("3.6.7", imageTypeVersionMap.get("azkaban_config").getVersion());
+    Assert.assertNotNull(imageTypeVersionMap.get("azkaban_core"));
+    Assert.assertEquals("3.6.3", imageTypeVersionMap.get("azkaban_core").getVersion());
+    Assert.assertNotNull(imageTypeVersionMap.get("azkaban_exec"));
+    Assert.assertEquals("1.8.3", imageTypeVersionMap.get("azkaban_exec").getVersion());
+    Assert.assertNotNull(imageTypeVersionMap.get("hive_job"));
+    Assert.assertEquals("2.1.4", imageTypeVersionMap.get("hive_job").getVersion());
+    Assert.assertNotNull(imageTypeVersionMap.get("spark_job"));
+    Assert.assertEquals("1.1.3", imageTypeVersionMap.get("spark_job").getVersion());
+    // Below two image types are from based on active image version
+    Assert.assertNotNull(imageTypeVersionMap.get("pig_job"));
+    Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job").getVersion());
+    Assert.assertNotNull(imageTypeVersionMap.get("hadoop_job"));
+    Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job").getVersion());
   }
 
   private Map<String, List<ImageRampup>> convertToRampupMap(final String input) {

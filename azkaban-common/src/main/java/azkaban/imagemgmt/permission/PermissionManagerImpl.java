@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.permission;
 
+import azkaban.imagemgmt.daos.HPFlowDao;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtException;
@@ -27,6 +28,9 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Objects.*;
+
+
 /**
  * This class defines and manages the permission for accessing image management APIs. The
  * permissions are defined on image type. The permissions are created using user role and access
@@ -38,10 +42,13 @@ public class PermissionManagerImpl implements PermissionManager {
   private static final Logger log = LoggerFactory.getLogger(PermissionManagerImpl.class);
 
   private final ImageTypeDao imageTypeDao;
+  private final HPFlowDao hpFlowDao;
 
   @Inject
-  public PermissionManagerImpl(final ImageTypeDao imageTypeDao) {
+  public PermissionManagerImpl(final ImageTypeDao imageTypeDao,
+      final HPFlowDao hpFlowDao) {
     this.imageTypeDao = imageTypeDao;
+    this.hpFlowDao = hpFlowDao;
   }
 
   /**
@@ -75,5 +82,25 @@ public class PermissionManagerImpl implements PermissionManager {
     }
 
     return hasPermission;
+  }
+
+  /**
+   * Checks if the user has permission to manage high priority flows.
+   * @param userId : must not be null.
+   * @return boolean
+   */
+  @Override
+  public boolean hasPermission(final String userId) {
+    requireNonNull(userId, "userId must not be null");
+    if (this.hpFlowDao.isHPFlowOwner(userId)) {
+      return true;
+    }
+
+    // Throw exception with FORBIDDEN error.
+    log.error(String.format("API access permission check failed. The user %s "
+        + "does not have access to manage high priority flows", userId));
+    throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format(
+        "API access permission check failed. The user %s does not have access "
+            + "to manage high priority flows", userId));
   }
 }

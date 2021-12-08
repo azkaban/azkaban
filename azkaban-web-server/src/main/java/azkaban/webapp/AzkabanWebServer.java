@@ -37,10 +37,12 @@ import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.services.HPFlowService;
 import azkaban.imagemgmt.services.ImageMgmtCommonService;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.servlets.HPFlowServlet;
 import azkaban.imagemgmt.servlets.ImageRampupServlet;
 import azkaban.imagemgmt.servlets.ImageTypeServlet;
 import azkaban.imagemgmt.servlets.ImageVersionServlet;
@@ -535,6 +537,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       routesMap.put("/imageTypes/*", new ImageTypeServlet());
       routesMap.put("/imageVersions/*", new ImageVersionServlet());
       routesMap.put("/imageRampup/*", new ImageRampupServlet());
+      routesMap.put("/hpFlows/*", new HPFlowServlet());
     }
     return routesMap;
   }
@@ -812,5 +815,9 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   public ImageMgmtCommonService getImageMgmtCommonService() {
     return SERVICE_PROVIDER.getInstance(ImageMgmtCommonService.class);
+  }
+
+  public HPFlowService getHPFlowService() {
+    return SERVICE_PROVIDER.getInstance(HPFlowService.class);
   }
 }

@@ -32,6 +32,8 @@ import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
 import azkaban.imagemgmt.converters.ImageTypeConverter;
 import azkaban.imagemgmt.converters.ImageVersionConverter;
+import azkaban.imagemgmt.daos.HPFlowDao;
+import azkaban.imagemgmt.daos.HPFlowDaoImpl;
 import azkaban.imagemgmt.daos.ImageMgmtCommonDao;
 import azkaban.imagemgmt.daos.ImageMgmtCommonDaoImpl;
 import azkaban.imagemgmt.daos.ImageRampupDao;
@@ -104,7 +106,9 @@ public class AzkabanCommonModule extends AbstractModule {
               Constants.DEFAULT_AZKABAN_POLLING_INTERVAL_MS);
       return new OsCpuUtil(Math.max(1, (cpuLoadPeriodSec * 1000) / pollingIntervalMs));
     });
+    // Following bindings are needed for containerized flow execution
     bindImageManagementDependencies();
+    bindHPFlowManagementDependencies();
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -199,5 +203,12 @@ public class AzkabanCommonModule extends AbstractModule {
     return DispatchMethod.isContainerizedMethodEnabled(this.props
         .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
             DispatchMethod.PUSH.name()));
+  }
+
+  private void bindHPFlowManagementDependencies() {
+    if (!isContainerizedDispatchMethodEnabled()) {
+      return;
+    }
+    bind(HPFlowDao.class).to(HPFlowDaoImpl.class).in(Scopes.SINGLETON);
   }
 }
