@@ -17,6 +17,7 @@ package azkaban.utils;
 
 import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -40,7 +41,9 @@ import azkaban.test.executions.ExecutionsTestUtil;
 import com.codahale.metrics.MetricRegistry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.mail.internet.AddressException;
 import org.junit.Assert;
 import org.junit.Before;
@@ -139,6 +142,23 @@ public class EmailerTest {
         .setSubject("Flow status could not be updated from executor1-host on azkaban");
     assertThat(TestUtils.readResource("failedUpdateMessage2.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
+  }
+
+  @Test
+  public void testOverrideEmailAddressAndSubject() throws Exception {
+    final Flow flow = this.project.getFlow(("jobe"));
+    flow.addOverrideEmails(this.receiveAddrList);
+    final Map<String, Object> eventData = new HashMap<>();
+    eventData.put(MODIFIED_BY, "dementer");
+    eventData.put("jobOverridden", "jobe");
+    eventData.put("diffMessage","Newly created Properties: [ Xmx, 2G], [ Xms, 1G]");
+    Assert.assertNotNull(flow);
+    final CommonMetrics commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
+    final Emailer emailer = new Emailer(this.props, commonMetrics, this.messageCreator,
+        this.executorLoader);
+    emailer.alertOnJobPropertyOverridden(this.project, flow, eventData);
+    verify(this.message).addAllToAddress(this.receiveAddrList);
+    verify(this.message).setSubject("[Project Property Overridden Alert]");
   }
 
   @Test

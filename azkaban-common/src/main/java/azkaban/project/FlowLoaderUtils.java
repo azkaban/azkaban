@@ -215,6 +215,14 @@ public class FlowLoaderUtils {
       failureEmail.add(email.toLowerCase());
     }
 
+    final List<String> overrideEmailList =
+        prop.getStringList(CommonJobProperties.OVERRIDE_EMAILS,
+            Collections.EMPTY_LIST);
+    final Set<String> overrideEmail = new HashSet<>();
+    for (final String email : overrideEmailList) {
+      overrideEmail.add(email.toLowerCase());
+    }
+
     final List<String> notifyEmailList =
         prop.getStringList(CommonJobProperties.NOTIFY_EMAILS,
             Collections.EMPTY_LIST);
@@ -226,6 +234,7 @@ public class FlowLoaderUtils {
 
     flow.addFailureEmails(failureEmail);
     flow.addSuccessEmails(successEmail);
+    flow.addOverrideEmails(overrideEmail);
   }
 
   /**
