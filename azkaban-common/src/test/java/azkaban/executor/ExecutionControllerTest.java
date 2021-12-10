@@ -224,6 +224,11 @@ public class ExecutionControllerTest {
     // Flow1 is not assigned to any executor and is in PREPARING status.
     submitFlow(this.flow1, this.ref1);
     this.flow1.setStatus(Status.PREPARING);
+    // Verify FLOW_FINISHED event is emitted
+    this.controller.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+    });
     try {
       this.controller.cancelFlow(this.flow1, this.user.getUserId());
     } catch (ExecutorManagerException e) {
