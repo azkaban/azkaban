@@ -23,13 +23,17 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static azkaban.Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.db.DatabaseOperator;
 import azkaban.event.EventListener;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutorLoader;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
@@ -41,11 +45,14 @@ import azkaban.spi.Storage;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.user.Permission;
 import azkaban.user.User;
+import azkaban.utils.Emailer;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.ValidatorUtils;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import java.util.ArrayList;
+import java.util.List;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Assert;
@@ -98,6 +105,8 @@ public class ProjectManagerTest {
   private ProjectCache cache;
   private AzkabanEventReporter azkabanEventReporter;
   private Project project;
+  private AlerterHolder alerterHolder;
+  private Emailer emailer;
 
   @Before
   public void setUp() throws Exception {
@@ -118,8 +127,10 @@ public class ProjectManagerTest {
         this.storage, this.archiveUnthinner,
         this.validatorUtils);
 
+    this.emailer = mock(Emailer.class);
+    this.alerterHolder = new AlerterHolder(this.props, emailer);
     this.manager = new ProjectManager(this.azkabanProjectLoader, this.projectLoader,
-        this.projectStorageManager, this.props, this.cache);
+        this.projectStorageManager, this.props, this.cache, this.alerterHolder);
     // Set up project and azkaban event reporter
     props.put(AZKABAN_EVENT_REPORTING_ENABLED, "true");
     props.put(AZKABAN_EVENT_REPORTING_CLASS_PARAM,
@@ -264,6 +275,10 @@ public class ProjectManagerTest {
     final User user = new User("testUser5");
     // Set job override property in a flow
     final Flow flow = new Flow(flowName);
+    // Set override email list for the flow
+    List<String> overrideEmailList = new ArrayList<>();
+    overrideEmailList.add("dementer@azkaban.org");
+    flow.addOverrideEmails(overrideEmailList);
     final Node node = new Node(jobName);
     flow.addNode(node);
     final Map<String, Flow> flowMap = new HashMap();
@@ -274,6 +289,7 @@ public class ProjectManagerTest {
     jobParamGroup.put("command", "sleep 2");
     jobParamGroup.put("dependencies", "job0");
     final Props overrideParams = new Props(null, jobParamGroup);
+    final Map<String, Object> eventData = new HashMap<>();
     // Add customized event listener
     project.addListener((event) -> {
       ProjectEvent projectEvent = (ProjectEvent) event;
@@ -285,5 +301,6 @@ public class ProjectManagerTest {
     });
     // Override a job property
     manager.setJobOverrideProperty(project, flow, overrideParams, jobName, node.getJobSource(), user);
+    verify(this.emailer).alertOnJobPropertyOverridden(any(), any(), any());
     }
 }
