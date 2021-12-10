@@ -145,7 +145,7 @@ public class EmailerTest {
   }
 
   @Test
-  public void testAlertOnJobPropertyOverridden() throws Exception {
+  public void testOverrideEmailAddressAndSubject() throws Exception {
     final Flow flow = this.project.getFlow(("jobe"));
     flow.addOverrideEmails(this.receiveAddrList);
     final Map<String, Object> eventData = new HashMap<>();

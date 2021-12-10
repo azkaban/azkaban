@@ -267,9 +267,9 @@ public class ExecutionControllerUtils {
       final Map<String, Object> eventData, final AlerterHolder alerterHolder) {
     if (!flow.getOverrideEmails().isEmpty()) {
       logger.info("Alert on job property overridden event in project: " + project.getName());
-      final Alerter mailAlter = alerterHolder.get("email");
+      final Alerter mailAlerter = alerterHolder.get("email");
       try {
-        mailAlter.alertOnJobPropertyOverridden(project, flow, eventData);
+        mailAlerter.alertOnJobPropertyOverridden(project, flow, eventData);
       } catch (final Exception e) {
         logger.error("Failed to send email alert." + e.getMessage(), e);
       }
