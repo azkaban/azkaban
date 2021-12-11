@@ -19,6 +19,10 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.event.Event;
+import azkaban.event.EventData;
+import azkaban.event.EventHandler;
+import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
@@ -28,6 +32,7 @@ import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.AzPodStatus.TransitionValidator;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -50,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * (2) Driving pod lifecycle actions, such as deleting flow pods in a final state.
  */
 @Singleton
-public class FlowStatusManagerListener implements AzPodStatusListener {
+public class FlowStatusManagerListener extends EventHandler implements AzPodStatusListener {
 
   private static final Logger logger = LoggerFactory.getLogger(FlowStatusManagerListener.class);
   public static final int EVENT_CACHE_STATS_FREQUENCY = 100;
@@ -64,6 +69,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   private final ExecutorService executor;
 
   private final ContainerizationMetrics containerizationMetrics;
+  private final EventListener eventListener;
 
   // Note about the cache size.
   // Each incoming event is expected to be less than 5KB in size and the maximum cache size will be
@@ -76,8 +82,10 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
   public FlowStatusManagerListener(Props azkProps,
       ContainerizedImpl containerizedImpl,
       ExecutorLoader executorLoader,
-      AlerterHolder alerterHolder, ContainerizationMetrics containerizationMetrics) {
+      AlerterHolder alerterHolder, ContainerizationMetrics containerizationMetrics,
+      EventListener eventListener) {
     this.containerizationMetrics = containerizationMetrics;
+    this.eventListener = eventListener;
     requireNonNull(azkProps, "azkaban properties must not be null");
     requireNonNull(containerizedImpl, "container implementation must not be null");
     requireNonNull(executorLoader, "executor loader must not be null");
@@ -85,6 +93,7 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
     this.containerizedImpl = containerizedImpl;
     this.executorLoader = executorLoader;
     this.alerterHolder = alerterHolder;
+    this.addListener(eventListener);
 
     this.executor = Executors.newSingleThreadExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-watch-pool-%d").build());
@@ -266,6 +275,9 @@ public class FlowStatusManagerListener implements AzPodStatusListener {
       }
       ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
           null, Status.EXECUTION_STOPPED);
+      // Emit EXECUTION_STOPPED flow event
+      this.fireEventListeners(Event.create(executableFlow,
+          EventType.FLOW_FINISHED, new EventData(executableFlow)));
       ExecutionControllerUtils.restartFlow(executableFlow, originalStatus);
       // Log event for cases where the flow was not already in a final state
       WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
