@@ -36,6 +36,7 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
@@ -303,11 +304,7 @@ public class KubernetesWatchTest {
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
     // Verify EXECUTION_STOPPED flow life cycle event is emitted
-    updatingListener.addListener((event) -> {
-      Event flowEvent = (Event) event;
-      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
-      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
-    });
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -340,11 +337,7 @@ public class KubernetesWatchTest {
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
     // Verify EXECUTION_STOPPED flow life cycle event is emitted
-    updatingListener.addListener((event) -> {
-      Event flowEvent = (Event) event;
-      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
-      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
-    });
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -412,11 +405,7 @@ public class KubernetesWatchTest {
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
     // Verify EXECUTION_STOPPED flow life cycle event is emitted
-    updatingListener.addListener((event) -> {
-      Event flowEvent = (Event) event;
-      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
-      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
-    });
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -448,6 +437,15 @@ public class KubernetesWatchTest {
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+  }
+
+  //// Verify FLOW_FINISHED flow life cycle event with status EXECUTION_STOPPED is emitted
+  private void assertExecutionStoppedFlowEvent(final FlowStatusManagerListener updatingListener) {
+    updatingListener.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
+    });
   }
 
   // validate flow status is finalized to EXECUTION_STOPPED, all sub nodes are set to KILLED
