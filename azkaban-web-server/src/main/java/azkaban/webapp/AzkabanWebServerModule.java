@@ -24,7 +24,6 @@ import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
-import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -63,7 +62,6 @@ import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.ContainerizationMetricsImpl;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
-import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -255,9 +253,10 @@ public class AzkabanWebServerModule extends AbstractModule {
       final Props azkProps,
       final ContainerizedImpl containerizedImpl,
       final ExecutorLoader executorLoader,
-      final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics) {
+      final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics,
+      final EventListener eventListener) {
     return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder,
-        containerizationMetrics);
+        containerizationMetrics, eventListener);
   }
 
   @Inject

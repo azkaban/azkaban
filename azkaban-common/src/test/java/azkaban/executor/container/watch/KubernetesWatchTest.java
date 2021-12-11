@@ -26,19 +26,24 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.DummyEventListener;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
@@ -125,6 +130,7 @@ public class KubernetesWatchTest {
       OnContainerizedExecutionEventListener.class);
   private Map<String, String> flowParam = ImmutableMap.of(FlowParameters
       .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true");
+  private EventListener eventListener = new DummyEventListener();
 
   @Before
   public void setUp() throws Exception {
@@ -179,7 +185,7 @@ public class KubernetesWatchTest {
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
     return new FlowStatusManagerListener(azkProps, mockedContainerizedImpl(),
-        mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics);
+        mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics, eventListener);
   }
 
   private AzPodStatusDrivingListener statusDriverWithListener(AzPodStatusListener listener) {
@@ -297,6 +303,8 @@ public class KubernetesWatchTest {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -328,6 +336,8 @@ public class KubernetesWatchTest {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -394,6 +404,8 @@ public class KubernetesWatchTest {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -425,6 +437,15 @@ public class KubernetesWatchTest {
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+  }
+
+  //// Verify FLOW_FINISHED flow life cycle event with status EXECUTION_STOPPED is emitted
+  private void assertExecutionStoppedFlowEvent(final FlowStatusManagerListener updatingListener) {
+    updatingListener.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
+    });
   }
 
   // validate flow status is finalized to EXECUTION_STOPPED, all sub nodes are set to KILLED

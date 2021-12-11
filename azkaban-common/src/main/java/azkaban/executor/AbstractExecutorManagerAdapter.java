@@ -526,6 +526,9 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
             .get(exFlow.getExecutionId());
         handleCancelFlow(pair.getFirst(), exFlow, userId);
+        // Emit FLOW_FINISHED event
+        this.fireEventListeners(Event.create(exFlow,
+            EventType.FLOW_FINISHED, new EventData(exFlow)));
       } else {
         final ExecutorManagerException eme = new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");

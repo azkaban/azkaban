@@ -478,6 +478,11 @@ public class ContainerizedDispatchManagerTest {
         new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
     ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
     apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_SUCCESS_JSON);
+    // Verify FLOW_FINISHED event is emitted
+    dispatchManager.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+    });
     dispatchManager.cancelFlow(flow1, this.user.getUserId());
     Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
         apiClient.getLastBuildExecutorUriRespone());
