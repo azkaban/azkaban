@@ -153,6 +153,12 @@ public class Constants {
   // Overridable plugin load properties
   public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
 
+  // Append JVM args to job commands
+  public static final String AZ_JOB_COMMAND_ARGS = "azkaban.jvm.cmd.args";
+
+  // Ignore the above JVM args for jobtypes which have this true.
+  public static final String AZ_JOB_IGNORE_JVM_ARGS = "ignore.jvm.args";
+
   /**
    * File containing param override configs
    * For a directory structure, property files in Proj_Dir used to have lower precedence than A.

@@ -262,6 +262,9 @@ public class ProcessJob extends AbstractProcessJob {
       }
     }
 
+    // Append any JVM args needed for job commands
+    commands = appendJVMArgs(commands);
+
     for (String command : commands) {
       AzkabanProcessBuilder builder = null;
       if (isExecuteAsUser) {
@@ -319,6 +322,27 @@ public class ProcessJob extends AbstractProcessJob {
 
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
+  }
+
+  /**
+   * This method fetches JVM args which maybe needed for jobtypes to function
+   * @param commands Original commands
+   * @return Updated commands.
+   */
+  private List<String> appendJVMArgs(List<String> commands) {
+    final String appendArgs = this.getSysProps().getString(
+        Constants.AZ_JOB_COMMAND_ARGS, null);
+    final boolean ignoreJVMArgs = this.getSysProps().getBoolean(
+        Constants.AZ_JOB_IGNORE_JVM_ARGS, false);
+    if (ignoreJVMArgs || null == appendArgs) {
+      return commands;
+    }
+    // append the args to each command.
+    List<String> appendedCmds = new ArrayList<>(commands.size());
+    for (final String command : commands) {
+      appendedCmds.add(command + " " + appendArgs);
+    }
+    return appendedCmds;
   }
 
   /**
