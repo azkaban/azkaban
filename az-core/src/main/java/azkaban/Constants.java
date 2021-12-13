@@ -153,11 +153,11 @@ public class Constants {
   // Overridable plugin load properties
   public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
 
-  // Append JVM args to job commands
+  // Append JVM opts to jobtype command
   public static final String AZ_JOBS_JAVA_OPTS = "azkaban.jobs.java.opts";
 
-  // Ignore the above JVM args for jobtypes which have this true.
-  public static final String AZ_JOB_IGNORE_JVM_ARGS = "ignore.jvm.args";
+  // Ignore the above JVM opts for jobtypes which have this true.
+  public static final String AZ_JOB_IGNORE_JAVA_OPTS = "azkaban.jobs.ignore.java.opts";
 
   /**
    * File containing param override configs

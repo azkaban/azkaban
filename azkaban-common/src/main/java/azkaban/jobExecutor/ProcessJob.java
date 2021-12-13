@@ -333,12 +333,14 @@ public class ProcessJob extends AbstractProcessJob {
     final String appendArgs = this.getSysProps().getString(
         Constants.AZ_JOBS_JAVA_OPTS, null);
     final boolean ignoreJVMArgs = this.getSysProps().getBoolean(
-        Constants.AZ_JOB_IGNORE_JVM_ARGS, false);
+        Constants.AZ_JOB_IGNORE_JAVA_OPTS, false);
     if (ignoreJVMArgs || null == appendArgs) {
       return commands;
     }
+
+    info("JAVA OPTS appended to each command : " + appendArgs);
     // append the args to each command.
-    List<String> appendedCmds = new ArrayList<>(commands.size());
+    final List<String> appendedCmds = new ArrayList<>(commands.size());
     for (final String command : commands) {
       appendedCmds.add(command + " " + appendArgs);
     }
