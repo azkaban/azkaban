@@ -56,8 +56,6 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -591,16 +589,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return v1SpecBuilder.build();
   }
 
-  @VisibleForTesting
-  V1ObjectMeta createPodMetadata(final int executionId, Map<String, String> flowParam) {
-    return new V1ObjectMetaBuilder()
-        .withName(getPodName(executionId))
-        .withNamespace(this.namespace)
-        .addToLabels(getLabelsForPod(executionId, flowParam))
-        .addToAnnotations(getAnnotationsForPod())
-        .build();
-  }
-
   /**
    * This method is used to get cpu request for a flow container. Precedence is defined below. a)
    * Use CPU request set in flow parameter constrained by max allowed cpu set in config b) Use cpu
@@ -785,14 +773,20 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * Creates a pod instance.
-   * @param podMetadata metadata to use during pod instantiation
-   * @param podSpec spec to use during pod instantiation
-   * @return a {@link V1Pod} instance
+   * @param executionId
+   * @param podSpec
+   * @return
    */
   @VisibleForTesting
-  V1Pod createPodFromMetadataAndSpec(final V1ObjectMeta podMetadata, final V1PodSpec podSpec) {
-    return new AzKubernetesV1PodBuilder(podMetadata, podSpec).build();
+  V1Pod createPodFromSpec(final int executionId, final V1PodSpec podSpec, Map<String, String> flowParam) {
+    final ImmutableMap<String, String> labels = getLabelsForPod(executionId, flowParam);
+    final ImmutableMap<String, String> annotations = getAnnotationsForPod();
+
+    final V1Pod pod = new AzKubernetesV1PodBuilder(getPodName(executionId), this.namespace, podSpec)
+        .withPodLabels(labels)
+        .withPodAnnotations(annotations)
+        .build();
+    return pod;
   }
 
   /**
@@ -834,10 +828,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.add(this.azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
-    final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
+    final VersionSet versionSet = fetchVersionSet(executionId,
+        flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
     setSATokenAutomount(podSpec);
-    final V1ObjectMeta podMetadata = createPodMetadata(executionId, flowParam);
 
     // If a pod-template is provided, merge its component definitions into the podSpec.
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {
@@ -850,16 +844,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         PodTemplateMergeUtils.mergePodSpec(podSpec, podSpecFromTemplate);
         logPodSpecYaml(executionId, podSpecFromTemplate, flowParam, "ExecId: {}, PodSpec after "
             + "template merge: {}");
-
-        final V1ObjectMeta podMetadataFromTemplate = podTemplate.getPodMetadataFromTemplate();
-        PodTemplateMergeUtils.mergePodMetadata(podMetadata, podMetadataFromTemplate);
       } catch (final IOException e) {
         logger.info("ExecId: {}, Failed to create k8s pod from template: {}", executionId,
             e.getMessage());
         throw new ExecutorManagerException(e);
       }
     }
-    final V1Pod pod = createPodFromMetadataAndSpec(podMetadata, podSpec);
+    final V1Pod pod = createPodFromSpec(executionId, podSpec, flowParam);
     logPodSpecYaml(executionId, pod, flowParam, "ExecId: {}, Pod: {}");
 
     try {
