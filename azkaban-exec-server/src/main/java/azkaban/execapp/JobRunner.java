@@ -770,7 +770,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
       insertJobMetadata();
       insertJVMAargs();
-
       this.props.put(CommonJobProperties.JOB_ID, this.jobId);
       this.props.put(CommonJobProperties.JOB_ATTEMPT, this.node.getAttempt());
       this.props.put(CommonJobProperties.JOB_METADATA_FILE,
@@ -876,6 +875,7 @@ public class JobRunner extends EventHandler implements Runnable {
     return projectPermissionsURL;
   }
 
+
   /**
    * Add useful JVM arguments so it is easier to map a running Java process to a flow, execution id
    * and job
@@ -892,9 +892,26 @@ public class JobRunner extends EventHandler implements Runnable {
     final String previousJVMArgs = this.props.get(JavaProcessJob.JVM_PARAMS);
     jobJVMArgs += (previousJVMArgs == null) ? "" : " " + previousJVMArgs;
 
+    // Add useful Java options for java jobs which are provided through properties
+    String javaOpts = insertJavaOptions();
+    jobJVMArgs += (javaOpts == null) ? "" : " " + javaOpts;
     this.logger.info("job JVM args: " + jobJVMArgs);
     this.props.put(JavaProcessJob.JVM_PARAMS, jobJVMArgs);
   }
+
+  /**
+   * Add useful Java options for java jobs provided through properties.
+   */
+  private String insertJavaOptions() {
+    if (this.jobtypeManager.getCommonPluginLoadProps() == null) {
+      return null;
+    }
+    final String appendJavaOpts = this.jobtypeManager.getCommonPluginLoadProps().getString(
+        Constants.AZ_JOBS_JAVA_OPTS, null);
+    logger.info("JAVA OPTS appended to each command : " + appendJavaOpts);
+    return appendJavaOpts;
+  }
+
 
   /**
    * Add relevant links to the job properties so that downstream consumers may know what executions
