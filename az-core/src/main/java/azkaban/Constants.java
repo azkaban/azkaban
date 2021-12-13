@@ -154,7 +154,7 @@ public class Constants {
   public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
 
   // Append JVM args to job commands
-  public static final String AZ_JOB_COMMAND_ARGS = "azkaban.jvm.cmd.args";
+  public static final String AZ_JOBS_JAVA_OPTS = "azkaban.jobs.java.opts";
 
   // Ignore the above JVM args for jobtypes which have this true.
   public static final String AZ_JOB_IGNORE_JVM_ARGS = "ignore.jvm.args";

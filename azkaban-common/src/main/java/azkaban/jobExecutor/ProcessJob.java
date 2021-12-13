@@ -331,7 +331,7 @@ public class ProcessJob extends AbstractProcessJob {
    */
   private List<String> appendJVMArgs(List<String> commands) {
     final String appendArgs = this.getSysProps().getString(
-        Constants.AZ_JOB_COMMAND_ARGS, null);
+        Constants.AZ_JOBS_JAVA_OPTS, null);
     final boolean ignoreJVMArgs = this.getSysProps().getBoolean(
         Constants.AZ_JOB_IGNORE_JVM_ARGS, false);
     if (ignoreJVMArgs || null == appendArgs) {
