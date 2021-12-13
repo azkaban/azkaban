@@ -23,7 +23,6 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -285,20 +284,14 @@ public class PodTemplateMergeUtils {
    */
   public static void mergePodMetadata(V1ObjectMeta podMetadata,
       V1ObjectMeta podMetadataFromTemplate) {
-    final Map<String, String> labels = podMetadata.getLabels() != null ?
-        podMetadata.getLabels() : new HashMap<>();
+    final Map<String, String> labels = podMetadata.getLabels();
     // if the same label exists in both metadata objects the template value has precedence.
-    if (podMetadataFromTemplate.getLabels() != null) {
-      labels.putAll(podMetadataFromTemplate.getLabels());
-    }
+    labels.putAll(podMetadataFromTemplate.getLabels());
     podMetadata.setLabels(labels);
 
-    final Map<String, String> annotations = podMetadata.getAnnotations() != null ?
-        podMetadata.getAnnotations() : new HashMap<>();
+    final Map<String, String> annotations = podMetadata.getAnnotations();
     // if the same annotation key exists in both metadata objects the template value has precedence.
-    if (podMetadataFromTemplate.getAnnotations() != null) {
-      annotations.putAll(podMetadataFromTemplate.getAnnotations());
-    }
+    annotations.putAll(podMetadataFromTemplate.getAnnotations());
     podMetadata.setAnnotations(annotations);
   }
 }
