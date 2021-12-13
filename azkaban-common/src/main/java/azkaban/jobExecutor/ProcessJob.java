@@ -262,6 +262,9 @@ public class ProcessJob extends AbstractProcessJob {
       }
     }
 
+    // Append any Java Opts needed for job commands
+    commands = appendJavaOpts(commands);
+
     for (String command : commands) {
       AzkabanProcessBuilder builder = null;
       if (isExecuteAsUser) {
@@ -319,6 +322,29 @@ public class ProcessJob extends AbstractProcessJob {
 
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
+  }
+
+  /**
+   * This method fetches Java Opts which maybe needed for jobtypes to function
+   * @param commands Original commands
+   * @return Updated commands.
+   */
+  private List<String> appendJavaOpts(List<String> commands) {
+    final String appendJavaOpts = this.getSysProps().getString(
+        Constants.AZ_JOBS_JAVA_OPTS, null);
+    final boolean ignoreJavaOpts = this.getSysProps().getBoolean(
+        Constants.AZ_JOB_IGNORE_JAVA_OPTS, false);
+    if (ignoreJavaOpts || null == appendJavaOpts) {
+      return commands;
+    }
+
+    info("JAVA OPTS appended to each command : " + appendJavaOpts);
+    // append the args to each command.
+    final List<String> appendedCmds = new ArrayList<>(commands.size());
+    for (final String command : commands) {
+      appendedCmds.add(command + " " + appendJavaOpts);
+    }
+    return appendedCmds;
   }
 
   /**
