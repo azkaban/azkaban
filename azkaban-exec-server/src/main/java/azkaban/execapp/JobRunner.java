@@ -770,6 +770,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
       insertJobMetadata();
       insertJVMAargs();
+
       this.props.put(CommonJobProperties.JOB_ID, this.jobId);
       this.props.put(CommonJobProperties.JOB_ATTEMPT, this.node.getAttempt());
       this.props.put(CommonJobProperties.JOB_METADATA_FILE,
@@ -893,7 +894,7 @@ public class JobRunner extends EventHandler implements Runnable {
     jobJVMArgs += (previousJVMArgs == null) ? "" : " " + previousJVMArgs;
 
     // Add useful Java options for java jobs which are provided through properties
-    String javaOpts = insertJavaOptions();
+    final String javaOpts = insertJavaOptions();
     jobJVMArgs += (javaOpts == null) ? "" : " " + javaOpts;
     this.logger.info("job JVM args: " + jobJVMArgs);
     this.props.put(JavaProcessJob.JVM_PARAMS, jobJVMArgs);
