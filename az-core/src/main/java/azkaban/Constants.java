@@ -156,9 +156,6 @@ public class Constants {
   // Append JVM opts to jobtype command
   public static final String AZ_JOBS_JAVA_OPTS = "azkaban.jobs.java.opts";
 
-  // Ignore the above JVM opts for jobtypes which have this true.
-  public static final String AZ_JOB_IGNORE_JAVA_OPTS = "azkaban.jobs.ignore.java.opts";
-
   /**
    * File containing param override configs
    * For a directory structure, property files in Proj_Dir used to have lower precedence than A.
