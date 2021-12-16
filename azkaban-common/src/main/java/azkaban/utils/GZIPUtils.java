@@ -39,16 +39,12 @@ public class GZIPUtils {
 
   public static byte[] gzipBytes(final byte[] bytes, final int offset, final int length)
           throws IOException {
-    try(final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream()){
-      GZIPOutputStream gzipStream = null;
+    final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream()
+    GZIPOutputStream gzipStream = new GZIPOutputStream(byteOutputStream);
 
-      gzipStream = new GZIPOutputStream(byteOutputStream);
-
-      gzipStream.write(bytes, offset, length);
-      gzipStream.close();
-      return byteOutputStream.toByteArray();
-    }
-
+    gzipStream.write(bytes, offset, length);
+    gzipStream.close();
+    return byteOutputStream.toByteArray();
   }
 
   public static byte[] unGzipBytes(final byte[] bytes) throws IOException {
