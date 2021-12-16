@@ -55,6 +55,8 @@ import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1Event;
+import io.kubernetes.client.openapi.models.V1EventList;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
@@ -70,6 +72,10 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -80,6 +86,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1116,6 +1123,103 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
   }
 
+  @Override
+  public void logPodDetails(final int executionId) throws ExecutorManagerException {
+    String podDetails = "";
+    podDetails += getPodEvents(executionId);
+    podDetails += getPodLogs(executionId);
+    try {
+      this.executorLoader.appendLogs(executionId,"podDetails", podDetails);
+    } catch (ExecutorManagerException e) {
+      logger.error("ExecId: {}, Unable to log pod details. Msg: {} ",
+          executionId, e.getMessage());;
+      throw e;
+    }
+  }
+
+  private String getPodEvents(final int executionId) throws ExecutorManagerException {
+    String podEvents = podEventsHeader();
+    final String podName = getPodName(executionId);
+    V1EventList events = null;
+    try {
+      events = this.coreV1Api.listNamespacedEvent(this.namespace, null, null,
+          null, null, null, null, null,
+          null, null);
+    } catch (final ApiException e) {
+      logger.error("ExecId: {}, Unable to get events for Pod. Msg: {} ",
+          executionId, e.getResponseBody());;
+      throw new ExecutorManagerException(e);
+    }
+//    Set<CoreV1Event> uniqueEvents = Set<CoreV1Event>();
+    for(V1Event event : events.getItems()) {
+      if (event.getRelated().getKind().equals("Pod") && event.getRelated().getName().equals(podName)) {
+        podEvents += formatPodEvent(event);
+      }
+    }
+    return podEvents;
+
+//
+//    EventList events
+//    final String podName = getPodName(executionId);
+//    EventsV1Api eventsApi = EventsV1Api(client);
+//    EventsV1EventList k8sEventslist = eventsApi.listNamespacedEvent(this.namespace, null, null,
+//        null, null, null, null, null, null, null, null);
+//    for(EventsV1Event event : k8sEventslist.items()) {
+//      if(event.getRegarding().getKind().equals("Pod") &&
+//          event.getRegarding().getName().equals(podName)) {
+//
+//      }
+//    }
+
+  }
+
+  private String podEventsHeader() {
+    String header = "Type" + "\t" + "Reason" + "\t" + "Age" + "\t" + "From" + "\t" + "Message";
+    return header;
+  }
+
+  /**
+   * This method is used to obtain the Pod Logs from the K8s Core V1 API
+   *
+   * @param executionId of pod
+   * @return String of podLogs
+   */
+  private String getPodLogs(final int executionId) throws ExecutorManagerException {
+    final String podName = getPodName(executionId);
+    String podLogs = "";
+    try {
+      podLogs = this.coreV1Api.readNamespacedPodLog(podName, this.namespace,
+          this.flowContainerName, false, null, null,
+          null, null, null, null, null);
+    } catch (final ApiException e) {
+      logger.error("ExecId: {}, Unable to get logs for Pod. Msg: {} ",
+          executionId, e.getResponseBody());;
+      throw new ExecutorManagerException(e);
+    }
+    return podLogs;
+  }
+
+
+  private String formatPodEvent(final V1Event event) {
+
+    String formatedEvent = "";
+    formatedEvent += event.getType() + "\t";
+    formatedEvent += event.getReason() + "\t";
+    formatedEvent += convertJodaDate(event.getLastTimestamp()) +" (" + event.getCount().toString() + " times)" + "\t";
+    formatedEvent += event.getReportingInstance() + "\t";
+    formatedEvent += event.getMessage();
+    return formatedEvent;
+  }
+
+  private String convertJodaDate(DateTime dt) {
+    DateTimeFormatter formatter =
+        DateTimeFormatter.ofPattern("yyyy MM dd HH:mm:ss z").withZone(ZoneId.of("PST"));
+    OffsetDateTime time = OffsetDateTime.of(dt.getYear(),dt.getMonthOfYear(), dt.getDayOfMonth(),
+        dt.getHourOfDay(),
+        dt.getMinuteOfDay(), dt.getSecondOfDay(), dt.getMillisOfSecond(),
+        ZoneOffset.of(dt.getZone().getID()));
+    return time.format(formatter);
+  }
   /**
    * This method is used to get service name. It will be created using service name prefix, azkaban
    * cluster name and execution id.

@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,6 +175,20 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
    * @param event pod watch event
    */
   private void postProcess(AzPodStatusMetadata event) {
+    final String executionId = event.getFlowPodMetadata().get().getExecutionId();
+    if (StringUtils.isNotEmpty(executionId)) {
+      final int execId = Integer.valueOf(executionId);
+      logger.info("The execution id for this event is " + executionId);
+      try{
+        containerizedImpl.logPodDetails(execId);
+      } catch (ExecutorManagerException e) {
+        String message = format("Exception while logging ;od details.");
+        logger.error(message, e);
+        throw new AzkabanWatchException(message, e);
+      }
+    } else {
+      logger.warn("The execution id for this event is null");
+    }
     updatePodStatus(event);
   }
 
@@ -338,6 +353,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
     validateAndPreProcess(event);
     boolean skipUpdates = !isUpdatedPodStatusDistinct(event);
     postProcess(event);
+
     if (!skipUpdates) {
       finalizeFlowAndDeleteContainer(event);
     }

@@ -153,6 +153,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public void appendLogs(int execId, String Name, String logs) throws ExecutorManagerException {
+    return;
+  }
+
+
+  @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
     final ExecutableFlow toUpdate = this.flows.get(flow.getExecutionId());
