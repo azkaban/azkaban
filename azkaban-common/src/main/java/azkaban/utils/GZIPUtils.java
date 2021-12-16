@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import azkaban.database.EncodingType;
 import azkaban.db.EncodingType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,8 +40,10 @@ public class GZIPUtils {
 
   public static byte[] gzipBytes(final byte[] bytes, final int offset, final int length)
           throws IOException {
-    final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream()
-    GZIPOutputStream gzipStream = new GZIPOutputStream(byteOutputStream);
+    final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+    GZIPOutputStream gzipStream = null;
+
+    gzipStream = new GZIPOutputStream(byteOutputStream);
 
     gzipStream.write(bytes, offset, length);
     gzipStream.close();
@@ -53,18 +56,18 @@ public class GZIPUtils {
 
     final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
     IOUtils.copy(gzipInputStream, byteOutputStream);
-
+    gzipInputStream.close();
     return byteOutputStream.toByteArray();
   }
 
   public static String unGzipString(final byte[] bytes, final String encType)
-      throws IOException {
+          throws IOException {
     final byte[] response = unGzipBytes(bytes);
     return new String(response, encType);
   }
 
   public static Object transformBytesToObject(final byte[] data, final EncodingType encType)
-      throws IOException {
+          throws IOException {
     if (encType == EncodingType.GZIP) {
       final String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
       return JSONUtils.parseJSONFromString(jsonString);
@@ -75,3 +78,4 @@ public class GZIPUtils {
   }
 
 }
+
