@@ -27,7 +27,7 @@ import org.apache.commons.io.IOUtils;
 public class GZIPUtils {
 
   public static byte[] gzipString(final String str, final String encType)
-      throws IOException {
+          throws IOException {
     final byte[] stringData = str.getBytes(encType);
 
     return gzipBytes(stringData);
@@ -38,25 +38,28 @@ public class GZIPUtils {
   }
 
   public static byte[] gzipBytes(final byte[] bytes, final int offset, final int length)
-      throws IOException {
-    final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-    GZIPOutputStream gzipStream = null;
+          throws IOException {
+    try(final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream()){
+      GZIPOutputStream gzipStream = null;
 
-    gzipStream = new GZIPOutputStream(byteOutputStream);
+      gzipStream = new GZIPOutputStream(byteOutputStream);
 
-    gzipStream.write(bytes, offset, length);
-    gzipStream.close();
-    return byteOutputStream.toByteArray();
+      gzipStream.write(bytes, offset, length);
+      gzipStream.close();
+      return byteOutputStream.toByteArray();
+    }
+
   }
 
   public static byte[] unGzipBytes(final byte[] bytes) throws IOException {
-    final ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes);
-    final GZIPInputStream gzipInputStream = new GZIPInputStream(byteInputStream);
+    try(final ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes)){
+      final GZIPInputStream gzipInputStream = new GZIPInputStream(byteInputStream);
 
-    final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-    IOUtils.copy(gzipInputStream, byteOutputStream);
-
-    return byteOutputStream.toByteArray();
+      final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+      IOUtils.copy(gzipInputStream, byteOutputStream);
+      gzipInputStream.close();
+      return byteOutputStream.toByteArray();
+    }
   }
 
   public static String unGzipString(final byte[] bytes, final String encType)
