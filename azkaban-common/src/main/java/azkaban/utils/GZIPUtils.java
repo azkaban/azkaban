@@ -52,14 +52,13 @@ public class GZIPUtils {
   }
 
   public static byte[] unGzipBytes(final byte[] bytes) throws IOException {
-    try(final ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes)){
-      final GZIPInputStream gzipInputStream = new GZIPInputStream(byteInputStream);
+    final ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes);
+    final GZIPInputStream gzipInputStream = new GZIPInputStream(byteInputStream);
 
-      final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-      IOUtils.copy(gzipInputStream, byteOutputStream);
-      gzipInputStream.close();
-      return byteOutputStream.toByteArray();
-    }
+    final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+    IOUtils.copy(gzipInputStream, byteOutputStream);
+
+    return byteOutputStream.toByteArray();
   }
 
   public static String unGzipString(final byte[] bytes, final String encType)
