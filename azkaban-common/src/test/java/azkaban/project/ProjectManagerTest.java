@@ -243,6 +243,13 @@ public class ProjectManagerTest {
       Assert.assertEquals("Event metadata not created as expected.", "ADMIN", projectEvent.getEventData().get("permission"));
       Assert.assertEquals("Event metadata not created as expected.", "SUCCESS", projectEvent.getEventData().get("projectEventStatus"));
       Assert.assertEquals("Event metadata not created as expected.", "null", projectEvent.getEventData().get("errorMessage"));
+
+      String updatedGroupPermissions = (String) projectEvent.getEventData().get("updatedGroupPermissions");
+      Assert.assertNotNull("Event metadata not created as expected.", updatedGroupPermissions);
+      Assert.assertTrue("Event metadata not created as expected.", updatedGroupPermissions.matches("((\\w+)=(\\w+,?)+:?)+"));
+      Assert.assertTrue("Event metadata not created as expected.", updatedGroupPermissions.contains("READ")
+          && updatedGroupPermissions.contains("WRITE") && updatedGroupPermissions.contains("EXECUTE"));
+      Assert.assertEquals("Event metadata not created as expected.", "", projectEvent.getEventData().get("updatedUserPermissions"));
     });
     project.addListener(listener1);
     // Add a user permission
