@@ -435,8 +435,8 @@ public class ProjectManager {
     }
 
     //Getting updated user and Group permissions as String
-    Map<String, String> updatedUserPermissionMap = new HashMap<>();
-    Map<String, String> updatedGroupPermissionMap = new HashMap<>();
+    final Map<String, String> updatedUserPermissionMap = new HashMap<>(project.getUserPermissions().size());
+    final Map<String, String> updatedGroupPermissionMap = new HashMap<>(project.getGroupPermissions().size());
 
     project.getUserPermissions().forEach(el -> updatedUserPermissionMap.put(el.getFirst(), el.getSecond().toString()));
     project.getGroupPermissions().forEach(el -> updatedGroupPermissionMap.put(el.getFirst(), el.getSecond().toString()));
