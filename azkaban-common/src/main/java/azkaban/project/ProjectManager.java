@@ -35,6 +35,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -432,6 +433,19 @@ public class ProjectManager {
       eventData.put("updatedUser", name);
       eventData.put("updatedGroup", "null");
     }
+
+    //Getting updated user and Group permissions as String
+    final Map<String, String> updatedUserPermissionMap = new HashMap<>(project.getUserPermissions().size());
+    final Map<String, String> updatedGroupPermissionMap = new HashMap<>(project.getGroupPermissions().size());
+
+    project.getUserPermissions().forEach(el -> updatedUserPermissionMap.put(el.getFirst(), el.getSecond().toString()));
+    project.getGroupPermissions().forEach(el -> updatedGroupPermissionMap.put(el.getFirst(), el.getSecond().toString()));
+
+    String userPermissionMapAsString = Joiner.on(":").withKeyValueSeparator("=").join(updatedUserPermissionMap);
+    String groupPermissionMapAsString = Joiner.on(":").withKeyValueSeparator("=").join(updatedGroupPermissionMap);
+
+    eventData.put("updatedUserPermissions", userPermissionMapAsString);
+    eventData.put("updatedGroupPermissions", groupPermissionMapAsString);
 
     String errorMessage = null;
     try {
