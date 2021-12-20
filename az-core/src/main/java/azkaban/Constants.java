@@ -292,6 +292,12 @@ public class Constants {
 
     // Represent the class name of azkaban metrics reporter.
     public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME = "azkaban.metrics.reporter.name";
+    /**
+     * In environments where hostnames keep changing, for example, Kubernates ecosystem,
+     * we can use this config to pass a custom hostname which will be used to store,
+     * and reference metrics.
+     */
+    public static final String CUSTOM_METRICS_HOSTNAME = "azkaban.metrics.hostname";
 
     // Represent the metrics server URL.
     public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
