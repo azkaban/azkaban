@@ -39,7 +39,7 @@ import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.opentable.db.postgres.embedded.EmbeddedPostgres;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
