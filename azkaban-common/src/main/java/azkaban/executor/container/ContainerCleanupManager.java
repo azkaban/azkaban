@@ -15,18 +15,24 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +52,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ContainerCleanupManager {
 
+  public static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = -1;
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
   private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(10);
   private final long cleanupIntervalMin;
@@ -53,6 +60,17 @@ public class ContainerCleanupManager {
   private final ExecutorLoader executorLoader;
   private final ContainerizedImpl containerizedImpl;
   private final ContainerizedDispatchManager containerizedDispatchManager;
+
+  private static final String SUBMIT_TIME = "submit_time";
+  private static final String START_TIME = "start_time";
+  private static final String UPDATE_TIME = "update_time";
+  // Defines the validity duration associated with certain statuses from the
+  // submit/start/update time.
+  private final ImmutableMap<Status, Pair<Duration, String>> validityMap;
+
+  public ImmutableMap<Status, Pair<Duration, String>> getValidityMap() {
+    return this.validityMap;
+  }
 
   @Inject
   public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -67,16 +85,35 @@ public class ContainerCleanupManager {
     this.executorLoader = executorLoader;
     this.containerizedImpl = containerizedImpl;
     this.containerizedDispatchManager = containerizedDispatchManager;
+    long runningFlowValidity = DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS;
+    try {
+      // Added extra buffer of an hour to not conflict with the flow runner cancellation.
+      runningFlowValidity = azkProps
+          .getLong(AZKABAN_MAX_FLOW_RUNNING_MINS, DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS);
+      runningFlowValidity = runningFlowValidity > 0 ? runningFlowValidity + 60 :
+          runningFlowValidity;
+    } catch (NumberFormatException ne) {
+      logger
+          .info("NumberFormatException while parsing value for: " + AZKABAN_MAX_FLOW_RUNNING_MINS);
+    }
+
+    this.validityMap = new Builder<Status,
+        Pair<Duration, String>>()
+        .put(Status.DISPATCHING, new Pair<>(Duration.ofMinutes(10), SUBMIT_TIME))
+        .put(Status.PREPARING, new Pair<>(Duration.ofMinutes(15), SUBMIT_TIME))
+        .put(Status.RUNNING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
+        .put(Status.PAUSED, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
+        .put(Status.KILLING, new Pair<>(Duration.ofMinutes(15), UPDATE_TIME))
+        .put(Status.EXECUTION_STOPPED, new Pair<>(Duration.ofMinutes(15), UPDATE_TIME))
+        .put(Status.FAILED_FINISHING,
+            new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
+        .build();
+
   }
 
   public void cleanUpStaleFlows() {
-    cleanUpStaleFlows(Status.DISPATCHING);
-    cleanUpStaleFlows(Status.PREPARING);
-    cleanUpStaleFlows(Status.RUNNING);
-    cleanUpStaleFlows(Status.PAUSED);
-    cleanUpStaleFlows(Status.KILLING);
-    cleanUpStaleFlows(Status.EXECUTION_STOPPED);
-    cleanUpStaleFlows(Status.FAILED_FINISHING);
+    this.validityMap.entrySet().stream().filter(e -> !e.getValue().getFirst().isNegative()).map(
+        Entry::getKey).forEach(this::cleanUpStaleFlows);
   }
 
   /**
@@ -86,19 +123,21 @@ public class ContainerCleanupManager {
    * @param status
    */
   public void cleanUpStaleFlows(final Status status) {
+    logger.info("Cleaning up stale flows for status: " + status.name());
     List<ExecutableFlow> staleFlows;
     try {
-      staleFlows = this.executorLoader.fetchStaleFlowsForStatus(status);
+      staleFlows = this.executorLoader.fetchStaleFlowsForStatus(status, this.validityMap);
     } catch (final Exception e) {
       logger.error("Exception occurred while fetching stale flows during clean up." + e);
       return;
     }
     for (final ExecutableFlow flow : staleFlows) {
       if (shouldIgnore(flow, status)) {
-        return;
+        continue;
       }
-      logger.info("Cleaning up stale flow " + flow.getExecutionId() + " in state " + status.name());
-      cancelFlowQuietly(flow);
+      Status originalStatus = flow.getStatus();
+      cancelFlowQuietly(flow, originalStatus);
+      retryFlowQuietly(flow, originalStatus);
       deleteContainerQuietly(flow.getExecutionId());
     }
   }
@@ -133,13 +172,25 @@ public class ContainerCleanupManager {
    *
    * @param flow
    */
-  private void cancelFlowQuietly(ExecutableFlow flow) {
+  private void cancelFlowQuietly(ExecutableFlow flow, Status originalStatus) {
     try {
+      logger.info(
+          "Cleaning up stale flow " + flow.getExecutionId() + " in state " + originalStatus
+              .name());
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
     } catch (ExecutorManagerException eme) {
-      logger.info("ExecutorManagerException while cancelling flow.", eme);
+      logger.error("ExecutorManagerException while cancelling flow.", eme);
     } catch (RuntimeException re) {
       logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
+    }
+  }
+
+  private void retryFlowQuietly(ExecutableFlow flow, Status originalStatus) {
+    try {
+      logger.info("Restarting cleaned up flow " + flow.getExecutionId());
+      ExecutionControllerUtils.restartFlow(flow, originalStatus);
+    } catch (RuntimeException re) {
+      logger.error("Unexpected RuntimeException while restarting flow during clean up." + re);
     }
   }
 
@@ -152,7 +203,7 @@ public class ContainerCleanupManager {
     try {
       this.containerizedImpl.deleteContainer(executionId);
     } catch (final ExecutorManagerException eme) {
-      logger.warn("ExecutorManagerException while deleting container.", eme);
+      logger.error("ExecutorManagerException while deleting container.", eme);
     } catch (final RuntimeException re) {
       logger.error("Unexpected RuntimeException while deleting container.", re);
     }

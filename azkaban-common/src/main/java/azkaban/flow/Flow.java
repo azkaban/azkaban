@@ -45,6 +45,7 @@ public class Flow {
   private static final String METADATA_PROPERTY = "metadata";
   private static final String FAILURE_EMAIL_PROPERTY = "failure.email";
   private static final String SUCCESS_EMAIL_PROPERTY = "success.email";
+  private static final String OVERRIDE_EMAIL_PROPERTY = "override.email";
   private static final String MAIL_CREATOR_PROPERTY = "mailCreator";
   private static final String ERRORS_PROPERTY = "errors";
   private static final String IS_LOCKED_PROPERTY = "isLocked";
@@ -57,12 +58,13 @@ public class Flow {
   private final HashMap<String, Edge> edges = new HashMap<>();
   private final HashMap<String, Set<Edge>> outEdges = new HashMap<>();
   private final HashMap<String, Set<Edge>> inEdges = new HashMap<>();
-  private final HashMap<String, FlowProps> flowProps = new HashMap<>();
+  private final HashMap<String, ImmutableFlowProps> flowProps = new HashMap<>();
   private ArrayList<Node> startNodes = null;
   private ArrayList<Node> endNodes = null;
   private int numLevels = -1;
   private final List<String> failureEmail = new ArrayList<>();
   private final List<String> successEmail = new ArrayList<>();
+  private final List<String> overrideEmail = new ArrayList<>();
 
   public String getFailureAction() {
     return failureAction;
@@ -121,6 +123,8 @@ public class Flow {
         .getOrDefault(FAILURE_EMAIL_PROPERTY, flow.getFailureEmails());
     final List<String> successEmails = (List<String>) flowObject
         .getOrDefault(SUCCESS_EMAIL_PROPERTY, flow.getSuccessEmails());
+    final List<String> overrideEmails = (List<String>) flowObject
+        .getOrDefault(OVERRIDE_EMAIL_PROPERTY, flow.getOverrideEmails());
     final String mailCreator = (String) flowObject
         .getOrDefault(MAIL_CREATOR_PROPERTY, flow.getMailCreator());
     final String failureAction = (String) flowObject.getOrDefault(
@@ -140,7 +144,7 @@ public class Flow {
     flow.setMailCreator(mailCreator);
     flow.setFailureAction(failureAction);
     // Loading projects
-    final Map<String, FlowProps> properties = loadPropertiesFromObject(propertiesList);
+    final Map<String, ImmutableFlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
 
     // Loading nodes
@@ -176,12 +180,12 @@ public class Flow {
     return edgeResult;
   }
 
-  private static Map<String, FlowProps> loadPropertiesFromObject(
+  private static Map<String, ImmutableFlowProps> loadPropertiesFromObject(
       final List<Object> propertyObjectList) {
-    final Map<String, FlowProps> properties = new HashMap<>();
+    final Map<String, ImmutableFlowProps> properties = new HashMap<>();
 
     for (final Object propObj : propertyObjectList) {
-      final FlowProps prop = FlowProps.fromObject(propObj);
+      final ImmutableFlowProps prop = ImmutableFlowProps.fromObject(propObj);
       properties.put(prop.getSource(), prop);
     }
 
@@ -248,6 +252,10 @@ public class Flow {
     return this.successEmail;
   }
 
+  public List<String> getOverrideEmails() {
+    return this.overrideEmail;
+  }
+
   public String getMailCreator() {
     return this.mailCreator;
   }
@@ -266,6 +274,10 @@ public class Flow {
 
   public void addFailureEmails(final Collection<String> emails) {
     this.failureEmail.addAll(emails);
+  }
+
+  public void addOverrideEmails(final Collection<String> emails) {
+    this.overrideEmail.addAll(emails);
   }
 
   public int getNumLevels() {
@@ -298,8 +310,8 @@ public class Flow {
     this.nodes.put(node.getId(), node);
   }
 
-  public void addAllFlowProperties(final Collection<FlowProps> props) {
-    for (final FlowProps prop : props) {
+  public void addAllFlowProperties(final Collection<ImmutableFlowProps> props) {
+    for (final ImmutableFlowProps prop : props) {
       this.flowProps.put(prop.getSource(), prop);
     }
   }
@@ -394,6 +406,7 @@ public class Flow {
     flowObj.put(EDGES_PROPERTY, objectizeEdges());
     flowObj.put(FAILURE_EMAIL_PROPERTY, this.failureEmail);
     flowObj.put(SUCCESS_EMAIL_PROPERTY, this.successEmail);
+    flowObj.put(OVERRIDE_EMAIL_PROPERTY, this.overrideEmail);
     flowObj.put(MAIL_CREATOR_PROPERTY, this.mailCreator);
     flowObj.put(LAYEDOUT_PROPERTY, this.isLayedOut);
     flowObj.put(EMBEDDED_FLOW_PROPERTY, this.isEmbeddedFlow);
@@ -418,7 +431,7 @@ public class Flow {
 
   private List<Object> objectizeProperties() {
     final ArrayList<Object> result = new ArrayList<>();
-    for (final FlowProps props : this.flowProps.values()) {
+    for (final ImmutableFlowProps props : this.flowProps.values()) {
       final Object objProps = props.toObject();
       result.add(objProps);
     }
@@ -501,11 +514,11 @@ public class Flow {
     return this.inEdges;
   }
 
-  public FlowProps getFlowProps(final String propSource) {
+  public ImmutableFlowProps getFlowProps(final String propSource) {
     return this.flowProps.get(propSource);
   }
 
-  public Map<String, FlowProps> getAllFlowProps() {
+  public Map<String, ImmutableFlowProps> getAllFlowProps() {
     return this.flowProps;
   }
 

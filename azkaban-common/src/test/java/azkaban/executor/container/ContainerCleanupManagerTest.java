@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -23,16 +24,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ContainerCleanupManagerTest {
@@ -46,6 +50,8 @@ public class ContainerCleanupManagerTest {
   @Before
   public void setup() throws Exception {
     this.props = new Props();
+    // 10 days
+    this.props.put(AZKABAN_MAX_FLOW_RUNNING_MINS, 14400);
     this.executorLoader = mock(ExecutorLoader.class);
     this.containerImpl = mock(ContainerizedImpl.class);
     this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
@@ -56,15 +62,22 @@ public class ContainerCleanupManagerTest {
   @Test
   public void testEmptyStaleExecutions() throws Exception {
     // List of stale flows is empty
-    when(this.executorLoader.fetchStaleFlowsForStatus(any())).thenReturn(new ArrayList<>());
+    when(this.executorLoader.fetchStaleFlowsForStatus(any(), any())).thenReturn(new ArrayList<>());
     this.cleaner.cleanUpStaleFlows();
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.DISPATCHING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.PREPARING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.RUNNING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.PAUSED);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.KILLING);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.EXECUTION_STOPPED);
-    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.FAILED_FINISHING);
+    verify(this.executorLoader).fetchStaleFlowsForStatus(Status.DISPATCHING,
+        this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.PREPARING, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.RUNNING, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.PAUSED, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.KILLING, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.EXECUTION_STOPPED, this.cleaner.getValidityMap());
+    verify(this.executorLoader)
+        .fetchStaleFlowsForStatus(Status.FAILED_FINISHING, this.cleaner.getValidityMap());
     verifyZeroInteractions(this.containerImpl);
   }
 
@@ -72,15 +85,16 @@ public class ContainerCleanupManagerTest {
   public void testExceptionInFetchingExecutions() throws Exception {
     // Mock an exception while fetching stale flows.
     doThrow(new RuntimeException("mock runtime exception"))
-        .when(this.executorLoader).fetchStaleFlowsForStatus(any());
+        .when(this.executorLoader).fetchStaleFlowsForStatus(any(), any());
     // Verifies that exception is consumed, otherwise this test will fail with exception.
     this.cleaner.cleanUpStaleFlows();
     // Additionally verify  no invocations for container deletion should take place
     verifyZeroInteractions(this.containerImpl);
   }
 
+  @Ignore
   @Test
-  public void testCleanUpPreparingFlows() throws ExecutorManagerException {
+  public void testCleanUpPreparingFlows() throws Exception {
     ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
     ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(1000);
@@ -88,7 +102,8 @@ public class ContainerCleanupManagerTest {
     flow.setSubmitUser("goku");
     flow.setExecutionOptions(new ExecutionOptions());
     executableFlows.add(flow);
-    when(this.executorLoader.fetchStaleFlowsForStatus(Status.PREPARING))
+    when(this.executorLoader
+        .fetchStaleFlowsForStatus(Status.PREPARING, this.cleaner.getValidityMap()))
         .thenReturn(executableFlows);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId()))
         .thenReturn(flow);
@@ -100,8 +115,15 @@ public class ContainerCleanupManagerTest {
       return null;
     }).when(this.containerizedDispatchManager).cancelFlow(flow, flow.getSubmitUser());
 
+    OnContainerizedExecutionEventListener onExecutionEventListener = mock(
+        OnContainerizedExecutionEventListener.class);
+    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+
     this.cleaner.cleanUpStaleFlows(Status.PREPARING);
+    TimeUnit.MILLISECONDS.sleep(10);
     Assert.assertEquals(Status.KILLED, flow.getStatus());
     verify(this.containerImpl).deleteContainer(flow.getExecutionId());
+    // Verify that the flow is indeed retried.
+    verify(onExecutionEventListener).onExecutionEvent(flow, Constants.RESTART_FLOW);
   }
 }

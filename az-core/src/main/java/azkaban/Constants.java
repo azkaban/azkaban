@@ -153,6 +153,27 @@ public class Constants {
   // Overridable plugin load properties
   public static final String AZ_PLUGIN_LOAD_OVERRIDE_PROPS = "azkaban.plugin.load.override.props";
 
+  // Append JVM opts to jobtype command
+  public static final String AZ_JOBS_JAVA_OPTS = "azkaban.jobs.java.opts";
+
+  /**
+   * File containing param override configs
+   * For a directory structure, property files in Proj_Dir used to have lower precedence than A.
+   * For the newly introduced file, this will no longer be true
+
+   * Proj_Dir
+   * basic.properties
+   * param_override.properties
+   * A/
+   * foo_a.properties
+   * foo.job
+
+   * i.e.
+   * (a). param_override.properties precedence will be higher than foo_a.properties.
+   * (b). foo_a.properties precedence will be higher than that of basic.properties.
+   */
+  public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
+
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 
@@ -473,8 +494,8 @@ public class Constants {
 
     // By default job props always win over flow override props.
     // If this flag is set to true, then override props override also override existing job props.
-    public static final String EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED =
-        "executor.props.resolve.overrideExisting.enabled";
+    public static final String AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER =
+        "azkaban.executor.runtimeProps.override.eager";
 
     // Executor client TLS properties
     public static final String EXECUTOR_CLIENT_TLS_ENABLED = "azkaban.executor.client.tls.enabled";
@@ -618,31 +639,29 @@ public class Constants {
     // Kubernetes pod related properties
     public static final String KUBERNETES_POD_PREFIX = AZKABAN_KUBERNETES_PREFIX + "pod.";
     public static final String KUBERNETES_POD_NAME_PREFIX = KUBERNETES_POD_PREFIX + "name.prefix";
-    public static final String KUBERNETES_POD_NSCD_SOCKET_VOLUME_MOUNT_PATH =
-        KUBERNETES_POD_PREFIX + "nscd.socket.volume.mount.path";
-    public static final String KUBERNETES_POD_NSCD_SOCKET_HOST_PATH =
-        KUBERNETES_POD_PREFIX + "nscd.socket.host.path";
-    public static final String KUBERNETES_POD_NSCD_MOUNT_READ_ONLY =
-        KUBERNETES_POD_PREFIX + "nscd.mount.read.only";
     public static final String KUBERNETES_POD_AZKABAN_BASE_IMAGE_NAME = AZKABAN_KUBERNETES_PREFIX +
         "azkaban-base.image.name";
     public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
         AZKABAN_KUBERNETES_PREFIX + "azkaban-config.image.name";
+    public static final String KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT =
+        KUBERNETES_POD_PREFIX + "service.account.token.automount";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
-    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT =
-        KUBERNETES_FLOW_CONTAINER_PREFIX +
-            "cpu.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
+    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.cpu";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX +
             "cpu.request";
-    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT =
-        KUBERNETES_FLOW_CONTAINER_PREFIX +
-            "memory.limit";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
+    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_NAME =

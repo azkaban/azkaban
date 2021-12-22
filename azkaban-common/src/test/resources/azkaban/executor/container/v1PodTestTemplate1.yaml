@@ -1,8 +1,16 @@
 apiVersion: "v1"
 kind: "Pod"
 metadata:
-  name: "az-template-example"
-  namespace: "az-team"
+  annotations:
+    akey1: template-aval1
+    akey2: aval2
+    akey3: template-aval3
+  labels:
+    lkey1: template-lvalue1
+    lkey2: lvalue2
+    lkey3: template-lvalue3
+  name: "template-az-example"
+  namespace: "template-az-team"
 spec:
   initContainers:
     - env:
@@ -47,15 +55,13 @@ spec:
         initialDelaySeconds: 5
         periodSeconds: 5
       volumeMounts:
+        - mountPath: /export/some/path
+          name: jobtype-volume-spark
         - name: kubelet
           mountPath: "/var/run/kubelet"
-        - name: jobtype-volume-custom-spark
-          mountPath: "azBasePath/plugins/jobtypes/custom-spark"
   volumes:
     - emptyDir: {}
       name: jobtype-volume-spark
-    - emptyDir: {}
-      name: jobtype-volume-custom-spark
     - name: kubelet
       hostPath:
         path: /export/content/lid/apps/kubelet/i002/var

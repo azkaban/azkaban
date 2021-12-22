@@ -21,6 +21,7 @@ import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +61,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ContainerizedDispatchManagerTest {
@@ -476,6 +478,11 @@ public class ContainerizedDispatchManagerTest {
         new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
     ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
     apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_SUCCESS_JSON);
+    // Verify FLOW_FINISHED event is emitted
+    dispatchManager.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+    });
     dispatchManager.cancelFlow(flow1, this.user.getUserId());
     Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
         apiClient.getLastBuildExecutorUriRespone());
@@ -528,6 +535,31 @@ public class ContainerizedDispatchManagerTest {
             this.containerizationMetrics);
     dispatchManager.start();
     return dispatchManager;
+  }
+
+  /**
+   * This test tries to verify the the flow is finalized and restarted if the dispatch fails.
+   * @throws Exception
+   */
+  @Ignore
+  @Test
+  public void testRestartFlow() throws Exception {
+    initializeContainerizedDispatchImpl();
+    doAnswer(e -> {
+      throw new ExecutorManagerException("Unable to create container");
+    }).when(this.containerizedImpl).createContainer(this.flow1.getExecutionId());
+    when(this.loader.fetchExecutableFlow(this.flow1.getExecutionId())).thenReturn(this.flow1);
+    OnContainerizedExecutionEventListener onExecutionEventListener = mock(
+        OnContainerizedExecutionEventListener.class);
+    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+    Thread thread = new Thread(
+        this.containerizedDispatchManager.getExecutionDispatcher(this.flow1.getExecutionId()));
+    thread.start();
+    synchronized (thread) {
+      thread.join();
+    }
+    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    verify(onExecutionEventListener).onExecutionEvent(this.flow1, Constants.RESTART_FLOW);
   }
 
   @NotThreadSafe

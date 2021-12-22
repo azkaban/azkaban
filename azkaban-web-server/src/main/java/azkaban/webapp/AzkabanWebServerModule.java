@@ -24,7 +24,6 @@ import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
-import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -63,7 +62,6 @@ import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.ContainerizationMetricsImpl;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
-import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -136,6 +134,7 @@ public class AzkabanWebServerModule extends AbstractModule {
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
     bindContainerCleanupManager();
+    bindOnExecutionEventListener();
   }
 
   private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
@@ -225,6 +224,15 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ContainerCleanupManager.class).in(Scopes.SINGLETON);
   }
 
+  private void bindOnExecutionEventListener() {
+    if(!isContainerizedDispatchMethodEnabled()) {
+      bind(OnExecutionEventListener.class).toProvider(Providers.of(null));
+      return;
+    }
+    log.info("Binding OnExecutionEventListener");
+    bind(OnExecutionEventListener.class).to(OnContainerizedExecutionEventListener.class).in(Scopes.SINGLETON);
+  }
+
   @Inject
   @Singleton
   @Provides
@@ -245,9 +253,10 @@ public class AzkabanWebServerModule extends AbstractModule {
       final Props azkProps,
       final ContainerizedImpl containerizedImpl,
       final ExecutorLoader executorLoader,
-      final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics) {
+      final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics,
+      final EventListener eventListener) {
     return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder,
-        containerizationMetrics);
+        containerizationMetrics, eventListener);
   }
 
   @Inject
@@ -328,18 +337,5 @@ public class AzkabanWebServerModule extends AbstractModule {
         Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
     return engine;
-  }
-
-  @Inject
-  @Singleton
-  @Provides
-  public OnExecutionEventListener createOnContainerizationExecutionEventListener (
-      final ExecutorLoader executorLoader,
-      final ExecutorManagerAdapter executorManagerAdapter,
-      final ProjectManager projectManager) {
-    OnExecutionEventListener listener = new OnContainerizedExecutionEventListener(executorLoader,
-        executorManagerAdapter, projectManager);
-    ExecutionControllerUtils.onExecutionEventListener = listener;
-    return listener;
   }
 }

@@ -19,8 +19,11 @@ package azkaban.alert;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import java.util.List;
+import java.util.Map;
 
 public interface Alerter {
 
@@ -38,6 +41,8 @@ public interface Alerter {
   void alertOnFailedExecutorHealthCheck(Executor executor,
       List<ExecutableFlow> executions,
       ExecutorManagerException e, List<String> alertEmails);
+
+  void alertOnJobPropertyOverridden(Project project, Flow flow, Map<String, Object> metaData);
 
   String getAzkabanURL();
 }

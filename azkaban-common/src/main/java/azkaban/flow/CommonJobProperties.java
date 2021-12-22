@@ -61,6 +61,11 @@ public class CommonJobProperties {
    */
   public static final String FAILURE_EMAILS = "failure.emails";
 
+  /**
+   * Comma delimited list of email addresses for job property override messages
+   */
+  public static final String OVERRIDE_EMAILS = "override.emails";
+
   /*
    * The following are the common props that will be added to the job by azkaban
    */

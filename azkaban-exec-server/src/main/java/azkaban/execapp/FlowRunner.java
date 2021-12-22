@@ -50,7 +50,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.ConditionOnJobStatus;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.jobExecutor.ProcessJob;
@@ -71,9 +71,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
@@ -98,7 +96,6 @@ import java.util.regex.Matcher;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
@@ -532,7 +529,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private void loadAllProperties() throws IOException {
     // First load all the properties
-    for (final FlowProps fprops : this.flow.getFlowProps()) {
+    for (final ImmutableFlowProps fprops : this.flow.getFlowProps()) {
       final String source = fprops.getSource();
       final File propsPath = new File(this.execDir, source);
       final Props props = new Props(null, propsPath);
@@ -540,7 +537,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     }
 
     // Resolve parents
-    for (final FlowProps fprops : this.flow.getFlowProps()) {
+    for (final ImmutableFlowProps fprops : this.flow.getFlowProps()) {
       if (fprops.getInheritedSource() != null) {
         final String source = fprops.getSource();
         final String inherit = fprops.getInheritedSource();
@@ -968,7 +965,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private boolean isOverrideExistingEnabled() {
     return this.azkabanProps.getBoolean(
-        ConfigurationKeys.EXECUTOR_PROPS_RESOLVE_OVERRIDE_EXISTING_ENABLED, false);
+        ConfigurationKeys.AZKABAN_EXECUTOR_RUNTIME_PROPS_OVERRIDE_EAGER, false);
   }
 
   private Props applyRuntimeProperties(final ExecutableNode node,
@@ -1670,7 +1667,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.FLOW_PAUSE_DURATION,
           String.valueOf(flowRunner.getFlowPauseDuration()));
       metaData.put(EventReporterConstants.FLOW_PREPARATION_DURATION,
-          String.valueOf(flowRunner.flowCreateTime));
+          String.valueOf(flowRunner.getFlowCreateTime()));
       // FLow SLA option string
       metaData.put(EventReporterConstants.SLA_OPTIONS, flow.getSlaOptionStr());
       // Flow executor type by versionSet
@@ -1724,6 +1721,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         final FlowRunner flowRunner = (FlowRunner) event.getRunner();
         final ExecutableFlow flow = flowRunner.getExecutableFlow();
         if (event.getType() == EventType.FLOW_STARTED) {
+          // Estimate flow wait time duration including time taken to create pod (for containerized
+          // executions) and submit flowRunner, discrepancy caused by different system time in web
+          // server (where executable flow is submitted) and executor/container.
+          if (flow.getSubmitTime() > 0 ) {
+            flowRunner.setFlowCreateTime(System.currentTimeMillis() - flow.getSubmitTime());
+          }
           FlowRunner.this.logger.info("Flow started: " + flow.getId());
           FlowRunner.this.azkabanEventReporter.report(event.getType(), getFlowMetadata(flowRunner));
         } else if (event.getType() == EventType.FLOW_STATUS_CHANGED) {

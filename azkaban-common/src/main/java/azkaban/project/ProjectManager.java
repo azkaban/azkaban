@@ -22,6 +22,8 @@ import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
@@ -33,6 +35,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -58,18 +61,20 @@ public class ProjectManager {
   private final Props props;
   private final boolean creatorDefaultPermissions;
   private final ProjectCache cache;
+  private final AlerterHolder alerterHolder;
 
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
       final ProjectStorageManager projectStorageManager,
-      final Props props, final ProjectCache cache) {
+      final Props props, final ProjectCache cache, final AlerterHolder alerterHolder) {
     this.projectLoader = requireNonNull(loader);
     this.props = requireNonNull(props);
     this.azkabanProjectLoader = requireNonNull(azkabanProjectLoader);
     this.cache = requireNonNull(cache);
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
+    this.alerterHolder = alerterHolder;
     logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
     logger.info("ProjectManager instance created.");
@@ -371,9 +376,11 @@ public class ProjectManager {
     final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
     eventData.put("diffMessage", diffMessage);
     setProjectEventStatus(errorMessage, eventData);
+
+    // Send job property overridden alert
+    ExecutionControllerUtils.alertUserOnJobPropertyOverridden(project, flow, eventData, this.alerterHolder);
     // Fire project event listener
     project.fireEventListeners(ProjectEvent.create(project, azkaban.spi.EventType.JOB_PROPERTY_OVERRIDDEN, eventData));
-
     this.projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
         modifier.getUserId(), diffMessage);
     return;
@@ -426,6 +433,19 @@ public class ProjectManager {
       eventData.put("updatedUser", name);
       eventData.put("updatedGroup", "null");
     }
+
+    //Getting updated user and Group permissions as String
+    final Map<String, String> updatedUserPermissionMap = new HashMap<>(project.getUserPermissions().size());
+    final Map<String, String> updatedGroupPermissionMap = new HashMap<>(project.getGroupPermissions().size());
+
+    project.getUserPermissions().forEach(el -> updatedUserPermissionMap.put(el.getFirst(), el.getSecond().toString()));
+    project.getGroupPermissions().forEach(el -> updatedGroupPermissionMap.put(el.getFirst(), el.getSecond().toString()));
+
+    String userPermissionMapAsString = Joiner.on(":").withKeyValueSeparator("=").join(updatedUserPermissionMap);
+    String groupPermissionMapAsString = Joiner.on(":").withKeyValueSeparator("=").join(updatedGroupPermissionMap);
+
+    eventData.put("updatedUserPermissions", userPermissionMapAsString);
+    eventData.put("updatedGroupPermissions", groupPermissionMapAsString);
 
     String errorMessage = null;
     try {

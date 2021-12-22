@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.Constants;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
@@ -486,26 +487,19 @@ public class ExecutableFlow extends ExecutableFlowBase {
    * @return Returns the flattened flow props overridden by flow params.
    */
   public void setFlowPropsAndParams(final ProjectLoader projectLoader) {
-    Props props = new Props();
-    // Fetch the flow properties
-    if (FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion)) {
-      props = FlowLoaderUtils.loadPropsFromYamlFile(projectLoader,
-          this, null);
-    } else {
-      final Map<String, Props> propsMap = projectLoader.
-          fetchProjectProperties(projectId, version);
-      if (null != propsMap) {
-        propsMap.values().forEach(props::putAll);
-      }
-    }
+    Props props = FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion) ?
+        FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, this, null) :
+        projectLoader.fetchProjectProperty(projectId, version, Constants.PARAM_OVERRIDE_FILE);
 
-    // Filter out the properties to keep only the override ones.
-    Map<String, String> flowOverridePropsMap = props.getMapByPrefix(PARAM_OVERRIDE);
+    if (null == props) {
+      return;
+    }
+    // Clone the props object and filter out the properties to keep only the override ones.
+    Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(PARAM_OVERRIDE);
 
     // Update the flow params with override props
     if (this.executionOptions != null) {
       this.executionOptions.addAllFlowParameters(flowOverridePropsMap);
     }
   }
-
 }

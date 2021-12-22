@@ -15,29 +15,39 @@
  */
 package azkaban.executor.container.watch;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.Constants.FlowParameters;
 import azkaban.DispatchMethod;
+import azkaban.event.Event;
+import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.DummyEventListener;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionControllerUtils;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.FlowStatusChangeEventListener;
+import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.JSON;
@@ -54,6 +64,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -72,7 +83,7 @@ public class KubernetesWatchTest {
   private static String LOCAL_KUBE_CONFIG_PATH = "/path/to/valid/kube-config";
   private static final int DEFAULT_MAX_INIT_COUNT = 3;
   private static final int DEFAULT_WATCH_RESET_DELAY_MILLIS = 100;
-  private static final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 5000;
+  private static final int DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS = 10000;
 
   /**
    * File containing a mock sequence of events, this is expected to be reflective of actual events
@@ -99,6 +110,7 @@ public class KubernetesWatchTest {
   private static String PODNAME_WITH_INVALID_TRANSITIONS = "flow-pod-cluster1-999";
   private static int EXECUTION_ID_WITH_SUCCEESS = 280;
   private static int EXECUTION_ID_WITH_INIT_FAILURE = 740;
+  private static int EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR = 420;
   private static int EXECUTION_ID_WITH_INVALID_TRANSITIONS = 999;
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
@@ -114,10 +126,16 @@ public class KubernetesWatchTest {
 
   private ApiClient defaultApiClient;
   private ContainerizationMetrics containerizationMetrics = new DummyContainerizationMetricsImpl();
+  private OnContainerizedExecutionEventListener onExecutionEventListener = mock(
+      OnContainerizedExecutionEventListener.class);
+  private Map<String, String> flowParam = ImmutableMap.of(FlowParameters
+      .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true");
+  private EventListener eventListener = new DummyEventListener();
 
   @Before
   public void setUp() throws Exception {
     this.defaultApiClient = Config.defaultClient();
+    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
   }
 
   private KubernetesWatch kubernetesWatchWithMockListener() {
@@ -167,7 +185,7 @@ public class KubernetesWatchTest {
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
     return new FlowStatusManagerListener(azkProps, mockedContainerizedImpl(),
-        mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics);
+        mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics, eventListener);
   }
 
   private AzPodStatusDrivingListener statusDriverWithListener(AzPodStatusListener listener) {
@@ -271,7 +289,7 @@ public class KubernetesWatchTest {
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    assertThat(flow1.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
@@ -285,11 +303,14 @@ public class KubernetesWatchTest {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
     // Mocked flow in RUNNING state. Init failure event will be processed for this execution.
-    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE, Status.RUNNING);
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE, Status.PREPARING);
+
     when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE))
         .thenReturn(flow1);
 
@@ -301,10 +322,49 @@ public class KubernetesWatchTest {
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INIT_FAILURE);
+
+    // Verify that the flow is restarted.
+    verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+  }
+
+  @Test
+  public void testFlowManagerListenerCreateContainerError() throws Exception {
+    // Setup a FlowUpdatingListener
+    Props azkProps = new Props();
+    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
+    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    statusDriver.registerAzPodStatusListener(updatingListener);
+
+    // Mocked flow in DISPATCHING state. CreateContainerError event will be processed for this
+    // execution. The extracted AzPodStatus will be AZ_POD_APP_FAILURE.
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR,
+        Status.DISPATCHING);
+    when(updatingListener.getExecutorLoader()
+        .fetchExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR))
+        .thenReturn(flow1);
+
+    // Run events through the registered listeners.
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        1);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    // Verify that the previously DISPATCHING flow has been finalized to a failure state.
+    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
+    assertFlowExecutionStopped(flow1);
+
+    // Verify the Pod deletion API is invoked.
+    verify(updatingListener.getContainerizedImpl())
+        .deleteContainer(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR);
+
+    // Verify that the flow is restarted.
+    verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
   }
 
   // Validates that the callbacks are processed in ContainerStatusMetricsHandlerListener
@@ -344,6 +404,8 @@ public class KubernetesWatchTest {
     // Setup a FlowUpdatingListener
     Props azkProps = new Props();
     FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
     AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
     statusDriver.registerAzPodStatusListener(updatingListener);
 
@@ -352,6 +414,10 @@ public class KubernetesWatchTest {
         "embedded_flow");
     flow1.setExecutionId(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
     flow1.setStatus(Status.RUNNING);
+    // set flow parameter to allow restart from EXECUTION_STOPPED
+    final ExecutionOptions options = flow1.getExecutionOptions();
+    options.addAllFlowParameters(flowParam);
+    flow1.setExecutionOptions(options);
     when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INVALID_TRANSITIONS))
         .thenReturn(flow1);
 
@@ -364,12 +430,32 @@ public class KubernetesWatchTest {
     // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
     // nodes set to terminal state, too.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    Queue<ExecutableNode> queue = new LinkedList<>();
-    queue.add(flow1);
+    assertFlowExecutionStopped(flow1);
+
+    // Verify the Pod deletion API is invoked.
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
+
+    // Verify that the flow is restarted.
+    verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+  }
+
+  //// Verify FLOW_FINISHED flow life cycle event with status EXECUTION_STOPPED is emitted
+  private void assertExecutionStoppedFlowEvent(final FlowStatusManagerListener updatingListener) {
+    updatingListener.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
+    });
+  }
+
+  // validate flow status is finalized to EXECUTION_STOPPED, all sub nodes are set to KILLED
+  private void assertFlowExecutionStopped(final ExecutableFlow flow) {
+    final Queue<ExecutableNode> queue = new LinkedList<>();
+    queue.add(flow);
     // traverse through every node in flow1
     while(!queue.isEmpty()) {
       ExecutableNode node = queue.poll();
-      if (node==flow1) {
+      if (node==flow) {
         assertThat(node.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
       } else {
         assertThat(node.getStatus()).isEqualTo(Status.KILLED);
@@ -381,9 +467,6 @@ public class KubernetesWatchTest {
         }
       }
     }
-
-    // Verify the Pod deletion API is invoked.
-    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
   }
 
   @Test

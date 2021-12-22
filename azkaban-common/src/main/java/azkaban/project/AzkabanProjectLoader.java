@@ -270,10 +270,11 @@ class AzkabanProjectLoader {
 
       log.info("Uploading flow to db for project " + archive.getName());
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
-      log.info("Changing project versions for project " + archive.getName());
-      this.projectLoader.changeProjectVersion(project, newProjectVersion,
-          uploader.getUserId());
       project.setFlows(flows);
+
+      // Set the project version before upload of project files happens so that the files use
+      // new version.
+      project.setVersion(newProjectVersion);
 
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
@@ -289,6 +290,11 @@ class AzkabanProjectLoader {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
 
+      // CAUTION : Always change the project version as the last item to make
+      // sure all the project related files are uploaded.
+      log.info("Changing project versions for project " + archive.getName());
+      this.projectLoader.changeProjectVersion(project, newProjectVersion,
+          uploader.getUserId());
       this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
           "Uploaded project files zip " + archive.getName());
     }
