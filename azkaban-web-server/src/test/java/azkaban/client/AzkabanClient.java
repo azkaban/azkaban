@@ -51,9 +51,9 @@ public class AzkabanClient {
 	private final CloseableHttpClient httpClient;
 
 	public AzkabanClient(String url,
-											 String username,
-											 String password,
-											 int retries) throws Exception {
+						 String username,
+						 String password,
+						 int retries) throws Exception {
 
 		this.url = url;
 
