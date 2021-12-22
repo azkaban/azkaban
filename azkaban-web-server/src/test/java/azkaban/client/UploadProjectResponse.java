@@ -21,29 +21,29 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class UploadProjectResponse {
 
-	private final String projectId;
-	private final String version;
+    private final String projectId;
+    private final String version;
 
-	@JsonCreator
-	public UploadProjectResponse(@JsonProperty("projectId") String projectId,
-															 @JsonProperty("version") String version) {
-		this.projectId = projectId;
-		this.version = version;
-	}
+    @JsonCreator
+    public UploadProjectResponse(@JsonProperty("projectId") String projectId,
+                                 @JsonProperty("version") String version) {
+        this.projectId = projectId;
+        this.version = version;
+    }
 
-	public String getProjectId() {
-		return projectId;
-	}
+    public String getProjectId() {
+        return projectId;
+    }
 
-	public String getVersion() {
-		return version;
-	}
+    public String getVersion() {
+        return version;
+    }
 
-	@Override
-	public String toString() {
-		return "UploadProjectResponse{" +
-				"projectId='" + projectId + '\'' +
-				", version='" + version + '\'' +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "UploadProjectResponse{" +
+                "projectId='" + projectId + '\'' +
+                ", version='" + version + '\'' +
+                '}';
+    }
 }

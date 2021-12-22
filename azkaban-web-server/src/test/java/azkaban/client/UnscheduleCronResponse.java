@@ -21,29 +21,29 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class UnscheduleCronResponse {
 
-	private final String message;
-	private final String status;
+    private final String message;
+    private final String status;
 
-	@JsonCreator
-	public UnscheduleCronResponse(@JsonProperty("message") String message,
-																@JsonProperty("status") String status) {
-		this.message = message;
-		this.status = status;
-	}
+    @JsonCreator
+    public UnscheduleCronResponse(@JsonProperty("message") String message,
+                                  @JsonProperty("status") String status) {
+        this.message = message;
+        this.status = status;
+    }
 
-	public String getMessage() {
-		return message;
-	}
+    public String getMessage() {
+        return message;
+    }
 
-	public String getStatus() {
-		return status;
-	}
+    public String getStatus() {
+        return status;
+    }
 
-	@Override
-	public String toString() {
-		return "UnscheduleCronResponse{" +
-				"message='" + message + '\'' +
-				", status='" + status + '\'' +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "UnscheduleCronResponse{" +
+                "message='" + message + '\'' +
+                ", status='" + status + '\'' +
+                '}';
+    }
 }

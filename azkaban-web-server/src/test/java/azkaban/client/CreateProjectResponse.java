@@ -21,37 +21,37 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class CreateProjectResponse {
 
-	private final String status;
-	private final String path;
-	private final String action;
+    private final String status;
+    private final String path;
+    private final String action;
 
-	@JsonCreator
-	public CreateProjectResponse(@JsonProperty("status") String status,
-															 @JsonProperty("path") String path,
-															 @JsonProperty("action") String action) {
-		this.status = status;
-		this.path = path;
-		this.action = action;
-	}
+    @JsonCreator
+    public CreateProjectResponse(@JsonProperty("status") String status,
+                                 @JsonProperty("path") String path,
+                                 @JsonProperty("action") String action) {
+        this.status = status;
+        this.path = path;
+        this.action = action;
+    }
 
-	public String getStatus() {
-		return status;
-	}
+    public String getStatus() {
+        return status;
+    }
 
-	public String getPath() {
-		return path;
-	}
+    public String getPath() {
+        return path;
+    }
 
-	public String getAction() {
-		return action;
-	}
+    public String getAction() {
+        return action;
+    }
 
-	@Override
-	public String toString() {
-		return "CreateProjectResponse{" +
-				"status='" + status + '\'' +
-				", path='" + path + '\'' +
-				", action='" + action + '\'' +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "CreateProjectResponse{" +
+                "status='" + status + '\'' +
+                ", path='" + path + '\'' +
+                ", action='" + action + '\'' +
+                '}';
+    }
 }

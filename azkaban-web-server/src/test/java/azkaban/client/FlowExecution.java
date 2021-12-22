@@ -21,77 +21,77 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class FlowExecution {
 
-	private final String startTime;
-	private final String submitUser;
-	private final String status;
-	private final String submitTime;
-	private final String execId;
-	private final String projectId;
-	private final String endTime;
-	private final String flowId;
+    private final String startTime;
+    private final String submitUser;
+    private final String status;
+    private final String submitTime;
+    private final String execId;
+    private final String projectId;
+    private final String endTime;
+    private final String flowId;
 
-	@JsonCreator
-	public FlowExecution(@JsonProperty("startTime") String startTime,
-											 @JsonProperty("submitUser") String submitUser,
-											 @JsonProperty("status") String status,
-											 @JsonProperty("submitTime") String submitTime,
-											 @JsonProperty("execId") String execId,
-											 @JsonProperty("projectId") String projectId,
-											 @JsonProperty("endTime") String endTime,
-											 @JsonProperty("flowId") String flowId) {
-		this.startTime = startTime;
-		this.submitUser = submitUser;
-		this.status = status;
-		this.submitTime = submitTime;
-		this.execId = execId;
-		this.projectId = projectId;
-		this.endTime = endTime;
-		this.flowId = flowId;
-	}
+    @JsonCreator
+    public FlowExecution(@JsonProperty("startTime") String startTime,
+                         @JsonProperty("submitUser") String submitUser,
+                         @JsonProperty("status") String status,
+                         @JsonProperty("submitTime") String submitTime,
+                         @JsonProperty("execId") String execId,
+                         @JsonProperty("projectId") String projectId,
+                         @JsonProperty("endTime") String endTime,
+                         @JsonProperty("flowId") String flowId) {
+        this.startTime = startTime;
+        this.submitUser = submitUser;
+        this.status = status;
+        this.submitTime = submitTime;
+        this.execId = execId;
+        this.projectId = projectId;
+        this.endTime = endTime;
+        this.flowId = flowId;
+    }
 
-	public String getStartTime() {
-		return startTime;
-	}
+    public String getStartTime() {
+        return startTime;
+    }
 
-	public String getSubmitUser() {
-		return submitUser;
-	}
+    public String getSubmitUser() {
+        return submitUser;
+    }
 
-	public String getStatus() {
-		return status;
-	}
+    public String getStatus() {
+        return status;
+    }
 
-	public String getSubmitTime() {
-		return submitTime;
-	}
+    public String getSubmitTime() {
+        return submitTime;
+    }
 
-	public String getExecId() {
-		return execId;
-	}
+    public String getExecId() {
+        return execId;
+    }
 
-	public String getProjectId() {
-		return projectId;
-	}
+    public String getProjectId() {
+        return projectId;
+    }
 
-	public String getEndTime() {
-		return endTime;
-	}
+    public String getEndTime() {
+        return endTime;
+    }
 
-	public String getFlowId() {
-		return flowId;
-	}
+    public String getFlowId() {
+        return flowId;
+    }
 
-	@Override
-	public String toString() {
-		return "FlowExecution{" +
-				"startTime='" + startTime + '\'' +
-				", submitUser='" + submitUser + '\'' +
-				", status='" + status + '\'' +
-				", submitTime='" + submitTime + '\'' +
-				", execId='" + execId + '\'' +
-				", projectId='" + projectId + '\'' +
-				", endTime='" + endTime + '\'' +
-				", flowId='" + flowId + '\'' +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "FlowExecution{" +
+                "startTime='" + startTime + '\'' +
+                ", submitUser='" + submitUser + '\'' +
+                ", status='" + status + '\'' +
+                ", submitTime='" + submitTime + '\'' +
+                ", execId='" + execId + '\'' +
+                ", projectId='" + projectId + '\'' +
+                ", endTime='" + endTime + '\'' +
+                ", flowId='" + flowId + '\'' +
+                '}';
+    }
 }

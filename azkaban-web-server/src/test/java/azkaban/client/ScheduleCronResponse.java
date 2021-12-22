@@ -21,45 +21,45 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class ScheduleCronResponse {
 
-	private final String scheduleId;
-	private final String message;
-	private final String status;
-	private final String projectName;
+    private final String scheduleId;
+    private final String message;
+    private final String status;
+    private final String projectName;
 
-	@JsonCreator
-	public ScheduleCronResponse(@JsonProperty("projectName") String projectName,
-															@JsonProperty("scheduleId") String scheduleId,
-															@JsonProperty("message") String message,
-															@JsonProperty("status") String status) {
-		this.projectName = projectName;
-		this.scheduleId = scheduleId;
-		this.message = message;
-		this.status = status;
-	}
+    @JsonCreator
+    public ScheduleCronResponse(@JsonProperty("projectName") String projectName,
+                                @JsonProperty("scheduleId") String scheduleId,
+                                @JsonProperty("message") String message,
+                                @JsonProperty("status") String status) {
+        this.projectName = projectName;
+        this.scheduleId = scheduleId;
+        this.message = message;
+        this.status = status;
+    }
 
-	public String getProjectName() {
-		return projectName;
-	}
+    public String getProjectName() {
+        return projectName;
+    }
 
-	public String getScheduleId() {
-		return scheduleId;
-	}
+    public String getScheduleId() {
+        return scheduleId;
+    }
 
-	public String getMessage() {
-		return message;
-	}
+    public String getMessage() {
+        return message;
+    }
 
-	public String getStatus() {
-		return status;
-	}
+    public String getStatus() {
+        return status;
+    }
 
-	@Override
-	public String toString() {
-		return "CronScheduleResponse{" +
-				"scheduleId='" + scheduleId + '\'' +
-				", message='" + message + '\'' +
-				", status='" + status + '\'' +
-				", projectName='" + projectName + '\'' +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "CronScheduleResponse{" +
+                "scheduleId='" + scheduleId + '\'' +
+                ", message='" + message + '\'' +
+                ", status='" + status + '\'' +
+                ", projectName='" + projectName + '\'' +
+                '}';
+    }
 }
