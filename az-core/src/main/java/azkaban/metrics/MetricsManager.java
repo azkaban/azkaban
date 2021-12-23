@@ -117,9 +117,9 @@ public class MetricsManager {
    */
   public synchronized void startReporting(final Props props) {
     final String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
-    final String metricsReporterConfigPath =
-        props.get(CUSTOM_METRICS_REPORTER_CONFIG_PATH); // optional param
     if (!StringUtils.isBlank(metricsReporterClassName)) {
+      final String metricsReporterConfigPath =
+          props.getString(CUSTOM_METRICS_REPORTER_CONFIG_PATH, ""); // optional param
       try {
         log.info("The class name of the custom metrics reporter is: {}", metricsReporterClassName);
         final Class<?> metricsClass = Class.forName(metricsReporterClassName);
@@ -129,8 +129,8 @@ public class MetricsManager {
         ctor.newInstance(this.registry, metricsReporterConfigPath);
 
       } catch (final Exception e) {
-        final String errMsg = "Encountered an error while loading or instantiating the custom "
-            + "metrics reporter " + metricsReporterClassName;
+        final String errMsg = "Encountered an error while loading or instantiating the custom metrics reporter "
+            + metricsReporterClassName;
         log.error(errMsg, e);
         throw new IllegalStateException(errMsg, e);
       }
