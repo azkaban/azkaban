@@ -17,7 +17,7 @@
 package azkaban.metrics;
 
 import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CLASS_NAME;
-import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
+import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CONFIG_PATH;
 
 import azkaban.utils.Props;
 import com.codahale.metrics.Counter;
@@ -33,13 +33,14 @@ import java.lang.reflect.Constructor;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The singleton class, MetricsManager, is the place to have MetricRegistry and ConsoleReporter in
- * this class. Also, web servers and executors can call {@link #startReporting(String, Props)} to
- * start reporting AZ metrics to remote metrics server.
+ * this class. Also, web servers and executors can call {@link #startReporting(Props)} to start
+ * reporting AZ metrics to remote metrics server.
  */
 @Singleton
 public class MetricsManager {
@@ -114,27 +115,27 @@ public class MetricsManager {
    * reporting metrics to remote metrics collector. Note: this method must be synchronized, since
    * both web server and executor will call it during initialization.
    */
-  public synchronized void startReporting(final String reporterName, final Props props) {
+  public synchronized void startReporting(final Props props) {
     final String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
-    final String metricsServerURL = props.get(METRICS_SERVER_URL);
-    if (metricsReporterClassName != null && metricsServerURL != null) {
+    if (!StringUtils.isBlank(metricsReporterClassName)) {
+      final String metricsReporterConfigPath =
+          props.getString(CUSTOM_METRICS_REPORTER_CONFIG_PATH, ""); // optional param
       try {
-        log.info("metricsReporterClassName: " + metricsReporterClassName);
+        log.info("The class name of the custom metrics reporter is: {}", metricsReporterClassName);
         final Class<?> metricsClass = Class.forName(metricsReporterClassName);
 
-        final Constructor<?> ctor = metricsClass.getConstructor(reporterName.getClass(),
-            this.registry.getClass(), metricsServerURL.getClass(), boolean.class);
-        ctor.newInstance(reporterName, this.registry, metricsServerURL, true);
+        final Constructor<?> ctor = metricsClass.getConstructor(this.registry.getClass(),
+            metricsReporterConfigPath.getClass());
+        ctor.newInstance(this.registry, metricsReporterConfigPath);
 
       } catch (final Exception e) {
-        log.error("Encountered error while loading and instantiating "
-            + metricsReporterClassName, e);
-        throw new IllegalStateException("Encountered error while loading and instantiating "
-            + metricsReporterClassName, e);
+        final String errMsg = "Encountered an error while loading or instantiating the custom metrics reporter "
+            + metricsReporterClassName;
+        log.error(errMsg, e);
+        throw new IllegalStateException(errMsg, e);
       }
     } else {
-      log.error(String.format("No value for property: %s or %s was found",
-          CUSTOM_METRICS_REPORTER_CLASS_NAME, METRICS_SERVER_URL));
+      log.error("No value for property: {} was found.", CUSTOM_METRICS_REPORTER_CLASS_NAME);
     }
   }
 }

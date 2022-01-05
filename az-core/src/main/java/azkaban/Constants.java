@@ -290,13 +290,15 @@ public class Constants {
     public static final String AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST = "azkaban.server.logging.kafka.brokerList";
     public static final String AZKABAN_SERVER_LOGGING_KAFKA_TOPIC = "azkaban.server.logging.kafka.topic";
 
-    // Represent the class name of azkaban metrics reporter.
-    public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME = "azkaban.metrics.reporter.name";
-
-    // Represent the metrics server URL.
-    public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
-
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
+
+    // Web and Exec server properties to configure a custom metrics reporter.
+    // (Required) The fully qualified name of the reporter class.
+    public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME = "azkaban.metrics.reporter.name";
+    // (Optional) The path to a file containing the reporter specific settings.
+    public static final String CUSTOM_METRICS_REPORTER_CONFIG_PATH =
+        "azkaban.metrics.reporter.config.path";
+
     public static final String MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = "azkaban.metrics"
         + ".min_age_for_classifying_a_flow_aged_minutes";
 
