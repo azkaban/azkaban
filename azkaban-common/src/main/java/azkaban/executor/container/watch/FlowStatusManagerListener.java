@@ -175,20 +175,6 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
    * @param event pod watch event
    */
   private void postProcess(AzPodStatusMetadata event) {
-    final String executionId = event.getFlowPodMetadata().get().getExecutionId();
-    if (StringUtils.isNotEmpty(executionId)) {
-      final int execId = Integer.valueOf(executionId);
-      logger.info("The execution id for this event is " + executionId);
-      try{
-        containerizedImpl.logPodDetails(execId);
-      } catch (ExecutorManagerException e) {
-        String message = format("Exception while logging ;od details.");
-        logger.error(message, e);
-        throw new AzkabanWatchException(message, e);
-      }
-    } else {
-      logger.warn("The execution id for this event is null");
-    }
     updatePodStatus(event);
   }
 
@@ -338,7 +324,25 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
           event.getPodName(), originalFlowStatus.get()));
     }
+    logPodDetails(event);
     deleteFlowContainer(event);
+  }
+
+  private void logPodDetails(AzPodStatusMetadata event) {
+    final String executionId = event.getFlowPodMetadata().get().getExecutionId();
+    if (StringUtils.isNotEmpty(executionId)) {
+      final int execId = Integer.valueOf(executionId);
+      logger.info("The execution id for this event is " + executionId);
+      try{
+        containerizedImpl.logPodDetails(execId);
+      } catch (ExecutorManagerException e) {
+        String message = format("Exception while logging pod details.");
+        logger.error(message, e);
+        throw new AzkabanWatchException(message, e);
+      }
+    } else {
+      logger.warn("The execution id for this event is null");
+    }
   }
 
   /**
@@ -353,7 +357,6 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
     validateAndPreProcess(event);
     boolean skipUpdates = !isUpdatedPodStatusDistinct(event);
     postProcess(event);
-
     if (!skipUpdates) {
       finalizeFlowAndDeleteContainer(event);
     }

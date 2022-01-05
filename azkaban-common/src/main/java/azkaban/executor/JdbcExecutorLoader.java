@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -306,17 +307,19 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.executionLogsDao.uploadLogFile(execId, name, attempt, files);
   }
 
-
   @Override
   public void appendLogs(final int execId, final String name, final String logs) throws
       ExecutorManagerException {
+    logger.info("Appending the following string to the log file: \n" + logs);
     if (StringUtils.isBlank(logs)) {
       return;
     }
+    File tempFile = null;
     try {
-      File tempFile = File.createTempFile("appendLogs-" + execId + "-" + name, ".tmp");
+      tempFile = File.createTempFile("appendLogs-" + execId + "-" + name, ".tmp");
       Files.write(tempFile.toPath(), logs.getBytes(StandardCharsets.UTF_8));
-      this.executionLogsDao.appendLogs(execId, name, tempFile);
+      this.executionLogsDao.appendLogs(execId, "", 0, tempFile);
+      Thread.sleep(1000);
       tempFile.delete();
     } catch (ExecutorManagerException eme) {
       logger.error("Exception while appending to logs.", eme);
@@ -327,6 +330,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     } catch (RuntimeException re) {
       logger.error("Unexpected RuntimeException while appending to logs.", re);
       throw new ExecutorManagerException(re);
+    } catch (InterruptedException e) {
+      logger.error("The log upload process was interrupted with exception: " + e.toString());
+      throw new ExecutorManagerException(e);
+    } finally {
+      if(Objects.nonNull(tempFile) && tempFile.exists()) {
+        tempFile.delete();
+      }
     }
   }
 

@@ -76,8 +76,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -1129,6 +1131,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     podDetails += getPodEvents(executionId);
     podDetails += getPodLogs(executionId);
     try {
+      logger.info("The pod details for pod " + executionId + " are: " + podDetails);
       this.executorLoader.appendLogs(executionId,"podDetails", podDetails);
     } catch (ExecutorManagerException e) {
       logger.error("ExecId: {}, Unable to log pod details. Msg: {} ",
@@ -1138,7 +1141,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   private String getPodEvents(final int executionId) throws ExecutorManagerException {
-    String podEvents = podEventsHeader();
+    String podEvents = "Events: \n";
     final String podName = getPodName(executionId);
     V1EventList events = null;
     try {
@@ -1150,32 +1153,16 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           executionId, e.getResponseBody());;
       throw new ExecutorManagerException(e);
     }
-//    Set<CoreV1Event> uniqueEvents = Set<CoreV1Event>();
     for(V1Event event : events.getItems()) {
-      if (event.getRelated().getKind().equals("Pod") && event.getRelated().getName().equals(podName)) {
+      if (event.getInvolvedObject().getKind().equals("Pod") && event.getInvolvedObject().getName().equals(podName)) {
         podEvents += formatPodEvent(event);
       }
     }
+    if(podEvents.equals("Events: \n")) {
+      podEvents += "\t THERE ARE NO POD EVENTS \n";
+    }
+    logger.info("The completed podEvents are: " + podEvents);
     return podEvents;
-
-//
-//    EventList events
-//    final String podName = getPodName(executionId);
-//    EventsV1Api eventsApi = EventsV1Api(client);
-//    EventsV1EventList k8sEventslist = eventsApi.listNamespacedEvent(this.namespace, null, null,
-//        null, null, null, null, null, null, null, null);
-//    for(EventsV1Event event : k8sEventslist.items()) {
-//      if(event.getRegarding().getKind().equals("Pod") &&
-//          event.getRegarding().getName().equals(podName)) {
-//
-//      }
-//    }
-
-  }
-
-  private String podEventsHeader() {
-    String header = "Type" + "\t" + "Reason" + "\t" + "Age" + "\t" + "From" + "\t" + "Message";
-    return header;
   }
 
   /**
@@ -1186,34 +1173,56 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private String getPodLogs(final int executionId) throws ExecutorManagerException {
     final String podName = getPodName(executionId);
-    String podLogs = "";
+    String podLogs = null;
     try {
+      logger.info("Getting Namespaced Pod Logs");
       podLogs = this.coreV1Api.readNamespacedPodLog(podName, this.namespace,
           this.flowContainerName, false, null, null,
-          null, null, null, null, null);
+          "true", null, null, 1000, null);
+      logger.info("The pod logs for executionId : " + executionId + " are :\n" + podLogs);
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to get logs for Pod. Msg: {} ",
           executionId, e.getResponseBody());;
       throw new ExecutorManagerException(e);
     }
-    return podLogs;
+    if(StringUtils.isEmpty(podLogs)) {
+      return "Pod Logs: \n\tTHE POD LOGS ARE EMPTY";
+    }
+    return "Pod Logs: \n" + podLogs + "\nEND POD LOGS";
   }
 
 
   private String formatPodEvent(final V1Event event) {
-
     String formatedEvent = "";
-    formatedEvent += event.getType() + "\t";
-    formatedEvent += event.getReason() + "\t";
-    formatedEvent += convertJodaDate(event.getLastTimestamp()) +" (" + event.getCount().toString() + " times)" + "\t";
-    formatedEvent += event.getReportingInstance() + "\t";
-    formatedEvent += event.getMessage();
+    if(Objects.nonNull(event.getLastTimestamp()) && StringUtils.isNotEmpty(event.getLastTimestamp()
+        .toString())) {
+      formatedEvent += "\t LastTimeStamp: " + event.getLastTimestamp() + "\n";
+    }
+    else {
+      formatedEvent += "\t LastTimeStamp: " + "LastTimeStamp is null, this is a new event" + "\n";
+    }
+    if(StringUtils.isNotEmpty(event.getType())) {
+      formatedEvent += "\t Type: " + event.getType() + "\n";
+    }
+    if(StringUtils.isNotEmpty(event.getReason())) {
+      formatedEvent += "\t Reason: " + event.getReason() + "\n";
+    }
+    if(StringUtils.isNotEmpty(event.getReportingInstance())) {
+      formatedEvent += "\t ReportingInstance: " + event.getReportingInstance() + "\n";
+    }
+    if(StringUtils.isNotEmpty(event.getMessage())) {
+      formatedEvent += "\t Message: " + event.getMessage() + "\n";
+    }
+    if (formatedEvent.equals("\t LastTimeStamp: " + "LastTimeStamp is null, this is a new event" + "\n")) {
+      return "";
+    }
     return formatedEvent;
   }
 
   private String convertJodaDate(DateTime dt) {
+    logger.info("The dt is: "+ dt.toString());
     DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern("yyyy MM dd HH:mm:ss z").withZone(ZoneId.of("PST"));
+        DateTimeFormatter.ofPattern("yyyy MM dd HH:mm:ss z").withZone(ZoneId.of("PST", ZoneId.SHORT_IDS));
     OffsetDateTime time = OffsetDateTime.of(dt.getYear(),dt.getMonthOfYear(), dt.getDayOfMonth(),
         dt.getHourOfDay(),
         dt.getMinuteOfDay(), dt.getSecondOfDay(), dt.getMillisOfSecond(),

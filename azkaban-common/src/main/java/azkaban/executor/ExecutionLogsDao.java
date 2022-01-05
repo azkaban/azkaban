@@ -67,13 +67,14 @@ public class ExecutionLogsDao {
     }
   }
 
-  public void appendLogs(final int execId, final String name, final File... files)
+  public void appendLogs(final int execId, final String name, final int attempt, final File... files)
       throws ExecutorManagerException {
     final AppendLogsHandler handler = new AppendLogsHandler();
     try {
       int lastEndByte = this.dbOperator.query(AppendLogsHandler.LAST_END_BYTE, handler, execId,
-          name);
-      uploadLogFile(execId, name, 0, lastEndByte, files);
+          name, attempt);
+      logger.info("Appending to logs for execution id: " + execId);
+      uploadLogFile(execId, name, attempt, lastEndByte, files);
     } catch (final SQLException e) {
       logger.error("appendLogFile failed.", e);
       throw new ExecutorManagerException("appendLogFile failed.", e);
@@ -87,6 +88,8 @@ public class ExecutionLogsDao {
 
   public void uploadLogFile(final int execId, final String name, final int attempt,
       final int offset, final File... files) throws ExecutorManagerException {
+    logger.info("The numbers of files is " + Integer.toString(files.length));
+    logger.info("Using files " + Arrays.toString(files) + " to upload");
     final SQLTransaction<Integer> transaction = transOperator -> {
       uploadLogFile(transOperator, execId, name, attempt, offset, files, this.defaultEncodingType);
       transOperator.getConnection().commit();
@@ -205,6 +208,7 @@ public class ExecutionLogsDao {
     transOperator.update(INSERT_EXECUTION_LOGS, execId, name, attempt,
         encType.getNumVal(), startByte, startByte + length, buf, DateTime.now()
             .getMillis());
+    logger.info("The byte buffer for execId " + execId + " is " + Arrays.toString(buf));
   }
 
   private static class FetchLogsHandler implements ResultSetHandler<LogData> {
