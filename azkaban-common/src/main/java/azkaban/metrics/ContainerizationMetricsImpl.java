@@ -63,7 +63,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   @Override
   public synchronized void startReporting(Props props) {
     logger.info(String.format("Start reporting container metrics"));
-    this.metricsManager.startReporting("AZ-WEB", props);
+    this.metricsManager.startReporting(props);
     this.isInitialized = true;
   }
 

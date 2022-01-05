@@ -289,7 +289,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private void startReportingExecMetrics() {
     logger.info("starting reporting Executor Metrics");
-    this.metricsManager.startReporting("AZ-EXEC", this.props);
+    this.metricsManager.startReporting(this.props);
   }
 
   private void initActive() throws ExecutorManagerException {
