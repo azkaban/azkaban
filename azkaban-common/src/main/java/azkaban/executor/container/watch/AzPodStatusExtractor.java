@@ -568,33 +568,60 @@ public class AzPodStatusExtractor {
    * @return
    */
   public AzPodStatus createAzPodStatus() {
+    // All pod statuses are checked for any status extracted from the pod event. If multiple
+    // statuses are detected, the first derived pod status will be returned, and the conflict
+    // will be logged
+    int statusCount = 0;
+    AzPodStatus azPodStatus = AzPodStatus.AZ_POD_UNEXPECTED;
     if (checkForAzPodRequested()) {
-      return AzPodStatus.AZ_POD_REQUESTED;
+      azPodStatus = AzPodStatus.AZ_POD_REQUESTED;
+      statusCount++;
     }
-    logInitContainerStatuses();
     if (checkForAzPodScheduled()) {
-      return AzPodStatus.AZ_POD_SCHEDULED;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus, AzPodStatus.AZ_POD_SCHEDULED);
     }
-    logAppContainerStatuses();
+    if (AzPodStatus.AZ_POD_REQUESTED != azPodStatus) {
+      logInitContainerStatuses();
+      if (AzPodStatus.AZ_POD_SCHEDULED != azPodStatus) {
+        logAppContainerStatuses();
+      }
+    }
     if (checkForAzPodInitContainersRunning()) {
-      return AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus,
+          AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING);
     }
     if (checkForAzPodAppContainerStarting()) {
-      return AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus,
+          AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING);
     }
     if (checkForAzPodReady()) {
-      return AzPodStatus.AZ_POD_READY;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus, AzPodStatus.AZ_POD_READY);
     }
     if (checkForAzPodCompleted()) {
-      return AzPodStatus.AZ_POD_COMPLETED;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus, AzPodStatus.AZ_POD_COMPLETED);
     }
     if (checkForAzPodInitFailure()) {
-      return AzPodStatus.AZ_POD_INIT_FAILURE;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus, AzPodStatus.AZ_POD_INIT_FAILURE);
     }
     if (checkForAzPodAppFailure()) {
-      return AzPodStatus.AZ_POD_APP_FAILURE;
+      azPodStatus = updateAzPodStatus(statusCount++, azPodStatus, AzPodStatus.AZ_POD_APP_FAILURE);
     }
-    return AzPodStatus.AZ_POD_UNEXPECTED;
+    if (statusCount > 1) {
+      logger.error("%d pod statuses are derived from current pod watch event", statusCount);
+    }
+    return azPodStatus;
+  }
+
+  /**
+   * Current status will be returned if no prior status is derived
+   * @param statusCount
+   * @param original
+   * @param current
+   * @return
+   */
+  private AzPodStatus updateAzPodStatus(int statusCount, AzPodStatus original,
+      AzPodStatus current){
+    return statusCount == 0 ? current : original;
   }
 
   /**
