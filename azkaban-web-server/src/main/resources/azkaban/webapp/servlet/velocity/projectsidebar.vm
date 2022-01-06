@@ -15,8 +15,8 @@
 *#
 
 <div class="well" id="project-sidebar">
-  <h3>$project.name</h3>
-  <p class="editable" id="project-description">$esc.html($project.description)</p>
+  <h3>$name</h3>
+  <p class="editable" id="project-description">$esc.html($description)</p>
   <div id="project-description-form" class="editable-form">
     <div class="input-group">
       <input type="text" class="form-control input-sm" id="project-description-edit"
@@ -27,11 +27,11 @@
     </div>
   </div>
   <hr>
-  <p><strong>Created on</strong> $TimeUtils.formatDateTime($project.createTimestamp)</p>
+  <p><strong>Created on</strong> $TimeUtils.formatDateTime($createTimestamp)</p>
   <p>
-    <strong>Last modified on</strong> $TimeUtils.formatDateTime($project.lastModifiedTimestamp)
+    <strong>Last modified on</strong> $TimeUtils.formatDateTime($lastModifiedTimestamp)
   </p>
-  <p><strong>Modified by</strong> $project.lastModifiedUser</p>
+  <p><strong>Modified by</strong> $lastModifiedUser</p>
 
   <hr>
 
