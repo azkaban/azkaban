@@ -31,8 +31,12 @@ public class ProjectSideBarViewTest {
 
     // Intentionally tries to inject a Javascript.
     project.setDescription("<script>window.alert(\"hacked\")</script>");
+    context.put("name", project.getName());
+    context.put("description", project.getDescription());
+    context.put("createTimestamp",project.getCreateTimestamp());
+    context.put("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+    context.put("lastModifiedUser",project.getLastModifiedUser());
 
-    context.put("project", project);
     context.put("admins", "admin_name");
     context.put("userpermission", "admin_permission");
 

@@ -32,8 +32,8 @@
     var errorMessage = null;
     var successMessage = null;
 
-    var projectId = ${project.id};
-    var projectName = "$project.name";
+    var projectId = ${id};
+    var projectName = "$name";
   </script>
 </head>
 <body>

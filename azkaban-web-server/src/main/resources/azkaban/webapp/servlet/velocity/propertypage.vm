@@ -45,7 +45,7 @@
   <div class="az-page-header page-header-bare">
     <div class="container-full">
       <h1>
-        <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${propsSource}&propNode=${propsNodePath}">
+        <a href="${context}/manager?project=${name}&flow=${flowid}&job=${jobid}&prop=${propsSource}&propNode=${propsNodePath}">
           Properties <small>$propsSourceLabel</small>
         </a>
       </h1>
@@ -55,12 +55,12 @@
     <div class="container-full">
       <ol class="breadcrumb">
         <li>
-          <a href="${context}/manager?project=${project.name}">
-            <strong>Project</strong> $project.name
+          <a href="${context}/manager?project=${name}">
+            <strong>Project</strong> $name
           </a>
         </li>
 
-        #set($ref = "${context}/manager?project=${project.name}&flow=")
+        #set($ref = "${context}/manager?project=${name}&flow=")
         #foreach( $flow in ${flowlist} )
           #set($ref = $ref + $flow)
 
@@ -133,7 +133,7 @@
             #else
               #foreach ($inheritedproperty in $inheritedproperties)
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${inheritedproperty}&propNode=${flowid}">
+                  <a href="${context}/manager?project=${name}&flow=${flowid}&job=${jobid}&prop=${inheritedproperty}&propNode=${flowid}">
                     $inheritedproperty
                   </a>
                 </li>
@@ -150,7 +150,7 @@
             #else
               #foreach ($dependingproperty in $dependingproperties)
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$jobid&prop=${dependingproperty}&propNode=${flowid}">
+                  <a href="${context}/manager?project=${name}&flow=${flowid}&job=$jobid&prop=${dependingproperty}&propNode=${flowid}">
                     $dependingproperty
                   </a>
                 </li>

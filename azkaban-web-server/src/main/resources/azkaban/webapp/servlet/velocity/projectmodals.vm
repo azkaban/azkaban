@@ -57,7 +57,7 @@
           </fieldset>
         </div>
         <div class="modal-footer">
-          <input type="hidden" name="project" value="$project.name">
+          <input type="hidden" name="project" value="$name">
           <input type="hidden" name="action" value="upload">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
@@ -83,7 +83,7 @@
       </div>
       <div class="modal-footer">
         <form id="delete-form">
-          <input type="hidden" name="project" value="$project.name">
+          <input type="hidden" name="project" value="$name">
           <input type="hidden" name="delete" value="true">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-danger" id="delete-btn">Delete Project</button>
