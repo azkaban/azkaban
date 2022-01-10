@@ -63,7 +63,7 @@ public class WebMetricsImpl implements WebMetrics {
   @Override
   public void startReporting(final Props props) {
     logger.info("Start reporting Web Server metrics.");
-    this.metricsManager.startReporting("AZ-WEB", props);
+    this.metricsManager.startReporting(props);
   }
 
   /**
