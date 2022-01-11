@@ -1131,7 +1131,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     podDetails += getPodEvents(executionId);
     podDetails += getPodLogs(executionId);
     try {
-      logger.info("The pod details for pod " + executionId + " are: " + podDetails);
       this.executorLoader.appendLogs(executionId,"podDetails", podDetails);
     } catch (ExecutorManagerException e) {
       logger.error("ExecId: {}, Unable to log pod details. Msg: {} ",
@@ -1161,7 +1160,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if(podEvents.equals("Events: \n")) {
       podEvents += "\t THERE ARE NO POD EVENTS \n";
     }
-    logger.info("The completed podEvents are: " + podEvents);
     return podEvents;
   }
 
@@ -1219,16 +1217,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return formatedEvent;
   }
 
-  private String convertJodaDate(DateTime dt) {
-    logger.info("The dt is: "+ dt.toString());
-    DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern("yyyy MM dd HH:mm:ss z").withZone(ZoneId.of("PST", ZoneId.SHORT_IDS));
-    OffsetDateTime time = OffsetDateTime.of(dt.getYear(),dt.getMonthOfYear(), dt.getDayOfMonth(),
-        dt.getHourOfDay(),
-        dt.getMinuteOfDay(), dt.getSecondOfDay(), dt.getMillisOfSecond(),
-        ZoneOffset.of(dt.getZone().getID()));
-    return time.format(formatter);
-  }
   /**
    * This method is used to get service name. It will be created using service name prefix, azkaban
    * cluster name and execution id.

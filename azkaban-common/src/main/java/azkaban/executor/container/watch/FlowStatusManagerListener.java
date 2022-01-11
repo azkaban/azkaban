@@ -332,7 +332,6 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
     final String executionId = event.getFlowPodMetadata().get().getExecutionId();
     if (StringUtils.isNotEmpty(executionId)) {
       final int execId = Integer.valueOf(executionId);
-      logger.info("The execution id for this event is " + executionId);
       try{
         containerizedImpl.logPodDetails(execId);
       } catch (ExecutorManagerException e) {
