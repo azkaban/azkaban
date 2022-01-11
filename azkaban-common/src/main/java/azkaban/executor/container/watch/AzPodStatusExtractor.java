@@ -25,10 +25,13 @@ import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watch.Response;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -568,33 +571,43 @@ public class AzPodStatusExtractor {
    * @return
    */
   public AzPodStatus createAzPodStatus() {
+    // All pod statuses are checked for any status extracted from the pod event. If multiple
+    // statuses are detected, the first derived pod status will be returned, and the conflict
+    // will be logged
+    List<AzPodStatus> derivedStatuses = new ArrayList<>();
+
     if (checkForAzPodRequested()) {
-      return AzPodStatus.AZ_POD_REQUESTED;
+      derivedStatuses.add(AzPodStatus.AZ_POD_REQUESTED);
     }
     logInitContainerStatuses();
     if (checkForAzPodScheduled()) {
-      return AzPodStatus.AZ_POD_SCHEDULED;
+      derivedStatuses.add(AzPodStatus.AZ_POD_SCHEDULED);
     }
     logAppContainerStatuses();
     if (checkForAzPodInitContainersRunning()) {
-      return AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING;
+      derivedStatuses.add(AzPodStatus.AZ_POD_INIT_CONTAINERS_RUNNING);
     }
     if (checkForAzPodAppContainerStarting()) {
-      return AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING;
+      derivedStatuses.add(AzPodStatus.AZ_POD_APP_CONTAINERS_STARTING);
     }
     if (checkForAzPodReady()) {
-      return AzPodStatus.AZ_POD_READY;
+      derivedStatuses.add(AzPodStatus.AZ_POD_READY);
     }
     if (checkForAzPodCompleted()) {
-      return AzPodStatus.AZ_POD_COMPLETED;
+      derivedStatuses.add(AzPodStatus.AZ_POD_COMPLETED);
     }
     if (checkForAzPodInitFailure()) {
-      return AzPodStatus.AZ_POD_INIT_FAILURE;
+      derivedStatuses.add(AzPodStatus.AZ_POD_INIT_FAILURE);
     }
     if (checkForAzPodAppFailure()) {
-      return AzPodStatus.AZ_POD_APP_FAILURE;
+      derivedStatuses.add(AzPodStatus.AZ_POD_APP_FAILURE);
     }
-    return AzPodStatus.AZ_POD_UNEXPECTED;
+    if (derivedStatuses.size() > 1) {
+      logger.warn(format("%d pod statuses are derived from current pod watch event: %s",
+          derivedStatuses.size(),
+          derivedStatuses.stream().map(s -> s.toString()).collect(Collectors.joining(","))));
+    }
+    return derivedStatuses.isEmpty() ? AzPodStatus.AZ_POD_UNEXPECTED : derivedStatuses.get(0);
   }
 
   /**
