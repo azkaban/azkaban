@@ -323,9 +323,28 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
         !Status.isStatusFinished(originalFlowStatus.get())) {
       logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
           event.getPodName(), originalFlowStatus.get()));
+      logPodDetails(event);
     }
-    logPodDetails(event);
     deleteFlowContainer(event);
+  }
+
+  private Optional<Status> getOriginalStatus(AzPodStatusMetadata event) {
+    int executionId = Integer.parseInt(event.getFlowPodMetadata().get().getExecutionId());
+    ExecutableFlow executableFlow = null;
+    try {
+      executableFlow = executorLoader.fetchExecutableFlow(executionId);
+    } catch (ExecutorManagerException e) {
+      String message = format("Exception while fetching executable flow for pod %s",
+          event.getPodName());
+      logger.error(message, e);
+      throw new AzkabanWatchException(message, e);
+    }
+    if (executableFlow == null) {
+      logger.error("Unable to find executable flow for execution: " + executionId);
+      return Optional.empty();
+    }
+    Status originalStatus = executableFlow.getStatus();
+    return Optional.of(originalStatus);
   }
 
   private void logPodDetails(AzPodStatusMetadata event) {

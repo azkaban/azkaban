@@ -1144,6 +1144,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String podName = getPodName(executionId);
     V1EventList events = null;
     try {
+      logger.info("Getting Pod Events for execution Id " + executionId);
       events = this.coreV1Api.listNamespacedEvent(this.namespace, null, null,
           null, null, null, null, null,
           null, null);
@@ -1173,11 +1174,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String podName = getPodName(executionId);
     String podLogs = null;
     try {
-      logger.info("Getting Namespaced Pod Logs");
+      logger.info("Getting Namespaced Pod Logs for execution Id " + executionId);
       podLogs = this.coreV1Api.readNamespacedPodLog(podName, this.namespace,
           this.flowContainerName, false, null, null,
           "true", null, null, 1000, null);
-      logger.info("The pod logs for executionId : " + executionId + " are :\n" + podLogs);
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to get logs for Pod. Msg: {} ",
           executionId, e.getResponseBody());;

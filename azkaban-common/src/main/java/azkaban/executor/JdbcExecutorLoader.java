@@ -310,7 +310,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public void appendLogs(final int execId, final String name, final String logs) throws
       ExecutorManagerException {
-    logger.info("Appending the following string to the log file: \n" + logs);
     if (StringUtils.isBlank(logs)) {
       return;
     }
