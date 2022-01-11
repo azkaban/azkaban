@@ -322,7 +322,6 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
         !Status.isStatusFinished(originalFlowStatus.get())) {
       logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
           event.getPodName(), originalFlowStatus.get()));
-      logPodDetails(event);
     }
     deleteFlowContainer(event);
   }
