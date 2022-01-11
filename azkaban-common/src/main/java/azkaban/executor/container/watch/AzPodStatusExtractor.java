@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -601,9 +603,9 @@ public class AzPodStatusExtractor {
       derivedStatuses.add(AzPodStatus.AZ_POD_APP_FAILURE);
     }
     if (derivedStatuses.size() > 1) {
-      logger.warn(format("%d pod statuses are derived from current pod watch event: ",
-          derivedStatuses.size()));
-      derivedStatuses.stream().forEach((status) -> logger.warn(status + " "));
+      logger.warn(format("%d pod statuses are derived from current pod watch event: "
+          + derivedStatuses.stream().map(s -> s.toString()).collect(Collectors.joining(","))),
+          derivedStatuses.size());
     }
     return derivedStatuses.isEmpty() ? AzPodStatus.AZ_POD_UNEXPECTED : derivedStatuses.get(0);
   }
