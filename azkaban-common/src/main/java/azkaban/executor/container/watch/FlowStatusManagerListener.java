@@ -46,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -325,26 +324,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
           event.getPodName(), originalFlowStatus.get()));
       logPodDetails(event);
     }
-    if (originalFlowStatus.isPresent() && Status.isStatusToLog(originalFlowStatus.get())) {
-      logPodDetails(event);
-    }
     deleteFlowContainer(event);
-  }
-
-  private void logPodDetails(AzPodStatusMetadata event) {
-    final String executionId = event.getFlowPodMetadata().get().getExecutionId();
-    if (StringUtils.isNotEmpty(executionId)) {
-      final int execId = Integer.valueOf(executionId);
-      try{
-        containerizedImpl.logPodDetails(execId);
-      } catch (ExecutorManagerException e) {
-        String message = format("Exception while logging pod details.");
-        logger.error(message, e);
-        throw new AzkabanWatchException(message, e);
-      }
-    } else {
-      logger.warn("The execution id for this event is null");
-    }
   }
 
   /**

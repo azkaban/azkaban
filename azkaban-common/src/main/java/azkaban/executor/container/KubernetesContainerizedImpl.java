@@ -1083,6 +1083,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   private void deletePod(final int executionId) throws ExecutorManagerException {
+    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
+    Status s = flow.getStatus();
+    if(s !=null && Status.isStatusToLog(s)) {
+      logPodDetails(executionId);
+    }
     try {
       final String podName = getPodName(executionId);
       this.coreV1Api.deleteNamespacedPod(podName, this.namespace, null, null,
@@ -1130,6 +1135,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     String podDetails = "";
     podDetails += getPodEvents(executionId);
     podDetails += getPodLogs(executionId);
+    if (StringUtils.isEmpty(podDetails)) {
+      return;
+    }
     try {
       this.executorLoader.appendLogs(executionId,"podDetails", podDetails);
     } catch (ExecutorManagerException e) {
@@ -1139,7 +1147,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
   }
 
-  private String getPodEvents(final int executionId) throws ExecutorManagerException {
+  private String getPodEvents(final int executionId) {
     String podEvents = "Events: \n";
     final String podName = getPodName(executionId);
     V1EventList events = null;
@@ -1150,8 +1158,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           null, null);
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to get events for Pod. Msg: {} ",
-          executionId, e.getResponseBody());;
-      throw new ExecutorManagerException(e);
+          executionId, e.getResponseBody());
+      return "";
     }
     for(V1Event event : events.getItems()) {
       if (event.getInvolvedObject().getKind().equals("Pod") && event.getInvolvedObject().getName().equals(podName)) {
@@ -1170,7 +1178,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param executionId of pod
    * @return String of podLogs
    */
-  private String getPodLogs(final int executionId) throws ExecutorManagerException {
+  private String getPodLogs(final int executionId) {
     final String podName = getPodName(executionId);
     String podLogs = null;
     try {
@@ -1180,8 +1188,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           "true", null, null, 1000, null);
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to get logs for Pod. Msg: {} ",
-          executionId, e.getResponseBody());;
-      throw new ExecutorManagerException(e);
+          executionId, e.getResponseBody());
+      return "";
     }
     if(StringUtils.isEmpty(podLogs)) {
       return "Pod Logs: \n\tTHE POD LOGS ARE EMPTY";

@@ -121,7 +121,7 @@ public enum Status {
         return true;
       default:
         return false;
-
+    }
   }
 
   public int getNumVal() {
