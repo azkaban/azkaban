@@ -603,9 +603,9 @@ public class AzPodStatusExtractor {
       derivedStatuses.add(AzPodStatus.AZ_POD_APP_FAILURE);
     }
     if (derivedStatuses.size() > 1) {
-      logger.warn(format("%d pod statuses are derived from current pod watch event: "
-          + derivedStatuses.stream().map(s -> s.toString()).collect(Collectors.joining(","))),
-          derivedStatuses.size());
+      logger.warn(format("%d pod statuses are derived from current pod watch event: %s",
+          derivedStatuses.size(),
+          derivedStatuses.stream().map(s -> s.toString()).collect(Collectors.joining(","))));
     }
     return derivedStatuses.isEmpty() ? AzPodStatus.AZ_POD_UNEXPECTED : derivedStatuses.get(0);
   }
