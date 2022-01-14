@@ -1315,8 +1315,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("name", project.getName());
-        page.add("id", project.getId());
+        page.add("projectName", project.getName());
+        page.add("projectId", project.getId());
         //params for projectsidebar
         page.add("description",project.getDescription());
         page.add("createTimestamp",project.getCreateTimestamp());
@@ -1441,7 +1441,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("name", project.getName());
+        page.add("projectName", project.getName());
         //params for projectsidebar
         page.add("description",project.getDescription());
         page.add("createTimestamp",project.getCreateTimestamp());
@@ -1506,7 +1506,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project " + projectName + ".");
       }
-      page.add("name", project.getName());
+      page.add("projectName", project.getName());
 
       final Flow flow = project.getFlow(flowNodePath);
       if (flow == null) {
@@ -1619,7 +1619,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project " + projectName + ".");
       }
-      page.add("name", project.getName());
+      page.add("projectName", project.getName());
 
       final Flow flow = project.getFlow(flowNodePath);
       if (flow == null) {
@@ -1725,8 +1725,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             + ".");
       }
 
-      page.add("name", project.getName());
-      page.add("id", project.getId());
+      page.add("projectName", project.getName());
+      page.add("projectId", project.getId());
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
@@ -1772,8 +1772,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("name", project.getName());
-        page.add("id", project.getId());
+        page.add("projectName", project.getName());
+        page.add("projectId", project.getId());
         //params for projectsidebar
         page.add("description",project.getDescription());
         page.add("createTimestamp",project.getCreateTimestamp());
