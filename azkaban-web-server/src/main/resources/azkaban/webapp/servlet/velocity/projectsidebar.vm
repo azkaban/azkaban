@@ -15,7 +15,7 @@
 *#
 
 <div class="well" id="project-sidebar">
-  <h3>$name</h3>
+  <h3>$projectName</h3>
   <p class="editable" id="project-description">$esc.html($description)</p>
   <div id="project-description-form" class="editable-form">
     <div class="input-group">

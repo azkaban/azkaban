@@ -29,8 +29,8 @@
     var errorMessage = null;
     var successMessage = null;
 
-    var projectId = "$id";
-    var projectName = "$name";
+    var projectId = "$projectId";
+    var projectName = "$projectName";
   </script>
 </head>
 <body>
@@ -49,14 +49,14 @@
       <div class="row">
         <div class="header-title">
           <h1>
-            <a href="${context}/manager?project=${name}&flow=${flowid}&job=${jobid}">
+            <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=${jobid}">
               Job <small>$jobid</small>
             </a>
           </h1>
         </div>
         <div class="header-control">
           <div class="pull-right header-form">
-            <a href="${context}/manager?project=${name}&job=$jobid&history" class="btn btn-info btn-sm">History</a>
+            <a href="${context}/manager?project=${projectName}&job=$jobid&history" class="btn btn-info btn-sm">History</a>
           </div>
           <div class="clearfix"></div>
         </div>
@@ -66,9 +66,9 @@
   <div class="page-breadcrumb">
     <div class="container-full">
       <ol class="breadcrumb">
-        <li><a href="${context}/manager?project=${name}"><strong>Project</strong> $name</a></li>
+        <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 
-        #set($ref = "${context}/manager?project=${name}&flow=")
+        #set($ref = "${context}/manager?project=${projectName}&flow=")
         #foreach( $flow in ${flowlist} )
           #set($ref = $ref + $flow)
 
@@ -102,7 +102,7 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <div class="pull-right">
-              <button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${name}", "${flowid}", "${jobid}")'>Edit
+              <button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${projectName}", "${flowid}", "${jobid}")'>Edit
               </button>
             </div>
             Job Properties
@@ -157,7 +157,7 @@
             #else
               #foreach($dependency in $dependencies)
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${name}&flow=${flowid}&job=$dependency">$dependency</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$dependency">$dependency</a>
                 </li>
               #end
             #end
@@ -174,7 +174,7 @@
             #else
               #foreach($dependent in $dependents)
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${name}&flow=${flowid}&job=$dependent">$dependent</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$dependent">$dependent</a>
                 </li>
               #end
             #end
@@ -190,7 +190,7 @@
             #else
               #foreach($prop in ${inheritedProperties})
                 <li class="list-group-item">
-                  <a href="${context}/manager?project=${name}&flow=${flowid}&job=${jobid}&prop=${prop.right}&propNode=${prop.middle}">${prop.left}</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=${jobid}&prop=${prop.right}&propNode=${prop.middle}">${prop.left}</a>
                 </li>
               #end
             #end
