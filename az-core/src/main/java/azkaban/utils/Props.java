@@ -15,6 +15,8 @@
  */
 package azkaban.utils;
 
+import org.slf4j.Logger;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -35,7 +37,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import org.apache.log4j.Logger;
 
 
 /**

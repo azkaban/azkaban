@@ -16,11 +16,11 @@
 
 package azkaban.dag;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import azkaban.utils.ExecutorServiceUtils;
+import azkaban.utils.Pair;
+import org.junit.After;
+import org.junit.Test;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,16 +29,17 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import javafx.util.Pair;
-import org.junit.After;
-import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests {@link DagService}
  *
- * <p>Naming conventions: nodes are named with letters such as a, b. Dags are named with 'f'
- * prefix. e.g. "fa". A sub DAG has the prefix "sf" such as "sfb". A sub DAG is a node within the
- * parent DAG.
+ * <p>Naming conventions: nodes are named with letters such as a, b. Dags are named with 'f' prefix.
+ * e.g. "fa". A sub DAG has the prefix "sf" such as "sfb". A sub DAG is a node within the parent
+ * DAG.
  */
 public class DagServiceTest {
 
@@ -47,14 +48,13 @@ public class DagServiceTest {
 
   // The names of the nodes that are supposed to fail.
   private final Set<String> nodesToFail = new HashSet<>();
-  private final TestNodeProcessor nodeProcessor = new TestNodeProcessor(this.dagService,
-      this.statusChangeRecorder, this.nodesToFail);
+  private final TestNodeProcessor nodeProcessor =
+      new TestNodeProcessor(this.dagService, this.statusChangeRecorder, this.nodesToFail);
   private final CountDownLatch dagFinishedLatch = new CountDownLatch(1);
-  private final DagProcessor dagProcessor = new TestDagProcessor(this.dagFinishedLatch,
-      this.statusChangeRecorder);
+  private final DagProcessor dagProcessor =
+      new TestDagProcessor(this.dagFinishedLatch, this.statusChangeRecorder);
   private final DagBuilder dagBuilder = new DagBuilder("fa", this.dagProcessor);
   private final List<Pair<String, Status>> expectedSequence = new ArrayList<>();
-
 
   @After
   public void tearDown() throws InterruptedException {
@@ -75,9 +75,7 @@ public class DagServiceTest {
     verify(serviceUtils).gracefulShutdown(exService, Duration.ofSeconds(10));
   }
 
-  /**
-   * Tests a DAG with one node which will run successfully.
-   */
+  /** Tests a DAG with one node which will run successfully. */
   @Test
   public void oneNodeSuccess() throws Exception {
     createNodeInTestDag("a");
@@ -89,12 +87,38 @@ public class DagServiceTest {
     buildDagRunAndVerify();
   }
 
-  /**
-   * Tests a DAG with two nodes which will run successfully.
-   * a
-   * |
-   * b
-   */
+  /** Creates a node and add to the test dag. */
+  private void createNodeInTestDag(final String name) {
+    this.dagBuilder.createNode(name, this.nodeProcessor);
+  }
+
+  private void addToExpectedSequence(final String name, final Status status) {
+    this.expectedSequence.add(new Pair<>(name, status));
+  }
+
+  private void buildDagRunAndVerify() throws InterruptedException {
+    final Dag dag = this.dagBuilder.build();
+    runAndVerify(dag);
+  }
+
+  private void runAndVerify(final Dag dag) throws InterruptedException {
+    runDag(dag);
+    verifyStatusSequence();
+  }
+
+  private void runDag(final Dag dag) throws InterruptedException {
+    this.dagService.startDag(dag);
+    final boolean isWaitSuccessful = this.dagFinishedLatch.await(2, TimeUnit.SECONDS);
+
+    // Make sure the dag finishes.
+    assertThat(isWaitSuccessful).isTrue();
+  }
+
+  private void verifyStatusSequence() {
+    this.statusChangeRecorder.verifySequence(this.expectedSequence);
+  }
+
+  /** Tests a DAG with two nodes which will run successfully. a | b */
   @Test
   public void twoNodesSuccess() throws Exception {
     createNodeInTestDag("a");
@@ -112,6 +136,7 @@ public class DagServiceTest {
 
   /**
    * Tests a DAG with three nodes which will run successfully.
+   *
    * <pre>
    *    a
    *  /  \
@@ -136,12 +161,9 @@ public class DagServiceTest {
     addToExpectedSequence("fa", Status.SUCCESS);
 
     buildDagRunAndVerify();
-
   }
 
-  /**
-   * Tests a DAG with one node which will fail.
-   */
+  /** Tests a DAG with one node which will fail. */
   @Test
   public void oneNodeFailure() throws Exception {
     createNodeInTestDag("a");
@@ -157,11 +179,9 @@ public class DagServiceTest {
   /**
    * Tests a DAG with two nodes, fails the first one.
    *
-   * Expects the child node to be marked canceled.
+   * <p>Expects the child node to be marked canceled.
    *
-   * a (fail)
-   * |
-   * b
+   * <p>a (fail) | b
    */
   @Test
   public void twoNodesFailFirst() throws Exception {
@@ -182,7 +202,7 @@ public class DagServiceTest {
   /**
    * Tests a DAG with three nodes with one failure.
    *
-   * Expects the sibling nodes to finish.
+   * <p>Expects the sibling nodes to finish.
    *
    * <pre>
    *       a
@@ -209,7 +229,6 @@ public class DagServiceTest {
     addToExpectedSequence("fa", Status.FAILURE);
 
     buildDagRunAndVerify();
-
   }
 
   /**
@@ -226,15 +245,16 @@ public class DagServiceTest {
    */
   @Test
   public void simple_sub_dag_success_case() throws Exception {
-    final TestSubDagProcessor testSubDagProcessor = new TestSubDagProcessor
-        (this.dagService, this.statusChangeRecorder);
+    final TestSubDagProcessor testSubDagProcessor =
+        new TestSubDagProcessor(this.dagService, this.statusChangeRecorder);
     final DagBuilder subDagBuilder = new DagBuilder("fb", testSubDagProcessor);
     subDagBuilder.createNode("a", this.nodeProcessor);
     subDagBuilder.createNode("b", this.nodeProcessor);
     final Dag bDag = subDagBuilder.build();
 
-    final TestSubDagNodeProcessor testSubDagNodeProcessor = new TestSubDagNodeProcessor
-        (this.dagService, this.statusChangeRecorder, bDag, testSubDagProcessor);
+    final TestSubDagNodeProcessor testSubDagNodeProcessor =
+        new TestSubDagNodeProcessor(
+            this.dagService, this.statusChangeRecorder, bDag, testSubDagProcessor);
     final String SUB_DAG_NAME = "sfb";
     this.dagBuilder.createNode(SUB_DAG_NAME, testSubDagNodeProcessor);
 
@@ -257,17 +277,14 @@ public class DagServiceTest {
     addToExpectedSequence("fa", Status.SUCCESS);
 
     runAndVerify(dag);
-
   }
 
-  /**
-   * Tests killing a dag.
-   */
+  /** Tests killing a dag. */
   @Test
   public void kill_a_node() throws Exception {
     final CountDownLatch nodeRunningLatch = new CountDownLatch(1);
-    final TestKillNodeProcessor killNodeProcessor = new TestKillNodeProcessor(this.dagService,
-        this.statusChangeRecorder, nodeRunningLatch);
+    final TestKillNodeProcessor killNodeProcessor =
+        new TestKillNodeProcessor(this.dagService, this.statusChangeRecorder, nodeRunningLatch);
     this.dagBuilder.createNode("a", killNodeProcessor);
     final Dag dag = this.dagBuilder.build();
 
@@ -289,38 +306,4 @@ public class DagServiceTest {
     assertThat(isWaitSuccessful).isTrue();
     verifyStatusSequence();
   }
-
-  private void addToExpectedSequence(final String name, final Status status) {
-    this.expectedSequence.add(new Pair<>(name, status));
-  }
-
-  private void runDag(final Dag dag) throws InterruptedException {
-    this.dagService.startDag(dag);
-    final boolean isWaitSuccessful = this.dagFinishedLatch.await(2, TimeUnit.SECONDS);
-
-    // Make sure the dag finishes.
-    assertThat(isWaitSuccessful).isTrue();
-  }
-
-  private void verifyStatusSequence() {
-    this.statusChangeRecorder.verifySequence(this.expectedSequence);
-  }
-
-  private void buildDagRunAndVerify() throws InterruptedException {
-    final Dag dag = this.dagBuilder.build();
-    runAndVerify(dag);
-  }
-
-  private void runAndVerify(final Dag dag) throws InterruptedException {
-    runDag(dag);
-    verifyStatusSequence();
-  }
-
-  /**
-   * Creates a node and add to the test dag.
-   */
-  private void createNodeInTestDag(final String name) {
-    this.dagBuilder.createNode(name, this.nodeProcessor);
-  }
 }
-
