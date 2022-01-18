@@ -563,7 +563,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Get CPU and memory requested for a flow container
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
-
+    logger.info("Creating pod for : " + executionId);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,

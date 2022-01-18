@@ -15,6 +15,7 @@
  */
 package azkaban.jobExecutor;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -26,6 +27,7 @@ import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.ExecuteAsUser;
+import azkaban.utils.ExecuteAsUserUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
@@ -248,8 +250,20 @@ public class ProcessJob extends AbstractProcessJob {
             String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
         );
       }
+
+      final boolean addGroupAndUserForEffectiveUser =
+          this.getSysProps().getBoolean(AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER, false);
+      if (addGroupAndUserForEffectiveUser) {
+        // If linux group and user needs to be added for effectiveUser before job process starts
+        // then set it up before effective user is used to set permission for any file.
+        info("Adding group and user for effective user: " + effectiveUser);
+        final ExecuteAsUser executeAsUser = new ExecuteAsUser(
+            this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+        ExecuteAsUserUtils.addGroupAndUserForEffectiveUser(executeAsUser, effectiveUser);
+      }
+
       // Set parent directory permissions to <uid>:azkaban so user can write in their execution directory
-      // if the directory is not permissioned correctly already (should happen once per execution)
+      // if the directory is not permission correctly already (should happen once per execution)
       if (!canWriteInCurrentWorkingDirectory(effectiveUser)) {
         info("Changing current working directory ownership");
         assignUserFileOwnership(effectiveUser, getWorkingDirectory());
