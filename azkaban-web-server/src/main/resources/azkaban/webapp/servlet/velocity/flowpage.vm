@@ -45,16 +45,16 @@
     var errorMessage = null;
     var successMessage = null;
 
-    var projectId = ${project.id};
-    var projectName = "${project.name}";
+    var projectId = ${projectId};
+    var projectName = "${projectName}";
     var flowId = "${flowid}";
     var execId = null;
     var pageSize = "${size}";
     var graphDepth = "${azkaban_depth}";
 
     var flowPageSettings = {
-      projectId: ${project.id},
-      projectName: "${project.name}",
+      projectId: ${projectId},
+      projectName: "${projectName}",
       flowId: "${flowid}",
       pageSize: ${size},
 
@@ -92,7 +92,7 @@
     <div class="container-full">
       <div class="row">
         <div class="header-title">
-          <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow
+          <h1><a href="${context}/manager?project=${projectName}&flow=${flowid}">Flow
             <small>$flowid</small>
           </a></h1>
         </div>
@@ -111,9 +111,9 @@
     <div class="container-full">
       <ol class="breadcrumb">
 
-        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+        <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 
-        #set($ref = "${context}/manager?project=${project.name}&flow=")
+        #set($ref = "${context}/manager?project=${projectName}&flow=")
         #foreach( $flow in ${flowlist} )
           #set($ref = $ref + $flow)
           #set($linkclass = "active")

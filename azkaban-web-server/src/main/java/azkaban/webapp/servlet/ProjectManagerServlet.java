@@ -1315,7 +1315,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("project", project);
+        page.add("projectName", project.getName());
+        page.add("projectId", project.getId());
+        //params for projectsidebar
+        page.add("description",project.getDescription());
+        page.add("createTimestamp",project.getCreateTimestamp());
+        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+        page.add("lastModifiedUser",project.getLastModifiedUser());
+
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
@@ -1434,7 +1441,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("project", project);
+        page.add("projectName", project.getName());
+        //params for projectsidebar
+        page.add("description",project.getDescription());
+        page.add("createTimestamp",project.getCreateTimestamp());
+        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+        page.add("lastModifiedUser",project.getLastModifiedUser());
+
         page.add("username", user.getUserId());
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
@@ -1493,7 +1506,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project " + projectName + ".");
       }
-      page.add("project", project);
+      page.add("projectName", project.getName());
 
       final Flow flow = project.getFlow(flowNodePath);
       if (flow == null) {
@@ -1606,7 +1619,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project " + projectName + ".");
       }
-      page.add("project", project);
+      page.add("projectName", project.getName());
 
       final Flow flow = project.getFlow(flowNodePath);
       if (flow == null) {
@@ -1712,7 +1725,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             + ".");
       }
 
-      page.add("project", project);
+      page.add("projectName", project.getName());
+      page.add("projectId", project.getId());
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
@@ -1758,7 +1772,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("project", project);
+        page.add("projectName", project.getName());
+        page.add("projectId", project.getId());
+        //params for projectsidebar
+        page.add("description",project.getDescription());
+        page.add("createTimestamp",project.getCreateTimestamp());
+        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+        page.add("lastModifiedUser",project.getLastModifiedUser());
+
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
