@@ -30,7 +30,7 @@
     var errorMessage = null;
     var successMessage = null;
     var userId = "$username";
-    var projectName = "$name";
+    var projectName = "$projectName";
   </script>
 </head>
 <body>
