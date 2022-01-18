@@ -107,21 +107,6 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void testCreateProjectsWithDifferentCases() {
-    final String projectName = "mytestproject";
-    final String projectDescription = "This is my new project with lower cases.";
-    final User user = new User("testUser1");
-    this.loader.createNewProject(projectName, projectDescription, user);
-    final String projectName2 = "MYTESTPROJECT";
-    final String projectDescription2 = "This is my new project with UPPER CASES.";
-    assertThatThrownBy(
-        () -> this.loader.createNewProject(projectName2, projectDescription2, user))
-        .isInstanceOf(ProjectManagerException.class)
-        .hasMessageContaining(
-            "Active project with name " + projectName2 + " already exists in db.");
-  }
-
-  @Test
   public void testFetchProjectByName() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");

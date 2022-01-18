@@ -156,20 +156,6 @@ public class JdbcProjectImpl implements ProjectLoader {
   public synchronized Project createNewProject(final String name, final String description,
       final User creator)
       throws ProjectManagerException {
-    final ProjectResultHandler handler = new ProjectResultHandler();
-
-    // Check if the same project name exists.
-    try {
-      final List<Project> projects = this.dbOperator
-          .query(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
-      if (!projects.isEmpty()) {
-        throw new ProjectManagerException(
-            "Active project with name " + name + " already exists in db.");
-      }
-    } catch (final SQLException ex) {
-      logger.error(ex);
-      throw new ProjectManagerException("Checking for existing project failed. " + name, ex);
-    }
 
     final String INSERT_PROJECT =
         "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob) values (?,?,?,?,?,?,?,?,?)";
