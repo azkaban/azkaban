@@ -175,29 +175,41 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
             + " null. Must provide valid imageType to create/register image type.");
       }
-      if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
-        log.debug(String.format("Invalid permission to create image type for "
-            + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
-        throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
-            + "create image type");
+      final Integer imageTypeId;
+      genericImageType.setModifiedBy(session.getUser().getUserId());
+      genericImageType.setCreatedBy(session.getUser().getUserId());
+      if (!HttpRequestUtils.hasParam(req, "updateImageOwners")){
+        if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
+          log.debug(String.format("Invalid permission to create image type for "
+              + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+          throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+              + "create image type");
+        }
+        // Create image type /Update  and get image type id
+        imageTypeId = this.imageTypeService.createImageType(genericImageType);
+      }else {
+        if (!hasImageManagementPermission(imageType, session.getUser(), Type.UPDATE)) {
+          log.debug(String.format("Invalid permission to update image type for "
+              + "user: %s, image type: %s.", session.getUser().getUserId(), imageType));
+          throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, "Invalid permission to "
+              + "create image type");
+        }
+        final String updateOp = req.getParameter("updateImageOwners");
+        imageTypeId = this.imageTypeService.updateImageType(genericImageType, updateOp);
       }
 
-      genericImageType.setCreatedBy(session.getUser().getUserId());
-      genericImageType.setModifiedBy(session.getUser().getUserId());
-      // Create image type and get image type id
-      final Integer imageTypeId = this.imageTypeService.createImageType(genericImageType);
       // prepare to send response
       resp.setStatus(HttpStatus.SC_CREATED);
       resp.setHeader("Location",
           IMAGE_TYPE_WITH_ID_URI_TEMPLATE.createURI(imageTypeId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
     } catch (final ImageMgmtException e) {
-      log.error("Exception while creating an image type", e);
+      log.error("Exception while creating / updating an image type", e);
       sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
     } catch (final Exception e) {
-      log.error("Exception while creating an image type", e);
+      log.error("Exception while creating / updating an image type", e);
       sendErrorResponse(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-          "Exception while creating an image type. Reason: " + e.getMessage());
+          "Exception while creating / updating an image type. Reason: " + e.getMessage());
     }
   }
 }

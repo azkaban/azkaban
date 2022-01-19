@@ -86,4 +86,21 @@ public interface ImageTypeDao {
    * @return ImageType
    */
   public ImageType getImageTypeWithOwnershipsById(String id);
+
+  /**
+   * Add an owner for a given image type.
+   *
+   * @param imageType - ImageType to be updated
+   * @return int - Id representing image type metadata
+   */
+  public int addOwnerOfImageType(ImageType imageType) throws ImageMgmtException;
+
+  /**
+   * Remove an owner for a given image type.
+   *
+   * @param imageType - ImageType to be updated
+   * @return int - Id representing image type metadata
+   */
+  public int removeOwnerOfImageType(ImageType imageType) throws ImageMgmtException;
+
 }

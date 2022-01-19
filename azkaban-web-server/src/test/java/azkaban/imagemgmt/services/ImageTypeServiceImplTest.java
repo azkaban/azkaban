@@ -84,6 +84,47 @@ public class ImageTypeServiceImplTest {
   }
 
   @Test
+  public void testAddOwnerToImageType() throws Exception {
+    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type.json");
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
+    when(this.imageTypeDao.addOwnerOfImageType(any(ImageType.class))).thenReturn(200);
+    final int imageTypeId = this.imageTypeService.updateImageType(imageTypeDTO, "addImageOwners");
+    final ArgumentCaptor<ImageType> imageTypeArgumentCaptor =
+        ArgumentCaptor.forClass(ImageType.class);
+    verify(this.imageTypeDao, times(1)).addOwnerOfImageType(imageTypeArgumentCaptor.capture());
+    final ImageType capturedImageType = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("kafka_push_job", capturedImageType.getName());
+    Assert.assertEquals("azkaban", capturedImageType.getCreatedBy());
+    Assert.assertEquals("image", capturedImageType.getDeployable().getName());
+    Assert.assertNotNull(capturedImageType.getOwnerships());
+    Assert.assertEquals(2, capturedImageType.getOwnerships().size());
+    Assert.assertEquals(200, imageTypeId);
+  }
+
+  @Test
+  public void testRemoveOwnerFromImageType() throws Exception {
+    final String jsonPayload = JSONUtils.readJsonFileAsString("image_management/image_type.json");
+    final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
+    imageTypeDTO.setCreatedBy("azkaban");
+    imageTypeDTO.setModifiedBy("azkaban");
+    when(this.imageTypeDao.removeOwnerOfImageType(any(ImageType.class))).thenReturn(300);
+    final int imageTypeId = this.imageTypeService.updateImageType(imageTypeDTO,
+        "removeImageOwners");
+    final ArgumentCaptor<ImageType> imageTypeArgumentCaptor =
+        ArgumentCaptor.forClass(ImageType.class);
+    verify(this.imageTypeDao, times(1)).removeOwnerOfImageType(imageTypeArgumentCaptor.capture());
+    final ImageType capturedImageType = imageTypeArgumentCaptor.getValue();
+    Assert.assertEquals("kafka_push_job", capturedImageType.getName());
+    Assert.assertEquals("azkaban", capturedImageType.getCreatedBy());
+    Assert.assertEquals("image", capturedImageType.getDeployable().getName());
+    Assert.assertNotNull(capturedImageType.getOwnerships());
+    Assert.assertEquals(2, capturedImageType.getOwnerships().size());
+    Assert.assertEquals(300, imageTypeId);
+  }
+
+  @Test
   public void testGetAllImageTypesWithOwnerships() throws Exception {
     List<ImageType> imageTypes = getImageTypeList();
     ImageTypeDTO expected = getImageTypeDTO();
