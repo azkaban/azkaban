@@ -15,7 +15,6 @@
  */
 package azkaban.security;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
@@ -28,7 +27,6 @@ import azkaban.executor.KeyStoreManager;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.ExecuteAsUser;
-import azkaban.utils.ExecuteAsUserUtils;
 import azkaban.utils.Props;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -394,20 +392,6 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
    */
   protected void doPrefetch(final File tokenFile, final Props props, final Logger logger,
       final String userToProxy) throws HadoopSecurityManagerException {
-    final boolean addGroupAndUserForEffectiveUser =
-        props.getBoolean(AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER, false);
-    if (addGroupAndUserForEffectiveUser) {
-      // If linux group and user needs to be added for effectiveUser before job process starts
-      // then set it up before effective user is used to set permission for any file.
-      logger.info("Adding group and user for effective user: " + userToProxy);
-      try {
-        ExecuteAsUserUtils.addGroupAndUserForEffectiveUser(executeAsUser, userToProxy);
-      } catch (Exception e) {
-        throw new HadoopSecurityManagerException(
-            "Failed to add group and user for effective user: " + userToProxy + ". Error: " + e);
-      }
-    }
-
     // Create suffix to be added to kerberos principal
     final String suffix = getFQNSuffix(props);
 
