@@ -26,20 +26,25 @@ public class ExecuteAsUserUtils {
       final String effectiveUser) throws Exception {
     List<String> commands = Arrays.asList(ADD_GROUP_PATH, effectiveUser);
     int result = executeAsUser.execute("root", commands);
+    // If group is added successfully, it will return code 0.
+    // If group is already added then it will return code 9.
     if (result == 0 || result == 9) {
       logger.info("Group is added successfully.");
       commands = Arrays
           .asList(ADD_USER_PATH, "-l", "-m", effectiveUser, "-g", effectiveUser);
       result = executeAsUser.execute("root", commands);
+      // If user is added successfully, it will return code 0.
+      // If user is already added then it will return code 9.
       if (result == 0 || result == 9) {
         logger.info("User is added successfully.");
       } else {
-        final String errorMessage = "Failed to add user: " + result;
+        final String errorMessage =
+            "Failed to add user:" + effectiveUser + "Return value was: " + result;
         logger.error(errorMessage);
         throw new JobExecutionException(errorMessage);
       }
     } else {
-      final String errorMessage = "Failed to add group: " + result;
+      final String errorMessage = "Failed to add group:" + effectiveUser + "Return value was: " + result;
       logger.error(errorMessage);
       throw new JobExecutionException(errorMessage);
     }
