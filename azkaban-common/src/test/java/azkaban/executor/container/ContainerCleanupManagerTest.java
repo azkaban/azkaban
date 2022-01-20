@@ -92,7 +92,6 @@ public class ContainerCleanupManagerTest {
     verifyZeroInteractions(this.containerImpl);
   }
 
-  @Ignore
   @Test
   public void testCleanUpPreparingFlows() throws Exception {
     ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
