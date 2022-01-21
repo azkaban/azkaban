@@ -45,8 +45,7 @@
   <div class="az-page-header page-header-bare">
     <div class="container-full">
       <h1>
-        <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=${jobid}&prop=$
-        {propsSource}&propNode=${propsNodePath}">
+        <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=${jobid}&prop=${propsSource}&propNode=${propsNodePath}">
           Properties <small>$propsSourceLabel</small>
         </a>
       </h1>
