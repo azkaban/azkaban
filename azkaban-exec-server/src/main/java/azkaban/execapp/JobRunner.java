@@ -16,6 +16,10 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.utils.ExecuteAsUserUtils.addGroupAndUserForEffectiveUser;
+
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
@@ -37,6 +41,7 @@ import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.spi.EventType;
+import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.PatternLayoutEscaped;
 import azkaban.utils.Props;
@@ -694,6 +699,12 @@ public class JobRunner extends EventHandler implements Runnable {
         writeStatus();
         fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED,
             new EventData(Status.RUNNING, this.node.getNestedId())));
+        try {
+          addGroupAndUser(this.jobtypeManager.getCommonPluginLoadProps());
+        } catch (Exception e) {
+          finalStatus = changeStatus(Status.FAILED);
+          logError("Job run failed while adding group and user.");
+        }
         finalStatus = runJob();
       } else {
         finalStatus = changeStatus(Status.FAILED);
@@ -843,6 +854,21 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return true;
+  }
+
+  // If linux group and user needs to be added for effectiveUser before job process starts
+  // then set it up before effective user is used to set permission for any file.
+  private void addGroupAndUser(final Props pluginPrivateProps) throws Exception {
+    if (pluginPrivateProps != null) {
+      final boolean addGroupAndUserForEffectiveUser =
+          pluginPrivateProps.getBoolean(AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER, false);
+      if (addGroupAndUserForEffectiveUser) {
+        logger.info("Adding group and user for effective user: " + this.effectiveUser);
+        final ExecuteAsUser executeAsUser = new ExecuteAsUser(
+            pluginPrivateProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+        addGroupAndUserForEffectiveUser(executeAsUser, this.effectiveUser);
+      }
+    }
   }
 
   /**

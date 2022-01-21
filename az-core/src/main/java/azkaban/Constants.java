@@ -319,6 +319,10 @@ public class Constants {
     // Path name of execute-as-user executable
     public static final String AZKABAN_SERVER_NATIVE_LIB_FOLDER = "azkaban.native.lib";
 
+    // Add group and user on linux machine for effective user before job process starts
+    public static final String AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER =
+        "azkaban.add.group.and.user.for.effective.user";
+
     // Name of *nix group associated with the process running Azkaban
     public static final String AZKABAN_SERVER_GROUP_NAME = "azkaban.group.name";
 
