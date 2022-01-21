@@ -248,8 +248,10 @@ public class ProcessJob extends AbstractProcessJob {
             String.format("Not permitted to proxy as '%s' through Azkaban", effectiveUser)
         );
       }
+
       // Set parent directory permissions to <uid>:azkaban so user can write in their execution directory
-      // if the directory is not permissioned correctly already (should happen once per execution)
+      // if the directory does not have correct permission already (should happen once per
+      // execution)
       if (!canWriteInCurrentWorkingDirectory(effectiveUser)) {
         info("Changing current working directory ownership");
         assignUserFileOwnership(effectiveUser, getWorkingDirectory());
