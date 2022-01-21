@@ -89,11 +89,11 @@ public class ImageTypeServiceImplTest {
     final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
     imageTypeDTO.setCreatedBy("azkaban");
     imageTypeDTO.setModifiedBy("azkaban");
-    when(this.imageTypeDao.addOwnerOfImageType(any(ImageType.class))).thenReturn(200);
+    when(this.imageTypeDao.addImageTypeOwner(any(ImageType.class))).thenReturn(200);
     final int imageTypeId = this.imageTypeService.updateImageType(imageTypeDTO, "addImageOwners");
     final ArgumentCaptor<ImageType> imageTypeArgumentCaptor =
         ArgumentCaptor.forClass(ImageType.class);
-    verify(this.imageTypeDao, times(1)).addOwnerOfImageType(imageTypeArgumentCaptor.capture());
+    verify(this.imageTypeDao, times(1)).addImageTypeOwner(imageTypeArgumentCaptor.capture());
     final ImageType capturedImageType = imageTypeArgumentCaptor.getValue();
     Assert.assertEquals("kafka_push_job", capturedImageType.getName());
     Assert.assertEquals("azkaban", capturedImageType.getCreatedBy());
@@ -109,12 +109,12 @@ public class ImageTypeServiceImplTest {
     final ImageTypeDTO imageTypeDTO = converterUtils.convertToDTO(jsonPayload, ImageTypeDTO.class);
     imageTypeDTO.setCreatedBy("azkaban");
     imageTypeDTO.setModifiedBy("azkaban");
-    when(this.imageTypeDao.removeOwnerOfImageType(any(ImageType.class))).thenReturn(300);
+    when(this.imageTypeDao.removeImageTypeOwner(any(ImageType.class))).thenReturn(300);
     final int imageTypeId = this.imageTypeService.updateImageType(imageTypeDTO,
         "removeImageOwners");
     final ArgumentCaptor<ImageType> imageTypeArgumentCaptor =
         ArgumentCaptor.forClass(ImageType.class);
-    verify(this.imageTypeDao, times(1)).removeOwnerOfImageType(imageTypeArgumentCaptor.capture());
+    verify(this.imageTypeDao, times(1)).removeImageTypeOwner(imageTypeArgumentCaptor.capture());
     final ImageType capturedImageType = imageTypeArgumentCaptor.getValue();
     Assert.assertEquals("kafka_push_job", capturedImageType.getName());
     Assert.assertEquals("azkaban", capturedImageType.getCreatedBy());

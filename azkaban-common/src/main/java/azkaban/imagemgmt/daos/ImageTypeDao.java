@@ -93,7 +93,7 @@ public interface ImageTypeDao {
    * @param imageType - ImageType to be updated
    * @return int - Id representing image type metadata
    */
-  public int addOwnerOfImageType(ImageType imageType) throws ImageMgmtException;
+  public int addImageTypeOwner(ImageType imageType) throws ImageMgmtException;
 
   /**
    * Remove an owner for a given image type.
@@ -101,6 +101,6 @@ public interface ImageTypeDao {
    * @param imageType - ImageType to be updated
    * @return int - Id representing image type metadata
    */
-  public int removeOwnerOfImageType(ImageType imageType) throws ImageMgmtException;
+  public int removeImageTypeOwner(ImageType imageType) throws ImageMgmtException;
 
 }

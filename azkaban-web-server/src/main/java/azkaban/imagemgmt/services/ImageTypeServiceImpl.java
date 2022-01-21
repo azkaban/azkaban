@@ -116,10 +116,10 @@ public class ImageTypeServiceImpl implements ImageTypeService {
                              final String updateOp) throws ImageMgmtException {
     // Check if update operation is valid
     if (updateOp.equals(IMAGE_UPDATE_ADD_USER)) {
-      return this.imageTypeDao.addOwnerOfImageType(this.converter.convertToDataModel(imageType));
+      return this.imageTypeDao.addImageTypeOwner(this.converter.convertToDataModel(imageType));
     }
     if (updateOp.equals(IMAGE_UPDATE_REMOVE_USER)) {
-      return this.imageTypeDao.removeOwnerOfImageType(this.converter.convertToDataModel(imageType));
+      return this.imageTypeDao.removeImageTypeOwner(this.converter.convertToDataModel(imageType));
     }
     else{
       throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "

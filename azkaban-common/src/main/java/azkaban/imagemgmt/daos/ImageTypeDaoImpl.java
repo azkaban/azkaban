@@ -130,13 +130,14 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   }
 
   @Override
-  public int addOwnerOfImageType(final ImageType imageType) {
+  public int addImageTypeOwner(final ImageType imageType) {
     final Set<ImageOwnership> currentOwners =
         new HashSet<>(getImageTypeOwnership(imageType.getName()));
     final Set<ImageOwnership> newOwners = new HashSet<>(imageType.getOwnerships());
     newOwners.removeAll(currentOwners);
     //Check if there are actually new owners added.
     if (newOwners.isEmpty()) {
+      log.info("No new owners were added to image type " + imageType.getName());
       throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image, "
           + "specified no new owners");
     }
@@ -152,13 +153,13 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       transOperator.getConnection().commit();
       return 1;
     };
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while updating image type due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image ");
+    }
     try {
       this.databaseOperator.transaction(update);
-      if (imageTypeId < 1) {
-        log.error(String.format("Exception while updating image type due to invalid "
-            + "imageTypeId: %d.", imageTypeId));
-        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image ");
-      }
       log.info("Successfully Updated image ownerships for :" + imageType.getName());
     } catch (final SQLException e) {
       log.error("Unable to update the image type metadata", e);
@@ -168,26 +169,28 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   }
 
   @Override
-  public int removeOwnerOfImageType(ImageType imageType) throws ImageMgmtException {
+  public int removeImageTypeOwner(ImageType imageType) throws ImageMgmtException {
     final Set<ImageOwnership> currentOwners =
         new HashSet<>(getImageTypeOwnership(imageType.getName()));
     final Set<ImageOwnership> ownersToRemove = new HashSet<>(imageType.getOwnerships());
     ownersToRemove.retainAll(currentOwners);
+    currentOwners.removeAll(ownersToRemove);
       //Check if it's removing all owners
-    if (ownersToRemove.size() >= currentOwners.size() - 1){
+    if (!(currentOwners.size() > 1)){
         throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while deleting "
             + " image owners, need greater than two owners to be present");
       }
       int imageTypeId =
           getImageTypeByName(imageType.getName()).map(BaseModel::getId).orElse(0);
 
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while removing owner due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while removing "
+          + "image owners. Invalid imageTypeId");
+    }
+
     try {
-      if (imageTypeId < 1) {
-        log.error(String.format("Exception while removing owner due to invalid "
-            + "imageTypeId: %d.", imageTypeId));
-        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while removing "
-            + "image owners. Invalid imageTypeId");
-      }
       for (final ImageOwnership imageOwnership : ownersToRemove) {
         this.databaseOperator.update(DELETE_IMAGE_OWNERSHIP, imageTypeId,
             imageOwnership.getOwner());

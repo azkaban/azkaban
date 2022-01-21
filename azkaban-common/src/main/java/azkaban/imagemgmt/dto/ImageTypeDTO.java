@@ -65,7 +65,7 @@ public class ImageTypeDTO extends BaseDTO {
   }
 
   public void setOwnerships(final List<ImageOwnershipDTO> ownerships) {
-            ownerships.stream().forEach(o -> o.setName(getName()));
+            ownerships.forEach(o -> o.setName(getName()));
             this.ownerships = ownerships;
   }
 }
