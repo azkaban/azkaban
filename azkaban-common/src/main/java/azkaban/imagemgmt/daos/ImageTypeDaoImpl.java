@@ -143,6 +143,11 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     }
     int imageTypeId =
         getImageTypeByName(imageType.getName()).map(BaseModel::getId).orElse(0);
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while updating image type due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image ");
+    }
     final SQLTransaction<Integer> update = transOperator -> {
       final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
       for (final ImageOwnership imageOwnership : newOwners) {
@@ -153,11 +158,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       transOperator.getConnection().commit();
       return 1;
     };
-    if (imageTypeId < 1) {
-      log.error(String.format("Exception while updating image type due to invalid "
-          + "imageTypeId: %d.", imageTypeId));
-      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image ");
-    }
     try {
       this.databaseOperator.transaction(update);
       log.info("Successfully Updated image ownerships for :" + imageType.getName());
