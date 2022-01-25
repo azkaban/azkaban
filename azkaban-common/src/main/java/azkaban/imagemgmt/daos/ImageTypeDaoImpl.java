@@ -23,6 +23,7 @@ import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.models.BaseModel;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
@@ -63,10 +64,27 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   static String INSERT_IMAGE_OWNERSHIP =
       "insert into image_ownerships ( type_id, owner, role, created_by, created_on, modified_by, "
           + "modified_on ) values (?, ?, ?, ?, ?, ?, ?)";
+  static String DELETE_IMAGE_OWNERSHIP =
+      "delete from image_ownerships where type_id=? AND owner=?";
 
   @Inject
   public ImageTypeDaoImpl(final DatabaseOperator databaseOperator) {
     this.databaseOperator = databaseOperator;
+  }
+
+  public void handleSqlException(final SQLException e){
+    String errorMessage = "";
+    // TODO: Find a better way to get the error message. Currently apache common dbutils
+    // throws sql exception for all the below error scenarios and error message contains
+    // complete query as well, hence generic error message is thrown.
+    if (e.getErrorCode() == SQL_ERROR_CODE_DUPLICATE_ENTRY) {
+      errorMessage = "Reason: Duplicate key provided for one or more column(s).";
+    }
+    if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
+      errorMessage = "Reason: Data too long for one or more column(s).";
+    }
+    throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
+        + "image type metadata. " + errorMessage);
   }
 
   @Override
@@ -106,20 +124,83 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       log.info("Created image type id :" + imageTypeId);
     } catch (final SQLException e) {
       log.error("Unable to create the image type metadata", e);
-      String errorMessage = "";
-      // TODO: Find a better way to get the error message. Currently apache common dbutils
-      // throws sql exception for all the below error scenarios and error message contains
-      // complete query as well, hence generic error message is thrown.
-      if (e.getErrorCode() == SQL_ERROR_CODE_DUPLICATE_ENTRY) {
-        errorMessage = "Reason: Duplicate key provided for one or more column(s).";
-      }
-      if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
-        errorMessage = "Reason: Data too long for one or more column(s).";
-      }
-      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
-          + "image type metadata. " + errorMessage);
+      handleSqlException(e);
     }
     return imageTypeId;
+  }
+
+  @Override
+  public int addImageTypeOwner(final ImageType imageType) {
+    final Set<ImageOwnership> currentOwners =
+        new HashSet<>(getImageTypeOwnership(imageType.getName()));
+    final Set<ImageOwnership> newOwners = new HashSet<>(imageType.getOwnerships());
+    newOwners.removeAll(currentOwners);
+    //Check if there are actually new owners added.
+    if (newOwners.isEmpty()) {
+      log.info("No new owners were added to image type " + imageType.getName());
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image, "
+          + "specified no new owners");
+    }
+    int imageTypeId =
+        getImageTypeByName(imageType.getName()).map(BaseModel::getId).orElse(0);
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while updating image type due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image ");
+    }
+    final SQLTransaction<Integer> update = transOperator -> {
+      final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+      for (final ImageOwnership imageOwnership : newOwners) {
+        transOperator.update(INSERT_IMAGE_OWNERSHIP, imageTypeId, imageOwnership.getOwner(),
+            imageOwnership.getRole().name(), imageType.getCreatedBy(), currentTimestamp,
+            imageType.getModifiedBy(), currentTimestamp);
+      }
+      transOperator.getConnection().commit();
+      return 1;
+    };
+    try {
+      this.databaseOperator.transaction(update);
+      log.info("Successfully Updated image ownerships for :" + imageType.getName());
+    } catch (final SQLException e) {
+      log.error("Unable to update the image type metadata", e);
+      handleSqlException(e);
+    }
+    return imageTypeId;
+  }
+
+  @Override
+  public int removeImageTypeOwner(ImageType imageType) throws ImageMgmtException {
+    final Set<ImageOwnership> currentOwners =
+        new HashSet<>(getImageTypeOwnership(imageType.getName()));
+    final Set<ImageOwnership> ownersToRemove = new HashSet<>(imageType.getOwnerships());
+    ownersToRemove.retainAll(currentOwners);
+    currentOwners.removeAll(ownersToRemove);
+      //Check if it's removing all owners
+    if (!(currentOwners.size() > 1)){
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while deleting "
+            + " image owners, need greater than two owners to be present");
+      }
+      int imageTypeId =
+          getImageTypeByName(imageType.getName()).map(BaseModel::getId).orElse(0);
+
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while removing owner due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while removing "
+          + "image owners. Invalid imageTypeId");
+    }
+
+    try {
+      for (final ImageOwnership imageOwnership : ownersToRemove) {
+        this.databaseOperator.update(DELETE_IMAGE_OWNERSHIP, imageTypeId,
+            imageOwnership.getOwner());
+      }
+      log.info("Successfully removed owner(s) image type id :" + imageTypeId);
+    } catch (final SQLException e) {
+        log.error("Unable to update the image type metadata", e);
+        handleSqlException(e);
+      }
+      return imageTypeId;
   }
 
   @Override

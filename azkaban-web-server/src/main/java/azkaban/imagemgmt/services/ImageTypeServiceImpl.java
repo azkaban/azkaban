@@ -16,6 +16,8 @@
 package azkaban.imagemgmt.services;
 
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_UPDATE_ADD_USER;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_UPDATE_REMOVE_USER;
 
 import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.daos.ImageTypeDao;
@@ -107,6 +109,22 @@ public class ImageTypeServiceImpl implements ImageTypeService {
     // Validate ownership metadata
     validateOwnership(imageType);
     return this.imageTypeDao.createImageType(this.converter.convertToDataModel(imageType));
+  }
+
+  @Override
+  public int updateImageType(final ImageTypeDTO imageType,
+                             final String updateOp) throws ImageMgmtException {
+    // Check if update operation is valid
+    if (updateOp.equals(IMAGE_UPDATE_ADD_USER)) {
+      return this.imageTypeDao.addImageTypeOwner(this.converter.convertToDataModel(imageType));
+    }
+    if (updateOp.equals(IMAGE_UPDATE_REMOVE_USER)) {
+      return this.imageTypeDao.removeImageTypeOwner(this.converter.convertToDataModel(imageType));
+    }
+    else{
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
+          + "input for image update operation"));
+    }
   }
 
   /**

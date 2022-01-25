@@ -56,10 +56,20 @@ public interface ImageTypeService {
   /**
    * Method for processing and delegation of image type creation/registration.
    *
-   * @param imageType - DTO which encaptulates  and transfers the create request details
+   * @param imageType - DTO which encapsulates  and transfers the create request details
    * @return int - id of the image type metadata record created
    * @throws IOException
    * @throws ImageMgmtException
    */
   public int createImageType(ImageTypeDTO imageType) throws ImageMgmtException;
+
+  /**
+   * Method for updating image types.
+   *
+   * @param imageType - DTO which encapsulates  and transfers the update request details
+   * @return int - id of the image type metadata record updated
+   * @throws IOException
+   * @throws ImageMgmtException
+   */
+  public int updateImageType(ImageTypeDTO imageType, String updateOp) throws ImageMgmtException;
 }
