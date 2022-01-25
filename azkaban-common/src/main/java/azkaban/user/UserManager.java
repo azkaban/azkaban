@@ -49,4 +49,12 @@ public interface UserManager {
   public Role getRole(String roleName);
 
   public boolean validateProxyUser(String proxyUser, User realUser);
+
+  /**
+   * @param username e.g. user alias
+   * @param groupName e.g. name of hadoop headless group / LDAP group
+   * @return Returns true if the user belongs to a group. This is used when verifying user
+   * permission by checking its group membership
+   */
+  public boolean validateUserGroupMembership(String username, String groupName);
 }
