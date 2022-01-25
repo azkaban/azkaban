@@ -362,4 +362,9 @@ public class XmlUserManager implements UserManager {
       return false;
     }
   }
+
+  @Override
+  public boolean validateUserGroupMembership(String username, String groupName) {
+    return false;
+  }
 }
