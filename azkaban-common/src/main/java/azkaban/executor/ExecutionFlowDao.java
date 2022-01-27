@@ -211,6 +211,17 @@ public class ExecutionFlowDao {
     }
   }
 
+  List<ExecutableFlow> fetchRecentlyFinishedFlows(final int maxCount, int executorID)
+          throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(
+              String.format("%s LIMIT %d", FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_EXECUTOR_FLOW, maxCount),
+              new FetchRecentlyFinishedFlows(), executorID);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching recently finished flows", e);
+    }
+  }
+
   List<ExecutableFlow> fetchFlowHistory(final String projectNameContains,
       final String flowNameContains, final String userNameContains, final int status,
       final long startTime, final long endTime, final int skip, final int num)
@@ -701,6 +712,10 @@ public class ExecutionFlowDao {
     private static final String FETCH_RECENTLY_FINISHED_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE end_time > ? AND status IN (?, ?, ?)";
+
+    private static final String FETCH_RECENTLY_FINISHED_EXECUTOR_FLOW =
+            "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
+                    + "WHERE executor_id = ? ORDER BY end_time DESC";
 
     @Override
     public List<ExecutableFlow> handle(

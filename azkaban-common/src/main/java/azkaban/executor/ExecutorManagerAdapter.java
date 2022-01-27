@@ -61,6 +61,8 @@ public interface ExecutorManagerAdapter {
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
+  public List<ExecutableFlow> getRecentlyFinishedFlows(int executorID);
+
   public List<ExecutableFlow> getExecutableFlows(int skip, int size)
       throws ExecutorManagerException;
 

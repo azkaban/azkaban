@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractExecutorManagerAdapter extends EventHandler implements
     ExecutorManagerAdapter {
-
+  private static final int EXECUTOR_DETAIL_COUNT = 50;
   private static final Logger logger =
       LoggerFactory.getLogger(AbstractExecutorManagerAdapter.class);
   protected final Props azkProps;
@@ -134,6 +134,18 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       flows = this.executorLoader.fetchRecentlyFinishedFlows(
           RECENTLY_FINISHED_LIFETIME);
+    } catch (final ExecutorManagerException e) {
+      logger.error("Failed to fetch recently finished flows.", e);
+    }
+    return flows;
+  }
+
+  @Override
+  public List<ExecutableFlow> getRecentlyFinishedFlows(int executorID) {
+    List<ExecutableFlow> flows = new ArrayList<>();
+    try {
+      flows = this.executorLoader.fetchRecentlyFinishedFlows(
+              EXECUTOR_DETAIL_COUNT, executorID);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to fetch recently finished flows.", e);
     }
