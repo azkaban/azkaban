@@ -153,7 +153,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public void appendLogs(int execId, String Name, String logs) throws ExecutorManagerException {
+  public void appendLogs(int execId, String name, String logs) throws ExecutorManagerException {
     throw new ExecutorManagerException("Method Not Implemented!");
   }
 
