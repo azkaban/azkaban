@@ -109,7 +109,7 @@ public enum Status {
     }
   }
 
-  public static boolean isStatusToLog(final Status status) {
+  public static boolean isStatusFinshedWithoutSuccess(final Status status) {
     switch (status) {
       case EXECUTION_STOPPED:
       case FAILED:

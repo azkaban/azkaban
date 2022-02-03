@@ -1078,8 +1078,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private void deletePod(final int executionId) throws ExecutorManagerException {
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
-    Status s = flow.getStatus();
-    if(s !=null && Status.isStatusToLog(s)) {
+    Status status = flow.getStatus();
+    if(status !=null && Status.isStatusFinshedWithoutSuccess(status)) {
       logPodDetails(executionId);
     }
     try {
@@ -1124,7 +1124,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
   }
 
-  @Override
   public void logPodDetails(final int executionId) throws ExecutorManagerException {
     String podDetails = "";
     podDetails += getPodEvents(executionId);
@@ -1193,30 +1192,33 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
 
   private String formatPodEvent(final V1Event event) {
-    String formatedEvent = "";
+    StringBuffer formattedEvent = new StringBuffer();
     if(Objects.nonNull(event.getLastTimestamp()) && StringUtils.isNotEmpty(event.getLastTimestamp()
         .toString())) {
-      formatedEvent += "\t LastTimeStamp: " + event.getLastTimestamp() + "\n";
+      formattedEvent.append("\t LastTimeStamp: " + event.getLastTimestamp() + "\n");
     }
     else {
-      formatedEvent += "\t LastTimeStamp: " + "LastTimeStamp is null, this is a new event" + "\n";
+      formattedEvent.append("\t LastTimeStamp: " + "LastTimeStamp is null, this is a new event" +
+        "\n");
     }
     if(StringUtils.isNotEmpty(event.getType())) {
-      formatedEvent += "\t Type: " + event.getType() + "\n";
+      formattedEvent.append("\t Type: " + event.getType() + "\n");
     }
     if(StringUtils.isNotEmpty(event.getReason())) {
-      formatedEvent += "\t Reason: " + event.getReason() + "\n";
+      formattedEvent.append("\t Reason: " + event.getReason() + "\n");
     }
     if(StringUtils.isNotEmpty(event.getReportingInstance())) {
-      formatedEvent += "\t ReportingInstance: " + event.getReportingInstance() + "\n";
+      formattedEvent.append("\t ReportingInstance: " + event.getReportingInstance() + "\n");
     }
     if(StringUtils.isNotEmpty(event.getMessage())) {
-      formatedEvent += "\t Message: " + event.getMessage() + "\n";
+      formattedEvent.append("\t Message: " + event.getMessage() + "\n");
     }
-    if (formatedEvent.equals("\t LastTimeStamp: " + "LastTimeStamp is null, this is a new event" + "\n")) {
+    String events = formattedEvent.toString();
+    if (events.equals("\t LastTimeStamp: " + "LastTimeStamp is null, this is a "
+        + "new event" + "\n")) {
       return "";
     }
-    return formatedEvent;
+    return events;
   }
 
   /**

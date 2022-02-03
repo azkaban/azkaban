@@ -67,6 +67,17 @@ public class ExecutionLogsDao {
     }
   }
 
+  /**
+   * This method is used to append pod logs to the execution job log, especially for a K8s pod
+   *
+   * @param execId - executionId specified in Azkaban
+   * @param name - name of append operation, used to specify purpose in DB
+   * @param attempt - upload attempt, used to differentiate in DB
+   * @param files -  files to be appended to the Job log
+   *
+   * @throws ExecutorManagerException
+   */
+
   public void appendLogs(final int execId, final String name, final int attempt, final File... files)
       throws ExecutorManagerException {
     final AppendLogsHandler handler = new AppendLogsHandler();

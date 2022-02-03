@@ -318,7 +318,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       tempFile = File.createTempFile("appendLogs-" + execId + "-" + name, ".tmp");
       Files.write(tempFile.toPath(), logs.getBytes(StandardCharsets.UTF_8));
       this.executionLogsDao.appendLogs(execId, "", 0, tempFile);
-      Thread.sleep(1000);
       tempFile.delete();
     } catch (ExecutorManagerException eme) {
       logger.error("Exception while appending to logs.", eme);
@@ -329,9 +328,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     } catch (RuntimeException re) {
       logger.error("Unexpected RuntimeException while appending to logs.", re);
       throw new ExecutorManagerException(re);
-    } catch (InterruptedException e) {
-      logger.error("The log upload process was interrupted with exception: " + e.toString());
-      throw new ExecutorManagerException(e);
     } finally {
       if(Objects.nonNull(tempFile) && tempFile.exists()) {
         tempFile.delete();
