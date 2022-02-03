@@ -1125,14 +1125,15 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   public void logPodDetails(final int executionId) throws ExecutorManagerException {
-    String podDetails = "";
-    podDetails += getPodEvents(executionId);
-    podDetails += getPodLogs(executionId);
-    if (StringUtils.isEmpty(podDetails)) {
+    StringBuffer podDetails = new StringBuffer();
+    podDetails.append(getPodEvents(executionId));
+    podDetails.append(getPodLogs(executionId));
+    String details = podDetails.toString();
+    if (StringUtils.isEmpty(details)) {
       return;
     }
     try {
-      this.executorLoader.appendLogs(executionId,"podDetails", podDetails);
+      this.executorLoader.appendLogs(executionId,"podDetails", details);
     } catch (ExecutorManagerException e) {
       logger.error("ExecId: {}, Unable to log pod details. Msg: {} ",
           executionId, e.getMessage());;
@@ -1141,12 +1142,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   private String getPodEvents(final int executionId) {
-    String podEvents = "Events: \n";
+    StringBuffer podEvents = new StringBuffer();
+    podEvents.append("Events: \n");
     final String podName = getPodName(executionId);
-    V1EventList events = null;
+    V1EventList kubernetesEvents = null;
     try {
       logger.info("Getting Pod Events for execution Id " + executionId);
-      events = this.coreV1Api.listNamespacedEvent(this.namespace, null, null,
+      kubernetesEvents = this.coreV1Api.listNamespacedEvent(this.namespace, null, null,
           null, null, null, null, null,
           null, null);
     } catch (final ApiException e) {
@@ -1154,15 +1156,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           executionId, e.getResponseBody());
       return "";
     }
-    for(V1Event event : events.getItems()) {
+    for(V1Event event : kubernetesEvents.getItems()) {
       if (event.getInvolvedObject().getKind().equals("Pod") && event.getInvolvedObject().getName().equals(podName)) {
-        podEvents += formatPodEvent(event);
+        podEvents.append(formatPodEvent(event));
       }
     }
-    if(podEvents.equals("Events: \n")) {
-      podEvents += "\t THERE ARE NO POD EVENTS \n";
+    String events = podEvents.toString();
+    if(events.equals("Events: \n")) {
+       podEvents.append("\t THERE ARE NO POD EVENTS \n");
+       return podEvents.toString();
     }
-    return podEvents;
+    return events;
   }
 
   /**
