@@ -1077,7 +1077,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param flow
    * @throws ExecutorManagerException
    */
+
   private void deletePod(final ExecutableFlow flow) throws ExecutorManagerException {
+    requireNonNull(flow, "The flow must not be null");
     final int executionId = flow.getExecutionId();
     final Status status = flow.getStatus();
     if (status != null && Status.isStatusFinshedWithoutSuccess(status)) {
@@ -1102,6 +1104,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   public void deleteService(final ExecutableFlow flow) throws ExecutorManagerException {
+    requireNonNull(flow, "The flow must not be null");
     final int executionId = flow.getExecutionId();
     try {
       final String serviceName = getServiceName(executionId);
