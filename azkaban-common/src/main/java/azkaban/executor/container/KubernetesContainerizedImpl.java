@@ -1106,8 +1106,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public void deleteService(final ExecutableFlow flow) throws ExecutorManagerException {
     requireNonNull(flow, "The flow must not be null");
     final int executionId = flow.getExecutionId();
+    final String serviceName = getServiceName(executionId);
     try {
-      final String serviceName = getServiceName(executionId);
       final V1Status deleteResult = this.coreV1Api.deleteNamespacedService(
           serviceName,
           this.namespace,
