@@ -83,6 +83,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1077,8 +1078,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   private void deletePod(final ExecutableFlow flow) throws ExecutorManagerException {
-    final Status status = flow.getStatus();
     final int executionId = flow.getExecutionId();
+    final Status status = flow.getStatus();
     if (status != null && Status.isStatusFinshedWithoutSuccess(status)) {
       logPodDetails(executionId);
     }
@@ -1087,9 +1088,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       this.coreV1Api.deleteNamespacedPod(podName, this.namespace, null, null,
           null, null, null, new V1DeleteOptions());
       logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}", executionId, podName);
-    } catch (final NullPointerException npe) {
-      logger.error("The passed in flow was null, and therefore does not have an associated "
-          + "executionId");
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete Pod in Kubernetes: {}", executionId,
           e.getResponseBody());
@@ -1104,10 +1102,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   public void deleteService(final ExecutableFlow flow) throws ExecutorManagerException {
-    // Need to initialize value for catch
-    int executionId = -1;
+    final int executionId = flow.getExecutionId();
     try {
-      executionId = flow.getExecutionId();
       final String serviceName = getServiceName(executionId);
       final V1Status deleteResult = this.coreV1Api.deleteNamespacedService(
           serviceName,
@@ -1123,9 +1119,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           serviceName,
           deleteResult.getCode(),
           deleteResult.getMessage());
-    } catch (final NullPointerException npe) {
-      logger.error("The passed in flow was null, and therefore does not have an associated "
-          + "executionId");
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,
           e.getResponseBody());
