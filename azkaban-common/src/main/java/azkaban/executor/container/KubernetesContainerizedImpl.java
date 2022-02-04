@@ -385,14 +385,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * service was created then it will also delete the service. This method can be called as a part
    * of cleanup process for containers in case containers didn't shutdown gracefully.
    *
-   * @param executionId
+   * @param flow
    * @throws ExecutorManagerException
    */
   @Override
-  public void deleteContainer(final int executionId) throws ExecutorManagerException {
-    deletePod(executionId);
+  public void deleteContainer(final ExecutableFlow flow) throws ExecutorManagerException {
+    deletePod(flow);
     if (isServiceRequired()) {
-      deleteService(executionId);
+      deleteService(flow);
     }
   }
 
@@ -1073,13 +1073,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * This method is used to delete pod in Kubernetes. It will terminate the pod. deployment is
    * fixed
    *
-   * @param executionId
+   * @param flow
    * @throws ExecutorManagerException
    */
-  private void deletePod(final int executionId) throws ExecutorManagerException {
-    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
-    Status status = flow.getStatus();
-    if(status !=null && Status.isStatusFinshedWithoutSuccess(status)) {
+  private void deletePod(final ExecutableFlow flow) throws ExecutorManagerException {
+    final Status status = flow.getStatus();
+    final int executionId = flow.getExecutionId();
+    if (status != null && Status.isStatusFinshedWithoutSuccess(status)) {
       logPodDetails(executionId);
     }
     try {
@@ -1087,6 +1087,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       this.coreV1Api.deleteNamespacedPod(podName, this.namespace, null, null,
           null, null, null, new V1DeleteOptions());
       logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}", executionId, podName);
+    } catch (final NullPointerException npe) {
+      logger.error("The passed in flow was null, and therefore does not have an associated "
+          + "executionId");
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete Pod in Kubernetes: {}", executionId,
           e.getResponseBody());
@@ -1097,12 +1100,15 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * This method is used to delete service in Kubernetes which is created for Pod.
    *
-   * @param executionId
+   * @param flow
    * @throws ExecutorManagerException
    */
-  public void deleteService(final int executionId) throws ExecutorManagerException {
-    final String serviceName = getServiceName(executionId);
+  public void deleteService(final ExecutableFlow flow) throws ExecutorManagerException {
+    // Need to initialize value for catch
+    int executionId = -1;
     try {
+      executionId = flow.getExecutionId();
+      final String serviceName = getServiceName(executionId);
       final V1Status deleteResult = this.coreV1Api.deleteNamespacedService(
           serviceName,
           this.namespace,
@@ -1117,6 +1123,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           serviceName,
           deleteResult.getCode(),
           deleteResult.getMessage());
+    } catch (final NullPointerException npe) {
+      logger.error("The passed in flow was null, and therefore does not have an associated "
+          + "executionId");
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,
           e.getResponseBody());
