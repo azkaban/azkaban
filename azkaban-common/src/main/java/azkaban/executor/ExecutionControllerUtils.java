@@ -103,6 +103,8 @@ public class ExecutionControllerUtils {
           failEverything(dsFlow, finalFlowStatus);
           executorLoader.updateExecutableFlow(dsFlow);
         }
+        // flow will be used for event reporter afterwards, thus the final status needs to be set
+        flow.setStatus(finalFlowStatus);
       }
 
       if (flow.getEndTime() == -1) {
