@@ -162,11 +162,12 @@ public class ExecutionFlowDao {
     final StringBuilder query = new StringBuilder()
         .append(FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY)
         .append(" WHERE status=? ")
+        .append(" AND dispatch_method=?")
         .append(" AND " + validityFrom + ">0")
         .append(" AND " + validityFrom + "<?");
     try {
       return this.dbOperator.query(query.toString(), new FetchExecutableFlows(),
-          status.getNumVal(), beforeInMillis);
+          status.getNumVal(), DispatchMethod.CONTAINERIZED.getNumVal(), beforeInMillis);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching stale flows", e);
     }
