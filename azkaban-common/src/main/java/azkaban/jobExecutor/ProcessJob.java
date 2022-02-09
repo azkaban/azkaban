@@ -33,6 +33,8 @@ import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -392,6 +394,17 @@ public class ProcessJob extends AbstractProcessJob {
     final List<String> checkIfUserCanWriteCommand = Arrays
         .asList(CREATE_FILE, getWorkingDirectory() + "/" + TEMP_FILE_NAME);
     final int result = executeAsUser.execute(effectiveUser, checkIfUserCanWriteCommand);
+    // There's bug when traversing a special DAG like A->A->B->A, where A and B are different
+    // effective users. The CWD ownership would be A->A->B->B instead of A->A->B->A.
+    // This is Because the TEMP_FILE created in the second job would persist (which A always has
+    // write permission of this temp file) and violates the logic to check whether current effective
+    // user has write permission in CWD.
+    // Therefore, if TEMP_FILE is created, it should be destroyed at the end of the function
+    try {
+      Files.deleteIfExists(Paths.get(getWorkingDirectory() + "/" + TEMP_FILE_NAME));
+    } catch (Exception e) {
+      info(String.format("Failed to delete %s in current working directory", TEMP_FILE_NAME));
+    }
     return result == SUCCESSFUL_EXECUTION;
   }
 
