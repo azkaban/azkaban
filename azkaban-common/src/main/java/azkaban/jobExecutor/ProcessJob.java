@@ -34,6 +34,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -391,14 +392,15 @@ public class ProcessJob extends AbstractProcessJob {
       throws IOException {
     final ExecuteAsUser executeAsUser = new ExecuteAsUser(
         this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+    final Path tmpFilePath = Paths.get(getWorkingDirectory(), TEMP_FILE_NAME);
     final List<String> checkIfUserCanWriteCommand = Arrays
-        .asList(CREATE_FILE, getWorkingDirectory() + "/" + TEMP_FILE_NAME);
+        .asList(CREATE_FILE, tmpFilePath.toString());
     final int result = executeAsUser.execute(effectiveUser, checkIfUserCanWriteCommand);
     // If TEMP_FILE user_can_write is created, it should be deleted at the end of the function
     try {
-      Files.deleteIfExists(Paths.get(getWorkingDirectory() + "/" + TEMP_FILE_NAME));
+      Files.deleteIfExists(tmpFilePath);
     } catch (Exception e) {
-      info(String.format("Failed to delete %s in current working directory", TEMP_FILE_NAME));
+      warn(String.format("Failed to delete %s in current working directory", TEMP_FILE_NAME), e);
     }
     return result == SUCCESSFUL_EXECUTION;
   }
