@@ -394,12 +394,7 @@ public class ProcessJob extends AbstractProcessJob {
     final List<String> checkIfUserCanWriteCommand = Arrays
         .asList(CREATE_FILE, getWorkingDirectory() + "/" + TEMP_FILE_NAME);
     final int result = executeAsUser.execute(effectiveUser, checkIfUserCanWriteCommand);
-    // There's bug when traversing a special DAG like A->A->B->A, where A and B are different
-    // effective users. The CWD ownership would be A->A->B->B instead of A->A->B->A.
-    // This is Because the TEMP_FILE created in the second job would persist (which A always has
-    // write permission of this temp file) and violates the logic to check whether current effective
-    // user has write permission in CWD.
-    // Therefore, if TEMP_FILE is created, it should be destroyed at the end of the function
+    // If TEMP_FILE user_can_write is created, it should be deleted at the end of the function
     try {
       Files.deleteIfExists(Paths.get(getWorkingDirectory() + "/" + TEMP_FILE_NAME));
     } catch (Exception e) {
