@@ -259,26 +259,48 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
-  public void testFetchStaleFlows() throws Exception {
-    long olderThan10Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10);
-    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", olderThan10Days,
+  public void testFetchStaleFlows() throws IOException, ExecutorManagerException {
+    // Flow executions in PREPARING state
+    final long lessThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5);
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", lessThan15Minutes,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(), DispatchMethod.POLL);
+
+    final long olderThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(15);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", olderThan15Minutes,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(), DispatchMethod.POLL);
+
+    final ExecutableFlow flow3 = submitNewFlow("exectest1", "exec2", olderThan15Minutes,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(),
+        DispatchMethod.CONTAINERIZED);
+
+    // Flow executions in RUNNING state
+    final long olderThan10Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10);
+    final ExecutableFlow flow4 = submitNewFlow("exectest1", "exec3", olderThan10Days,
         ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan10Days),
         DispatchMethod.CONTAINERIZED);
 
-    long olderThan5Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5);
-    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec3", olderThan5Days,
+    final long olderThan5Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5);
+    final ExecutableFlow flow5 = submitNewFlow("exectest1", "exec1", olderThan5Days,
         ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan5Days),
         DispatchMethod.CONTAINERIZED);
 
-    ImmutableMap<Status, Pair<Duration, String>> validityMap = ImmutableMap.of(Status.RUNNING,
-        new Pair<>(Duration.ofDays(10), "start_time"));
-    // Only the first flow in the RUNNING state should be returned.
-    final List<ExecutableFlow> fetchedStaleFlows =
-        this.executionFlowDao.fetchStaleFlowsForStatus(Status.RUNNING, validityMap);
-    assertThat(fetchedStaleFlows.size()).isEqualTo(1);
+    ImmutableMap<Status, Pair<Duration, String>> validityMap = ImmutableMap.of(
+        Status.PREPARING, new Pair<>(Duration.ofMinutes(15), "submit_time"),
+        Status.RUNNING, new Pair<>(Duration.ofDays(10), "start_time"));
 
-    final ExecutableFlow fetchedFlow1 = fetchedStaleFlows.get(0);
-    assertTwoFlowSame(flow1, fetchedFlow1);
+    // Test staleness in PREPARING state
+    final List<ExecutableFlow> staleFlowsInPreparing =
+        this.executionFlowDao.fetchStaleFlowsForStatus(Status.PREPARING, validityMap);
+    // Only containerized executions submitted more than 15 mins ago should be returned
+    assertThat(staleFlowsInPreparing.size()).isEqualTo(1);
+    assertTwoFlowSame(flow3, staleFlowsInPreparing.get(0));
+
+    // Test staleness in RUNNING state
+    final List<ExecutableFlow> staleFlowsInRunning =
+        this.executionFlowDao.fetchStaleFlowsForStatus(Status.RUNNING, validityMap);
+    // Only the first flow in the RUNNING state should be returned.
+    assertThat(staleFlowsInRunning.size()).isEqualTo(1);
+    assertTwoFlowSame(flow4, staleFlowsInRunning.get(0));
   }
 
   @Test
