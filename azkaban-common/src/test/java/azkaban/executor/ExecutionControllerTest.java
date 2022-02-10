@@ -115,7 +115,7 @@ public class ExecutionControllerTest {
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
+    when(this.loader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
     when(this.loader.fetchQueuedFlows()).thenReturn(this.queuedFlows);
   }

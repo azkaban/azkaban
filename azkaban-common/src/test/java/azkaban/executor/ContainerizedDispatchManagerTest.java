@@ -21,6 +21,7 @@ import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -69,10 +70,8 @@ public class ContainerizedDispatchManagerTest {
   private final CommonMetrics commonMetrics = new CommonMetrics(
       new MetricsManager(new MetricRegistry()));
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
-  private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new
-      HashMap<>();
-  private List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows = new
-      ArrayList<>();
+  private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new HashMap<>();
+  private List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows = new ArrayList<>();
   private ExecutorLoader loader;
   private ExecutorApiGateway apiGateway;
   private ContainerizedImpl containerizedImpl;
@@ -140,7 +139,7 @@ public class ContainerizedDispatchManagerTest {
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
+    when(this.loader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
     when(this.loader.fetchActiveFlowByExecId(flow1.getExecutionId())).thenReturn(
         new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), DispatchMethod.CONTAINERIZED), flow1));
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
@@ -408,7 +407,7 @@ public class ContainerizedDispatchManagerTest {
         new ContainerizedDispatchManager(this.props, this.loader,
         this.commonMetrics,
         this.apiGateway, this.containerizedImpl, null, null, this.eventListener,
-            this.containerizationMetrics);
+            this.containerizationMetrics, null);
   }
 
   @Test
@@ -532,7 +531,7 @@ public class ContainerizedDispatchManagerTest {
     ContainerizedDispatchManager dispatchManager =
         new ContainerizedDispatchManager(containerEnabledProps, this.loader,
             this.commonMetrics, apiGateway, this.containerizedImpl,null, null, this.eventListener,
-            this.containerizationMetrics);
+            this.containerizationMetrics, null);
     dispatchManager.start();
     return dispatchManager;
   }

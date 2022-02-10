@@ -39,7 +39,7 @@ public interface ExecutorLoader {
   List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
       throws ExecutorManagerException;
 
-  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()

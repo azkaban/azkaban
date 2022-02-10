@@ -625,7 +625,7 @@ public class ExecutorManagerTest {
     this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2, DispatchMethod.PUSH);
     this.activeFlows.put(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1));
     this.activeFlows.put(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2));
-    when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
+    when(this.loader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
   }
 
   private ExecutableFlow waitFlowFinished(final ExecutableFlow flow) throws Exception {

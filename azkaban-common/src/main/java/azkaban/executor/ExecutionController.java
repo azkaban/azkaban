@@ -125,7 +125,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     // include executor which were initially active and still has flows running
     try {
       for (final Pair<ExecutionReference, ExecutableFlow> running : this.executorLoader
-          .fetchActiveFlows().values()) {
+          .fetchActiveFlows(DispatchMethod.POLL).values()) {
         final ExecutionReference ref = running.getFirst();
         if (ref.getExecutor().isPresent()) {
           final Executor executor = ref.getExecutor().get();
