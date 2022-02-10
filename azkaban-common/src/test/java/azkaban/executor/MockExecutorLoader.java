@@ -78,8 +78,8 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
-      throws ExecutorManagerException {
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
     return this.activeFlows;
   }
 

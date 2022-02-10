@@ -24,6 +24,7 @@ import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutorHealthChecker;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -135,6 +136,10 @@ public class AzkabanWebServerModule extends AbstractModule {
     bindContainerWatchDependencies();
     bindContainerCleanupManager();
     bindOnExecutionEventListener();
+    // Workaround to support the transition from bare metal executions using the POLL dispatch
+    // model to containerized executions. In that mixed environment cleanup logics to handle stuck
+    // executions for both CONTAINERIZED and POLL dispatch models are needed.
+    bindExecutorHealthCheckerForContainerization();
   }
 
   private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
@@ -222,6 +227,22 @@ public class AzkabanWebServerModule extends AbstractModule {
     }
     log.info("Binding ContainerCleanupManager");
     bind(ContainerCleanupManager.class).in(Scopes.SINGLETON);
+  }
+
+  private void bindExecutorHealthCheckerForContainerization() {
+    // {@link azkaban.executor.ExecutorHealthChecker} binding should only happen if
+    // {@link azkaban.DispatchMethod.CONTAINERIZED} dispatch model is enabled and below properties are defined.
+    if(isContainerizedDispatchMethodEnabled()) {
+      if(!this.props.getString(
+          ConfigurationKeys.AZKABAN_EXECUTOR_HEALTHCHECK_INTERVAL_MIN, "").isEmpty() &&
+          !this.props.getString(
+              ConfigurationKeys.AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, "").isEmpty()) {
+        log.info("Binding ExecutorHealthChecker");
+        bind(ExecutorHealthChecker.class).in(Scopes.SINGLETON);
+      } else {
+        bind(ExecutorHealthChecker.class).toProvider(Providers.of(null));
+      }
+    }
   }
 
   private void bindOnExecutionEventListener() {

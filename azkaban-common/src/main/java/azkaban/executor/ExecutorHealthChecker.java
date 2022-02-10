@@ -16,6 +16,7 @@
 package azkaban.executor;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -201,7 +202,7 @@ public class ExecutorHealthChecker {
     final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap = new HashMap<>();
     try {
       for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this
-          .executorLoader.fetchActiveFlows().values()) {
+          .executorLoader.fetchActiveFlows(DispatchMethod.POLL).values()) {
         final Optional<Executor> executor = runningFlow.getFirst().getExecutor();
         List<ExecutableFlow> flows = exFlowMap.get(executor);
         if (flows == null) {
