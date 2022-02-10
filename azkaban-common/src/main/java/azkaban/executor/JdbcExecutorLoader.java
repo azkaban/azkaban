@@ -127,9 +127,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
-      throws ExecutorManagerException {
-    return this.fetchActiveFlowDao.fetchActiveFlows();
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchActiveFlows(dispatchMethod);
   }
 
   @Override

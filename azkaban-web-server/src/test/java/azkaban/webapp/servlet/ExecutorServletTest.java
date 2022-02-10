@@ -132,7 +132,7 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
   public void testPostAjaxUpdateProperty() throws Exception {
     ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
         new Props(), null, null, null, null, null, null, new DummyEventListener(),
-        new DummyContainerizationMetricsImpl());
+        new DummyContainerizationMetricsImpl(), null);
     Mockito.when(this.azkabanWebServer.getExecutorManager())
         .thenReturn(containerizedDispatchManager);
     this.executorServlet.init(this.servletConfig);

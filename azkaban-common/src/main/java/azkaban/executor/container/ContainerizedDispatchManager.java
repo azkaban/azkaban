@@ -31,6 +31,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorApiGateway;
+import azkaban.executor.ExecutorHealthChecker;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -51,6 +52,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -76,15 +78,21 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private final ContainerRampUpCriteria containerRampUpCriteria;
   private final ContainerProxyUserCriteria containerProxyUserCriteria;
   private final Optional<ContainerizedWatch> containerizedWatch;
+  private final Optional<ExecutorHealthChecker> executorHealthChecker;
 
   @Inject
-  public ContainerizedDispatchManager(final Props azkProps, final ExecutorLoader executorLoader,
-      final CommonMetrics commonMetrics, final ExecutorApiGateway apiGateway,
+  public ContainerizedDispatchManager(
+      final Props azkProps,
+      final ExecutorLoader executorLoader,
+      final CommonMetrics commonMetrics,
+      final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl,
       final AlerterHolder alerterHolder,
       final ContainerizedWatch containerizedWatch,
       final EventListener eventListener,
-      final ContainerizationMetrics containerizationMetrics) throws ExecutorManagerException {
+      final ContainerizationMetrics containerizationMetrics,
+      @Nullable final ExecutorHealthChecker executorHealthChecker)
+      throws ExecutorManagerException {
     super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
         containerizationMetrics);
     rateLimiter =
@@ -95,6 +103,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
     this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
+    this.executorHealthChecker = Optional.ofNullable(executorHealthChecker);
   }
 
   public ContainerJobTypeCriteria getContainerJobTypeCriteria() {
@@ -226,6 +235,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.queueProcessor = setupQueueProcessor();
     this.queueProcessor.start();
     startWatch();
+    this.executorHealthChecker.ifPresent(ehc -> ehc.start());
   }
 
   // Start the event watch if configured.
@@ -291,6 +301,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       logger.info("Shutting down containerized watch");
       containerizedWatch.get().requestShutdown();
     }
+
+    this.executorHealthChecker.ifPresent(ehc -> ehc.shutdown());
   }
 
   /**

@@ -70,7 +70,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props,
         this.executorLoader, this.commonMetrics, mock(ExecutorApiGateway.class),
         mock(ContainerizedImpl.class),null, null,
-        new DummyEventListener(), new DummyContainerizationMetricsImpl());
+        new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
     this.projectManager = mock(ProjectManager.class);
     when(this.projectManager.getProject(projectId)).thenReturn(this.project);
 

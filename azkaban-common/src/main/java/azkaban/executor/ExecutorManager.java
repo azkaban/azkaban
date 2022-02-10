@@ -356,7 +356,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   private void loadRunningExecutions() throws ExecutorManagerException {
     logger.info("Loading running flows from database..");
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
-        .fetchActiveFlows();
+        .fetchActiveFlows(DispatchMethod.PUSH);
     logger.info("Loaded " + activeFlows.size() + " running flows");
     this.runningExecutions.get().putAll(activeFlows);
   }

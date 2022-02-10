@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
@@ -146,11 +147,11 @@ public class FetchActiveFlowDao {
    * @return active flows map
    * @throws ExecutorManagerException the executor manager exception
    */
-  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
-      throws ExecutorManagerException {
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchActiveExecutableFlows.FETCH_ACTIVE_EXECUTABLE_FLOWS,
-          new FetchActiveExecutableFlows());
+          new FetchActiveExecutableFlows(), dispatchMethod.getNumVal());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
     }
@@ -204,7 +205,8 @@ public class FetchActiveFlowDao {
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " WHERE ex.status NOT IN ("
+            + " WHERE dispatch_method = ? "
+            + " AND ex.status NOT IN ("
             + getTerminatingStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
