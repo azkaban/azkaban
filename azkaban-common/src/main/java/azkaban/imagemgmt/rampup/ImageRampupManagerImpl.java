@@ -18,6 +18,7 @@ package azkaban.imagemgmt.rampup;
 import azkaban.Constants.ImageMgmtConstants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.container.ContainerImplUtils;
+import azkaban.imagemgmt.daos.HPFlowDao;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
@@ -30,8 +31,12 @@ import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.models.ImageVersionMetadata;
 import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.imagemgmt.version.VersionSet;
+import com.google.common.annotations.VisibleForTesting;
+import io.kubernetes.client.Exec;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,6 +74,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   private final ImageTypeDao imageTypeDao;
   private final ImageVersionDao imageVersionDao;
   private final ImageRampupDao imageRampupDao;
+  private final HPFlowDao hpFlowDao;
   private static final String MSG_RANDOM_RAMPUP_VERSION_SELECTION = "The version selection is "
       + "based on deterministic rampup.";
   private static final String MSG_ACTIVE_VERSION_SELECTION = "The version selection is "
@@ -81,11 +87,12 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
 
   @Inject
   public ImageRampupManagerImpl(final ImageRampupDao imageRampupDao,
-      final ImageVersionDao imageVersionDao,
-      final ImageTypeDao imageTypeDao) {
+      final ImageVersionDao imageVersionDao, final ImageTypeDao imageTypeDao,
+      final HPFlowDao hpFlowDao) {
     this.imageRampupDao = imageRampupDao;
     this.imageVersionDao = imageVersionDao;
     this.imageTypeDao = imageTypeDao;
+    this.hpFlowDao = hpFlowDao;
   }
 
   @Override
@@ -166,8 +173,12 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   public Map<String, VersionInfo> getVersionByImageTypes(final ExecutableFlow flow,
       final Set<String> imageTypes, Set<String> overlayImageTypes)
       throws ImageMgmtException {
-    final Map<String, List<ImageRampup>> imageTypeRampups = this.imageRampupDao
-        .getRampupByImageTypes(imageTypes);
+    // If the flow is high priority flow, then skip fetching rampup plan and
+    // use the ACTIVE version of the image.
+    final boolean isHPFlow = this.hpFlowDao.isHPFlow(flow);
+    final Map<String, List<ImageRampup>> imageTypeRampups = isHPFlow ?
+        new LinkedHashMap<>(1) :
+        this.imageRampupDao.getRampupByImageTypes(imageTypes);
     final Set<String> remainingImageTypes = new TreeSet<>();
     final Map<String, ImageVersionMetadata> imageTypeVersionMap =
         this.processAndGetVersionForImageTypes(flow, imageTypes, imageTypeRampups,

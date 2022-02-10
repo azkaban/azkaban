@@ -36,4 +36,11 @@ public interface PermissionManager {
   public boolean hasPermission(final String imageTypeName, final String userId, final Type type)
       throws ImageMgmtException;
 
+  /**
+   * Checks if the user has permission to manage high priority flows.
+   * @param userId
+   * @return
+   * @throws ImageMgmtException
+   */
+  public boolean hasPermission(final String userId) throws ImageMgmtException;
 }
