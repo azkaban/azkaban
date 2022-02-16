@@ -121,7 +121,7 @@ public class KubernetesContainerizedImplTest {
   private static final String MAX_ALLOWED_MEMORY = "32Gi";
   public static final String DEPENDENCY1 = "dependency1";
   public static final int CPU_LIMIT_MULTIPLIER = 1;
-  public static final int MEMORY_LIMIT_MULTIPLIER = 2;
+  public static final int MEMORY_LIMIT_MULTIPLIER = 1;
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
