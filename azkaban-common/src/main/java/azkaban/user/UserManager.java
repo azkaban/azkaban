@@ -16,6 +16,8 @@
 
 package azkaban.user;
 
+import java.util.Set;
+
 /**
  * Interface for the UserManager. Implementors will have to handle the retrieval of the User object
  * given the username and password.
@@ -52,9 +54,9 @@ public interface UserManager {
 
   /**
    * @param username e.g. user alias
-   * @param groupName e.g. name of hadoop headless group / LDAP group
+   * @param groupSet e.g. a set of hadoop headless group / LDAP group names
    * @return Returns true if the user belongs to a group. This is used when verifying user
    * permission by checking its group membership
    */
-  public boolean validateUserGroupMembership(String username, String groupName);
+  public boolean validateUserGroupMembership(String username, Set<String> groupSet);
 }
