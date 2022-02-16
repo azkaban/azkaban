@@ -364,7 +364,7 @@ public class XmlUserManager implements UserManager {
   }
 
   @Override
-  public boolean validateUserGroupMembership(String username, String groupName) {
+  public boolean validateUserGroupMembership(String username, Set<String> groupSet) {
     return false;
   }
 }
