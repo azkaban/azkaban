@@ -30,10 +30,12 @@ spec:
     resources:
       limits:
         cpu: '2'
-        memory: 8Gi
+        memory: 4Gi
+        ephemeral-storage: 12Gi
       requests:
         cpu: '2'
         memory: 4Gi
+        ephemeral-storage: 12Gi
     volumeMounts:
     - mountPath: /export/apps/azkaban/azkaban-exec-server/current/plugins/jobtypes/spark
       name: jobtype-volume-spark

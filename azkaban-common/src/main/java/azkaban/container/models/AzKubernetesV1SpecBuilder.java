@@ -216,16 +216,20 @@ public class AzKubernetesV1SpecBuilder {
      * @param cpuRequest cpu requested for the flow-container/ application-container
      * @param memLimit memory limit for the flow-container/ application-container
      * @param memRequest memory requested for the flow-container/ application-container
+     * @param diskRequest disk requested for the flow-container/ application-container
      *
      * All the arguments themselves may contain multiplier. Example: 500m for 500 Millis
      */
-    public AzKubernetesV1SpecBuilder withResources(String cpuLimit, String cpuRequest, String memLimit, String memRequest) {
+    public AzKubernetesV1SpecBuilder withResources(String cpuLimit, String cpuRequest, String memLimit,
+        String memRequest, String diskRequest) {
         V1ResourceRequirements appResourceRequirements = new V1ResourceRequirementsBuilder()
                 .addToLimits("cpu", new Quantity(cpuLimit))
                 .addToRequests("cpu", new Quantity(cpuRequest))
                 .addToLimits("memory", new Quantity(memLimit))
                 .addToRequests("memory", new Quantity(memRequest))
-                .build();
+                .addToLimits("ephemeral-storage", new Quantity(diskRequest))
+                .addToRequests("ephemeral-storage", new Quantity(diskRequest))
+            .build();
         this.flowContainerBuilder.withResources(appResourceRequirements);
         return this;
     }

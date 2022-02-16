@@ -100,7 +100,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_CPU_REQUEST = "1";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
   public static final int DEFAULT_CPU_LIMIT_MULTIPLIER = 1;
-  public static final int DEFAULT_MEMORY_LIMIT_MULTIPLIER = 2;
+  public static final int DEFAULT_MEMORY_LIMIT_MULTIPLIER = 1;
+  public static final String DEFAULT_DISK_REQUEST = "12Gi";
+  public static final String DEFAULT_MAX_DISK = "50Gi";
   public static final String MAPPING = "Mapping";
   public static final String SERVICE_API_VERSION_2 = "ambassador/v2";
   public static final String DEFAULT_INIT_MOUNT_PATH_PREFIX_FOR_JOBTYPES = "/data/jobtypes";
@@ -142,6 +144,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private int memoryLimitMultiplier;
   private final String memoryRequest;
   private final String maxAllowedMemory;
+  private final String diskRequest;
+  private final String maxAllowedDisk;
   private final int servicePort;
   private final long serviceTimeout;
   private final VersionSetLoader versionSetLoader;
@@ -226,6 +230,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.maxAllowedMemory = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
             DEFAULT_MAX_MEMORY);
+    this.diskRequest = this.azkProps.getString(
+        ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_DISK_REQUEST,
+            DEFAULT_DISK_REQUEST);
+    this.maxAllowedDisk = this.azkProps.getString(
+        ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_DISK,
+            DEFAULT_MAX_DISK);
     this.servicePort =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
             54343);
@@ -301,6 +311,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * azkaban base image.
    */
   private void addIncludedJobTypes() {
+    INCLUDED_JOB_TYPES.add("command");
+    INCLUDED_JOB_TYPES.add("gobblin");
     INCLUDED_JOB_TYPES.add("hadoopJava");
     INCLUDED_JOB_TYPES.add("hadoopShell");
     INCLUDED_JOB_TYPES.add("hive");
@@ -308,7 +320,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     INCLUDED_JOB_TYPES.add("java2");
     INCLUDED_JOB_TYPES.add("pig");
     INCLUDED_JOB_TYPES.add("pigLi");
-    INCLUDED_JOB_TYPES.add("command");
     INCLUDED_JOB_TYPES.add("javaprocess");
     INCLUDED_JOB_TYPES.add("noop");
   }
@@ -563,13 +574,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Get CPU and memory requested for a flow container
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
+    final String flowContainerDiskRequest = getFlowContainerDiskRequest(flowParam);
     logger.info("Creating pod for execution-id: " + executionId);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,
                 azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit,
-                flowContainerMemoryRequest);
+                flowContainerMemoryRequest, flowContainerDiskRequest);
 
     final Map<String, String> envVariables = new HashMap<>();
     envVariables.put(ContainerizedDispatchManagerProperties.ENV_VERSION_SET_ID,
@@ -644,7 +656,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       return this.memoryRequest;
     }
     String userMemoryRequest =
-        flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+        flowParam.get(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
     int resourceCompare = compareResources(this.maxAllowedMemory, userMemoryRequest);
     if (resourceCompare < 0) { // user requested memory exceeds max allowed memory
       userMemoryRequest = this.maxAllowedMemory;
@@ -655,6 +667,31 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest, this.memoryRequest,
         this.memoryLimitMultiplier);
     return userMemoryRequest;
+  }
+
+  /**
+   * This method is used to get disk request for flow container. Precedence is defined below.
+   * a) Use disk request set in flow parameter constrained by max allowed disk set in config
+   * b) Use disk request set in system properties or default is set in @diskRequest
+   *
+   * @param flowParam
+   * @return Disk request for a flow container
+   */
+  @VisibleForTesting
+  String getFlowContainerDiskRequest(final Map<String, String> flowParam) {
+    if (flowParam == null || flowParam.isEmpty() || !flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_DISK_REQUEST)) {
+      return this.diskRequest;
+    }
+
+    String userDiskRequest =
+        flowParam.get(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_DISK_REQUEST);
+    int resourceCompare = compareResources(this.maxAllowedDisk, userDiskRequest);
+    if (resourceCompare < 0) {
+      // If comparison fails for any reason, use the value from the config.
+      userDiskRequest = this.diskRequest;
+    }
+    return userDiskRequest;
   }
 
   /**

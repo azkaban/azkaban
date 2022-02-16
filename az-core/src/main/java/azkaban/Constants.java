@@ -670,6 +670,10 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_DISK_REQUEST =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "disk.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_DISK =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.disk";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "secret.name";
     public static final String KUBERNETES_FLOW_CONTAINER_SECRET_VOLUME =
@@ -754,6 +758,10 @@ public class Constants {
     // Constant for memory request for flow container
     public static final String FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST =
         "flow.container.memory.request";
+
+    // Constant for disk request for flow container
+    public static final String FLOW_PARAM_FLOW_CONTAINER_DISK_REQUEST =
+        "flow.container.disk.request";
 
     public static final String FLOW_PARAM_POD_ENV_VAR = "pod.env.var.";
 
