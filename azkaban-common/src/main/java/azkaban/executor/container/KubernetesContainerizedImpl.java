@@ -688,6 +688,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         flowParam.get(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_DISK_REQUEST);
     int resourceCompare = compareResources(this.maxAllowedDisk, userDiskRequest);
     if (resourceCompare < 0) {
+      // User request disk capacity exceeds max allowed disk
+      userDiskRequest = this.maxAllowedDisk;
+    } else if (resourceCompare == 0) {
       // If comparison fails for any reason, use the value from the config.
       userDiskRequest = this.diskRequest;
     }
