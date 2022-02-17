@@ -23,15 +23,23 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 
 @Singleton
 public class JdbcExecutorLoader implements ExecutorLoader {
+
+  private static final Logger logger = Logger.getLogger(JdbcExecutorLoader.class);
 
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;
@@ -298,6 +306,35 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     this.executionLogsDao.uploadLogFile(execId, name, attempt, files);
   }
+
+  @Override
+  public void appendLogs(final int execId, final String name, final String logs) throws
+      ExecutorManagerException {
+    if (StringUtils.isBlank(logs)) {
+      return;
+    }
+    File tempFile = null;
+    try {
+      tempFile = File.createTempFile("appendLogs-" + execId + "-" + name, ".tmp");
+      Files.write(tempFile.toPath(), logs.getBytes(StandardCharsets.UTF_8));
+      this.executionLogsDao.appendLogs(execId, "", 0, tempFile);
+      tempFile.delete();
+    } catch (ExecutorManagerException eme) {
+      logger.error("Exception while appending to logs.", eme);
+      throw eme;
+    } catch (IOException ioe) {
+      logger.error("IOException while appending to logs.", ioe);
+      throw new ExecutorManagerException(ioe);
+    } catch (RuntimeException re) {
+      logger.error("Unexpected RuntimeException while appending to logs.", re);
+      throw new ExecutorManagerException(re);
+    } finally {
+      if(Objects.nonNull(tempFile) && tempFile.exists()) {
+        tempFile.delete();
+      }
+    }
+  }
+
 
   @Override
   public void uploadAttachmentFile(final ExecutableNode node, final File file)
