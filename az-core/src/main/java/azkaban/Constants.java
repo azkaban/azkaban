@@ -212,6 +212,7 @@ public class Constants {
     public static final String EFFECTIVE_USERS = "effectiveUsers";
     public static final String CPU_UTILIZED = "cpuUtilized";
     public static final String MEMORY_UTILIZED_IN_BYTES = "memoryUtilizedInBytes";
+    public static final String EXECUTION_SOURCE = "executionSource";
   }
 
   public static class ConfigurationKeys {
