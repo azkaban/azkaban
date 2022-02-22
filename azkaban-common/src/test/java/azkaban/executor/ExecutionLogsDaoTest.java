@@ -84,23 +84,6 @@ public class ExecutionLogsDaoTest {
 
     assertThat(data2).isNotNull();
     assertThat(data2.getLength()).isEqualTo(20);
-
-    // verify that ordered append is equivalent to upload with multiple files
-    this.executionLogsDao.appendLogs(12, "smallFiles", 0, new File(logDir, "log1.log"));
-    this.executionLogsDao.appendLogs(12, "smallFiles", 0, new File(logDir, "log2.log"));
-    this.executionLogsDao.appendLogs(12, "smallFiles", 0, new File(logDir, "log3.log"));
-
-    final LogData data3 = this.executionLogsDao.fetchLogs(12, "smallFiles", 0, 0, 50000);
-    assertThat(data3).isNotNull();
-    assertThat(data3.getLength()).isEqualTo(53);
-
-    final LogData data4 = this.executionLogsDao.fetchLogs(12, "smallFiles", 0, 10, 20);
-
-    assertThat(data4).isNotNull();
-    assertThat(data4.getLength()).isEqualTo(20);
-
-    assertThat(data.getData()).isEqualTo(data3.getData());
-    assertThat(data2.getData()).isEqualTo(data4.getData());
   }
 
   @Test
@@ -125,28 +108,6 @@ public class ExecutionLogsDaoTest {
     final LogData logsResult3 = this.executionLogsDao.fetchLogs(1, "largeFiles", 0, 150000, 250000);
     assertThat(logsResult3).isNotNull();
     assertThat(logsResult3.getLength()).isEqualTo(185493);
-
-    // verify that ordered append is equivalent to upload with multiple files
-    this.executionLogsDao.appendLogs(12, "largeFiles", 0, new File(logDir, "largeLog1.log"));
-    this.executionLogsDao.appendLogs(12, "largeFiles", 0, new File(logDir, "largeLog2.log"));
-    this.executionLogsDao.appendLogs(12, "largeFiles", 0, new File(logDir, "largeLog3.log"));
-
-    final LogData logsResult4 = this.executionLogsDao.fetchLogs(12, "largeFiles", 0, 0, 64000);
-    assertThat(logsResult4).isNotNull();
-    assertThat(logsResult4.getLength()).isEqualTo(64000);
-
-    final LogData logsResult5 = this.executionLogsDao.fetchLogs(12, "largeFiles", 0, 1000, 64000);
-    assertThat(logsResult5).isNotNull();
-    assertThat(logsResult5.getLength()).isEqualTo(64000);
-
-    final LogData logsResult6 = this.executionLogsDao.fetchLogs(12, "largeFiles", 0, 150000, 250000);
-    assertThat(logsResult6).isNotNull();
-    assertThat(logsResult6.getLength()).isEqualTo(185493);
-
-    assertThat(logsResult.getData()).isEqualTo(logsResult4.getData());
-    assertThat(logsResult2.getData()).isEqualTo(logsResult5.getData());
-    assertThat(logsResult3.getData()).isEqualTo(logsResult6.getData());
-
   }
 
   @Test
