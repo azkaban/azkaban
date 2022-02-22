@@ -138,7 +138,7 @@ public class ContainerCleanupManager {
       Status originalStatus = flow.getStatus();
       cancelFlowQuietly(flow, originalStatus);
       retryFlowQuietly(flow, originalStatus);
-      deleteContainerQuietly(flow);
+      deleteContainerQuietly(flow.getExecutionId());
     }
   }
 
@@ -199,9 +199,9 @@ public class ContainerCleanupManager {
   // for Kubernetes as it's declarative API will only submit the request for deleting container
   // resources. In future we can consider making this async to eliminate any chance of the cleanup
   // thread getting blocked.
-  private void deleteContainerQuietly(final ExecutableFlow flow) {
+  private void deleteContainerQuietly(final int executionId) {
     try {
-      this.containerizedImpl.deleteContainer(flow);
+      this.containerizedImpl.deleteContainer(executionId);
     } catch (final ExecutorManagerException eme) {
       logger.error("ExecutorManagerException while deleting container.", eme);
     } catch (final RuntimeException re) {

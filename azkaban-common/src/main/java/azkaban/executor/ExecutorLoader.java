@@ -268,18 +268,6 @@ public interface ExecutorLoader {
   void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException;
 
-  /**
-   * This method is used to append pod logs to the execution job log, especially for a K8s pod
-   *
-   * @param execId - executionId specified in Azkaban
-   * @param name - name of append operation, used to specify purpose in DB
-   * @param logs -  logs to be appended
-   *
-   * @throws ExecutorManagerException
-   */
-
-  void appendLogs(int execId, String name, String logs) throws ExecutorManagerException;
-
   void uploadAttachmentFile(ExecutableNode node, File file)
       throws ExecutorManagerException;
 
