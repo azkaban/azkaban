@@ -1681,6 +1681,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       } else {
         metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
       }
+      //Flow Trigger Information
+      metaData.put(EventReporterConstants.EXECUTION_SOURCE, flow.getExecutionSource());
 
       // Project upload info
       final ProjectFileHandler handler = flowRunner.projectFileHandler;
