@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import static azkaban.Constants.EventReporterConstants.AZ_HOST;
 import static azkaban.Constants.EventReporterConstants.AZ_WEBSERVER;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRY_BY_AZKABAN;
 import static azkaban.Constants.EventReporterConstants.EXECUTOR_TYPE;
 import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
 import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_NAME;
@@ -372,6 +373,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
         ServerUtils.getVersionSetJsonString(versionSet), flowMetadata.get(VERSION_SET)); // Checks version set
     Assert.assertEquals("Event metadata not created as expected", "BAREMETAL",
         flowMetadata.get(EXECUTOR_TYPE)); // Checks executor type
+    Assert.assertEquals("Event metadata not created as expected.", "false",
+        flowMetadata.get(EXECUTION_RETRY_BY_AZKABAN));
   }
 
   @Test

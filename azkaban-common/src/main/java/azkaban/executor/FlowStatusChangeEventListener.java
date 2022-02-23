@@ -76,6 +76,8 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
     metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
     metaData.put(EventReporterConstants.FLOW_VERSION, String.valueOf(flow.getAzkabanFlowVersion()));
     metaData.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
+    metaData.put(EventReporterConstants.EXECUTION_RETRY_BY_AZKABAN,
+        String.valueOf(flow.getExecutionOptions().isExecutionRetried()));
     if (flow.getVersionSet() != null) { // Save version set information
       metaData.put(EventReporterConstants.VERSION_SET,
           getVersionSetJsonString(flow.getVersionSet()));
