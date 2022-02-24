@@ -126,9 +126,11 @@ public class ContainerCleanupManager {
    */
   public void cleanUpStaleContainers() {
     try {
-      this.containerizedImpl.deleteContainers(validityMap.get(Status.RUNNING).getFirst().toMillis());
-    } catch (ExecutorManagerException e) {
-      logger.error("Exception occurred while deleting stale pods and services." + e);
+      this.containerizedImpl.deleteAgedContainers(validityMap.get(Status.RUNNING).getFirst());
+    } catch (ExecutorManagerException eme) {
+      logger.error("ExecutorManagerException occurred while deleting stale pods and services." + eme);
+    } catch (RuntimeException re) {
+      logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
     }
   }
 

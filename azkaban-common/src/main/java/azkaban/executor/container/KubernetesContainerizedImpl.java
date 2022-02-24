@@ -63,6 +63,7 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Status;
+import io.kubernetes.client.proto.V1beta1Extensions.Ingress;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
@@ -71,9 +72,9 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -128,7 +129,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
-  public static final int DAY_TO_MILLISECOND_CONVERSION_FACTOR = 86400000;
+  public static final int DEFAULT_EXECUTION_ID = -1;
 
   private final String namespace;
   private final ApiClient client;
@@ -419,14 +420,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   @Override
-  public void deleteContainers(long containerValidity) throws ExecutorManagerException {
+  public void deleteAgedContainers(Duration containerValidity) throws ExecutorManagerException {
     logger.info(String.format("Cleaning up containers older than %d days",
-        containerValidity / DAY_TO_MILLISECOND_CONVERSION_FACTOR));
-    final List<String> podsToDelete = getStalePods(containerValidity);
-    for (String podName : podsToDelete) {
-      logger.info(String.format("Deleting stale pod %s", podName));
-      final int execId = getExecutionId(podName);
+        containerValidity.toDays()));
+    final Set<Integer> containersToDelete = getStaleContainers(containerValidity);
+    for (int execId : containersToDelete) {
       if (execId > 0) {
+        logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
+            getServiceName(execId)));
         deleteContainer(execId);
       }
     }
@@ -434,44 +435,37 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method is used to fetch all stale pods in the current az cluster and namespace
-   * @param containerValidity pod validity in milliseconds
-   * @return List of stale pods
+   * @param containerValidity container validity in milliseconds
+   * @return Set of stale container's execution ids
    */
-  private List<String> getStalePods(final long containerValidity) {
-    List<String> stalePodList = new ArrayList<>();
+  private Set<Integer> getStaleContainers(final Duration containerValidity) {
+    Set<Integer> staleContainerExecIdSet = new HashSet<>();
     try {
       final String label = "cluster=" + this.clusterName;
       V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
 
-      // Get all pods whose age is older than Azkaban max flow running time (e.g. 10 days)
-      final Long validStartTimeStamp = System.currentTimeMillis() - containerValidity;
-      stalePodList =
+      // Get all execution ids of the pods whose age is older than Azkaban max flow running time
+      // (e.g. 10 days)
+      final Long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
+      staleContainerExecIdSet =
           items.getItems().stream()
               .filter((pod) -> pod.getMetadata().getCreationTimestamp().getMillis() < validStartTimeStamp)
-              .map((pod) -> pod.getMetadata().getName()).collect(Collectors.toList());
-    } catch (ApiException e) {
+              .map((pod) -> pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
+                  EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID)
+                  .replace(EXECUTION_ID_LABEL_PREFIX, ""))
+              .map((execId) -> Integer.valueOf(execId))
+              .collect(Collectors.toSet());
+    } catch (ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
-          e.getResponseBody());
+          ae.getResponseBody());
+    } catch (NullPointerException ne) {
+      logger.error("Error in extracting execution Id from pod label", ne.getMessage());
+    } catch (NumberFormatException ne) {
+      logger.error("Error in parsing execution Id from pod label", ne.getMessage());
     }
-    return stalePodList;
-  }
-
-  /**
-   * This method is used to extract execution id from pod mame
-   * @param podName
-   * @return execution id
-   */
-  private int getExecutionId(final String podName) {
-    int execId = -1;
-    try {
-      execId = Integer.valueOf(podName.replace(this.podPrefix + "-", "")
-          .replace(this.clusterName + "-", ""));
-    } catch (Exception e) {
-      logger.error("Failed to retrieve execution id from pod {}.", podName, e.getMessage());
-    }
-    return execId;
+    return staleContainerExecIdSet;
   }
 
   /**

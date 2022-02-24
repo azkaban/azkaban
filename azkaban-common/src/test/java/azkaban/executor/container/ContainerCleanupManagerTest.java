@@ -132,6 +132,6 @@ public class ContainerCleanupManagerTest {
   @Test
   public void testCleanUpStaleContainers() throws Exception {
     this.cleaner.cleanUpStaleContainers();
-    verify(this.containerImpl).deleteContainers(Duration.ofMinutes(MAX_FLOW_RUNNING_MIN + 60).toMillis());
+    verify(this.containerImpl).deleteAgedContainers(Duration.ofMinutes(MAX_FLOW_RUNNING_MIN + 60));
   }
 }

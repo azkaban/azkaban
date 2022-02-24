@@ -16,9 +16,10 @@
 package azkaban.executor.container;
 
 import azkaban.executor.ExecutorManagerException;
+import java.time.Duration;
 
 public interface ContainerizedImpl {
   void createContainer(final int executionId) throws ExecutorManagerException;
   void deleteContainer(final int executionId) throws ExecutorManagerException;
-  void deleteContainers(final long containerValidity) throws ExecutorManagerException;
+  void deleteAgedContainers(final Duration containerValidity) throws ExecutorManagerException;
 }
