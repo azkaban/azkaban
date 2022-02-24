@@ -32,11 +32,11 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ContainerCleanupManagerTest {
@@ -46,12 +46,13 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
+  private static long MAX_FLOW_RUNNING_MIN = 14400;
 
   @Before
   public void setup() throws Exception {
     this.props = new Props();
     // 10 days
-    this.props.put(AZKABAN_MAX_FLOW_RUNNING_MINS, 14400);
+    this.props.put(AZKABAN_MAX_FLOW_RUNNING_MINS, MAX_FLOW_RUNNING_MIN);
     this.executorLoader = mock(ExecutorLoader.class);
     this.containerImpl = mock(ContainerizedImpl.class);
     this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
@@ -124,5 +125,11 @@ public class ContainerCleanupManagerTest {
     verify(this.containerImpl).deleteContainer(flow);
     // Verify that the flow is indeed retried.
     verify(onExecutionEventListener).onExecutionEvent(flow, Constants.RESTART_FLOW);
+  }
+
+  @Test
+  public void testCleanUpStaleContainers() throws Exception {
+    this.cleaner.cleanUpStaleContainers();
+    verify(this.containerImpl).deleteContainers(Duration.ofMinutes(MAX_FLOW_RUNNING_MIN + 60).toMillis());
   }
 }

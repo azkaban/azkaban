@@ -21,4 +21,5 @@ import azkaban.executor.ExecutorManagerException;
 public interface ContainerizedImpl {
   void createContainer(final int executionId) throws ExecutorManagerException;
   void deleteContainer(final ExecutableFlow flow) throws ExecutorManagerException;
+  void deleteContainers(final long containerValidity) throws ExecutorManagerException;
 }

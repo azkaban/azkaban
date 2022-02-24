@@ -54,8 +54,10 @@ public class ContainerCleanupManager {
 
   public static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = -1;
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
-  private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(10);
-  private final long cleanupIntervalMin;
+  private static final Duration DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL = Duration.ofMinutes(10);
+  private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(60);
+  private final long executionCleanupIntervalMin;
+  private final long containerCleanupIntervalMin;
   private final ScheduledExecutorService cleanupService;
   private final ExecutorLoader executorLoader;
   private final ContainerizedImpl containerizedImpl;
@@ -76,9 +78,12 @@ public class ContainerCleanupManager {
   public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
       final ContainerizedImpl containerizedImpl,
       final ContainerizedDispatchManager containerizedDispatchManager) {
-    this.cleanupIntervalMin = azkProps
+    this.executionCleanupIntervalMin = azkProps
         .getLong(
             ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
+            DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL.toMinutes());
+    this.containerCleanupIntervalMin = azkProps.getLong(
+            ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_CONTAINER_CLEANUP_INTERVAL_MIN,
             DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
@@ -114,6 +119,14 @@ public class ContainerCleanupManager {
   public void cleanUpStaleFlows() {
     this.validityMap.entrySet().stream().filter(e -> !e.getValue().getFirst().isNegative()).map(
         Entry::getKey).forEach(this::cleanUpStaleFlows);
+  }
+
+  public void cleanUpStaleContainers() {
+    try {
+      this.containerizedImpl.deleteContainers(validityMap.get(Status.RUNNING).getFirst().toMillis());
+    } catch (ExecutorManagerException e) {
+      logger.error("Exception occurred while deleting stale pods and services." + e);
+    }
   }
 
   /**
@@ -215,8 +228,11 @@ public class ContainerCleanupManager {
   @SuppressWarnings("FutureReturnValueIgnored")
   public void start() {
     logger.info("Start container cleanup service");
+    // Default execution clean up interval is 10 min, container clean up interval is 60 min
     this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleFlows, 0L,
-        this.cleanupIntervalMin, TimeUnit.MINUTES);
+        this.executionCleanupIntervalMin, TimeUnit.MINUTES);
+    this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleContainers, 0L,
+        this.containerCleanupIntervalMin, TimeUnit.MINUTES);
   }
 
   /**
