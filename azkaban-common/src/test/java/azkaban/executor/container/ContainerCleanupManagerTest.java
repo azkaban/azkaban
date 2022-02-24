@@ -47,7 +47,8 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
-  private static long MAX_FLOW_RUNNING_MIN = 14400;
+  private static long MAX_FLOW_RUNNING_MIN = 60 * 24 * 10; // 10 days
+  private static long EXTRA_HOUR_MIN = 60;
 
   @Before
   public void setup() throws Exception {
@@ -132,6 +133,6 @@ public class ContainerCleanupManagerTest {
   @Test
   public void testCleanUpStaleContainers() throws Exception {
     this.cleaner.cleanUpStaleContainers();
-    verify(this.containerImpl).deleteAgedContainers(Duration.ofMinutes(MAX_FLOW_RUNNING_MIN + 60));
+    verify(this.containerImpl).deleteAgedContainers(Duration.ofMinutes(MAX_FLOW_RUNNING_MIN + EXTRA_HOUR_MIN));
   }
 }

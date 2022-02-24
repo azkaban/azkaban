@@ -127,10 +127,8 @@ public class ContainerCleanupManager {
   public void cleanUpStaleContainers() {
     try {
       this.containerizedImpl.deleteAgedContainers(validityMap.get(Status.RUNNING).getFirst());
-    } catch (ExecutorManagerException eme) {
-      logger.error("ExecutorManagerException occurred while deleting stale pods and services." + eme);
-    } catch (RuntimeException re) {
-      logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
+    } catch (Exception e) {
+      logger.error("Exception occurred while cleaning up stale pods and services." + e);
     }
   }
 
@@ -196,10 +194,8 @@ public class ContainerCleanupManager {
           "Cleaning up stale flow " + flow.getExecutionId() + " in state " + originalStatus
               .name());
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
-    } catch (ExecutorManagerException eme) {
-      logger.error("ExecutorManagerException while cancelling flow.", eme);
-    } catch (RuntimeException re) {
-      logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
+    } catch (Exception e) {
+      logger.error("Unexpected Exception while canceling and finalizing flow during clean up." + e);
     }
   }
 
@@ -220,10 +216,8 @@ public class ContainerCleanupManager {
   private void deleteContainerQuietly(final int executionId) {
     try {
       this.containerizedImpl.deleteContainer(executionId);
-    } catch (final ExecutorManagerException eme) {
-      logger.error("ExecutorManagerException while deleting container.", eme);
-    } catch (final RuntimeException re) {
-      logger.error("Unexpected RuntimeException while deleting container.", re);
+    } catch (final Exception e) {
+      logger.error("Unexpected RuntimeException while deleting container.", e);
     }
   }
 

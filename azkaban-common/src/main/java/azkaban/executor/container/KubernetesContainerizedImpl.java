@@ -129,7 +129,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
-  public static final int DEFAULT_EXECUTION_ID = -1;
+  private static final int DEFAULT_EXECUTION_ID = -1;
+  private static final String EQUAL_SIGN = "=";
 
   private final String namespace;
   private final ApiClient client;
@@ -405,12 +406,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public void deleteContainer(final int executionId) throws ExecutorManagerException {
     try { // if pod deletion is not successful, the service deletion can still be handled
       deletePod(executionId);
-    } catch (ExecutorManagerException e) {
-      logger.error("ExecId: {}, Unable to delete Pod in Kubernetes: {}", executionId,
-          e.getMessage());
-    }
-    if (isServiceRequired()) {
-      deleteService(executionId);
+    } finally {
+      if (isServiceRequired()) {
+        deleteService(executionId);
+      }
     }
   }
 
@@ -438,10 +437,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param containerValidity container validity in milliseconds
    * @return Set of stale container's execution ids
    */
-  private Set<Integer> getStaleContainers(final Duration containerValidity) {
+  private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
     Set<Integer> staleContainerExecIdSet = new HashSet<>();
     try {
-      final String label = "cluster=" + this.clusterName;
+      final String label = CLUSTER_LABEL_NAME + EQUAL_SIGN + this.clusterName;
       V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
@@ -460,10 +459,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     } catch (ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
           ae.getResponseBody());
+      throw new ExecutorManagerException(ae);
     } catch (NullPointerException ne) {
       logger.error("Error in extracting execution Id from pod label", ne.getMessage());
+      throw new ExecutorManagerException(ne);
     } catch (NumberFormatException ne) {
       logger.error("Error in parsing execution Id from pod label", ne.getMessage());
+      throw new ExecutorManagerException(ne);
     }
     return staleContainerExecIdSet;
   }
