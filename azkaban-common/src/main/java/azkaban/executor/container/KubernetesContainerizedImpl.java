@@ -129,7 +129,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
   private static final int DEFAULT_EXECUTION_ID = -1;
-  private static final String EQUAL_TO = "=";
+  private static final String EQUALS_TO = "=";
 
   private final String namespace;
   private final ApiClient client;
@@ -439,7 +439,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
     Set<Integer> staleContainerExecIdSet = new HashSet<>();
     try {
-      final String label = CLUSTER_LABEL_NAME + EQUAL_TO + this.clusterName;
+      final String label = CLUSTER_LABEL_NAME + EQUALS_TO + this.clusterName;
       V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
