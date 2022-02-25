@@ -16,16 +16,14 @@
 
 package azkaban.dag;
 
-
-import static org.assertj.core.api.Assertions.assertThat;
+import azkaban.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
-import javafx.util.Pair;
 
-/**
- * Records the sequence of nodes and dag status change.
- */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/** Records the sequence of nodes and dag status change. */
 class StatusChangeRecorder {
 
   private final List<Pair<String, Status>> sequence = new ArrayList<>();

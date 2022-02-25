@@ -40,9 +40,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.quartz.CronExpression;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -51,7 +52,7 @@ import org.quartz.CronExpression;
 public class Utils {
 
   private static final Random RANDOM = new Random();
-  private static final Logger logger = Logger.getLogger(Utils.class);
+  private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
   /**
    * Private constructor.
