@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRY_BY_AZKABAN;
+
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
@@ -63,8 +65,6 @@ public class ExecutionOptions {
   public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
-  // Flow restartability check
-  private static final String EXECUTION_RETRY_BY_AZKABAN = "executionRetryByAzkaban";
   private boolean isExecutionRetried = false;
 
   private boolean notifyOnFirstFailure = true;
