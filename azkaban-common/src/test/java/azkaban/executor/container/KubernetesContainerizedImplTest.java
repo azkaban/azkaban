@@ -649,33 +649,33 @@ public class KubernetesContainerizedImplTest {
 
     // stale pod 1 with execution id information
     final V1ObjectMeta podMetadata1 = new V1ObjectMeta();
-    ImmutableMap<String, String> label1 = ImmutableMap.of(
+    final ImmutableMap<String, String> label1 = ImmutableMap.of(
         "execution-id", "execid-123");
     podMetadata1.setLabels(label1);
     podMetadata1.setCreationTimestamp(new DateTime(validStartTimeStamp - 1));
-    V1Pod pod1 = new AzKubernetesV1PodBuilder(podMetadata1, null).build();
+    final V1Pod pod1 = new AzKubernetesV1PodBuilder(podMetadata1, null).build();
 
     // stale pod 2 without execution id information
     final V1ObjectMeta podMetadata2 = new V1ObjectMeta();
-    ImmutableMap<String, String> label2 = ImmutableMap.of(
+    final ImmutableMap<String, String> label2 = ImmutableMap.of(
         "key2", "val2");
     podMetadata2.setLabels(label2);
     podMetadata2.setCreationTimestamp(new DateTime(validStartTimeStamp - 1));
-    V1Pod pod2 = new AzKubernetesV1PodBuilder(podMetadata2, null).build();
+    final V1Pod pod2 = new AzKubernetesV1PodBuilder(podMetadata2, null).build();
 
     // valid pod 3 with execution id information
     final V1ObjectMeta podMetadata3 = new V1ObjectMeta();
-    ImmutableMap<String, String> label3 = ImmutableMap.of(
+    final ImmutableMap<String, String> label3 = ImmutableMap.of(
         "execution-id", "execid-12345");
     podMetadata3.setLabels(label3);
     podMetadata3.setCreationTimestamp(new DateTime(validStartTimeStamp + 1 ));
-    V1Pod pod3 = new AzKubernetesV1PodBuilder(podMetadata3, null).build();
+    final V1Pod pod3 = new AzKubernetesV1PodBuilder(podMetadata3, null).build();
 
     podList.addItemsItem(pod1);
     podList.addItemsItem(pod2);
     podList.addItemsItem(pod3);
 
-    Set<Integer> staleContainerExecIdSet =
+    final Set<Integer> staleContainerExecIdSet =
         this.kubernetesContainerizedImpl.getExecutionIdFromPodList(podList,
         validStartTimeStamp);
     Assert.assertTrue(staleContainerExecIdSet.contains(123));

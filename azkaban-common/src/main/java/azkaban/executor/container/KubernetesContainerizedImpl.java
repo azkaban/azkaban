@@ -414,15 +414,15 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method is used to delete invalid containers in batch
-   * @param containerValidity pod validity in milliseconds
+   * @param containerValidity container valid duration
    * @throws ExecutorManagerException
    */
   @Override
-  public void deleteAgedContainers(Duration containerValidity) throws ExecutorManagerException {
+  public void deleteAgedContainers(final Duration containerValidity) throws ExecutorManagerException {
     logger.info(String.format("Cleaning up containers older than %d days",
         containerValidity.toDays()));
     final Set<Integer> containersToDelete = getStaleContainers(containerValidity);
-    for (int execId : containersToDelete) {
+    for (final int execId : containersToDelete) {
       if (execId > 0) {
         logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
             getServiceName(execId)));
@@ -438,20 +438,20 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method is used to fetch all stale pods in the current az cluster and namespace
-   * @param containerValidity container validity in milliseconds
+   * @param containerValidity container valid duration
    * @return Set of stale container's execution ids
    */
   private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
     try {
       // Select pods only from current Azkaban cluster and namespace
       final String label = CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + LABEL_POSTFIX;
-      V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
+      final V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
 
       // Get all execution ids of the pods whose age is older than Azkaban max flow running time
       // (e.g. 10 days)
-      final Long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
+      final long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
       return getExecutionIdFromPodList(items, validStartTimeStamp);
     } catch (ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
@@ -468,8 +468,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   @VisibleForTesting
   Set<Integer> getExecutionIdFromPodList (final V1PodList podList, final long validStartTimeStamp) {
-    Set<Integer> staleContainerExecIdSet = new HashSet<>();
-    for (V1Pod pod: podList.getItems()) {
+    final Set<Integer> staleContainerExecIdSet = new HashSet<>();
+    for (final V1Pod pod: podList.getItems()) {
       if (pod.getMetadata().getCreationTimestamp().getMillis() < validStartTimeStamp) {
         final String execIdLabel =
             pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
