@@ -129,7 +129,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
   private static final int DEFAULT_EXECUTION_ID = -1;
-  private static final String LABEL_POSTFIX = "app=azkaban-exec-server";
 
   private final String namespace;
   private final ApiClient client;
@@ -444,7 +443,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
     try {
       // Select pods only from current Azkaban cluster and namespace
-      final String label = CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + LABEL_POSTFIX;
+      final String label =
+          CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + APP_LABEL_NAME + "=" + POD_APPLICATION_TAG;
       final V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
@@ -452,7 +452,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // Get all execution ids of the pods whose age is older than Azkaban max flow running time
       // (e.g. 10 days)
       final long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
-      return getExecutionIdFromPodList(items, validStartTimeStamp);
+      return getExecutionIdsFromPodList(items, validStartTimeStamp);
     } catch (ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
           ae.getResponseBody());
@@ -467,12 +467,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   @VisibleForTesting
-  Set<Integer> getExecutionIdFromPodList (final V1PodList podList, final long validStartTimeStamp) {
+  Set<Integer> getExecutionIdsFromPodList(final V1PodList podList, final long validStartTimeStamp) {
     final Set<Integer> staleContainerExecIdSet = new HashSet<>();
     for (final V1Pod pod: podList.getItems()) {
-      if (pod.getMetadata().getCreationTimestamp().getMillis() < validStartTimeStamp) {
+      final V1ObjectMeta podMetadata = pod.getMetadata();
+      if (podMetadata.getCreationTimestamp().getMillis() < validStartTimeStamp) {
         final String execIdLabel =
-            pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
+            podMetadata.getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
             EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID);
         try {
           final String execId = execIdLabel.substring(execIdLabel.indexOf(
@@ -480,7 +481,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           staleContainerExecIdSet.add(Integer.valueOf(execId));
         } catch (Exception e) {
           logger.error(String.format("Unable to retrieve execution id from pod %s",
-              pod.getMetadata().getName()), e.getMessage());
+              podMetadata.getName()), e.getMessage());
         }
       }
     }

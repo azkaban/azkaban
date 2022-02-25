@@ -217,7 +217,7 @@ public class ContainerCleanupManager {
     try {
       this.containerizedImpl.deleteContainer(executionId);
     } catch (final Exception e) {
-      logger.error("Unexpected RuntimeException while deleting container.", e);
+      logger.error("Unexpected exception while deleting container.", e);
     }
   }
 

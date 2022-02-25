@@ -89,7 +89,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.joda.time.DateTime;
@@ -676,7 +675,7 @@ public class KubernetesContainerizedImplTest {
     podList.addItemsItem(pod3);
 
     final Set<Integer> staleContainerExecIdSet =
-        this.kubernetesContainerizedImpl.getExecutionIdFromPodList(podList,
+        this.kubernetesContainerizedImpl.getExecutionIdsFromPodList(podList,
         validStartTimeStamp);
     Assert.assertTrue(staleContainerExecIdSet.contains(123));
     Assert.assertTrue(staleContainerExecIdSet.contains(-1));
