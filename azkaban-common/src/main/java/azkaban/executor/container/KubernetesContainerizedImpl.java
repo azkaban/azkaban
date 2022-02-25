@@ -129,7 +129,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
   private static final int DEFAULT_EXECUTION_ID = -1;
-  private static final String EQUALS_TO = "=";
+  private static final String LABEL_POSTFIX = "app=azkaban-exec-server";
 
   private final String namespace;
   private final ApiClient client;
@@ -426,7 +426,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       if (execId > 0) {
         logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
             getServiceName(execId)));
-        deleteContainer(execId);
+        try {
+          deleteContainer(execId);
+        } catch (ExecutorManagerException e) {
+          logger.error(String.format("Unable to delete stale pod and service of exec-id %d",
+              execId), e.getMessage());
+        }
       }
     }
   }
@@ -437,9 +442,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return Set of stale container's execution ids
    */
   private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
-    Set<Integer> staleContainerExecIdSet = new HashSet<>();
     try {
-      final String label = CLUSTER_LABEL_NAME + EQUALS_TO + this.clusterName;
+      // Select pods only from current Azkaban cluster and namespace
+      final String label = CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + LABEL_POSTFIX;
       V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
@@ -447,25 +452,37 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // Get all execution ids of the pods whose age is older than Azkaban max flow running time
       // (e.g. 10 days)
       final Long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
-      staleContainerExecIdSet =
-          items.getItems().stream()
-              .filter((pod) -> pod.getMetadata().getCreationTimestamp().getMillis() < validStartTimeStamp)
-              .map((pod) -> pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
-                  EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID))
-              .map((str) -> str.substring(str.indexOf(
-                  EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length()))
-              .map((execId) -> Integer.valueOf(execId))
-              .collect(Collectors.toSet());
+      return getExecutionIdFromPodList(items, validStartTimeStamp);
     } catch (ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
           ae.getResponseBody());
       throw new ExecutorManagerException(ae);
-    } catch (NullPointerException ne) {
-      logger.error("Error in extracting execution Id from pod label", ne.getMessage());
-      throw new ExecutorManagerException(ne);
-    } catch (NumberFormatException ne) {
-      logger.error("Error in parsing execution Id from pod label", ne.getMessage());
-      throw new ExecutorManagerException(ne);
+    }
+  }
+
+  /**
+   * Obtain a set of execution ids from stale pod list
+   * @param podList
+   * @param validStartTimeStamp
+   * @return
+   */
+  @VisibleForTesting
+  Set<Integer> getExecutionIdFromPodList (final V1PodList podList, final long validStartTimeStamp) {
+    Set<Integer> staleContainerExecIdSet = new HashSet<>();
+    for (V1Pod pod: podList.getItems()) {
+      if (pod.getMetadata().getCreationTimestamp().getMillis() < validStartTimeStamp) {
+        final String execIdLabel =
+            pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
+            EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID);
+        try {
+          final String execId = execIdLabel.substring(execIdLabel.indexOf(
+              EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length());
+          staleContainerExecIdSet.add(Integer.valueOf(execId));
+        } catch (Exception e) {
+          logger.error(String.format("Unable to retrieve execution id from pod %s",
+              pod.getMetadata().getName()), e.getMessage());
+        }
+      }
     }
     return staleContainerExecIdSet;
   }

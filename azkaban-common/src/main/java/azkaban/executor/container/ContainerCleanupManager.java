@@ -204,7 +204,7 @@ public class ContainerCleanupManager {
       logger.info("Restarting cleaned up flow " + flow.getExecutionId());
       ExecutionControllerUtils.restartFlow(flow, originalStatus);
     } catch (RuntimeException re) {
-      logger.error("Unexpected RuntimeException while restarting flow during clean up." + re);
+      logger.error("Unexpected Exception while restarting flow during clean up." + re);
     }
   }
 
