@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRY_BY_AZKABAN;
+import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
 
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
@@ -66,6 +67,7 @@ public class ExecutionOptions {
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
   private boolean isExecutionRetried = false;
+  private Integer originalFlowExecutionIdBeforeRetry = null;
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -158,6 +160,8 @@ public class ExecutionOptions {
     // part of execution options.
 
     options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRY_BY_AZKABAN, false));
+    options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
+        options.originalFlowExecutionIdBeforeRetry));
 
     return options;
   }
@@ -308,6 +312,11 @@ public class ExecutionOptions {
   public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
       executionRetried; }
 
+  public Integer getOriginalFlowExecutionIdBeforeRetry() { return originalFlowExecutionIdBeforeRetry; }
+
+  public void setOriginalFlowExecutionIdBeforeRetry(Integer originalFlowExecutionIdBeforeRetry) { this.originalFlowExecutionIdBeforeRetry =
+      originalFlowExecutionIdBeforeRetry; }
+
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -329,6 +338,7 @@ public class ExecutionOptions {
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
     flowOptionObj.put(EXECUTION_RETRY_BY_AZKABAN, this.isExecutionRetried);
+    flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }
 
