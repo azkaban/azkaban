@@ -453,7 +453,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               .map((pod) -> pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
                   EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID))
               .map((str) -> str.substring(str.indexOf(
-                  EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_NAME.length()))
+                  EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length()))
               .map((execId) -> Integer.valueOf(execId))
               .collect(Collectors.toSet());
     } catch (ApiException ae) {
