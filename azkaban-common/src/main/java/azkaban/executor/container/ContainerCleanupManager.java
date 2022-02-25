@@ -127,7 +127,7 @@ public class ContainerCleanupManager {
   public void cleanUpStaleContainers() {
     try {
       this.containerizedImpl.deleteAgedContainers(validityMap.get(Status.RUNNING).getFirst());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("Exception occurred while cleaning up stale pods and services." + e);
     }
   }
@@ -194,7 +194,7 @@ public class ContainerCleanupManager {
           "Cleaning up stale flow " + flow.getExecutionId() + " in state " + originalStatus
               .name());
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("Unexpected Exception while canceling and finalizing flow during clean up." + e);
     }
   }
@@ -203,8 +203,8 @@ public class ContainerCleanupManager {
     try {
       logger.info("Restarting cleaned up flow " + flow.getExecutionId());
       ExecutionControllerUtils.restartFlow(flow, originalStatus);
-    } catch (RuntimeException re) {
-      logger.error("Unexpected Exception while restarting flow during clean up." + re);
+    } catch (final Exception e) {
+      logger.error("Unexpected Exception while restarting flow during clean up." + e);
     }
   }
 

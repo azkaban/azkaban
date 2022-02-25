@@ -427,7 +427,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             getServiceName(execId)));
         try {
           deleteContainer(execId);
-        } catch (ExecutorManagerException e) {
+        } catch (final ExecutorManagerException e) {
           logger.error(String.format("Unable to delete stale pod and service of exec-id %d",
               execId), e.getMessage());
         }
@@ -453,7 +453,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // (e.g. 10 days)
       final long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
       return getExecutionIdsFromPodList(items, validStartTimeStamp);
-    } catch (ApiException ae) {
+    } catch (final ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
           ae.getResponseBody());
       throw new ExecutorManagerException(ae);
@@ -462,8 +462,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * Obtain a set of execution ids from stale pod list
-   * @param podList
-   * @param validStartTimeStamp
+   * @param podList a stable pod list fetched from current az cluster and namespace
+   * @param validStartTimeStamp earliest creation timestamp for a valid pod
    * @return
    */
   @VisibleForTesting
@@ -479,7 +479,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           final String execId = execIdLabel.substring(execIdLabel.indexOf(
               EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length());
           staleContainerExecIdSet.add(Integer.valueOf(execId));
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error(String.format("Unable to retrieve execution id from pod %s",
               podMetadata.getName()), e.getMessage());
         }
