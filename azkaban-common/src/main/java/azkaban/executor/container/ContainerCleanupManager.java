@@ -83,8 +83,8 @@ public class ContainerCleanupManager {
             ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
             DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL.toMinutes());
     this.containerCleanupIntervalMin = azkProps.getLong(
-        ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_CONTAINER_CLEANUP_INTERVAL_MIN
-        , DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
+        ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_CONTAINER_CLEANUP_INTERVAL_MIN,
+        DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;

@@ -63,7 +63,6 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Status;
-import io.kubernetes.client.proto.V1beta1Extensions.Ingress;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
@@ -130,7 +129,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
   private static final int DEFAULT_EXECUTION_ID = -1;
-  private static final String EQUAL_SIGN = "=";
+  private static final String EQUAL_TO = "=";
 
   private final String namespace;
   private final ApiClient client;
@@ -440,7 +439,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
     Set<Integer> staleContainerExecIdSet = new HashSet<>();
     try {
-      final String label = CLUSTER_LABEL_NAME + EQUAL_SIGN + this.clusterName;
+      final String label = CLUSTER_LABEL_NAME + EQUAL_TO + this.clusterName;
       V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
@@ -452,8 +451,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           items.getItems().stream()
               .filter((pod) -> pod.getMetadata().getCreationTimestamp().getMillis() < validStartTimeStamp)
               .map((pod) -> pod.getMetadata().getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
-                  EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID)
-                  .replace(EXECUTION_ID_LABEL_PREFIX, ""))
+                  EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID))
+              .map((str) -> str.substring(str.indexOf(
+                  EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_NAME.length()))
               .map((execId) -> Integer.valueOf(execId))
               .collect(Collectors.toSet());
     } catch (ApiException ae) {
