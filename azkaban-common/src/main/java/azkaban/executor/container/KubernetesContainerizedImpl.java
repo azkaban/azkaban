@@ -422,15 +422,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         containerValidity.toDays()));
     final Set<Integer> containersToDelete = getStaleContainers(containerValidity);
     for (final int execId : containersToDelete) {
-      if (execId > 0) {
-        logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
-            getServiceName(execId)));
-        try {
-          deleteContainer(execId);
-        } catch (final ExecutorManagerException e) {
-          logger.error(String.format("Unable to delete stale pod and service of exec-id %d",
-              execId), e.getMessage());
-        }
+      logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
+          getServiceName(execId)));
+      try {
+        deleteContainer(execId);
+      } catch (final ExecutorManagerException e) {
+        logger.error(String.format("Unable to delete stale pod and service of exec-id %d",
+            execId), e.getMessage());
       }
     }
   }
@@ -478,7 +476,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         try {
           final String execId = execIdLabel.substring(execIdLabel.indexOf(
               EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length());
-          staleContainerExecIdSet.add(Integer.valueOf(execId));
+          final int id = Integer.valueOf(execId);
+          if (id > 0) {
+            staleContainerExecIdSet.add(id);
+          }
         } catch (final Exception e) {
           logger.error(String.format("Unable to retrieve execution id from pod %s",
               podMetadata.getName()), e.getMessage());

@@ -678,7 +678,7 @@ public class KubernetesContainerizedImplTest {
         this.kubernetesContainerizedImpl.getExecutionIdsFromPodList(podList,
         validStartTimeStamp);
     Assert.assertTrue(staleContainerExecIdSet.contains(123));
-    Assert.assertTrue(staleContainerExecIdSet.contains(-1));
+    Assert.assertFalse(staleContainerExecIdSet.contains(-1));
     Assert.assertFalse(staleContainerExecIdSet.contains(12345));
   }
 
