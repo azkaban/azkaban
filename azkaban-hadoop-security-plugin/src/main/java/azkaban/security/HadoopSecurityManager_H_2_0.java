@@ -424,14 +424,23 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
             logger.info("Need to pre-fetch extra metastore tokens from hive.");
 
             // start to process the user inputs.
+            int extraHcatTokenCount = 0;
             for (final String thriftUrl : extraHcatLocations) {
               logger.info("Pre-fetching metastore token from : " + thriftUrl);
 
               hiveConf = new HiveConf();
               hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrl);
-              hcatToken =
-                  fetchHcatToken(userToProxyFQN, hiveConf, thriftUrl, logger);
-              cred.addToken(hcatToken.getService(), hcatToken);
+              try {
+                hcatToken =
+                    fetchHcatToken(userToProxyFQN, hiveConf, thriftUrl, logger);
+                cred.addToken(hcatToken.getService(), hcatToken);
+                ++extraHcatTokenCount;
+              } catch (Exception e) {
+                logger.error("Failed to fetch extra metastore tokens from : " + thriftUrl, e);
+              }
+            }
+            if (0 == extraHcatTokenCount) {
+              throw new HadoopSecurityManagerException("No extra metastore token can be fetched.");
             }
           }
         }
