@@ -196,7 +196,7 @@ public class KubernetesContainerizedImplTest {
         .equals(cpuRequestedInFlowParam);
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(memoryRequestedInFlowParam);
-    // cpu limit should be same as request cpu, memory should be twice of requested memory
+    // cpu limit should be match request cpu, memory should match requested memory by a multiplier
     String expectedCPULimit =
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(cpuRequestedInFlowParam, CPU_REQUESTED_IN_PROPS,
@@ -275,7 +275,7 @@ public class KubernetesContainerizedImplTest {
         .equals(CPU_REQUESTED_IN_PROPS);
     assert (this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam))
         .equals(MEMORY_REQUESTED_IN_PROPS);
-    // cpu limit should be same as request cpu, memory should be twice of requested memory
+    // cpu limit should be match request cpu, memory should match requested memory by a multiplier
     final String expectedCPULimit =
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(CPU_REQUESTED_IN_PROPS, CPU_REQUESTED_IN_PROPS,
@@ -286,6 +286,56 @@ public class KubernetesContainerizedImplTest {
             .getResourceLimitFromResourceRequest(MEMORY_REQUESTED_IN_PROPS, MEMORY_REQUESTED_IN_PROPS,
                 MEMORY_LIMIT_MULTIPLIER);
     assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
+  }
+
+  /**
+   * This test is used to verify that if CPU and memory for a container is not requested by user,
+   * the limit should be same as defined in config
+   * @throws Exception
+   */
+  @Test
+  public void testCPUAndMemoryLimitChange() throws Exception {
+    // container 1: when there's no user requested resource, the limit should be same as config
+    // defined limit
+    final Map<String, String> flowParam = new HashMap<>();
+    final String cpuLimitByConf = this.kubernetesContainerizedImpl.getCpuLimit();
+    final String memoryLimitByConf = this.kubernetesContainerizedImpl.getMemoryLimit();
+    this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam);
+    this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam);
+
+    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(cpuLimitByConf);
+    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(memoryLimitByConf);
+
+    // container 2: when user requests resource in flow parameters, the limit should match
+    // dynamically
+    final String cpuRequestedInFlowParam = "3";
+    final String memoryRequestedInFlowParam = "3Gi";
+    flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST, cpuRequestedInFlowParam);
+    flowParam
+        .put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST, memoryRequestedInFlowParam);
+    this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam);
+    this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam);
+
+    String expectedCPULimit =
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(cpuRequestedInFlowParam, CPU_REQUESTED_IN_PROPS,
+                CPU_LIMIT_MULTIPLIER);
+    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(expectedCPULimit);
+    String expectedMemoryLimit =
+        this.kubernetesContainerizedImpl
+            .getResourceLimitFromResourceRequest(memoryRequestedInFlowParam, MEMORY_REQUESTED_IN_PROPS,
+                MEMORY_LIMIT_MULTIPLIER);
+    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(expectedMemoryLimit);
+
+    // container 3: when user again does not specify resource request, the limit should again be
+    // the same as config defined limit
+    flowParam.remove(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+    flowParam.remove(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+    this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam);
+    this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam);
+
+    assert (this.kubernetesContainerizedImpl.getCpuLimit()).equals(cpuLimitByConf);
+    assert (this.kubernetesContainerizedImpl.getMemoryLimit()).equals(memoryLimitByConf);
   }
 
   /**

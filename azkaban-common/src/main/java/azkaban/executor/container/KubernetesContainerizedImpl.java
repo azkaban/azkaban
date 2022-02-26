@@ -172,6 +172,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String azkabanBaseImageName;
   private final String azkabanConfigImageName;
   private final ProjectLoader projectLoader;
+  private final String cpuLimitByConf;
+  private final String memoryLimitByConf;
 
 
   private static final Logger logger = LoggerFactory
@@ -221,6 +223,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             DEFAULT_CPU_LIMIT_MULTIPLIER);
     this.cpuLimit = this.getResourceLimitFromResourceRequest(this.cpuRequest, this.cpuRequest,
         this.cpuLimitMultiplier);
+    this.cpuLimitByConf = this.cpuLimit;
     this.maxAllowedCPU = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU
             , DEFAULT_MAX_CPU);
@@ -231,6 +234,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             DEFAULT_MEMORY_LIMIT_MULTIPLIER);
     this.memoryLimit = this.getResourceLimitFromResourceRequest(this.memoryRequest, this.memoryRequest,
         memoryLimitMultiplier);
+    this.memoryLimitByConf = this.memoryLimit;
     this.maxAllowedMemory = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
             DEFAULT_MAX_MEMORY);
@@ -710,6 +714,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   String getFlowContainerCPURequest(final Map<String, String> flowParam) {
     if (flowParam == null || flowParam.isEmpty() || !flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
+      this.cpuLimit = this.cpuLimitByConf;
       return this.cpuRequest;
     }
     String userCPURequest =
@@ -738,6 +743,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
     if (flowParam == null || flowParam.isEmpty() || !flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
+      this.memoryLimit = this.memoryLimitByConf;
       return this.memoryRequest;
     }
     String userMemoryRequest =
