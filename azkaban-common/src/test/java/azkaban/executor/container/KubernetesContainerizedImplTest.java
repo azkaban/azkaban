@@ -78,6 +78,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.util.Yaml;
 import java.io.IOException;
@@ -88,9 +89,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+import org.joda.time.DateTime;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -634,6 +635,51 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("2.3.4", mergedFlowPropsAndParams.get("image.version"));
+  }
+
+  /**
+   * Test get execution id set from pod list
+   * @throws Exception
+   */
+  @Test
+  public  void testGetExecutionIdFromPodList() throws Exception{
+    final V1PodList podList = new V1PodList();
+    final long validStartTimeStamp = System.currentTimeMillis();
+
+    // stale pod 1 with execution id information
+    final V1ObjectMeta podMetadata1 = new V1ObjectMeta();
+    final ImmutableMap<String, String> label1 = ImmutableMap.of(
+        "execution-id", "execid-123");
+    podMetadata1.setLabels(label1);
+    podMetadata1.setCreationTimestamp(new DateTime(validStartTimeStamp - 1));
+    final V1Pod pod1 = new AzKubernetesV1PodBuilder(podMetadata1, null).build();
+
+    // stale pod 2 without execution id information
+    final V1ObjectMeta podMetadata2 = new V1ObjectMeta();
+    final ImmutableMap<String, String> label2 = ImmutableMap.of(
+        "key2", "val2");
+    podMetadata2.setLabels(label2);
+    podMetadata2.setCreationTimestamp(new DateTime(validStartTimeStamp - 1));
+    final V1Pod pod2 = new AzKubernetesV1PodBuilder(podMetadata2, null).build();
+
+    // valid pod 3 with execution id information
+    final V1ObjectMeta podMetadata3 = new V1ObjectMeta();
+    final ImmutableMap<String, String> label3 = ImmutableMap.of(
+        "execution-id", "execid-12345");
+    podMetadata3.setLabels(label3);
+    podMetadata3.setCreationTimestamp(new DateTime(validStartTimeStamp + 1 ));
+    final V1Pod pod3 = new AzKubernetesV1PodBuilder(podMetadata3, null).build();
+
+    podList.addItemsItem(pod1);
+    podList.addItemsItem(pod2);
+    podList.addItemsItem(pod3);
+
+    final Set<Integer> staleContainerExecIdSet =
+        this.kubernetesContainerizedImpl.getExecutionIdsFromPodList(podList,
+        validStartTimeStamp);
+    Assert.assertTrue(staleContainerExecIdSet.contains(123));
+    Assert.assertFalse(staleContainerExecIdSet.contains(-1));
+    Assert.assertFalse(staleContainerExecIdSet.contains(12345));
   }
 
   private ExecutableFlow createTestFlow() throws Exception {
