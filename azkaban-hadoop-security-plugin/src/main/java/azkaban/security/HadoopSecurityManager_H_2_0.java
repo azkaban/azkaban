@@ -416,11 +416,11 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
             hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrls);
             try {
               hcatToken = fetchHcatToken(userToProxyFQN, hiveConf, thriftUrls, logger);
+              cred.addToken(hcatToken.getService(), hcatToken);
               ++extraHcatTokenCount;
             } catch (Exception e) {
               logger.error("Failed to fetch extra metastore tokens from : " + thriftUrls, e);
             }
-            cred.addToken(hcatToken.getService(), hcatToken);
           }
         } else {
           // Only if EXTRA_HCAT_CLUSTERS
