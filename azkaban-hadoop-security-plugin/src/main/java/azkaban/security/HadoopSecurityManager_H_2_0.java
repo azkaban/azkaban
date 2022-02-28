@@ -404,6 +404,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
         // Added support for extra_hcat_clusters
         final List<String> extraHcatClusters = props.getStringListFromCluster(EXTRA_HCAT_CLUSTERS);
+        int extraHcatTokenCount = 0;
         if (Collections.EMPTY_LIST != extraHcatClusters) {
           logger.info("Need to pre-fetch extra metastore tokens from extra hive clusters.");
 
@@ -413,7 +414,12 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
             hiveConf = new HiveConf();
             hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrls);
-            hcatToken = fetchHcatToken(userToProxyFQN, hiveConf, thriftUrls, logger);
+            try {
+              hcatToken = fetchHcatToken(userToProxyFQN, hiveConf, thriftUrls, logger);
+              ++extraHcatTokenCount;
+            } catch (Exception e) {
+              logger.error("Failed to fetch extra metastore tokens from : " + thriftUrls, e);
+            }
             cred.addToken(hcatToken.getService(), hcatToken);
           }
         } else {
@@ -424,7 +430,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
             logger.info("Need to pre-fetch extra metastore tokens from hive.");
 
             // start to process the user inputs.
-            int extraHcatTokenCount = 0;
+
             for (final String thriftUrl : extraHcatLocations) {
               logger.info("Pre-fetching metastore token from : " + thriftUrl);
 
@@ -439,10 +445,10 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
                 logger.error("Failed to fetch extra metastore tokens from : " + thriftUrl, e);
               }
             }
-            if (0 == extraHcatTokenCount) {
-              throw new HadoopSecurityManagerException("No extra metastore token can be fetched.");
-            }
           }
+        }
+        if (0 == extraHcatTokenCount) {
+          throw new HadoopSecurityManagerException("No extra metastore token could be fetched.");
         }
 
         logger.info("Hive metastore token(s) prefetched");
