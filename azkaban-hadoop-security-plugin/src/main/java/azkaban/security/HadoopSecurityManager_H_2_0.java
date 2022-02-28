@@ -430,7 +430,6 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
             logger.info("Need to pre-fetch extra metastore tokens from hive.");
 
             // start to process the user inputs.
-
             for (final String thriftUrl : extraHcatLocations) {
               logger.info("Pre-fetching metastore token from : " + thriftUrl);
 
