@@ -193,7 +193,7 @@ public class Constants {
     public static final String FLOW_KILL_DURATION = "flowKillDuration";
     public static final String FLOW_PAUSE_DURATION = "flowPauseDuration";
     public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
-    public static final String EXECUTION_RETRY_BY_AZKABAN = "executionRetryByAzkaban";
+    public static final String EXECUTION_RETRIED_BY_AZKABAN = "executionRetriedByAzkaban";
     public static final String ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY =
         "originalFlowExecutionIdBeforeRetry";
     public static final String SLA_OPTIONS = "slaOptions";

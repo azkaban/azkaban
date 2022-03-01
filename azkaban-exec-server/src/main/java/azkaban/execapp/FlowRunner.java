@@ -1656,7 +1656,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(flow.getExecutionId()));
       metaData.put(EventReporterConstants.START_TIME, String.valueOf(flow.getStartTime()));
       metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));
-      metaData.put(EventReporterConstants.EXECUTION_RETRY_BY_AZKABAN,
+      metaData.put(EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN,
           String.valueOf(flow.getExecutionOptions().isExecutionRetried()));
       if (flow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry() != null) {
         // original flow execution id is set when there is one

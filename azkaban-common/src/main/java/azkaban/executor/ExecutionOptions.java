@@ -16,7 +16,7 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRY_BY_AZKABAN;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN;
 import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
 
 import azkaban.executor.mail.DefaultMailCreator;
@@ -159,7 +159,7 @@ public class ExecutionOptions {
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
 
-    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRY_BY_AZKABAN, false));
+    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRIED_BY_AZKABAN, false));
     options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
         options.originalFlowExecutionIdBeforeRetry));
 
@@ -337,7 +337,7 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
-    flowOptionObj.put(EXECUTION_RETRY_BY_AZKABAN, this.isExecutionRetried);
+    flowOptionObj.put(EXECUTION_RETRIED_BY_AZKABAN, this.isExecutionRetried);
     flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }
