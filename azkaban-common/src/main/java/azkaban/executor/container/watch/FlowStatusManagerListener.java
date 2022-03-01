@@ -242,7 +242,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
    * @param event pod event
    * @return
    */
-  private Optional<ExecutableFlow> compareAndFinalizeFlowStatus(AzPodStatusMetadata event) {
+  private Optional<Status> compareAndFinalizeFlowStatus(AzPodStatusMetadata event) {
     requireNonNull(event, "event must not be null");
 
     int executionId = Integer.parseInt(event.getFlowPodMetadata().get().getExecutionId());
@@ -282,7 +282,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       // Log event for cases where the flow was not already in a final state
       WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }
-    return Optional.of(executableFlow);
+    return Optional.of(originalStatus);
   }
 
   /**
@@ -290,7 +290,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
    *
    * @param event pod watch event
    */
-  private void deleteFlowContainer(AzPodStatusMetadata event, ExecutableFlow flow) {
+  private void deleteFlowContainer(AzPodStatusMetadata event) {
     logger.info("Deleting Flow Pod: " + event.getPodName());
     if (event.getFlowPodMetadata().get().isCleanupDisabled()) {
       logger.warn(format("Pod deletion is disabled for pod %s, please delete it manually.",
@@ -298,7 +298,9 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       return;
     }
     try {
-      containerizedImpl.deleteContainer(flow);
+      containerizedImpl.deleteContainer(
+          Integer.parseInt(
+              event.getFlowPodMetadata().get().getExecutionId()));
     } catch (ExecutorManagerException e) {
       String message = format("Exception while deleting flow container.");
       logger.error(message, e);
@@ -315,15 +317,13 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
    * @param event
    */
   private void finalizeFlowAndDeleteContainer(AzPodStatusMetadata event) {
-    Optional<ExecutableFlow> originalExecutableFlow = compareAndFinalizeFlowStatus(event);
-    if(originalExecutableFlow.isPresent()) {
-      Status originalFlowStatus = originalExecutableFlow.get().getStatus();
-      if (!Status.isStatusFinished(originalFlowStatus)) {
-        logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
-            event.getPodName(), originalFlowStatus));
-      }
+    Optional<Status> originalFlowStatus = compareAndFinalizeFlowStatus(event);
+    if (originalFlowStatus.isPresent() &&
+        !Status.isStatusFinished(originalFlowStatus.get())) {
+      logger.warn(format("Flow for pod %s was in the non-final state %s and was finalized",
+          event.getPodName(), originalFlowStatus.get()));
     }
-    deleteFlowContainer(event, originalExecutableFlow.get());
+    deleteFlowContainer(event);
   }
 
   /**
