@@ -55,7 +55,7 @@ public class GZIPUtils {
 
     final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
     IOUtils.copy(gzipInputStream, byteOutputStream);
-
+    gzipInputStream.close();
     return byteOutputStream.toByteArray();
   }
 
