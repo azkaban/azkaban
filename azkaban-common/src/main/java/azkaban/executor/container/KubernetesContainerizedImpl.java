@@ -423,7 +423,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       } catch (final Exception e) {
         logger.error(String.format("Exception occurred when deleting stale pod and/or service of "
                 + "exec-id %d", execId), e.getMessage());
-        throw new ExecutorManagerException(e);
       }
     }
   }
