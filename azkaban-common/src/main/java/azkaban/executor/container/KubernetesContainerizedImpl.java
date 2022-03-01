@@ -140,11 +140,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String clusterName;
   private final String clusterEnv;
   private final String flowContainerName;
-  private String cpuLimit;
   private int cpuLimitMultiplier;
   private final String cpuRequest;
   private final String maxAllowedCPU;
-  private String memoryLimit;
   private int memoryLimitMultiplier;
   private final String memoryRequest;
   private final String maxAllowedMemory;
@@ -219,8 +217,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.cpuLimitMultiplier = this.azkProps
         .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
             DEFAULT_CPU_LIMIT_MULTIPLIER);
-    this.cpuLimit = this.getResourceLimitFromResourceRequest(this.cpuRequest, this.cpuRequest,
-        this.cpuLimitMultiplier);
     this.maxAllowedCPU = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU
             , DEFAULT_MAX_CPU);
@@ -229,8 +225,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.memoryLimitMultiplier = this.azkProps
         .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
             DEFAULT_MEMORY_LIMIT_MULTIPLIER);
-    this.memoryLimit = this.getResourceLimitFromResourceRequest(this.memoryRequest, this.memoryRequest,
-        memoryLimitMultiplier);
     this.maxAllowedMemory = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
             DEFAULT_MAX_MEMORY);
@@ -426,9 +420,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           getServiceName(execId)));
       try {
         deleteContainer(execId);
-      } catch (final ExecutorManagerException e) {
-        logger.error(String.format("Unable to delete stale pod and service of exec-id %d",
-            execId), e.getMessage());
+      } catch (final Exception e) {
+        logger.error(String.format("Exception occurred when deleting stale pod and/or service of "
+                + "exec-id %d", execId), e.getMessage());
       }
     }
   }
@@ -443,14 +437,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // Select pods only from current Azkaban cluster and namespace
       final String label =
           CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + APP_LABEL_NAME + "=" + POD_APPLICATION_TAG;
-      final V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
+      final V1PodList podList= this.coreV1Api.listNamespacedPod(this.namespace, null,
           null, null, null, label,
           null, null, null, null);
 
       // Get all execution ids of the pods whose age is older than Azkaban max flow running time
       // (e.g. 10 days)
       final long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
-      return getExecutionIdsFromPodList(items, validStartTimeStamp);
+      return getExecutionIdsFromPodList(podList, validStartTimeStamp);
     } catch (final ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
           ae.getResponseBody());
@@ -658,14 +652,18 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
     // Get CPU and memory requested for a flow container
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
+    final String flowContainerCPULimit = getResourceLimitFromResourceRequest(flowContainerCPURequest, this.memoryRequest,
+        this.cpuLimitMultiplier);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
+    final String flowContainerMemoryLimit = getResourceLimitFromResourceRequest(flowContainerMemoryRequest, this.memoryRequest,
+        this.cpuLimitMultiplier);
     final String flowContainerDiskRequest = getFlowContainerDiskRequest(flowParam);
     logger.info("Creating pod for execution-id: " + executionId);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,
                 azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
-            .withResources(this.cpuLimit, flowContainerCPURequest, this.memoryLimit,
+            .withResources(flowContainerCPULimit, flowContainerCPURequest, flowContainerMemoryLimit,
                 flowContainerMemoryRequest, flowContainerDiskRequest);
 
     final Map<String, String> envVariables = new HashMap<>();
@@ -721,8 +719,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // type is not correct, cpu request set in the config should be used
       userCPURequest = this.cpuRequest;
     }
-    this.cpuLimit = getResourceLimitFromResourceRequest(userCPURequest, this.cpuRequest,
-        this.cpuLimitMultiplier);
     return userCPURequest;
   }
 
@@ -749,8 +745,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // type is not correct, memory request set in the config should be used
       userMemoryRequest = this.memoryRequest;
     }
-    this.memoryLimit = getResourceLimitFromResourceRequest(userMemoryRequest, this.memoryRequest,
-        this.memoryLimitMultiplier);
     return userMemoryRequest;
   }
 
@@ -811,25 +805,25 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   /**
    * This method returns resource limit as a multiplier of requested resource
-   * @param resourceRequest
+   * @param userResourceRequest
    * @param defaultResourceRequest
    * @return resource limit based on requested resource
    */
   @VisibleForTesting
-  String getResourceLimitFromResourceRequest(final String resourceRequest,
+  String getResourceLimitFromResourceRequest(final String userResourceRequest,
       final String defaultResourceRequest, int multiplier) {
     String resourceLimit = defaultResourceRequest;
     try {
       final String PARTS_RE = "[eEinumkKMGTP]+";
-      final String[] parts = resourceRequest.split(PARTS_RE);
+      final String[] parts = userResourceRequest.split(PARTS_RE);
       final BigDecimal numericValueRequested = new BigDecimal(parts[0]);
-      final String suffix = resourceRequest.substring(parts[0].length());
+      final String suffix = userResourceRequest.substring(parts[0].length());
       final BigDecimal numericValueLimit =
           numericValueRequested.multiply(new BigDecimal(multiplier));
       resourceLimit = numericValueLimit + suffix;
     } catch (final NumberFormatException ne) {
       logger.error("NumberFormatException while paring user requested resource numeric value: "
-      + resourceRequest);
+      + userResourceRequest);
     }
     return resourceLimit;
   }
@@ -1261,13 +1255,5 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private String getPodName(final int executionId) {
     return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
-  }
-
-  public String getCpuLimit() {
-    return this.cpuLimit;
-  }
-
-  public String getMemoryLimit() {
-    return this.memoryLimit;
   }
 }
