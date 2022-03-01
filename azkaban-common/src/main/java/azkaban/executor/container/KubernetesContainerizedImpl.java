@@ -652,11 +652,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
     // Get CPU and memory requested for a flow container
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
-    final String flowContainerCPULimit = getResourceLimitFromResourceRequest(flowContainerCPURequest, this.memoryRequest,
-        this.cpuLimitMultiplier);
+    final String flowContainerCPULimit =
+        getResourceLimitFromResourceRequest(flowContainerCPURequest, this.cpuRequest,
+            this.cpuLimitMultiplier);
     final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
-    final String flowContainerMemoryLimit = getResourceLimitFromResourceRequest(flowContainerMemoryRequest, this.memoryRequest,
-        this.cpuLimitMultiplier);
+    final String flowContainerMemoryLimit = getResourceLimitFromResourceRequest(
+        flowContainerMemoryRequest, this.memoryRequest,
+        this.memoryLimitMultiplier);
     final String flowContainerDiskRequest = getFlowContainerDiskRequest(flowParam);
     logger.info("Creating pod for execution-id: " + executionId);
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
