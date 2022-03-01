@@ -54,8 +54,10 @@ public class ContainerCleanupManager {
 
   public static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = -1;
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
-  private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(10);
-  private final long cleanupIntervalMin;
+  private static final Duration DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL = Duration.ofMinutes(10);
+  private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(60);
+  private final long executionCleanupIntervalMin;
+  private final long containerCleanupIntervalMin;
   private final ScheduledExecutorService cleanupService;
   private final ExecutorLoader executorLoader;
   private final ContainerizedImpl containerizedImpl;
@@ -76,10 +78,13 @@ public class ContainerCleanupManager {
   public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
       final ContainerizedImpl containerizedImpl,
       final ContainerizedDispatchManager containerizedDispatchManager) {
-    this.cleanupIntervalMin = azkProps
+    this.executionCleanupIntervalMin = azkProps
         .getLong(
             ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
-            DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
+            DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL.toMinutes());
+    this.containerCleanupIntervalMin = azkProps.getLong(
+        ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_CONTAINER_CLEANUP_INTERVAL_MIN,
+        DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;
@@ -114,6 +119,17 @@ public class ContainerCleanupManager {
   public void cleanUpStaleFlows() {
     this.validityMap.entrySet().stream().filter(e -> !e.getValue().getFirst().isNegative()).map(
         Entry::getKey).forEach(this::cleanUpStaleFlows);
+  }
+
+  /**
+   * Try to clean the stale containers that are older than maximum azkaban flow running time
+   */
+  public void cleanUpStaleContainers() {
+    try {
+      this.containerizedImpl.deleteAgedContainers(validityMap.get(Status.RUNNING).getFirst());
+    } catch (final Exception e) {
+      logger.error("Exception occurred while cleaning up stale pods and services." + e);
+    }
   }
 
   /**
@@ -178,10 +194,8 @@ public class ContainerCleanupManager {
           "Cleaning up stale flow " + flow.getExecutionId() + " in state " + originalStatus
               .name());
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
-    } catch (ExecutorManagerException eme) {
-      logger.error("ExecutorManagerException while cancelling flow.", eme);
-    } catch (RuntimeException re) {
-      logger.error("Unexpected RuntimeException while finalizing flow during clean up." + re);
+    } catch (final Exception e) {
+      logger.error("Unexpected Exception while canceling and finalizing flow during clean up." + e);
     }
   }
 
@@ -189,8 +203,8 @@ public class ContainerCleanupManager {
     try {
       logger.info("Restarting cleaned up flow " + flow.getExecutionId());
       ExecutionControllerUtils.restartFlow(flow, originalStatus);
-    } catch (RuntimeException re) {
-      logger.error("Unexpected RuntimeException while restarting flow during clean up." + re);
+    } catch (final Exception e) {
+      logger.error("Unexpected Exception while restarting flow during clean up." + e);
     }
   }
 
@@ -202,10 +216,8 @@ public class ContainerCleanupManager {
   private void deleteContainerQuietly(final int executionId) {
     try {
       this.containerizedImpl.deleteContainer(executionId);
-    } catch (final ExecutorManagerException eme) {
-      logger.error("ExecutorManagerException while deleting container.", eme);
-    } catch (final RuntimeException re) {
-      logger.error("Unexpected RuntimeException while deleting container.", re);
+    } catch (final Exception e) {
+      logger.error("Unexpected exception while deleting container.", e);
     }
   }
 
@@ -215,8 +227,11 @@ public class ContainerCleanupManager {
   @SuppressWarnings("FutureReturnValueIgnored")
   public void start() {
     logger.info("Start container cleanup service");
+    // Default execution clean up interval is 10 min, container clean up interval is 60 min
     this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleFlows, 0L,
-        this.cleanupIntervalMin, TimeUnit.MINUTES);
+        this.executionCleanupIntervalMin, TimeUnit.MINUTES);
+    this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleContainers, 0L,
+        this.containerCleanupIntervalMin, TimeUnit.MINUTES);
   }
 
   /**

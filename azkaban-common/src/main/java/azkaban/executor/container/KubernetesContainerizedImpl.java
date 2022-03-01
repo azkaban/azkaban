@@ -59,6 +59,7 @@ import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Status;
@@ -70,7 +71,9 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -125,6 +128,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
+  private static final int DEFAULT_EXECUTION_ID = -1;
 
   private final String namespace;
   private final ApiClient client;
@@ -398,10 +402,91 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   @Override
   public void deleteContainer(final int executionId) throws ExecutorManagerException {
-    deletePod(executionId);
-    if (isServiceRequired()) {
-      deleteService(executionId);
+    try { // if pod deletion is not successful, the service deletion can still be handled
+      deletePod(executionId);
+    } finally {
+      if (isServiceRequired()) {
+        deleteService(executionId);
+      }
     }
+  }
+
+  /**
+   * This method is used to delete invalid containers in batch
+   * @param containerValidity container valid duration
+   * @throws ExecutorManagerException
+   */
+  @Override
+  public void deleteAgedContainers(final Duration containerValidity) throws ExecutorManagerException {
+    logger.info(String.format("Cleaning up containers older than %d days",
+        containerValidity.toDays()));
+    final Set<Integer> containersToDelete = getStaleContainers(containerValidity);
+    for (final int execId : containersToDelete) {
+      logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
+          getServiceName(execId)));
+      try {
+        deleteContainer(execId);
+      } catch (final ExecutorManagerException e) {
+        logger.error(String.format("Unable to delete stale pod and service of exec-id %d",
+            execId), e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * This method is used to fetch all stale pods in the current az cluster and namespace
+   * @param containerValidity container valid duration
+   * @return Set of stale container's execution ids
+   */
+  private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
+    try {
+      // Select pods only from current Azkaban cluster and namespace
+      final String label =
+          CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + APP_LABEL_NAME + "=" + POD_APPLICATION_TAG;
+      final V1PodList items= this.coreV1Api.listNamespacedPod(this.namespace, null,
+          null, null, null, label,
+          null, null, null, null);
+
+      // Get all execution ids of the pods whose age is older than Azkaban max flow running time
+      // (e.g. 10 days)
+      final long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
+      return getExecutionIdsFromPodList(items, validStartTimeStamp);
+    } catch (final ApiException ae) {
+      logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
+          ae.getResponseBody());
+      throw new ExecutorManagerException(ae);
+    }
+  }
+
+  /**
+   * Obtain a set of execution ids from stale pod list
+   * @param podList a stable pod list fetched from current az cluster and namespace
+   * @param validStartTimeStamp earliest creation timestamp for a valid pod
+   * @return
+   */
+  @VisibleForTesting
+  Set<Integer> getExecutionIdsFromPodList(final V1PodList podList, final long validStartTimeStamp) {
+    final Set<Integer> staleContainerExecIdSet = new HashSet<>();
+    for (final V1Pod pod: podList.getItems()) {
+      final V1ObjectMeta podMetadata = pod.getMetadata();
+      if (podMetadata.getCreationTimestamp().getMillis() < validStartTimeStamp) {
+        final String execIdLabel =
+            podMetadata.getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
+            EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID);
+        try {
+          final String execId = execIdLabel.substring(execIdLabel.indexOf(
+              EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length());
+          final int id = Integer.valueOf(execId);
+          if (id > 0) {
+            staleContainerExecIdSet.add(id);
+          }
+        } catch (final Exception e) {
+          logger.error(String.format("Unable to retrieve execution id from pod %s",
+              podMetadata.getName()), e.getMessage());
+        }
+      }
+    }
+    return staleContainerExecIdSet;
   }
 
   /**
