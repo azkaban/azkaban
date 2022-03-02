@@ -422,6 +422,9 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
               logger.error("Failed to fetch extra metastore tokens from : " + thriftUrls, e);
             }
           }
+          if (0 == extraHcatTokenCount) {
+            throw new HadoopSecurityManagerException("No extra metastore token could be fetched.");
+          }
         } else {
           // Only if EXTRA_HCAT_CLUSTERS
           final List<String> extraHcatLocations =
@@ -444,10 +447,10 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
                 logger.error("Failed to fetch extra metastore tokens from : " + thriftUrl, e);
               }
             }
+            if (0 == extraHcatTokenCount) {
+              throw new HadoopSecurityManagerException("No extra metastore token could be fetched.");
+            }
           }
-        }
-        if (0 == extraHcatTokenCount) {
-          throw new HadoopSecurityManagerException("No extra metastore token could be fetched.");
         }
 
         logger.info("Hive metastore token(s) prefetched");
