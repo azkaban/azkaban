@@ -379,7 +379,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   @Override
-  public void createContainer(final int executionId) throws ExecutorManagerException {
+  public synchronized void createContainer(final int executionId) throws ExecutorManagerException {
     createPod(executionId);
     if (isServiceRequired()) {
       createService(executionId);
@@ -395,7 +395,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   @Override
-  public void deleteContainer(final int executionId) throws ExecutorManagerException {
+  public synchronized void deleteContainer(final int executionId) throws ExecutorManagerException {
     try { // if pod deletion is not successful, the service deletion can still be handled
       deletePod(executionId);
     } finally {
@@ -411,7 +411,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   @Override
-  public void deleteAgedContainers(final Duration containerValidity) throws ExecutorManagerException {
+  public synchronized void deleteAgedContainers(final Duration containerValidity) throws ExecutorManagerException {
     logger.info(String.format("Cleaning up containers older than %d days",
         containerValidity.toDays()));
     final Set<Integer> containersToDelete = getStaleContainers(containerValidity);
