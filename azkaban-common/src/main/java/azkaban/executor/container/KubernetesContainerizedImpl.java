@@ -1080,10 +1080,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return selectorBuilder.toString();
   }
 
-  public String getNamespace() {
-    return this.namespace;
-  }
-
   /**
    * TODO: Add implementation to get annotations for Pod.
    *
@@ -1213,7 +1209,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param executionId
    * @throws ExecutorManagerException
    */
-  public void deleteService(final int executionId) throws ExecutorManagerException {
+  private void deleteService(final int executionId) throws ExecutorManagerException {
     final String serviceName = getServiceName(executionId);
     try {
       final V1Status deleteResult = this.coreV1Api.deleteNamespacedService(
