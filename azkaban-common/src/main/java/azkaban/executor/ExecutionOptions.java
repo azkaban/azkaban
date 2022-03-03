@@ -16,6 +16,9 @@
 
 package azkaban.executor;
 
+import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN;
+import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
+
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
@@ -63,9 +66,8 @@ public class ExecutionOptions {
   public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
-  // Flow restartability check
-  private static final String EXECUTION_RETRY = "executionRetryByAzkaban";
   private boolean isExecutionRetried = false;
+  private Integer originalFlowExecutionIdBeforeRetry = null;
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -157,7 +159,9 @@ public class ExecutionOptions {
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
 
-    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRY, false));
+    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRIED_BY_AZKABAN, false));
+    options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
+        options.originalFlowExecutionIdBeforeRetry));
 
     return options;
   }
@@ -308,6 +312,11 @@ public class ExecutionOptions {
   public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
       executionRetried; }
 
+  public Integer getOriginalFlowExecutionIdBeforeRetry() { return originalFlowExecutionIdBeforeRetry; }
+
+  public void setOriginalFlowExecutionIdBeforeRetry(Integer originalFlowExecutionIdBeforeRetry) { this.originalFlowExecutionIdBeforeRetry =
+      originalFlowExecutionIdBeforeRetry; }
+
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -328,7 +337,8 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
-    flowOptionObj.put(EXECUTION_RETRY, this.isExecutionRetried);
+    flowOptionObj.put(EXECUTION_RETRIED_BY_AZKABAN, this.isExecutionRetried);
+    flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }
 
