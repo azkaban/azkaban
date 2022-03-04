@@ -34,6 +34,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.IFlowRunnerManager;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
@@ -108,7 +109,7 @@ import org.slf4j.LoggerFactory;
  * execution is completed.
  */
 @Singleton
-public class FlowRunnerManager implements EventListener<Event>,
+public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Event>,
     ThreadPoolExecutingListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowRunnerManager.class);
@@ -203,15 +204,16 @@ public class FlowRunnerManager implements EventListener<Event>,
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
-    this.triggerManager = triggerManager;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.execMetrics = execMetrics;
     this.dependencyTransferManager = dependencyTransferManager;
     this.storage = storage;
     this.clusterRouter = clusterRouter;
-
     this.flowRampManager = flowRampManager;
+
+    this.triggerManager = triggerManager;
+    this.triggerManager.setFlowRunnerManager(this);
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -281,9 +283,6 @@ public class FlowRunnerManager implements EventListener<Event>,
       this.pollingService = new PollingService(pollingIntervalMillis,
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
-      this.triggerManager.setDispatchMethod(DispatchMethod.POLL);
-    } else {
-      this.triggerManager.setDispatchMethod(DispatchMethod.PUSH);
     }
   }
 
@@ -579,6 +578,7 @@ public class FlowRunnerManager implements EventListener<Event>,
 
   }
 
+  @Override
   public void cancelJobBySLA(final int execId, final String jobId)
       throws ExecutorManagerException {
     final FlowRunner flowRunner = this.runningFlows.get(execId);
@@ -599,6 +599,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     }
   }
 
+  @Override
   public void cancelFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner flowRunner = this.runningFlows.get(execId);
@@ -617,6 +618,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     flowRunner.kill(user);
   }
 
+  @Override
   public void pauseFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner runner = this.runningFlows.get(execId);
@@ -633,6 +635,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     }
   }
 
+  @Override
   public void resumeFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner runner = this.runningFlows.get(execId);
@@ -645,6 +648,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     runner.resume(user);
   }
 
+  @Override
   public void retryFailures(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner flowRunner = this.runningFlows.get(execId);

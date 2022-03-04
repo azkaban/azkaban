@@ -17,12 +17,8 @@
 package azkaban.execapp.action;
 
 import azkaban.Constants;
-import azkaban.DispatchMethod;
-import azkaban.ServiceProvider;
-import azkaban.container.FlowContainer;
-import azkaban.execapp.FlowRunnerManager;
+import azkaban.executor.IFlowRunnerManager;
 import azkaban.trigger.TriggerAction;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
@@ -31,48 +27,18 @@ public class KillExecutionAction implements TriggerAction {
 
   public static final String type = "KillExecutionAction";
 
-  private static final Logger logger = Logger
-      .getLogger(KillExecutionAction.class);
+  private static final Logger logger = Logger.getLogger(KillExecutionAction.class);
 
   private final String actionId;
   private final int execId;
-  private final DispatchMethod dispatchMethod;
+  private final IFlowRunnerManager flowRunnerManager;
 
-  @Deprecated
-  public KillExecutionAction(final String actionId, final int execId) {
-    this.execId = execId;
-    this.actionId = actionId;
-    // If no dispatch method is provided then fallback to push
-    this.dispatchMethod = DispatchMethod.PUSH;
-  }
 
-  /**
-   * Constructor with dispatchMethod
-   * @param actionId the type of action
-   * @param execId the flow execution id
-   * @param dispatchMethod the dispatch method used
-   */
   public KillExecutionAction(final String actionId, final int execId,
-      final DispatchMethod dispatchMethod) {
+      final IFlowRunnerManager flowRunnerManager) {
     this.execId = execId;
     this.actionId = actionId;
-    this.dispatchMethod = dispatchMethod;
-  }
-
-  public static KillExecutionAction createFromJson(final Object obj) {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static KillExecutionAction createFromJson(final HashMap<String, Object> obj) {
-    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    final String objType = (String) jsonObj.get("type");
-    if (!objType.equals(type)) {
-      throw new RuntimeException("Cannot create action of " + type + " from "
-          + objType);
-    }
-    final String actionId = (String) jsonObj.get("actionId");
-    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    return new KillExecutionAction(actionId, execId);
+    this.flowRunnerManager = flowRunnerManager;
   }
 
   @Override
@@ -87,29 +53,18 @@ public class KillExecutionAction implements TriggerAction {
 
   @Override
   public KillExecutionAction fromJson(final Object obj) throws Exception {
-    return createFromJson((HashMap<String, Object>) obj);
+    throw new UnsupportedOperationException("Operation not supported for this trigger action.");
   }
 
   @Override
   public Object toJson() {
-    final Map<String, Object> jsonObj = new HashMap<>();
-    jsonObj.put("actionId", this.actionId);
-    jsonObj.put("type", type);
-    jsonObj.put("execId", String.valueOf(this.execId));
-    return jsonObj;
+    throw new UnsupportedOperationException("Operation not supported for this trigger action.");
   }
 
   @Override
   public void doAction() throws Exception {
     logger.info("ready to kill execution " + this.execId);
-    if (dispatchMethod == DispatchMethod.CONTAINERIZED) {
-      ServiceProvider.SERVICE_PROVIDER.getInstance(FlowContainer.class)
-          .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
-    } else {
-      // Regular execution
-      ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class)
-          .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
-    }
+    this.flowRunnerManager.cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
   }
 
   @Override
