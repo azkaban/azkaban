@@ -136,14 +136,17 @@ public class ExecutorHealthChecker {
       Optional<ExecutorManagerException> healthcheckException = Optional.empty();
       Map<String, Object> results = null;
       try {
-        // Todo jamiesjc: add metrics to monitor the http call return time
+        long pingTime = System.currentTimeMillis();
         results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
                 ConnectorParams.PING_ACTION, null, null, null);
+        pingTime = System.currentTimeMillis() - pingTime;
+        logger.info("Got ping response from " + executorDetailString(executor)
+            + " in " + pingTime + "ms");
       } catch (final ExecutorManagerException e) {
         healthcheckException = Optional.of(e);
       } catch (final RuntimeException re) {
-        logger.error("Unexepected exception while reaching executor - "
+        logger.error("Unexpected exception while reaching executor - "
             + executorDetailString(executor), re);
       }
       if (!healthcheckException.isPresent()) {
