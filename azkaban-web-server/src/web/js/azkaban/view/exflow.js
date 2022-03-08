@@ -349,7 +349,6 @@ azkaban.FlowLogView = Backbone.View.extend({
     console.log("fetchLogs offset is " + offset)
 
     $.ajax({
-      async: false,
       url: requestURL,
       data: {
         "execid": execId,
