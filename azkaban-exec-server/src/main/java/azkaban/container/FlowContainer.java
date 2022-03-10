@@ -535,11 +535,12 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     this.flowRunner.getExecutableFlow().setModifiedBy("SLA");
 
     for (final JobRunner jobRunner : this.flowRunner.getActiveJobRunners()) {
-      if (jobRunner.getJobId().equals(jobId)) {
-        logger.info("Killing job " + jobId + " in execution " + execId + " by SLA");
-        jobRunner.killBySLA();
-        break;
+      if (!jobRunner.getJobId().equals(jobId)) {
+        continue;
       }
+      logger.info("Killing job " + jobId + " in execution " + execId + " by SLA");
+      jobRunner.killBySLA();
+      break;
     }
   }
 

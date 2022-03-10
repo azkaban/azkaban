@@ -16,8 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.utils.FileIOUtils.LogData;
-
 /**
  * Defines operations common to all flow execution controllers.
  */
