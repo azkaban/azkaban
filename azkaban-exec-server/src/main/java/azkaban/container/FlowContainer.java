@@ -24,7 +24,6 @@ import static com.google.common.base.Preconditions.checkState;
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.PluginManager;
-import azkaban.DispatchMethod;
 import azkaban.cluster.ClusterModule;
 import azkaban.cluster.ClusterRouter;
 import azkaban.common.ExecJettyServerModule;
@@ -36,6 +35,7 @@ import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.ExecMetrics;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.FlowRunner.FlowRunnerProxy;
+import azkaban.execapp.JobRunner;
 import azkaban.execapp.TriggerManager;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
@@ -46,6 +46,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.IFlowRunnerManager;
 import azkaban.executor.Status;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jmx.JmxJettyServer;
@@ -63,6 +64,7 @@ import azkaban.server.IMBeanRegistrable;
 import azkaban.server.MBeanRegistrationManager;
 import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
+import azkaban.spi.EventType;
 import azkaban.storage.ProjectStorageManager;
 import azkaban.utils.DependencyTransferManager;
 import azkaban.utils.FileIOUtils;
@@ -93,6 +95,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 import org.mortbay.jetty.Connector;
@@ -114,7 +117,7 @@ import org.mortbay.jetty.servlet.Context;
  *  RUNNING from FlowRunner. The rest of the state machine is handled by FlowRunner.
  */
 @Singleton
-public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
+public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, EventListener<Event> {
 
   private static final String JOBTYPE_DIR = "plugins/jobtypes";
   private static final String CONF_ARG = "-conf";
@@ -213,8 +216,10 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
     this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
         DEFAULT_VALIDATE_PROXY_USER);
+
     this.triggerManager = triggerManager;
-    this.triggerManager.setDispatchMethod(DispatchMethod.CONTAINERIZED);
+    this.triggerManager.setFlowRunnerManager(this);
+
     this.jobTypeManager =
         new JobTypeManager(
             this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
@@ -491,6 +496,17 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     launchCtrlMsgListener(this);
   }
 
+  @Override
+  public void pauseFlow(int execId, String user) throws ExecutorManagerException {
+    throw new NotImplementedException("Operation not yet implemented.");
+  }
+
+  @Override
+  public void resumeFlow(int execId, String user) throws ExecutorManagerException {
+    throw new NotImplementedException("Operation not yet implemented.");
+  }
+
+  @Override
   public void cancelFlow(final int execId, final String user)
       throws ExecutorManagerException {
 
@@ -509,13 +525,27 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
     this.flowRunner.kill(user);
   }
 
-  /**
-   * Attempts to retry the failed jobs in a running execution.
-   *
-   * @param execId
-   * @param user
-   * @throws ExecutorManagerException
-   */
+  @Override
+  public void cancelJobBySLA(final int execId, final String jobId)
+      throws ExecutorManagerException {
+    if (this.flowRunner == null) {
+      throw new ExecutorManagerException("Execution " + execId + " is not running.");
+    }
+
+    this.flowRunner.getExecutableFlow().setModifiedBy("SLA");
+
+    for (final JobRunner jobRunner : this.flowRunner.getActiveJobRunners()) {
+      if (!jobRunner.getJobId().equals(jobId)) {
+        continue;
+      }
+      logger.info("Killing job " + jobId + " in execution " + execId + " by SLA");
+      jobRunner.killBySLA();
+      break;
+    }
+  }
+
+
+  @Override
   public void retryFailures(final int execId, final String user)
       throws ExecutorManagerException {
 
@@ -786,10 +816,11 @@ public class FlowContainer implements IMBeanRegistrable, EventListener<Event> {
    */
   @Override
   public void handleEvent(final Event event) {
-    if (event.getType().isFlowEventType()) {
+    if (event.getType() == EventType.FLOW_STARTED) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
-      // Set Flow level SLA options for containerized executions
+
+      // add flow level SLA checker
       this.triggerManager
           .addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow
               .getExecutionOptions().getSlaOptions()));
