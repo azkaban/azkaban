@@ -42,6 +42,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -73,10 +74,13 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
   private final String truststorePath;
   private final String truststorePassword;
   private SSLConnectionSocketFactory tlsSocketFactory;
+  private final int executorPingTimeout;
 
   @Inject
   public ExecutorApiClient(final Props azkProps) {
     super();
+    this.executorPingTimeout =
+        azkProps.getInt(ConfigurationKeys.AZKABAN_EXECUTOR_PING_TIMEOUT, 5000);
     isReverseProxyEnabled =
         azkProps.getBoolean(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED,
         false);
@@ -182,12 +186,29 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
    *
    * @return http client
    */
+
   protected CloseableHttpClient createHttpsClient() {
     final HttpClientBuilder httpClientBuilder = HttpClients.custom()
         .setSSLSocketFactory(this.tlsSocketFactory);
     return httpClientBuilder.build();
   }
+  protected CloseableHttpClient createHttpsClientForPing() {
+    final RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(
+        this.executorPingTimeout).build();
+    final HttpClientBuilder httpClientBuilder = HttpClients.custom()
+        .setSSLSocketFactory(this.tlsSocketFactory);
+    return httpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+  }
 
+  @Override
+  protected CloseableHttpClient createHttpClient() {
+    return HttpClientBuilder.create().build();
+  }
+  protected CloseableHttpClient createHttpClientForPing() {
+    final RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(
+        this.executorPingTimeout).build();
+    return HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+  }
   /**
    * function to perform a Post https method.
    *
@@ -203,9 +224,32 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
       logger.error(" unable to perform httpPost as the passed uri is null.");
       return null;
     }
-
+    Pair<String, String> pingPair = new Pair<>(ConnectorParams.ACTION_PARAM,
+        ConnectorParams.PING_ACTION);
     final HttpPost post = new HttpPost(uri);
-    return this.sendAndReturnHttps(completeRequest(post, params));
+    if (params != null && params.contains(pingPair)) {
+      return this.sendAndReturnHttpsForPing(completeRequest(post, params));
+    } else {
+      return this.sendAndReturnHttps(completeRequest(post, params));
+    }
+  }
+
+  @Override
+  public String httpPost(final URI uri, final List<Pair<String, String>> params)
+      throws IOException {
+    // shortcut if the passed url is invalid.
+    if (null == uri) {
+      logger.error(" unable to perform httpPost as the passed uri is null.");
+      return null;
+    }
+    Pair<String, String> pingPair = new Pair<>(ConnectorParams.ACTION_PARAM,
+        ConnectorParams.PING_ACTION);
+    final HttpPost post = new HttpPost(uri);
+    if (params != null && params.contains(pingPair)) {
+      return this.sendAndReturnHttpForPing(completeRequest(post, params));
+    } else {
+      return this.sendAndReturnHttp(completeRequest(post, params));
+    }
   }
 
   public String doPost(final URI uri, final DispatchMethod dispatchMethod, final List<Pair<String, String>> params)
@@ -229,6 +273,26 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     }
   }
 
+  protected String sendAndReturnHttpsForPing(final HttpUriRequest request)
+      throws IOException {
+    try (final CloseableHttpClient client = this.createHttpsClientForPing()) {
+      return this.parseResponse(client.execute(request));
+    }
+  }
+
+  protected String sendAndReturnHttp(final HttpUriRequest request)
+      throws IOException {
+    try (final CloseableHttpClient client = this.createHttpsClient()) {
+      return this.parseResponse(client.execute(request));
+    }
+  }
+
+  protected String sendAndReturnHttpForPing(final HttpUriRequest request)
+      throws IOException {
+    try (final CloseableHttpClient client = this.createHttpClientForPing()) {
+      return this.parseResponse(client.execute(request));
+    }
+  }
   /**
    * Implementing the parseResponse function to return de-serialized Json object.
    *
