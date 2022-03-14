@@ -42,6 +42,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -182,10 +183,12 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
    *
    * @return http client
    */
-  protected CloseableHttpClient createHttpsClient() {
+  protected CloseableHttpClient createHttpsClient(final int HttpTimeout) {
+    final RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(
+        HttpTimeout).build();
     final HttpClientBuilder httpClientBuilder = HttpClients.custom()
         .setSSLSocketFactory(this.tlsSocketFactory);
-    return httpClientBuilder.build();
+    return httpClientBuilder.setDefaultRequestConfig(requestConfig).build();
   }
 
   /**
@@ -196,7 +199,8 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
    * @return the response object type of which is specified by user.
    * @throws UnsupportedEncodingException, IOException.
    */
-  public String httpsPost(final URI uri, final List<Pair<String, String>> params)
+  public String httpsPost(final URI uri,
+      final int HttpTimeout, final List<Pair<String, String>> params)
           throws IOException {
     // shortcut if the passed url is invalid.
     if (null == uri) {
@@ -205,26 +209,27 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     }
 
     final HttpPost post = new HttpPost(uri);
-    return this.sendAndReturnHttps(completeRequest(post, params));
+    return this.sendAndReturnHttps(completeRequest(post, params), HttpTimeout);
   }
 
-  public String doPost(final URI uri, final DispatchMethod dispatchMethod, final List<Pair<String, String>> params)
+  public String doPost(final URI uri, final DispatchMethod dispatchMethod,
+      final int HttpTimeout, final List<Pair<String, String>> params)
           throws IOException {
     // If in future tls support is added for POLL based model, then following condition
     // can be simplified
     if (isTlsEnabled && null != dispatchMethod && dispatchMethod == DispatchMethod.CONTAINERIZED) {
-      return this.httpsPost(uri, params);
+      return this.httpsPost(uri, HttpTimeout, params);
     } else {
-      return this.httpPost(uri, params);
+      return this.httpPost(uri, HttpTimeout, params);
     }
   }
 
   /**
    * function to dispatch the https request and pass back the response.
    */
-  protected String sendAndReturnHttps(final HttpUriRequest request)
+  protected String sendAndReturnHttps(final HttpUriRequest request, final int HttpTimeout)
           throws IOException {
-    try (final CloseableHttpClient client = this.createHttpsClient()) {
+    try (final CloseableHttpClient client = this.createHttpsClient(HttpTimeout)) {
       return this.parseResponse(client.execute(request));
     }
   }

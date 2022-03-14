@@ -591,7 +591,7 @@ public class ContainerizedDispatchManagerTest {
     }
 
     @Override
-    public String httpPost(URI uri, List<Pair<String, String>> params)
+    public String httpPost(URI uri, int HttpTimeout, List<Pair<String, String>> params)
         throws IOException {
       this.lastHttpPostUri = uri;
       this.lastHttpPostParams = params;

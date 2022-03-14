@@ -46,7 +46,7 @@ public class RestfulApiClientTest {
 
     final String content = "123456789";
 
-    final String result = mockClient.httpPost(uri, toPairList(content));
+    final String result = mockClient.httpPost(uri, -1, toPairList(content));
     Assert.assertTrue(result != null && result.contains(uri.toString()));
     Assert.assertTrue(result.contains("METHOD = POST"));
     Assert.assertTrue(result.contains(String.format("%s = value=%s;", "BODY", content)));
@@ -71,7 +71,7 @@ public class RestfulApiClientTest {
     }
 
     @Override
-    protected String sendAndReturn(final HttpUriRequest request) throws IOException {
+    protected String sendAndReturn(final HttpUriRequest request, final int HttpTimeout) throws IOException {
       final HttpResponseFactory factory = new DefaultHttpResponseFactory();
 
       final HttpResponse response = factory.newHttpResponse(

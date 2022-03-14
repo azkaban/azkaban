@@ -55,6 +55,7 @@ public class ExecutorHealthChecker {
   private final ExecutorApiGateway apiGateway;
   private final AlerterHolder alerterHolder;
   private final Map<Integer, Integer> executorFailureCount = new HashMap<>();
+  private final int executorPingTimeout;
 
   @Inject
   public ExecutorHealthChecker(final Props azkProps, final ExecutorLoader executorLoader,
@@ -70,6 +71,8 @@ public class ExecutorHealthChecker {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
+    this.executorPingTimeout =
+        azkProps.getInt(ConfigurationKeys.AZKABAN_EXECUTOR_PING_TIMEOUT, 5000);
   }
 
   public void start() {
@@ -139,7 +142,8 @@ public class ExecutorHealthChecker {
         long pingTime = System.currentTimeMillis();
         results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
-                ConnectorParams.PING_ACTION, null, null, null);
+                ConnectorParams.PING_ACTION, null, null, null,
+                executorPingTimeout);
         pingTime = System.currentTimeMillis() - pingTime;
         logger.info("Got ping response from " + executorDetailString(executor)
             + " in " + pingTime + "ms");

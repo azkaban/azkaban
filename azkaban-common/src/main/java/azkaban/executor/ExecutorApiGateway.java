@@ -60,6 +60,7 @@ public class ExecutorApiGateway {
   private final static Executor defaultEmptyExecutor = new Executor(-1, "", 1, false);
   private final ExecutorApiClient apiClient;
   private final String clusterName;
+  private final int HttpTimeout;
 
   @Inject
   public ExecutorApiGateway(final ExecutorApiClient apiClient, Props azkProps) {
@@ -68,12 +69,14 @@ public class ExecutorApiGateway {
     this.apiClient = apiClient;
     this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
+    this.HttpTimeout = -1;
   }
 
   Map<String, Object> callWithExecutable(final ExecutableFlow exflow,
       final Executor executor, final String action) throws ExecutorManagerException {
     return callWithExecutionId(executor.getHost(), executor.getPort(), action,
-        exflow.getExecutionId(), null, exflow.getDispatchMethod(), (Pair<String, String>[]) null);
+        exflow.getExecutionId(), null, exflow.getDispatchMethod(), this.HttpTimeout,
+        (Pair<String, String>[]) null);
   }
 
   Map<String, Object> callWithReference(final ExecutionReference ref, final String action,
@@ -81,7 +84,7 @@ public class ExecutorApiGateway {
     final Executor executor = (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED
         ? defaultEmptyExecutor : ref.getExecutor().get());
     return callWithExecutionId(executor.getHost(), executor.getPort(), action, ref.getExecId(),
-        null, ref.getDispatchMethod(), params);
+        null, ref.getDispatchMethod(), this.HttpTimeout, params);
   }
 
   public Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
@@ -90,7 +93,7 @@ public class ExecutorApiGateway {
     final Executor executor = (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED
         ? defaultEmptyExecutor : ref.getExecutor().get());
     return callWithExecutionId(executor.getHost(), executor.getPort(), action,
-        ref.getExecId(), user, ref.getDispatchMethod(), params);
+        ref.getExecId(), user, ref.getDispatchMethod(), this.HttpTimeout, params);
   }
 
   @VisibleForTesting
@@ -117,6 +120,7 @@ public class ExecutorApiGateway {
   Map<String, Object> callWithExecutionId(final String host, final int port,
       final String action, final Integer executionId, final String user,
       final DispatchMethod dispatchMethod,
+      final int HttpTimeout,
       final Pair<String, String>... params) throws ExecutorManagerException {
     try {
       final List<Pair<String, String>> paramList = new ArrayList<>();
@@ -134,7 +138,8 @@ public class ExecutorApiGateway {
       // Ideally we should throw an exception if executionId is null but some existing code
       // (updateExecutions()) expects to call this method with a null executionId.
       String executionPath = createExecutionPath(Optional.ofNullable(executionId), dispatchMethod);
-      return callForJsonObjectMap(host, port, executionPath, dispatchMethod, paramList);
+      return callForJsonObjectMap(host, port, executionPath, dispatchMethod, HttpTimeout,
+          paramList);
     } catch (final IOException e) {
       throw new ExecutorManagerException(e.getMessage(), e);
     }
@@ -146,7 +151,8 @@ public class ExecutorApiGateway {
   <T> T callForJsonType(final String host, final int port, final String path,
       final DispatchMethod dispatchMethod,
       final List<Pair<String, String>> paramList, final Class<T> valueType) throws IOException {
-    final String responseString = callForJsonString(host, port, path, dispatchMethod, paramList);
+    final String responseString = callForJsonString(host, port, path, dispatchMethod,
+        HttpTimeout, paramList);
     if (null == responseString || responseString.length() == 0) {
       return null;
     }
@@ -157,9 +163,10 @@ public class ExecutorApiGateway {
    * Call executor and return json object map.
    */
   Map<String, Object> callForJsonObjectMap(final String host, final int port,
-      final String path, final DispatchMethod dispatchMethod, final List<Pair<String, String>> paramList) throws IOException {
+      final String path, final DispatchMethod dispatchMethod, final int HttpTimeout,
+      final List<Pair<String, String>> paramList) throws IOException {
     final String responseString =
-        callForJsonString(host, port, path, dispatchMethod, paramList);
+        callForJsonString(host, port, path, dispatchMethod, HttpTimeout, paramList);
 
     @SuppressWarnings("unchecked") final Map<String, Object> jsonResponse =
         (Map<String, Object>) JSONUtils.parseJSONFromString(responseString);
@@ -173,7 +180,8 @@ public class ExecutorApiGateway {
   /*
    * Call executor and return raw json string.
    */
-  private String callForJsonString(final String host, final int port, final String path, final DispatchMethod dispatchMethod,
+  private String callForJsonString(final String host, final int port, final String path,
+      final DispatchMethod dispatchMethod, final int HttpTimeout,
       List<Pair<String, String>> paramList) throws IOException {
     if (paramList == null) {
       paramList = new ArrayList<>();
@@ -182,7 +190,7 @@ public class ExecutorApiGateway {
     @SuppressWarnings("unchecked") final URI uri =
         apiClient.buildExecutorUri(host, port, path, true, dispatchMethod);
 
-    return this.apiClient.doPost(uri, dispatchMethod, paramList);
+    return this.apiClient.doPost(uri, dispatchMethod, HttpTimeout, paramList);
   }
 
   public Map<String, Object> updateExecutions(final Executor executor,
@@ -202,7 +210,8 @@ public class ExecutorApiGateway {
         JSONUtils.toJSON(executionIdsList));
 
     return callWithExecutionId(executor.getHost(), executor.getPort(),
-        ConnectorParams.UPDATE_ACTION, null, null, null, executionIds, updateTimes);
+        ConnectorParams.UPDATE_ACTION, null, null, null,
+        this.HttpTimeout, executionIds, updateTimes);
   }
 
 }
