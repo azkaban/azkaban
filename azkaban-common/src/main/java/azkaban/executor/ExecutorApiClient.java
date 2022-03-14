@@ -257,6 +257,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     // If in future tls support is added for POLL based model, then following condition
     // can be simplified
     if (isTlsEnabled && null != dispatchMethod && dispatchMethod == DispatchMethod.CONTAINERIZED) {
+      //TODO: Use a HTTP Client builder function rather than calling the client with default params.
       return this.httpsPost(uri, params);
     } else {
       return this.httpPost(uri, params);
