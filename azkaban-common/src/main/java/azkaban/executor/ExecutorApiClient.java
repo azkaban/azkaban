@@ -197,7 +197,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
         this.executorPingTimeout).build();
     final HttpClientBuilder httpClientBuilder = HttpClients.custom()
         .setSSLSocketFactory(this.tlsSocketFactory);
-    return httpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+    return httpClientBuilder.setDefaultRequestConfig(requestConfig).build();
   }
 
   @Override
