@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -115,7 +116,8 @@ public abstract class RestfulApiClient<T> {
    * @return the response object type of which is specified by user.
    * @throws UnsupportedEncodingException, IOException
    */
-  public T httpPost(final URI uri, final int HttpTimeout, final List<Pair<String, String>> params)
+  public T httpPost(final URI uri, Optional<Integer> httpTimeout,
+      final List<Pair<String, String>> params)
       throws IOException {
     // shortcut if the passed url is invalid.
     if (null == uri) {
@@ -124,7 +126,7 @@ public abstract class RestfulApiClient<T> {
     }
 
     final HttpPost post = new HttpPost(uri);
-    return this.sendAndReturn(completeRequest(post, params), HttpTimeout);
+    return this.sendAndReturn(completeRequest(post, params), httpTimeout);
   }
 
   /**
@@ -134,18 +136,23 @@ public abstract class RestfulApiClient<T> {
    *
    * @return an http client instance from default settings.
    */
-  protected CloseableHttpClient createHttpClient(final int HttpTimeout) {
-    final RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(
-        HttpTimeout).build();
-    return HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+  protected CloseableHttpClient createHttpClient( final Optional<Integer> httpTimeout) {
+    if (httpTimeout.isPresent()) {
+      int timeout = httpTimeout.get();
+      final RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(
+          timeout).build();
+      return HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+    } else {
+      return HttpClientBuilder.create().build();
+    }
   }
 
   /**
    * function to dispatch the request and pass back the response.
    */
-  protected T sendAndReturn(final HttpUriRequest request, final int HttpTimeout)
+  protected T sendAndReturn(final HttpUriRequest request, final Optional<Integer> httpTimeout)
       throws IOException {
-    try (final CloseableHttpClient client = this.createHttpClient(HttpTimeout)) {
+    try (final CloseableHttpClient client = this.createHttpClient(httpTimeout)) {
       return this.parseResponse(client.execute(request));
     }
   }

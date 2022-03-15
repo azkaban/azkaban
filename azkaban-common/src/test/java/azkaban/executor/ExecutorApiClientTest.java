@@ -28,6 +28,7 @@ import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -131,7 +132,7 @@ public class ExecutorApiClientTest {
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
     final String postResponse = tlsEnabledClient
         .doPost(new URI(SimpleServlet.TLS_ENABLED_URI), DispatchMethod.CONTAINERIZED,
-            -1,null);
+            Optional.of(-1),null);
     Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
   }
 
@@ -140,12 +141,13 @@ public class ExecutorApiClientTest {
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
     ExecutorApiClient spyTlsEnabledClient = Mockito.spy(tlsEnabledClient);
     final String postResponse = spyTlsEnabledClient
-            .doPost(new URI(SimpleServlet.TLS_ENABLED_URI), DispatchMethod.CONTAINERIZED, -1,null);
+            .doPost(new URI(SimpleServlet.TLS_ENABLED_URI), DispatchMethod.CONTAINERIZED,
+                Optional.of(-1),null);
     Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
     Mockito.verify(spyTlsEnabledClient, Mockito.times(1)).httpsPost(Mockito.any(),
-        Mockito.anyInt(), Mockito.any());
+        Mockito.any(), Mockito.any());
     Mockito.verify(spyTlsEnabledClient, Mockito.times(0)).httpPost(Mockito.any(),
-        Mockito.anyInt(), Mockito.any());
+        Mockito.any(), Mockito.any());
   }
 
   @Test
@@ -154,7 +156,7 @@ public class ExecutorApiClientTest {
     // This is for sanity testing that TLS enabled http-client continues working as expected with
     // GET requests as well.
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(this.tlsEnabledProps);
-    final HttpClient httpClient = tlsEnabledClient.createHttpsClient(-1);
+    final HttpClient httpClient = tlsEnabledClient.createHttpsClient(Optional.of(-1));
     final HttpGet httpGet = new HttpGet(SimpleServlet.TLS_ENABLED_URI);
     final HttpResponse httpResponse = httpClient.execute(httpGet);
     Assert.assertNotNull(httpResponse);
@@ -175,7 +177,7 @@ public class ExecutorApiClientTest {
     final ExecutorApiClient tlsDisabledClient = new ExecutorApiClient(new Props());
     // this should throw SSLHandshakeException
     final String postResponse = tlsDisabledClient.
-        httpPost(new URI(SimpleServlet.TLS_ENABLED_URI),-1, null);
+        httpPost(new URI(SimpleServlet.TLS_ENABLED_URI), Optional.of(-1), null);
     Assert.fail();
   }
 
@@ -188,7 +190,7 @@ public class ExecutorApiClientTest {
 
     // this should throw SSLHandshakeException
     final String postResponse = tlsEnabledClient
-        .httpPost(new URI(SimpleServlet.TLS_ENABLED_URI),-1, null);
+        .httpPost(new URI(SimpleServlet.TLS_ENABLED_URI), Optional.of(-1), null);
     Assert.fail();
   }
 

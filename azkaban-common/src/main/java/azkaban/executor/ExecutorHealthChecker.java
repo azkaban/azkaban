@@ -143,7 +143,7 @@ public class ExecutorHealthChecker {
         results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
                 ConnectorParams.PING_ACTION, null, null, null,
-                executorPingTimeout);
+                Optional.of(executorPingTimeout));
         pingTime = System.currentTimeMillis() - pingTime;
         logger.info("Got ping response from " + executorDetailString(executor)
             + " in " + pingTime + "ms");

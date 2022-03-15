@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -92,7 +93,7 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,-1)).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
     assertThat(this.flow1.getStatus()).isEqualTo(Status.RUNNING);
@@ -125,19 +126,19 @@ public class ExecutorHealthCheckerTest {
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     this.executorHealthChecker.checkExecutorHealth();
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,5000);
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000));
     verifyZeroInteractions(this.alerterHolder);
 
     // Pinged executor successfully. Failure count (=0) < MAX_FAILURE_COUNT (=2). Do not alert.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,5000)).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
     verifyZeroInteractions(this.alerterHolder);
 
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,5000)).thenReturn(null);
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenReturn(null);
     this.executorHealthChecker.checkExecutorHealth();
     verifyZeroInteractions(this.alerterHolder);
 
@@ -165,7 +166,7 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,-1)).thenThrow(new RuntimeException("test "
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenThrow(new RuntimeException("test "
         + "exception"));
 
     // this will throw, causing the test to fail in case the error is not caught correctly
@@ -186,19 +187,19 @@ public class ExecutorHealthCheckerTest {
 
     // Throw a runtime exception for both executors.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,-1)).thenThrow(new RuntimeException("test "
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenThrow(new RuntimeException("test "
         + "exception"));
     when(this.apiGateway.callWithExecutionId(this.executor2.getHost(), this.executor2.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,-1)).thenThrow(new RuntimeException("test "
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenThrow(new RuntimeException("test "
         + "exception"));
     this.executorHealthChecker.checkExecutorHealth();
 
     // Verify ping API is called for both executors. Implying that runtime exception for one of the
     // executors did not prevent the check on other executor.
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(),
-        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null, null,5000);
+        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000));
     verify(this.apiGateway).callWithExecutionId(this.executor2.getHost(),
-        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null, null,5000);
+        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000));
     verifyZeroInteractions(this.alerterHolder);
   }
 
@@ -217,7 +218,7 @@ public class ExecutorHealthCheckerTest {
     when(this.apiGateway.callWithExecutionId(
         this.executor1.getHost(),
         this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null,-1))
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1)))
         .thenThrow(healthcheckException);
 
     // Force an unchecked exception when sending alert emails for the healthcheck failure

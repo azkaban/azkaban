@@ -58,7 +58,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
+import javax.swing.text.html.Option;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -591,7 +593,8 @@ public class ContainerizedDispatchManagerTest {
     }
 
     @Override
-    public String httpPost(URI uri, int HttpTimeout, List<Pair<String, String>> params)
+    public String httpPost(URI uri, Optional<Integer> httpTimeout,
+        List<Pair<String, String>> params)
         throws IOException {
       this.lastHttpPostUri = uri;
       this.lastHttpPostParams = params;
