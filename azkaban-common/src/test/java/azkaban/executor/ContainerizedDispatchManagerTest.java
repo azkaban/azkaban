@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
-import javax.swing.text.html.Option;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
