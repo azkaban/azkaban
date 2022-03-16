@@ -70,7 +70,8 @@ public class ExecutorApiGatewayTest {
     final String json = JSONUtils.toJSON(exeInfo);
     when(this.client.doPost(any(), any(), any(), any())).thenReturn(json);
     final ExecutorInfo exeInfo2 = this.gateway
-        .callForJsonType("localhost", 1234, "executor", null,null, ExecutorInfo.class);
+        .callForJsonType("localhost", 1234, "executor", null, Optional.of(-1), null,
+        ExecutorInfo.class);
     Assert.assertTrue(exeInfo.equals(exeInfo2));
   }
 

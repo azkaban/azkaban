@@ -149,6 +149,7 @@ public class ExecutorApiGateway {
    */
   <T> T callForJsonType(final String host, final int port, final String path,
       final DispatchMethod dispatchMethod,
+      final Optional<Integer> httpTimeout,
       final List<Pair<String, String>> paramList, final Class<T> valueType) throws IOException {
     final String responseString = callForJsonString(host, port, path, dispatchMethod,
         httpTimeout, paramList);

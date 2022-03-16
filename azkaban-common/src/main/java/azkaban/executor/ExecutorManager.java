@@ -201,7 +201,9 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final Future<ExecutorInfo> fetchExecutionInfo =
           this.executorInfoRefresherService.submit(
               () -> this.apiGateway.callForJsonType(executor.getHost(),
-                  executor.getPort(), "/serverStatistics", DispatchMethod.PUSH, null, ExecutorInfo.class));
+                  executor.getPort(), "/serverStatistics", DispatchMethod.PUSH, Optional.of(-1),
+                  null,
+                  ExecutorInfo.class));
       futures.add(new Pair<>(executor,
           fetchExecutionInfo));
     }
