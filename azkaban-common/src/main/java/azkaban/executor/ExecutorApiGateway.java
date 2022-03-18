@@ -68,7 +68,7 @@ public class ExecutorApiGateway {
     this.apiClient = apiClient;
     this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
-    this.httpTimeout = Optional.of(-1);
+    this.httpTimeout = Optional.empty();
   }
 
   Map<String, Object> callWithExecutable(final ExecutableFlow exflow,

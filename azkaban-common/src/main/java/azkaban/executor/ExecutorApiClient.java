@@ -187,14 +187,14 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
     final HttpClientBuilder httpClientBuilder = HttpClients.custom()
         .setSSLSocketFactory(this.tlsSocketFactory);
     if (httpTimeout.isPresent()) {
-      int timeout = httpTimeout.get();
+      final int timeout = httpTimeout.get();
       final RequestConfig requestConfig = RequestConfig.custom()
           .setConnectTimeout(timeout)
           .setSocketTimeout(timeout)
           .build();
       return httpClientBuilder.setDefaultRequestConfig(requestConfig).build();
     } else {
-      return httpClientBuilder.create().build();
+      return httpClientBuilder.build();
     }
   }
 

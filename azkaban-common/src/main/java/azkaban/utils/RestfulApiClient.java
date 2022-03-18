@@ -138,7 +138,7 @@ public abstract class RestfulApiClient<T> {
    */
   protected CloseableHttpClient createHttpClient( final Optional<Integer> httpTimeout) {
     if (httpTimeout.isPresent()) {
-      int timeout = httpTimeout.get();
+      final int timeout = httpTimeout.get();
       final RequestConfig requestConfig = RequestConfig.custom()
           .setConnectTimeout(timeout)
           .setSocketTimeout(timeout)

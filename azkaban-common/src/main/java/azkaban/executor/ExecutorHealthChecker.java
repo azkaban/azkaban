@@ -47,6 +47,8 @@ public class ExecutorHealthChecker {
   private static final int DEFAULT_EXECUTOR_MAX_FAILURE_COUNT = 6;
   // Web server checks executor health every 5 min by default.
   private static final Duration DEFAULT_EXECUTOR_HEALTHCHECK_INTERVAL = Duration.ofMinutes(5);
+  // Default PING timeout is set 5 seconds/ 5000 ms by default.
+  private static final int DEFAULT_EXECUTOR_HEALTHCHECK_TIMEOUT = 5000;
   private final long healthCheckIntervalMin;
   private final int executorMaxFailureCount;
   private final List<String> alertEmails;
@@ -71,8 +73,10 @@ public class ExecutorHealthChecker {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
+    // Defining a http timout in milliseconds for PING based health check
     this.executorPingTimeout =
-        azkProps.getInt(ConfigurationKeys.AZKABAN_EXECUTOR_PING_TIMEOUT, 5000);
+        azkProps.getInt(ConfigurationKeys.AZKABAN_EXECUTOR_PING_TIMEOUT,
+            DEFAULT_EXECUTOR_HEALTHCHECK_TIMEOUT);
   }
 
   public void start() {

@@ -47,7 +47,7 @@ public class RestfulApiClientTest {
 
     final String content = "123456789";
 
-    final String result = mockClient.httpPost(uri, Optional.of(-1), toPairList(content));
+    final String result = mockClient.httpPost(uri, Optional.empty(), toPairList(content));
     Assert.assertTrue(result != null && result.contains(uri.toString()));
     Assert.assertTrue(result.contains("METHOD = POST"));
     Assert.assertTrue(result.contains(String.format("%s = value=%s;", "BODY", content)));

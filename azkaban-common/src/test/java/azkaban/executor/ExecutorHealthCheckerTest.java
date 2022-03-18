@@ -93,7 +93,7 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
     assertThat(this.flow1.getStatus()).isEqualTo(Status.RUNNING);
@@ -166,7 +166,7 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenThrow(new RuntimeException("test "
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenThrow(new RuntimeException("test "
         + "exception"));
 
     // this will throw, causing the test to fail in case the error is not caught correctly
@@ -187,10 +187,10 @@ public class ExecutorHealthCheckerTest {
 
     // Throw a runtime exception for both executors.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenThrow(new RuntimeException("test "
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenThrow(new RuntimeException("test "
         + "exception"));
     when(this.apiGateway.callWithExecutionId(this.executor2.getHost(), this.executor2.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1))).thenThrow(new RuntimeException("test "
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenThrow(new RuntimeException("test "
         + "exception"));
     this.executorHealthChecker.checkExecutorHealth();
 
@@ -218,7 +218,7 @@ public class ExecutorHealthCheckerTest {
     when(this.apiGateway.callWithExecutionId(
         this.executor1.getHost(),
         this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null, Optional.of(-1)))
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000)))
         .thenThrow(healthcheckException);
 
     // Force an unchecked exception when sending alert emails for the healthcheck failure
