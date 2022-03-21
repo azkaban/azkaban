@@ -31,6 +31,7 @@ import azkaban.executor.ExecutorApiClient;
 import azkaban.executor.ExecutorApiClientTest.SimpleServlet;
 import azkaban.utils.Props;
 import java.net.URI;
+import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mortbay.jetty.Server;
@@ -67,7 +68,7 @@ public class ExecJettyServerModuleTest {
     final ExecutorApiClient tlsDisabledClient = new ExecutorApiClient(new Props());
     final String postResponse = tlsDisabledClient
         .doPost(new URI(SimpleServlet.TLS_DISABLED_URI), DispatchMethod.CONTAINERIZED,
-            null);
+            Optional.empty(),null);
     Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
     jettyServer.stop();
   }
@@ -106,7 +107,7 @@ public class ExecJettyServerModuleTest {
     final ExecutorApiClient tlsEnabledClient = new ExecutorApiClient(clientProps);
     final String postResponse = tlsEnabledClient
         .doPost(new URI(SimpleServlet.TLS_ENABLED_URI), DispatchMethod.CONTAINERIZED,
-            null);
+            Optional.empty(),null);
     Assert.assertEquals(SimpleServlet.POST_RESPONSE_STRING, postResponse);
     jettyServer.stop();
   }

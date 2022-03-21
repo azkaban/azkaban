@@ -6,6 +6,7 @@ import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -60,7 +61,8 @@ public class ExecutorApiGatewaySystemTest {
             JSONUtils.toJSON(updateTimesList));
 
     final Map<String, Object> results = this.apiGateway.callWithExecutionId("localhost", 12321,
-        ConnectorParams.UPDATE_ACTION, null, null, null, executionIds, updateTimes);
+        ConnectorParams.UPDATE_ACTION, null, null, null, Optional.empty(),
+        executionIds, updateTimes);
 
     Assert.assertTrue(results != null);
     final List<Map<String, Object>> executionUpdates =
