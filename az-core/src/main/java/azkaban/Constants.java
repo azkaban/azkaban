@@ -356,6 +356,14 @@ public class Constants {
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
+    // Max flow DISPATCHING time in mins.
+    public static final String AZKABAN_MAX_FLOW_DISPATCHING_MINS = "azkaban.server.flow.max.dispatching.minutes";
+    // Max flow PREPARING time in mins.
+    public static final String AZKABAN_MAX_FLOW_PREPARING_MINS = "azkaban.server.flow.max.preparing.minutes";
+    // Max flow KILLING time in mins.
+    public static final String AZKABAN_MAX_FLOW_KILLING_MINS = "azkaban.server.flow.max.killing.minutes";
+    // Max flow EXECUTION_STOPPED time in mins.
+    public static final String AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS = "azkaban.server.flow.max.exec_stopped.minutes";
 
     // Maximum number of tries to download a dependency (no more retry attempts will be made after this many download failures)
     public static final String AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES = "azkaban.dependency.max.download.tries";
