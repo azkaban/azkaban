@@ -15,7 +15,7 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS;
+import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
 import azkaban.Constants.FlowParameters;
@@ -56,6 +56,11 @@ public class ContainerCleanupManager {
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
   private static final Duration DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL = Duration.ofMinutes(10);
   private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(60);
+  private static final int DEFAULT_AZKABAN_MAX_FLOW_DISPATCHING_MINS = 10;
+  private static final int DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS = 15;
+  private static final int DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS = 15;
+  private static final int DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS = 15;
+
   private final long executionCleanupIntervalMin;
   private final long containerCleanupIntervalMin;
   private final ScheduledExecutorService cleanupService;
@@ -78,6 +83,7 @@ public class ContainerCleanupManager {
   public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
       final ContainerizedImpl containerizedImpl,
       final ContainerizedDispatchManager containerizedDispatchManager) {
+    // Get all the intervals
     this.executionCleanupIntervalMin = azkProps
         .getLong(
             ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN,
@@ -85,6 +91,15 @@ public class ContainerCleanupManager {
     this.containerCleanupIntervalMin = azkProps.getLong(
         ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_CONTAINER_CLEANUP_INTERVAL_MIN,
         DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
+    // Get all the validity durations for the validityMap
+    int maxDispatchingValidity = azkProps.getInt(
+        AZKABAN_MAX_FLOW_DISPATCHING_MINS, DEFAULT_AZKABAN_MAX_FLOW_DISPATCHING_MINS);
+    int maxPreparingValidity = azkProps.getInt(
+        AZKABAN_MAX_FLOW_PREPARING_MINS, DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS);
+    int maxKillingValidity = azkProps.getInt(
+        AZKABAN_MAX_FLOW_KILLING_MINS, DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS);
+    int maxExecStoppedValidity = azkProps.getInt(
+        AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS, DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS);
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;
@@ -104,14 +119,13 @@ public class ContainerCleanupManager {
 
     this.validityMap = new Builder<Status,
         Pair<Duration, String>>()
-        .put(Status.DISPATCHING, new Pair<>(Duration.ofMinutes(10), SUBMIT_TIME))
-        .put(Status.PREPARING, new Pair<>(Duration.ofMinutes(15), SUBMIT_TIME))
+        .put(Status.DISPATCHING, new Pair<>(Duration.ofMinutes(maxDispatchingValidity), SUBMIT_TIME))
+        .put(Status.PREPARING, new Pair<>(Duration.ofMinutes(maxPreparingValidity), SUBMIT_TIME))
         .put(Status.RUNNING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .put(Status.PAUSED, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
-        .put(Status.KILLING, new Pair<>(Duration.ofMinutes(15), UPDATE_TIME))
-        .put(Status.EXECUTION_STOPPED, new Pair<>(Duration.ofMinutes(15), UPDATE_TIME))
-        .put(Status.FAILED_FINISHING,
-            new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
+        .put(Status.KILLING, new Pair<>(Duration.ofMinutes(maxKillingValidity), UPDATE_TIME))
+        .put(Status.EXECUTION_STOPPED, new Pair<>(Duration.ofMinutes(maxExecStoppedValidity), UPDATE_TIME))
+        .put(Status.FAILED_FINISHING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
 
   }
