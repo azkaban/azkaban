@@ -240,6 +240,7 @@ public class Constants {
     // Configures properties for Azkaban executor health check
     public static final String AZKABAN_EXECUTOR_HEALTHCHECK_INTERVAL_MIN = "azkaban.executor.healthcheck.interval.min";
     public static final String AZKABAN_EXECUTOR_MAX_FAILURE_COUNT = "azkaban.executor.max.failurecount";
+    public static final String AZKABAN_EXECUTOR_PING_TIMEOUT = "azkaban.executor.ping.timeout";
     public static final String AZKABAN_ADMIN_ALERT_EMAIL = "azkaban.admin.alert.email";
 
     // Configures Azkaban Flow Version in project YAML file
