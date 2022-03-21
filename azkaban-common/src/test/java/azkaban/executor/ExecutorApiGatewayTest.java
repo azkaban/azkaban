@@ -23,6 +23,7 @@ import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -67,9 +68,10 @@ public class ExecutorApiGatewayTest {
     final ExecutorInfo exeInfo = new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89,
         10);
     final String json = JSONUtils.toJSON(exeInfo);
-    when(this.client.doPost(any(), any(), any())).thenReturn(json);
+    when(this.client.doPost(any(), any(), any(), any())).thenReturn(json);
     final ExecutorInfo exeInfo2 = this.gateway
-        .callForJsonType("localhost", 1234, "executor", null, null, ExecutorInfo.class);
+        .callForJsonType("localhost", 1234, "executor", null, Optional.empty(), null,
+        ExecutorInfo.class);
     Assert.assertTrue(exeInfo.equals(exeInfo2));
   }
 
@@ -77,7 +79,7 @@ public class ExecutorApiGatewayTest {
   public void updateExecutions() throws Exception {
     final ImmutableMap<String, String> map = ImmutableMap.of("test", "response");
     when(this.client
-        .doPost(any(), any(), this.params.capture()))
+        .doPost(any(), any(), any(), this.params.capture()))
         .thenReturn(JSONUtils.toJSON(map));
     final Map<String, Object> response = this.gateway
         .updateExecutions(new Executor(2, "executor-2", 1234, true),
@@ -131,14 +133,14 @@ public class ExecutorApiGatewayTest {
     final String apiHost = "host1";
     final int apiPort = 1234;
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
-        null, null, null);
+        null, null, null, Optional.of(5000));
 
     final URI expectedUri = new URI("http://host1:1234/executor");
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
         new Pair<>("action", "ping"),
         new Pair<>("execid", "null"), // this is "null" (string) due to application of String.valueOf()
         new Pair<>("user", null));
-    Mockito.verify(clientSpy).httpPost(eq(expectedUri), eq(expectedParams));
+    Mockito.verify(clientSpy).httpPost(eq(expectedUri), eq(Optional.of(5000)), eq(expectedParams));
   }
 
   @Test
@@ -151,14 +153,14 @@ public class ExecutorApiGatewayTest {
     final String apiHost = "host1";
     final int apiPort = 1234;
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
-        1, "bond", DispatchMethod.CONTAINERIZED);
+        1, "bond", DispatchMethod.CONTAINERIZED, Optional.of(5000));
 
     final URI expectedUri = new URI("http://host1:1234/azkaban-1/container");
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
         new Pair<>("action", "ping"),
         new Pair<>("execid", "1"),
         new Pair<>("user", "bond"));
-    Mockito.verify(clientSpy).httpPost(eq(expectedUri), eq(expectedParams));
+    Mockito.verify(clientSpy).httpPost(eq(expectedUri), eq(Optional.of(5000)), eq(expectedParams));
   }
 
   @Test(expected = ExecutorManagerException.class)
@@ -172,7 +174,7 @@ public class ExecutorApiGatewayTest {
 
     // this should throw an exception as the properties have reverse-proxy enabled and execution id is null
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
-        null, null, DispatchMethod.CONTAINERIZED);
+        null, null, DispatchMethod.CONTAINERIZED, Optional.of(5000));
     Assert.fail();
   }
 
@@ -184,7 +186,7 @@ public class ExecutorApiGatewayTest {
     }
 
     @Override
-    protected String sendAndReturn(HttpUriRequest request) throws IOException {
+    protected String sendAndReturn(HttpUriRequest request, final Optional<Integer> httpTimeout) throws IOException {
       return SUCCESS_JSON;
     }
   }
