@@ -18,6 +18,7 @@ package azkaban.imagemgmt.permission;
 
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.user.Permission.Type;
+import azkaban.user.UserManager;
 
 /**
  * Interface defines method to check the permission for accessing image management APIs.
@@ -25,15 +26,16 @@ import azkaban.user.Permission.Type;
 public interface PermissionManager {
 
   /**
-   * Checks the permission based on image type name, user id and Permission type for accessing image
-   * management APIs.
+   * Checks the permission based on user manager, image type name, user id and Permission type.
    *
+   * @param userManager
    * @param imageTypeName
    * @param userId
    * @param type
    * @return boolean
    */
-  public boolean hasPermission(final String imageTypeName, final String userId, final Type type)
+  public boolean hasPermission(final UserManager userManager, final String imageTypeName,
+      final String userId, final Type type)
       throws ImageMgmtException;
 
 }

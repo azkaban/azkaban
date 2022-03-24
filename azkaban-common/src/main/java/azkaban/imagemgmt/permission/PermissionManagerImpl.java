@@ -21,7 +21,11 @@ import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
+import azkaban.user.UserManager;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -45,35 +49,32 @@ public class PermissionManagerImpl implements PermissionManager {
   }
 
   /**
-   * Checks the permission based on image type name, user id and Permission type.
+   * Checks the permission based on user manager, image type name, user id and Permission type.
    *
+   * @param userManager
    * @param imageTypeName
    * @param userId
    * @param type
    * @return boolean
    */
   @Override
-  public boolean hasPermission(final String imageTypeName, final String userId, final Type type) {
+  public boolean hasPermission(final UserManager userManager, final String imageTypeName,
+      final String userId,
+      final Type type) {
     // Gets the image type metadata including ownerships.
-    final Optional<ImageOwnership> optionalImageOwnership =
-        this.imageTypeDao.getImageTypeOwnership(imageTypeName, userId);
-    boolean hasPermission = false;
+    final List<ImageOwnership> imageOwnerships =
+        this.imageTypeDao.getImageTypeOwnership(imageTypeName);
+    // The owner set contains both users and groups.
+    final Set<String> ownerSet = new HashSet<>();
     // Check if ownership is present. If so check the permission of the user role.
-    if (optionalImageOwnership.isPresent()) {
+    for (final ImageOwnership imageOwnership: imageOwnerships) {
       // Gets the permission of the user based on image type ownership metadata.
-      final Permission permission = optionalImageOwnership.get().getRole().getPermission();
+      final Permission permission = imageOwnership.getRole().getPermission();
       // Check if the given Permission.Type contains in the permission of the user.
       if (permission.isPermissionSet(type)) {
-        hasPermission = true;
+        ownerSet.add(imageOwnership.getOwner());
       }
-    } else {
-      log.error(String.format("API access permission check failed. There is no ownership record "
-          + "for image type: %s, user id: %s.", imageTypeName, userId));
-      throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission "
-              + "check failed. There is no ownership record for image type: %s, user id: %s.",
-          imageTypeName, userId));
     }
-
-    return hasPermission;
+    return ownerSet.contains(userId) || userManager.validateUserGroupMembership(userId, ownerSet);
   }
 }
