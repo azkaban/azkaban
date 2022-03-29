@@ -343,7 +343,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
    * @param imageTypeName
    * @return List<ImageOwnership>
    */
-  private List<ImageOwnership> getImageTypeOwnership(final String imageTypeName) {
+  @Override
+  public List<ImageOwnership> getImageTypeOwnership(final String imageTypeName) {
     final FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
     try {
       return this.databaseOperator
@@ -355,30 +356,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to fetch ownership for image type : " + imageTypeName);
     }
-  }
-
-  /**
-   * Gets ownership metadata based on image type name and user id.
-   *
-   * @param imageTypeName
-   * @return Optional<ImageOwnership>
-   */
-  @Override
-  public Optional<ImageOwnership> getImageTypeOwnership(final String imageTypeName,
-      final String userId) {
-    final FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
-    List<ImageOwnership> imageOwnerships = new ArrayList<>();
-    try {
-      imageOwnerships = this.databaseOperator
-          .query(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID,
-              fetchImageOwnershipHandler, imageTypeName.toLowerCase(), userId);
-    } catch (final SQLException ex) {
-      log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID
-          + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR, String.format(
-          "Unable to fetch ownership for image type: %s, user id: %s. ", imageTypeName, userId));
-    }
-    return imageOwnerships.isEmpty() ? Optional.empty() : Optional.of(imageOwnerships.get(0));
   }
 
   /**
@@ -435,11 +412,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
             + "and lower(it.name) = ?";
-
-    private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID =
-        "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
-            + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
-            + "and lower(it.name) = ? and io.owner = ?";
 
     @Override
     public List<ImageOwnership> handle(final ResultSet rs) throws SQLException {
