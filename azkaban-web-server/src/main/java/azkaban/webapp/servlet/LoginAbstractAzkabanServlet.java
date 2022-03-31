@@ -747,7 +747,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
     // Check image management APIs access permission for other users.
     final PermissionManager permissionManager = getApplication().getPermissionManager();
-    return permissionManager.hasPermission(imageTypeName, user.getUserId(), type);
+    final UserManager userManager = getApplication().getUserManager();
+    return permissionManager.hasPermission(userManager, imageTypeName, user.getUserId(), type);
   }
 
   /**
