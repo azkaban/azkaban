@@ -10,6 +10,7 @@ import com.google.inject.name.Named;
 import java.io.File;
 import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 
 public class ClusterModule extends AbstractModule {
 
@@ -46,7 +47,7 @@ public class ClusterModule extends AbstractModule {
     }
     final String routerConfPath = props.getString(AzkabanExecutorServer.CLUSTER_ROUTER_CONF,
         "router-conf.xml");
-    configuration.addResource(routerConfPath);
+    configuration.addResource(new Path(routerConfPath));
     return configuration;
   }
 }
