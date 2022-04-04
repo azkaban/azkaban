@@ -278,7 +278,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       // Emit EXECUTION_STOPPED flow event
       this.fireEventListeners(Event.create(executableFlow,
           EventType.FLOW_FINISHED, new EventData(executableFlow)));
-      ExecutionControllerUtils.restartFlow(executableFlow, Status.EXECUTION_STOPPED);
+      ExecutionControllerUtils.restartFlow(executableFlow, executableFlow.getStatus());
       // Log event for cases where the flow was not already in a final state
       WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }
