@@ -167,6 +167,7 @@ public class ContainerCleanupManager {
       }
       Status originalStatus = flow.getStatus();
       cancelFlowQuietly(flow, originalStatus);
+      retryFlowQuietly(flow, originalStatus);
       deleteContainerQuietly(flow.getExecutionId());
     }
   }
@@ -209,6 +210,20 @@ public class ContainerCleanupManager {
       this.containerizedDispatchManager.cancelFlow(flow, flow.getSubmitUser());
     } catch (final Exception e) {
       logger.error("Unexpected Exception while canceling and finalizing flow during clean up." + e);
+    }
+  }
+
+  /**
+   * Quietly retry flow if it is terminated in statuses prior to RUNNING
+   * @param flow
+   * @param originalStatus
+   */
+  private void retryFlowQuietly(ExecutableFlow flow, Status originalStatus) {
+    try {
+      logger.info("Restarting cleaned up flow " + flow.getExecutionId());
+      ExecutionControllerUtils.restartFlow(flow, originalStatus);
+    } catch (final Exception e) {
+      logger.error("Unexpected Exception while restarting flow during clean up." + e);
     }
   }
 
