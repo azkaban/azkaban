@@ -167,7 +167,6 @@ public class ContainerCleanupManager {
       }
       Status originalStatus = flow.getStatus();
       cancelFlowQuietly(flow, originalStatus);
-      retryFlowQuietly(flow, originalStatus);
       deleteContainerQuietly(flow.getExecutionId());
     }
   }

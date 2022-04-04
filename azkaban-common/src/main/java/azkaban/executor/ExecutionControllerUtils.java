@@ -138,7 +138,8 @@ public class ExecutionControllerUtils {
       return;
     }
     final ExecutionOptions options = flow.getExecutionOptions();
-    if (options == null || options.isExecutionRetried()) { // flow can only be retried once
+    // flow can only be retried once
+    if (options == null || options.isExecutionRetried()) {
       return;
     }
     // If the original execution status is not EXECUTION_STOPPED, it can be retried
