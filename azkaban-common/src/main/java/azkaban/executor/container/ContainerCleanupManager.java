@@ -212,15 +212,6 @@ public class ContainerCleanupManager {
     }
   }
 
-  private void retryFlowQuietly(ExecutableFlow flow, Status originalStatus) {
-    try {
-      logger.info("Restarting cleaned up flow " + flow.getExecutionId());
-      ExecutionControllerUtils.restartFlow(flow, originalStatus);
-    } catch (final Exception e) {
-      logger.error("Unexpected Exception while restarting flow during clean up." + e);
-    }
-  }
-
   // Deletes the container specified by executionId while logging and consuming any exceptions.
   // Note that while this method is not async it's still expected to return 'quickly'. This is true
   // for Kubernetes as it's declarative API will only submit the request for deleting container
