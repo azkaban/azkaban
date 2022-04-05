@@ -213,6 +213,11 @@ public class ContainerCleanupManager {
     }
   }
 
+  /**
+   * Quietly retry flow if it is terminated in statuses prior to RUNNING
+   * @param flow
+   * @param originalStatus
+   */
   private void retryFlowQuietly(ExecutableFlow flow, Status originalStatus) {
     try {
       logger.info("Restarting cleaned up flow " + flow.getExecutionId());
