@@ -310,7 +310,10 @@ public class KubernetesWatchTest {
 
     // Mocked flow in RUNNING state. Init failure event will be processed for this execution.
     ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE, Status.PREPARING);
-
+    // set flow parameter to allow restart from EXECUTION_STOPPED
+    final ExecutionOptions options = flow1.getExecutionOptions();
+    options.addAllFlowParameters(flowParam);
+    flow1.setExecutionOptions(options);
     when(updatingListener.getExecutorLoader().fetchExecutableFlow(EXECUTION_ID_WITH_INIT_FAILURE))
         .thenReturn(flow1);
 
@@ -345,6 +348,10 @@ public class KubernetesWatchTest {
     // execution. The extracted AzPodStatus will be AZ_POD_APP_FAILURE.
     ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR,
         Status.DISPATCHING);
+    // set flow parameter to allow restart from EXECUTION_STOPPED
+    final ExecutionOptions options = flow1.getExecutionOptions();
+    options.addAllFlowParameters(flowParam);
+    flow1.setExecutionOptions(options);
     when(updatingListener.getExecutorLoader()
         .fetchExecutableFlow(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR))
         .thenReturn(flow1);

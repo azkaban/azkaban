@@ -124,26 +124,33 @@ public class ExecutionControllerUtils {
 
   /**
    * This method tries to restart the flow for certain statuses otherwise simply return.
-   * If the flow is already retried once, then it won't be retried again.
-   * If the status is EXECUTION_STOPPED, then it will be retried only if
+   * There are three scenarios that this method is called: 1. a flow is cleaned up by
+   * ContainerCleanupManager; 2. a flow has dispatch failure; 3. a flow encounters pod failure
+   * Each flow execution can be retried once.
+   * If the original status is EXECUTION_STOPPED, then it will be retried only if
    * allow.restart.on.execution.stopped is set to true
    *
    * @param flow
    * @param originalStatus
    */
   public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
-    if (!RESTARTABLE_STATUSES.contains(originalStatus) && flow.getStatus() != EXECUTION_STOPPED) {
+    if (!RESTARTABLE_STATUSES.contains(originalStatus)) {
       return;
     }
     final ExecutionOptions options = flow.getExecutionOptions();
+    // flow can only be retried once
     if (options == null || options.isExecutionRetried()) {
       return;
     }
+    // If the original execution status is not EXECUTION_STOPPED, it can be retried
     if (originalStatus != Status.EXECUTION_STOPPED) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId());
       ExecutionControllerUtils.submitRestartFlow(flow);
       return;
     }
+    // If the original execution status is EXECUTION_STOPPED, which indicates the program
+    // detects there's an invalid pod state transition and flow is terminated before final states,
+    // the runtime properties (flow parameters) need to be checked.
     final Map<String, String> flowParams = options.getFlowParameters();
     if (flowParams == null || flowParams.isEmpty()) {
       return;
