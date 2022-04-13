@@ -19,6 +19,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.TreeSet;
@@ -60,7 +61,9 @@ public class ContainerImplUtils {
         populateJobTypeForFlow(subNode, jobTypes);
       }
     } else {
-      jobTypes.add(node.getType());
+      if (node.getStatus() != Status.DISABLED) {
+        jobTypes.add(node.getType());
+      }
     }
   }
 
