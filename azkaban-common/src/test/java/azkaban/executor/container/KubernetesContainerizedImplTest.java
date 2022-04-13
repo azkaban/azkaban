@@ -83,6 +83,12 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.util.Yaml;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +98,7 @@ import java.util.TreeSet;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.joda.time.DateTime;
+import org.joda.time.field.OffsetDateTimeField;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -378,6 +385,7 @@ public class KubernetesContainerizedImplTest {
         this.kubernetesContainerizedImpl.createPodFromMetadataAndSpec(podMetadata, podSpec);
     final String createdPodSpec1 = Yaml.dump(pod1).trim();
     String readPodSpec1 = TestUtils.readResource("v1PodTest1.yaml", this).trim();
+    log.info("Resulting pod spec: {}", flow.getExecutionId(), createdPodSpec1);
     Assert.assertEquals(readPodSpec1, createdPodSpec1);
     log.info("Resulting pod spec: {}", flow.getExecutionId(), createdPodSpec1);
 
@@ -642,14 +650,14 @@ public class KubernetesContainerizedImplTest {
   @Test
   public  void testGetExecutionIdFromPodList() throws Exception{
     final V1PodList podList = new V1PodList();
-    final long validStartTimeStamp = System.currentTimeMillis();
+    final OffsetDateTime validStartTimeStamp = OffsetDateTime.now();
 
     // stale pod 1 with execution id information
     final V1ObjectMeta podMetadata1 = new V1ObjectMeta();
     final ImmutableMap<String, String> label1 = ImmutableMap.of(
         "execution-id", "execid-123");
     podMetadata1.setLabels(label1);
-    podMetadata1.setCreationTimestamp(new DateTime(validStartTimeStamp - 1));
+    podMetadata1.setCreationTimestamp(validStartTimeStamp.minus(1, ChronoUnit.MILLIS));
     final V1Pod pod1 = new AzKubernetesV1PodBuilder(podMetadata1, null).build();
 
     // stale pod 2 without execution id information
@@ -657,7 +665,7 @@ public class KubernetesContainerizedImplTest {
     final ImmutableMap<String, String> label2 = ImmutableMap.of(
         "key2", "val2");
     podMetadata2.setLabels(label2);
-    podMetadata2.setCreationTimestamp(new DateTime(validStartTimeStamp - 1));
+    podMetadata2.setCreationTimestamp(validStartTimeStamp.minus(1, ChronoUnit.MILLIS));
     final V1Pod pod2 = new AzKubernetesV1PodBuilder(podMetadata2, null).build();
 
     // valid pod 3 with execution id information
@@ -665,7 +673,7 @@ public class KubernetesContainerizedImplTest {
     final ImmutableMap<String, String> label3 = ImmutableMap.of(
         "execution-id", "execid-12345");
     podMetadata3.setLabels(label3);
-    podMetadata3.setCreationTimestamp(new DateTime(validStartTimeStamp + 1 ));
+    podMetadata3.setCreationTimestamp(validStartTimeStamp.plus(1, ChronoUnit.MILLIS));
     final V1Pod pod3 = new AzKubernetesV1PodBuilder(podMetadata3, null).build();
 
     podList.addItemsItem(pod1);
@@ -675,6 +683,10 @@ public class KubernetesContainerizedImplTest {
     final Set<Integer> staleContainerExecIdSet =
         this.kubernetesContainerizedImpl.getExecutionIdsFromPodList(podList,
         validStartTimeStamp);
+    log.info(String.valueOf(staleContainerExecIdSet));
+    //log.info(String.valueOf(validStartTimeStamp.minus(1, ChronoUnit.MILLIS).toInstant()
+    //.toEpochMilli()));
+    //log.info(String.valueOf(validStartTimeStamp.toInstant().toEpochMilli()));
     Assert.assertTrue(staleContainerExecIdSet.contains(123));
     Assert.assertFalse(staleContainerExecIdSet.contains(-1));
     Assert.assertFalse(staleContainerExecIdSet.contains(12345));

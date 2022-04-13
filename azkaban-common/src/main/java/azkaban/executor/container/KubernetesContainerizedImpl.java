@@ -26,7 +26,6 @@ import azkaban.container.models.AzKubernetesV1PodBuilder;
 import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
-import azkaban.container.models.ImagePullPolicy;
 import azkaban.container.models.InitContainerType;
 import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.event.Event;
@@ -54,7 +53,9 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.ApiResponse;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1Container.ImagePullPolicyEnum;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
@@ -62,7 +63,6 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
-import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
@@ -72,6 +72,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -437,13 +439,24 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // Select pods only from current Azkaban cluster and namespace
       final String label =
           CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + APP_LABEL_NAME + "=" + POD_APPLICATION_TAG;
-      final V1PodList podList= this.coreV1Api.listNamespacedPod(this.namespace, null,
-          null, null, null, label,
-          null, null, null, null);
+      final V1PodList podList= this.coreV1Api.listNamespacedPod(
+          this.namespace,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+      );
 
       // Get all execution ids of the pods whose age is older than Azkaban max flow running time
       // (e.g. 10 days)
-      final long validStartTimeStamp = System.currentTimeMillis() - containerValidity.toMillis();
+      final OffsetDateTime validStartTimeStamp = OffsetDateTime.now().minus(
+          containerValidity.toMillis(), ChronoUnit.MILLIS);
       return getExecutionIdsFromPodList(podList, validStartTimeStamp);
     } catch (final ApiException ae) {
       logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
@@ -459,11 +472,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   @VisibleForTesting
-  Set<Integer> getExecutionIdsFromPodList(final V1PodList podList, final long validStartTimeStamp) {
+  Set<Integer> getExecutionIdsFromPodList(final V1PodList podList, final OffsetDateTime validStartTimeStamp) {
     final Set<Integer> staleContainerExecIdSet = new HashSet<>();
     for (final V1Pod pod: podList.getItems()) {
       final V1ObjectMeta podMetadata = pod.getMetadata();
-      if (podMetadata.getCreationTimestamp().getMillis() < validStartTimeStamp) {
+      if (podMetadata.getCreationTimestamp().isBefore(validStartTimeStamp)) {
         final String execIdLabel =
             podMetadata.getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
             EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID);
@@ -664,7 +677,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,
-                azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
+                azkabanBaseImageFullPath, ImagePullPolicyEnum.IFNOTPRESENT, azkabanConfigVersion)
             .withResources(flowContainerCPULimit, flowContainerCPURequest, flowContainerMemoryLimit,
                 flowContainerMemoryRequest, flowContainerDiskRequest);
 
@@ -984,7 +997,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     logPodSpecYaml(executionId, pod, flowParam, "ExecId: {}, Pod: {}");
 
     try {
-      this.coreV1Api.createNamespacedPod(this.namespace, pod, null, null, null);
+      this.coreV1Api.createNamespacedPod(
+          this.namespace,
+          pod,
+          null,
+          null,
+          null,
+          null);
       logger.info("ExecId: {}, Dispatched pod for execution.", executionId);
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to create Pod: {}", executionId, e.getResponseBody());
@@ -1112,7 +1131,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       }
       try {
         final String imageFullPath = versionSet.getVersion(jobType).get().pathWithVersion();
-        v1SpecBuilder.addInitContainerType(jobType, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
+        v1SpecBuilder.addInitContainerType(jobType, imageFullPath, ImagePullPolicyEnum.IFNOTPRESENT,
             String.join("/", this.initMountPathPrefixForJobtypes, jobType),
             String.join("/", this.appMountPathPrefixForJobtypes, jobType), InitContainerType.JOBTYPE);
       } catch (final Exception e) {
@@ -1124,7 +1143,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       try {
         final String imageFullPath = versionSet.getVersion(dependency).get().pathWithVersion();
         v1SpecBuilder
-            .addInitContainerType(dependency, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
+            .addInitContainerType(dependency, imageFullPath, ImagePullPolicyEnum.IFNOTPRESENT,
                 String.join("/", this.initMountPathPrefixForDependencies, dependency),
                 String.join("/", this.appMountPathPrefixForDependencies, dependency),
                 InitContainerType.DEPENDENCY);
@@ -1159,7 +1178,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           .withPort(String.valueOf(this.servicePort))
           .withTimeoutMs(String.valueOf(this.serviceTimeout))
           .build();
-      this.coreV1Api.createNamespacedService(this.namespace, serviceObject, null, null, null);
+      this.coreV1Api.createNamespacedService(
+          this.namespace,
+          serviceObject,
+          null,
+          null,
+          null,
+          null);
       logger.info("ExecId: {}, Service is created.", executionId);
     } catch (final IOException e) {
       logger.error("ExecId: {}, Unable to create service in Kubernetes. Msg: {}", executionId,
@@ -1212,7 +1237,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void deleteService(final int executionId) throws ExecutorManagerException {
     final String serviceName = getServiceName(executionId);
     try {
-      final V1Status deleteResult = this.coreV1Api.deleteNamespacedService(
+      final ApiResponse<V1Service> deleteResult = this.coreV1Api.deleteNamespacedServiceWithHttpInfo(
           serviceName,
           this.namespace,
           null,
@@ -1224,8 +1249,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, code: {}, message: {}",
           executionId,
           serviceName,
-          deleteResult.getCode(),
-          deleteResult.getMessage());
+          deleteResult.getStatusCode(),
+          deleteResult.getData());
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,
           e.getResponseBody());

@@ -66,7 +66,7 @@ spec:
     volumeMounts:
     - mountPath: /data/dependencies/dependency1
       name: dependency-volume-dependency1
-  restartPolicy: Never
+  restartPolicy: NEVER
   volumes:
   - emptyDir: {}
     name: jobtype-volume-spark

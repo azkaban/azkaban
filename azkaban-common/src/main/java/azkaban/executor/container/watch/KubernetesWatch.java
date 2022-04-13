@@ -27,11 +27,13 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watch.Response;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +79,12 @@ public class KubernetesWatch implements ContainerizedWatch {
     this.apiClient = apiClient;
     // no timeout for request completion
     OkHttpClient httpClient =
-        this.apiClient.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+        this.apiClient.getHttpClient().newBuilder()
+            .protocols(Arrays.asList(Protocol.HTTP_2,Protocol.HTTP_1_1))
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .callTimeout(1200, TimeUnit.SECONDS)
+            .readTimeout(600, TimeUnit.SECONDS)
+            .build();
     this.apiClient.setHttpClient(httpClient);
     this.coreV1Api = new CoreV1Api(this.apiClient);
 
@@ -105,7 +112,8 @@ public class KubernetesWatch implements ContainerizedWatch {
   protected void initializePodWatch() throws ApiException {
     try {
       this.podWatch = Watch.createWatch(this.apiClient,
-          this.coreV1Api.listNamespacedPodCall(this.podWatchParams.getNamespace(),
+          this.coreV1Api.listNamespacedPodCall(
+              this.podWatchParams.getNamespace(),
               "true",
               false,
               null,
@@ -114,7 +122,8 @@ public class KubernetesWatch implements ContainerizedWatch {
               null,
               null,
               null,
-              true,
+              null,
+              null ,
               null),
           new TypeToken<Response<V1Pod>>() {}.getType());
     } catch (ApiException ae) {
