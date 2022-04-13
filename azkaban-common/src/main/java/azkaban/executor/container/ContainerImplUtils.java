@@ -61,6 +61,8 @@ public class ContainerImplUtils {
         populateJobTypeForFlow(subNode, jobTypes);
       }
     } else {
+      // If a node is disabled, we don't need to initialize its jobType container image when
+      // creating a pod.
       if (node.getStatus() != Status.DISABLED) {
         jobTypes.add(node.getType());
       }
