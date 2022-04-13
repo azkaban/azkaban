@@ -123,7 +123,7 @@ public class KubernetesWatch implements ContainerizedWatch {
               null,
               null,
               null,
-              null ,
+              true ,
               null),
           new TypeToken<Response<V1Pod>>() {}.getType());
     } catch (ApiException ae) {
