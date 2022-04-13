@@ -445,7 +445,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           null,
           null,
           null,
-          null,
+          label,
           null,
           null,
           null,
@@ -1178,13 +1178,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           .withPort(String.valueOf(this.servicePort))
           .withTimeoutMs(String.valueOf(this.serviceTimeout))
           .build();
-      this.coreV1Api.createNamespacedService(
-          this.namespace,
-          serviceObject,
-          null,
-          null,
-          null,
-          null);
+      this.coreV1Api.createNamespacedService(this.namespace, serviceObject, null,
+          null, null, null);
       logger.info("ExecId: {}, Service is created.", executionId);
     } catch (final IOException e) {
       logger.error("ExecId: {}, Unable to create service in Kubernetes. Msg: {}", executionId,
