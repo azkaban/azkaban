@@ -31,33 +31,35 @@ Only users with admin privileges can use this action. This action need
 at least one active executor to be successful. Use curl or simply visit
 following URL:- ``WEBSERVER_URL/executor?ajax=reloadExecutors``
 
-Logging job logs to a Kafka cluster
+Logging logs to a Kafka cluster
 -----------------------------------
 
-Azkaban supports sending job logs to a log ingestion (such as ELK)
+Azkaban supports sending job and flow logs to a log ingestion (such as ELK)
 cluster via a Kafka appender. In order to enable this in Azkaban, you
-will need to set two exec server properties (shown here with sample
+will need to set three logging kafka properties (shown here with sample
 values):
 
 .. code-block:: guess
 
-   azkaban.server.logging.kafka.brokerList=localhost:9092
-   azkaban.server.logging.kafka.topic=azkaban-logging
+   azkaban.logging.kafka.brokers=localhost:9092
+   azkaban.job.logging.kafka.topic=azkaban-job-logging
+   azkaban.flow.logging.kafka.topic=azkaban-flow-logging
 
 These configure where Azkaban can find your Kafka cluster, and also
 which topic to put the logs under. Failure to provide these parameters
 will result in Azkaban refusing to create a Kafka appender upon
 requesting one.
 
-In order to configure a job to send its logs to Kafka, the following job
+In order to configure jobs and flows to send its logs to Kafka, the following
 property needs to be set to true:
 
 .. code-block:: guess
 
-   azkaban.job.logging.kafka.enable=true
+   azkaban.logging.kafka.enabled=true
 
-Jobs with this setting enabled will broadcast its log messages in JSON
-form to the Kafka cluster. It has the following structure:
+By default, the logging kafka log4j appender is org.apache.kafka.log4jappender.KafkaLog4jAppender
+ and logs will broadcast in JSON form to the Kafka cluster. It has the following
+structure:
 
 .. code-block:: guess
 
@@ -72,3 +74,11 @@ form to the Kafka cluster. It has the following structure:
      "flowid": "ID of flow",
      "execid": "ID of execution"
    }
+
+Instead of using the default kafka log4j appender, you can plug in your own logging kafka log4j
+appender by extending org.apache.kafka.log4jappender.KafkaLog4jAppender and set the following
+property to your appender:
+
+.. code-block:: guess
+
+   azkaban.logging.kafka.class=a.b.c.yourKafkaLog4jAppender
