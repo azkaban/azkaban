@@ -312,9 +312,9 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
               fsToken.getKind(), fsToken.getService()));
         }
       } catch (Exception e) {
-        logger.error("Failed to fetch DFS token for " + userToProxyFQN);
+        logger.error("Failed to fetch DFS token for " + userToProxyFQN, e);
         throw new HadoopSecurityManagerException(
-            "Failed to fetch DFS token for " + userToProxyFQN);
+            "Failed to fetch DFS token for " + userToProxyFQN, e);
       }
     } finally {
       if (fs != null) {
