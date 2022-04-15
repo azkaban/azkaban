@@ -648,6 +648,8 @@ public class Constants {
         AZKABAN_CONTAINERIZED_PREFIX + "jobtype.allowlist";
     public static final String CONTAINERIZED_PROXY_USER_DENYLIST =
         AZKABAN_CONTAINERIZED_PREFIX + "proxy.user.denylist";
+    public static final String CONTAINERIZED_PROJECT2VERSION_DENYLIST =
+        AZKABAN_CONTAINERIZED_PREFIX + "project2version.denylist";
 
     // Kubernetes related properties
     public static final String AZKABAN_KUBERNETES_PREFIX = "azkaban.kubernetes.";

@@ -37,6 +37,8 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -46,6 +48,7 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,6 +80,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
   private final ContainerProxyUserCriteria containerProxyUserCriteria;
+  private final ContainerProjectVersionCriteria containerProjectVersionCriteria;
   private final Optional<ContainerizedWatch> containerizedWatch;
   private final Optional<ExecutorHealthChecker> executorHealthChecker;
 
@@ -89,6 +93,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final ContainerizedImpl containerizedImpl,
       final AlerterHolder alerterHolder,
       final ContainerizedWatch containerizedWatch,
+      final ProjectLoader projectLoader,
+      final ProjectManager projectManager,
       final EventListener eventListener,
       final ContainerizationMetrics containerizationMetrics,
       @Nullable final ExecutorHealthChecker executorHealthChecker)
@@ -103,6 +109,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
     this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
+    this.containerProjectVersionCriteria = new ContainerProjectVersionCriteria(azkProps,
+        projectManager, projectLoader);
     this.executorHealthChecker = Optional.ofNullable(executorHealthChecker);
   }
 
@@ -220,6 +228,13 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
+    dispatchMethod = this.containerProjectVersionCriteria.getDispatchMethod(flow);
+    logger.info("Dispatch method by project version criteria is",
+        dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
+    if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
+      return dispatchMethod;
+    }
+
     return this.containerProxyUserCriteria.getDispatchMethod(flow);
   }
 

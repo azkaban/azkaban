@@ -460,6 +460,26 @@ public class Props {
   }
 
   /**
+   * Returns a map of strings with the comma as the separator of the key value pairs and colon as
+   * separator of the key and value.
+   */
+  public Map<String, String> getStringStringMap(final String key) {
+    Map<String, String> stringStringMap = new HashMap<>();
+    List<String> keyValuePairs = getStringList(key, "\\s*,\\s*");
+    keyValuePairs.forEach(pair -> {
+      List<String> keyValue = Arrays.asList(pair.split("\\s*:\\s*"));
+
+      if (keyValue.size() != 2) {
+        throw new IllegalArgumentException("Invalid format of string map passed in.");
+      }
+
+      stringStringMap.put(keyValue.get(0), keyValue.get(1));
+    });
+
+    return stringStringMap;
+  }
+
+  /**
    * Returns a list of clusters with the comma as the separator of the value
    * e.g., for input string: "thrift://hcat1:port,thrift://hcat2:port;thrift://hcat3:port,thrift://hcat4:port;"
    * we will get ["thrift://hcat1:port,thrift://hcat2:port", "thrift://hcat3:port,thrift://hcat4:port"]
