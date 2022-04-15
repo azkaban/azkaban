@@ -336,6 +336,19 @@ public class KubernetesContainerizedImplTest {
   }
 
   @Test
+  public void testNoJobTypeIfJobIsDisabledInFlow() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    flow.setSubmitUser("testUser1");
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitTime(System.currentTimeMillis());
+    flow.setExecutionId(0);
+    // Set all jobs in the flow to be in DISABLED status
+    flow.getExecutableNodes().forEach(executableNode -> executableNode.setStatus(Status.DISABLED));
+    final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
+    assertThat(jobTypes.size()).isEqualTo(0);
+  }
+
+  @Test
   public void testPodConstruction() throws Exception {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(1);
