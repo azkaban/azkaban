@@ -47,14 +47,11 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
-  private static long MAX_FLOW_RUNNING_MIN = 60 * 24 * 10; // 10 days
   private static long EXTRA_HOUR_MIN = 60;
 
   @Before
   public void setup() throws Exception {
     this.props = new Props();
-    // 10 days
-    this.props.put(AZKABAN_MAX_FLOW_RUNNING_MINS, MAX_FLOW_RUNNING_MIN);
     this.executorLoader = mock(ExecutorLoader.class);
     this.containerImpl = mock(ContainerizedImpl.class);
     this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
@@ -133,6 +130,6 @@ public class ContainerCleanupManagerTest {
   @Test
   public void testCleanUpStaleContainers() throws Exception {
     this.cleaner.cleanUpStaleContainers();
-    verify(this.containerImpl).deleteAgedContainers(Duration.ofMinutes(MAX_FLOW_RUNNING_MIN + EXTRA_HOUR_MIN));
+    verify(this.containerImpl).deleteAgedContainers(this.cleaner.getValidityMap().get(Status.RUNNING).getFirst());
   }
 }
