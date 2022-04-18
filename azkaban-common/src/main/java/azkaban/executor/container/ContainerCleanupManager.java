@@ -52,12 +52,12 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ContainerCleanupManager {
 
-  public static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = -1;
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
   private static final Duration DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL = Duration.ofMinutes(10);
   private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(60);
   private static final int DEFAULT_AZKABAN_MAX_FLOW_DISPATCHING_MINS = 10;
   private static final int DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS = 15;
+  private static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = 10 * 24 * 60; // 10 days
   private static final int DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS = 15;
   private static final int DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS = 15;
 
