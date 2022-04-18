@@ -139,10 +139,13 @@ public class ContainerCleanupManager {
    * Try to clean the stale containers that are older than maximum azkaban flow running time
    */
   public void cleanUpStaleContainers() {
-    try {
-      this.containerizedImpl.deleteAgedContainers(validityMap.get(Status.RUNNING).getFirst());
-    } catch (final Exception e) {
-      logger.error("Exception occurred while cleaning up stale pods and services." + e);
+    Duration containerValidity = validityMap.get(Status.RUNNING).getFirst();
+    if (!containerValidity.isNegative()) {
+      try {
+        this.containerizedImpl.deleteAgedContainers(containerValidity);
+      } catch (final Exception e) {
+        logger.error("Exception occurred while cleaning up stale pods and services." + e);
+      }
     }
   }
 
