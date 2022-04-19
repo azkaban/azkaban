@@ -222,6 +222,10 @@ public class ContainerCleanupManager {
    * @param originalStatus
    */
   private void retryFlowQuietly(ExecutableFlow flow, Status originalStatus) {
+    // EXECUTION_STOPPED flows should not be retried in CleanUpManager periodically
+    if (originalStatus == Status.EXECUTION_STOPPED) {
+      return;
+    }
     try {
       logger.info("Restarting cleaned up flow " + flow.getExecutionId());
       ExecutionControllerUtils.restartFlow(flow, originalStatus);
