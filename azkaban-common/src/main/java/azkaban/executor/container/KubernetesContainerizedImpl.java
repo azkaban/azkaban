@@ -53,7 +53,6 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.ApiResponse;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Container.ImagePullPolicyEnum;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
@@ -63,9 +62,11 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
+import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -1232,20 +1233,23 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void deleteService(final int executionId) throws ExecutorManagerException {
     final String serviceName = getServiceName(executionId);
     try {
-      final ApiResponse<V1Service> deleteResult = this.coreV1Api.deleteNamespacedServiceWithHttpInfo(
-          serviceName,
-          this.namespace,
-          null,
-          null,
-          null,
-          null,
-          null,
-          new V1DeleteOptions());
-      logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, code: {}, message: {}",
-          executionId,
-          serviceName,
-          deleteResult.getStatusCode(),
-          deleteResult.getData());
+      // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
+      // See more here: https://github.com/kubernetes-client/java/wiki/6.-Known-Issues
+
+      GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
+          new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
+              "v1", "services", this.client);
+      V1Service deletedService = serviceClient.delete(
+          this.namespace, serviceName).throwsApiException().getObject();
+      if (deletedService != null) {
+        logger.info(
+            "Received after-deletion status of the service deletion request for " +serviceName+
+            " will be deleting in background!");
+      }
+      else{
+        logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}",
+            executionId, serviceName);
+      }
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,
           e.getResponseBody());

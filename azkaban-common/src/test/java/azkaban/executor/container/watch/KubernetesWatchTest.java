@@ -141,7 +141,7 @@ public class KubernetesWatchTest {
   private KubernetesWatch kubernetesWatchWithMockListener() {
     Props azkProps = localProperties();
     ApiClient localApiClient = WatchUtils.createApiClient(azkProps);
-    return new KubernetesWatch(localApiClient, new AzPodStausExtractingListener(),
+    return new KubernetesWatch(azkProps, localApiClient, new AzPodStausExtractingListener(),
         WatchUtils.createPodWatchParams(azkProps)
     );
   }
@@ -501,7 +501,7 @@ public class KubernetesWatchTest {
         Watch<V1Pod> preInitPodWatch,
         PodWatchParams podWatchParams,
         int maxInitCount) {
-      super(apiClient, podWatchEventListener, podWatchParams);
+      super(new Props(), apiClient, podWatchEventListener, podWatchParams);
       requireNonNull(preInitPodWatch, "pre init pod watch must not be null");
       this.preInitPodWatch = preInitPodWatch;
       this.maxInitCount = maxInitCount;

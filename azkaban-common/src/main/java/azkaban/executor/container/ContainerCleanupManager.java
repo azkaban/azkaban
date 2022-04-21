@@ -127,7 +127,6 @@ public class ContainerCleanupManager {
         .put(Status.EXECUTION_STOPPED, new Pair<>(Duration.ofMinutes(maxExecStoppedValidity), UPDATE_TIME))
         .put(Status.FAILED_FINISHING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
-
   }
 
   public void cleanUpStaleFlows() {
