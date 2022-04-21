@@ -679,10 +679,6 @@ public class KubernetesContainerizedImplTest {
     final Set<Integer> staleContainerExecIdSet =
         this.kubernetesContainerizedImpl.getExecutionIdsFromPodList(podList,
         validStartTimeStamp);
-    log.info(String.valueOf(staleContainerExecIdSet));
-    //log.info(String.valueOf(validStartTimeStamp.minus(1, ChronoUnit.MILLIS).toInstant()
-    //.toEpochMilli()));
-    //log.info(String.valueOf(validStartTimeStamp.toInstant().toEpochMilli()));
     Assert.assertTrue(staleContainerExecIdSet.contains(123));
     Assert.assertFalse(staleContainerExecIdSet.contains(-1));
     Assert.assertFalse(staleContainerExecIdSet.contains(12345));
