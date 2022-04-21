@@ -75,8 +75,6 @@ public class ContainerCleanupManagerTest {
     verify(this.executorLoader)
         .fetchStaleFlowsForStatus(Status.KILLING, this.cleaner.getValidityMap());
     verify(this.executorLoader)
-        .fetchStaleFlowsForStatus(Status.EXECUTION_STOPPED, this.cleaner.getValidityMap());
-    verify(this.executorLoader)
         .fetchStaleFlowsForStatus(Status.FAILED_FINISHING, this.cleaner.getValidityMap());
     verifyZeroInteractions(this.containerImpl);
   }
