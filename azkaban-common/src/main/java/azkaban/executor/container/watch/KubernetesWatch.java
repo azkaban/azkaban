@@ -52,12 +52,15 @@ public class KubernetesWatch implements ContainerizedWatch {
   private final CoreV1Api coreV1Api;
   private final PodWatchParams podWatchParams;
   private final Thread watchRunner;
-  private final int DEFAULT_KUBERNETES_WATCH_CALL_TIMEOUT = 86400;
-  private final int DEFAULT_KUBERNETES_WATCH_CONNECT_TIMEOUT = 30;
-  private final int DEFAULT_KUBERNETES_WATCH_READ_TIMEOUT = 86400;
-  private final int callTimeout;
-  private final int connectTimeout;
-  private final int readTimeout;
+  private final long DEFAULT_KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS =
+      TimeUnit.DAYS.toSeconds(1);
+  private final long DEFAULT_KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS =
+      TimeUnit.SECONDS.toSeconds(1);
+  private final long DEFAULT_KUBERNETES_WATCH_READ_TIMEOUT_SECONDS =
+      TimeUnit.DAYS.toSeconds(1);
+  private final long callTimeout;
+  private final long connectTimeout;
+  private final long readTimeout;
   private Watch<V1Pod> podWatch;
   private RawPodWatchEventListener podWatchEventListener;
   private int podWatchInitCount = 0;
@@ -86,15 +89,19 @@ public class KubernetesWatch implements ContainerizedWatch {
     this.podWatchParams = podWatchParams;
     this.apiClient = apiClient;
     this.callTimeout =
-        azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_CALL_TIMEOUT,
-        DEFAULT_KUBERNETES_WATCH_CALL_TIMEOUT);
+        azkProps.getLong(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS,
+        DEFAULT_KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS);
     this.connectTimeout =
-        azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_CONNECT_TIMEOUT,
-            DEFAULT_KUBERNETES_WATCH_CONNECT_TIMEOUT);
+        azkProps.getLong(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS,
+            DEFAULT_KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS);
     this.readTimeout =
-        azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_READ_TIMEOUT,
-            DEFAULT_KUBERNETES_WATCH_READ_TIMEOUT);
-    // Setting read and call timeouts. So pod watch will be reinitialized.
+        azkProps.getLong(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_READ_TIMEOUT_SECONDS,
+            DEFAULT_KUBERNETES_WATCH_READ_TIMEOUT_SECONDS);
+    /**
+     * We are setting call, read and connect timeouts since we have cluster specific requirements
+     * for them as we started noticing some clusters fail to refresh /close a stale K8s watch
+     * connection.
+     */
     OkHttpClient httpClient =
         this.apiClient.getHttpClient().newBuilder()
             .protocols(Arrays.asList(Protocol.HTTP_2,Protocol.HTTP_1_1))

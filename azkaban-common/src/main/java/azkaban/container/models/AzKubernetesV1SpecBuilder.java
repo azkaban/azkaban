@@ -52,7 +52,6 @@ public class AzKubernetesV1SpecBuilder {
             LoggerFactory.getLogger(AzKubernetesV1SpecBuilder.class);
     private static final String AZ_CLUSTER_KEY = "AZ_CLUSTER";
     private static final String AZ_CONF_VERSION_KEY = "AZ_CONF_VERSION";
-    private static final String DEFAULT_RESTART_POLICY = "NEVER";
     private static final int SECRET_VOLUME_DEFAULT_MODE = 0400; // file read permitted only for the user
 
     private final V1ContainerBuilder flowContainerBuilder = new V1ContainerBuilder();

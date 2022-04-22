@@ -1234,21 +1234,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String serviceName = getServiceName(executionId);
     try {
       // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
-      // See more here: https://github.com/kubernetes-client/java/wiki/6.-Known-Issues
+      // See more here: https://github.com/kubernetes-client/java/issues/86
 
-      GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
+      final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
           new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
               "v1", "services", this.client);
-      V1Service deletedService = serviceClient.delete(
+      final V1Service deletedService = serviceClient.delete(
           this.namespace, serviceName).throwsApiException().getObject();
-      if (deletedService != null) {
-        logger.info(
-            "Received after-deletion status of the service deletion request for " +serviceName+
-            " will be deleting in background!");
-      }
-      else{
+      if (deletedService == null) {
         logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}",
             executionId, serviceName);
+      }
+      else{
+        logger.info(
+            "Received after-deletion status of the service deletion request for " +serviceName+
+                " will be deleting in background!");
       }
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,

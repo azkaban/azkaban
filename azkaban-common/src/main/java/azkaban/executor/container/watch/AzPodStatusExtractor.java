@@ -180,7 +180,7 @@ public class AzPodStatusExtractor {
     Map<String, V1PodCondition> conditionMap = new HashMap<>();
     this.podConditions.stream().forEach(
         condition ->
-            conditionMap.put(String.valueOf(condition.getType()), condition));
+            conditionMap.put(condition.getType().toString(), condition));
   this.scheduledCondition =
       Optional.ofNullable(conditionMap.remove(PodCondition.PodScheduled.name()));
   this.containersReadyCondition =

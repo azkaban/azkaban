@@ -723,12 +723,12 @@ public class Constants {
     public static final String KUBERNETES_WATCH_ENABLED = KUBERNETES_WATCH_PREFIX + "enabled";
     public static final String KUBERNETES_WATCH_EVENT_CACHE_MAX_ENTRIES =
         KUBERNETES_WATCH_PREFIX + "cache.max.entries";
-    public static final String KUBERNETES_WATCH_CALL_TIMEOUT = KUBERNETES_WATCH_PREFIX + "call"
-        + ".timeout";
-    public static final String KUBERNETES_WATCH_CONNECT_TIMEOUT = KUBERNETES_WATCH_PREFIX +
-      "connect.timeout";
-    public static final String KUBERNETES_WATCH_READ_TIMEOUT = KUBERNETES_WATCH_PREFIX + "read"
-        + ".timeout";
+    public static final String KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS =
+        KUBERNETES_WATCH_PREFIX + "call.timeout";
+    public static final String KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS =
+        KUBERNETES_WATCH_PREFIX + "connect.timeout";
+    public static final String KUBERNETES_WATCH_READ_TIMEOUT_SECONDS =
+        KUBERNETES_WATCH_PREFIX + "read.timeout";
 
     // Periodicity of lookup and cleanup of stale executions.
     public static final String CONTAINERIZED_STALE_EXECUTION_CLEANUP_INTERVAL_MIN =
