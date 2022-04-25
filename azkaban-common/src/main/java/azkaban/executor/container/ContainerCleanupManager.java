@@ -124,7 +124,6 @@ public class ContainerCleanupManager {
         .put(Status.RUNNING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .put(Status.PAUSED, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .put(Status.KILLING, new Pair<>(Duration.ofMinutes(maxKillingValidity), UPDATE_TIME))
-        .put(Status.EXECUTION_STOPPED, new Pair<>(Duration.ofMinutes(maxExecStoppedValidity), UPDATE_TIME))
         .put(Status.FAILED_FINISHING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
 
@@ -222,10 +221,6 @@ public class ContainerCleanupManager {
    * @param originalStatus
    */
   private void retryFlowQuietly(ExecutableFlow flow, Status originalStatus) {
-    // EXECUTION_STOPPED flows should not be retried in CleanUpManager periodically
-    if (originalStatus == Status.EXECUTION_STOPPED) {
-      return;
-    }
     try {
       logger.info("Restarting cleaned up flow " + flow.getExecutionId());
       ExecutionControllerUtils.restartFlow(flow, originalStatus);
