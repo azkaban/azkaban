@@ -22,6 +22,7 @@ import io.kubernetes.client.openapi.models.V1ContainerState;
 import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
+import io.kubernetes.client.openapi.models.V1PodCondition.TypeEnum;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watch.Response;
@@ -30,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,7 +180,7 @@ public class AzPodStatusExtractor {
     Map<String, V1PodCondition> conditionMap = new HashMap<>();
     this.podConditions.stream().forEach(
         condition ->
-            conditionMap.put(condition.getType(), condition));
+            conditionMap.put(condition.getType().toString(), condition));
   this.scheduledCondition =
       Optional.ofNullable(conditionMap.remove(PodCondition.PodScheduled.name()));
   this.containersReadyCondition =
@@ -225,7 +225,7 @@ public class AzPodStatusExtractor {
   private void extractPhase() {
     requireNonNull(this.v1PodStatus.getPhase(), "pod status phase must not be null");
     // This will throw an IllegalArgumentException in case of an unexpected phase name.
-    this.podPhase = PodPhase.valueOf(this.v1PodStatus.getPhase());
+    this.podPhase = PodPhase.valueOf(String.valueOf(this.v1PodStatus.getPhase()));
   }
 
   /**

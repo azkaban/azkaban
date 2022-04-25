@@ -100,7 +100,7 @@ spec:
       name: jobtype-volume-spark
     - mountPath: /data/jobtypes/custom-spark
       name: jobtype-volume-custom-spark
-  restartPolicy: Never
+  restartPolicy: NEVER
   volumes:
   - emptyDir: {}
     name: jobtype-volume-spark
