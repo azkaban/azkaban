@@ -17,7 +17,9 @@ package azkaban.executor.container.watch;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.executor.container.ContainerizedWatch;
+import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
@@ -27,11 +29,13 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watch.Response;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +52,15 @@ public class KubernetesWatch implements ContainerizedWatch {
   private final CoreV1Api coreV1Api;
   private final PodWatchParams podWatchParams;
   private final Thread watchRunner;
+  private final long DEFAULT_KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS =
+      TimeUnit.DAYS.toSeconds(1);
+  private final long DEFAULT_KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS =
+      TimeUnit.SECONDS.toSeconds(1);
+  private final long DEFAULT_KUBERNETES_WATCH_READ_TIMEOUT_SECONDS =
+      TimeUnit.DAYS.toSeconds(1);
+  private final long callTimeout;
+  private final long connectTimeout;
+  private final long readTimeout;
   private Watch<V1Pod> podWatch;
   private RawPodWatchEventListener podWatchEventListener;
   private int podWatchInitCount = 0;
@@ -64,7 +77,7 @@ public class KubernetesWatch implements ContainerizedWatch {
    * @param podWatchParams
    */
   @Inject
-  public KubernetesWatch(ApiClient apiClient,
+  public KubernetesWatch(final Props azkProps, ApiClient apiClient,
       RawPodWatchEventListener podWatchEventListener,
       PodWatchParams podWatchParams) {
     requireNonNull(apiClient);
@@ -75,9 +88,27 @@ public class KubernetesWatch implements ContainerizedWatch {
     this.podWatchEventListener = podWatchEventListener;
     this.podWatchParams = podWatchParams;
     this.apiClient = apiClient;
-    // no timeout for request completion
+    this.callTimeout =
+        azkProps.getLong(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS,
+        DEFAULT_KUBERNETES_WATCH_CALL_TIMEOUT_SECONDS);
+    this.connectTimeout =
+        azkProps.getLong(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS,
+            DEFAULT_KUBERNETES_WATCH_CONNECT_TIMEOUT_SECONDS);
+    this.readTimeout =
+        azkProps.getLong(ContainerizedDispatchManagerProperties.KUBERNETES_WATCH_READ_TIMEOUT_SECONDS,
+            DEFAULT_KUBERNETES_WATCH_READ_TIMEOUT_SECONDS);
+    /**
+     * We are setting call, read and connect timeouts since we have cluster specific requirements
+     * for them as we started noticing some clusters fail to refresh /close a stale K8s watch
+     * connection.
+     */
     OkHttpClient httpClient =
-        this.apiClient.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+        this.apiClient.getHttpClient().newBuilder()
+            .protocols(Arrays.asList(Protocol.HTTP_2,Protocol.HTTP_1_1))
+            .connectTimeout(this.connectTimeout, TimeUnit.SECONDS)
+            .callTimeout(this.callTimeout, TimeUnit.SECONDS)
+            .readTimeout(this.readTimeout, TimeUnit.SECONDS)
+            .build();
     this.apiClient.setHttpClient(httpClient);
     this.coreV1Api = new CoreV1Api(this.apiClient);
 
@@ -105,7 +136,8 @@ public class KubernetesWatch implements ContainerizedWatch {
   protected void initializePodWatch() throws ApiException {
     try {
       this.podWatch = Watch.createWatch(this.apiClient,
-          this.coreV1Api.listNamespacedPodCall(this.podWatchParams.getNamespace(),
+          this.coreV1Api.listNamespacedPodCall(
+              this.podWatchParams.getNamespace(),
               "true",
               false,
               null,
@@ -114,7 +146,8 @@ public class KubernetesWatch implements ContainerizedWatch {
               null,
               null,
               null,
-              true,
+              null,
+              true ,
               null),
           new TypeToken<Response<V1Pod>>() {}.getType());
     } catch (ApiException ae) {
