@@ -17,12 +17,15 @@ public class ExecuteAsUserUtils {
 
   /**
    * Add group and user on environment where job will run before job process starts. These commands
-   * can only be executed by root user.
+   * can only be executed by root user. Keep it synchronized in case of race condition.
+   * Otherwise, it is possible that while threadA creates a new user and not yet finish the
+   * create user call, threadB finds user is already created and thus continue the processing
+   * which ends up with user not found error.
    *
    * @param effectiveUser
    * @throws Exception
    */
-  public static void addGroupAndUserForEffectiveUser(final ExecuteAsUser executeAsUser,
+  public static synchronized void addGroupAndUserForEffectiveUser(final ExecuteAsUser executeAsUser,
       final String effectiveUser) throws Exception {
     List<String> commands = Arrays.asList(ADD_GROUP_PATH, effectiveUser);
     int result = executeAsUser.execute("root", commands);
