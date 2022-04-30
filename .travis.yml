@@ -8,7 +8,7 @@ before_install:
   - sudo apt update
   - sudo apt install openjfx
 
-script: ./gradlew clean build --scan --no-daemon --info
+script: ./gradlew clean build --scan  --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
 before_cache:
@@ -32,5 +32,5 @@ env:
     - GRADLE_OPTS="-Xms128m"
 
 after_success:
-  - ./gradlew coveralls --no-daemon
+  - ./gradlew coveralls 
   - bash <(curl -s https://codecov.io/bash)
