@@ -19,6 +19,7 @@ import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
 import azkaban.Constants.FlowParameters;
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
@@ -31,11 +32,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -110,8 +114,6 @@ public class ContainerCleanupManager {
       // Added extra buffer of an hour to not conflict with the flow runner cancellation.
       runningFlowValidity = azkProps
           .getLong(AZKABAN_MAX_FLOW_RUNNING_MINS, DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS);
-      runningFlowValidity = runningFlowValidity > 0 ? runningFlowValidity + 60 :
-          runningFlowValidity;
     } catch (NumberFormatException ne) {
       logger
           .info("NumberFormatException while parsing value for: " + AZKABAN_MAX_FLOW_RUNNING_MINS);
@@ -134,15 +136,45 @@ public class ContainerCleanupManager {
   }
 
   /**
-   * Try to clean the stale containers that are older than maximum azkaban flow running time
+   * From all pods in the current namespace and Azkaban cluster, select the pods whose executions
+   * are not in unfinished statuses, e.g. DISPATCHING, PREPARING, RUNNING, PAUSED, KILLING,
+   * FAILED_FINISHING in DB, and delete the pods & services to release resources
    */
-  public void cleanUpStaleContainers() {
-    Duration containerValidity = validityMap.get(Status.RUNNING).getFirst();
-    if (!containerValidity.isNegative()) {
+  public void cleanUpContainersInTerminalStatuses() {
+    logger.info("Cleaning up pods of terminated flow executions");
+    Set<Integer> activeFlows = new HashSet<>();
+    Set<Integer> currentNameSpacedPods = new HashSet<>();
+    ImmutableMap<Status, Pair<Duration, String>> unFinishedStatusesMap =
+        new Builder<Status,
+        Pair<Duration, String>>()
+        .put(Status.DISPATCHING, new Pair<>(Duration.ZERO, SUBMIT_TIME))
+        .put(Status.PREPARING, new Pair<>(Duration.ZERO, SUBMIT_TIME))
+        .put(Status.RUNNING, new Pair<>(Duration.ZERO, START_TIME))
+        .put(Status.PAUSED, new Pair<>(Duration.ZERO, START_TIME))
+        .put(Status.KILLING, new Pair<>(Duration.ZERO, UPDATE_TIME))
+        .put(Status.FAILED_FINISHING, new Pair<>(Duration.ZERO, START_TIME))
+        .build();
+    // Obtain all pods in current namespace which are dispatched from current Azkaban cluster
+    try {
+      currentNameSpacedPods = this.containerizedImpl.getContainersByDuration(Duration.ZERO);
+    } catch (final ExecutorManagerException e) {
+      logger.error("Unable to obtain the pods in the current namespace and Azkaban cluster", e);
+    }
+    // Obtain all containerized executions that are in unfinished statuses
+    for (Status status : unFinishedStatusesMap.keySet()) {
       try {
-        this.containerizedImpl.deleteAgedContainers(containerValidity);
-      } catch (final Exception e) {
-        logger.error("Exception occurred while cleaning up stale pods and services." + e);
+        List<ExecutableFlow> flows = (this.executorLoader.fetchStaleFlowsForStatus(status,
+            unFinishedStatusesMap));
+        activeFlows.addAll(flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
+      } catch (final ExecutorManagerException e) {
+        logger.error("Unable to obtain current flows executions of status {}", status, e);
+      }
+    }
+    // Delete the pod if its execution status is finished
+    for (int executionId : currentNameSpacedPods) {
+      if (!activeFlows.contains(executionId)) {
+        logger.info("Cleaning up the pod of finished execution: {}", executionId);
+        deleteContainerQuietly(executionId);
       }
     }
   }
@@ -250,7 +282,7 @@ public class ContainerCleanupManager {
     // Default execution clean up interval is 10 min, container clean up interval is 60 min
     this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleFlows, 0L,
         this.executionCleanupIntervalMin, TimeUnit.MINUTES);
-    this.cleanupService.scheduleAtFixedRate(this::cleanUpStaleContainers, 0L,
+    this.cleanupService.scheduleAtFixedRate(this::cleanUpContainersInTerminalStatuses, 0L,
         this.containerCleanupIntervalMin, TimeUnit.MINUTES);
   }
 

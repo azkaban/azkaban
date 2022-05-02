@@ -34,6 +34,8 @@ import azkaban.executor.Status;
 import azkaban.utils.Props;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
@@ -126,8 +128,22 @@ public class ContainerCleanupManagerTest {
   }
 
   @Test
-  public void testCleanUpStaleContainers() throws Exception {
-    this.cleaner.cleanUpStaleContainers();
-    verify(this.containerImpl).deleteAgedContainers(this.cleaner.getValidityMap().get(Status.RUNNING).getFirst());
+  public void cleanUpContainersInTerminalStatuses() throws Exception {
+    Set<Integer> pods = new HashSet<>();
+    pods.add(1000);
+    pods.add(1001);
+    final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
+    final ExecutableFlow flow = new ExecutableFlow();
+    flow.setExecutionId(1000);
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitUser("goku");
+    flow.setExecutionOptions(new ExecutionOptions());
+    executableFlows.add(flow);
+    when(this.executorLoader
+        .fetchStaleFlowsForStatus(Status.PREPARING, this.cleaner.getValidityMap()))
+        .thenReturn(executableFlows);
+    when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
+    this.cleaner.cleanUpContainersInTerminalStatuses();
+    verify(this.containerImpl).deleteContainer(1001);
   }
 }
