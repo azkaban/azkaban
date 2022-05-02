@@ -15,6 +15,7 @@
  */
 package azkaban.jobtype;
 
+import azkaban.Constants;
 import azkaban.jobExecutor.JavaProcessJob;
 import java.io.BufferedReader;
 import java.io.File;
@@ -357,7 +358,15 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   }
 
   private Map<String, String> getPigParams() {
-    return getJobProps().getMapByPrefix(PIG_PARAM_PREFIX);
+    final Map<String, String> paramMap = getJobProps().getMapByPrefix(PIG_PARAM_PREFIX);
+    // This map may also contain certain configs which are meant for flow execution on containers.
+    // These configs start with "param.override.". Remove any such property.
+    for (final String key : paramMap.keySet()) {
+      if (key.startsWith(Constants.PARAM_OVERRIDE)) {
+        paramMap.remove(key);
+      }
+    }
+    return paramMap;
   }
 
   private List<String> getPigParamFiles() {
