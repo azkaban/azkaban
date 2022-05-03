@@ -1215,7 +1215,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       } else if (statusCode == 202 ) {
         logger.info("Pod deletion request accepted, deletion in background");
       } else {
-        logger.error("Pod deletion unauthorized");
+        logger.error("Pod deletion failed");
         throw new ExecutorManagerException("Pod " + podName + "deletion failed");
       }
     } catch (final ApiException e) {
@@ -1241,14 +1241,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               "v1", "services", this.client);
       final V1Service deletedService = serviceClient.delete(
           this.namespace, serviceName).throwsApiException().getObject();
-      if (deletedService == null) {
-        logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}",
-            executionId, serviceName);
-      }
-      else{
-        logger.info(
-            "Received after-deletion status of the service deletion request for " +serviceName+
-                " will be deleting in background!");
+      final int statusCode =
+          serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
+      logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, Status: {}",
+          executionId, serviceName, statusCode);
+      if (statusCode == 200) {
+        logger.info("Service deletion successful");
+      } else if (statusCode == 202 ) {
+        logger.info("Service deletion request accepted, deletion in background");
+      } else {
+        logger.error("Service deletion failed");
+        throw new ExecutorManagerException("Service " + serviceName + "deletion failed");
       }
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,
