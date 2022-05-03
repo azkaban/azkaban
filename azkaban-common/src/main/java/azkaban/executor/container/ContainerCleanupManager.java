@@ -163,8 +163,8 @@ public class ContainerCleanupManager {
     // Obtain all containerized executions that are in unfinished statuses
     for (Status status : unFinishedStatusesMap.keySet()) {
       try {
-        List<ExecutableFlow> flows = (this.executorLoader.fetchStaleFlowsForStatus(status,
-            unFinishedStatusesMap));
+        List<ExecutableFlow> flows = this.executorLoader.fetchStaleFlowsForStatus(status,
+            unFinishedStatusesMap);
         activeFlows.addAll(flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
       } catch (final ExecutorManagerException e) {
         logger.error("Unable to obtain current flows executions of status {}", status, e);

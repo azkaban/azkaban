@@ -1195,33 +1195,32 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * This method is used to delete pod in Kubernetes. It will terminate the pod. Additional 2
-   * retries are enabled to ensure a clean delete
+   * This method is used to delete pod in Kubernetes. It will terminate the pod.
    *
    * @param executionId
    * @throws ExecutorManagerException
    */
   private void deletePod(final int executionId) throws ExecutorManagerException {
-    boolean deleted = false;
-    int retry = 0;
     final String podName = getPodName(executionId);
-    while (!deleted && retry < 3) {
-      try {
-        final ApiResponse<V1Pod> localVarResp =
-            this.coreV1Api.deleteNamespacedPodWithHttpInfo(podName, this.namespace, null, null,
-                null, null, null, new V1DeleteOptions());
-        logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}, Status: {}", executionId,
-            podName, localVarResp.getStatusCode());
-        if (localVarResp.getStatusCode() == 200) {
-          deleted = true;
-        }
-        ++ retry;
-      } catch (final ApiException e) {
-        logger.warn("Exception occurred when deleting Pod {} in Kubernetes: {}", podName, e.getResponseBody());
+    try {
+      final GenericKubernetesApi<V1Pod, V1PodList> serviceClient =
+          new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
+              "v1", "pods", this.client);
+      final int statusCode =
+          serviceClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
+      logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}, Status: {}", executionId,
+          podName, statusCode);
+      if (statusCode == 200) {
+        logger.info("Pod deletion successful");
+      } else if (statusCode == 202 ) {
+        logger.info("Pod deletion request accepted, deletion in background");
+      } else {
+        logger.error("Pod deletion unauthorized");
+        throw new ExecutorManagerException("Pod " + podName + "deletion failed");
       }
-    }
-    if (!deleted) {
-      logger.error("ExecId: {}, Unable to delete Pod {} in Kubernetes", executionId, podName);
+    } catch (final ApiException e) {
+      logger.warn("Exception occurred when deleting Pod {} in Kubernetes: {}", podName, e.getResponseBody());
+      throw new ExecutorManagerException(e);
     }
   }
 
