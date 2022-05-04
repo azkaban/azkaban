@@ -55,7 +55,6 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Container.ImagePullPolicyEnum;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -409,38 +408,33 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * This method is used to delete invalid containers in batch
-   * @param containerValidity container valid duration
-   * @throws ExecutorManagerException
+   * This method is used to fetch all pods in the current az cluster and namespace that are
+   * created a time duration ago
+   * @param containerDuration duration between container start timestamp and current timestamp
+   * @return Set of container's execution ids
    */
   @Override
-  public synchronized void deleteAgedContainers(final Duration containerValidity) throws ExecutorManagerException {
-    logger.info(String.format("Cleaning up containers older than %d days",
-        containerValidity.toDays()));
-    final Set<Integer> containersToDelete = getStaleContainers(containerValidity);
-    for (final int execId : containersToDelete) {
-      logger.info(String.format("Deleting stale pod %s and service %s", getPodName(execId),
-          getServiceName(execId)));
-      try {
-        deleteContainer(execId);
-      } catch (final Exception e) {
-        logger.error(String.format("Exception occurred when deleting stale pod and/or service of "
-                + "exec-id %d", execId), e.getMessage());
-      }
-    }
+  public Set<Integer> getContainersByDuration(final Duration containerDuration) throws ExecutorManagerException {
+    // Get the list of pods from current Azkaban cluster and namespace
+    final V1PodList podList= this.getListNamespacedPod();
+
+    // Get all execution ids of the pods whose age is older than a certain time duration
+    final OffsetDateTime validStartTimeStamp = OffsetDateTime.now().minus(
+        containerDuration.toMillis(), ChronoUnit.MILLIS);
+    return getExecutionIdsFromPodList(podList, validStartTimeStamp);
   }
 
   /**
-   * This method is used to fetch all stale pods in the current az cluster and namespace
-   * @param containerValidity container valid duration
-   * @return Set of stale container's execution ids
+   * This method is used to fetch a list of all pods in the current az cluster and namespace
+   * @return
+   * @throws ExecutorManagerException
    */
-  private Set<Integer> getStaleContainers(final Duration containerValidity) throws ExecutorManagerException {
+  private V1PodList getListNamespacedPod() throws ExecutorManagerException {
     try {
-      // Select pods only from current Azkaban cluster and namespace
+      // Select pods from current Azkaban cluster and namespace
       final String label =
           CLUSTER_LABEL_NAME + "=" + this.clusterName + "," + APP_LABEL_NAME + "=" + POD_APPLICATION_TAG;
-      final V1PodList podList= this.coreV1Api.listNamespacedPod(
+      return this.coreV1Api.listNamespacedPod(
           this.namespace,
           null,
           null,
@@ -453,16 +447,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           null,
           null
       );
-
-      // Get all execution ids of the pods whose age is older than Azkaban max flow running time
-      // (e.g. 10 days)
-      final OffsetDateTime validStartTimeStamp = OffsetDateTime.now().minus(
-          containerValidity.toMillis(), ChronoUnit.MILLIS);
-      return getExecutionIdsFromPodList(podList, validStartTimeStamp);
-    } catch (final ApiException ae) {
-      logger.error(String.format("Unable to fetch stale pods in %s.", this.clusterName),
-          ae.getResponseBody());
-      throw new ExecutorManagerException(ae);
+    } catch (final ApiException e) {
+      logger.error(String.format("Unable to fetch pods in %s.", this.clusterName),
+          e.getResponseBody());
+      throw new ExecutorManagerException(e);
     }
   }
 
@@ -1205,21 +1193,31 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * This method is used to delete pod in Kubernetes. It will terminate the pod. deployment is
-   * fixed
+   * This method is used to delete pod in Kubernetes. It will terminate the pod.
    *
    * @param executionId
    * @throws ExecutorManagerException
    */
   private void deletePod(final int executionId) throws ExecutorManagerException {
+    final String podName = getPodName(executionId);
     try {
-      final String podName = getPodName(executionId);
-      this.coreV1Api.deleteNamespacedPod(podName, this.namespace, null, null,
-          null, null, null, new V1DeleteOptions());
-      logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}", executionId, podName);
+      final GenericKubernetesApi<V1Pod, V1PodList> podClient =
+          new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
+              "v1", "pods", this.client);
+      final int statusCode =
+          podClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
+      logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}, Status: {}", executionId,
+          podName, statusCode);
+      if (statusCode == 200) {
+        logger.info("Pod deletion successful");
+      } else if (statusCode == 202 ) {
+        logger.info("Pod deletion request accepted, deletion in background");
+      } else {
+        logger.error("Pod deletion failed");
+        throw new ExecutorManagerException("Pod " + podName + "deletion failed");
+      }
     } catch (final ApiException e) {
-      logger.error("ExecId: {}, Unable to delete Pod in Kubernetes: {}", executionId,
-          e.getResponseBody());
+      logger.warn("Exception occurred when deleting Pod {} in Kubernetes: {}", podName, e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
   }
@@ -1239,16 +1237,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
           new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
               "v1", "services", this.client);
-      final V1Service deletedService = serviceClient.delete(
-          this.namespace, serviceName).throwsApiException().getObject();
-      if (deletedService == null) {
-        logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}",
-            executionId, serviceName);
-      }
-      else{
-        logger.info(
-            "Received after-deletion status of the service deletion request for " +serviceName+
-                " will be deleting in background!");
+      final int statusCode =
+          serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
+      logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, Status: {}",
+          executionId, serviceName, statusCode);
+      if (statusCode == 200) {
+        logger.info("Service deletion successful");
+      } else if (statusCode == 202 ) {
+        logger.info("Service deletion request accepted, deletion in background");
+      } else {
+        logger.error("Service deletion failed");
+        throw new ExecutorManagerException("Service " + serviceName + "deletion failed");
       }
     } catch (final ApiException e) {
       logger.error("ExecId: {}, Unable to delete service in Kubernetes: {}", executionId,
