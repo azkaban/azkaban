@@ -30,10 +30,13 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -144,16 +147,11 @@ public class ContainerCleanupManager {
     logger.info("Cleaning up pods of terminated flow executions");
     Set<Integer> activeFlows = new HashSet<>();
     Set<Integer> currentNameSpacedPods = new HashSet<>();
+
     ImmutableMap<Status, Pair<Duration, String>> unFinishedStatusesMap =
-        new Builder<Status,
-        Pair<Duration, String>>()
-        .put(Status.DISPATCHING, new Pair<>(Duration.ZERO, SUBMIT_TIME))
-        .put(Status.PREPARING, new Pair<>(Duration.ZERO, SUBMIT_TIME))
-        .put(Status.RUNNING, new Pair<>(Duration.ZERO, START_TIME))
-        .put(Status.PAUSED, new Pair<>(Duration.ZERO, START_TIME))
-        .put(Status.KILLING, new Pair<>(Duration.ZERO, UPDATE_TIME))
-        .put(Status.FAILED_FINISHING, new Pair<>(Duration.ZERO, START_TIME))
-        .build();
+        this.validityMap.keySet().stream().collect(ImmutableMap.toImmutableMap(e->e,
+            e->new Pair<>(Duration.ZERO, SUBMIT_TIME)));
+
     // Obtain all pods in current namespace which are dispatched from current Azkaban cluster
     try {
       currentNameSpacedPods = this.containerizedImpl.getContainersByDuration(Duration.ZERO);
@@ -173,7 +171,8 @@ public class ContainerCleanupManager {
     // Delete the pod if its execution status is finished
     for (int executionId : currentNameSpacedPods) {
       if (!activeFlows.contains(executionId)) {
-        logger.info("Cleaning up the pod of finished execution: {}", executionId);
+        logger.info("Cleaning up the stale pod and service for finished execution: {}",
+            executionId);
         deleteContainerQuietly(executionId);
       }
     }

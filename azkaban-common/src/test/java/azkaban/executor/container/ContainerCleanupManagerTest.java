@@ -16,7 +16,10 @@
 package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS;
+import static azkaban.Constants.EventReporterConstants.SUBMIT_TIME;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -31,16 +34,20 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ContainerCleanupManagerTest {
 
@@ -49,7 +56,6 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
-  private static long EXTRA_HOUR_MIN = 60;
 
   @Before
   public void setup() throws Exception {
@@ -140,10 +146,11 @@ public class ContainerCleanupManagerTest {
     flow.setExecutionOptions(new ExecutionOptions());
     executableFlows.add(flow);
     when(this.executorLoader
-        .fetchStaleFlowsForStatus(Status.PREPARING, this.cleaner.getValidityMap()))
+        .fetchStaleFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
         .thenReturn(executableFlows);
     when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
     this.cleaner.cleanUpContainersInTerminalStatuses();
     verify(this.containerImpl).deleteContainer(1001);
+    verify(this.containerImpl, Mockito.times(0)).deleteContainer(1000);
   }
 }

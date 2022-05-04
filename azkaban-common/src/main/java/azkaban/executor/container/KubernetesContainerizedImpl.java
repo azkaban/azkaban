@@ -1203,11 +1203,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void deletePod(final int executionId) throws ExecutorManagerException {
     final String podName = getPodName(executionId);
     try {
-      final GenericKubernetesApi<V1Pod, V1PodList> serviceClient =
+      final GenericKubernetesApi<V1Pod, V1PodList> podClient =
           new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
               "v1", "pods", this.client);
       final int statusCode =
-          serviceClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
+          podClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
       logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}, Status: {}", executionId,
           podName, statusCode);
       if (statusCode == 200) {
@@ -1239,8 +1239,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
           new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
               "v1", "services", this.client);
-      final V1Service deletedService = serviceClient.delete(
-          this.namespace, serviceName).throwsApiException().getObject();
       final int statusCode =
           serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
       logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, Status: {}",
