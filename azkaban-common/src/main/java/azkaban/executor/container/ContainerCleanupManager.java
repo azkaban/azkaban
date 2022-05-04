@@ -144,6 +144,9 @@ public class ContainerCleanupManager {
     Set<Integer> activeFlows = new HashSet<>();
     Set<Integer> currentNameSpacedPods = new HashSet<>();
 
+    // The unfinished statuses DISPATCHING, PREPARING, RUNNING, PAUSED, KILLING, FAILED_FINISHING.
+    // This map will be used to find out all executions of above statuses where
+    // submit_time < current system time - 0 from the DB
     ImmutableMap<Status, Pair<Duration, String>> unFinishedStatusesMap =
         this.validityMap.keySet().stream().collect(ImmutableMap.toImmutableMap(e->e,
             e->new Pair<>(Duration.ZERO, SUBMIT_TIME)));
