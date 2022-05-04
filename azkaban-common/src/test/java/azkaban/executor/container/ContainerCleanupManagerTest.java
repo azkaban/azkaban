@@ -15,7 +15,6 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -32,13 +31,17 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ContainerCleanupManagerTest {
 
@@ -47,7 +50,6 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
-  private static long EXTRA_HOUR_MIN = 60;
 
   @Before
   public void setup() throws Exception {
@@ -126,8 +128,23 @@ public class ContainerCleanupManagerTest {
   }
 
   @Test
-  public void testCleanUpStaleContainers() throws Exception {
-    this.cleaner.cleanUpStaleContainers();
-    verify(this.containerImpl).deleteAgedContainers(this.cleaner.getValidityMap().get(Status.RUNNING).getFirst());
+  public void cleanUpContainersInTerminalStatuses() throws Exception {
+    Set<Integer> pods = new HashSet<>();
+    pods.add(1000);
+    pods.add(1001);
+    final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
+    final ExecutableFlow flow = new ExecutableFlow();
+    flow.setExecutionId(1000);
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitUser("goku");
+    flow.setExecutionOptions(new ExecutionOptions());
+    executableFlows.add(flow);
+    when(this.executorLoader
+        .fetchStaleFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
+        .thenReturn(executableFlows);
+    when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
+    this.cleaner.cleanUpContainersInTerminalStatuses();
+    verify(this.containerImpl).deleteContainer(1001);
+    verify(this.containerImpl, Mockito.times(0)).deleteContainer(1000);
   }
 }
