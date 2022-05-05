@@ -103,6 +103,11 @@ public class AzPodStatusExtractor {
 
     requireNonNull(this.v1Pod.getStatus(), "pod status must not be null");
     requireNonNull(this.v1Pod.getStatus().getPhase(), "pod phase must not be null");
+    logger.debug("The status for the pod is" + this.v1Pod.getStatus());
+    logger.debug("The phase for the pod is" + this.v1Pod.getStatus().getPhase());
+    logger.debug("The condition for the pod is" + this.v1Pod.getStatus().getConditions());
+    logger.debug("The Container statuses for the pod are" + this.v1Pod.getStatus().getContainerStatuses());
+
     this.v1PodStatus = this.v1Pod.getStatus();
     this.podConditions = this.v1Pod.getStatus().getConditions();
 
@@ -361,8 +366,8 @@ public class AzPodStatusExtractor {
       logger.debug("ContainerStarting false as container status is null or empty");
       return false;
     }
-    boolean allContainersWaiting = containerStatuses.stream().allMatch(status ->
-        status.getState().getWaiting() != null && status.getStarted() == false);
+    boolean allContainersWaiting =
+        containerStatuses.stream().allMatch(status -> status.getStarted() == false);
     if (!allContainersWaiting) {
       logger.debug("ContainerStarting false as all containers are not waiting");
       return false;
