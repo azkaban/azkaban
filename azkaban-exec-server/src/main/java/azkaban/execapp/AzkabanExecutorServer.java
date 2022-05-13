@@ -185,7 +185,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   public static void launch(final AzkabanExecutorServer azkabanExecutorServer) throws Exception {
     azkabanExecutorServer.start();
-    ServerUtils.setupTimeZone(azkabanExecutorServer.getAzkabanProps(), logger);
+    AzkabanServer.setupTimeZone(azkabanExecutorServer.getAzkabanProps(), logger);
     app = azkabanExecutorServer;
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
