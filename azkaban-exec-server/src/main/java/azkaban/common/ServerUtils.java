@@ -26,8 +26,11 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import javax.annotation.Nonnull;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTimeZone;
+
 
 /**
  * Common utility methods for Azkaban Executor and Flow Container
@@ -65,4 +68,16 @@ public class ServerUtils {
     }
     return JSONUtils.toJSON(imageToVersionStringMap, true).replaceAll("\"", "");
   }
+
+  public static void setupTimeZone(final Props azkabanSettings, @Nonnull final Logger logger) {
+    if (azkabanSettings.containsKey(Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID)) {
+      final String timezoneId = azkabanSettings.getString(Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID);
+      System.setProperty("user.timezone", timezoneId);
+      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      TimeZone.setDefault(timeZone);
+      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
+      logger.info("Setting timezone to " + timezoneId);
+    }
+  }
+
 }

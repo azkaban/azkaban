@@ -185,7 +185,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   public static void launch(final AzkabanExecutorServer azkabanExecutorServer) throws Exception {
     azkabanExecutorServer.start();
-    setupTimeZone(azkabanExecutorServer.getAzkabanProps());
+    ServerUtils.setupTimeZone(azkabanExecutorServer.getAzkabanProps(), logger);
     app = azkabanExecutorServer;
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -241,17 +241,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
         }
       }
     });
-  }
-
-  private static void setupTimeZone(final Props azkabanSettings) {
-    if (azkabanSettings.containsKey(ConfigurationKeys.DEFAULT_TIMEZONE_ID)) {
-      final String timezoneId = azkabanSettings.getString(ConfigurationKeys.DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezoneId);
-      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
-      TimeZone.setDefault(timeZone);
-      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
-      logger.info("Setting timezone to " + timezoneId);
-    }
   }
 
   private void start() throws Exception {
