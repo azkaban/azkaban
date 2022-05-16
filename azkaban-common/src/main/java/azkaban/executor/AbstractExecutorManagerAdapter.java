@@ -526,9 +526,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
             .get(exFlow.getExecutionId());
         handleCancelFlow(pair.getFirst(), exFlow, userId);
-        // Emit FLOW_FINISHED event
-        this.fireEventListeners(Event.create(exFlow,
-            EventType.FLOW_FINISHED, new EventData(exFlow)));
       } else {
         final ExecutorManagerException eme = new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
@@ -560,6 +557,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
           executableFlow, "Cancel action has been called but the flow is unreachable.", null,
           finalizingStatus);
+      this.fireEventListeners(Event.create(executableFlow,
+          EventType.FLOW_FINISHED, new EventData(executableFlow)));
       // Throwing exception to make the reason appear on the UI.
       throw new ExecutorManagerException("Flow execution is unreachable. Finalizing the flow.");
     }
@@ -574,6 +573,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final String finalizingReason = "Unable to gracefully kill the flow execution.";
       ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
           executableFlow, finalizingReason, e, finalizingStatus);
+      this.fireEventListeners(Event.create(executableFlow,
+          EventType.FLOW_FINISHED, new EventData(executableFlow)));
       // Throwing exception to make the reason appear on the UI.
       throw new ExecutorManagerException(finalizingReason
           + " Finalizing the flow.");
