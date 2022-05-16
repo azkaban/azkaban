@@ -557,6 +557,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
           executableFlow, "Cancel action has been called but the flow is unreachable.", null,
           finalizingStatus);
+      // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
+      // so we need to manually send one here.
       this.fireEventListeners(Event.create(executableFlow,
           EventType.FLOW_FINISHED, new EventData(executableFlow)));
       // Throwing exception to make the reason appear on the UI.
@@ -573,6 +575,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final String finalizingReason = "Unable to gracefully kill the flow execution.";
       ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
           executableFlow, finalizingReason, e, finalizingStatus);
+      // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
+      // so we need to manually send one here.
       this.fireEventListeners(Event.create(executableFlow,
           EventType.FLOW_FINISHED, new EventData(executableFlow)));
       // Throwing exception to make the reason appear on the UI.
