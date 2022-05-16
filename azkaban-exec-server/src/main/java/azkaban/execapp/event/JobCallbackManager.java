@@ -119,9 +119,9 @@ public class JobCallbackManager implements EventListener<Event> {
         final JobRunner jobRunner = (JobRunner) event.getRunner();
         jobRunner.getLogger().error(
             "Encountered error while handling job callback event", e);
-        this.logger.warn("Error during handleEvent for event {}, execId: {}",
+        logger.warn("Error during handleEvent for event {}, execId: {}",
             event.getData().getStatus(), jobRunner.getNode().getParentFlow().getExecutionId());
-        this.logger.warn(e.getMessage(), e);
+        logger.warn(e.getMessage(), e);
       }
     } else {
       logger.warn("((( Got an unsupported runner: "
@@ -135,7 +135,7 @@ public class JobCallbackManager implements EventListener<Event> {
 
     if (!JobCallbackUtil.isThereJobCallbackProperty(jobRunner.getProps(),
         ON_COMPLETION_JOB_CALLBACK_STATUS)) {
-      this.logger.info("No callback property for {}, exec id: {}", eventData.getStatus(),
+      logger.info("No callback property for {}, exec id: {}", eventData.getStatus(),
           jobRunner.getNode().getParentFlow().getExecutionId());
       return;
     }
@@ -156,7 +156,7 @@ public class JobCallbackManager implements EventListener<Event> {
         || jobStatus == Status.FAILED_FINISHING || jobStatus == Status.KILLED) {
       jobCallBackStatusEnum = JobCallbackStatusEnum.FAILURE;
     } else {
-      this.logger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
+      logger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
           + jobStatus);
       jobCallBackStatusEnum = null; // to be explicit
     }
@@ -166,38 +166,38 @@ public class JobCallbackManager implements EventListener<Event> {
     if (jobCallBackStatusEnum != null) {
       final List<HttpRequestBase> jobCallbackHttpRequests =
           JobCallbackUtil.parseJobCallbackProperties(props,
-              jobCallBackStatusEnum, contextInfo, maxNumCallBack, this.logger);
+              jobCallBackStatusEnum, contextInfo, maxNumCallBack, logger);
 
       if (!jobCallbackHttpRequests.isEmpty()) {
         final String msg =
             String.format("Making %d job callbacks for status: %s",
                 jobCallbackHttpRequests.size(), jobCallBackStatusEnum.name());
-        this.logger.info(msg);
+        logger.info(msg);
 
         addDefaultHeaders(jobCallbackHttpRequests);
 
-        JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, this.logger,
+        JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, logger,
             jobCallbackHttpRequests);
       } else {
-        this.logger.info("No job callbacks for status: " + jobCallBackStatusEnum);
+        logger.info("No job callbacks for status: " + jobCallBackStatusEnum);
       }
     }
 
     // for completed status
     final List<HttpRequestBase> httpRequestsForCompletedStatus =
         JobCallbackUtil.parseJobCallbackProperties(props, COMPLETED,
-            contextInfo, maxNumCallBack, this.logger);
+            contextInfo, maxNumCallBack, logger);
 
     // now make the call
     if (!httpRequestsForCompletedStatus.isEmpty()) {
-      this.logger.info("Making " + httpRequestsForCompletedStatus.size()
+      logger.info("Making " + httpRequestsForCompletedStatus.size()
           + " job callbacks for status: " + COMPLETED);
 
       addDefaultHeaders(httpRequestsForCompletedStatus);
-      JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, this.logger,
+      JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, logger,
           httpRequestsForCompletedStatus);
     } else {
-      this.logger.info("No job callbacks for status: " + COMPLETED);
+      logger.info("No job callbacks for status: " + COMPLETED);
     }
   }
 
@@ -216,7 +216,7 @@ public class JobCallbackManager implements EventListener<Event> {
 
       final List<HttpRequestBase> jobCallbackHttpRequests =
           JobCallbackUtil.parseJobCallbackProperties(props, STARTED,
-              contextInfo, maxNumCallBack, this.logger);
+              contextInfo, maxNumCallBack, logger);
 
       final String jobId = contextInfo.get(CONTEXT_JOB_TOKEN);
       final String msg =
@@ -228,7 +228,7 @@ public class JobCallbackManager implements EventListener<Event> {
       addDefaultHeaders(jobCallbackHttpRequests);
 
       JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId,
-          this.logger, jobCallbackHttpRequests);
+          logger, jobCallbackHttpRequests);
     }
   }
 
