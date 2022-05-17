@@ -368,8 +368,9 @@ public class AzPodStatusExtractor {
     }
     boolean allContainersWaiting =
         containerStatuses.stream().allMatch(status -> status.getStarted() == false);
-    if (!allContainersWaiting) {
-      logger.debug("ContainerStarting false as all containers are not waiting");
+    if (!allContainersWaiting && this.containersReadyConditionStatus.isPresent() &&
+        this.containersReadyConditionStatus.get() == PodConditionStatus.True) {
+      logger.debug("ContainerStarting false as all containers are not waiting and container is ready");
       return false;
     }
     logger.debug("ContainerStarting is true");
