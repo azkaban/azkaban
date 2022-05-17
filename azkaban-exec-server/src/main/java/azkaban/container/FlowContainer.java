@@ -487,6 +487,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
    */
   @VisibleForTesting
   void start(final Props azkabanProps) {
+    AzkabanServer.setupTimeZone(azkabanProps, logger);
     this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
     JmxJobMBeanManager.getInstance().initialize(azkabanProps);
 

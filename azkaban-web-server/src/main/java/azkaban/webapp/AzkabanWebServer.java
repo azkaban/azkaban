@@ -230,14 +230,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     new PluginCheckerAndActionsLoader().load(triggerPluginDir);
 
     // Setup time zone
-    if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
-      final String timezoneId = props.getString(DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezoneId);
-      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
-      TimeZone.setDefault(timeZone);
-      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
-      logger.info("Setting timezone to " + timezoneId);
-    }
+    AzkabanServer.setupTimeZone(props, logger);
 
     configureMBeanServer();
   }
