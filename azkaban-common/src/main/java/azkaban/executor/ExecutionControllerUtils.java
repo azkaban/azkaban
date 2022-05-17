@@ -107,6 +107,16 @@ public class ExecutionControllerUtils {
         flow.setStatus(finalFlowStatus);
       }
 
+      if (flow.getUpdateTime() == -1) {
+        flow.setUpdateTime(System.currentTimeMillis());
+        executorLoader.updateExecutableFlow(dsFlow);
+      }
+
+      if (flow.getStartTime() == -1) {
+        flow.setStartTime(System.currentTimeMillis());
+        executorLoader.updateExecutableFlow(dsFlow);
+      }
+
       if (flow.getEndTime() == -1) {
         flow.setEndTime(System.currentTimeMillis());
         executorLoader.updateExecutableFlow(dsFlow);
@@ -355,6 +365,10 @@ public class ExecutionControllerUtils {
           node.setEndTime(time);
         }
       }
+    }
+
+    if (exFlow.getUpdateTime() == -1) {
+      exFlow.setUpdateTime(time);
     }
 
     if (exFlow.getStartTime() == -1) {
