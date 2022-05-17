@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
@@ -11,6 +11,7 @@ import static azkaban.jobcallback.JobCallbackConstants.HTTP_POST;
 
 import azkaban.jobcallback.JobCallbackConstants;
 import azkaban.jobcallback.JobCallbackStatusEnum;
+import azkaban.jobcallback.JobCallbackUtil;
 import azkaban.utils.Props;
 import java.net.URLEncoder;
 import java.util.HashMap;

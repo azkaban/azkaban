@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
 import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
@@ -15,11 +15,10 @@ import static azkaban.jobcallback.JobCallbackStatusEnum.SUCCESS;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
-import azkaban.execapp.JobRunnerBase;
-import azkaban.execapp.jmx.JmxJobCallback;
-import azkaban.execapp.jmx.JmxJobCallbackMBean;
+import azkaban.executor.JobRunnerBase;
+import azkaban.jmx.JmxJobCallback;
+import azkaban.jmx.JmxJobCallbackMBean;
 import azkaban.executor.Status;
-import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;

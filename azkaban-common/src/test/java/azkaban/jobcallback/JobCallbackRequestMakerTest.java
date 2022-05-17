@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
@@ -10,8 +10,6 @@ import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
 
-import azkaban.jobcallback.JobCallbackConstants;
-import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;

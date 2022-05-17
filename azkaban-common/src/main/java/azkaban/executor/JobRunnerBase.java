@@ -1,4 +1,4 @@
-package azkaban.execapp;
+package azkaban.executor;
 
 import azkaban.event.EventHandler;
 import azkaban.utils.Props;

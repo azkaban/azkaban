@@ -1,9 +1,9 @@
-package azkaban.execapp.jmx;
+package azkaban.jmx;
 
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
-import azkaban.execapp.JobRunnerBase;
+import azkaban.executor.JobRunnerBase;
 import azkaban.executor.Status;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;

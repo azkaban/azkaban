@@ -15,15 +15,13 @@
  */
 
 
-package azkaban.common;
+package azkaban.utils;
 
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
-import azkaban.execapp.event.JobCallbackManager;
+import azkaban.jobcallback.JobCallbackManager;
 import azkaban.imagemgmt.version.VersionSet;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;

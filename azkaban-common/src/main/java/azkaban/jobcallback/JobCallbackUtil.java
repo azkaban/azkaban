@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
@@ -20,7 +20,6 @@ import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
 import azkaban.event.Event;
 import azkaban.event.EventData;
-import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.utils.Props;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
