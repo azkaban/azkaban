@@ -357,6 +357,10 @@ public class ExecutionControllerUtils {
       }
     }
 
+    if (exFlow.getStartTime() == -1) {
+      exFlow.setStartTime(time);
+    }
+
     if (exFlow.getEndTime() == -1) {
       exFlow.setEndTime(time);
     }
