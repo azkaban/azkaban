@@ -130,6 +130,12 @@ public class Constants {
   // Used by UserManager for password validation (to tell apart real passwords from auth codes).
   // Empirically, passwords are shorter than this, and ACs are longer:
   public static final int OAUTH_MIN_AUTHCODE_LENGTH = 80;
+  // Hadoop Security Manager retry policy constants
+  public static final int HSM_MAX_RETRY_ATTEMPTS = 5;
+  // Initial delay before retrying
+  public static final int HSM_RETRY_DELAY_SEC = 3;
+  // Upper limit of time the attempts need to occur within
+  public static final int HSM_MAX_RETRY_DELAY_SEC = 300;
   // Used (or should be used) wherever a string representation of UTF_8 charset is needed:
   public static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.toString();
 

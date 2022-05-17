@@ -18,6 +18,9 @@ package azkaban.security;
 
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_LOCATION;
+import static azkaban.Constants.HSM_MAX_RETRY_ATTEMPTS;
+import static azkaban.Constants.HSM_MAX_RETRY_DELAY_SEC;
+import static azkaban.Constants.HSM_RETRY_DELAY_SEC;
 
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
@@ -67,8 +70,11 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
   // Retry policy builder for fetching Hadoop tokens
   RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
-      .withBackoff(3,30, ChronoUnit.SECONDS)
-      .withMaxRetries(5)
+      .withBackoff(HSM_RETRY_DELAY_SEC, HSM_MAX_RETRY_DELAY_SEC, ChronoUnit.SECONDS)
+      .withMaxRetries(HSM_MAX_RETRY_ATTEMPTS)
+      .onFailedAttempt(e -> logger.error("Token fetch failure {}", e.getLastException()))
+      .onRetry(e -> logger.warn("Failure #"+ e.getAttemptCount() +".Retrying."))
+      .onFailure(e -> logger.error("Failed to fetch tokens after 5 retries.", e.getException()))
       .build();
 
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
