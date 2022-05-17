@@ -218,9 +218,9 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       final JobConf jobConf = new JobConf();
       final JobClient jobClient = new JobClient(jobConf);
       logger.info("Pre-fetching JT token from JobTracker");
-      Token<DelegationTokenIdentifier> mrdt = null;
+      Token<DelegationTokenIdentifier> mrDelegationToken = null;
       try {
-        mrdt = Failsafe.with(retryPolicy)
+        mrDelegationToken = Failsafe.with(retryPolicy)
             .get(()->jobClient.getDelegationToken(getMRTokenRenewerInternal(jobConf)));
       }catch (Exception e){
         logger.error("Failed to get delegation token " + e.getMessage());
@@ -229,15 +229,15 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
         jobClient.close();
       }
 
-      if (mrdt == null) {
+      if (mrDelegationToken == null) {
         logger.error("Failed to fetch JT token");
         throw new HadoopSecurityManagerException(
             "Failed to fetch JT token for " + userToProxyFQN);
       }
 
       logger.info(String.format("JT token pre-fetched, token kind: %s, token service: %s",
-          mrdt.getKind(), mrdt.getService()));
-      cred.addToken(mrdt.getService(), mrdt);
+          mrDelegationToken.getKind(), mrDelegationToken.getService()));
+      cred.addToken(mrDelegationToken.getService(), mrDelegationToken);
     }
   }
 
