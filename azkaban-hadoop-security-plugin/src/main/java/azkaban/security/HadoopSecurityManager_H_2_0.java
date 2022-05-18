@@ -339,6 +339,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
               fsToken.getKind(), fsToken.getService()));
         }
       } catch (Exception e) {
+        // Adding logging of configuration on when exception is encountered.
         logger.info("Hadoop Configuration Values used:\n");
         conf.forEach(s -> {
           logger.info("key:" + s.getKey() + " value:" + s.getValue());
