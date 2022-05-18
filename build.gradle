@@ -144,7 +144,7 @@ ext.deps = [
     systemRules         : 'com.github.stefanbirkner:system-rules:1.19.0',
     javaxValidation      : 'javax.validation:validation-api:2.0.1.Final',
     hibernateValidator   : 'org.hibernate:hibernate-validator:6.1.5.Final',
-    failsafe             : 'dev.failsafe:failsafe:3.2.3' ]
+    failsafe             : 'dev.failsafe:failsafe:3.2.4' ]
 
 subprojects {
   apply plugin: 'java'

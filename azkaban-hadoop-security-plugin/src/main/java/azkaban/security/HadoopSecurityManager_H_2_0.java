@@ -70,11 +70,14 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
   // Retry policy builder for fetching Hadoop tokens
   RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+      .handleResult(null)
+      .handleResultIf(result -> result == null)
       .withBackoff(HSM_RETRY_DELAY_SEC, HSM_MAX_RETRY_DELAY_SEC, ChronoUnit.SECONDS)
       .withMaxRetries(HSM_MAX_RETRY_ATTEMPTS)
       .onFailedAttempt(e -> logger.error("Token fetch failure {}", e.getLastException()))
       .onRetry(e -> logger.warn("Failure #"+ e.getAttemptCount() +".Retrying."))
-      .onFailure(e -> logger.error("Failed to fetch tokens after 5 retries.", e.getException()))
+      .onFailure(e -> logger.error("Failed to fetch tokens after 5 retries. "
+          + e.getException().getMessage()))
       .build();
 
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
@@ -175,8 +178,9 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
     final IMetaStoreClient hiveClient = createRetryingMetaStoreClient(hiveConf);
     final String hcatTokenStr =
-        hiveClient.getDelegationToken(userToProxy, UserGroupInformation
-            .getLoginUser().getShortUserName());
+        Failsafe.with(retryPolicy)
+            .get(() -> hiveClient.getDelegationToken(userToProxy, UserGroupInformation
+            .getLoginUser().getShortUserName()));
     final Token<DelegationTokenIdentifier> hcatToken =
         new Token<>();
     hcatToken.decodeFromUrlString(hcatTokenStr);
