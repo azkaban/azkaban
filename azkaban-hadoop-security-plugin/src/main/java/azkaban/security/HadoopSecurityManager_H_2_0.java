@@ -18,9 +18,6 @@ package azkaban.security;
 
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_CLUSTERS;
 import static azkaban.Constants.JobProperties.EXTRA_HCAT_LOCATION;
-import static azkaban.Constants.HSM_MAX_RETRY_ATTEMPTS;
-import static azkaban.Constants.HSM_MAX_RETRY_DELAY_SEC;
-import static azkaban.Constants.HSM_RETRY_DELAY_SEC;
 
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
@@ -67,6 +64,15 @@ import org.apache.thrift.TException;
  * delegation token for NameNode, JobHistory Server, JobTracker and HCAT services.
  */
 public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
+
+  // Hadoop Security Manager retry policy constants
+
+ // Max number of retry attempts
+  final private static int HSM_MAX_RETRY_ATTEMPTS = 5;
+  // Minimum Delay before retrying with backoff
+  final private static int HSM_RETRY_DELAY_SEC = 5;
+  // Upper limit of time the attempts need to occur within
+  final private static int HSM_MAX_RETRY_DELAY_SEC = 300;
 
   // Retry policy builder for fetching Hadoop tokens
   RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
@@ -331,7 +337,9 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       // check if we get the correct FS, and most importantly, the conf
       logger.info("Getting DFS token from " + fs.getUri());
       try {
-        final Token<?>[] fsTokens = fs.addDelegationTokens(renewer, cred);
+        FileSystem finalFs = fs;
+        final Token<?>[] fsTokens = Failsafe.with(retryPolicy)
+            .get(()-> finalFs.addDelegationTokens(renewer, cred));
         for (int i = 0; i < fsTokens.length; i++) {
           final Token<?> fsToken = fsTokens[i];
           logger.info(String.format(
@@ -339,6 +347,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
               fsToken.getKind(), fsToken.getService()));
         }
       } catch (Exception e) {
+        // Adding logging of configuration on when exception is encountered.
         // Adding logging of configuration on when exception is encountered.
         logger.info("Hadoop Configuration Values used:\n");
         conf.forEach(s -> {
