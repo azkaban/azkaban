@@ -88,10 +88,6 @@ public class JavaJobRunnerMain {
       String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
 
       _logger = Logger.getRootLogger();
-      _logger.removeAllAppenders();
-      ConsoleAppender appender = new ConsoleAppender(DEFAULT_LAYOUT);
-      appender.activateOptions();
-      _logger.addAppender(appender);
 
       Properties props = new Properties();
       props.load(new BufferedReader(new FileReader(propsFile)));
