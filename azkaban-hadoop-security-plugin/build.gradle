@@ -3,7 +3,7 @@ apply plugin: 'distribution'
 dependencies {
     compile project(':az-core')
     compile project(":azkaban-common")
-
+    compile deps.failsafe
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopMRClientCommon
     compileOnly deps.hadoopMRClientCore

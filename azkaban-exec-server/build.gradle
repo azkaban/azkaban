@@ -28,6 +28,7 @@ dependencies {
     compile deps.guava
     compile deps.jsr305
     compile deps.kafkaLog4jAppender
+    compile deps.failsafe
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
     testCompile(project(':azkaban-common').sourceSets.test.output)
