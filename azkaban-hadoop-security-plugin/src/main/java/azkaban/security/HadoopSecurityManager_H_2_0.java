@@ -23,10 +23,13 @@ import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +64,27 @@ import org.apache.thrift.TException;
  * delegation token for NameNode, JobHistory Server, JobTracker and HCAT services.
  */
 public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
+
+  // Hadoop Security Manager retry policy constants
+
+ // Max number of retry attempts
+  final private static int HSM_MAX_RETRY_ATTEMPTS = 5;
+  // Minimum Delay before retrying with backoff
+  final private static int HSM_RETRY_DELAY_SEC = 5;
+  // Upper limit of time the attempts need to occur within
+  final private static int HSM_MAX_RETRY_DELAY_SEC = 300;
+
+  // Retry policy builder for fetching Hadoop tokens
+  RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+      .handleResult(null)
+      .handleResultIf(result -> result == null)
+      .withBackoff(HSM_RETRY_DELAY_SEC, HSM_MAX_RETRY_DELAY_SEC, ChronoUnit.SECONDS)
+      .withMaxRetries(HSM_MAX_RETRY_ATTEMPTS)
+      .onFailedAttempt(e -> logger.error("Token fetch failure {}", e.getLastException()))
+      .onRetry(e -> logger.warn("Failure #"+ e.getAttemptCount() +".Retrying."))
+      .onFailure(e -> logger.error("Failed to fetch tokens after 5 retries. "
+          + e.getException().getMessage()))
+      .build();
 
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
@@ -160,8 +184,9 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
     final IMetaStoreClient hiveClient = createRetryingMetaStoreClient(hiveConf);
     final String hcatTokenStr =
-        hiveClient.getDelegationToken(userToProxy, UserGroupInformation
-            .getLoginUser().getShortUserName());
+        Failsafe.with(retryPolicy)
+            .get(() -> hiveClient.getDelegationToken(userToProxy, UserGroupInformation
+            .getLoginUser().getShortUserName()));
     final Token<DelegationTokenIdentifier> hcatToken =
         new Token<>();
     hcatToken.decodeFromUrlString(hcatTokenStr);
@@ -203,22 +228,26 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       final JobConf jobConf = new JobConf();
       final JobClient jobClient = new JobClient(jobConf);
       logger.info("Pre-fetching JT token from JobTracker");
-      Token<DelegationTokenIdentifier> mrdt;
+      Token<DelegationTokenIdentifier> mrDelegationToken = null;
       try {
-        mrdt = jobClient.getDelegationToken(getMRTokenRenewerInternal(jobConf));
-      } finally {
+        mrDelegationToken = Failsafe.with(retryPolicy)
+            .get(()->jobClient.getDelegationToken(getMRTokenRenewerInternal(jobConf)));
+      }catch (Exception e){
+        logger.error("Failed to get delegation token " + e.getMessage());
+      }
+      finally {
         jobClient.close();
       }
 
-      if (mrdt == null) {
+      if (mrDelegationToken == null) {
         logger.error("Failed to fetch JT token");
         throw new HadoopSecurityManagerException(
             "Failed to fetch JT token for " + userToProxyFQN);
       }
 
       logger.info(String.format("JT token pre-fetched, token kind: %s, token service: %s",
-          mrdt.getKind(), mrdt.getService()));
-      cred.addToken(mrdt.getService(), mrdt);
+          mrDelegationToken.getKind(), mrDelegationToken.getService()));
+      cred.addToken(mrDelegationToken.getService(), mrDelegationToken);
     }
   }
 
@@ -257,6 +286,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
         ": " + props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN));
     if (props.getBoolean(HadoopSecurityManager.OBTAIN_NAMENODE_TOKEN, false)) {
       final String renewer = getMRTokenRenewerInternal(new JobConf()).toString();
+      logger.info("Renewer is " + renewer);
       // Get the tokens name node
       fetchNameNodeTokenInternal(renewer, cred, userToProxyFQN, null);
       Optional<String[]> otherNameNodes = getOtherNameNodes(props);
@@ -297,14 +327,19 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       // Use FileSystem.get() instead of newInstance() to ensure cache is not used.
       // .get() method checks if cache is enabled or not, newInstance() does not.
       if (uri == null) {
-        fs = FileSystem.get(conf);
+        fs = Failsafe.with(retryPolicy)
+            .get(()->FileSystem.get(conf))
+        ;
       } else {
-        fs = FileSystem.get(uri, conf);
+        fs = Failsafe.with(retryPolicy)
+            .get(()->FileSystem.get(uri, conf));
       }
       // check if we get the correct FS, and most importantly, the conf
       logger.info("Getting DFS token from " + fs.getUri());
       try {
-        final Token<?>[] fsTokens = fs.addDelegationTokens(renewer, cred);
+        FileSystem finalFs = fs;
+        final Token<?>[] fsTokens = Failsafe.with(retryPolicy)
+            .get(()-> finalFs.addDelegationTokens(renewer, cred));
         for (int i = 0; i < fsTokens.length; i++) {
           final Token<?> fsToken = fsTokens[i];
           logger.info(String.format(
@@ -312,7 +347,12 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
               fsToken.getKind(), fsToken.getService()));
         }
       } catch (Exception e) {
-        logger.error("Failed to fetch DFS token for " + userToProxyFQN);
+        // Adding logging of configuration on when exception is encountered.
+        logger.info("Hadoop Configuration Values used:\n");
+        conf.forEach(s -> {
+          logger.info("key:" + s.getKey() + " value:" + s.getValue());
+        });
+        logger.error("Failed to fetch DFS token for " + userToProxyFQN + "because of  " +e + e.getMessage());
         throw new HadoopSecurityManagerException(
             "Failed to fetch DFS token for " + userToProxyFQN);
       }
@@ -352,7 +392,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
       try {
         jhsdt = getDelegationTokenFromHS(hsProxy);
       } catch (final Exception e) {
-        logger.error("Failed to fetch JH token", e);
+        logger.error("Failed to fetch JH token" + e.getMessage());
         throw new HadoopSecurityManagerException(
             "Failed to fetch JH token for " + userToProxyFQN);
       }
@@ -414,12 +454,14 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
             hiveConf = new HiveConf();
             hiveConf.set(HiveConf.ConfVars.METASTOREURIS.varname, thriftUrls);
+            logger.info(hiveConf.getAllProperties() + " " + userToProxyFQN );
             try {
               hcatToken = fetchHcatToken(userToProxyFQN, hiveConf, thriftUrls, logger);
               cred.addToken(hcatToken.getService(), hcatToken);
               ++extraHcatTokenCount;
             } catch (Exception e) {
-              logger.error("Failed to fetch extra metastore tokens from : " + thriftUrls, e);
+              logger.error("Failed to fetch extra metastore tokens from : " + thriftUrls
+                  + e.getMessage());
             }
           }
           if (0 == extraHcatTokenCount) {
@@ -427,6 +469,7 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
           }
         } else {
           // Only if EXTRA_HCAT_CLUSTERS
+          logger.info("Extra hcat clusters provided: " + extraHcatClusters);
           final List<String> extraHcatLocations =
               props.getStringList(EXTRA_HCAT_LOCATION);
           if (Collections.EMPTY_LIST != extraHcatLocations) {
@@ -494,12 +537,15 @@ public class HadoopSecurityManager_H_2_0 extends AbstractHadoopSecurityManager {
 
   private Token<?> getDelegationTokenFromHS(final HSClientProtocol hsProxy)
       throws IOException, InterruptedException {
+    logger.info(hsProxy.toString());
     final GetDelegationTokenRequest request =
         this.recordFactory.newRecordInstance(GetDelegationTokenRequest.class);
     request.setRenewer(Master.getMasterPrincipal(this.conf));
+    logger.info(request.getRenewer() + Master.getMasterPrincipal(this.conf));
     final org.apache.hadoop.yarn.api.records.Token mrDelegationToken;
     mrDelegationToken =
-        hsProxy.getDelegationToken(request).getDelegationToken();
+        Failsafe.with(retryPolicy)
+            .get(()->hsProxy.getDelegationToken(request).getDelegationToken());
     return ConverterUtils.convertFromYarn(mrDelegationToken,
         hsProxy.getConnectAddress());
   }

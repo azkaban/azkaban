@@ -394,8 +394,8 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
       final String userToProxy) throws HadoopSecurityManagerException {
     // Create suffix to be added to kerberos principal
     final String suffix = getFQNSuffix(props);
-
     final String userToProxyFQN = userToProxy + suffix;
+    logger.info(tokenFile.toString() + props.toAllProperties().toString());
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
 
     final Credentials cred = new Credentials();
@@ -641,7 +641,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
         }
       }
     };
-
+    logger.info(hiveConf.getAllProperties() + hookLoader.toString() + HiveMetaStoreClient.class.getName());
     return RetryingMetaStoreClient
         .getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
   }
