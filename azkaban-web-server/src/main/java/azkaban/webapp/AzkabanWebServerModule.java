@@ -63,6 +63,7 @@ import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.ContainerizationMetricsImpl;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -272,11 +273,13 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Provides
   private AzPodStatusListener createFlowPodMonitoringListener(
       final Props azkProps,
+      final ProjectManager projectManager,
       final ContainerizedImpl containerizedImpl,
       final ExecutorLoader executorLoader,
       final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics,
       final EventListener eventListener) {
-    return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder,
+    return new FlowStatusManagerListener(azkProps, projectManager, containerizedImpl,
+        executorLoader, alerterHolder,
         containerizationMetrics, eventListener);
   }
 

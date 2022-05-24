@@ -405,7 +405,7 @@ public class ContainerizedDispatchManagerTest {
 
   private void initializeContainerizedDispatchImpl() throws Exception{
     this.containerizedDispatchManager =
-        new ContainerizedDispatchManager(this.props, this.loader,
+        new ContainerizedDispatchManager(this.props, null, this.loader,
         this.commonMetrics,
         this.apiGateway, this.containerizedImpl, null, null, this.eventListener,
             this.containerizationMetrics, null);
@@ -530,7 +530,7 @@ public class ContainerizedDispatchManagerTest {
   private ContainerizedDispatchManager createDispatchWithGateway(ExecutorApiGateway apiGateway,
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
-        new ContainerizedDispatchManager(containerEnabledProps, this.loader,
+        new ContainerizedDispatchManager(containerEnabledProps, null, this.loader,
             this.commonMetrics, apiGateway, this.containerizedImpl,null, null, this.eventListener,
             this.containerizationMetrics, null);
     dispatchManager.start();
