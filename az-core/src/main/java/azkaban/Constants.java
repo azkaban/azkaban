@@ -173,7 +173,6 @@ public class Constants {
    * (b). foo_a.properties precedence will be higher than that of basic.properties.
    */
   public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
-  public static final String PARAM_OVERRIDE = "param.override.";
 
   // Azkaban event reporter constants
   public static class EventReporterConstants {
