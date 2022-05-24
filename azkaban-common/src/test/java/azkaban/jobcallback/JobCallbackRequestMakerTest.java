@@ -98,7 +98,7 @@ public class JobCallbackRequestMakerTest {
         + "=" + sc;
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void basicGetTest() {
     final Props props = new Props();
     final String url = buildUrlForDelay(1);
@@ -113,7 +113,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void simulateNotOKStatusCodeTest() {
     final Props props = new Props();
     final String url = buildUrlForStatusCode(404);
@@ -127,7 +127,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void unResponsiveGetTest() {
     final Props props = new Props();
     final String url = buildUrlForDelay(10);
@@ -141,7 +141,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void basicPostTest() {
     final Props props = new Props();
     final String url = buildUrlForDelay(1);
