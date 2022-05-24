@@ -60,7 +60,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
   public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
-
+  private static final String PARAM_OVERRIDE = "param.override.";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -494,7 +494,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
       return;
     }
     // Clone the props object and filter out the properties to keep only the override ones.
-    Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(Constants.PARAM_OVERRIDE);
+    Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(PARAM_OVERRIDE);
 
     // Update the flow params with override props
     if (this.executionOptions != null) {
