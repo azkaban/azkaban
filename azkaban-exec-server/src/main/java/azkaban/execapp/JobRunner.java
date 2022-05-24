@@ -18,13 +18,13 @@ package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
 import static azkaban.utils.ExecuteAsUserUtils.addGroupAndUserForEffectiveUser;
 
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
-import azkaban.event.EventHandler;
 import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
@@ -67,10 +67,7 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
 
-public class JobRunner extends EventHandler implements Runnable {
-
-  public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
-
+public class JobRunner extends JobRunnerBase implements Runnable {
   private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
   private static final Object logCreatorLock = new Object();
 
@@ -80,7 +77,6 @@ public class JobRunner extends EventHandler implements Runnable {
   private final Object syncObject = new Object();
   private final JobTypeManager jobtypeManager;
   private final ExecutorLoader loader;
-  private final Props props;
   private final Props azkabanProps;
   private final ExecutableNode node;
   private final File workingDir;
@@ -88,7 +84,6 @@ public class JobRunner extends EventHandler implements Runnable {
   private final String jobId;
   private final Set<String> pipelineJobs = new HashSet<>();
   private final FlowRunnerProxy flowRunnerProxy;
-  private Logger logger = null;
   private Logger flowLogger = null;
   private Appender jobAppender = null;
   private Optional<Appender> kafkaAppender = Optional.empty();
@@ -118,7 +113,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
       final JobTypeManager jobtypeManager, final Props azkabanProps, final FlowRunnerProxy flowRunnerProxy) {
-    this.props = node.getInputProps();
+    super(node.getInputProps());
     this.node = node;
     this.workingDir = workingDir;
 
@@ -199,10 +194,6 @@ public class JobRunner extends EventHandler implements Runnable {
     this.flowLogger = flowLogger;
     this.jobLogChunkSize = logFileChuckSize;
     this.jobLogBackupIndex = numLogBackup;
-  }
-
-  public Props getProps() {
-    return this.props;
   }
 
   public String getEffectiveUser() {
@@ -508,23 +499,18 @@ public class JobRunner extends EventHandler implements Runnable {
       if (Status.isStatusFinished(nodeStatus)) {
         quickFinish = true;
       } else if (nodeStatus == Status.DISABLED) {
-        nodeStatus = changeStatus(Status.SKIPPED, time);
+        changeStatus(Status.SKIPPED, time);
         quickFinish = true;
       } else if (this.isKilled()) {
-        nodeStatus = changeStatus(Status.KILLED, time);
+        changeStatus(Status.KILLED, time);
         quickFinish = true;
       }
 
       if (quickFinish) {
         this.node.setStartTime(time);
-        fireEvent(
-            Event.create(this, EventType.JOB_STARTED,
-                new EventData(nodeStatus, this.node.getNestedId())));
+        fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(node)));
         this.node.setEndTime(time);
-        fireEvent(
-            Event
-                .create(this, EventType.JOB_FINISHED,
-                    new EventData(nodeStatus, this.node.getNestedId())));
+        fireEvent(Event.create(this, EventType.JOB_FINISHED, new EventData(node)));
         return true;
       }
 
@@ -685,7 +671,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
     // Start the node.
     this.node.setStartTime(System.currentTimeMillis());
-    Status finalStatus = this.node.getStatus();
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
       // End of job in queue and start of execution
@@ -697,17 +682,16 @@ public class JobRunner extends EventHandler implements Runnable {
       if (prepareJob()) {
         // Writes status to the db
         writeStatus();
-        fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED,
-            new EventData(Status.RUNNING, this.node.getNestedId())));
+        fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED, new EventData(node)));
         try {
           addGroupAndUser(this.jobtypeManager.getCommonPluginLoadProps());
         } catch (Exception e) {
-          finalStatus = changeStatus(Status.FAILED);
+          changeStatus(Status.FAILED);
           logError("Job run failed while adding group and user.");
         }
-        finalStatus = runJob();
+        runJob();
       } else {
-        finalStatus = changeStatus(Status.FAILED);
+        changeStatus(Status.FAILED);
         logError("Job run failed preparing the job.");
       }
     }
@@ -719,7 +703,7 @@ public class JobRunner extends EventHandler implements Runnable {
       // So we set it to KILLED to make sure we know that we forced kill it
       // rather than
       // it being a legitimate failure.
-      finalStatus = changeStatus(Status.KILLED);
+      changeStatus(Status.KILLED);
       if (this.getJobKillTime() != -1 && this.getKillDuration() == 0) {
         this.setKillDuration(System.currentTimeMillis() - this.getJobKillTime());
       }
@@ -736,8 +720,7 @@ public class JobRunner extends EventHandler implements Runnable {
     } finally {
       try {
         // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
-        fireEvent(Event.create(this, EventType.JOB_FINISHED,
-            new EventData(finalStatus, this.node.getNestedId())), false);
+        fireEvent(Event.create(this, EventType.JOB_FINISHED, new EventData(node)), false);
       } catch (final RuntimeException e) {
         serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
             + " jobId: " + this.jobId);
@@ -1117,10 +1100,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public File getLogFile() {
     return this.logFile;
-  }
-
-  public Logger getLogger() {
-    return this.logger;
   }
 
   public long getTimeInQueue() { return this.timeInQueue; }

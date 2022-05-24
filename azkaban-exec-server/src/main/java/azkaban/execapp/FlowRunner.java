@@ -817,7 +817,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private void finishExecutableNode(final ExecutableNode node) {
     this.finishedNodes.add(node);
-    final EventData eventData = new EventData(node.getStatus(), node.getNestedId());
+    final EventData eventData = new EventData(node);
     fireEventListeners(Event.create(this, EventType.JOB_FINISHED, eventData));
   }
 

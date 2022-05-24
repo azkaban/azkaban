@@ -3,8 +3,7 @@ package azkaban.execapp.jmx;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
-import azkaban.execapp.JobRunner;
-import azkaban.executor.ExecutableNode;
+import azkaban.execapp.JobRunnerBase;
 import azkaban.executor.Status;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
@@ -98,13 +97,11 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener<Event> {
       throw new RuntimeException("JmxJobMBeanManager has not been initialized");
     }
 
-    if (event.getRunner() instanceof JobRunner) {
-      final JobRunner jobRunner = (JobRunner) event.getRunner();
+    if (event.getRunner() instanceof JobRunnerBase) {
       final EventData eventData = event.getData();
-      final ExecutableNode node = jobRunner.getNode();
 
       if (logger.isDebugEnabled()) {
-        logger.debug("*** got " + event.getType() + " " + node.getId() + " "
+        logger.debug("*** got " + event.getType() + " " + eventData.getJobId() + " "
             + event.getRunner().getClass().getName() + " status: "
             + eventData.getStatus());
       }
@@ -127,7 +124,7 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener<Event> {
           this.totalSucceededJobCount.incrementAndGet();
         }
 
-        handleJobFinishedCount(eventData.getStatus(), node.getType());
+        handleJobFinishedCount(eventData.getStatus(), eventData.getNodeType());
       }
 
     } else {

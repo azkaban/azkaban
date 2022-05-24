@@ -25,18 +25,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.slf4j.Logger;
+import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
-import org.slf4j.LoggerFactory;
 
 public class JobCallbackRequestMakerTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(JobCallbackRequestMakerTest.class);
+  private static final Logger logger = Logger.getLogger(JobCallbackRequestMakerTest.class);
 
   private static final String SLEEP_DURATION_PARAM = "sleepDuration";
   private static final String STATUS_CODE_PARAM = "returnedStatusCode";
