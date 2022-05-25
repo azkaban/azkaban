@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
@@ -32,8 +32,7 @@ import org.apache.http.impl.client.FutureRequestExecutionMetrics;
 import org.apache.http.impl.client.FutureRequestExecutionService;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpRequestFutureTask;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
  * Responsible for making the job callback HTTP requests.
@@ -45,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public class JobCallbackRequestMaker {
 
-  private static final Logger logger = LoggerFactory.getLogger(JobCallbackRequestMaker.class);
+  private static final Logger logger = Logger.getLogger(JobCallbackRequestMaker.class);
 
   private static final int DEFAULT_TIME_OUT_MS = 3000;
   private static final int DEFAULT_RESPONSE_WAIT_TIME_OUT_MS = 5000;

@@ -1,5 +1,12 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
+import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_SSL_PORT;
+import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
+import static azkaban.Constants.DEFAULT_PORT_NUMBER;
+import static azkaban.Constants.DEFAULT_SSL_PORT_NUMBER;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackStatusEnum.COMPLETED;
 import static azkaban.jobcallback.JobCallbackStatusEnum.FAILURE;
@@ -9,11 +16,10 @@ import static azkaban.jobcallback.JobCallbackStatusEnum.SUCCESS;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
-import azkaban.execapp.JobRunner;
-import azkaban.execapp.jmx.JmxJobCallback;
-import azkaban.execapp.jmx.JmxJobCallbackMBean;
+import azkaban.executor.JobRunnerBase;
+import azkaban.jmx.JmxJobCallback;
+import azkaban.jmx.JmxJobCallbackMBean;
 import azkaban.executor.Status;
-import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -26,8 +32,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicHeader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
  * Responsible processing job callback properties on job status change events.
@@ -44,7 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class JobCallbackManager implements EventListener<Event> {
 
-  private static final Logger logger = LoggerFactory.getLogger(JobCallbackManager.class);
+  private static final Logger logger = Logger.getLogger(JobCallbackManager.class);
   private static final JobCallbackStatusEnum[] ON_COMPLETION_JOB_CALLBACK_STATUS =
       {SUCCESS, FAILURE, COMPLETED};
   private static boolean isInitialized = false;
@@ -107,21 +112,22 @@ public class JobCallbackManager implements EventListener<Event> {
       return;
     }
 
-    if (event.getRunner() instanceof JobRunner) {
+    if (event.getRunner() instanceof JobRunnerBase) {
+      JobRunnerBase jobRunnerBase = (JobRunnerBase) event.getRunner();
+      Props jobProps = jobRunnerBase.getProps();
+      Logger jobLogger = jobRunnerBase.getLogger();
       try {
         if (event.getType() == EventType.JOB_STARTED) {
-          processJobCallOnStart(event);
+          processJobCallOnStart(event, jobProps, jobLogger);
         } else if (event.getType() == EventType.JOB_FINISHED) {
-          processJobCallOnFinish(event);
+          processJobCallOnFinish(event, jobProps, jobLogger);
         }
       } catch (final Throwable e) {
-        // Use job runner logger so user can see the issue in their job log
-        final JobRunner jobRunner = (JobRunner) event.getRunner();
-        jobRunner.getLogger().error(
+        jobLogger.error(
             "Encountered error while handling job callback event", e);
-        this.logger.warn("Error during handleEvent for event {}, execId: {}",
-            event.getData().getStatus(), jobRunner.getNode().getParentFlow().getExecutionId());
-        this.logger.warn(e.getMessage(), e);
+        logger.warn("Error during handleEvent for event " + event.getData().getStatus() + ", "
+                + "execId: " + event.getData().getExecutionId());
+        logger.warn(e.getMessage(), e);
       }
     } else {
       logger.warn("((( Got an unsupported runner: "
@@ -129,20 +135,21 @@ public class JobCallbackManager implements EventListener<Event> {
     }
   }
 
-  private void processJobCallOnFinish(final Event event) {
-    final JobRunner jobRunner = (JobRunner) event.getRunner();
+  private void processJobCallOnFinish(final Event event, final Props jobProps,
+      final Logger jobLogger) {
     final EventData eventData = event.getData();
 
-    if (!JobCallbackUtil.isThereJobCallbackProperty(jobRunner.getProps(),
+    if (!JobCallbackUtil.isThereJobCallbackProperty(jobProps,
         ON_COMPLETION_JOB_CALLBACK_STATUS)) {
-      this.logger.info("No callback property for {}, exec id: {}", eventData.getStatus(),
-          jobRunner.getNode().getParentFlow().getExecutionId());
+      logger.info("No callback property for " + eventData.getStatus() + ", exec id: " +
+          eventData.getExecutionId());
       return;
     }
 
     // don't want to waste time resolving properties if there are no
     // callback properties to parse
-    final Props props = PropsUtils.resolveProps(jobRunner.getProps());
+    // resolve props in best effort. Ignore the case where a referenced property is undefined.
+    final Props props = PropsUtils.resolveProps(jobProps, true);
 
     final Map<String, String> contextInfo =
         JobCallbackUtil.buildJobContextInfoMap(event, this.azkabanHostName);
@@ -156,7 +163,7 @@ public class JobCallbackManager implements EventListener<Event> {
         || jobStatus == Status.FAILED_FINISHING || jobStatus == Status.KILLED) {
       jobCallBackStatusEnum = JobCallbackStatusEnum.FAILURE;
     } else {
-      this.logger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
+      logger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
           + jobStatus);
       jobCallBackStatusEnum = null; // to be explicit
     }
@@ -166,76 +173,80 @@ public class JobCallbackManager implements EventListener<Event> {
     if (jobCallBackStatusEnum != null) {
       final List<HttpRequestBase> jobCallbackHttpRequests =
           JobCallbackUtil.parseJobCallbackProperties(props,
-              jobCallBackStatusEnum, contextInfo, maxNumCallBack, this.logger);
+              jobCallBackStatusEnum, contextInfo, maxNumCallBack, logger);
 
       if (!jobCallbackHttpRequests.isEmpty()) {
         final String msg =
             String.format("Making %d job callbacks for status: %s",
                 jobCallbackHttpRequests.size(), jobCallBackStatusEnum.name());
-        this.logger.info(msg);
+        logger.info(msg);
 
         addDefaultHeaders(jobCallbackHttpRequests);
 
-        JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, this.logger,
+        JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, logger,
             jobCallbackHttpRequests);
       } else {
-        this.logger.info("No job callbacks for status: " + jobCallBackStatusEnum);
+        logger.info("No job callbacks for status: " + jobCallBackStatusEnum);
       }
     }
 
     // for completed status
     final List<HttpRequestBase> httpRequestsForCompletedStatus =
         JobCallbackUtil.parseJobCallbackProperties(props, COMPLETED,
-            contextInfo, maxNumCallBack, this.logger);
+            contextInfo, maxNumCallBack, logger);
 
     // now make the call
     if (!httpRequestsForCompletedStatus.isEmpty()) {
-      this.logger.info("Making " + httpRequestsForCompletedStatus.size()
+      jobLogger.info("Making " + httpRequestsForCompletedStatus.size()
           + " job callbacks for status: " + COMPLETED);
 
       addDefaultHeaders(httpRequestsForCompletedStatus);
-      JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, this.logger,
+      JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId, logger,
           httpRequestsForCompletedStatus);
     } else {
-      this.logger.info("No job callbacks for status: " + COMPLETED);
+      logger.info("No job callbacks for status: " + COMPLETED);
     }
   }
 
-  private void processJobCallOnStart(final Event event) {
-    final JobRunner jobRunner = (JobRunner) event.getRunner();
-
-    if (JobCallbackUtil.isThereJobCallbackProperty(jobRunner.getProps(),
+  private void processJobCallOnStart(final Event event, final Props jobProps,
+      final Logger jobLogger) {
+    if (JobCallbackUtil.isThereJobCallbackProperty(jobProps,
         JobCallbackStatusEnum.STARTED)) {
 
       // don't want to waste time resolving properties if there are
       // callback properties to parse
-      final Props props = PropsUtils.resolveProps(jobRunner.getProps());
+      // resolve props in best effort. Ignore the case where a referenced property is undefined.
+      final Props props = PropsUtils.resolveProps(jobProps, true);
 
       final Map<String, String> contextInfo =
           JobCallbackUtil.buildJobContextInfoMap(event, this.azkabanHostName);
 
       final List<HttpRequestBase> jobCallbackHttpRequests =
           JobCallbackUtil.parseJobCallbackProperties(props, STARTED,
-              contextInfo, maxNumCallBack, this.logger);
+              contextInfo, maxNumCallBack, logger);
 
       final String jobId = contextInfo.get(CONTEXT_JOB_TOKEN);
       final String msg =
           String.format("Making %d job callbacks for job %s for jobStatus: %s",
               jobCallbackHttpRequests.size(), jobId, STARTED.name());
 
-      jobRunner.getLogger().info(msg);
+      jobLogger.info(msg);
 
       addDefaultHeaders(jobCallbackHttpRequests);
 
       JobCallbackRequestMaker.getInstance().makeHttpRequest(jobId,
-          this.logger, jobCallbackHttpRequests);
+          logger, jobCallbackHttpRequests);
     }
   }
 
   private String getAzkabanHostName(final Props props) {
-    final String baseURL = props.get(JobRunner.AZKABAN_WEBSERVER_URL);
+    final String baseURL = props.get(AZKABAN_WEBSERVER_URL);
     try {
-      String hostName = InetAddress.getLocalHost().getHostName();
+      // Refer to the web server configuration in AzkabanServer.
+      String hostName =
+          props.getString(JETTY_HOSTNAME, "localhost") + ":" + (props.getBoolean(JETTY_USE_SSL
+              , true) ? props.getInt(JETTY_SSL_PORT, DEFAULT_SSL_PORT_NUMBER) :
+              props.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER));
       if (baseURL != null) {
         final URL url = new URL(baseURL);
         hostName = url.getHost() + ":" + url.getPort();

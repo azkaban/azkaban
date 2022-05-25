@@ -23,7 +23,7 @@ import azkaban.db.DatabaseOperator;
 import azkaban.execapp.AzkabanExecutorServerTest;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.FlowRunner.FlowRunnerProxy;
-import azkaban.execapp.event.JobCallbackManager;
+import azkaban.jobcallback.JobCallbackManager;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.project.ProjectFileHandler;

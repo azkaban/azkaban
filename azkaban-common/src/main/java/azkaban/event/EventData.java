@@ -10,17 +10,11 @@ public class EventData {
 
   private final Status status;
   private final String nestedId;
-
-  /**
-   * Creates a new EventData instance.
-   *
-   * @param status node status.
-   * @param nestedId node id, corresponds to {@link ExecutableNode#getNestedId()}.
-   */
-  public EventData(final Status status, final String nestedId) {
-    this.status = status;
-    this.nestedId = nestedId;
-  }
+  private final String jobId;
+  private final String nodeType;
+  private final String projectName;
+  private final String flowName;
+  private final int executionId;
 
   /**
    * Creates a new EventData instance.
@@ -28,7 +22,14 @@ public class EventData {
    * @param node node.
    */
   public EventData(final ExecutableNode node) {
-    this(node.getStatus(), node.getNestedId());
+    this.status = node.getStatus();
+    this.nestedId = node.getNestedId();
+    this.jobId = node.getId();
+    this.nodeType = node.getType();
+
+    this.projectName = (node.getParentFlow() == null) ? null: node.getParentFlow().getProjectName();
+    this.flowName = (node.getParentFlow() == null) ? null: node.getParentFlow().getFlowId();
+    this.executionId = (node.getParentFlow() == null) ? -1: node.getParentFlow().getExecutionId();
   }
 
   public Status getStatus() {
@@ -39,4 +40,23 @@ public class EventData {
     return this.nestedId;
   }
 
+  public String getJobId() {
+    return this.jobId;
+  }
+
+  public String getNodeType() {
+    return this.nodeType;
+  }
+
+  public String getProjectName() {
+    return this.projectName;
+  }
+
+  public String getFlowName() {
+    return this.flowName;
+  }
+
+  public int getExecutionId() {
+    return this.executionId;
+  }
 }

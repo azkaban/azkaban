@@ -219,7 +219,7 @@ public class Constants {
   }
 
   public static class ConfigurationKeys {
-
+    public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
     public static final String AZKABAN_CLUSTER_NAME = "azkaban.cluster.name";
     public static final String AZKABAN_CLUSTER_ENV = "azkaban.cluster.env";
     public static final String AZKABAN_GLOBAL_PROPERTIES_EXT_PATH = "executor.global.properties";
@@ -334,6 +334,7 @@ public class Constants {
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
     // Jetty server configurations.
+    public static final String JETTY_HOSTNAME = "jetty.hostname";
     public static final String JETTY_HEADER_BUFFER_SIZE = "jetty.headerBufferSize";
     public static final String JETTY_USE_SSL = "jetty.use.ssl";
     public static final String JETTY_SSL_PORT = "jetty.ssl.port";
