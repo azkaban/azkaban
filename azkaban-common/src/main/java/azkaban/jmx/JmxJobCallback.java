@@ -1,4 +1,4 @@
-package azkaban.execapp.jmx;
+package azkaban.jmx;
 
 import org.apache.http.impl.client.FutureRequestExecutionMetrics;
 

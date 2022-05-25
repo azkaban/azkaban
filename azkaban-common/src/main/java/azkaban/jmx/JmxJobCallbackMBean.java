@@ -1,4 +1,4 @@
-package azkaban.execapp.jmx;
+package azkaban.jmx;
 
 import azkaban.jmx.DisplayName;
 

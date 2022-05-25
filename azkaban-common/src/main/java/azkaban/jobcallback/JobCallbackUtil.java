@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
@@ -20,9 +20,6 @@ import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
 import azkaban.event.Event;
 import azkaban.event.EventData;
-import azkaban.execapp.JobRunner;
-import azkaban.executor.ExecutableNode;
-import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.utils.Props;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -38,12 +35,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 public class JobCallbackUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(JobCallbackUtil.class);
+  private static final Logger logger = Logger.getLogger(JobCallbackUtil.class);
 
   private static final Map<JobCallbackStatusEnum, String> firstJobcallbackPropertyMap =
       new HashMap<>(
@@ -231,39 +227,30 @@ public class JobCallbackUtil {
    *
    * @return Map<String,String>
    */
-  public static Map<String, String> buildJobContextInfoMap(final Event event,
-      final String server) {
+  public static Map<String, String> buildJobContextInfoMap(final Event event, final String server) {
+    final EventData eventData = event.getData();
+    final String projectName = eventData.getProjectName();
+    final String flowName = eventData.getFlowName();
+    final String executionId =
+        String.valueOf(eventData.getExecutionId());
+    final String jobId = eventData.getJobId();
 
-    if (event.getRunner() instanceof JobRunner) {
-      final JobRunner jobRunner = (JobRunner) event.getRunner();
-      final ExecutableNode node = jobRunner.getNode();
-      final EventData eventData = event.getData();
-      final String projectName = node.getParentFlow().getProjectName();
-      final String flowName = node.getParentFlow().getFlowId();
-      final String executionId =
-          String.valueOf(node.getParentFlow().getExecutionId());
-      final String jobId = node.getId();
+    final Map<String, String> result = new HashMap<>();
+    result.put(CONTEXT_SERVER_TOKEN, server);
+    result.put(CONTEXT_PROJECT_TOKEN, projectName);
+    result.put(CONTEXT_FLOW_TOKEN, flowName);
+    result.put(CONTEXT_EXECUTION_ID_TOKEN, executionId);
+    result.put(CONTEXT_JOB_TOKEN, jobId);
+    result.put(CONTEXT_JOB_STATUS_TOKEN, eventData.getStatus().name().toLowerCase());
 
-      final Map<String, String> result = new HashMap<>();
-      result.put(CONTEXT_SERVER_TOKEN, server);
-      result.put(CONTEXT_PROJECT_TOKEN, projectName);
-      result.put(CONTEXT_FLOW_TOKEN, flowName);
-      result.put(CONTEXT_EXECUTION_ID_TOKEN, executionId);
-      result.put(CONTEXT_JOB_TOKEN, jobId);
-      result.put(CONTEXT_JOB_STATUS_TOKEN, eventData.getStatus().name().toLowerCase());
+    /*
+     * if (node.getStatus() == Status.SUCCEEDED || node.getStatus() ==
+     * Status.FAILED) { result.put(JOB_STATUS_TOKEN,
+     * node.getStatus().name().toLowerCase()); } else if (node.getStatus() ==
+     * Status.PREPARING) { result.put(JOB_STATUS_TOKEN, "started"); }
+     */
 
-      /*
-       * if (node.getStatus() == Status.SUCCEEDED || node.getStatus() ==
-       * Status.FAILED) { result.put(JOB_STATUS_TOKEN,
-       * node.getStatus().name().toLowerCase()); } else if (node.getStatus() ==
-       * Status.PREPARING) { result.put(JOB_STATUS_TOKEN, "started"); }
-       */
-
-      return result;
-
-    } else {
-      throw new IllegalArgumentException("Provided event is not a job event");
-    }
+    return result;
   }
 
   /**

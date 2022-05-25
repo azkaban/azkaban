@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
 import static azkaban.Constants.EventReporterConstants;
 
 import azkaban.DispatchMethod;
@@ -68,7 +69,7 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
       // or else use jetty.hostname
       metaData.put(EventReporterConstants.AZ_WEBSERVER,
           props.getString(EventReporterConstants.AZ_WEBSERVER,
-          props.getString("jetty.hostname", "localhost")));
+          props.getString(JETTY_HOSTNAME, "localhost")));
     }
     metaData.put(EventReporterConstants.PROJECT_NAME, flow.getProjectName());
     metaData.put(EventReporterConstants.SUBMIT_USER, flow.getSubmitUser());

@@ -28,11 +28,10 @@ import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_TIME;
 import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_USER;
 import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static azkaban.Constants.EventReporterConstants.SLA_OPTIONS;
-import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 
 import azkaban.Constants;
-import azkaban.common.ServerUtils;
+import azkaban.utils.ServerUtils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;

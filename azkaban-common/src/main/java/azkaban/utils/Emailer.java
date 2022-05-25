@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
 import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
 import static java.util.Objects.requireNonNull;
 
@@ -76,7 +77,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
     this.clientHostname = props.getString(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-        props.getString("jetty.hostname", "localhost"));
+        props.getString(JETTY_HOSTNAME, "localhost"));
 
     if (props.getBoolean(ConfigurationKeys.JETTY_USE_SSL, true)) {
       this.scheme = HTTPS;

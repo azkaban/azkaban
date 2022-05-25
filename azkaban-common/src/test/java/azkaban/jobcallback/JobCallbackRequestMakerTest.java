@@ -1,4 +1,4 @@
-package azkaban.execapp.event;
+package azkaban.jobcallback;
 
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
@@ -10,8 +10,6 @@ import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
 
-import azkaban.jobcallback.JobCallbackConstants;
-import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,18 +23,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.slf4j.Logger;
+import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
-import org.slf4j.LoggerFactory;
 
 public class JobCallbackRequestMakerTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(JobCallbackRequestMakerTest.class);
+  private static final Logger logger = Logger.getLogger(JobCallbackRequestMakerTest.class);
 
   private static final String SLEEP_DURATION_PARAM = "sleepDuration";
   private static final String STATUS_CODE_PARAM = "returnedStatusCode";
@@ -101,7 +98,7 @@ public class JobCallbackRequestMakerTest {
         + "=" + sc;
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void basicGetTest() {
     final Props props = new Props();
     final String url = buildUrlForDelay(1);
@@ -116,7 +113,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void simulateNotOKStatusCodeTest() {
     final Props props = new Props();
     final String url = buildUrlForStatusCode(404);
@@ -130,7 +127,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void unResponsiveGetTest() {
     final Props props = new Props();
     final String url = buildUrlForDelay(10);
@@ -144,7 +141,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker.makeHttpRequest(JOB_NANE, logger, httpRequestList);
   }
 
-  @Test(timeout = 4000)
+  @Test(timeout = 8000)
   public void basicPostTest() {
     final Props props = new Props();
     final String url = buildUrlForDelay(1);

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
-import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.jmx.JmxJobMBeanManager;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
