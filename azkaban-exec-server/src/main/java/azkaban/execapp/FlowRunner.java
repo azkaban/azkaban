@@ -18,6 +18,7 @@ package azkaban.execapp;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_PROPERTIES_TO_PROPAGATE;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
 import static azkaban.Constants.EventReporterConstants;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
@@ -1650,7 +1651,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // or else use jetty.hostname
       metaData.put(EventReporterConstants.AZ_WEBSERVER,
           props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-              props.getString("jetty.hostname", "localhost")));
+              props.getString(JETTY_HOSTNAME, "localhost")));
       metaData.put(EventReporterConstants.PROJECT_NAME, flow.getProjectName());
       metaData.put(EventReporterConstants.SUBMIT_USER, flow.getSubmitUser());
       metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(flow.getExecutionId()));
@@ -1837,7 +1838,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       // or else use jetty.hostname
       metaData.put(EventReporterConstants.AZ_WEBSERVER,
           props.getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-              props.getString("jetty.hostname", "localhost")));
+              props.getString(JETTY_HOSTNAME, "localhost")));
       metaData.put(EventReporterConstants.JOB_PROXY_USER, jobRunner.getEffectiveUser());
       // attempt id
       metaData.put(EventReporterConstants.ATTEMPT_ID, String.valueOf(node.getAttempt()));

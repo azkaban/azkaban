@@ -17,6 +17,7 @@ package azkaban.server;
 
 import static azkaban.Constants.AZKABAN_PRIVATE_PROPERTIES_FILE;
 import static azkaban.Constants.AZKABAN_PROPERTIES_FILE;
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_SSL_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
@@ -97,7 +98,7 @@ public abstract class AzkabanServer {
         : azkabanSettings.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER);
 
     // setting stats configuration for connectors
-    final String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
+    final String hostname = azkabanSettings.getString(JETTY_HOSTNAME, "localhost");
     azkabanSettings.put("server.hostname", hostname);
     azkabanSettings.put("server.port", port);
     azkabanSettings.put("server.useSSL", String.valueOf(isSslEnabled));

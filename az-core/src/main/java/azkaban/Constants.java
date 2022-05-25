@@ -335,6 +335,7 @@ public class Constants {
     // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
 
     // Jetty server configurations.
+    public static final String JETTY_HOSTNAME = "jetty.hostname";
     public static final String JETTY_HEADER_BUFFER_SIZE = "jetty.headerBufferSize";
     public static final String JETTY_USE_SSL = "jetty.use.ssl";
     public static final String JETTY_SSL_PORT = "jetty.ssl.port";

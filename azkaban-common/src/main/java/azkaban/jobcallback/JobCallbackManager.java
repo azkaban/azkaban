@@ -1,6 +1,7 @@
 package azkaban.jobcallback;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_SSL_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
@@ -241,8 +242,9 @@ public class JobCallbackManager implements EventListener<Event> {
   private String getAzkabanHostName(final Props props) {
     final String baseURL = props.get(AZKABAN_WEBSERVER_URL);
     try {
+      // Refer to the web server configuration in AzkabanServer.
       String hostName =
-          props.getString("jetty.hostname", "localhost") + ":" + (props.getBoolean(JETTY_USE_SSL
+          props.getString(JETTY_HOSTNAME, "localhost") + ":" + (props.getBoolean(JETTY_USE_SSL
               , true) ? props.getInt(JETTY_SSL_PORT, DEFAULT_SSL_PORT_NUMBER) :
               props.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER));
       if (baseURL != null) {
