@@ -120,7 +120,7 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
    */
   @Override
   public synchronized void handleEvent(final Event event) {
-    if (this.azkabanEventReporter != null) {
+    if (this.azkabanEventReporter != null && event.getRunner() instanceof ExecutableFlow) {
       final ExecutableFlow flow = (ExecutableFlow) event.getRunner();
       if (flow != null) {
         this.azkabanEventReporter.report(event.getType(), getFlowMetaData(flow));

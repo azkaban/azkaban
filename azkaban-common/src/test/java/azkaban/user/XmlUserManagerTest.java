@@ -151,8 +151,8 @@ public class XmlUserManagerTest {
     managerLoaded.countDown();
 
     // Wait until login fails with the old password
-    Awaitility.await().atMost(10L, TimeUnit.SECONDS).
-        pollInterval(10L, TimeUnit.MILLISECONDS).until(
+    Awaitility.await().atMost(60L, TimeUnit.SECONDS).
+        pollInterval(100L, TimeUnit.MILLISECONDS).until(
         () -> {
           User user;
           try {

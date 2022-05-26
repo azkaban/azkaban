@@ -67,7 +67,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     this.executorLoader = new MockExecutorLoader();
     this.executorLoader.uploadExecutableFlow(this.flow1);
 
-    this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props,
+    this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, null,
         this.executorLoader, this.commonMetrics, mock(ExecutorApiGateway.class),
         mock(ContainerizedImpl.class),null, null,
         new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
