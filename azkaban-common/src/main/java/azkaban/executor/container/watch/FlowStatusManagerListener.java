@@ -31,9 +31,12 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.AzPodStatus.TransitionValidator;
+import azkaban.jobcallback.JobCallbackManager;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
+import azkaban.utils.ServerUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -46,8 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
  * Provides callback implementations of {@link AzPodStatusListener} for
@@ -57,11 +59,12 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class FlowStatusManagerListener extends EventHandler implements AzPodStatusListener {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowStatusManagerListener.class);
+  private static final Logger logger = Logger.getLogger(FlowStatusManagerListener.class);
   public static final int EVENT_CACHE_STATS_FREQUENCY = 100;
   public static final int DEFAULT_EVENT_CACHE_MAX_ENTRIES = 4096;
   public static final int SHUTDOWN_TERMINATION_TIMEOUT_SECONDS = 5;
 
+  private final ProjectManager projectManager;
   private final ContainerizedImpl containerizedImpl;
   private final ExecutorLoader executorLoader;
   private final AlerterHolder alerterHolder;
@@ -80,6 +83,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
 
   @Inject
   public FlowStatusManagerListener(Props azkProps,
+      ProjectManager projectManager,
       ContainerizedImpl containerizedImpl,
       ExecutorLoader executorLoader,
       AlerterHolder alerterHolder, ContainerizationMetrics containerizationMetrics,
@@ -90,10 +94,13 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
     requireNonNull(containerizedImpl, "container implementation must not be null");
     requireNonNull(executorLoader, "executor loader must not be null");
     requireNonNull(alerterHolder, "alerter holder must not be null");
+    this.projectManager = projectManager;
     this.containerizedImpl = containerizedImpl;
     this.executorLoader = executorLoader;
     this.alerterHolder = alerterHolder;
     this.addListener(eventListener);
+    ServerUtils.configureJobCallback(logger, azkProps);
+    this.addListener(JobCallbackManager.getInstance());
 
     this.executor = Executors.newSingleThreadExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-watch-pool-%d").build());
@@ -189,7 +196,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       return;
     }
     CacheStats stats = podStatusCache.stats();
-    logger.info("Pod Event Cache Stats at flow event count {}:  {}", eventCount, stats.toString());
+    logger.info("Pod Event Cache Stats at flow event count " + eventCount + ":  " + stats.toString());
   }
 
   /**
@@ -273,8 +280,8 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       } else {
         logger.warn ("Containerization metrics are not initialized");
       }
-      ExecutionControllerUtils.finalizeFlow(executorLoader, alerterHolder, executableFlow, reason,
-          null, Status.EXECUTION_STOPPED);
+      ExecutionControllerUtils.finalizeFlow(this, this.projectManager, executorLoader,
+          alerterHolder, executableFlow, reason, null, Status.EXECUTION_STOPPED);
       // Emit EXECUTION_STOPPED flow event
       this.fireEventListeners(Event.create(executableFlow,
           EventType.FLOW_FINISHED, new EventData(executableFlow)));

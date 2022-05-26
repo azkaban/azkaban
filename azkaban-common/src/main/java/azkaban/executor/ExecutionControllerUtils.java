@@ -18,14 +18,20 @@ package azkaban.executor;
 
 import static azkaban.executor.Status.EXECUTION_STOPPED;
 import static azkaban.executor.Status.RESTARTABLE_STATUSES;
+import static azkaban.executor.Status.StatusBeforeRunningSet;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.FlowParameters;
 import azkaban.alert.Alerter;
+import azkaban.event.Event;
+import azkaban.event.EventData;
+import azkaban.event.EventHandler;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
+import azkaban.project.ProjectManager;
+import azkaban.spi.EventType;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -34,10 +40,12 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -84,7 +92,31 @@ public class ExecutionControllerUtils {
    * @param originalError the cause, if execution is being finalized because of an error
    * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void finalizeFlow(final ExecutorLoader executorLoader, @Nullable final AlerterHolder
+  @Deprecated
+  public static void finalizeFlow(final ExecutorLoader executorLoader,
+      @Nullable final AlerterHolder
+          alerterHolder, final ExecutableFlow flow, final String reason,
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
+    finalizeFlow(null, null, executorLoader, alerterHolder, flow, reason, originalError, finalFlowStatus);
+  }
+
+  /**
+   * If the current status of the execution is not one of the finished statuses, mark the execution
+   * as failed in the DB.
+   *
+   * @param eventHandler the event handler to fire job events
+   * @param projectManager the project manager to load job props from DB
+   * @param executorLoader the executor loader
+   * @param alerterHolder the alerter holder
+   * @param flow the execution
+   * @param reason reason for finalizing the execution
+   * @param originalError the cause, if execution is being finalized because of an error
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
+   */
+  public static void finalizeFlow(final EventHandler eventHandler,
+      final ProjectManager projectManager,
+      final ExecutorLoader executorLoader,
+      @Nullable final AlerterHolder
       alerterHolder, final ExecutableFlow flow, final String reason,
       @Nullable final Throwable originalError, final Status finalFlowStatus) {
     boolean alertUser = true;
@@ -100,7 +132,7 @@ public class ExecutionControllerUtils {
         // If it's marked finished, we're good. If not, we fail everything and then mark it
         // finished.
         if (!isFinished(dsFlow)) {
-          failEverything(dsFlow, finalFlowStatus);
+          failEverything(eventHandler, projectManager, dsFlow, finalFlowStatus);
           executorLoader.updateExecutableFlow(dsFlow);
         }
         // flow will be used for event reporter afterwards, thus the final status needs to be set
@@ -318,8 +350,25 @@ public class ExecutionControllerUtils {
    * @param exFlow the executable flow
    * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void failEverything(final ExecutableFlow exFlow, final Status finalFlowStatus) {
+  @Deprecated
+  public static void failEverything(final ExecutableFlow exFlow,
+      final Status finalFlowStatus) {
+    failEverything(null, null, exFlow, finalFlowStatus);
+  }
+
+  /**
+   * Set the flow status to failed and fail every node inside the flow.
+   *
+   * @param eventHandler the event handler to fire job events
+   * @param projectManager the project manager to load job props from DB
+   * @param exFlow the executable flow
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
+   */
+  public static void failEverything(final EventHandler eventHandler,
+      final ProjectManager projectManager, final ExecutableFlow exFlow,
+      final Status finalFlowStatus) {
     final long time = System.currentTimeMillis();
+    final Map<ExecutableNode, Status> nodeToOrigStatus = new HashMap<>();
     final Queue<ExecutableNode> queue = new LinkedList<>();
     queue.add(exFlow);
     // Traverse the DAG and fail every node that's not in a terminal state
@@ -341,6 +390,7 @@ public class ExecutionControllerUtils {
             continue;
             // case UNKNOWN:
           case READY:
+            nodeToOrigStatus.put(node, node.getStatus());
             if (finalFlowStatus == Status.KILLED) {
               // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
               node.setStatus(Status.KILLED);
@@ -353,6 +403,7 @@ public class ExecutionControllerUtils {
             }
             break;
           default:
+            nodeToOrigStatus.put(node, node.getStatus());
             // Set the default job/node status as the finalFlowStatus
             node.setStatus(finalFlowStatus);
             break;
@@ -363,6 +414,39 @@ public class ExecutionControllerUtils {
         }
         if (node.getEndTime() == -1) {
           node.setEndTime(time);
+        }
+      }
+    }
+
+    // Fire correct JOB_STARTED and JOB_FINISHED events.
+    if (eventHandler != null && projectManager != null) {
+      final Project project = projectManager.getProject(exFlow.getProjectId());
+      final Flow flow = project.getFlow(exFlow.getFlowId());
+      for (Entry<ExecutableNode, Status> entry: nodeToOrigStatus.entrySet()) {
+        final ExecutableNode node = entry.getKey();
+        final Status origStatus = entry.getValue();
+
+        // Fill in job props by following the logic in ProjectManagerServlet.
+        if (node.getInputProps() == null) {
+          node.setInputProps(projectManager.getJobOverrideProperty(project, flow, node.getId(),
+              node.getJobSource()));
+        }
+        if (node.getInputProps() == null) {
+          node.setInputProps(projectManager.getProperties(project, flow, node.getId(),
+              node.getJobSource()));
+        }
+
+        if (StatusBeforeRunningSet.contains(origStatus)) {
+          final Status finalStatus = node.getStatus();
+          node.setStatus(origStatus);
+          eventHandler.fireEventListeners(Event.create(new JobRunnerBase(node.getInputProps()),
+              EventType.JOB_STARTED, new EventData(node)));
+          node.setStatus(finalStatus);
+        }
+
+        if (Status.isStatusFinished(node.getStatus())) {
+          eventHandler.fireEventListeners(Event.create(new JobRunnerBase(node.getInputProps()),
+              EventType.JOB_FINISHED, new EventData(node)));
         }
       }
     }

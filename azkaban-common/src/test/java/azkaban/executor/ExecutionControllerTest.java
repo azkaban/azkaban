@@ -90,7 +90,7 @@ public class ExecutionControllerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
-    this.controller = new ExecutionController(this.props, this.loader, this.commonMetrics,
+    this.controller = new ExecutionController(this.props, null, this.loader, this.commonMetrics,
         this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener, this.containerizationMetrics);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);

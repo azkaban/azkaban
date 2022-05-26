@@ -45,6 +45,9 @@ public enum Status {
   private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
       .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
 
+  public static final Set<Status> StatusBeforeRunningSet = new TreeSet<>(
+      Arrays.asList(Status.READY, Status.DISPATCHING, Status.PREPARING, Status.QUEUED));
+
   public static final Set<Status> nonFinishingStatusAfterFlowStartsSet = new TreeSet<>(
       Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
 

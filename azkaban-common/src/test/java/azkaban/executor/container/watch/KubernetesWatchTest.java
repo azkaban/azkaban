@@ -184,7 +184,7 @@ public class KubernetesWatchTest {
   }
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
-    return new FlowStatusManagerListener(azkProps, mockedContainerizedImpl(),
+    return new FlowStatusManagerListener(azkProps, null, mockedContainerizedImpl(),
         mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics, eventListener);
   }
 

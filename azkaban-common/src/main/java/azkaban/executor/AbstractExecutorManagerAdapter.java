@@ -23,14 +23,17 @@ import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
 import azkaban.flow.FlowUtils;
+import azkaban.jobcallback.JobCallbackManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.project.ProjectWhitelist;
 import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.ServerUtils;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -44,8 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
  * This class is used as an abstract implementation for ExecutorManagerAdapter. It has common code
@@ -54,9 +56,9 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractExecutorManagerAdapter extends EventHandler implements
     ExecutorManagerAdapter {
 
-  private static final Logger logger =
-      LoggerFactory.getLogger(AbstractExecutorManagerAdapter.class);
+  private static final Logger logger = Logger.getLogger(AbstractExecutorManagerAdapter.class);
   protected final Props azkProps;
+  protected final ProjectManager projectManager;
   protected final ExecutorLoader executorLoader;
   protected final CommonMetrics commonMetrics;
   protected final ExecutorApiGateway apiGateway;
@@ -68,6 +70,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   protected final ContainerizationMetrics containerizationMetrics;
 
   protected AbstractExecutorManagerAdapter(final Props azkProps,
+      final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
@@ -75,6 +78,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final EventListener eventListener,
       final ContainerizationMetrics containerizationMetrics) {
     this.azkProps = azkProps;
+    this.projectManager = projectManager;
     this.executorLoader = executorLoader;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
@@ -84,6 +88,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.eventListener = eventListener;
     this.containerizationMetrics = containerizationMetrics;
     this.addListener(eventListener);
+    ServerUtils.configureJobCallback(logger, azkProps);
+    this.addListener(JobCallbackManager.getInstance());
   }
 
   /**
@@ -115,8 +121,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
           .size();
-      logger.info("Time taken to fetch size of queued flows is {}",
-          (System.currentTimeMillis() - startTime) / 1000);
+      logger.info("Time taken to fetch size of queued flows is " + (System.currentTimeMillis() - startTime) / 1000);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get flows queued for a long time.", e);
     }
@@ -554,7 +559,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     if (!isExecutionReachable(executionReference, userId)) {
       logger.info("Finalizing executable flow as execution is unreachable: " + executionReference
           .getExecId());
-      ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
+      ExecutionControllerUtils.finalizeFlow(this, this.projectManager, this.executorLoader,
+          this.alerterHolder,
           executableFlow, "Cancel action has been called but the flow is unreachable.", null,
           finalizingStatus);
       // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
@@ -573,12 +579,12 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
           .error("Exception occurred while cancelling flow: " + executionReference.getExecId(), e);
       logger.info("Finalizing executable flow: " + executionReference.getExecId());
       final String finalizingReason = "Unable to gracefully kill the flow execution.";
-      ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder,
-          executableFlow, finalizingReason, e, finalizingStatus);
+      ExecutionControllerUtils.finalizeFlow(this, this.projectManager, this.executorLoader,
+          this.alerterHolder, executableFlow, finalizingReason, e, finalizingStatus);
       // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
       // so we need to manually send one here.
       this.fireEventListeners(Event.create(executableFlow,
-          EventType.FLOW_FINISHED, new EventData(executableFlow)));
+      EventType.FLOW_FINISHED, new EventData(executableFlow)));
       // Throwing exception to make the reason appear on the UI.
       throw new ExecutorManagerException(finalizingReason
           + " Finalizing the flow.");

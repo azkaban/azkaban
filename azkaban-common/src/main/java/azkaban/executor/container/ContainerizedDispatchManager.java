@@ -37,6 +37,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -83,6 +84,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   @Inject
   public ContainerizedDispatchManager(
       final Props azkProps,
+      final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
@@ -93,7 +95,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final ContainerizationMetrics containerizationMetrics,
       @Nullable final ExecutorHealthChecker executorHealthChecker)
       throws ExecutorManagerException {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
+    super(azkProps, projectManager, executorLoader, commonMetrics, apiGateway, alerterHolder,
+        eventListener,
         containerizationMetrics);
     rateLimiter =
         RateLimiter.create(azkProps
@@ -464,7 +467,9 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           ExecutableFlow execFlow =
               ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
           Status originalStatus = execFlow.getStatus();
-          ExecutionControllerUtils.finalizeFlow(ContainerizedDispatchManager.this.executorLoader,
+          ExecutionControllerUtils.finalizeFlow(ContainerizedDispatchManager.this,
+              ContainerizedDispatchManager.this.projectManager,
+              ContainerizedDispatchManager.this.executorLoader,
               ContainerizedDispatchManager.this.alerterHolder, execFlow, "Failed to dispatch", e,
               Status.FAILED);
           logger.info("Finalizing the flow execution ", executionId);

@@ -78,7 +78,7 @@ public class TriggerManagerDeadlockTest {
   private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
     final ActiveExecutors activeExecutors = new ActiveExecutors(this.execLoader);
     final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
-    return new ExecutorManager(props, this.execLoader, this.commonMetrics, this.apiGateway,
+    return new ExecutorManager(props, null, this.execLoader, this.commonMetrics, this.apiGateway,
         this.runningExecutions, activeExecutors, this.updaterStage, this.executionFinalizer,
         updaterThread);
   }
