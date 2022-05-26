@@ -55,6 +55,8 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   private static final String PIG_ADDITIONAL_JARS = "pig.additional.jars";
   private static final String DEFAULT_PIG_ADDITIONAL_JARS = "default.pig.additional.jars";
   private static final String PIG_PARAM_PREFIX = "param.";
+  // This param override is used for containerized executions and conflicts with pig params.
+  private static final String PARAM_OVERRIDE_PREFIX = "override.";
   private static final String PIG_PARAM_FILES = "paramfile";
   private static final String HADOOP_UGI = "hadoop.job.ugi";
   private static final String DEBUG = "debug";
@@ -360,9 +362,10 @@ public class HadoopPigJob extends AbstractHadoopJavaProcessJob {
   private Map<String, String> getPigParams() {
     final Map<String, String> paramMap = getJobProps().getMapByPrefix(PIG_PARAM_PREFIX);
     // This map may also contain certain configs which are meant for flow execution on containers.
-    // These configs start with "param.override.". Remove any such property.
+    // These configs start with "param.override.". The "param." is removed by getMapByPrefix.
+    // Remove any such property.
     for (final String key : paramMap.keySet()) {
-      if (key.startsWith(Constants.PARAM_OVERRIDE)) {
+      if (key.startsWith(PARAM_OVERRIDE_PREFIX)) {
         paramMap.remove(key);
       }
     }
