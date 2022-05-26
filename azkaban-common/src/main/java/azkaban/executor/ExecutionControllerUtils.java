@@ -368,7 +368,7 @@ public class ExecutionControllerUtils {
       final ProjectManager projectManager, final ExecutableFlow exFlow,
       final Status finalFlowStatus) {
     final long time = System.currentTimeMillis();
-    final Map<ExecutableNode, Status> node2origStatus = new HashMap<>();
+    final Map<ExecutableNode, Status> nodeToOrigStatus = new HashMap<>();
     final Queue<ExecutableNode> queue = new LinkedList<>();
     queue.add(exFlow);
     // Traverse the DAG and fail every node that's not in a terminal state
@@ -390,7 +390,7 @@ public class ExecutionControllerUtils {
             continue;
             // case UNKNOWN:
           case READY:
-            node2origStatus.put(node, node.getStatus());
+            nodeToOrigStatus.put(node, node.getStatus());
             if (finalFlowStatus == Status.KILLED) {
               // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
               node.setStatus(Status.KILLED);
@@ -403,7 +403,7 @@ public class ExecutionControllerUtils {
             }
             break;
           default:
-            node2origStatus.put(node, node.getStatus());
+            nodeToOrigStatus.put(node, node.getStatus());
             // Set the default job/node status as the finalFlowStatus
             node.setStatus(finalFlowStatus);
             break;
@@ -420,11 +420,11 @@ public class ExecutionControllerUtils {
 
     // Fire correct JOB_STARTED and JOB_FINISHED events.
     if (eventHandler != null && projectManager != null) {
-      Project project = projectManager.getProject(exFlow.getProjectId());
-      Flow flow = project.getFlow(exFlow.getFlowId());
-      for (Entry<ExecutableNode, Status> entry: node2origStatus.entrySet()) {
-        ExecutableNode node = entry.getKey();
-        Status origStatus = entry.getValue();
+      final Project project = projectManager.getProject(exFlow.getProjectId());
+      final Flow flow = project.getFlow(exFlow.getFlowId());
+      for (Entry<ExecutableNode, Status> entry: nodeToOrigStatus.entrySet()) {
+        final ExecutableNode node = entry.getKey();
+        final Status origStatus = entry.getValue();
 
         // Fill in job props by following the logic in ProjectManagerServlet.
         if (node.getInputProps() == null) {
@@ -437,7 +437,7 @@ public class ExecutionControllerUtils {
         }
 
         if (StatusBeforeRunningSet.contains(origStatus)) {
-          Status finalStatus = node.getStatus();
+          final Status finalStatus = node.getStatus();
           node.setStatus(origStatus);
           eventHandler.fireEventListeners(Event.create(new JobRunnerBase(node.getInputProps()),
               EventType.JOB_STARTED, new EventData(node)));
