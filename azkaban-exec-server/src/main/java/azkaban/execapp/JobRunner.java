@@ -18,6 +18,9 @@ package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
 import static azkaban.utils.ExecuteAsUserUtils.addGroupAndUserForEffectiveUser;
 
@@ -46,6 +49,7 @@ import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.PatternLayoutEscaped;
 import azkaban.utils.Props;
+import azkaban.utils.RestfulApiClient;
 import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
 import com.google.common.annotations.VisibleForTesting;
@@ -877,11 +881,11 @@ public class JobRunner extends JobRunnerBase implements Runnable {
    */
   private String getProjectPermissionsURL() {
     String projectPermissionsURL = null;
-    final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
-    if (baseURL != null) {
+    final String azkabanWebServerURL = getAzkabanWebServerURL();
+    if (azkabanWebServerURL != null) {
       final String projectName = this.node.getParentFlow().getProjectName();
       projectPermissionsURL = String
-          .format("%s/manager?project=%s&permissions", baseURL, projectName);
+          .format("%s/manager?project=%s&permissions", azkabanWebServerURL, projectName);
     }
     return projectPermissionsURL;
   }
@@ -931,30 +935,33 @@ public class JobRunner extends JobRunnerBase implements Runnable {
   private void insertJobMetadata() {
     final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
     if (baseURL != null) {
-      URL webserverURL = null;
+      URL baseWebServerURL = null;
       try {
-        webserverURL = new URL(baseURL);
+        baseWebServerURL = new URL(baseURL);
       } catch (MalformedURLException e) {
         logger.error(String.format("Exception in parsing url: %s", baseURL), e);
       }
-      final String azkabanWebserverHost = (webserverURL != null) ? webserverURL.getHost() : null;
+      final String azkabanWebserverHost =
+          (baseWebServerURL != null) ? baseWebServerURL.getHost() : null;
+      this.props.put(CommonJobProperties.AZKABAN_WEBSERVERHOST, azkabanWebserverHost);
+
       final String flowName = this.node.getParentFlow().getFlowId();
       final String projectName = this.node.getParentFlow().getProjectName();
-
-      this.props.put(CommonJobProperties.AZKABAN_URL, baseURL);
-      this.props.put(CommonJobProperties.AZKABAN_WEBSERVERHOST, azkabanWebserverHost);
+      // For execution links use Azkaban external web server url if configured.
+      final String azkabanWebServerURL = getAzkabanWebServerURL();
+      this.props.put(CommonJobProperties.AZKABAN_URL, azkabanWebServerURL);
       this.props.put(CommonJobProperties.EXECUTION_LINK,
-          String.format("%s/executor?execid=%d", baseURL, this.executionId));
-      this.props.put(CommonJobProperties.JOBEXEC_LINK, String.format(
-          "%s/executor?execid=%d&job=%s", baseURL, this.executionId, this.node.getNestedId()));
+          String.format("%s/executor?execid=%d", azkabanWebServerURL, this.executionId));
+      this.props.put(CommonJobProperties.JOBEXEC_LINK, String.format("%s/executor?execid=%d&job=%s",
+          azkabanWebServerURL, this.executionId, this.node.getNestedId()));
       this.props.put(CommonJobProperties.ATTEMPT_LINK, String.format(
-          "%s/executor?execid=%d&job=%s&attempt=%d", baseURL, this.executionId,
+          "%s/executor?execid=%d&job=%s&attempt=%d", azkabanWebServerURL, this.executionId,
           this.node.getNestedId(), this.node.getAttempt()));
       this.props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
-          "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
+          "%s/manager?project=%s&flow=%s", azkabanWebServerURL, projectName, flowName));
       this.props.put(CommonJobProperties.JOB_LINK, String.format(
-          "%s/manager?project=%s&flow=%s&job=%s", baseURL, projectName,
-          flowName, this.jobId));
+          "%s/manager?project=%s&flow=%s&job=%s", azkabanWebServerURL, projectName, flowName,
+          this.jobId));
     } else {
       if (this.logger != null) {
         this.logger.info(AZKABAN_WEBSERVER_URL + " property was not set");
@@ -967,6 +974,43 @@ public class JobRunner extends JobRunnerBase implements Runnable {
     // in nodes
     this.props.put(CommonJobProperties.IN_NODES,
         StringUtils.join2(this.node.getInNodes(), ","));
+  }
+
+  /**
+   * Build Azkaban frontend base url. Use external configs
+   * ({@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME},
+   * {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT}) if set
+   * else {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_URL}
+   */
+  private String getAzkabanWebServerURL() {
+    String azkabanWebServerURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);;
+
+    // Use Azkaban external web server url if configured.
+    final String webServerExternalHostname =
+        this.azkabanProps.get(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME);
+    final int webServerExternalPort =
+        this.azkabanProps.getInt(AZKABAN_WEBSERVER_EXTERNAL_PORT, -1);
+    final int webServerExternalSslPort =
+        this.azkabanProps.getInt(AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT, -1);
+
+    if( webServerExternalHostname != null &&
+        (webServerExternalSslPort != -1 || webServerExternalPort != -1)) {
+      int azkabanWebServerPort = webServerExternalPort;
+      boolean isHttp = true;
+      if(webServerExternalSslPort != -1) {
+        azkabanWebServerPort = webServerExternalSslPort;
+        isHttp = false;
+      }
+      try {
+        azkabanWebServerURL = RestfulApiClient.buildUri(webServerExternalHostname,
+            azkabanWebServerPort, null, isHttp).toString();
+      } catch (IOException e) {
+        this.logger.info(String.format("Failed to create external web server url from params: "
+            + "%s, %d. Using default: %s", webServerExternalHostname, azkabanWebServerPort,
+            azkabanWebServerURL));
+      }
+    }
+    return azkabanWebServerURL;
   }
 
   private Status runJob() {
