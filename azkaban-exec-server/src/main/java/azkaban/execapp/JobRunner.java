@@ -43,11 +43,9 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.spi.EventType;
 import azkaban.utils.ExecuteAsUser;
-import azkaban.utils.ExternalLinkUtils;
-import azkaban.utils.PatternLayoutEscaped;
+import azkaban.utils.KafkaLog4jUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
-import azkaban.utils.UndefinedPropertyException;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -87,7 +85,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
   private final FlowRunnerProxy flowRunnerProxy;
   private Logger flowLogger = null;
   private Appender jobAppender = null;
-  private Optional<Appender> kafkaAppender = Optional.empty();
+  private KafkaLog4jAppender kafkaLog4jAppender;
   private File logFile;
   private String attachmentFileName;
   private Job job;
@@ -365,32 +363,19 @@ public class JobRunner extends JobRunnerBase implements Runnable {
             + " for job " + this.jobId, e);
       }
 
-      if (this.props.getBoolean(Constants.JobProperties.AZKABAN_JOB_LOGGING_KAFKA_ENABLE, false)) {
-        // Only attempt appender construction if required properties are present
-        if (this.azkabanProps
-            .containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST)
-            && this.azkabanProps
-            .containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC)) {
-          try {
-            attachKafkaAppender(createKafkaAppender());
-          } catch (final Exception e) {
-            removeAppender(this.kafkaAppender);
-            this.flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
-          }
-        } else {
-          this.flowLogger.info(
-              "Kafka appender not created as brokerlist or topic not provided by executor server");
+      if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED, false)) {
+        // Keep the names consistent as what we did in uploadLogFile()
+        this.kafkaLog4jAppender =
+            KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(this.azkabanProps,
+                String.valueOf(this.executionId), this.node.getNestedId(),
+                String.valueOf(this.node.getAttempt()));
+
+        if (this.kafkaLog4jAppender != null) {
+          this.logger.addAppender(this.kafkaLog4jAppender);
+          this.logger.setAdditivity(false);
+          this.flowLogger.info("Attached new Kafka appender for job " + this.jobId);
         }
       }
-    }
-
-    final String externalViewer = ExternalLinkUtils
-        .getExternalLogViewer(this.azkabanProps, this.jobId,
-            this.props);
-    if (!externalViewer.isEmpty()) {
-      this.logger.info("If you want to leverage AZ ELK logging support, you need to follow the "
-          + "instructions: http://azkaban.github.io/azkaban/docs/latest/#how-to");
-      this.logger.info("If you did the above step, see logs at: " + externalViewer);
     }
   }
 
@@ -427,40 +412,6 @@ public class JobRunner extends JobRunnerBase implements Runnable {
     this.attachmentFileName = file.getAbsolutePath();
   }
 
-  private void attachKafkaAppender(final KafkaLog4jAppender appender) {
-    // This should only be called once
-    assert (!this.kafkaAppender.isPresent());
-
-    this.kafkaAppender = Optional.of(appender);
-    this.logger.addAppender(this.kafkaAppender.get());
-    this.logger.setAdditivity(false);
-    this.flowLogger.info("Attached new Kafka appender for job " + this.jobId);
-  }
-
-  private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
-    final KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
-    kafkaProducer.setSyncSend(false);
-    kafkaProducer.setBrokerList(this.azkabanProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
-    kafkaProducer.setTopic(
-        this.azkabanProps
-            .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
-
-    final String layoutString = LogUtil.createLogPatternLayoutJsonString(this.props, this.jobId);
-
-    kafkaProducer.setLayout(new PatternLayoutEscaped(layoutString));
-    kafkaProducer.activateOptions();
-
-    this.flowLogger.info("Created kafka appender for " + this.jobId);
-    return kafkaProducer;
-  }
-
-  private void removeAppender(final Optional<Appender> appender) {
-    if (appender.isPresent()) {
-      removeAppender(appender.get());
-    }
-  }
-
   private void removeAppender(final Appender appender) {
     if (appender != null) {
       this.logger.removeAppender(appender);
@@ -469,12 +420,8 @@ public class JobRunner extends JobRunnerBase implements Runnable {
   }
 
   private void closeLogger() {
-    if (this.jobAppender != null) {
-      removeAppender(this.jobAppender);
-    }
-    if (this.kafkaAppender.isPresent()) {
-      removeAppender(this.kafkaAppender);
-    }
+    removeAppender(this.jobAppender);
+    removeAppender(this.kafkaLog4jAppender);
   }
 
   private void writeStatus() {

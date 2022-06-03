@@ -166,6 +166,7 @@ public class JobRunnerTest {
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
   }
@@ -223,6 +224,7 @@ public class JobRunnerTest {
     Assert.assertEquals("java.lang.RuntimeException: Forced"
             + " failure of testJob", runner.getNode().getFailureMessage());
 
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
 
@@ -258,6 +260,7 @@ public class JobRunnerTest {
 
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.JOB_STARTED, EventType.JOB_FINISHED);
 
     Assert.assertFalse("Thread ContextClassLoader not reset properly",
@@ -292,6 +295,7 @@ public class JobRunnerTest {
     Assert.assertTrue(outputProps == null);
     Assert.assertTrue(runner.getLogFilePath() == null);
     Assert.assertTrue(!runner.isKilled());
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.JOB_STARTED, EventType.JOB_FINISHED);
 
     Assert.assertFalse("Thread ContextClassLoader not reset properly",
@@ -338,6 +342,7 @@ public class JobRunnerTest {
     Assert.assertTrue(logFile.exists());
     Assert.assertTrue(eventCollector.checkOrdering());
     Assert.assertTrue(runner.isKilled());
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
   }
@@ -383,6 +388,7 @@ public class JobRunnerTest {
     Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 
     Assert.assertTrue(eventCollector.checkOrdering());
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector
         .assertEvents(EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED, EventType.JOB_FINISHED);
   }
@@ -430,6 +436,7 @@ public class JobRunnerTest {
     // wait so that there's time to make the "DB update" for KILLED status
     TestUtils.await().untilAsserted(
         () -> assertThat(loader.getNodeUpdateCount("testJob")).isEqualTo(2));
+    Assert.assertFalse(runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.JOB_FINISHED);
   }
 

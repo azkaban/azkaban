@@ -29,6 +29,8 @@ import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_USER;
 import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static azkaban.Constants.EventReporterConstants.SLA_OPTIONS;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import azkaban.Constants;
 import azkaban.utils.ServerUtils;
@@ -86,6 +88,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SUCCEEDED);
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
   }
 
@@ -125,6 +128,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SKIPPED);
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
   }
 
@@ -156,6 +160,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,  EventType.FLOW_FINISHED);
   }
 
@@ -190,6 +195,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     // Two FLOW_STATUS_CHANGED events fired, one for FAILED and one for KILLED
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,
         EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
@@ -221,6 +227,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
@@ -260,6 +267,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertFalse(this.runner.getFlowKillTime() == -1);
     Assert.assertEquals("me", this.runner.getExecutableFlow().getModifiedBy());
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
@@ -284,7 +292,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     // Cannot pause a flow that is being killed or that has already been killed. This should throw
     // IllegalStateException.
     this.runner.pause("me");
-
   }
 
   @Test
@@ -305,6 +312,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertAttempts("job-retry-fail", 2);
 
     waitForAndAssertFlowStatus(Status.FAILED);
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   @Test

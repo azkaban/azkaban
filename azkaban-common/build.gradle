@@ -44,6 +44,7 @@ dependencies {
     compile deps.mysqlConnector
     compile deps.snakeyaml
     compile deps.velocity
+    compile deps.kafkaLog4jAppender
 
     testRuntime deps.h2
 
