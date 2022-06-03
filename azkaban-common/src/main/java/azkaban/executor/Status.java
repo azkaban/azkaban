@@ -112,6 +112,21 @@ public enum Status {
     }
   }
 
+  public static boolean isStatusFinshedWithoutSuccess(final Status status) {
+    switch (status) {
+      case EXECUTION_STOPPED:
+      case FAILED:
+      case KILLING:
+      case KILLED:
+      case SKIPPED:
+      case FAILED_SUCCEEDED:
+      case CANCELLED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public int getNumVal() {
     return this.numVal;
   }

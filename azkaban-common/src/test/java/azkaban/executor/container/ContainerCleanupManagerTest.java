@@ -92,7 +92,6 @@ public class ContainerCleanupManagerTest {
     verifyZeroInteractions(this.containerImpl);
   }
 
-  @Ignore
   @Test
   public void testCleanUpPreparingFlows() throws Exception {
     ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
@@ -122,7 +121,7 @@ public class ContainerCleanupManagerTest {
     this.cleaner.cleanUpStaleFlows(Status.PREPARING);
     TimeUnit.MILLISECONDS.sleep(10);
     Assert.assertEquals(Status.KILLED, flow.getStatus());
-    verify(this.containerImpl).deleteContainer(flow.getExecutionId());
+    verify(this.containerImpl).deleteContainer(flow);
     // Verify that the flow is indeed retried.
     verify(onExecutionEventListener).onExecutionEvent(flow, Constants.RESTART_FLOW);
   }
@@ -133,18 +132,24 @@ public class ContainerCleanupManagerTest {
     pods.add(1000);
     pods.add(1001);
     final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
-    final ExecutableFlow flow = new ExecutableFlow();
-    flow.setExecutionId(1000);
-    flow.setStatus(Status.PREPARING);
-    flow.setSubmitUser("goku");
-    flow.setExecutionOptions(new ExecutionOptions());
-    executableFlows.add(flow);
+    final ExecutableFlow flow1000 = new ExecutableFlow();
+    flow1000.setExecutionId(1000);
+    flow1000.setStatus(Status.PREPARING);
+    flow1000.setSubmitUser("goku");
+    flow1000.setExecutionOptions(new ExecutionOptions());
+    executableFlows.add(flow1000);
+    final ExecutableFlow flow1001 = new ExecutableFlow();
+    flow1000.setExecutionId(1001);
+    flow1000.setStatus(Status.KILLED);
+    flow1000.setSubmitUser("goku");
+    flow1000.setExecutionOptions(new ExecutionOptions());
+    executableFlows.add(flow1001);
+    when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
     when(this.executorLoader
         .fetchStaleFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
         .thenReturn(executableFlows);
-    when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
     this.cleaner.cleanUpContainersInTerminalStatuses();
-    verify(this.containerImpl).deleteContainer(1001);
-    verify(this.containerImpl, Mockito.times(0)).deleteContainer(1000);
+    verify(this.containerImpl).deletePod(1000);
+    verify(this.containerImpl, Mockito.times(0)).deletePod(1001);
   }
 }

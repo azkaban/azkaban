@@ -15,12 +15,16 @@
  */
 package azkaban.executor.container;
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import java.time.Duration;
 import java.util.Set;
 
 public interface ContainerizedImpl {
   void createContainer(final int executionId) throws ExecutorManagerException;
-  void deleteContainer(final int executionId) throws ExecutorManagerException;
   Set<Integer> getContainersByDuration(final Duration containerDuration) throws ExecutorManagerException;
+  void deleteContainer(final ExecutableFlow flow) throws ExecutorManagerException;
+  void deletePod(final int executionId) throws ExecutorManagerException;
+  void deleteService(final int executionId) throws ExecutorManagerException;
+
 }

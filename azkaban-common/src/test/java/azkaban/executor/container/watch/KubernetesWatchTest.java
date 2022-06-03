@@ -292,7 +292,7 @@ public class KubernetesWatchTest {
     assertThat(flow1.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
 
     // Verify the Pod deletion API is invoked.
-    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(flow1);
 
     // Sanity check for asserting the sequence in which events were received.
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
@@ -328,7 +328,7 @@ public class KubernetesWatchTest {
     assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
-    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INIT_FAILURE);
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(flow1);
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
@@ -368,7 +368,7 @@ public class KubernetesWatchTest {
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl())
-        .deleteContainer(EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR);
+        .deleteContainer(flow1);
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
@@ -440,7 +440,7 @@ public class KubernetesWatchTest {
     assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
-    verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_INVALID_TRANSITIONS);
+    verify(updatingListener.getContainerizedImpl()).deleteContainer(flow1);
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);

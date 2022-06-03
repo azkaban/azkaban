@@ -55,6 +55,8 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Container.ImagePullPolicyEnum;
+import io.kubernetes.client.openapi.models.CoreV1Event;
+import io.kubernetes.client.openapi.models.CoreV1EventList;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -77,6 +79,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -135,6 +138,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String namespace;
   private final ApiClient client;
   private final CoreV1Api coreV1Api;
+
+
+  final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient;
+  final GenericKubernetesApi<V1Pod, V1PodList> podClient;
+
   private final Props azkProps;
   private final ExecutorLoader executorLoader;
   private final String podPrefix;
@@ -161,6 +169,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String initMountPathPrefixForDependencies;
   private final String appMountPathPrefixForDependencies;
   private final boolean saTokenAutoMount;
+  private final boolean isPodLoggingEnabled;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
       String.CASE_INSENSITIVE_ORDER);
   private final String secretName;
@@ -172,7 +181,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String azkabanBaseImageName;
   private final String azkabanConfigImageName;
   private final ProjectLoader projectLoader;
-
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -287,6 +295,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getBoolean(
             ContainerizedDispatchManagerProperties.KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT,
             false);
+    //Implimenting as toggle feature in case deletePods call is blocking
+    this.isPodLoggingEnabled =
+        this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.ENABLE_POD_LOGGING, false);
     try {
       // Path to the configuration file for Kubernetes which contains information about
       // Kubernetes API Server and identity for authentication
@@ -298,6 +309,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               Files.newBufferedReader(Paths.get(kubeConfigPath), Charset.defaultCharset())))
               .build();
       this.coreV1Api = new CoreV1Api(this.client);
+      // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
+      // See more here: https://github.com/kubernetes-client/java/issues/86
+      this.serviceClient = new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
+              "v1", "services", this.client);
+      this.podClient = new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
+              "v1", "pods", this.client);
     } catch (final IOException exception) {
       logger.error("Unable to read kube config file: {}", exception.getMessage());
       throw new ExecutorManagerException(exception);
@@ -393,16 +410,16 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * service was created then it will also delete the service. This method can be called as a part
    * of cleanup process for containers in case containers didn't shutdown gracefully.
    *
-   * @param executionId
+   * @param flow
    * @throws ExecutorManagerException
    */
   @Override
-  public synchronized void deleteContainer(final int executionId) throws ExecutorManagerException {
+  public synchronized void deleteContainer(final ExecutableFlow flow) throws ExecutorManagerException {
     try { // if pod deletion is not successful, the service deletion can still be handled
-      deletePod(executionId);
+      deletePod(flow);
     } finally {
       if (isServiceRequired()) {
-        deleteService(executionId);
+        deleteService(flow.getExecutionId());
       }
     }
   }
@@ -468,7 +485,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       if (podMetadata.getCreationTimestamp().isBefore(validStartTimeStamp)) {
         final String execIdLabel =
             podMetadata.getLabels().getOrDefault(EXECUTION_ID_LABEL_NAME,
-            EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID);
+                EXECUTION_ID_LABEL_PREFIX + DEFAULT_EXECUTION_ID);
         try {
           final String execId = execIdLabel.substring(execIdLabel.indexOf(
               EXECUTION_ID_LABEL_PREFIX) + EXECUTION_ID_LABEL_PREFIX.length());
@@ -1195,17 +1212,31 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * This method is used to delete pod in Kubernetes. It will terminate the pod.
    *
-   * @param executionId
+   * @param flow
    * @throws ExecutorManagerException
    */
-  private void deletePod(final int executionId) throws ExecutorManagerException {
+  private void deletePod(final ExecutableFlow flow) throws ExecutorManagerException {
+    requireNonNull(flow, "The flow must not be null");
+    final int executionId = flow.getExecutionId();
+    final Status status = flow.getStatus();
+    if(isPodLoggingEnabled) {
+      if (status != null && Status.isStatusFinshedWithoutSuccess(status)) {
+        long startTime = System.currentTimeMillis();
+        logPodDetails(executionId);
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        logger.info("Logging Pod Details took {} milliseconds", Long.toString(duration));
+      }
+    }
+    deletePod(flow.getExecutionId());
+  }
+
+  @Override
+  public void deletePod(final int executionId) throws ExecutorManagerException {
     final String podName = getPodName(executionId);
     try {
-      final GenericKubernetesApi<V1Pod, V1PodList> podClient =
-          new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
-              "v1", "pods", this.client);
       final int statusCode =
-          podClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
+          this.podClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
       logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}, Status: {}", executionId,
           podName, statusCode);
       if (statusCode == 200) {
@@ -1225,20 +1256,16 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * This method is used to delete service in Kubernetes which is created for Pod.
    *
-   * @param executionId
+   * @param flow
    * @throws ExecutorManagerException
    */
-  private void deleteService(final int executionId) throws ExecutorManagerException {
+  @Override
+  public void deleteService(final int executionId) throws ExecutorManagerException {
+    requireNonNull(executionId, "The executionId must not be null");
     final String serviceName = getServiceName(executionId);
     try {
-      // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
-      // See more here: https://github.com/kubernetes-client/java/issues/86
-
-      final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
-          new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
-              "v1", "services", this.client);
       final int statusCode =
-          serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
+          this.serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
       logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, Status: {}",
           executionId, serviceName, statusCode);
       if (statusCode == 200) {
@@ -1254,6 +1281,107 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
+  }
+
+  public void logPodDetails(final int executionId) throws ExecutorManagerException {
+    StringBuffer podDetails = new StringBuffer();
+    podDetails.append(getPodEvents(executionId));
+    podDetails.append(getPodLogs(executionId));
+    String details = podDetails.toString();
+    if (StringUtils.isEmpty(details)) {
+      return;
+    }
+    try {
+      this.executorLoader.appendLogs(executionId,"podDetails", details);
+    } catch (ExecutorManagerException e) {
+      logger.error("ExecId: {}, Unable to log pod details. Msg: {} ",
+          executionId, e.getMessage());;
+      throw e;
+    }
+  }
+
+  private String getPodEvents(final int executionId) {
+    StringBuffer podEvents = new StringBuffer();
+    podEvents.append("Events: \n");
+    final String podName = getPodName(executionId);
+    CoreV1EventList kubernetesEvents = null;
+    try {
+      logger.info("Getting Pod Events for execution Id " + executionId);
+      kubernetesEvents = this.coreV1Api.listNamespacedEvent(this.namespace, null, null,
+          null, null, null, null, null,
+          null, null, null);
+    } catch (final ApiException e) {
+      logger.error("ExecId: {}, Unable to get events for Pod. Msg: {} ",
+          executionId, e.getResponseBody());
+      return "";
+    }
+    for(CoreV1Event event : kubernetesEvents.getItems()) {
+      if (event.getInvolvedObject().getKind().equals("Pod") && event.getInvolvedObject().getName().equals(podName)) {
+        podEvents.append(formatPodEvent(event));
+      }
+    }
+    String events = podEvents.toString();
+    if(events.equals("Events: \n")) {
+       podEvents.append("\t THERE ARE NO POD EVENTS \n");
+       return podEvents.toString();
+    }
+    return events;
+  }
+
+  /**
+   * This method is used to obtain the Pod Logs from the K8s Core V1 API
+   *
+   * @param executionId of pod
+   * @return String of podLogs
+   */
+  private String getPodLogs(final int executionId) {
+    final String podName = getPodName(executionId);
+    String podLogs = null;
+    try {
+      logger.info("Getting Namespaced Pod Logs for execution Id " + executionId);
+      podLogs = this.coreV1Api.readNamespacedPodLog(podName, this.namespace,
+          this.flowContainerName, false, null, null,
+          "true", null, null, 1000, null);
+    } catch (final ApiException e) {
+      logger.error("ExecId: {}, Unable to get logs for Pod. Msg: {} ",
+          executionId, e.getResponseBody());
+      return "";
+    }
+    if(StringUtils.isEmpty(podLogs)) {
+      return "Pod Logs: \n\tTHE POD LOGS ARE EMPTY";
+    }
+    return "Pod Logs: \n" + podLogs + "\nEND POD LOGS";
+  }
+
+
+  private String formatPodEvent(final CoreV1Event event) {
+    StringBuffer formattedEvent = new StringBuffer();
+    if(Objects.nonNull(event.getLastTimestamp()) && StringUtils.isNotEmpty(event.getLastTimestamp()
+        .toString())) {
+      formattedEvent.append("\t LastTimeStamp: " + event.getLastTimestamp() + "\n");
+    }
+    else {
+      formattedEvent.append("\t LastTimeStamp: " + "LastTimeStamp is null, this is a new event" +
+        "\n");
+    }
+    if(StringUtils.isNotEmpty(event.getType())) {
+      formattedEvent.append("\t Type: " + event.getType() + "\n");
+    }
+    if(StringUtils.isNotEmpty(event.getReason())) {
+      formattedEvent.append("\t Reason: " + event.getReason() + "\n");
+    }
+    if(StringUtils.isNotEmpty(event.getReportingInstance())) {
+      formattedEvent.append("\t ReportingInstance: " + event.getReportingInstance() + "\n");
+    }
+    if(StringUtils.isNotEmpty(event.getMessage())) {
+      formattedEvent.append("\t Message: " + event.getMessage() + "\n");
+    }
+    String events = formattedEvent.toString();
+    if (events.equals("\t LastTimeStamp: " + "LastTimeStamp is null, this is a "
+        + "new event" + "\n")) {
+      return "";
+    }
+    return events;
   }
 
   /**
