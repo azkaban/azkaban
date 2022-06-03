@@ -94,6 +94,7 @@ public class HadoopJavaJobRunnerMain {
     // Separate try catch for logger
     try {
       _logger = Logger.getRootLogger();
+      _logger.setLevel(Level.INFO);
     } catch (Exception e) {
       throw e;
     }
