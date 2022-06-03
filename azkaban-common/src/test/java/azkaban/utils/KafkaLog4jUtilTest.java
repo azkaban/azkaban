@@ -20,6 +20,7 @@ public class KafkaLog4jUtilTest {
   private final String execId = "12345";
   private final String flowId = "sample_flowid";
   private final String jobId = "sample_jobid";
+  private final String jobNestedId = flowId + ":" + jobId;
   private final String jobAttempt = "1";
 
   @Before
@@ -38,7 +39,7 @@ public class KafkaLog4jUtilTest {
     appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, execId,
         flowId);
     Assert.assertNull(appender);
-    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, flowId, jobId, jobAttempt);
+    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, flowId, jobAttempt);
     Assert.assertNull(appender);
   }
 
@@ -49,14 +50,14 @@ public class KafkaLog4jUtilTest {
     appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, execId,
         flowId);
     Assert.assertNull(appender);
-    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, flowId, jobId, jobAttempt);
+    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, jobNestedId, jobAttempt);
     Assert.assertNull(appender);
   }
 
   @Test
   public void validateFields() {
     final String expectedFlowAppenderName = execId + "." + flowId;
-    final String expectedJobAppenderName = execId + "." + flowId + "." + jobId + "." + jobAttempt;
+    final String expectedJobAppenderName = execId + "." + jobNestedId + "." + jobAttempt;
 
     KafkaLog4jAppender appender;
     appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, execId, flowId);
@@ -64,7 +65,7 @@ public class KafkaLog4jUtilTest {
     Assert.assertEquals(appender.getTopic(), expectedFlowLoggingKafkaTopic);
     Assert.assertEquals(appender.getName(), expectedFlowAppenderName);
 
-    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, flowId, jobId, jobAttempt);
+    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, jobNestedId, jobAttempt);
     Assert.assertEquals(appender.getBrokerList(), expectedKafkaBrokers);
     Assert.assertEquals(appender.getTopic(), expectedJobLoggingKafkaTopic);
     Assert.assertEquals(appender.getName(), expectedJobAppenderName);

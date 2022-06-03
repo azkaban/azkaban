@@ -364,10 +364,11 @@ public class JobRunner extends JobRunnerBase implements Runnable {
       }
 
       if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED, false)) {
+        // Keep the names consistent as what we did in uploadLogFile()
         this.kafkaLog4jAppender =
             KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(this.azkabanProps,
-                String.valueOf(this.executionId),  this.node.getParentFlow().getFlowId(),
-                getJobId(), String.valueOf(this.node.getAttempt()));
+                String.valueOf(this.executionId), this.node.getNestedId(),
+                String.valueOf(this.node.getAttempt()));
 
         if (this.kafkaLog4jAppender != null) {
           this.logger.addAppender(this.kafkaLog4jAppender);

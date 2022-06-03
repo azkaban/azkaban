@@ -24,7 +24,7 @@ public class KafkaLog4jUtils {
   }
 
   private static KafkaLog4jAppender getAzkabanKafkaLog4jAppender(final Props props,
-      final String execId, final String flowId, final String jobId, final String jobAttempt,
+      final String execId, final String name, final String jobAttempt,
       final String topicConfigKey) {
     final boolean loggingKafkaEnabled =
         props.getBoolean(AZKABAN_LOGGING_KAFKA_ENABLED, false);
@@ -44,7 +44,7 @@ public class KafkaLog4jUtils {
       KafkaLog4jAppender kafkaLog4jAppender =
           (KafkaLog4jAppender) kafkaLog4jAppenderClassConstructor.newInstance();
 
-      String[] origIds = new String[] {execId, flowId, jobId, jobAttempt};
+      String[] origIds = new String[] {execId, name, jobAttempt};
       String[] nonNullIds = Arrays.stream(origIds).filter(Objects::nonNull).toArray(String[]::new);
 
       kafkaLog4jAppender.setBrokerList(props
@@ -67,12 +67,12 @@ public class KafkaLog4jUtils {
    *
    * @param props Azkaban props
    * @param execId Azkaban exec id
-   * @param flowId Azkaban flow id
+   * @param name Azkaban flow id
    * @return KafkaLog4jAppender
    */
   public static KafkaLog4jAppender getAzkabanFlowKafkaLog4jAppender(final Props props,
-      final String execId, final String flowId) {
-    return getAzkabanKafkaLog4jAppender(props, execId, flowId, null, null,
+      final String execId, final String name) {
+    return getAzkabanKafkaLog4jAppender(props, execId, name, null,
         ConfigurationKeys.AZKABAN_FLOW_LOGGING_KAFKA_TOPIC);
   }
 
@@ -81,14 +81,13 @@ public class KafkaLog4jUtils {
    *
    * @param props Azkaban props
    * @param execId Azkaban exec id
-   * @param flowId Azkaban flow id
-   * @param jobId Azkaban job id
+   * @param name Azkaban job's nested id
    * @param jobAttempt Azkaban job attempt
    * @return KafkaLog4jAppender
    */
   public static KafkaLog4jAppender getAzkabanJobKafkaLog4jAppender(final Props props,
-      final String execId, final String flowId, final String jobId, final String jobAttempt) {
-    return getAzkabanKafkaLog4jAppender(props, execId, flowId, jobId, jobAttempt,
+      final String execId, final String name, final String jobAttempt) {
+    return getAzkabanKafkaLog4jAppender(props, execId, name, jobAttempt,
         ConfigurationKeys.AZKABAN_JOB_LOGGING_KAFKA_TOPIC);
   }
 }
