@@ -291,9 +291,14 @@ public class Constants {
     public static final String HISTORY_SERVER_JOB_URL = "azkaban.server.external.history_server_job_url";
     public static final String SPARK_HISTORY_SERVER_JOB_URL = "azkaban.server.external.spark_history_server_job_url";
 
-    // Configures the Kafka appender for logging user jobs, specified for the exec server
-    public static final String AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST = "azkaban.server.logging.kafka.brokerList";
-    public static final String AZKABAN_SERVER_LOGGING_KAFKA_TOPIC = "azkaban.server.logging.kafka.topic";
+    // Configures the Kafka appender for logging user jobs and flows.
+    public static final String AZKABAN_LOGGING_KAFKA_ENABLED = "azkaban.logging.kafka.enabled";
+    public static final String AZKABAN_LOGGING_KAFKA_CLASS_PARAM = "azkaban.logging.kafka.class";
+    public static final String AZKABAN_LOGGING_KAFKA_BROKERS = "azkaban.logging.kafka.brokers";
+    public static final String AZKABAN_JOB_LOGGING_KAFKA_TOPIC = "azkaban.job.logging.kafka.topic";
+    public static final String AZKABAN_FLOW_LOGGING_KAFKA_TOPIC = "azkaban.flow.logging.kafka.topic";
+    public static final String AZKABAN_LOGGING_KAFKA_SCHEMA_REGISTRY_URL =
+        "azkaban.logging.kafka.schema.registry.url";
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
 
@@ -545,9 +550,6 @@ public class Constants {
   }
 
   public static class JobProperties {
-
-    // Job property that enables/disables using Kafka logging of user job logs
-    public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
 
     /*
      * this parameter is used to replace EXTRA_HCAT_LOCATION that could fail when one of the uris is not available.

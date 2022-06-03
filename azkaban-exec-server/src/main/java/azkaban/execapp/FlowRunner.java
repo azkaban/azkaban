@@ -66,6 +66,7 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.spi.ExecutorType;
+import azkaban.utils.KafkaLog4jUtils;
 import azkaban.utils.Props;
 import azkaban.utils.SwapQueue;
 import com.codahale.metrics.Timer;
@@ -98,6 +99,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import org.apache.commons.lang.StringUtils;
+import org.apache.kafka.log4jappender.KafkaLog4jAppender;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -140,6 +142,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       new ConcurrentHashMap<>();
   private final FlowRunnerProxy flowRunnerProxy;
   private final AzkabanEventReporter azkabanEventReporter;
+  private KafkaLog4jAppender kafkaLog4jAppender;
   private final AlerterHolder alerterHolder;
   private Optional<Double> cpuUtilized = Optional.empty();
   private Optional<Long> memoryUtilizedInBytes = Optional.empty();
@@ -281,6 +284,11 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   @VisibleForTesting
   ConcurrentHashMap<String, String> getJobEffectiveUsers() {
     return this.jobEffectiveUsers;
+  }
+
+  @VisibleForTesting
+  Logger getLogger() {
+    return this.logger;
   }
 
   public FlowRunner setFlowWatcher(final FlowWatcher watcher) {
@@ -510,15 +518,32 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     try {
       this.flowAppender = new FileAppender(this.loggerLayout, absolutePath, false);
       this.logger.addAppender(this.flowAppender);
+      if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED, false)) {
+        this.kafkaLog4jAppender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(this.azkabanProps,
+            String.valueOf(this.execId), this.flow.getFlowId());
+
+        if (this.kafkaLog4jAppender != null) {
+          this.logger.addAppender(this.kafkaLog4jAppender);
+          this.logger.setAdditivity(false);
+          this.logger.info("Attached new Kafka appender for flow");
+        }
+      }
     } catch (final IOException e) {
       this.logger.error("Could not open log file in " + this.execDir, e);
     }
   }
 
+  private void removeAppender(final Appender appender) {
+    if (appender != null) {
+      this.logger.removeAppender(appender);
+      appender.close();
+    }
+  }
+
   private void closeLogger() {
     if (!isContainerizedDispatchMethodEnabled() && this.logger != null) {
-      this.logger.removeAppender(this.flowAppender);
-      this.flowAppender.close();
+      removeAppender(this.flowAppender);
+      removeAppender(this.kafkaLog4jAppender);
 
       try {
         this.executorLoader.uploadLogFile(this.execId, "", 0, this.logFile);
