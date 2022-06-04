@@ -138,9 +138,6 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
 
   // Logging
   private static final Logger logger = Logger.getLogger(FlowContainer.class);
-  private static final String logFileName = "logs/azkaban-execserver.log";
-  private static final File logFile =
-          new File(String.valueOf(ContainerizedFlowPreparer.getCurrentDir()), logFileName);
 
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
@@ -587,8 +584,8 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     }
 
     try {
-      final File logFile = FlowContainer.logFile;
-      if (logFile.exists()) {
+      final File logFile = this.flowRunner.getFlowLogFile();
+      if (logFile != null && logFile.exists()) {
         return FileIOUtils.readUtf8File(logFile, startByte, length);
       } else {
         logger.warn(String.format("Flow log file does not exist for flow execId: %d", execId));
@@ -800,18 +797,6 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   }
 
   /**
-   * Uploads the log file to the db for persistence.
-   * @param execId execution id of the flow.
-   */
-  private void uploadLogFile(final int execId) {
-    try {
-      this.executorLoader.uploadLogFile(execId, "", 0, FlowContainer.logFile);
-    } catch (final ExecutorManagerException e) {
-      e.printStackTrace();
-    }
-  }
-
-  /**
    * handleEvent : handles events related to flow state machine
    * @param : event emitted by FlowRunner
    */
@@ -880,10 +865,6 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
       logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
     }
     logger.info("Sayonara!");
-    if (this.flowRunner != null) {
-      // If the flowRunner is not created, the execId would be invalid.
-      uploadLogFile(this.flowRunner.getExecutionId());
-    }
     System.exit(0);
   }
 }

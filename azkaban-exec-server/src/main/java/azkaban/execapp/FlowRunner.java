@@ -266,6 +266,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     // Create logger and execution dir in flowRunner initialization instead of flow runtime to avoid NPE
     // where the uninitialized logger is used in flow preparing state
     createLogger(this.flow.getFlowId());
+
+    // Tell if containerization is enabled or not in flow logs.
+    this.logger.info("Is Containerization Enabled: " + isContainerizedDispatchMethodEnabled());
     this.azkabanEventReporter = azkabanEventReporter;
 
     this.projectFileHandler =
@@ -497,15 +500,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
    * setup logger and execution dir for the flowId
    */
   private void createLogger(final String flowId) {
-    // Create logger
-    // If this is a containerized execution then there is no need for a custom logger.
-    // The logs would be appended to server logs and persisted from FlowContainer.
-    if (isContainerizedDispatchMethodEnabled()) {
-      this.logger = Logger.getLogger(FlowRunner.class);
-      return;
-    }
-
-    // Not containerized execution, fallback to existing logic.
     final String loggerName = this.execId + "." + flowId;
     this.logger = Logger.getLogger(loggerName);
 
@@ -541,7 +535,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   }
 
   private void closeLogger() {
-    if (!isContainerizedDispatchMethodEnabled() && this.logger != null) {
+    if (this.logger != null) {
       removeAppender(this.flowAppender);
       removeAppender(this.kafkaLog4jAppender);
 
