@@ -16,7 +16,6 @@
 package azkaban.webapp;
 
 import static azkaban.Constants.AZKABAN_SERVLET_CONTEXT_KEY;
-import static azkaban.Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID;
 import static azkaban.Constants.ConfigurationKeys.ENABLE_QUARTZ;
 import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -111,7 +110,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.TimeZone;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -121,7 +119,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;

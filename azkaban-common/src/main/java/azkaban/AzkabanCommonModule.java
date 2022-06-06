@@ -21,6 +21,7 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLE
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzkabanDataSource;
@@ -44,6 +45,8 @@ import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.logs.JdbcExecutionLogsLoader;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectCache;
@@ -94,6 +97,8 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
+    bind(ExecutionLogsLoader.class).annotatedWith(Names.named(NEARLINE_LOGS)).to(
+        JdbcExecutionLogsLoader.class);
     bind(ProjectCache.class).to(InMemoryProjectCache.class);
     bind(OsCpuUtil.class).toProvider(() -> {
       final int cpuLoadPeriodSec = this.props

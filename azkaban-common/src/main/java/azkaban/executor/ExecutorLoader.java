@@ -161,6 +161,7 @@ public interface ExecutorLoader {
    *
    * @return isSuccess
    */
+  @Deprecated
   void postExecutorEvent(Executor executor, EventType type, String user,
       String message) throws ExecutorManagerException;
 
@@ -175,6 +176,7 @@ public interface ExecutorLoader {
    *
    * @return List<ExecutorLogEvent>
    */
+  @Deprecated
   List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
       int offset) throws ExecutorManagerException;
 
@@ -259,13 +261,7 @@ public interface ExecutorLoader {
   boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 
-  LogData fetchLogs(int execId, String name, int attempt, int startByte,
-      int endByte) throws ExecutorManagerException;
-
   List<Object> fetchAttachments(int execId, String name, int attempt)
-      throws ExecutorManagerException;
-
-  void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException;
 
   void uploadAttachmentFile(ExecutableNode node, File file)
@@ -304,9 +300,6 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
-      throws ExecutorManagerException;
-
-  int removeExecutionLogsByTime(long millis, int recordCleanupLimit)
       throws ExecutorManagerException;
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;

@@ -19,8 +19,6 @@ package azkaban.execapp;
 
 import azkaban.cluster.ClusterModule;
 import azkaban.common.ExecJettyServerModule;
-import azkaban.executor.ExecutorLoader;
-import azkaban.executor.JdbcExecutorLoader;
 import com.google.inject.AbstractModule;
 
 
@@ -35,7 +33,6 @@ public class AzkabanExecServerModule extends AbstractModule {
   protected void configure() {
     install(new ExecJettyServerModule());
     install(new ClusterModule());
-    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
   }
 
 }

@@ -16,12 +16,16 @@
 
 package azkaban.executor;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.project.ProjectManager;
@@ -50,6 +54,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -85,6 +90,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   @Inject
   public ExecutorManager(final Props azkProps,
       final ProjectManager projectManager, final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final RunningExecutions runningExecutions,
@@ -92,8 +98,8 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) {
-    super(azkProps, projectManager, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener(),
-        new DummyContainerizationMetricsImpl());
+    super(azkProps, projectManager, executorLoader, executionLogsLoader, commonMetrics, apiGateway,
+        null, new DummyEventListener(), new DummyContainerizationMetricsImpl());
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;

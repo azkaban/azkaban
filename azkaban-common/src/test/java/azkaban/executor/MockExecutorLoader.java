@@ -139,20 +139,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public void uploadLogFile(final int execId, final String name, final int attempt,
-      final File... files)
-      throws ExecutorManagerException {
-    for (final File file : files) {
-      try {
-        final String logs = FileUtils.readFileToString(file, "UTF-8");
-        LOGGER.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
     final ExecutableFlow toUpdate = this.flows.get(flow.getExecutionId());
@@ -225,14 +211,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte,
-      final int endByte) throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
   public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
@@ -294,13 +272,6 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  @Override
-  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return 0;
   }
 
   @Override

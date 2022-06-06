@@ -15,6 +15,7 @@
  */
 package azkaban.execapp;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -38,6 +39,7 @@ import azkaban.executor.IFlowRunnerManager;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metric.MetricReportManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLoader;
@@ -85,6 +87,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -136,6 +139,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
   private final ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
@@ -172,6 +176,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
   @Inject
   public FlowRunnerManager(final Props props,
       final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
       final ProjectLoader projectLoader,
       final ProjectStorageManager projectStorageManager,
       final TriggerManager triggerManager,
@@ -203,6 +208,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
     this.executorService = createExecutorService(this.numThreads);
 
     this.executorLoader = executorLoader;
+    this.executionLogsLoader = executionLogsLoader;
     this.projectLoader = projectLoader;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
@@ -527,9 +533,9 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
         .configure(flow, FileIOUtils.getDirectory(this.projectDirectory, flow.getDirectory()));
 
     final FlowRunner runner =
-        new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
-            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder, this.commonMetrics,
-            this.execMetrics);
+        new FlowRunner(flow, this.executorLoader, this.executionLogsLoader, this.projectLoader,
+            this.jobtypeManager, this.azkabanProps, this.azkabanEventReporter, this.alerterHolder,
+            this.commonMetrics, this.execMetrics);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)

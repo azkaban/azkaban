@@ -15,8 +15,11 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+
 import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.ProjectManager;
@@ -31,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,12 +54,13 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   @Inject
   public ExecutionController(final Props azkProps,
       final ProjectManager projectManager, final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
   ExecutorHealthChecker executorHealthChecker, final EventListener eventListener,
       final ContainerizationMetrics containerizationMetrics) {
-    super(azkProps, projectManager, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
-        containerizationMetrics);
+    super(azkProps, projectManager, executorLoader, executionLogsLoader, commonMetrics, apiGateway,
+        alerterHolder, eventListener, containerizationMetrics);
     this.executorHealthChecker = executorHealthChecker;
   }
 

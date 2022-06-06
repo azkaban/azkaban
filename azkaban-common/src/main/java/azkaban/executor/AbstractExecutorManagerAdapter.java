@@ -15,6 +15,8 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
@@ -24,6 +26,7 @@ import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
 import azkaban.flow.FlowUtils;
 import azkaban.jobcallback.JobCallbackManager;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
@@ -46,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.inject.Named;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
@@ -60,6 +64,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   protected final Props azkProps;
   protected final ProjectManager projectManager;
   protected final ExecutorLoader executorLoader;
+  protected final ExecutionLogsLoader nearlineExecutionLogsLoader;
   protected final CommonMetrics commonMetrics;
   protected final ExecutorApiGateway apiGateway;
   protected final AlerterHolder alerterHolder;
@@ -72,6 +77,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   protected AbstractExecutorManagerAdapter(final Props azkProps,
       final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
+      final ExecutionLogsLoader nearlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final AlerterHolder alerterHolder,
@@ -80,6 +86,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.azkProps = azkProps;
     this.projectManager = projectManager;
     this.executorLoader = executorLoader;
+    this.nearlineExecutionLogsLoader = nearlineExecutionLogsLoader;
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
@@ -438,7 +445,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, offsetParam, lengthParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      return this.executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
+      return this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
           length);
     }
   }
@@ -463,7 +470,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      return this.executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
+      return this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
           offset, length);
     }
   }

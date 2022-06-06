@@ -747,6 +747,11 @@ public class Constants {
     public static final String ENV_MEMORY_REQUEST = "MEMORY_REQUEST";
   }
 
+  public static class LogConstants {
+    public static final String NEARLINE_LOGS = "nearlineLogs";
+    public static final String OFFLINE_LOGS = "offlineLogs";
+  }
+
   public static class ImageMgmtConstants {
 
     public static final String IMAGE_TYPE = "imageType";

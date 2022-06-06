@@ -16,6 +16,7 @@
 
 package azkaban.container;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.common.ExecJettyServerModule.EXEC_CONTAINER_CONTEXT;
 import static azkaban.common.ExecJettyServerModule.EXEC_JETTY_SERVER;
@@ -27,6 +28,7 @@ import azkaban.Constants.PluginManager;
 import azkaban.cluster.ClusterModule;
 import azkaban.cluster.ClusterRouter;
 import azkaban.common.ExecJettyServerModule;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.utils.ServerUtils;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
@@ -144,6 +146,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
 
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final ProjectLoader projectLoader;
   private final TriggerManager triggerManager;
   private final JobTypeManager jobTypeManager;
@@ -177,6 +180,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   @Inject
   public FlowContainer(final Props props,
       final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
       final ProjectLoader projectLoader,
       final ClusterRouter clusterRouter,
       final TriggerManager triggerManager,
@@ -199,6 +203,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     }
 
     this.executorLoader = executorLoader;
+    this.executionLogsLoader = executionLogsLoader;
     this.projectLoader = projectLoader;
 
     // setup executor service
@@ -416,7 +421,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     final MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
-    this.flowRunner = new FlowRunner(flow, this.executorLoader,
+    this.flowRunner = new FlowRunner(flow, this.executorLoader, this.executionLogsLoader,
         this.projectLoader, this.jobTypeManager, this.azKabanProps, this.eventReporter,
         this.alerterHolder, commonMetrics, execMetrics);
     this.flowRunner.setFlowWatcher(watcher)
@@ -805,7 +810,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
    */
   private void uploadLogFile(final int execId) {
     try {
-      this.executorLoader.uploadLogFile(execId, "", 0, FlowContainer.logFile);
+      this.executionLogsLoader.uploadLogFile(execId, "", 0, FlowContainer.logFile);
     } catch (final ExecutorManagerException e) {
       e.printStackTrace();
     }

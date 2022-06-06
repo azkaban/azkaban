@@ -29,6 +29,7 @@ import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
@@ -65,7 +66,8 @@ public class ExecutionControllerTest {
   private List<Executor> activeExecutors = new ArrayList<>();
   private List<Executor> allExecutors = new ArrayList<>();
   private ExecutionController controller;
-  private ExecutorLoader loader;
+  private ExecutorLoader executorLoader;
+  private ExecutionLogsLoader executionLogsLoader;
   private ExecutorApiGateway apiGateway;
   private AlerterHolder alertHolder;
   private ExecutorHealthChecker executorHealthChecker;
@@ -85,20 +87,22 @@ public class ExecutionControllerTest {
   public void setup() throws Exception {
     this.props = new Props();
     this.user = TestUtils.getTestUser();
-    this.loader = mock(ExecutorLoader.class);
+    this.executorLoader = mock(ExecutorLoader.class);
+    this.executionLogsLoader = mock(ExecutionLogsLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
-    this.controller = new ExecutionController(this.props, null, this.loader, this.commonMetrics,
-        this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener, this.containerizationMetrics);
+    this.controller = new ExecutionController(this.props, null, this.executorLoader,
+        this.executionLogsLoader, this.commonMetrics, this.apiGateway, this.alertHolder,
+        this.executorHealthChecker, this.eventListener, this.containerizationMetrics);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);
     final Executor executor3 = new Executor(3, "localhost", 12347, false);
     this.activeExecutors = ImmutableList.of(executor1, executor2);
     this.allExecutors = ImmutableList.of(executor1, executor2, executor3);
-    when(this.loader.fetchActiveExecutors()).thenReturn(this.activeExecutors);
+    when(this.executorLoader.fetchActiveExecutors()).thenReturn(this.activeExecutors);
 
     this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
@@ -115,9 +119,9 @@ public class ExecutionControllerTest {
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
+    when(this.executorLoader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
-    when(this.loader.fetchQueuedFlows()).thenReturn(this.queuedFlows);
+    when(this.executorLoader.fetchQueuedFlows()).thenReturn(this.queuedFlows);
   }
 
   @Test
@@ -180,7 +184,7 @@ public class ExecutionControllerTest {
   @Test
   public void testSubmitFlows() throws Exception {
     this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
-    verify(this.loader).uploadExecutableFlow(this.flow1);
+    verify(this.executorLoader).uploadExecutableFlow(this.flow1);
     Assert.assertEquals(this.controller.eventListener, this.eventListener);
     this.controller.fireEventListeners(Event.create(flow1,
         EventType.FLOW_STATUS_CHANGED,
@@ -257,7 +261,7 @@ public class ExecutionControllerTest {
     // should succeed after unlocking the flow
     this.flow1.setLocked(false);
     this.controller.submitExecutableFlow(this.flow1, this.user.getUserId());
-    verify(this.loader).uploadExecutableFlow(this.flow1);
+    verify(this.executorLoader).uploadExecutableFlow(this.flow1);
   }
 
   /**
@@ -267,7 +271,7 @@ public class ExecutionControllerTest {
    */
   @Test
   public void testGetApplicationIdsFromLog() throws Exception {
-    when(this.loader.fetchActiveFlowByExecId(this.flow1.getExecutionId()))
+    when(this.executorLoader.fetchActiveFlowByExecId(this.flow1.getExecutionId()))
         .thenReturn(new Pair<>(this.ref1, this.flow1));
 
     // Verify that application ids are obtained successfully from the log data.
@@ -320,8 +324,8 @@ public class ExecutionControllerTest {
 
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
       Exception {
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
-    when(this.loader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    when(this.executorLoader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
+    when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     this.controller.submitExecutableFlow(flow, this.user.getUserId());
     this.unfinishedFlows.put(flow.getExecutionId(), new Pair<>(ref, flow));
   }
@@ -331,6 +335,6 @@ public class ExecutionControllerTest {
         .of(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1),
             this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
+    when(this.executorLoader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
   }
 }
