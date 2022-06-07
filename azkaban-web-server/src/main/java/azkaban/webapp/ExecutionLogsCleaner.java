@@ -25,9 +25,8 @@ public class ExecutionLogsCleaner {
    private final ExecutionLogsLoader executionLogsLoader;
    private final Props azkProps;
    private long executionLogsRetentionMs;
-   // 12 weeks
-   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
-       * 24 * 60 * 60 * 1000L;
+   // 30 days
+   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 30 * 24 * 60 * 60 * 1000L;
 
    // 1 hour
    private static final long DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS = 60 * 60;
