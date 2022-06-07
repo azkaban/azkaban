@@ -160,7 +160,7 @@ public class JobCallbackManager implements EventListener<Event> {
     if (jobStatus == Status.SUCCEEDED) {
       jobCallBackStatusEnum = JobCallbackStatusEnum.SUCCESS;
     } else if (jobStatus == Status.FAILED
-        || jobStatus == Status.FAILED_FINISHING || jobStatus == Status.KILLED) {
+        || jobStatus == Status.FAILED_FINISHING || jobStatus == Status.KILLED || jobStatus == Status.EXECUTION_STOPPED) {
       jobCallBackStatusEnum = JobCallbackStatusEnum.FAILURE;
     } else {
       logger.info("!!!! WE ARE NOT SUPPORTING JOB CALLBACKS FOR STATUS: "
