@@ -53,6 +53,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -90,7 +91,8 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   @Inject
   public ExecutorManager(final Props azkProps,
       final ProjectManager projectManager, final ExecutorLoader executorLoader,
-      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      @Named(OFFLINE_LOGS) @Nullable final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final RunningExecutions runningExecutions,
@@ -98,8 +100,9 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) {
-    super(azkProps, projectManager, executorLoader, executionLogsLoader, commonMetrics, apiGateway,
-        null, new DummyEventListener(), new DummyContainerizationMetricsImpl());
+    super(azkProps, projectManager, executorLoader, nearlineExecutionLogsLoader,
+        offlineExecutionLogsLoader, commonMetrics, apiGateway, null, new DummyEventListener(),
+        new DummyContainerizationMetricsImpl());
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;

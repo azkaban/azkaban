@@ -18,10 +18,12 @@ package azkaban;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_OFFLINE_LOGS_LOADER_CLASS_PARAM;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
 import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzkabanDataSource;
@@ -63,6 +65,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.google.inject.util.Providers;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import javax.inject.Inject;
@@ -99,6 +102,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
     bind(ExecutionLogsLoader.class).annotatedWith(Names.named(NEARLINE_LOGS)).to(
         JdbcExecutionLogsLoader.class);
+    bindOfflineLogsLoader();
     bind(ProjectCache.class).to(InMemoryProjectCache.class);
     bind(OsCpuUtil.class).toProvider(() -> {
       final int cpuLoadPeriodSec = this.props
@@ -181,6 +185,37 @@ public class AzkabanCommonModule extends AbstractModule {
       }
     }
     return null;
+  }
+
+  private void bindOfflineLogsLoader() {
+    final Class<?> offlineLogsLoader =
+        this.props.getClass(AZKABAN_OFFLINE_LOGS_LOADER_CLASS_PARAM, null);
+    ExecutionLogsLoader executionLogsLoader = null;
+    if (offlineLogsLoader != null && offlineLogsLoader.getConstructors().length > 0) {
+      this.logger.info("Loading offline logs loader class " + offlineLogsLoader.getName());
+      try {
+        final Constructor<?> offlineLogsLoaderConstructor =
+            offlineLogsLoader.getConstructor(Props.class);
+        executionLogsLoader =
+            (ExecutionLogsLoader) offlineLogsLoaderConstructor.newInstance(this.props);
+      } catch (final InvocationTargetException e) {
+        this.logger.error(e.getTargetException().getMessage());
+        if (e.getTargetException() instanceof IllegalArgumentException) {
+          throw new IllegalArgumentException(e);
+        } else {
+          throw new RuntimeException(e);
+        }
+      } catch (final Exception e) {
+        this.logger.error("Could not instantiate OfflineLogsLoader " + offlineLogsLoader.getName());
+        throw new RuntimeException(e);
+      }
+    }
+
+    if (offlineLogsLoader == null) {
+      bind(ExecutionLogsLoader.class).annotatedWith(Names.named(OFFLINE_LOGS)).toProvider(Providers.of(null));
+    } else {
+      bind(ExecutionLogsLoader.class).annotatedWith(Names.named(OFFLINE_LOGS)).toInstance(executionLogsLoader);
+    }
   }
 
   private void bindImageManagementDependencies() {

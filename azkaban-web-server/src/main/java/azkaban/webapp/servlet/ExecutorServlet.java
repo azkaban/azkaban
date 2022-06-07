@@ -1068,6 +1068,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
               "ExecutorManagerAdapter is not of type: " + ContainerizedDispatchManager.class
                   .getName());
         }
+      } else if (propType.equals("general")) {
+        updateGeneralProps(req, ret);
       } else {
         ret.put("error", "Unsupported propType: " + propType);
       }
@@ -1107,6 +1109,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       case REMOVE_FROM_DENY_LIST:
         containerizedDispatchManager.getContainerProxyUserCriteria()
             .removeFromDenyList(ServletUtils.getSetFromString(val));
+        break;
+      default:
+        break;
+    }
+  }
+
+  private void updateGeneralProps(final HttpServletRequest req,
+      final HashMap<String, Object> ret)
+      throws ServletException {
+    String subType = getParam(req, "subType");
+    GeneralPropUpdate generalPropUpdate = GeneralPropUpdate.fromParam(subType);
+    String val = getParam(req, "val");
+    switch (generalPropUpdate) {
+      case ENABLE_OFFLINE_LOGS_LOADER:
+        this.executorManagerAdapter.enableOfflineLogsLoader(Boolean.parseBoolean(val));
         break;
       default:
         break;
@@ -1165,6 +1182,30 @@ enum ContainerPropUpdate {
       }
     }
     throw new IllegalArgumentException(
-        "No ContainerPropUpdates corresponding to param value " + param);
+        "No ContainerPropUpdate corresponding to param value " + param);
+  }
+}
+
+enum GeneralPropUpdate {
+  ENABLE_OFFLINE_LOGS_LOADER("enableOfflineLogsLoader");
+
+  private final String param;
+
+  GeneralPropUpdate(String param) {
+    this.param = param;
+  }
+
+  public String getParam() {
+    return param;
+  }
+
+  public static GeneralPropUpdate fromParam(String param) {
+    for (GeneralPropUpdate value : GeneralPropUpdate.values()) {
+      if (value.getParam().equals(param)) {
+        return value;
+      }
+    }
+    throw new IllegalArgumentException(
+        "No GeneralPropUpdate corresponding to param value " + param);
   }
 }

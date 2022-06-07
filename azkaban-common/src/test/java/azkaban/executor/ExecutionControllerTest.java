@@ -67,7 +67,8 @@ public class ExecutionControllerTest {
   private List<Executor> allExecutors = new ArrayList<>();
   private ExecutionController controller;
   private ExecutorLoader executorLoader;
-  private ExecutionLogsLoader executionLogsLoader;
+  private ExecutionLogsLoader nearlineExecutionLogsLoader;
+  private ExecutionLogsLoader offlineExecutionLogsLoader;
   private ExecutorApiGateway apiGateway;
   private AlerterHolder alertHolder;
   private ExecutorHealthChecker executorHealthChecker;
@@ -88,14 +89,16 @@ public class ExecutionControllerTest {
     this.props = new Props();
     this.user = TestUtils.getTestUser();
     this.executorLoader = mock(ExecutorLoader.class);
-    this.executionLogsLoader = mock(ExecutionLogsLoader.class);
+    this.nearlineExecutionLogsLoader = mock(ExecutionLogsLoader.class);
+    this.offlineExecutionLogsLoader = mock(ExecutionLogsLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.alertHolder = mock(AlerterHolder.class);
     this.executorHealthChecker = mock(ExecutorHealthChecker.class);
     this.controller = new ExecutionController(this.props, null, this.executorLoader,
-        this.executionLogsLoader, this.commonMetrics, this.apiGateway, this.alertHolder,
-        this.executorHealthChecker, this.eventListener, this.containerizationMetrics);
+        this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader, this.commonMetrics,
+        this.apiGateway, this.alertHolder, this.executorHealthChecker, this.eventListener,
+        this.containerizationMetrics);
 
     final Executor executor1 = new Executor(1, "localhost", 12345, true);
     final Executor executor2 = new Executor(2, "localhost", 12346, true);

@@ -75,7 +75,8 @@ public class ContainerizedDispatchManagerTest {
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new HashMap<>();
   private List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows = new ArrayList<>();
   private ExecutorLoader executorLoader;
-  private ExecutionLogsLoader executionLogsLoader;
+  private ExecutionLogsLoader nearlineExecutionLogsLoader;
+  private ExecutionLogsLoader offlineExecutionLogsLoader;
   private ExecutorApiGateway apiGateway;
   private ContainerizedImpl containerizedImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
@@ -100,7 +101,8 @@ public class ContainerizedDispatchManagerTest {
     this.props = new Props();
     this.user = TestUtils.getTestUser();
     this.executorLoader = mock(ExecutorLoader.class);
-    this.executionLogsLoader = mock(ExecutionLogsLoader.class);
+    this.nearlineExecutionLogsLoader = mock(ExecutionLogsLoader.class);
+    this.offlineExecutionLogsLoader = mock(ExecutionLogsLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.containerizedImpl = mock(ContainerizedImpl.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
@@ -409,8 +411,9 @@ public class ContainerizedDispatchManagerTest {
   private void initializeContainerizedDispatchImpl() throws Exception{
     this.containerizedDispatchManager =
         new ContainerizedDispatchManager(this.props, null, this.executorLoader,
-            this.executionLogsLoader, this.commonMetrics, this.apiGateway, this.containerizedImpl,
-            null, null, this.eventListener, this.containerizationMetrics, null);
+            this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader, this.commonMetrics,
+            this.apiGateway, this.containerizedImpl, null, null, this.eventListener,
+            this.containerizationMetrics, null);
   }
 
   @Test
@@ -533,8 +536,9 @@ public class ContainerizedDispatchManagerTest {
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
         new ContainerizedDispatchManager(containerEnabledProps, null, this.executorLoader,
-            this.executionLogsLoader, this.commonMetrics, apiGateway, this.containerizedImpl,null,
-            null, this.eventListener, this.containerizationMetrics, null);
+            this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader, this.commonMetrics,
+            apiGateway, this.containerizedImpl, null, null, this.eventListener,
+            this.containerizationMetrics, null);
     dispatchManager.start();
     return dispatchManager;
   }

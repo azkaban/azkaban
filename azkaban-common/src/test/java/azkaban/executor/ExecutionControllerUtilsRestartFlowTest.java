@@ -36,7 +36,8 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private Flow flow;
   private ExecutableFlow flow1;
   private ExecutorLoader executorLoader;
-  private ExecutionLogsLoader executionLogsLoader;
+  private ExecutionLogsLoader nearlineExecutionLogsLoader;
+  private ExecutionLogsLoader offlineExecutionLogsLoader;
   private User user;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private final CommonMetrics commonMetrics = new CommonMetrics(
@@ -69,12 +70,12 @@ public class ExecutionControllerUtilsRestartFlowTest {
 
     this.executorLoader = new MockExecutorLoader();
     this.executorLoader.uploadExecutableFlow(this.flow1);
-    this.executionLogsLoader = new MockExecutionLogsLoader();
+    this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
 
     this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, null,
-        this.executorLoader, this.executionLogsLoader, this.commonMetrics,
-        mock(ExecutorApiGateway.class), mock(ContainerizedImpl.class),null, null,
-        new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
+        this.executorLoader, this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader,
+        this.commonMetrics, mock(ExecutorApiGateway.class), mock(ContainerizedImpl.class),null,
+        null, new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
     this.projectManager = mock(ProjectManager.class);
     when(this.projectManager.getProject(projectId)).thenReturn(this.project);
 

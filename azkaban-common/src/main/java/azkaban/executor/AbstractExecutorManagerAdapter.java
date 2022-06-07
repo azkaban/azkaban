@@ -15,7 +15,7 @@
  */
 package azkaban.executor;
 
-import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_OFFLINE_LOGS_LOADER_ENABLED;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Named;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
@@ -62,9 +61,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
   private static final Logger logger = Logger.getLogger(AbstractExecutorManagerAdapter.class);
   protected final Props azkProps;
+  protected boolean offlineLogsLoaderEnabled;
   protected final ProjectManager projectManager;
   protected final ExecutorLoader executorLoader;
   protected final ExecutionLogsLoader nearlineExecutionLogsLoader;
+  protected final Optional<ExecutionLogsLoader> offlineExecutionLogsLoader;
   protected final CommonMetrics commonMetrics;
   protected final ExecutorApiGateway apiGateway;
   protected final AlerterHolder alerterHolder;
@@ -78,15 +79,19 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
       final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final AlerterHolder alerterHolder,
       final EventListener eventListener,
       final ContainerizationMetrics containerizationMetrics) {
     this.azkProps = azkProps;
+    this.offlineLogsLoaderEnabled = this.azkProps.getBoolean(AZKABAN_OFFLINE_LOGS_LOADER_ENABLED,
+        false);
     this.projectManager = projectManager;
     this.executorLoader = executorLoader;
     this.nearlineExecutionLogsLoader = nearlineExecutionLogsLoader;
+    this.offlineExecutionLogsLoader = Optional.ofNullable(offlineExecutionLogsLoader);
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
@@ -97,6 +102,16 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     this.addListener(eventListener);
     ServerUtils.configureJobCallback(logger, azkProps);
     this.addListener(JobCallbackManager.getInstance());
+  }
+
+  @Override
+  public void enableOfflineLogsLoader(boolean enabled) {
+    this.offlineLogsLoaderEnabled = enabled;
+  }
+
+  @Override
+  public boolean isOfflineLogsLoaderEnabled() {
+    return this.offlineLogsLoaderEnabled;
   }
 
   /**
@@ -445,8 +460,18 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, offsetParam, lengthParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      return this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
-          length);
+      LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0,
+          offset, length);
+
+      // Return offline logs if nearline logs are empty or the flow in kubernetes pod crashed
+      if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
+          (logData.getLength() == 0 ||
+              (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
+                  (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
+        return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), "", 0,
+            offset, length);
+      }
+      return logData;
     }
   }
 
@@ -470,8 +495,22 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      return this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
-          offset, length);
+      LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId,
+          attempt, offset, length);
+
+      // Return offline logs if nearline logs are empty or the flow and job in kubernetes pod
+      // crashed
+      if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
+          (logData.getLength() == 0 ||
+              (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
+                  (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
+        final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
+        if (node.getStatus() == Status.KILLED || node.getStatus() == Status.EXECUTION_STOPPED) {
+          return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), jobId,
+              attempt, offset, length);
+        }
+      }
+      return logData;
     }
   }
 
@@ -591,7 +630,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
       // so we need to manually send one here.
       this.fireEventListeners(Event.create(executableFlow,
-      EventType.FLOW_FINISHED, new EventData(executableFlow)));
+          EventType.FLOW_FINISHED, new EventData(executableFlow)));
       // Throwing exception to make the reason appear on the UI.
       throw new ExecutorManagerException(finalizingReason
           + " Finalizing the flow.");

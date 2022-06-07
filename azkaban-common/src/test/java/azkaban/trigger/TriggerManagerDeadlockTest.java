@@ -52,7 +52,8 @@ public class TriggerManagerDeadlockTest {
   TriggerLoader loader;
   TriggerManager triggerManager;
   ExecutorLoader executorLoader;
-  ExecutionLogsLoader executionLogsLoader;
+  ExecutionLogsLoader nearlineExecutionLogsLoader;
+  ExecutionLogsLoader offlineExecutionLogsLoader;
   ExecutorApiGateway apiGateway;
   RunningExecutions runningExecutions;
   private ExecutorManagerUpdaterStage updaterStage;
@@ -67,7 +68,8 @@ public class TriggerManagerDeadlockTest {
     props.put("trigger.scan.interval", 1000);
     props.put(ConfigurationKeys.EXECUTOR_PORT, 12321);
     this.executorLoader = new MockExecutorLoader();
-    this.executionLogsLoader = new MockExecutionLogsLoader();
+    this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
+    this.offlineExecutionLogsLoader = new MockExecutionLogsLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.runningExecutions = new RunningExecutions();
     this.updaterStage = new ExecutorManagerUpdaterStage();
@@ -82,9 +84,10 @@ public class TriggerManagerDeadlockTest {
   private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
     final ActiveExecutors activeExecutors = new ActiveExecutors(this.executorLoader);
     final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
-    return new ExecutorManager(props, null, this.executorLoader, this.executionLogsLoader,
-        this.commonMetrics, this.apiGateway, this.runningExecutions, activeExecutors,
-        this.updaterStage, this.executionFinalizer, updaterThread);
+    return new ExecutorManager(props, null, this.executorLoader, this.nearlineExecutionLogsLoader,
+        this.offlineExecutionLogsLoader, this.commonMetrics, this.apiGateway,
+        this.runningExecutions, activeExecutors, this.updaterStage, this.executionFinalizer,
+        updaterThread);
   }
 
   private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {

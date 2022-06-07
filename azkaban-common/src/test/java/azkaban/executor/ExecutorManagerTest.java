@@ -70,7 +70,8 @@ public class ExecutorManagerTest {
       new MetricsManager(new MetricRegistry()));
   private ExecutorManager manager;
   private ExecutorLoader executorLoader;
-  private ExecutionLogsLoader executionLogsLoader;
+  private ExecutionLogsLoader nearlineExecutionLogsLoader;
+  private ExecutionLogsLoader offlineExecutionLogsLoader;
   private Props props;
   private User user;
   private ExecutableFlow flow1;
@@ -90,7 +91,8 @@ public class ExecutorManagerTest {
     this.alertHolder = mock(AlerterHolder.class);
     when(this.alertHolder.get("email")).thenReturn(this.mailAlerter);
     this.executorLoader = new MockExecutorLoader();
-    this.executionLogsLoader = new MockExecutionLogsLoader();
+    this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
+    this.offlineExecutionLogsLoader = new MockExecutionLogsLoader();
     this.runningExecutions = new RunningExecutions();
     this.updaterStage = new ExecutorManagerUpdaterStage();
   }
@@ -165,8 +167,9 @@ public class ExecutorManagerTest {
     updaterThread.waitTimeIdleMs = 0;
     updaterThread.waitTimeMs = 0;
     final ExecutorManager executorManager = new ExecutorManager(this.props, null,
-        this.executorLoader, this.executionLogsLoader, this.commonMetrics, this.apiGateway,
-        this.runningExecutions, activeExecutors, this.updaterStage, executionFinalizer,
+        this.executorLoader, this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader,
+        this.commonMetrics, this.apiGateway, this.runningExecutions, activeExecutors,
+        this.updaterStage, executionFinalizer,
         updaterThread);
     executorManager.setSleepAfterDispatchFailure(Duration.ZERO);
     executorManager.initialize();

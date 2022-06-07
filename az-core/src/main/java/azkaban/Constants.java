@@ -299,6 +299,10 @@ public class Constants {
     public static final String AZKABAN_FLOW_LOGGING_KAFKA_TOPIC = "azkaban.flow.logging.kafka.topic";
     public static final String AZKABAN_LOGGING_KAFKA_SCHEMA_REGISTRY_URL =
         "azkaban.logging.kafka.schema.registry.url";
+    // This is designed for viewing logs emitted from above kafka appender
+    public static final String AZKABAN_OFFLINE_LOGS_LOADER_ENABLED = "azkaban.offline.logs.loader.enabled";
+    public static final String AZKABAN_OFFLINE_LOGS_LOADER_CLASS_PARAM =
+        "azkaban.offline.logs.loader.class";
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
 

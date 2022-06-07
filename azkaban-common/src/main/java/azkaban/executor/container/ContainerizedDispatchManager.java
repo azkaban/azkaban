@@ -16,6 +16,7 @@
 package azkaban.executor.container;
 
 import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
 
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
@@ -90,7 +91,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final Props azkProps,
       final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
-      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      @Named(OFFLINE_LOGS) @Nullable final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl,
@@ -100,8 +102,9 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final ContainerizationMetrics containerizationMetrics,
       @Nullable final ExecutorHealthChecker executorHealthChecker)
       throws ExecutorManagerException {
-    super(azkProps, projectManager, executorLoader, executionLogsLoader, commonMetrics, apiGateway,
-        alerterHolder, eventListener, containerizationMetrics);
+    super(azkProps, projectManager, executorLoader, nearlineExecutionLogsLoader,
+        offlineExecutionLogsLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
+        containerizationMetrics);
     rateLimiter =
         RateLimiter.create(azkProps
             .getInt(ContainerizedDispatchManagerProperties.CONTAINERIZED_CREATION_RATE_LIMIT, 20));
