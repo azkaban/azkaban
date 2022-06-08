@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class KubernetesContainerizedImpl extends EventHandler implements ContainerizedImpl {
 
-  public static final String DEFAULT_FLOW_CONTAINER_NAME_PREFIX = "az-flow-container";
+  public static final String DEFAULT_FLOW_CONTAINER_NAME_PREFIX = "az-platform-image";
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
@@ -135,6 +135,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String namespace;
   private final ApiClient client;
   private final CoreV1Api coreV1Api;
+  // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
+  // See more here: https://github.com/kubernetes-client/java/issues/86
+  private final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient;
+  private final GenericKubernetesApi<V1Pod, V1PodList> podClient;
   private final Props azkProps;
   private final ExecutorLoader executorLoader;
   private final String podPrefix;
@@ -298,6 +302,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               Files.newBufferedReader(Paths.get(kubeConfigPath), Charset.defaultCharset())))
               .build();
       this.coreV1Api = new CoreV1Api(this.client);
+      this.serviceClient = new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
+          "v1", "services", this.client);
+      this.podClient = new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
+          "v1", "pods", this.client);
     } catch (final IOException exception) {
       logger.error("Unable to read kube config file: {}", exception.getMessage());
       throw new ExecutorManagerException(exception);
@@ -1201,11 +1209,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void deletePod(final int executionId) throws ExecutorManagerException {
     final String podName = getPodName(executionId);
     try {
-      final GenericKubernetesApi<V1Pod, V1PodList> podClient =
-          new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "",
-              "v1", "pods", this.client);
-      final int statusCode =
-          podClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
+      final int statusCode =  podClient.delete(this.namespace, podName).throwsApiException().getHttpStatusCode();
       logger.info("ExecId: {}, Action: Pod Deletion, Pod Name: {}, Status: {}", executionId,
           podName, statusCode);
       if (statusCode == 200) {
@@ -1231,14 +1235,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void deleteService(final int executionId) throws ExecutorManagerException {
     final String serviceName = getServiceName(executionId);
     try {
-      // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
-      // See more here: https://github.com/kubernetes-client/java/issues/86
-
-      final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
-          new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
-              "v1", "services", this.client);
-      final int statusCode =
-          serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
+      final int statusCode = serviceClient.delete(this.namespace, serviceName).throwsApiException().getHttpStatusCode();
       logger.info("ExecId: {}, Action: Service Deletion, Service Name: {}, Status: {}",
           executionId, serviceName, statusCode);
       if (statusCode == 200) {
