@@ -421,10 +421,12 @@ public class ExecutionControllerUtils {
     // Fire correct JOB_STARTED and JOB_FINISHED events.
     if (eventHandler != null && projectManager != null) {
       final Project project = projectManager.getProject(exFlow.getProjectId());
-      final Flow flow = project.getFlow(exFlow.getFlowId());
       for (Entry<ExecutableNode, Status> entry: nodeToOrigStatus.entrySet()) {
         final ExecutableNode node = entry.getKey();
         final Status origStatus = entry.getValue();
+        // We shouldn't use project.getFlow(exFlow.getFlowId()) b/c the node might be in embedded
+        // flows and exFlow might be the ancestor flow but not node's direct parent flow.
+        final Flow flow = project.getFlow(node.getParentFlow().getFlowId());
 
         // Fill in job props by following the logic in ProjectManagerServlet.
         if (node.getInputProps() == null) {
