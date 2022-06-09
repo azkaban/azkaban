@@ -26,7 +26,7 @@ spec:
       value: '1'
     image: path1:7.0.4
     imagePullPolicy: IfNotPresent
-    name: az-flow-container
+    name: az-platform-image
     resources:
       limits:
         cpu: '2'
