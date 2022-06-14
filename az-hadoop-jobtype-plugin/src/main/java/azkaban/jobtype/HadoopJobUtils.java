@@ -43,6 +43,7 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.log4j.Logger;
+import org.apache.hadoop.fs.Path;
 
 
 /**
@@ -85,6 +86,9 @@ public class HadoopJobUtils {
   public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
   // Azkaban property for listing additional namenodes for delegation tokens
   private static final String OTHER_NAMENODES_PROPERTY = "other_namenodes";
+  //Yarn resource configuration directory for the cluster where the job is scheduled by the cluster router
+  private static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
+  private static final String YARN_CONF_FILENAME = "yarn-site.xml";
 
   private HadoopJobUtils() {
   }
@@ -362,12 +366,12 @@ public class HadoopJobUtils {
         proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {
-            HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log);
+            HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
             return null;
           }
         });
       } else {
-        HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log);
+        HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
       }
     } catch (final Throwable t) {
       log.warn("something happened while trying to kill all spawned jobs", t);
@@ -382,13 +386,13 @@ public class HadoopJobUtils {
    *
    * @return a Set<String>. The set will contain the applicationIds that this job tried to kill.
    */
-  public static Set<String> killAllSpawnedHadoopJobs(final String logFilePath, final Logger log) {
+  public static Set<String> killAllSpawnedHadoopJobs(final String logFilePath, final Logger log, final Props jobProps) {
     final Set<String> allSpawnedJobs = findApplicationIdFromLog(logFilePath, log);
     log.info("applicationIds to kill: " + allSpawnedJobs);
 
     for (final String appId : allSpawnedJobs) {
       try {
-        killJobOnCluster(appId, log);
+        killJobOnCluster(appId, log, jobProps);
       } catch (final Throwable t) {
         log.warn("something happened while trying to kill this job: " + appId, t);
       }
@@ -488,12 +492,15 @@ public class HadoopJobUtils {
    *   If the spark job is complete, it will return immediately, with a job not found on job tracker
    * </pre>
    */
-  public static void killJobOnCluster(final String applicationId, final Logger log)
+  public static void killJobOnCluster(final String applicationId, final Logger log, final Props jobProps)
       throws YarnException,
       IOException {
 
     final YarnConfiguration yarnConf = new YarnConfiguration();
     final YarnClient yarnClient = YarnClient.createYarnClient();
+    if (jobProps.containsKey(YARN_CONF_DIRECTORY_PROPERTY)) {
+      yarnConf.addResource(new Path(jobProps.get(YARN_CONF_DIRECTORY_PROPERTY) + "/" + YARN_CONF_FILENAME));
+    }
     yarnClient.init(yarnConf);
     yarnClient.start();
 
