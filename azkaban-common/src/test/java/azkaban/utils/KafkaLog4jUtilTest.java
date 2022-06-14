@@ -7,12 +7,16 @@ import static azkaban.Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_CLASS_PA
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED;
 
 import org.apache.kafka.log4jappender.KafkaLog4jAppender;
+import org.apache.log4j.Layout;
+import org.apache.log4j.PatternLayout;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class KafkaLog4jUtilTest {
 
+  private static final Layout DEFAULT_LAYOUT = new PatternLayout(
+      "%d{yyyy/MM/dd HH:mm:ss.SSS Z} %5p [%c{1}] [%t] [Azkaban] %m%n\n");
   private final Props props = new Props();
   private final String expectedKafkaBrokers = "sample.kafka.azkaban.com:12345";
   private final String expectedFlowLoggingKafkaTopic = "sample_flow_logging_kafka_topic";
@@ -36,10 +40,11 @@ public class KafkaLog4jUtilTest {
   public void returnNullIfLoggingKafkaNotEnabled() {
     KafkaLog4jAppender appender;
     props.put(AZKABAN_LOGGING_KAFKA_ENABLED, "false");
-    appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, execId,
+    appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, DEFAULT_LAYOUT, execId,
         flowId);
     Assert.assertNull(appender);
-    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, flowId, jobAttempt);
+    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, DEFAULT_LAYOUT, execId,
+        flowId, jobAttempt);
     Assert.assertNull(appender);
   }
 
@@ -47,10 +52,11 @@ public class KafkaLog4jUtilTest {
   public void returnNullIfKafkaClassIsNotFound() {
     props.put(AZKABAN_LOGGING_KAFKA_CLASS_PARAM, "unknown_class");
     KafkaLog4jAppender appender;
-    appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, execId,
+    appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, DEFAULT_LAYOUT, execId,
         flowId);
     Assert.assertNull(appender);
-    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, jobNestedId, jobAttempt);
+    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, DEFAULT_LAYOUT, execId,
+        jobNestedId, jobAttempt);
     Assert.assertNull(appender);
   }
 
@@ -60,12 +66,14 @@ public class KafkaLog4jUtilTest {
     final String expectedJobAppenderName = execId + "." + jobNestedId + "." + jobAttempt;
 
     KafkaLog4jAppender appender;
-    appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, execId, flowId);
+    appender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(props, DEFAULT_LAYOUT, execId,
+        flowId);
     Assert.assertEquals(appender.getBrokerList(), expectedKafkaBrokers);
     Assert.assertEquals(appender.getTopic(), expectedFlowLoggingKafkaTopic);
     Assert.assertEquals(appender.getName(), expectedFlowAppenderName);
 
-    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, execId, jobNestedId, jobAttempt);
+    appender = KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(props, DEFAULT_LAYOUT, execId,
+        jobNestedId, jobAttempt);
     Assert.assertEquals(appender.getBrokerList(), expectedKafkaBrokers);
     Assert.assertEquals(appender.getTopic(), expectedJobLoggingKafkaTopic);
     Assert.assertEquals(appender.getName(), expectedJobAppenderName);

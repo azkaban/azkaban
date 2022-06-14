@@ -10,7 +10,7 @@ public interface ExecutionLogsLoader {
       throws ExecutorManagerException;
 
   LogData fetchLogs(int execId, String name, int attempt, int startByte,
-      int endByte) throws ExecutorManagerException;
+      int length) throws ExecutorManagerException;
 
   int removeExecutionLogsByTime(long millis, int recordCleanupLimit)
       throws ExecutorManagerException;

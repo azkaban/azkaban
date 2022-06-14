@@ -370,7 +370,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
       if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED, false)) {
         // Keep the names consistent as what we did in uploadLogFile()
         this.kafkaLog4jAppender =
-            KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(this.azkabanProps,
+            KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(this.azkabanProps, this.loggerLayout,
                 String.valueOf(this.executionId), this.node.getNestedId(),
                 String.valueOf(this.node.getAttempt()));
 
@@ -418,8 +418,12 @@ public class JobRunner extends JobRunnerBase implements Runnable {
 
   private void removeAppender(final Appender appender) {
     if (appender != null) {
-      this.logger.removeAppender(appender);
-      appender.close();
+      try {
+        this.logger.removeAppender(appender);
+        appender.close();
+      } catch (Exception e) {
+        logger.error("Failed to remove appender " + appender.getName(), e);
+      }
     }
   }
 

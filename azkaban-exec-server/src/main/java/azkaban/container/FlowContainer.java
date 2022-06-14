@@ -204,8 +204,6 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     this.azkabanProps = props;
     // Get the execution ID from the environment
     this.execId = getExecutionId();
-    // Set up RootLogger
-    createLogger();
 
     // Setup global props if applicable
     final String globalPropsPath = this.azkabanProps.getString(AZKABAN_GLOBAL_PROPERTIES_EXT_PATH, null);
@@ -254,6 +252,10 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
       // Setting up the in-memory KeyStore for all the job executions in the flow.
       setupKeyStore();
     }
+
+    // Set up RootLogger after keystore is setup
+    createLogger();
+
     // Create a flow preparer
     this.flowPreparer = new ContainerizedFlowPreparer(
         SERVICE_PROVIDER.getInstance(ProjectStorageManager.class),
@@ -839,7 +841,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
           false)) {
         // Keep the names consistent as what we did in uploadLogFile()
         this.kafkaLog4jAppender =
-            KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(this.azkabanProps,
+            KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(this.azkabanProps, DEFAULT_LAYOUT,
             String.valueOf(this.execId), "");
 
         if (this.kafkaLog4jAppender != null) {
@@ -856,8 +858,12 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   private static void removeAppender(final Appender appender) {
     final Logger rootLogger = Logger.getRootLogger();
     if (appender != null) {
-      rootLogger.removeAppender(appender);
-      appender.close();
+      try {
+        rootLogger.removeAppender(appender);
+        appender.close();
+      } catch (Exception e) {
+        logger.error("Failed to remove appender " + appender.getName(), e);
+      }
     }
   }
 
@@ -869,7 +875,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     try {
       this.executionLogsLoader.uploadLogFile(this.execId, "", 0, this.logFile);
     } catch (final ExecutorManagerException e) {
-      e.printStackTrace();
+      logger.error("Failed to close logger", e);
     }
   }
 
