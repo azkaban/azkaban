@@ -54,7 +54,7 @@ public class ExecutionLogsDao {
   }
 
   // TODO kunkun-tang: the interface's parameter is called endByte, but actually is length.
-  LogData fetchLogs(final int execId, final String name, final int attempt,
+  public LogData fetchLogs(final int execId, final String name, final int attempt,
       final int startByte,
       final int length) throws ExecutorManagerException {
     final FetchLogsHandler handler = new FetchLogsHandler(startByte, length + startByte);
@@ -135,7 +135,7 @@ public class ExecutionLogsDao {
     }
   }
 
-  int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
+  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
       throws ExecutorManagerException {
     int totalRecordsRemoved = 0;
     int removedRecords;

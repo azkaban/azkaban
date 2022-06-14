@@ -16,8 +16,13 @@
 package azkaban.webapp.servlet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.mock;
 
+import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.DummyEventListener;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
@@ -36,6 +41,7 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
@@ -129,9 +135,10 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
   }
 
   @Test
-  public void testPostAjaxUpdateProperty() throws Exception {
+  public void testPostAjaxUpdateContainerProperty() throws Exception {
     ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
-        new Props(), null, null, null, null, null, null, null, new DummyEventListener(),
+        new Props(), null, null, null, null, null,
+        null, null, null, null, new DummyEventListener(),
         new DummyContainerizationMetricsImpl(), null);
     Mockito.when(this.azkabanWebServer.getExecutorManager())
         .thenReturn(containerizedDispatchManager);
@@ -185,5 +192,33 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     this.executorServlet.handlePost(this.req, this.res, this.session);
     output = containerizedDispatchManager.getContainerProxyUserCriteria().getDenyList();
     assertEquals(ImmutableSet.of("azdev"), output);
+  }
+
+  @Test
+  public void testPostAjaxUpdateGeneralProperty() throws Exception {
+    AbstractExecutorManagerAdapter abstractExecutorManagerAdapter =
+        mock(AbstractExecutorManagerAdapter.class);
+    Mockito.doCallRealMethod().when(abstractExecutorManagerAdapter).enableOfflineLogsLoader(anyBoolean());
+    Mockito.doCallRealMethod().when(abstractExecutorManagerAdapter).isOfflineLogsLoaderEnabled();
+    Mockito.when(this.azkabanWebServer.getExecutorManager())
+        .thenReturn(abstractExecutorManagerAdapter);
+    this.executorServlet.init(this.servletConfig);
+
+    this.req.addParameter("ajax", "updateProp");
+    this.req.addParameter("propType", "general");
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "enableOfflineLogsLoader");
+    this.req.addParameter("val","true");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertTrue(abstractExecutorManagerAdapter.isOfflineLogsLoaderEnabled());
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "enableOfflineLogsLoader");
+    this.req.addParameter("val","false");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertFalse(abstractExecutorManagerAdapter.isOfflineLogsLoaderEnabled());
   }
 }

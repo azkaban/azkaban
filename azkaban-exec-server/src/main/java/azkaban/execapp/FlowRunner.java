@@ -30,6 +30,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.ServiceProvider;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.utils.ServerUtils;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -124,6 +125,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   private final JobTypeManager jobtypeManager;
   private final Layout loggerLayout = DEFAULT_LAYOUT;
   private final ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final ProjectLoader projectLoader;
   private final int execId;
   private final File execDir;
@@ -221,12 +223,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
    * Constructor. This will create its own ExecutorService for thread pools
    */
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
-      final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
-      final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter,
-      final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
-      final ExecMetrics execMetrics)
+      final ExecutionLogsLoader executionLogsLoader, final ProjectLoader projectLoader,
+      final JobTypeManager jobtypeManager, final Props azkabanProps,
+      final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder,
+      final CommonMetrics commonMetrics, final ExecMetrics execMetrics)
       throws ExecutorManagerException {
-    this(flow, executorLoader, projectLoader, jobtypeManager, null, azkabanProps,
+    this(flow, executorLoader, executionLogsLoader, projectLoader, jobtypeManager, null, azkabanProps,
         azkabanEventReporter, alerterHolder, commonMetrics, execMetrics);
   }
 
@@ -234,14 +236,15 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
    * Constructor. If executorService is null, then it will create it's own for thread pools.
    */
   public FlowRunner(final ExecutableFlow flow, final ExecutorLoader executorLoader,
-      final ProjectLoader projectLoader, final JobTypeManager jobtypeManager,
-      final ExecutorService executorService, final Props azkabanProps,
-      final AzkabanEventReporter azkabanEventReporter, final AlerterHolder alerterHolder,
-      final CommonMetrics commonMetrics, final ExecMetrics execMetrics)
-      throws ExecutorManagerException {
+      final ExecutionLogsLoader executionLogsLoader, final ProjectLoader projectLoader,
+      final JobTypeManager jobtypeManager, final ExecutorService executorService,
+      final Props azkabanProps, final AzkabanEventReporter azkabanEventReporter,
+      final AlerterHolder alerterHolder, final CommonMetrics commonMetrics,
+      final ExecMetrics execMetrics) throws ExecutorManagerException {
     this.execId = flow.getExecutionId();
     this.flow = flow;
     this.executorLoader = executorLoader;
+    this.executionLogsLoader = executionLogsLoader;
     this.projectLoader = projectLoader;
     this.execDir = new File(flow.getExecutionPath());
     this.jobtypeManager = jobtypeManager;
@@ -546,7 +549,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       removeAppender(this.kafkaLog4jAppender);
 
       try {
-        this.executorLoader.uploadLogFile(this.execId, "", 0, this.logFile);
+        this.executionLogsLoader.uploadLogFile(this.execId, "", 0, this.logFile);
       } catch (final ExecutorManagerException e) {
         e.printStackTrace();
       }
@@ -1267,7 +1270,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     final File path = new File(this.execDir, node.getJobSource());
 
     final JobRunner jobRunner =
-        new JobRunner(node, path.getParentFile(), this.executorLoader,
+        new JobRunner(node, path.getParentFile(), this.executorLoader, this.executionLogsLoader,
             this.jobtypeManager, this.azkabanProps, this.flowRunnerProxy);
 
     if (this.watcher != null) {

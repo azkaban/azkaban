@@ -21,6 +21,7 @@ import azkaban.execapp.FlowRunnerTestUtil;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
+import azkaban.logs.MockExecutionLogsLoader;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;

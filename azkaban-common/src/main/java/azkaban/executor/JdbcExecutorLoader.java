@@ -18,7 +18,6 @@ package azkaban.executor;
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.project.ProjectLoader;
-import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +35,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;
   private final ExecutionJobDao executionJobDao;
-  private final ExecutionLogsDao executionLogsDao;
   private final ExecutorEventsDao executorEventsDao;
   private final ActiveExecutingFlowsDao activeExecutingFlowsDao;
   private final FetchActiveFlowDao fetchActiveFlowDao;
@@ -49,7 +47,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public JdbcExecutorLoader(final ExecutionFlowDao executionFlowDao,
       final ExecutorDao executorDao,
       final ExecutionJobDao executionJobDao,
-      final ExecutionLogsDao executionLogsDao,
       final ExecutorEventsDao executorEventsDao,
       final ActiveExecutingFlowsDao activeExecutingFlowsDao,
       final FetchActiveFlowDao fetchActiveFlowDao,
@@ -60,7 +57,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
-    this.executionLogsDao = executionLogsDao;
     this.executorEventsDao = executorEventsDao;
     this.activeExecutingFlowsDao = activeExecutingFlowsDao;
     this.fetchActiveFlowDao = fetchActiveFlowDao;
@@ -278,25 +274,10 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte,
-      final int length) throws ExecutorManagerException {
-
-    return this.executionLogsDao.fetchLogs(execId, name, attempt, startByte, length);
-  }
-
-  @Override
   public List<Object> fetchAttachments(final int execId, final String jobId, final int attempt)
       throws ExecutorManagerException {
 
     return this.executionJobDao.fetchAttachments(execId, jobId, attempt);
-  }
-
-  @Override
-  public void uploadLogFile(final int execId, final String name, final int attempt,
-      final File... files)
-      throws ExecutorManagerException {
-    this.executionLogsDao.uploadLogFile(execId, name, attempt, files);
   }
 
   @Override
@@ -365,12 +346,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public Executor fetchExecutorByExecutionId(final int executionId)
       throws ExecutorManagerException {
     return this.executorDao.fetchExecutorByExecutionId(executionId);
-  }
-
-  @Override
-  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
-      throws ExecutorManagerException {
-    return this.executionLogsDao.removeExecutionLogsByTime(millis, recordCleanupLimit);
   }
 
   @Override

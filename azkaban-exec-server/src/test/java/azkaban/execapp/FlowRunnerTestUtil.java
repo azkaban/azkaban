@@ -38,6 +38,8 @@ import azkaban.flow.FlowUtils;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
+import azkaban.logs.ExecutionLogsLoader;
+import azkaban.logs.MockExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.FlowLoader;
@@ -72,6 +74,7 @@ public class FlowRunnerTestUtil {
   private final File projectDir;
   private final ProjectLoader projectLoader;
   private ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final ProjectFileHandler handler;
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
@@ -86,6 +89,7 @@ public class FlowRunnerTestUtil {
 
     this.executorLoader = mock(ExecutorLoader.class);
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+    this.executionLogsLoader = mock(ExecutionLogsLoader.class);
 
     this.projectLoader = mock(ProjectLoader.class);
     this.handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
@@ -281,7 +285,7 @@ public class FlowRunnerTestUtil {
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final FlowRunner runner =
-        new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
+        new FlowRunner(exFlow, this.executorLoader, this.executionLogsLoader, this.projectLoader,
             this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics,
             execMetrics);
     if (eventCollector != null) {

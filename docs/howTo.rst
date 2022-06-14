@@ -82,3 +82,10 @@ property to your appender:
 .. code-block:: guess
 
    azkaban.logging.kafka.class=a.b.c.yourKafkaLog4jAppender
+
+You can use following properties to view the logs emitted by kafka log4j appender:
+
+.. code-block:: guess
+
+   azkaban.offline.logging.enabled=true
+   azkaban.offline.logging.class=a.b.c.yourKafkaLogViewer
