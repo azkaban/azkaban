@@ -16,6 +16,7 @@
 
 package azkaban.container;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_GLOBAL_PROPERTIES_EXT_PATH;
 import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.common.ExecJettyServerModule.EXEC_CONTAINER_CONTEXT;
@@ -207,7 +208,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     createLogger();
 
     // Setup global props if applicable
-    final String globalPropsPath = this.azkabanProps.getString("executor.global.properties", null);
+    final String globalPropsPath = this.azkabanProps.getString(AZKABAN_GLOBAL_PROPERTIES_EXT_PATH, null);
     if (globalPropsPath != null) {
       try {
         this.globalProps = new Props(null, globalPropsPath);
@@ -816,11 +817,11 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
    * setup logger and execution dir for the flowId
    */
   private void createLogger() {
-    Logger rootLogger = Logger.getRootLogger();
+    final Logger rootLogger = Logger.getRootLogger();
 
     for (Object o: Collections.list(rootLogger.getAllAppenders())) {
       if (o instanceof FileAppender) {
-        FileAppender appender = (FileAppender) o;
+        final FileAppender appender = (FileAppender) o;
         logFile = new File(appender.getFile());
         break;
       }
@@ -853,7 +854,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   }
 
   private static void removeAppender(final Appender appender) {
-    Logger rootLogger = Logger.getRootLogger();
+    final Logger rootLogger = Logger.getRootLogger();
     if (appender != null) {
       rootLogger.removeAppender(appender);
       appender.close();
