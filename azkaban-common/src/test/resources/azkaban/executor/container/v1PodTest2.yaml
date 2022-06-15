@@ -35,7 +35,7 @@ spec:
         - /tmp/liveProbe
       initialDelaySeconds: 5
       periodSeconds: 5
-    name: az-flow-container
+    name: az-platform-image
     readinessProbe:
       exec:
         command:
