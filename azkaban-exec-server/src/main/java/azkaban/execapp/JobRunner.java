@@ -977,10 +977,13 @@ public class JobRunner extends JobRunnerBase implements Runnable {
   }
 
   /**
-   * Build Azkaban frontend base url. Use external configs
-   * ({@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME},
-   * {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT}) if set
-   * else {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_URL}
+   * Build Azkaban frontend base url. Use external or user facing configs (for the cases where the
+   * Web server is behind a proxy for example) if set else use property
+   * {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_URL}.
+   * User facing access is configured with properties:
+   * {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME},
+   * {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_SSL_PORT} and
+   * {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_EXTERNAL_PORT}
    */
   private String getAzkabanWebServerURL() {
     String azkabanWebServerURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
