@@ -31,6 +31,8 @@ import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.RunningExecutions;
 import azkaban.executor.RunningExecutionsUpdater;
 import azkaban.executor.RunningExecutionsUpdaterThread;
+import azkaban.logs.ExecutionLogsLoader;
+import azkaban.logs.MockExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
@@ -49,7 +51,9 @@ public class TriggerManagerDeadlockTest {
 
   TriggerLoader loader;
   TriggerManager triggerManager;
-  ExecutorLoader execLoader;
+  ExecutorLoader executorLoader;
+  ExecutionLogsLoader nearlineExecutionLogsLoader;
+  ExecutionLogsLoader offlineExecutionLogsLoader;
   ExecutorApiGateway apiGateway;
   RunningExecutions runningExecutions;
   private ExecutorManagerUpdaterStage updaterStage;
@@ -63,12 +67,14 @@ public class TriggerManagerDeadlockTest {
     final Props props = new Props();
     props.put("trigger.scan.interval", 1000);
     props.put(ConfigurationKeys.EXECUTOR_PORT, 12321);
-    this.execLoader = new MockExecutorLoader();
+    this.executorLoader = new MockExecutorLoader();
+    this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
+    this.offlineExecutionLogsLoader = new MockExecutionLogsLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.runningExecutions = new RunningExecutions();
     this.updaterStage = new ExecutorManagerUpdaterStage();
     this.alertHolder = mock(AlerterHolder.class);
-    this.executionFinalizer = new ExecutionFinalizer(this.execLoader,
+    this.executionFinalizer = new ExecutionFinalizer(this.executorLoader,
         this.updaterStage, this.alertHolder, this.runningExecutions);
     this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = getExecutorManager(props);
@@ -76,9 +82,10 @@ public class TriggerManagerDeadlockTest {
   }
 
   private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
-    final ActiveExecutors activeExecutors = new ActiveExecutors(this.execLoader);
+    final ActiveExecutors activeExecutors = new ActiveExecutors(this.executorLoader);
     final RunningExecutionsUpdaterThread updaterThread = getRunningExecutionsUpdaterThread();
-    return new ExecutorManager(props, null, this.execLoader, this.commonMetrics, this.apiGateway,
+    return new ExecutorManager(props, null, this.executorLoader, this.nearlineExecutionLogsLoader,
+        this.offlineExecutionLogsLoader, this.commonMetrics, this.apiGateway,
         this.runningExecutions, activeExecutors, this.updaterStage, this.executionFinalizer,
         updaterThread);
   }
@@ -86,7 +93,8 @@ public class TriggerManagerDeadlockTest {
   private RunningExecutionsUpdaterThread getRunningExecutionsUpdaterThread() {
     return new RunningExecutionsUpdaterThread(new RunningExecutionsUpdater(
         this.updaterStage, this.alertHolder, this.commonMetrics, this.apiGateway,
-        this.runningExecutions, this.executionFinalizer, this.execLoader), this.runningExecutions);
+        this.runningExecutions, this.executionFinalizer, this.executorLoader),
+        this.runningExecutions);
   }
 
   @After

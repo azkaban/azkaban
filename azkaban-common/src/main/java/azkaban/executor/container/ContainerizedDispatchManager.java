@@ -15,6 +15,9 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
+
 import azkaban.Constants;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
@@ -35,6 +38,7 @@ import azkaban.executor.ExecutorHealthChecker;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.ProjectManager;
@@ -55,6 +59,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +91,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final Props azkProps,
       final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      @Named(OFFLINE_LOGS) @Nullable final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final ContainerizedImpl containerizedImpl,
@@ -95,8 +102,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
       final ContainerizationMetrics containerizationMetrics,
       @Nullable final ExecutorHealthChecker executorHealthChecker)
       throws ExecutorManagerException {
-    super(azkProps, projectManager, executorLoader, commonMetrics, apiGateway, alerterHolder,
-        eventListener,
+    super(azkProps, projectManager, executorLoader, nearlineExecutionLogsLoader,
+        offlineExecutionLogsLoader, commonMetrics, apiGateway, alerterHolder, eventListener,
         containerizationMetrics);
     rateLimiter =
         RateLimiter.create(azkProps

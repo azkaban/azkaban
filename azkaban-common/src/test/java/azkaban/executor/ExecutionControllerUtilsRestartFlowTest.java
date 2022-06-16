@@ -9,6 +9,8 @@ import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.logs.ExecutionLogsLoader;
+import azkaban.logs.MockExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.metrics.MetricsManager;
@@ -33,7 +35,9 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private Props props;
   private Flow flow;
   private ExecutableFlow flow1;
-  private MockExecutorLoader executorLoader;
+  private ExecutorLoader executorLoader;
+  private ExecutionLogsLoader nearlineExecutionLogsLoader;
+  private ExecutionLogsLoader offlineExecutionLogsLoader;
   private User user;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private final CommonMetrics commonMetrics = new CommonMetrics(
@@ -66,11 +70,12 @@ public class ExecutionControllerUtilsRestartFlowTest {
 
     this.executorLoader = new MockExecutorLoader();
     this.executorLoader.uploadExecutableFlow(this.flow1);
+    this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
 
     this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, null,
-        this.executorLoader, this.commonMetrics, mock(ExecutorApiGateway.class),
-        mock(ContainerizedImpl.class),null, null,
-        new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
+        this.executorLoader, this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader,
+        this.commonMetrics, mock(ExecutorApiGateway.class), mock(ContainerizedImpl.class),null,
+        null, new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
     this.projectManager = mock(ProjectManager.class);
     when(this.projectManager.getProject(projectId)).thenReturn(this.project);
 

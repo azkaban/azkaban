@@ -41,6 +41,7 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.spi.EventType;
 import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.KafkaLog4jUtils;
@@ -75,7 +76,8 @@ public class JobRunner extends JobRunnerBase implements Runnable {
 
   private final Object syncObject = new Object();
   private final JobTypeManager jobtypeManager;
-  private final ExecutorLoader loader;
+  private final ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final Props azkabanProps;
   private final ExecutableNode node;
   private final File workingDir;
@@ -110,7 +112,8 @@ public class JobRunner extends JobRunnerBase implements Runnable {
   private volatile long queueDuration = 0;
   private volatile long killDuration = 0;
 
-  public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
+  public JobRunner(final ExecutableNode node, final File workingDir,
+      final ExecutorLoader executorLoader, final ExecutionLogsLoader executionLogsLoader,
       final JobTypeManager jobtypeManager, final Props azkabanProps, final FlowRunnerProxy flowRunnerProxy) {
     super(node.getInputProps());
     this.node = node;
@@ -121,7 +124,8 @@ public class JobRunner extends JobRunnerBase implements Runnable {
 
     this.flowRunnerProxy = flowRunnerProxy;
 
-    this.loader = loader;
+    this.executorLoader = executorLoader;
+    this.executionLogsLoader = executionLogsLoader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
     final String jobLogLayout = this.props.getString(
@@ -427,7 +431,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
   private void writeStatus() {
     try {
       this.node.setUpdateTime(System.currentTimeMillis());
-      this.loader.updateExecutableNode(this.node);
+      this.executorLoader.updateExecutableNode(this.node);
     } catch (final ExecutorManagerException e) {
       this.flowLogger.error("Could not update job properties in db for "
           + this.jobId, e);
@@ -555,7 +559,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
       });
       Arrays.sort(files, Collections.reverseOrder());
 
-      this.loader.uploadLogFile(this.executionId, this.node.getNestedId(), attemptNo,
+      this.executionLogsLoader.uploadLogFile(this.executionId, this.node.getNestedId(), attemptNo,
           files);
     } catch (final ExecutorManagerException e) {
       this.flowLogger.error(
@@ -576,7 +580,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
             + " written.");
         return;
       }
-      this.loader.uploadAttachmentFile(this.node, file);
+      this.executorLoader.uploadAttachmentFile(this.node, file);
     } catch (final ExecutorManagerException e) {
       this.flowLogger.error(
           "Error writing out attachment for job " + this.node.getNestedId(), e);
@@ -683,7 +687,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
 
   private void uploadExecutableNode() {
     try {
-      this.loader.uploadExecutableNode(this.node, this.props);
+      this.executorLoader.uploadExecutableNode(this.node, this.props);
     } catch (final ExecutorManagerException e) {
       this.logger.error("Error writing initial node properties", e);
     }

@@ -30,6 +30,10 @@ import java.util.Set;
 
 public interface ExecutorManagerAdapter {
 
+  public void enableOfflineLogsLoader(boolean enabled);
+
+  public boolean isOfflineLogsLoaderEnabled();
+
   public boolean isFlowRunning(int projectId, String flowId);
 
   public ExecutableFlow getExecutableFlow(int execId)
