@@ -16,6 +16,7 @@
 
 package azkaban.container;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_GLOBAL_PROPERTIES_EXT_PATH;
 import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.common.ExecJettyServerModule.EXEC_CONTAINER_CONTEXT;
@@ -29,6 +30,7 @@ import azkaban.cluster.ClusterModule;
 import azkaban.cluster.ClusterRouter;
 import azkaban.common.ExecJettyServerModule;
 import azkaban.logs.ExecutionLogsLoader;
+import azkaban.utils.KafkaLog4jUtils;
 import azkaban.utils.ServerUtils;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
@@ -86,6 +88,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -99,7 +102,12 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.kafka.log4jappender.KafkaLog4jAppender;
+import org.apache.log4j.Appender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -140,9 +148,12 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
 
   // Logging
   private static final Logger logger = Logger.getLogger(FlowContainer.class);
-  private static final String logFileName = "logs/azkaban-execserver.log";
-  private static final File logFile =
-          new File(String.valueOf(ContainerizedFlowPreparer.getCurrentDir()), logFileName);
+  private static final Layout DEFAULT_LAYOUT = new PatternLayout(
+      "%d{yyyy/MM/dd HH:mm:ss.SSS Z} %5p [%c{1}] [%t] [Azkaban] %m%n\n");
+  private static final String DEFAULT_LOG_FILE_NAME = "logs/azkaban-execserver.log";
+  private File logFile = null;
+  private Appender fileAppender = null;
+  private KafkaLog4jAppender kafkaLog4jAppender = null;
 
   private final ExecutorService executorService;
   private final ExecutorLoader executorLoader;
@@ -154,11 +165,11 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   private final Server jettyServer;
   private final Context containerContext;
   private final AzkabanEventReporter eventReporter;
-  private final Props azKabanProps;
+  private final Props azkabanProps;
   private final AlerterHolder alerterHolder;
   private Props globalProps;
   private final int numJobThreadPerFlow;
-  private Path execDirPath;
+  private int execId;
   private int port; // Listener port for incoming control & log messages (ContainerServlet)
   private FlowRunner flowRunner;
   private Future<?> flowFuture;
@@ -190,9 +201,14 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
       @Named(EXEC_CONTAINER_CONTEXT) final Context context) throws ExecutorManagerException {
 
     // Create Azkaban Props Map
-    this.azKabanProps = props;
+    this.azkabanProps = props;
+    // Get the execution ID from the environment
+    this.execId = getExecutionId();
+    // Set up RootLogger
+    createLogger();
+
     // Setup global props if applicable
-    final String globalPropsPath = this.azKabanProps.getString("executor.global.properties", null);
+    final String globalPropsPath = this.azkabanProps.getString(AZKABAN_GLOBAL_PROPERTIES_EXT_PATH, null);
     if (globalPropsPath != null) {
       try {
         this.globalProps = new Props(null, globalPropsPath);
@@ -216,10 +232,10 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     this.eventReporter = eventReporter;
     this.alerterHolder = alerterHolder;
 
-    this.jobLogChunkSize = this.azKabanProps.getString(JOB_LOG_CHUNK_SIZE,
+    this.jobLogChunkSize = this.azkabanProps.getString(JOB_LOG_CHUNK_SIZE,
         DEFAULT_LOG_CHUNK_SIZE);
-    this.jobLogNumFiles = this.azKabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
-    this.validateProxyUser = this.azKabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
+    this.jobLogNumFiles = this.azkabanProps.getInt(JOB_LOG_BACKUP_INDEX, DEFAULT_LOG_NUM_FILES);
+    this.validateProxyUser = this.azkabanProps.getBoolean(PROXY_USER_LOCK_DOWN,
         DEFAULT_VALIDATE_PROXY_USER);
 
     this.triggerManager = triggerManager;
@@ -227,13 +243,13 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
 
     this.jobTypeManager =
         new JobTypeManager(
-            this.azKabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
+            this.azkabanProps.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
                 PluginManager.JOBTYPE_DEFAULTDIR),
             this.globalProps, getClass().getClassLoader(), clusterRouter,
-            this.azKabanProps.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
+            this.azkabanProps.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
 
     this.numJobThreadPerFlow = props.getInt(JOB_THREAD_COUNT, DEFAULT_JOB_TREAD_COUNT);
-    if (this.azKabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
+    if (this.azkabanProps.getBoolean(Constants.USE_IN_MEMORY_KEYSTORE,
         DEFAULT_USE_IN_MEMORY_KEYSTORE)) {
       // Setting up the in-memory KeyStore for all the job executions in the flow.
       setupKeyStore();
@@ -250,14 +266,10 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
    * explicitly sets it to present working directory.
    *
    * @param args Takes the execution id and Project zip file path as inputs.
-   * @throws IOException
-   * @throws ExecutorManagerException
    */
-  public static void main(final String[] args) throws ExecutorManagerException {
+  public static void main(final String[] args) {
     // Redirect all std out and err messages into slf4j
     StdOutErrRedirect.redirectOutAndErrToLog();
-    // Get the execution ID from the environment
-    final int execId = getExecutionId();
     final Path currentDir = ContainerizedFlowPreparer.getCurrentDir();
 
     // Set Azkaban props
@@ -271,12 +283,12 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     final FlowContainer flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
 
     // Setup the callback mechanism and start the jetty server.
-    flowContainer.start(azkabanProps);
+    flowContainer.start();
 
     // Once submitFlow is called, the shutdown must happen for clean exit.
     try {
       // execute the flow, this is a blocking call until flow finishes
-      flowContainer.submitFlow(execId);
+      flowContainer.submitFlow();
     } catch (final ExecutorManagerException e) {
       // Log the cause
       logger.error("Flow execution failed due to ", e);
@@ -323,16 +335,15 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   /**
    * Submit flow Creates and submits the FlowRunner.
    *
-   * @param execId Execution Id of the flow.
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  void submitFlow(final int execId)
+  void submitFlow()
       throws ExecutorManagerException {
-    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(execId);
+    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
     if (flow == null) {
-      logger.error("Error loading flow with execution Id " + execId);
-      throw new ExecutorManagerException("Error loading flow for exec: " + execId +
+      logger.error("Error loading flow with execution Id " + this.execId);
+      throw new ExecutorManagerException("Error loading flow for exec: " + this.execId +
           ". Terminating flow container launch");
     }
 
@@ -397,7 +408,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
       try {
         if (!ProjectWhitelist.isXmlFileLoaded()) {
-          ProjectWhitelist.load(azKabanProps);
+          ProjectWhitelist.load(azkabanProps);
         }
         final int numJobs =
             Integer.valueOf(options.getFlowParameters().get(
@@ -422,7 +433,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     this.flowRunner = new FlowRunner(flow, this.executorLoader, this.executionLogsLoader,
-        this.projectLoader, this.jobTypeManager, this.azKabanProps, this.eventReporter,
+        this.projectLoader, this.jobTypeManager, this.azkabanProps, this.eventReporter,
         this.alerterHolder, commonMetrics, execMetrics);
     this.flowRunner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
@@ -480,7 +491,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
       }
       logger.info("In-memory Keystore is setup, delete the cert file");
       // Delete the cert file from disk as the KeyStore is already cached above.
-      final Path certFilePath = Paths.get(this.azKabanProps.get(
+      final Path certFilePath = Paths.get(this.azkabanProps.get(
           Constants.ConfigurationKeys.CSR_KEYSTORE_LOCATION));
       deleteSymlinkedFile(certFilePath);
     }
@@ -488,15 +499,14 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
 
   /**
    * Starts the Jetty Server and sets up callback mechanisms
-   * @param azkabanProps Azkaban properties.
    */
   @VisibleForTesting
-  void start(final Props azkabanProps) {
-    AzkabanServer.setupTimeZone(azkabanProps, logger);
+  void start() {
+    AzkabanServer.setupTimeZone(this.azkabanProps, logger);
     this.containerContext.setAttribute(Constants.AZKABAN_CONTAINER_CONTEXT_KEY, this);
-    JmxJobMBeanManager.getInstance().initialize(azkabanProps);
+    JmxJobMBeanManager.getInstance().initialize(this.azkabanProps);
 
-    ServerUtils.configureJobCallback(FlowContainer.logger, azkabanProps);
+    ServerUtils.configureJobCallback(FlowContainer.logger, this.azkabanProps);
     configureMBeanServer();
     // Start the Jetty Server
     launchCtrlMsgListener(this);
@@ -592,9 +602,8 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
     }
 
     try {
-      final File logFile = FlowContainer.logFile;
-      if (logFile.exists()) {
-        return FileIOUtils.readUtf8File(logFile, startByte, length);
+      if (this.logFile.exists()) {
+        return FileIOUtils.readUtf8File(this.logFile, startByte, length);
       } else {
         logger.warn(String.format("Flow log file does not exist for flow execId: %d", execId));
         throw new ExecutorManagerException("Flow log file does not exist.");
@@ -805,12 +814,60 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   }
 
   /**
-   * Uploads the log file to the db for persistence.
-   * @param execId execution id of the flow.
+   * setup logger and execution dir for the flowId
    */
-  private void uploadLogFile(final int execId) {
+  private void createLogger() {
+    final Logger rootLogger = Logger.getRootLogger();
+
+    for (Object o: Collections.list(rootLogger.getAllAppenders())) {
+      if (o instanceof FileAppender) {
+        final FileAppender appender = (FileAppender) o;
+        logFile = new File(appender.getFile());
+        break;
+      }
+    }
+
     try {
-      this.executionLogsLoader.uploadLogFile(execId, "", 0, FlowContainer.logFile);
+      if (this.logFile == null) {
+        logFile = new File(DEFAULT_LOG_FILE_NAME);
+        this.fileAppender = new FileAppender(DEFAULT_LAYOUT, logFile.getAbsolutePath(), true);
+        rootLogger.addAppender(this.fileAppender);
+        logger.info("Attached new File appender for flow");
+      }
+
+      if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED,
+          false)) {
+        // Keep the names consistent as what we did in uploadLogFile()
+        this.kafkaLog4jAppender =
+            KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(this.azkabanProps,
+            String.valueOf(this.execId), "");
+
+        if (this.kafkaLog4jAppender != null) {
+          rootLogger.addAppender(this.kafkaLog4jAppender);
+          rootLogger.setAdditivity(false);
+          logger.info("Attached new Kafka appender for flow");
+        }
+      }
+    } catch (final Exception e) {
+      logger.error("Could not open log file: " + logFile.getAbsolutePath(), e);
+    }
+  }
+
+  private static void removeAppender(final Appender appender) {
+    final Logger rootLogger = Logger.getRootLogger();
+    if (appender != null) {
+      rootLogger.removeAppender(appender);
+      appender.close();
+    }
+  }
+
+  private void closeLogger() {
+    // If fileAppender is created internally, we should remove it. Otherwise, its lifecycle will be
+    // managed by log4j framework.
+    removeAppender(this.fileAppender);
+    removeAppender(this.kafkaLog4jAppender);
+    try {
+      this.executionLogsLoader.uploadLogFile(this.execId, "", 0, this.logFile);
     } catch (final ExecutorManagerException e) {
       e.printStackTrace();
     }
@@ -849,13 +906,13 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
   void shutdown() {
     logger.info("Shutting down the container");
     if (this.flowRunner != null) {
-      final int execId = this.flowRunner.getExecutionId();
       while (!this.flowFuture.isDone()) {
         // This should not happen immediately as submitFlowRunner is a blocking call.
         try {
           Thread.sleep(100);
         } catch (final InterruptedException e) {
-          logger.error(String.format("The sleep while waiting for execution : %d to finish was interrupted", execId));
+          logger.error(String.format("The sleep while waiting for execution : %d to finish was "
+              + "interrupted", this.execId));
         }
       }
     } else {
@@ -885,10 +942,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
       logger.error("Error shutting down JettyServer while winding down the FlowContainer", e);
     }
     logger.info("Sayonara!");
-    if (this.flowRunner != null) {
-      // If the flowRunner is not created, the execId would be invalid.
-      uploadLogFile(this.flowRunner.getExecutionId());
-    }
+    closeLogger();
     System.exit(0);
   }
 }

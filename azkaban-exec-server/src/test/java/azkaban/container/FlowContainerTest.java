@@ -48,6 +48,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.mockito.Mockito;
 
 import static azkaban.Constants.ConfigurationKeys.*;
+import static azkaban.Constants.ContainerizedDispatchManagerProperties.ENV_FLOW_EXECUTION_ID;
 import static azkaban.ServiceProvider.*;
 import static azkaban.container.FlowContainer.*;
 import static azkaban.utils.TestUtils.*;
@@ -60,17 +61,13 @@ public class FlowContainerTest {
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
-  public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
-  public static final String AZKABAN_DB_SQL_PATH = "azkaban-db/src/main/sql";
+  public static final int EXECUTION_ID = 1;
 
   public static final Props props = new Props();
   private static DatabaseOperator dbOperator;
 
   private ExecutorLoader executorLoader;
   private ProjectLoader projectLoader;
-  private AzkabanEventReporter eventReporter;
-  private ExecJettyServerModule jettyServer;
-  private AzkabanCommonModule commonModule;
   private FlowContainer flowContainer;
 
   private static Path azkabanRoot;
@@ -101,6 +98,7 @@ public class FlowContainerTest {
 
   @Before
   public void setup() throws Exception {
+    environmentVariables.set(ENV_FLOW_EXECUTION_ID, String.valueOf(EXECUTION_ID));
     this.executorLoader = mock(ExecutorLoader.class);
     this.projectLoader = mock(ProjectLoader.class);
   }
@@ -120,13 +118,13 @@ public class FlowContainerTest {
 
   private void startFlowContainer() throws IOException {
     final ExecutableFlow execFlow = createTestExecutableFlowFromYaml("basicflowyamltest", "basic_flow");
-    execFlow.setExecutionId(1);
+    execFlow.setExecutionId(EXECUTION_ID);
     final ProjectFileHandler handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
         1, null, null, null, "111.111.111.111");
     when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
 
     this.flowContainer = SERVICE_PROVIDER.getInstance(FlowContainer.class);
-    this.flowContainer.start(props);
+    this.flowContainer.start();
   }
 
   /**
