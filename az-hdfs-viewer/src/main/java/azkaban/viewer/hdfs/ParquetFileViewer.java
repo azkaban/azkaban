@@ -30,8 +30,8 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
-import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.avro.AvroSchemaConverter;
+import parquet.avro.AvroParquetReader;
+import parquet.avro.AvroSchemaConverter;
 
 /**
  * This class implements a viewer for Parquet files.
