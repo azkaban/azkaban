@@ -983,7 +983,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
    * else {@link azkaban.Constants.ConfigurationKeys#AZKABAN_WEBSERVER_URL}
    */
   private String getAzkabanWebServerURL() {
-    String azkabanWebServerURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);;
+    String azkabanWebServerURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
 
     // Use Azkaban external web server url if configured.
     final String webServerExternalHostname =
