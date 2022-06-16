@@ -39,7 +39,7 @@ spec:
   containers:
     - image: "path/azkaban-base-image:0.0.5"
       imagePullPolicy: "IfNotPresent"
-      name: "az-flow-container"
+      name: "az-platform-image"
       livenessProbe:
         exec:
           command:

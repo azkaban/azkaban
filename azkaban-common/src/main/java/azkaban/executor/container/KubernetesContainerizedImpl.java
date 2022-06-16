@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class KubernetesContainerizedImpl extends EventHandler implements ContainerizedImpl {
 
-  public static final String DEFAULT_FLOW_CONTAINER_NAME_PREFIX = "az-flow-container";
+  public static final String DEFAULT_FLOW_CONTAINER_NAME_PREFIX = "az-platform-image";
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
@@ -1233,7 +1233,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     try {
       // Using GenericKubernetesApi due to a Known issue in K8s Java client and OpenAPIv2:
       // See more here: https://github.com/kubernetes-client/java/issues/86
-
       final GenericKubernetesApi<V1Service, V1ServiceList> serviceClient =
           new GenericKubernetesApi<>(V1Service.class, V1ServiceList.class, "",
               "v1", "services", this.client);
