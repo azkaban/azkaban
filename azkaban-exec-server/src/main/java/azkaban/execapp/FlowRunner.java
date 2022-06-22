@@ -522,8 +522,10 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       this.flowAppender = new FileAppender(this.loggerLayout, absolutePath, false);
       this.logger.addAppender(this.flowAppender);
       if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED, false)) {
-        this.kafkaLog4jAppender = KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(this.azkabanProps,
-            String.valueOf(this.execId), this.flow.getFlowId());
+        // Keep the names consistent as what we did in uploadLogFile()
+        this.kafkaLog4jAppender =
+            KafkaLog4jUtils.getAzkabanFlowKafkaLog4jAppender(this.azkabanProps, this.loggerLayout,
+            String.valueOf(this.execId), "");
 
         if (this.kafkaLog4jAppender != null) {
           this.logger.addAppender(this.kafkaLog4jAppender);
@@ -538,8 +540,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   private void removeAppender(final Appender appender) {
     if (appender != null) {
-      this.logger.removeAppender(appender);
-      appender.close();
+      try {
+        this.logger.removeAppender(appender);
+        appender.close();
+      } catch (Exception e) {
+        logger.error("Failed to remove appender " + appender.getName(), e);
+      }
     }
   }
 
@@ -551,7 +557,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       try {
         this.executionLogsLoader.uploadLogFile(this.execId, "", 0, this.logFile);
       } catch (final ExecutorManagerException e) {
-        e.printStackTrace();
+        logger.error("Failed to close logger", e);
       }
     }
   }

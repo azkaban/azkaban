@@ -462,10 +462,9 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     } else {
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0,
           offset, length);
-
       // Return offline logs if nearline logs are empty or the flow in kubernetes pod crashed
       if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
-          (logData.getLength() == 0 ||
+          (logData == null ||
               (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
                   (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
         return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), "", 0,
@@ -497,11 +496,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     } else {
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId,
           attempt, offset, length);
-
       // Return offline logs if nearline logs are empty or the flow and job in kubernetes pod
       // crashed
       if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
-          (logData.getLength() == 0 ||
+          (logData == null ||
               (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
                   (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
         final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
