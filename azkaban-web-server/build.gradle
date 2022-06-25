@@ -20,7 +20,7 @@ plugins {
 
 node {
     // Version of node to use.
-    version = '8.10.0'
+    version = '16.15.1'
 
     // Version of npm to use.
     npmVersion = ''
@@ -30,7 +30,7 @@ node {
 
     // If true, it will download node using above parameters.
     // If false, it will try to use globally installed node.
-    download = false
+    download = true
 
     // Set the work directory for unpacking node
     workDir = file("${project.buildDir}/nodejs")
@@ -39,9 +39,9 @@ node {
     nodeModulesDir = file("${project.projectDir}")
 }
 
-// npm_cache_clean {
-//     args = ['--force']
-// }
+npm_cache_clean {
+    args = ['--force']
+}
 
 apply plugin: 'lesscss'
 apply plugin: 'dustjs'
