@@ -27,27 +27,27 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '3.2'
+//  id 'com.gradle.build-scan' version '3.2'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
 
 // https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-    }
-}
+// gradleEnterprise {
+//    buildScan {
+//        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+//        termsOfServiceAgree = "yes"
+//    }
+// }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
 
-apply plugin: 'compare-gradle-builds'
+// apply plugin: 'compare-gradle-builds'
 
-compareGradleBuilds {
-  targetBuild.gradleVersion = "4.0"
-}
+// compareGradleBuilds {
+//  targetBuild.gradleVersion = "4.0"
+// }
 
 allprojects {
   apply plugin: 'jacoco'
@@ -274,9 +274,9 @@ task jacocoAggregateReport(type: JacocoReport, group: 'Coverage reports') {
   // JacocoReport-type task requires users to specify which classes to be covered
   // See details in
   // https://docs.gradle.org/current/dsl/org.gradle.testing.jacoco.tasks.JacocoReport.html
-  sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
-  classDirectories = files(publishedProjects.sourceSets.main.output)
-  executionData = files(publishedProjects.jacocoTestReport.executionData)
+  getSourceDirectories().setFrom(files(publishedProjects.sourceSets.main.allSource.srcDirs))
+  getClassDirectories().setFrom(files(publishedProjects.sourceSets.main.output))
+  getExecutionData().setFrom(files(publishedProjects.jacocoTestReport.executionData))
 
   doFirst {
     executionData = files(executionData.findAll { it.exists() })

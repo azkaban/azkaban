@@ -17,6 +17,7 @@ apply plugin: 'c'
 model {
     components {
         main(NativeExecutableSpec) {
+            targetPlatform "osx_x86-64"
             sources {
                 c {
                     source {
