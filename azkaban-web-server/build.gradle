@@ -82,7 +82,7 @@ sourceSets {
     }
 }
 
-task movingJsTojsToPackage() {
+task movingJsTojsToPackage(dependsOn: ['npm_install']) {
 
     doLast {
         copy {
