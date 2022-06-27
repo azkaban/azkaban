@@ -56,7 +56,7 @@ Click on the **Upload** button. You will see the following dialog.
 
 Select the archive file of your workflow files that you want to
 upload. Currently Azkaban only supports ``*.zip`` files. The zip should
-contain the ``*.job`` files and any files needed to run your jobs. Job
+contain the ``*.flow`` files and any files needed to run your jobs. Job
 names must be unique in a project.
 
 Azkaban will validate the contents of the zip to make sure that
