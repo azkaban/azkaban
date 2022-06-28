@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -392,5 +393,9 @@ public class ExecutableFlowBase extends ExecutableNode {
     } else {
       return this.getId() + ":" + this.getFlowId();
     }
+  }
+
+  public Set<String> getExecutableNodeIds() {
+    return executableNodes.keySet();
   }
 }

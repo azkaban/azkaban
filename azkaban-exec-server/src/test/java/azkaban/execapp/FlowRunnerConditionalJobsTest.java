@@ -73,6 +73,7 @@ public class FlowRunnerConditionalJobsTest extends FlowRunnerTestBase {
     final Props generatedProperties = new Props();
     generatedProperties.put("key1", "value1");
     generatedProperties.put("key2", "value2");
+    generatedProperties.put("key3", "value4");
     InteractiveTestJob.getTestJob((CONDITIONAL_FLOW_2 + ":") + "jobA").succeedJob(generatedProperties);
     assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobB", Status.SUCCEEDED);
@@ -144,7 +145,7 @@ public class FlowRunnerConditionalJobsTest extends FlowRunnerTestBase {
    * JobB has defined "condition: var fImport = new JavaImporter(java.io.File); with(fImport) { var
    * f = new File('new'); f.createNewFile(); }"
    * Null ProtectionDomain will restrict this arbitrary code from creating a new file.
-   * However it will not kick in when the change for condition whitelisting is implemented.
+   * However it will not kick in when the change for condition allow-listing is implemented.
    * As a result, this test case will be ignored.
    *
    * @throws Exception the exception
