@@ -186,8 +186,8 @@ public class HttpRequestUtils {
     if (!hasPermission(userManager, user, Type.ADMIN)) {
       params.remove(ExecutionOptions.FLOW_PRIORITY);
       params.remove(ExecutionOptions.USE_EXECUTOR);
-      params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
-      params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
+//      params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
+//      params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
       params.remove(FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP);
       // Passing test version will be allowed for Azkaban ADMIN role only
       params.remove(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
