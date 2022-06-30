@@ -25,6 +25,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
@@ -82,10 +83,13 @@ public class ContainerCleanupManager {
     return this.validityMap;
   }
 
+  private final ContainerizationMetrics containerizationMetrics;
+
   @Inject
   public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
       final ContainerizedImpl containerizedImpl,
-      final ContainerizedDispatchManager containerizedDispatchManager) {
+      final ContainerizedDispatchManager containerizedDispatchManager, final
+      ContainerizationMetrics containerizationMetrics) {
     // Get all the intervals
     this.executionCleanupIntervalMin = azkProps
         .getLong(
@@ -108,6 +112,7 @@ public class ContainerCleanupManager {
     this.executorLoader = executorLoader;
     this.containerizedImpl = containerizedImpl;
     this.containerizedDispatchManager = containerizedDispatchManager;
+    this.containerizationMetrics = containerizationMetrics;
     long runningFlowValidity = DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS;
     try {
       // Added extra buffer of an hour to not conflict with the flow runner cancellation.
@@ -200,6 +205,11 @@ public class ContainerCleanupManager {
       cancelFlowQuietly(flow, originalStatus);
       retryFlowQuietly(flow, originalStatus);
       deleteContainerQuietly(flow.getExecutionId());
+      // If pod is cleaned up when flow is in DISPATCHING or PREPARING state, the
+      // container-dispatch-fail meter should be incremented
+      if (originalStatus == Status.DISPATCHING || originalStatus == Status.PREPARING) {
+        this.containerizationMetrics.markContainerDispatchFail();
+      }
     }
   }
 

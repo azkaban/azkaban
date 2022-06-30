@@ -30,6 +30,8 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import java.time.Duration;
@@ -50,6 +52,7 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
+  private DummyContainerizationMetricsImpl metrics;
 
   @Before
   public void setup() throws Exception {
@@ -58,7 +61,7 @@ public class ContainerCleanupManagerTest {
     this.containerImpl = mock(ContainerizedImpl.class);
     this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
     this.cleaner = new ContainerCleanupManager(this.props, this.executorLoader,
-        this.containerImpl, this.containerizedDispatchManager);
+        this.containerImpl, this.containerizedDispatchManager, this.metrics);
   }
 
   @Test
