@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+    <appender name="Console" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{yyyy/MM/dd HH:mm:ss.SSS Z} %5p [%c{1}] [%t] [Azkaban] %m%n"/>
+        </layout>
+    </appender>
+    <appender name="server" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="azkaban-webserver.log"/>
+        <param name="MaxBackupIndex" value="2"/>
+        <param name="MaxFileSize" value="102400MB"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{yyyy/MM/dd HH:mm:ss.SSS Z} %5p [%c{1}] [%t] [Azkaban] %m%n"/>
+        </layout>
+    </appender>
+    <logger name="azkaban">
+        <level value="INFO"/>
+        <appender-ref ref="server"/>
+    </logger>
+    <root>
+        <level value="INFO"/>
+        <appender-ref ref="Console"/>
+    </root>
+</log4j:configuration>
