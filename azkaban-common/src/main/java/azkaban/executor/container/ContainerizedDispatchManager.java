@@ -142,13 +142,15 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * Get queued flow ids from database. The status for queued flows is READY for containerization.
+   * Get queued flow ids from database. The status for queued flows is PREPARING or DISPATCHING for
+   * containerization.
    *
    * @return
    */
   public List<Integer> getQueuedFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     try {
+      getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.DISPATCHING));
       getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.PREPARING));
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get queued flow ids.", e);
@@ -157,7 +159,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * Get size of queued flows. The status for queued flows is PREPARING for containerization.
+   * Get size of queued flows. The status for queued flows is PREPARING or DISPATCHING for containerization.
    *
    * @return
    */
