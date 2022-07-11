@@ -49,10 +49,12 @@ if [[ -z "$AZKABAN_OPTS" ]]; then
   AZKABAN_OPTS="-Xmx3G"
 fi
 # Set the log4j configuration file
-if [ -f $conf/log4j.properties ]; then
+if [ -f $conf/log4j.xml ]; then
+  AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.xml -Dlog4j.log.dir=$azkaban_dir/logs"
+elif [ -f $conf/log4j.properties ]; then
   AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.properties -Dlog4j.log.dir=$azkaban_dir/logs"
 else
-  echo "Exit with error: $conf/log4j.properties file doesn't exist."
+  echo "Exit with error: neither $conf/log4j.xml nor $conf/log4j.properties exist."
   exit 1;
 fi
 AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$serverpath"
