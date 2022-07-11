@@ -53,7 +53,7 @@ if [ -f $conf/log4j.xml ]; then
 elif [ -f $conf/log4j.properties ]; then
   AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.properties -Dlog4j.log.dir=$azkaban_dir/logs"
 else
-  echo "Exit with error: neither $conf/log4j.xml or $conf/log4j.properties exist."
+  echo "Exit with error: neither $conf/log4j.xml nor $conf/log4j.properties exist."
   exit 1;
 fi
 AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$serverpath"
