@@ -94,6 +94,10 @@ public interface ExecutorManagerAdapter {
   public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId,
       int offset, int length, int attempt) throws ExecutorManagerException;
 
+  @Deprecated
+  public LogData getExecutionJobLogNearlineOnly(ExecutableFlow exFlow, String jobId,
+      int offset, int length, int attempt) throws ExecutorManagerException;
+
   public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId,
       int attempt) throws ExecutorManagerException;
 

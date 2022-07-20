@@ -532,7 +532,15 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
         this.runningExecutions.get().get(exFlow.getExecutionId());
-    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, false);
+  }
+
+  @Override
+  public LogData getExecutionJobLogNearlineOnly(final ExecutableFlow exFlow, final String jobId,
+      final int offset, final int length, final int attempt) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair =
+        this.runningExecutions.get().get(exFlow.getExecutionId());
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, true);
   }
 
   @Override
