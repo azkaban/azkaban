@@ -140,6 +140,10 @@ public class ExecutorApiGateway {
       return callForJsonObjectMap(host, port, executionPath, dispatchMethod, httpTimeout,
           paramList);
     } catch (final IOException e) {
+      logger.error("CallWithExecutionId with params host {}, port {}, action {}, "
+              + "executionId {}, user{}, dispatchMethod {} "
+              + "and params {} failed", host, port, action, executionId, user, dispatchMethod,
+          params, e);
       throw new ExecutorManagerException(e.getMessage(), e);
     }
   }
@@ -172,6 +176,9 @@ public class ExecutorApiGateway {
         (Map<String, Object>) JSONUtils.parseJSONFromString(responseString);
     final String error = (String) jsonResponse.get(ConnectorParams.RESPONSE_ERROR);
     if (error != null) {
+      logger.error("CallForJsonObjectMap with params host {}, port {}, path {}, dispatchMethod {} "
+              + "and paramList {} failed with error {}", host, port, path, dispatchMethod,
+          paramList.toString(), error);
       throw new IOException(error);
     }
     return jsonResponse;
