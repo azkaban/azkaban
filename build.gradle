@@ -256,7 +256,7 @@ if (System.env.TRAVIS == 'true') {
     tasks.withType(Test) {
       // Reduce the memory pressure on the Travis CI to reduce build failures.
       maxParallelForks = 2
-      minHeapSize = '128m'
+      minHeapSize = '512m'
       maxHeapSize '2g'
       outputs.upToDateWhen { false }
     }

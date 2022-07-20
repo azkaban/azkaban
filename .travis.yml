@@ -29,7 +29,7 @@ notifications:
 env:
   global:
     # Reduce the memory pressure on Travis CI to reduce build failures.
-    - GRADLE_OPTS="-Xms128m"
+    - GRADLE_OPTS="-Xms512m -Xmx512m"
 
 after_success:
   - ./gradlew coveralls --no-daemon
