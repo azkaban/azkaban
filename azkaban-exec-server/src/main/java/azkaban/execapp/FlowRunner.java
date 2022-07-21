@@ -96,6 +96,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -1209,22 +1211,26 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return evaluateExpression(replaced);
   }
 
+  @Nonnull
   private String findValueForJobVariable(final ExecutableNode node, final String jobName, final
   String variable) {
     // Get job output props
     final ExecutableNode target = node.getParentFlow().getExecutableNode(jobName);
     if (target == null) {
-      this.logger.error("Not able to load props from output props file, job name " + jobName
-          + " might be invalid.");
-      return null;
+      throw new IllegalStateException("Not able to find executable job name " + jobName
+          + ". The job name might be invalid. Available job names: " + node.getParentFlow().getExecutableNodeIds().stream().collect(
+          Collectors.joining(", ")));
     }
 
     final Props outputProps = target.getOutputProps();
-    if (outputProps != null && outputProps.containsKey(variable)) {
-      return outputProps.get(variable);
+    if (outputProps == null) {
+      throw new IllegalStateException("No output properties were generated for job " + jobName + ".");
+    }
+    if (!outputProps.containsKey(variable)) {
+      throw new IllegalStateException("No variable named " + variable + " found in job " + jobName + " output parameters. Properties: " + outputProps);
     }
 
-    return null;
+    return outputProps.get(variable);
   }
 
   private boolean evaluateExpression(final String expression) {

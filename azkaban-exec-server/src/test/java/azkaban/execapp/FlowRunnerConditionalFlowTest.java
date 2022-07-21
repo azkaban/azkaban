@@ -88,12 +88,30 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     final Props generatedProperties = new Props();
     generatedProperties.put("key1", "value1");
     generatedProperties.put("key2", "value2");
+    generatedProperties.put("key3", "value4");
     InteractiveTestJob.getTestJob("jobA").succeedJob(generatedProperties);
     assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
     assertStatus(flow, "jobD", Status.CANCELLED);
     assertFlowStatus(flow, Status.KILLED);
+  }
+
+  @Test
+  public void flowShouldFailWhenConditionalParameterDoesntExist() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_2, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    assertStatus(flow, "jobA", Status.RUNNING);
+    final Props generatedProperties = new Props();
+    generatedProperties.put("key1", "value1");
+    generatedProperties.put("key2", "value2");
+    InteractiveTestJob.getTestJob("jobA").succeedJob(generatedProperties);
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.SUCCEEDED);
+    assertStatus(flow, "jobC", Status.READY);
+    assertStatus(flow, "jobD", Status.READY);
+    assertFlowStatus(flow, Status.FAILED);
   }
 
   @Test
