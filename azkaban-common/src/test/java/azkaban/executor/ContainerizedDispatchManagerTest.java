@@ -149,7 +149,7 @@ public class ContainerizedDispatchManagerTest {
     when(this.executorLoader.fetchActiveFlowByExecId(flow1.getExecutionId())).thenReturn(
         new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), DispatchMethod.CONTAINERIZED), flow1));
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
-    when(this.executorLoader.fetchQueuedFlows(Status.READY)).thenReturn(this.queuedFlows);
+    when(this.executorLoader.fetchQueuedFlows(Status.PREPARING)).thenReturn(this.queuedFlows);
 
     Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
         new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(
