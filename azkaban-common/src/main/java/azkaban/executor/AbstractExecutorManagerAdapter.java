@@ -475,8 +475,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   protected LogData getJobLogData(final ExecutableFlow exFlow, final String jobId, final int offset,
-      final int length,
-      final int attempt, final Pair<ExecutionReference, ExecutableFlow> pair)
+      final int length, final int attempt, final Pair<ExecutionReference, ExecutableFlow> pair,
+      final boolean nearlineOnly)
       throws ExecutorManagerException {
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "job");
@@ -497,8 +497,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId,
           attempt, offset, length, exFlow.getEndTime());
       // Return offline logs if nearline logs are empty or the flow and job in kubernetes pod
-      // crashed
-      if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
+      // crashed and nearlineOnly is turned off
+      if (!nearlineOnly && offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
           (logData == null ||
               (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
                   (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
@@ -547,7 +547,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
         .fetchActiveFlowByExecId(exFlow.getExecutionId());
-    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, false);
+  }
+
+  @Override
+  public LogData getExecutionJobLogNearlineOnly(final ExecutableFlow exFlow, final String jobId,
+      final int offset, final int length, final int attempt) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, true);
   }
 
   @Override
@@ -767,7 +775,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     final Set<String> applicationIds = new LinkedHashSet<>();
     int offset = 0;
     try {
-      LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+      // Loading all offline logs batch by batch is time-consuming.
+      // Instead, we are targeting on improving getApplicationIds mechanism this year so it will
+      // not rely on full job logs to resolve the application ids.
+      LogData data = getExecutionJobLogNearlineOnly(exFlow, jobId, offset, 50000, attempt);
       while (data != null && data.getLength() > 0) {
         logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
@@ -783,7 +794,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         }
         applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(logData));
         offset = data.getOffset() + logData.length();
-        data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+        data = getExecutionJobLogNearlineOnly(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
