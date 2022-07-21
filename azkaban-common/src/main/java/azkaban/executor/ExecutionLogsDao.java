@@ -53,10 +53,8 @@ public class ExecutionLogsDao {
     this.dbOperator = dbOperator;
   }
 
-  // TODO kunkun-tang: the interface's parameter is called endByte, but actually is length.
   public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte,
-      final int length) throws ExecutorManagerException {
+      final int startByte, final int length) throws ExecutorManagerException {
     final FetchLogsHandler handler = new FetchLogsHandler(startByte, length + startByte);
     try {
       return this.dbOperator.query(FetchLogsHandler.FETCH_LOGS, handler,
