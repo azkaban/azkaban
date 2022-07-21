@@ -56,10 +56,11 @@ serverpath=$(pwd)
 AZKABAN_OPTS=" -Xmx512M -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
     -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
 
-if [[ -f "${conf}/log4j.properties" ]]; then
-  # Set the log4j configuration file
-  AZKABAN_OPTS="${AZKABAN_OPTS:- } -Dlog4j.configuration=file:${conf}/log4j.properties \
-      -Dlog4j.log.dir=${installdir}/logs"
+# Set the log4j configuration file
+if [ -f $conf/log4j.xml ]; then
+  AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.xml -Dlog4j.log.dir=$installdir/logs"
+elif [ -f $conf/log4j.properties ]; then
+  AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.properties -Dlog4j.log.dir=$installdir/logs"
 fi
 
 java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} $@ &
