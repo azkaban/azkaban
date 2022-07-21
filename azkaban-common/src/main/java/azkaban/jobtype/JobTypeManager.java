@@ -55,7 +55,8 @@ public class JobTypeManager {
       { CommonJobProperties.TARGET_CLUSTER_CLASSPATH,
         CommonJobProperties.TARGET_CLUSTER_NATIVE_LIB,
         "env.HADOOP_HOME", "env.HADOOP_COMMON_HOME", "env.HADOOP_YARN_HOME", "env.HADOOP_HDFS_HOME",
-        "env.HADOOP_MAPRED_HOME", "env.HADOOP_CONF_DIR", "env.YARN_CONF_DIR" };
+        "env.HADOOP_MAPRED_HOME", "env.HADOOP_CONF_DIR", "env.YARN_CONF_DIR", "env.SPARK_HOME",
+          "env.SPARK_CONF_DIR"};
 
   private final String jobTypePluginDir; // the dir for jobtype plugins
   private final ClassLoader parentLoader;
