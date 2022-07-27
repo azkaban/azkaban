@@ -83,6 +83,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   private final ContainerJobTypeCriteria containerJobTypeCriteria;
   private final ContainerRampUpCriteria containerRampUpCriteria;
   private final ContainerProxyUserCriteria containerProxyUserCriteria;
+  private final ContainerFlowCriteria containerFlowCriteria;
   private final Optional<ContainerizedWatch> containerizedWatch;
   private final Optional<ExecutorHealthChecker> executorHealthChecker;
 
@@ -113,6 +114,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.containerJobTypeCriteria = new ContainerJobTypeCriteria(azkProps);
     this.containerRampUpCriteria = new ContainerRampUpCriteria(azkProps);
     this.containerProxyUserCriteria = new ContainerProxyUserCriteria(azkProps);
+    this.containerFlowCriteria = new ContainerFlowCriteria(azkProps, logger);
     this.executorHealthChecker = Optional.ofNullable(executorHealthChecker);
   }
 
@@ -126,6 +128,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
 
   public ContainerProxyUserCriteria getContainerProxyUserCriteria(){
     return this.containerProxyUserCriteria;
+  }
+
+  public ContainerFlowCriteria getContainerFlowCriteria() {
+    return this.containerFlowCriteria;
   }
 
   /**
@@ -198,41 +204,48 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     if (executionOptions != null) {
       final Map<String, String> flowParam = executionOptions.getFlowParameters();
       if (flowParam != null && !flowParam.isEmpty()) {
-        if (flowParam
-            .containsKey(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER)) {
-          logger.info(FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER + " flow param is"
-              + " specified for " + flow.getFlowName() + ". It's value is set to "
-              + flowParam
-              .get(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER));
-          if (Boolean.valueOf(flowParam
-              .get(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER))) {
+        if (flowParam.containsKey(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER)) {
+          logger.info(FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER + " flow param is" + " specified for " + flow.getFlowName() + ". It's value is set to "
+              + flowParam.get(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER));
+          if (Boolean.valueOf(flowParam.get(Constants.FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER))) {
             return DispatchMethod.CONTAINERIZED;
           } else {
             return DispatchMethod.POLL;
           }
         }
         if (flowParam.containsKey(ExecutionOptions.USE_EXECUTOR)) {
-          logger.info(ExecutionOptions.USE_EXECUTOR + " flow param is"
-              + " specified for " + flow.getFlowName() + ". It's value is set to "
+          logger.info(ExecutionOptions.USE_EXECUTOR + " flow param is" + " specified for " + flow.getFlowName() + ". It's value is set to "
               + flowParam.get(ExecutionOptions.USE_EXECUTOR));
           return DispatchMethod.POLL;
         }
       }
     }
+    return getDispatchMethodUsingCriteria(flow);
+  }
 
+  private DispatchMethod getDispatchMethodUsingCriteria(final ExecutableFlow flow) {
     DispatchMethod dispatchMethod = this.containerRampUpCriteria.getDispatchMethod(flow);
-    logger.info("Dispatch method by proxy user criteria is",
+    logger.info("Dispatch method by ramp up criteria is " +
         dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
     dispatchMethod = this.containerJobTypeCriteria.getDispatchMethod(flow);
-    logger.info("Dispatch method by job type criteria is",
+    logger.info("Dispatch method by job type criteria is " +
         dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
     if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return dispatchMethod;
     }
-    return this.containerProxyUserCriteria.getDispatchMethod(flow);
+    dispatchMethod = this.containerProxyUserCriteria.getDispatchMethod(flow);
+    logger.info("Dispatch method by Proxy User criteria is " +
+        dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
+    if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
+      return dispatchMethod;
+    }
+    dispatchMethod = this.containerFlowCriteria.getDispatchMethod(flow);
+    logger.info("Dispatch method by flow filter is " +
+        dispatchMethod.name() + " for " + flow.getFlowName() + " flow.");
+    return dispatchMethod;
   }
 
   /**
