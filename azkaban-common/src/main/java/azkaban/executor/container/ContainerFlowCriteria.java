@@ -21,7 +21,12 @@ import org.slf4j.Logger;
 
 
 /**
- * Class for determining {@link azkaban.DispatchMethod} based on flow name filter.
+ * Class for determining {@link azkaban.DispatchMethod} based on project or flow name filter.
+ * A sample file can look like this:
+ * proj1:flow1
+ * proj1:flow2
+ * proj2
+ * proj3:flow1
  */
 public class ContainerFlowCriteria {
   // Flows are stored in a map where key is project name and value is set of flows.
@@ -78,7 +83,7 @@ public class ContainerFlowCriteria {
       for (String line; (line = reader.readLine()) != null;) {
         line = line.trim();
         List<String> flowFQN = Arrays.asList(line.split(":"));
-        validateAndAddFlow(flowFQN);
+        validateAndAdd(flowFQN);
       }
     } catch (final IOException e) {
       // Log and ignore
@@ -86,18 +91,28 @@ public class ContainerFlowCriteria {
   }
 
   /** Validate flowFQN and add it to flows map.
-   * @param flowFQN stored in the file is of format,
-   * <project name>:<flow name>. Each flowFQN must be of size two.
+   * @param flowFQN stored in the file is of format:
+   * <project name> when entire project needs to be in the filter and
+   * <project name>:<flow name>.
    */
-  private void validateAndAddFlow(final List<String> flowFQN) {
-    if (flowFQN.size() != 2) {
+  private void validateAndAdd(final List<String> flowFQN) {
+    if (!(flowFQN.size() == 1 || flowFQN.size() == 2)) {
       return;
     }
+
     final String project = flowFQN.get(0);
+    if (flowFQN.size() == 1) {
+      // Entire project is in the filter.
+      this.flows.put(project, null);
+      return;
+    }
+
+    // Handle the case when the FQN also contains flow name
     if (!this.flows.containsKey(project)) {
       // Make an entry for the project
       this.flows.put(project, new HashSet<>(1));
     }
+
     this.flows.get(project).add(flowFQN.get(1));
   }
 
@@ -114,7 +129,10 @@ public class ContainerFlowCriteria {
 
   @VisibleForTesting
   public boolean flowExists(final String projectName, final String flowName) {
+    if (!this.flows.containsKey(projectName)) {
+      return false;
+    }
     final Set<String> flowNames = this.flows.get(projectName);
-    return flowNames != null && flowNames.contains(flowName);
+    return flowNames == null || flowNames.contains(flowName);
   }
 }
