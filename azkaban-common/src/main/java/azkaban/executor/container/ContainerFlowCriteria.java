@@ -50,11 +50,15 @@ public class ContainerFlowCriteria {
    * Reloads the in-memory flows map with the flow filter file.
    */
   public void reloadFlowFilter() {
+    // Reset the filter map
+    flows = new HashMap<>(1);
     loadFlowFilter();
   }
 
   @VisibleForTesting
   public void reloadFlowFilter(final String fileLocation) {
+    // Reset the filter map
+    flows = new HashMap<>(1);
     loadFlowFilter(fileLocation);
   }
 
@@ -87,6 +91,7 @@ public class ContainerFlowCriteria {
       }
     } catch (final IOException e) {
       // Log and ignore
+      logger.info("Caught exception while reading the file." + e);
     }
   }
 
