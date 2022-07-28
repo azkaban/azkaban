@@ -27,7 +27,7 @@ public class ContainerFlowCriteria {
   // Flows are stored in a map where key is project name and value is set of flows.
   private Map<String, Set<String>> flows = new HashMap<>(1);
   private final String fileLocation;
-  private final org.slf4j.Logger logger;
+  private final Logger logger;
 
   /**
    *
