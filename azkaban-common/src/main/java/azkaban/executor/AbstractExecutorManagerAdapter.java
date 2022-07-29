@@ -462,11 +462,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     } else {
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0,
           offset, length, exFlow.getEndTime());
-      // Return offline logs if nearline logs are empty or the flow in kubernetes pod crashed
-      if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
-          (logData == null ||
-              (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
-                  (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
+      // Return offline logs if nearline logs are empty
+      if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() && logData == null) {
         return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), "", 0,
             offset, length, exFlow.getEndTime());
       }
@@ -496,17 +493,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     } else {
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId,
           attempt, offset, length, exFlow.getEndTime());
-      // Return offline logs if nearline logs are empty or the flow and job in kubernetes pod
-      // crashed and nearlineOnly is turned off
-      if (!nearlineOnly && offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() &&
-          (logData == null ||
-              (exFlow.getDispatchMethod() == DispatchMethod.CONTAINERIZED &&
-                  (exFlow.getStatus() == Status.KILLED || exFlow.getStatus() == Status.EXECUTION_STOPPED)))) {
-        final ExecutableNode node = exFlow.getExecutableNodePath(jobId);
-        if (node.getStatus() == Status.KILLED || node.getStatus() == Status.EXECUTION_STOPPED) {
-          return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), jobId,
-              attempt, offset, length, exFlow.getEndTime());
-        }
+      // Return offline logs if nearline logs are empty
+      if (!nearlineOnly && offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() && logData == null) {
+        return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), jobId,
+            attempt, offset, length, exFlow.getEndTime());
       }
       return logData;
     }
