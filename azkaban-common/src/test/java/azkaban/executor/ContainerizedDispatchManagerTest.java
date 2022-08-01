@@ -21,6 +21,7 @@ import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -108,6 +109,9 @@ public class ContainerizedDispatchManagerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
         ContainerizedImplType.KUBERNETES.name());
+    props.put(Constants.
+            ContainerizedDispatchManagerProperties.CONTAINERIZED_FLOW_FILTER_FILE,
+        "src/test/resources/flow_filter.txt");
     this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
     this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
@@ -514,6 +518,24 @@ public class ContainerizedDispatchManagerTest {
     //Verify that httpPost was requested with the 'cancel' param.
     Pair cancelAction = new Pair<String, String> ("action", "cancel");
     Assert.assertTrue(apiClient.getLastHttpPostParams().stream().anyMatch(pair -> cancelAction.equals(pair)));
+  }
+
+  @Test
+  public void testFlowFilter() throws Exception {
+    initializeContainerizedDispatchImpl();
+    // Flow names contained in flow_filter.txt must be loaded.
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow1"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow2"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow3"));
+    assertFalse(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow4"));
+
+    // Reload the flow list from another file, it must contain proj2 and flow4
+    containerizedDispatchManager.getContainerFlowCriteria().reloadFlowFilter("src/test/resources/flow_filter2.txt");
+    // Flow names contained in flow_filter2.txt must be loaded.
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow1"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow2"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow3"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow4"));
   }
 
   private Props createContainerDispatchEnabledProps(Props parentProps) {

@@ -1110,6 +1110,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         containerizedDispatchManager.getContainerProxyUserCriteria()
             .removeFromDenyList(ServletUtils.getSetFromString(val));
         break;
+      case RELOAD_FLOW_FILTER:
+        containerizedDispatchManager.getContainerFlowCriteria()
+            .reloadFlowFilter();
+        break;
       default:
         break;
     }
@@ -1163,7 +1167,8 @@ enum ContainerPropUpdate {
   REMOVE_FROM_ALLOW_LIST("removeFromAllowList"),
   UPDATE_RAMP_UP("updateRampUp"),
   APPEND_DENY_LIST("appendDenyList"),
-  REMOVE_FROM_DENY_LIST("removeFromDenyList");
+  REMOVE_FROM_DENY_LIST("removeFromDenyList"),
+  RELOAD_FLOW_FILTER("reloadFlowFilter");
 
   private final String param;
 

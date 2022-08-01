@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Class for determining {@link DispatchMethod} based on allowList.
+ * Class for determining {@link DispatchMethod} based on jobtype allowList.
  */
 public class ContainerJobTypeCriteria {
 
