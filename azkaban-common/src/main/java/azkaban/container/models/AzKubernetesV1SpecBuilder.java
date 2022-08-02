@@ -17,13 +17,11 @@
 package azkaban.container.models;
 
 import io.kubernetes.client.custom.Quantity;
-import io.kubernetes.client.openapi.models.V1Container.ImagePullPolicyEnum;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerBuilder;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1EnvVarBuilder;
 import io.kubernetes.client.openapi.models.V1PodSpec;
-import io.kubernetes.client.openapi.models.V1PodSpec.RestartPolicyEnum;
 import io.kubernetes.client.openapi.models.V1PodSpecBuilder;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1ResourceRequirementsBuilder;
@@ -52,6 +50,7 @@ public class AzKubernetesV1SpecBuilder {
             LoggerFactory.getLogger(AzKubernetesV1SpecBuilder.class);
     private static final String AZ_CLUSTER_KEY = "AZ_CLUSTER";
     private static final String AZ_CONF_VERSION_KEY = "AZ_CONF_VERSION";
+    private static final String DEFAULT_RESTART_POLICY = "Never";
     private static final int SECRET_VOLUME_DEFAULT_MODE = 0400; // file read permitted only for the user
 
     private final V1ContainerBuilder flowContainerBuilder = new V1ContainerBuilder();
@@ -61,18 +60,18 @@ public class AzKubernetesV1SpecBuilder {
     private final List<V1Container> initContainers = new ArrayList<>();
 
     private final V1EnvVar azClusterName;
-    private final RestartPolicyEnum restartPolicy;
+    private final String restartPolicy;
 
     /**
      * @param azClusterName Name to uniquely represent Azkaban instance requesting creation of Pod
      * @param restartPolicy Optional argument to specify flow container restart policy, otherwise, its "Never"
      */
-    public AzKubernetesV1SpecBuilder(String azClusterName, Optional<RestartPolicyEnum> restartPolicy) {
+    public AzKubernetesV1SpecBuilder(String azClusterName, Optional<String> restartPolicy) {
         this.azClusterName = new V1EnvVarBuilder()
                 .withName(AZ_CLUSTER_KEY)
                 .withValue(azClusterName)
                 .build();
-        this.restartPolicy = restartPolicy.orElse(RestartPolicyEnum.NEVER);
+        this.restartPolicy = restartPolicy.orElse(DEFAULT_RESTART_POLICY);
     }
 
     /**
@@ -94,7 +93,7 @@ public class AzKubernetesV1SpecBuilder {
      * This method adds the configured application-container to the Pod spec.
      * This application container is responsible for executing flow.
      */
-    public AzKubernetesV1SpecBuilder addFlowContainer(String name, String image, ImagePullPolicyEnum imagePullPolicy, String confVersion) {
+    public AzKubernetesV1SpecBuilder addFlowContainer(String name, String image, ImagePullPolicy imagePullPolicy, String confVersion) {
         V1EnvVar azConfVersion = new V1EnvVarBuilder()
                 .withName(AZ_CONF_VERSION_KEY)
                 .withValue(confVersion)
@@ -102,7 +101,7 @@ public class AzKubernetesV1SpecBuilder {
         this.flowContainerBuilder
                 .withName(name)
                 .withImage(image)
-                .withImagePullPolicy(imagePullPolicy)
+                .withImagePullPolicy(imagePullPolicy.getPolicyVal())
                 .withEnv(this.azClusterName, azConfVersion);
         LOGGER.info("Created flow container object with name " + name);
         return this;
@@ -120,7 +119,7 @@ public class AzKubernetesV1SpecBuilder {
      * to a volume also mounted to the application container.
      */
     public AzKubernetesV1SpecBuilder addInitContainerType(String name, String image,
-        ImagePullPolicyEnum imagePullPolicy, String initMountPath, String appMountPath,
+        ImagePullPolicy imagePullPolicy, String initMountPath, String appMountPath,
         final InitContainerType initContainerType) {
         LOGGER.info("Creating spec objects for type " + name);
         String jobTypeVolumeName = initContainerType.volumePrefix + name.toLowerCase();
@@ -147,7 +146,7 @@ public class AzKubernetesV1SpecBuilder {
         V1Container initContainer = new V1ContainerBuilder()
                 .withName(initContainerType.initPrefix + name.toLowerCase())
                 .addToEnv(this.azClusterName, jobTypeMountPath)
-                .withImagePullPolicy(imagePullPolicy)
+                .withImagePullPolicy(imagePullPolicy.getPolicyVal())
                 .withImage(image)
                 .withVolumeMounts(initMountVolume)
                 .build();
@@ -196,7 +195,7 @@ public class AzKubernetesV1SpecBuilder {
         final String secretName, final String volMountPath) {
         final V1SecretVolumeSource secretVolumeSource =
             new V1SecretVolumeSourceBuilder()
-                .withNewSecretName(secretName)
+                .withSecretName(secretName)
                 .withDefaultMode(SECRET_VOLUME_DEFAULT_MODE)
                 .build();
         final V1Volume secretVolume =
