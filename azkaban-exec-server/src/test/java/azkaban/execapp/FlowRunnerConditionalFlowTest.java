@@ -100,7 +100,6 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   }
 
   @Test
-  @Ignore
   public void flowShouldFailWhenConditionalParameterDoesntExist() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
     setUp(CONDITIONAL_FLOW_8, flowProps);
@@ -111,7 +110,6 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     generatedProperties.put("key2", "value2");
     InteractiveTestJob.getTestJob("jobA").succeedJob(generatedProperties);
     assertStatus(flow, "jobA", Status.SUCCEEDED);
-    assertStatus(flow, "jobB", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.READY);
     assertStatus(flow, "jobD", Status.READY);
     assertFlowStatus(flow, Status.FAILED);
