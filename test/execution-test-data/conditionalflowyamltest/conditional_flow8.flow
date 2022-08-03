@@ -1,0 +1,38 @@
+---
+config:
+  flow-level-parameter: value
+
+nodes:
+  - name: jobD
+    type: test
+    config:
+      seconds: 0
+      fail: false
+    condition: ${jobA:key2} == 'value2'
+
+    dependsOn:
+      - jobB
+      - jobC
+
+  - name: jobA
+    type: test
+
+  - name: jobB
+    type: test
+    config:
+      seconds: 0
+      fail: false
+    condition: ${jobA:key1} == 'value1'
+
+    dependsOn:
+      - jobA
+
+  - name: jobC
+    type: test
+    config:
+      seconds: 0
+      fail: false
+    condition: ${jobA:key3} == 'value3'
+
+    dependsOn:
+      - jobA
