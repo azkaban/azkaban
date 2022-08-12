@@ -100,7 +100,6 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   }
 
   @Test
-  @Ignore
   public void flowShouldFailWhenConditionalParameterDoesntExist() throws Exception {
     final HashMap<String, String> flowProps = new HashMap<>();
     setUp(CONDITIONAL_FLOW_8, flowProps);
