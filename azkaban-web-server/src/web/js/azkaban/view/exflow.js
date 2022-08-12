@@ -340,42 +340,51 @@ azkaban.FlowLogView = Backbone.View.extend({
   },
   initialize: function (settings) {
     this.model.set({"offset": 0});
+    this.model.set({"isRunning": false});
     this.handleUpdate();
   },
   handleUpdate: function (evt) {
-    var offset = this.model.get("offset");
-    var requestURL = contextURL + "/executor";
-    var model = this.model;
-    console.log("fetchLogs offset is " + offset)
+    if (this.model.get("isRunning") === true) {
+      console.warn("Web server is still loading the last batch of logs");
+    } else {
+      var offset = this.model.get("offset");
+      var requestURL = contextURL + "/executor";
+      var model = this.model;
+      this.model.set({"isRunning": true});
+      console.log("fetchLogs offset is " + offset);
 
-    $.ajax({
-      url: requestURL,
-      data: {
-        "execid": execId,
-        "ajax": "fetchExecFlowLogs",
-        "offset": offset,
-        "length": 50000
-      },
-      success: function (data) {
-        console.log("fetchLogs");
-        if (data.error) {
-          console.log(data.error);
-        } else {
-          var log = $("#logSection").text();
-          if (!log) {
-            log = data.data;
+      $.ajax({
+        url: requestURL,
+        data: {
+          "execid": execId,
+          "ajax": "fetchExecFlowLogs",
+          "offset": offset,
+          "length": 50000
+        },
+        success: function (data) {
+          console.log("fetchLogs");
+          if (data.error) {
+            console.log(data.error);
           } else {
-            log += data.data;
+            var log = $("#logSection").text();
+            if (!log) {
+              log = data.data;
+            } else {
+              log += data.data;
+            }
+
+            var newOffset = data.offset + data.length;
+
+            $("#logSection").text(log);
+            model.set({"offset": newOffset, "log": log});
+            $(".logViewer").scrollTop(9999);
           }
-
-          var newOffset = data.offset + data.length;
-
-          $("#logSection").text(log);
-          model.set({"offset": newOffset, "log": log});
-          $(".logViewer").scrollTop(9999);
+        },
+        complete: function() {
+          model.set({"isRunning": false});
         }
-      }
-    });
+      });
+    }
   }
 });
 
