@@ -26,6 +26,7 @@ import azkaban.container.models.AzKubernetesV1PodBuilder;
 import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
 import azkaban.container.models.AzKubernetesV1SpecBuilder;
+import azkaban.container.models.ImagePullPolicy;
 import azkaban.container.models.InitContainerType;
 import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.event.Event;
@@ -54,7 +55,7 @@ import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1Container.ImagePullPolicyEnum;
+import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -666,7 +667,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final AzKubernetesV1SpecBuilder v1SpecBuilder =
         new AzKubernetesV1SpecBuilder(this.clusterEnv, Optional.empty())
             .addFlowContainer(this.flowContainerName,
-                azkabanBaseImageFullPath, ImagePullPolicyEnum.IFNOTPRESENT, azkabanConfigVersion)
+                azkabanBaseImageFullPath, ImagePullPolicy.IF_NOT_PRESENT, azkabanConfigVersion)
             .withResources(flowContainerCPULimit, flowContainerCPURequest, flowContainerMemoryLimit,
                 flowContainerMemoryRequest, flowContainerDiskRequest);
 
@@ -1120,7 +1121,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       }
       try {
         final String imageFullPath = versionSet.getVersion(jobType).get().pathWithVersion();
-        v1SpecBuilder.addInitContainerType(jobType, imageFullPath, ImagePullPolicyEnum.IFNOTPRESENT,
+        v1SpecBuilder.addInitContainerType(jobType, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
             String.join("/", this.initMountPathPrefixForJobtypes, jobType),
             String.join("/", this.appMountPathPrefixForJobtypes, jobType), InitContainerType.JOBTYPE);
       } catch (final Exception e) {
@@ -1132,7 +1133,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       try {
         final String imageFullPath = versionSet.getVersion(dependency).get().pathWithVersion();
         v1SpecBuilder
-            .addInitContainerType(dependency, imageFullPath, ImagePullPolicyEnum.IFNOTPRESENT,
+            .addInitContainerType(dependency, imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
                 String.join("/", this.initMountPathPrefixForDependencies, dependency),
                 String.join("/", this.appMountPathPrefixForDependencies, dependency),
                 InitContainerType.DEPENDENCY);
