@@ -363,10 +363,17 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
         // to ACTIVE and the rest of the image versions with ACTIVE state must be set to STABLE.
         final SQLTransaction<Integer> setCurrentVersionActive = transOperator -> {
           // Set all the current active versions to STABLE
-          final String setStable = String.format("update image_versions iv, image_types it " +
-              " set iv.state = 'STABLE' where iv.type_id = it.id and it.name = '%s' "
-              + " and iv.state = 'active'", imageVersionRequest.getName());
-          transOperator.update(setStable);
+          final String setStable = "update image_versions iv, image_types it "
+              + "set iv.state = ?, iv.modified_on = ? "
+              + "where iv.type_id = it.id and it.name = ? and iv.state = ?";
+          final List<Object> setStableParams = new ArrayList<>();
+          setStableParams.add(State.STABLE.getStateValue());
+          setStableParams.add(Timestamp.valueOf(LocalDateTime.now()));
+          setStableParams.add(imageVersionRequest.getName());
+          setStableParams.add(State.ACTIVE.getStateValue());
+          transOperator.update(setStable, Iterables.toArray(setStableParams,
+              Object.class));
+
           // Now set the current version to ACTIVE
           final int count = transOperator.update(queryBuilder.toString(),
               Iterables.toArray(params, Object.class));
