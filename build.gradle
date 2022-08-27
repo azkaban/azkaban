@@ -99,6 +99,7 @@ ext.deps = [
     io                   : 'commons-io:commons-io:2.4',
     jacksonCoreAsl       : 'org.codehaus.jackson:jackson-core-asl:1.9.5',
     jacksonMapperAsl     : 'org.codehaus.jackson:jackson-mapper-asl:1.9.5',
+    jarchivelib          : 'org.rauschig:jarchivelib:1.2.0',
     javaxElApi           : 'javax.el:javax.el-api:3.0.0',
     javaxEl              : 'org.glassfish:javax.el:3.0.0',
     jetty                : 'org.mortbay.jetty:jetty:6.1.26',
