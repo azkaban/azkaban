@@ -37,9 +37,11 @@ import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.services.ImageMgmtCommonService;
+import azkaban.imagemgmt.services.ImageRampRuleService;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.servlets.ImageRampRuleServlet;
 import azkaban.imagemgmt.servlets.ImageRampupServlet;
 import azkaban.imagemgmt.servlets.ImageTypeServlet;
 import azkaban.imagemgmt.servlets.ImageVersionServlet;
@@ -525,6 +527,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       routesMap.put("/imageTypes/*", new ImageTypeServlet());
       routesMap.put("/imageVersions/*", new ImageVersionServlet());
       routesMap.put("/imageRampup/*", new ImageRampupServlet());
+      routesMap.put("/imageRampRule/*", new ImageRampRuleServlet());
     }
     return routesMap;
   }
@@ -790,6 +793,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   public ImageRampupService getImageRampupService() {
     return SERVICE_PROVIDER.getInstance(ImageRampupService.class);
+  }
+
+  public ImageRampRuleService getImageRampRuleService() {
+    return SERVICE_PROVIDER.getInstance(ImageRampRuleService.class);
   }
 
   public PermissionManager getPermissionManager() {

@@ -1,0 +1,5 @@
+{
+  "ruleId": "daliSparkExclude",
+  "imageName": "az-platform-image",
+  "imageVersion": "0.0.421"
+}

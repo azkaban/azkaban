@@ -50,6 +50,8 @@ import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
 import azkaban.imagemgmt.services.ImageMgmtCommonService;
 import azkaban.imagemgmt.services.ImageMgmtCommonServiceImpl;
+import azkaban.imagemgmt.services.ImageRampRuleService;
+import azkaban.imagemgmt.services.ImageRampRuleServiceImpl;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageRampupServiceImpl;
 import azkaban.imagemgmt.services.ImageTypeService;
@@ -189,6 +191,7 @@ public class AzkabanWebServerModule extends AbstractModule {
       bind(VersionSetLoader.class).to(JdbcVersionSetLoader.class).in(Scopes.SINGLETON);
       bind(ImageVersionMetadataService.class).to(ImageVersionMetadataServiceImpl.class).in(Scopes.SINGLETON);
       bind(ImageMgmtCommonService.class).to(ImageMgmtCommonServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageRampRuleService.class).to(ImageRampRuleServiceImpl.class).in(Scopes.SINGLETON);
     }
   }
 
