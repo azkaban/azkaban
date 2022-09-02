@@ -1,3 +1,18 @@
+/*
+ * Copyright 2022 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.imagemgmt.services;
 
 import azkaban.imagemgmt.daos.ImageTypeDao;
@@ -9,7 +24,12 @@ import azkaban.imagemgmt.daos.RampRuleDaoImpl;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageType;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.utils.ConverterUtils;
+import azkaban.user.Permission;
+import azkaban.user.Role;
+import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.JSONUtils;
@@ -29,6 +49,8 @@ public class ImageRampRuleServiceImplTest {
   private ImageVersionDao _imageVersionDao;
   private UserManager _userManager;
   private ImageRampRuleService _rampRuleService;
+  private PermissionManager _permissionManager;
+
   private ConverterUtils _converterUtils;
 
   @Before
@@ -37,24 +59,31 @@ public class ImageRampRuleServiceImplTest {
     this._imageTypeDao = mock(ImageTypeDaoImpl.class);
     this._imageVersionDao = mock(ImageVersionDaoImpl.class);
     this._userManager = mock(XmlUserManager.class);
-    this._rampRuleService = new ImageRampRuleServiceImpl(_rampRuleDao, _imageTypeDao, _imageVersionDao, _userManager);
+    this._permissionManager = new PermissionManagerImpl(_imageTypeDao, _userManager);
+    this._rampRuleService =
+        new ImageRampRuleServiceImpl(_rampRuleDao, _imageTypeDao, _imageVersionDao, _permissionManager);
     this._converterUtils = new ConverterUtils(new ObjectMapper());
   }
 
   @Test
   public void testCreateRule() {
-    String user = "user1";
+    User user = new User("testUser");
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule.json");
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
     when(_imageTypeDao.getImageTypeByName(requestDTO.getImageName())).thenReturn(Optional.of(new ImageType()));
     when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(true);
     ImageOwnership ownership = new ImageOwnership();
-    ownership.setOwner(user);
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    user.addRole("admin");
+    ownership.setOwner(user.getUserId());
+    ownership.setRole(ImageOwnership.Role.ADMIN);
     when(_imageTypeDao.getImageTypeOwnership(requestDTO.getImageName())).thenReturn(Collections.singletonList(ownership));
+
+    when(_userManager.getRole(any())).thenReturn(role);
     when(_userManager.validateUserGroupMembership(any(), any())).thenReturn(true);
     when(_userManager.validateGroup(any())).thenReturn(true);
     when(_rampRuleDao.addRampRule(any())).thenReturn(1);
-    assertThatCode(() -> _rampRuleService.createRule(requestDTO, user, false)).doesNotThrowAnyException();
+    assertThatCode(() -> _rampRuleService.createRule(requestDTO, user)).doesNotThrowAnyException();
   }
 
   @Test
@@ -62,7 +91,7 @@ public class ImageRampRuleServiceImplTest {
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule_invalid.json");
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
     when(_imageTypeDao.getImageTypeByName(requestDTO.getImageName())).thenReturn(Optional.empty());
-    assertThatCode(() -> _rampRuleService.createRule(requestDTO, "user", false))
+    assertThatCode(() -> _rampRuleService.createRule(requestDTO, new User("testUser")))
         .hasMessageContaining("Invalid image type");
   }
 
@@ -72,13 +101,13 @@ public class ImageRampRuleServiceImplTest {
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
     when(_imageTypeDao.getImageTypeByName(requestDTO.getImageName())).thenReturn(Optional.of(new ImageType()));
     when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(false);
-    assertThatCode(() -> _rampRuleService.createRule(requestDTO, "user", false))
+    assertThatCode(() -> _rampRuleService.createRule(requestDTO, new User("testUser")))
         .hasMessageContaining("Invalid image version");
   }
 
   @Test
   public void testNotAuthorizedUser() {
-    String user = "user";
+    User user = new User("testUser");
     String group = "group";
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule.json");
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
@@ -88,7 +117,7 @@ public class ImageRampRuleServiceImplTest {
     ownership.setOwner(group);
     when(_imageTypeDao.getImageTypeOwnership(requestDTO.getImageName())).thenReturn(Collections.singletonList(ownership));
     when(_userManager.validateUserGroupMembership(any(), any())).thenReturn(false);
-    assertThatCode(() -> _rampRuleService.createRule(requestDTO, user, false))
+    assertThatCode(() -> _rampRuleService.createRule(requestDTO, user))
         .hasMessageContaining("unauthorized user");
   }
 

@@ -18,7 +18,10 @@ package azkaban.imagemgmt.permission;
 
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.user.Permission.Type;
+import azkaban.user.User;
 import azkaban.user.UserManager;
+import java.util.Set;
+
 
 /**
  * Interface defines method to check the permission for accessing image management APIs.
@@ -28,14 +31,23 @@ public interface PermissionManager {
   /**
    * Checks the permission based on user manager, image type name, user id and Permission type.
    *
-   * @param userManager
    * @param imageTypeName
    * @param userId
    * @param type
    * @return boolean
    */
-  public boolean hasPermission(final UserManager userManager, final String imageTypeName,
-      final String userId, final Type type)
+  public boolean hasPermission(final String imageTypeName, final String userId, final Type type)
+      throws ImageMgmtException;
+
+  /**
+   * Checks the permission based on user manager, image type name, user id and Permission type;
+   * @return Set of Ldap Groups
+   *
+   * @param imageTypeName
+   * @param user
+   * @return the ownership set of desired image type
+   */
+  public Set<String> validatePermissionAndGetOwnerships(final String imageTypeName, final User user)
       throws ImageMgmtException;
 
 }
