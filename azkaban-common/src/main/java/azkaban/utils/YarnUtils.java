@@ -15,9 +15,17 @@
  */
 package azkaban.utils;
 
+import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
+
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.client.api.YarnClient;
@@ -29,6 +37,38 @@ public class YarnUtils {
   //Yarn resource configuration directory for the cluster where the job is scheduled by the cluster router
   private static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
   private static final String YARN_CONF_FILENAME = "yarn-site.xml";
+
+  public static final EnumSet<YarnApplicationState> YARN_APPLICATION_ALIVE_STATES = EnumSet.of(
+      YarnApplicationState.NEW,
+      YarnApplicationState.NEW_SAVING,
+      YarnApplicationState.SUBMITTED,
+      YarnApplicationState.ACCEPTED,
+      YarnApplicationState.RUNNING
+  );
+
+  /**
+   * Use the yarnClient to query the unfinished yarn applications, then use the yarnClient to kill
+   * them sequentially
+   *
+   * @param yarnClient the yarnClient already connects to the cluster
+   * @param flowExecID the azkaban flow execution id whose yarn applications needs to be killed
+   * @return the set of all to-be-killed (alive) yarn applications' IDs
+   * @throws IOException   for RPC issue
+   * @throws YarnException for YARN server issue
+   */
+  public static Set<String> getAllAliveAppIDsByExecID(final YarnClient yarnClient,
+      final String flowExecID, final Logger log)
+      throws IOException, YarnException {
+
+    Set<String> searchTags = ImmutableSet.of(AZKABAN_FLOW_EXEC_ID + ":" + flowExecID);
+
+    log.info(String.format("Searching for alive yarn application reports with tag %s", searchTags));
+    List<ApplicationReport> applicationReports = yarnClient.getApplications(
+        null, YARN_APPLICATION_ALIVE_STATES, searchTags);
+
+    return applicationReports.stream().map(ApplicationReport::getApplicationId)
+        .map(ApplicationId::toString).collect(Collectors.toSet());
+  }
 
   /**
    * Uses YarnClient to kill the jobs one by one
