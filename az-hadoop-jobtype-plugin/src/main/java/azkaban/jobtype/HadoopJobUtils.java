@@ -15,8 +15,10 @@
  */
 package azkaban.jobtype;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
+import azkaban.utils.YarnUtils;
 import azkaban.utils.Props;
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
@@ -38,12 +40,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.client.api.YarnClient;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.log4j.Logger;
-import org.apache.hadoop.fs.Path;
 
 
 /**
@@ -86,9 +84,6 @@ public class HadoopJobUtils {
   public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
   // Azkaban property for listing additional namenodes for delegation tokens
   private static final String OTHER_NAMENODES_PROPERTY = "other_namenodes";
-  //Yarn resource configuration directory for the cluster where the job is scheduled by the cluster router
-  private static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
-  private static final String YARN_CONF_FILENAME = "yarn-site.xml";
 
   private HadoopJobUtils() {
   }
@@ -345,16 +340,17 @@ public class HadoopJobUtils {
    * This method takes additional parameters to determine whether KillAllSpawnedHadoopJobs needs to
    * be executed
    * using doAs as a different user
-   *
-   * @param logFilePath Azkaban log file path
    * @param jobProps Azkaban job props
    * @param tokenFile Pass in the tokenFile if value is known.  It is ok to skip if the token file
    * is in the environmental variable
    * @param log a usable logger
    */
-  public static void proxyUserKillAllSpawnedHadoopJobs(final String logFilePath,
-      final Props jobProps,
+  public static void proxyUserKillAllSpawnedHadoopJobs(final Props jobProps,
       final File tokenFile, final Logger log) {
+
+    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+    log.info("Log file path is: " + logFilePath);
+
     final Properties properties = new Properties();
     properties.putAll(jobProps.getFlattened());
 
@@ -366,39 +362,22 @@ public class HadoopJobUtils {
         proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {
-            HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
+            findAndKillYarnApps(logFilePath, log, jobProps);
             return null;
           }
         });
       } else {
-        HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
+        findAndKillYarnApps(logFilePath, log, jobProps);
       }
     } catch (final Throwable t) {
       log.warn("something happened while trying to kill all spawned jobs", t);
     }
   }
 
-
-  /**
-   * Pass in a log file, this method will find all the hadoop jobs it has launched, and kills it
-   *
-   * Only works with Hadoop2
-   *
-   * @return a Set<String>. The set will contain the applicationIds that this job tried to kill.
-   */
-  public static Set<String> killAllSpawnedHadoopJobs(final String logFilePath, final Logger log, final Props jobProps) {
-    final Set<String> allSpawnedJobs = findApplicationIdFromLog(logFilePath, log);
-    log.info("applicationIds to kill: " + allSpawnedJobs);
-
-    for (final String appId : allSpawnedJobs) {
-      try {
-        killJobOnCluster(appId, log, jobProps);
-      } catch (final Throwable t) {
-        log.warn("something happened while trying to kill this job: " + appId, t);
-      }
-    }
-
-    return allSpawnedJobs;
+  private static void findAndKillYarnApps(String logFilePath, Logger log, Props jobProps) {
+    Set<String> allSpawnedJobAppIDs = findApplicationIdFromLog(logFilePath, log);
+    YarnClient yarnClient = YarnUtils.createYarnClient(jobProps);
+    YarnUtils.killAllAppsOnCluster(yarnClient, allSpawnedJobAppIDs, log);
   }
 
   /**
@@ -481,36 +460,6 @@ public class HadoopJobUtils {
       }
     }
     return applicationIds;
-  }
-
-  /**
-   * <pre>
-   * Uses YarnClient to kill the job on HDFS.
-   * Using JobClient only works partially:
-   *   If yarn container has started but spark job haven't, it will kill
-   *   If spark job has started, the cancel will hang until the spark job is complete
-   *   If the spark job is complete, it will return immediately, with a job not found on job tracker
-   * </pre>
-   */
-  public static void killJobOnCluster(final String applicationId, final Logger log, final Props jobProps)
-      throws YarnException,
-      IOException {
-
-    final YarnConfiguration yarnConf = new YarnConfiguration();
-    final YarnClient yarnClient = YarnClient.createYarnClient();
-    if (jobProps.containsKey(YARN_CONF_DIRECTORY_PROPERTY)) {
-      yarnConf.addResource(new Path(jobProps.get(YARN_CONF_DIRECTORY_PROPERTY) + "/" + YARN_CONF_FILENAME));
-    }
-    yarnClient.init(yarnConf);
-    yarnClient.start();
-
-    final String[] split = applicationId.split("_");
-    final ApplicationId aid = ApplicationId.newInstance(Long.parseLong(split[1]),
-        Integer.parseInt(split[2]));
-
-    log.info("start klling application: " + aid);
-    yarnClient.killApplication(aid);
-    log.info("successfully killed application: " + aid);
   }
 
   /**
