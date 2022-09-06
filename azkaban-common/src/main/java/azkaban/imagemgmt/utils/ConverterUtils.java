@@ -16,6 +16,7 @@
 package azkaban.imagemgmt.utils;
 
 import azkaban.imagemgmt.dto.BaseDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,15 +61,15 @@ public class ConverterUtils {
       return this.objectMapper.readValue(jsonPayloadString, dtoClass);
     } catch (final JsonParseException e) {
       log.error("Exception while parsing input json ", e);
-      throw new ImageMgmtInvalidInputException(
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST,
           "Exception while reading input payload. Invalid input.");
     } catch (final JsonMappingException e) {
       log.error("Exception while converting input json ", e);
-      throw new ImageMgmtInvalidInputException(
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST,
           "Exception while reading input payload. Invalid input.");
     } catch (final IOException e) {
       log.error("IOException occurred while converting input json ", e);
-      throw new ImageMgmtInvalidInputException(
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST,
           "Exception while reading input payload. Invalid input.");
     }
   }

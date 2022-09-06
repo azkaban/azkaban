@@ -22,6 +22,7 @@ import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.exception.ImageMgmtValidationException;
+import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
@@ -66,6 +67,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
       String.format("/imageTypes/{%s}", IMAGE_TYPE_ID_KEY));
   private ImageTypeService imageTypeService;
   private ConverterUtils converterUtils;
+  private PermissionManager permissionManager;
 
   private static final Logger log = LoggerFactory.getLogger(ImageTypeServlet.class);
 
@@ -79,6 +81,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
     final AzkabanWebServer server = (AzkabanWebServer) getApplication();
     this.imageTypeService = server.getImageTypeService();
     this.converterUtils = server.getConverterUtils();
+    this.permissionManager = server.getPermissionManager();
   }
 
   @Override
@@ -150,7 +153,7 @@ public class ImageTypeServlet extends LoginAbstractAzkabanServlet {
 
   private void getAllImageTypeDTOs(final HttpServletResponse resp, final Session session)
       throws IOException {
-    if (!isAzkabanAdmin(session.getUser())) {
+    if (!permissionManager.isAzkabanAdmin(session.getUser())) {
       throw new ImageMgmtInvalidPermissionException(ErrorCode.FORBIDDEN, FORBIDDEN_USER_ERR_MSG);
     }
     List<ImageTypeDTO> imageTypesDTO =

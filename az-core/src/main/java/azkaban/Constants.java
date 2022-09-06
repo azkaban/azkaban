@@ -765,6 +765,7 @@ public class Constants {
     public static final String VERSION_STATE = "versionState";
     public static final String ID_KEY = "id";
     public static final String IMAGE_RAMPUP_PLAN = "imageRampupPlan";
+    public static final String IMAGE_RAMP_RULE = "imageRampRule";
     public static final String IMAGE_UPDATE_ADD_USER = "addImageOwners";
     public static final String IMAGE_UPDATE_REMOVE_USER = "removeImageOwners";
   }

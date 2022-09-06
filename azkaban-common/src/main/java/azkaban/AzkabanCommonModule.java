@@ -44,6 +44,8 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.daos.RampRuleDao;
+import azkaban.imagemgmt.daos.RampRuleDaoImpl;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
@@ -224,6 +226,7 @@ public class AzkabanCommonModule extends AbstractModule {
       bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class).in(Scopes.SINGLETON);
+      bind(RampRuleDao.class).to(RampRuleDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageMgmtCommonDao.class).to(ImageMgmtCommonDaoImpl.class).in(Scopes.SINGLETON);
       bind(PermissionManager.class).to(PermissionManagerImpl.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
