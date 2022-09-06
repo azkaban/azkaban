@@ -22,6 +22,7 @@ import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
+import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import java.util.HashSet;
@@ -89,13 +90,12 @@ public class PermissionManagerImpl implements PermissionManager {
    * @return boolean
    */
   @Override
-  public Set<String> validatePermissionAndGetOwnerships(String imageTypeName, User user)
+  public Set<String> validatePermissionAndGetOwnerships(final String imageTypeName, final User user)
       throws ImageMgmtException {
     String userId = user.getUserId();
     // validate azkaban admin
-    boolean isAzkabanAdmin = user.getRoles().stream()
-        .anyMatch(role -> userManager.getRole(role).getPermission().isPermissionSet(Type.ADMIN));
-    // fetch owners from image_ownerships with matching permission set (i.g. ADMIN)
+    boolean isAzkabanAdmin = isAzkabanAdmin(user);
+    // fetch owners from image_ownerships with matching permission set (e.g. ADMIN)
     Set<String> imageOwnerships = imageTypeDao.getImageTypeOwnership(imageTypeName).stream()
         .map(ImageOwnership::getOwner)
         .collect(Collectors.toSet());
@@ -107,5 +107,18 @@ public class PermissionManagerImpl implements PermissionManager {
       throw new ImageMgmtValidationException(ErrorCode.UNAUTHORIZED, errorMsg);
     }
     return imageOwnerships;
+  }
+
+  /**
+   * Method to check if user is Azkaban Admin.
+   *
+   * @param user
+   * @return true, if azkaban dev
+   *         false otherwise
+   */
+  @Override
+  public boolean isAzkabanAdmin(final User user) {
+    return user.getRoles().stream()
+        .anyMatch(role -> userManager.getRole(role).getPermission().isPermissionSet(Type.ADMIN));
   }
 }

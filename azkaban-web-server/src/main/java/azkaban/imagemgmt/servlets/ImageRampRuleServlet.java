@@ -86,9 +86,9 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
    *
    * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
    **/
-  private void handleCreateRampRule(HttpServletRequest req,
-                                    HttpServletResponse resp,
-                                    User user)
+  private void handleCreateRampRule(final HttpServletRequest req,
+                                    final HttpServletResponse resp,
+                                    final User user)
                                     throws ServletException {
     String requestBody = HttpRequestUtils.getBody(req);
     ImageRampRuleRequestDTO rampRuleRequestDTO;

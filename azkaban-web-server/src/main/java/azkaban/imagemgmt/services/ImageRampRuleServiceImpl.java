@@ -26,7 +26,6 @@ import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.permission.PermissionManager;
-import azkaban.user.Permission;
 import azkaban.user.User;
 import java.util.List;
 import java.util.Set;
@@ -48,8 +47,10 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
   private final PermissionManager permissionManager;
 
   @Inject
-  public ImageRampRuleServiceImpl(RampRuleDao rampRuleDao, ImageTypeDao imageTypeDao, ImageVersionDao imageVersionDao,
-      PermissionManager permissionManager) {
+  public ImageRampRuleServiceImpl(final RampRuleDao rampRuleDao,
+                                  final ImageTypeDao imageTypeDao,
+                                  final ImageVersionDao imageVersionDao,
+                                  final PermissionManager permissionManager) {
     this.rampRuleDao = rampRuleDao;
     this.imageTypeDao = imageTypeDao;
     this.imageVersionDao = imageVersionDao;
@@ -67,7 +68,7 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
    * @throws ImageMgmtInvalidPermissionException when user does not have permission
    * */
   @Override
-  public void createRule(ImageRampRuleRequestDTO rampRuleRequest, User ldapUser){
+  public void createRule(final ImageRampRuleRequestDTO rampRuleRequest, final User ldapUser){
     // validate image_name and image_version
     final ImageType imageType = imageTypeDao
       .getImageTypeByName(rampRuleRequest.getImageName())
@@ -94,22 +95,22 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
   }
 
   @Override
-  public void createHpFlowRule(ImageRampRule rule) {
+  public void createHpFlowRule(final ImageRampRule rule) {
 
   }
 
   @Override
-  public void deleteRule(String ruleName) {
+  public void deleteRule(final String ruleName) {
 
   }
 
   @Override
-  public void addFlowsToRule(List<String> flowIds, String ruleName) {
+  public void addFlowsToRule(final List<String> flowIds, final String ruleName) {
 
   }
 
   @Override
-  public void updateVersionOnRule(String newVersion, String ruleName) {
+  public void updateVersionOnRule(final String newVersion, final String ruleName) {
 
   }
 }

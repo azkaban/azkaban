@@ -16,7 +16,6 @@
 package azkaban.imagemgmt.models;
 
 import java.util.Set;
-import javax.annotation.Nullable;
 
 
 /**
@@ -24,26 +23,26 @@ import javax.annotation.Nullable;
  */
 public class ImageRampRule extends BaseModel {
   // ramp rule name
-  String ruleName;
+  final String ruleName;
   // image name of ramp rule for
-  String imageName;
+  final String imageName;
   // image version of ramp rule for
   String imageVersion;
   // rule owners
-  Set<String> owners;
+  final Set<String> owners;
   // Ramp Rule for HP flows
   // ture if rule is for HP flow; false otherwise
-  boolean isHPRule;
+  final boolean isHPRule;
 
-  public ImageRampRule(String ruleName,
-                String imageName,
-                String imageVersion,
-                Set<String> owners,
-                boolean isHP,
-                String createdBy,
-                @Nullable String createdOn ,
-                @Nullable String modifiedBy,
-                @Nullable String modifiedOn) {
+  public ImageRampRule(final String ruleName,
+                       final String imageName,
+                       final String imageVersion,
+                       final Set<String> owners,
+                       final boolean isHP,
+                       final String createdBy,
+                       final String createdOn ,
+                       final String modifiedBy,
+                       final String modifiedOn) {
     this.ruleName = ruleName;
     this.imageName = imageName;
     this.imageVersion = imageVersion;

@@ -49,7 +49,7 @@ public class RampRuleDaoImpl implements RampRuleDao {
       + " values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
   @Inject
-  public RampRuleDaoImpl(DatabaseOperator databaseOperator) {
+  public RampRuleDaoImpl(final DatabaseOperator databaseOperator) {
     this.databaseOperator = databaseOperator;
   }
 

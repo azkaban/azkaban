@@ -35,13 +35,13 @@ public interface ImageRampRuleService {
    * @param ldapUser
    * @throws ImageMgmtException
    * */
-  void createRule(ImageRampRuleRequestDTO rampRuleRequestDTO, final User ldapUser);
+  void createRule(final ImageRampRuleRequestDTO rampRuleRequestDTO, final User ldapUser);
 
-  void createHpFlowRule(ImageRampRule rule);
+  void createHpFlowRule(final ImageRampRule rule);
 
-  void deleteRule(String ruleName);
+  void deleteRule(final String ruleName);
 
-  void addFlowsToRule(List<String> flowIds, String ruleName);
+  void addFlowsToRule(final List<String> flowIds, final String ruleName);
 
-  void updateVersionOnRule(String newVersion, String ruleName);
+  void updateVersionOnRule(final String newVersion, final String ruleName);
 }

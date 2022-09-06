@@ -50,4 +50,12 @@ public interface PermissionManager {
   public Set<String> validatePermissionAndGetOwnerships(final String imageTypeName, final User user)
       throws ImageMgmtException;
 
+  /**
+   * Method to check if user is Azkaban Admin.
+   *
+   * @param user
+   * @return true, if azkaban dev
+   *         false otherwise
+   */
+  public boolean isAzkabanAdmin(final User user);
 }
