@@ -109,10 +109,9 @@ public class HadoopJobUtils {
   }
 
   /**
-   * The same as {@link #addAdditionalNamenodesToProps}, but assumes that the
-   * calling job is MapReduce-based and so uses the
-   * {@link #MAPREDUCE_JOB_OTHER_NAMENODES} from a {@link Configuration} object
-   * to get the list of additional namenodes.
+   * The same as {@link #addAdditionalNamenodesToProps}, but assumes that the calling job is
+   * MapReduce-based and so uses the {@link #MAPREDUCE_JOB_OTHER_NAMENODES} from a {@link
+   * Configuration} object to get the list of additional namenodes.
    *
    * @param props Props to add the new Namenode URIs to.
    * @see #addAdditionalNamenodesToProps(Props, String)
@@ -128,14 +127,14 @@ public class HadoopJobUtils {
   }
 
   /**
-   * Takes the list of other Namenodes from which to fetch delegation tokens,
-   * the {@link #OTHER_NAMENODES_PROPERTY} property, from Props and inserts it
-   * back with the addition of the the potentially JobType-specific Namenode URIs
-   * from additionalNamenodes. Modifies props in-place.
+   * Takes the list of other Namenodes from which to fetch delegation tokens, the {@link
+   * #OTHER_NAMENODES_PROPERTY} property, from Props and inserts it back with the addition of the
+   * the potentially JobType-specific Namenode URIs from additionalNamenodes. Modifies props
+   * in-place.
    *
-   * @param props Props to add the new Namenode URIs to.
-   * @param additionalNamenodes Comma-separated list of Namenode URIs from which to fetch
-   * delegation tokens.
+   * @param props               Props to add the new Namenode URIs to.
+   * @param additionalNamenodes Comma-separated list of Namenode URIs from which to fetch delegation
+   *                            tokens.
    */
   public static void addAdditionalNamenodesToProps(final Props props,
       final String additionalNamenodes) {
@@ -336,20 +335,17 @@ public class HadoopJobUtils {
   }
 
   /**
-   * This method is a decorator around the KillAllSpawnedHadoopJobs method.
-   * This method takes additional parameters to determine whether KillAllSpawnedHadoopJobs needs to
-   * be executed
-   * using doAs as a different user
-   * @param jobProps Azkaban job props
+   * This method is a decorator around the KillAllSpawnedHadoopJobs method. This method takes
+   * additional parameters to determine whether KillAllSpawnedHadoopJobs needs to be executed using
+   * doAs as a different user
+   *
+   * @param jobProps  Azkaban job props
    * @param tokenFile Pass in the tokenFile if value is known.  It is ok to skip if the token file
-   * is in the environmental variable
-   * @param log a usable logger
+   *                  is in the environmental variable
+   * @param log       a usable logger
    */
   public static void proxyUserKillAllSpawnedHadoopJobs(final Props jobProps,
       final File tokenFile, final Logger log) {
-
-    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
-    log.info("Log file path is: " + logFilePath);
 
     final Properties properties = new Properties();
     properties.putAll(jobProps.getFlattened());
@@ -362,19 +358,21 @@ public class HadoopJobUtils {
         proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {
-            findAndKillYarnApps(logFilePath, log, jobProps);
+            findAndKillYarnApps(jobProps, log);
             return null;
           }
         });
       } else {
-        findAndKillYarnApps(logFilePath, log, jobProps);
+        findAndKillYarnApps(jobProps, log);
       }
     } catch (final Throwable t) {
       log.warn("something happened while trying to kill all spawned jobs", t);
     }
   }
 
-  private static void findAndKillYarnApps(String logFilePath, Logger log, Props jobProps) {
+  private static void findAndKillYarnApps(Props jobProps, Logger log) {
+    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+    log.info("Log file path is: " + logFilePath);
     Set<String> allSpawnedJobAppIDs = findApplicationIdFromLog(logFilePath, log);
     YarnClient yarnClient = YarnUtils.createYarnClient(jobProps);
     YarnUtils.killAllAppsOnCluster(yarnClient, allSpawnedJobAppIDs, log);
@@ -484,10 +482,10 @@ public class HadoopJobUtils {
    * Filter a collection of String commands to match a whitelist regex and not match a blacklist
    * regex.
    *
-   * @param commands Collection of commands to be filtered
+   * @param commands       Collection of commands to be filtered
    * @param whitelistRegex whitelist regex to work as inclusion criteria
    * @param blacklistRegex blacklist regex to work as exclusion criteria
-   * @param log logger to report violation
+   * @param log            logger to report violation
    * @return filtered list of matching. Empty list if no command match all the criteria.
    */
   public static List<String> filterCommands(final Collection<String> commands,
@@ -531,7 +529,7 @@ public class HadoopJobUtils {
    * Construct a CSV of tags for the Hadoop application.
    *
    * @param props job properties
-   * @param keys list of keys to construct tags from.
+   * @param keys  list of keys to construct tags from.
    * @return a CSV of tags
    */
   public static String constructHadoopTags(final Props props, final String[] keys) {
