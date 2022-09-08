@@ -18,17 +18,22 @@ package azkaban.imagemgmt.services;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.RampRuleDao;
+import azkaban.imagemgmt.dto.RampRuleOwnershipRequestDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.user.User;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
@@ -58,7 +63,7 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
   }
 
   /**
-   * Create ramp rule converted from ramp rule request, validate rampRuleRequest and user permission.
+   * Create ramp rule converted from ramp rule request, validate image version and user permission.
    * Then call for {@link RampRuleDao} to insert the entry into DB.
    *
    * @param rampRuleRequest
@@ -78,15 +83,23 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
       throw new ImageMgmtInvalidInputException(ErrorCode.NOT_FOUND, String.format(
           "Unable to fetch image version metadata. Invalid image version: %s.", rampRuleRequest.getImageVersion()));
     }
-    // fetch ownerships from image_ownerships and validate user permission
-    Set<String> imageOwnerships = permissionManager.validatePermissionAndGetOwnerships(imageType.getName(), ldapUser);
+    Set<String> ownerships;
+    // if user does not specify owners of a normal ramp rule, use ImageType owners as default
+    if (rampRuleRequest.getOwnerships() == null || rampRuleRequest.getOwnerships().isEmpty()) {
+      // fetch ownerships from image_ownerships and validate user permission
+      ownerships = permissionManager.validatePermissionAndGetOwnerships(imageType.getName(), ldapUser);
+    } else {
+      List<String> ruleOwners = Arrays.asList(rampRuleRequest.getOwnerships().split(","));
+      permissionManager.validateIdentity(ruleOwners);
+      ownerships = new HashSet<>(ruleOwners);
+    }
 
     // convert ImageRampRule and insert new ramp rule into DB
     ImageRampRule rampRule = new ImageRampRule.Builder()
         .setRuleName(rampRuleRequest.getRuleName())
         .setImageName(rampRuleRequest.getImageName())
         .setImageVersion(rampRuleRequest.getImageVersion())
-        .setOwners(imageOwnerships)
+        .setOwners(ownerships)
         .setHPRule(false)
         .setCreatedBy(rampRuleRequest.getCreatedBy())
         .setModifiedBy(rampRuleRequest.getModifiedBy())
@@ -94,9 +107,67 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
     rampRuleDao.addRampRule(rampRule);
   }
 
+  /**
+   * Create HP Flow rule converted from HPFlowRule request, validate input ownerships.
+   * Then call for {@link RampRuleDao} to insert the entry into DB.
+   *
+   * @param hpFlowRuleRequestDTO
+   * @param user
+   * @throws ImageMgmtDaoException when DB insertion fail
+   * @throws ImageMgmtValidationException when user does not have permission
+   * */
   @Override
-  public void createHpFlowRule(final ImageRampRule rule) {
+  public void createHpFlowRule(final RampRuleOwnershipRequestDTO hpFlowRuleRequestDTO, final User user) {
+    List<String> ruleOwners = Arrays.asList(hpFlowRuleRequestDTO.getOwnerships().split(","));
+    permissionManager.validateIdentity(ruleOwners);
+    ImageRampRule rampRule = new ImageRampRule.Builder()
+        .setRuleName(hpFlowRuleRequestDTO.getRuleName())
+        .setOwners(new HashSet<>(ruleOwners))
+        .setHPRule(true)
+        .setCreatedBy(hpFlowRuleRequestDTO.getCreatedBy())
+        .setModifiedBy(hpFlowRuleRequestDTO.getModifiedBy())
+        .build();
+    rampRuleDao.addRampRule(rampRule);
+  }
 
+  /**
+   * Update Ramp Rule ownership based on {@link RampRuleOwnershipRequestDTO} from user request to add/remove owners,
+   * generate new owner list and update at DB.
+   * Only azkaban admin or existing owners has the permission.
+   *
+   * @param ruleOwnershipDTO DTO from requestBody
+   * @param user
+   * @param operationType Add/Remove owners
+   * @throws ImageMgmtDaoException when DB update fail
+   * @throws ImageMgmtValidationException when user does not have permission
+   * */
+  @Override
+  public void updateOwnership(final RampRuleOwnershipRequestDTO ruleOwnershipDTO, final User user,
+      final OperationType operationType) {
+    Set<String> existingOwners = rampRuleDao.getOwners(ruleOwnershipDTO.getRuleName());
+    // validate current user has permission to change owner
+    if (!permissionManager.hasPermission(user, existingOwners)) {
+      throw new ImageMgmtInvalidPermissionException(ErrorCode.UNAUTHORIZED,
+          "current user "+ user.getUserId() + " does not have permission to change ownership");
+    }
+    // validate input ldaps
+    List<String> deltaOwners = Arrays.asList(ruleOwnershipDTO.getOwnerships().split(","));
+    permissionManager.validateIdentity(deltaOwners);
+    switch (operationType) {
+      case ADD:
+        Set<String> missingLdaps = deltaOwners.stream()
+          .filter(owner -> !existingOwners.contains(owner))
+          .collect(Collectors.toSet());
+        String newOwners = String.join(",", existingOwners).concat(",").concat(String.join(",", missingLdaps));
+        rampRuleDao.updateOwnerships(newOwners, ruleOwnershipDTO.getRuleName(), ruleOwnershipDTO.getModifiedBy());
+        break;
+      case REMOVE:
+        Set<String> alteredOwnership = existingOwners.stream()
+            .filter(owner -> !deltaOwners.contains(owner)).collect(Collectors.toSet());
+        String newOwnership = String.join(",", alteredOwnership);
+        rampRuleDao.updateOwnerships(newOwnership, ruleOwnershipDTO.getRuleName(), ruleOwnershipDTO.getModifiedBy());
+        break;
+    }
   }
 
   @Override

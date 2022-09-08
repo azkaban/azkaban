@@ -19,7 +19,7 @@ package azkaban.imagemgmt.permission;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
-import azkaban.user.UserManager;
+import java.util.List;
 import java.util.Set;
 
 
@@ -36,7 +36,7 @@ public interface PermissionManager {
    * @param type
    * @return boolean
    */
-  public boolean hasPermission(final String imageTypeName, final String userId, final Type type)
+  public boolean hasPermissionForImageType(final String imageTypeName, final String userId, final Type type)
       throws ImageMgmtException;
 
   /**
@@ -58,4 +58,22 @@ public interface PermissionManager {
    *         false otherwise
    */
   public boolean isAzkabanAdmin(final User user);
+
+  /**
+   * Checks if all the identities are all legit;
+   *
+   * @throws ImageMgmtException if failed to validate a single Ldap
+   * */
+  public void validateIdentity(final List<String> ids) throws ImageMgmtException;
+
+  /**
+   * Checks if current user has permission to make changes on Ramp rule
+   *
+   * @param user
+   * @param currentOwners
+   * @return true if azkaban admin or validated permission,
+   *         false otherwise
+   * @throws ImageMgmtException if failed to validate a single Ldap
+   * */
+  public boolean hasPermission(final User user, final Set<String> currentOwners);
 }

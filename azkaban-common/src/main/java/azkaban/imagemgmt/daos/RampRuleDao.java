@@ -16,6 +16,7 @@
 package azkaban.imagemgmt.daos;
 
 import azkaban.imagemgmt.models.ImageRampRule;
+import java.util.Set;
 
 
 /**
@@ -43,12 +44,24 @@ public interface RampRuleDao {
   int addRampRule(final ImageRampRule rule);
 
   /**
+   * Update owners metadata into table ramp_rules.
+   *
+   * @param newOwners
+   * @param ruleName
+   * @param modifiedBy
+   * @return int - id of the DB entry
+   * @throws azkaban.imagemgmt.exception.ImageMgmtDaoException
+   */
+  int updateOwnerships(final String newOwners, final String ruleName, final String modifiedBy);
+
+  /**
    * Query table ramp_rules to get owners of Ramp rule.
+   * Serves as the source of truth for rule ownership management.
    *
    * @param ruleName - ruleName in {@see ImageRampRule}
    * @return owners of the ramp rule.
    */
-  String getOwners(final String ruleName);
+  Set<String> getOwners(final String ruleName);
 
   /**
    * delete the ramp_rules to get owners of Ramp rule.

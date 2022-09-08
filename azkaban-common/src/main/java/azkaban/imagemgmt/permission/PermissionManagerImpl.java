@@ -22,7 +22,6 @@ import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
-import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import java.util.HashSet;
@@ -62,7 +61,7 @@ public class PermissionManagerImpl implements PermissionManager {
    * @return boolean
    */
   @Override
-  public boolean hasPermission(final String imageTypeName, final String userId, final Type type) {
+  public boolean hasPermissionForImageType(final String imageTypeName, final String userId, final Type type) {
     // Gets the image type metadata including ownerships.
     final List<ImageOwnership> imageOwnerships =
         this.imageTypeDao.getImageTypeOwnership(imageTypeName);
@@ -93,15 +92,12 @@ public class PermissionManagerImpl implements PermissionManager {
   public Set<String> validatePermissionAndGetOwnerships(final String imageTypeName, final User user)
       throws ImageMgmtException {
     String userId = user.getUserId();
-    // validate azkaban admin
-    boolean isAzkabanAdmin = isAzkabanAdmin(user);
     // fetch owners from image_ownerships with matching permission set (e.g. ADMIN)
     Set<String> imageOwnerships = imageTypeDao.getImageTypeOwnership(imageTypeName).stream()
         .map(ImageOwnership::getOwner)
         .collect(Collectors.toSet());
     // not authorized if not azkaban admin nor validate through image_ownership
-    if (!isAzkabanAdmin &&
-        !(imageOwnerships.contains(userId) || userManager.validateUserGroupMembership(userId, imageOwnerships))) {
+    if (!hasPermission(user, imageOwnerships)) {
       String errorMsg = String.format("unauthorized user %s does not has permission to operate", userId);
       log.error(errorMsg);
       throw new ImageMgmtValidationException(ErrorCode.UNAUTHORIZED, errorMsg);
@@ -120,5 +116,30 @@ public class PermissionManagerImpl implements PermissionManager {
   public boolean isAzkabanAdmin(final User user) {
     return user.getRoles().stream()
         .anyMatch(role -> userManager.getRole(role).getPermission().isPermissionSet(Type.ADMIN));
+  }
+
+  /**
+   * Validate each userId's identity using userManager. userId can be group or individual user account.
+   *
+   * @param ids
+   * @throws ImageMgmtValidationException
+   */
+  @Override
+  public void validateIdentity(List<String> ids) {
+    Set<String> invalids = ids.stream()
+        .filter(id -> !userManager.validateGroup(id) && !userManager.validateUser(id))
+        .collect(Collectors.toSet());
+    if (!invalids.isEmpty()) {
+      log.error("Invalid identity: " + invalids);
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST,
+          "fail to validate identity: " + String.join(",", invalids));
+    }
+  }
+
+  @Override
+  public boolean hasPermission(User user, Set<String> currentOwners) {
+    String userId = user.getUserId();
+    return isAzkabanAdmin(user) || currentOwners.contains(userId)
+        || userManager.validateUserGroupMembership(userId, currentOwners);
   }
 }
