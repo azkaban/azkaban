@@ -128,7 +128,7 @@ public class ImageRampRuleServiceImplTest {
     when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
     when(_rampRuleDao.updateOwnerships(any(), any(), any())).thenReturn(1);
 
-    String updatedOwner = _rampRuleService.updateOwnership(requestDTO, user, ImageRampRuleService.OperationType.ADD);
+    String updatedOwner = _rampRuleService.updateRuleOwnership(requestDTO, user, ImageRampRuleService.OperationType.ADD);
     assertThat(updatedOwner).contains(existingOwner1, existingOwner2);
     assertThat(updatedOwner).contains("user1");
   }
@@ -154,7 +154,7 @@ public class ImageRampRuleServiceImplTest {
     when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
     when(_rampRuleDao.updateOwnerships(any(), any(), any())).thenReturn(1);
 
-    String updatedOwner = _rampRuleService.updateOwnership(requestDTO, user, ImageRampRuleService.OperationType.REMOVE);
+    String updatedOwner = _rampRuleService.updateRuleOwnership(requestDTO, user, ImageRampRuleService.OperationType.REMOVE);
     assertThat(updatedOwner).contains(existingOwner2);
     assertThat(updatedOwner).doesNotContain("user1");
   }

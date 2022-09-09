@@ -164,7 +164,7 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
       // while converting to requestDTO, validation on json/required parameters would be performed.
       deltaOwnershipRequestDTO = utils.convertToDTO(requestBody, RampRuleOwnershipDTO.class);
       deltaOwnershipRequestDTO.setModifiedBy(user.getUserId());
-      String updatedOwners = imageRampRuleService.updateOwnership(deltaOwnershipRequestDTO, user, type);
+      String updatedOwners = imageRampRuleService.updateRuleOwnership(deltaOwnershipRequestDTO, user, type);
       // prepare response
       RampRuleOwnershipDTO responseModel = new RampRuleOwnershipDTO();
       responseModel.setOwnerships(updatedOwners);

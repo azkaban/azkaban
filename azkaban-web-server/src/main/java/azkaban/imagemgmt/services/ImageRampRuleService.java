@@ -43,11 +43,11 @@ public interface ImageRampRuleService {
    * Create an HP Flow exclusive Rule to denying all image Types,
    * validation performed based on {@link RampRuleOwnershipDTO} and convert to {@link ImageRampRule}
    *
-   * @param hpFlowRuleRequestDTO
+   * @param hpFlowRuleOwnershipRequestDTO
    * @param user
    * @throws ImageMgmtException
    * */
-  void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleRequestDTO, final User user);
+  void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleOwnershipRequestDTO, final User user);
 
   /**
    * Update the rule with ownerships, only existing owners have the permission to add/remove new owners,
@@ -59,7 +59,7 @@ public interface ImageRampRuleService {
    * @param operationType
    * @throws ImageMgmtException
    * @return*/
-  String updateOwnership(final RampRuleOwnershipDTO RuleOwnershipDTO, final User user,
+  String updateRuleOwnership(final RampRuleOwnershipDTO RuleOwnershipDTO, final User user,
       final OperationType operationType);
 
   void deleteRule(final String ruleName);

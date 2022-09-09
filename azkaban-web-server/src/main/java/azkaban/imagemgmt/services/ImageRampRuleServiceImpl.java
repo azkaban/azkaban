@@ -112,25 +112,26 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
    * Create HP Flow rule converted from HPFlowRule request, validate input ownerships.
    * Then call for {@link RampRuleDao} to insert the entry into DB.
    *
-   * @param hpFlowRuleRequestDTO
+   * @param hpFlowRuleOwnershipRequestDTO
    * @param user
    * @throws ImageMgmtDaoException when DB insertion fail
    * @throws ImageMgmtValidationException when user does not have permission
    * */
   @Override
-  public void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleRequestDTO, final User user) {
-    if (hpFlowRuleRequestDTO.getOwnerships() == null || hpFlowRuleRequestDTO.getOwnerships().isEmpty()) {
+  public void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleOwnershipRequestDTO, final User user) {
+    if (hpFlowRuleOwnershipRequestDTO.getOwnerships() == null
+        || hpFlowRuleOwnershipRequestDTO.getOwnerships().isEmpty()) {
       throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST,
           "missing ownerships, please specify valid ldap user");
     }
-    List<String> ruleOwners = Arrays.asList(hpFlowRuleRequestDTO.getOwnerships().split(","));
+    List<String> ruleOwners = Arrays.asList(hpFlowRuleOwnershipRequestDTO.getOwnerships().split(","));
     permissionManager.validateIdentity(ruleOwners);
     ImageRampRule rampRule = new ImageRampRule.Builder()
-        .setRuleName(hpFlowRuleRequestDTO.getRuleName())
+        .setRuleName(hpFlowRuleOwnershipRequestDTO.getRuleName())
         .setOwners(new HashSet<>(ruleOwners))
         .setHPRule(true)
-        .setCreatedBy(hpFlowRuleRequestDTO.getCreatedBy())
-        .setModifiedBy(hpFlowRuleRequestDTO.getModifiedBy())
+        .setCreatedBy(hpFlowRuleOwnershipRequestDTO.getCreatedBy())
+        .setModifiedBy(hpFlowRuleOwnershipRequestDTO.getModifiedBy())
         .build();
     rampRuleDao.addRampRule(rampRule);
   }
@@ -147,7 +148,7 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
    * @throws ImageMgmtValidationException when user does not have permission
    * @return newOwners */
   @Override
-  public String updateOwnership(final RampRuleOwnershipDTO ruleOwnershipDTO, final User user,
+  public String updateRuleOwnership(final RampRuleOwnershipDTO ruleOwnershipDTO, final User user,
       final OperationType operationType) {
     Set<String> existingOwners = rampRuleDao.getOwners(ruleOwnershipDTO.getRuleName());
     // validate current user has permission to change owner
