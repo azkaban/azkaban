@@ -15,7 +15,7 @@
  */
 package azkaban.imagemgmt.servlets;
 
-import azkaban.imagemgmt.dto.RampRuleOwnershipRequestDTO;
+import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.services.ImageRampRuleService;
@@ -133,10 +133,10 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
                                       final User user)
                                       throws ServletException {
     String requestBody = HttpRequestUtils.getBody(req);
-    RampRuleOwnershipRequestDTO hpFlowRuleRequestDTO;
+    RampRuleOwnershipDTO hpFlowRuleRequestDTO;
     try {
       // while converting to requestDTO, validation on json/required parameters would be performed.
-      hpFlowRuleRequestDTO = utils.convertToDTO(requestBody, RampRuleOwnershipRequestDTO.class);
+      hpFlowRuleRequestDTO = utils.convertToDTO(requestBody, RampRuleOwnershipDTO.class);
       hpFlowRuleRequestDTO.setCreatedBy(user.getUserId());
       hpFlowRuleRequestDTO.setModifiedBy(user.getUserId());
       imageRampRuleService.createHpFlowRule(hpFlowRuleRequestDTO, user);
@@ -149,7 +149,7 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Add/Remove owners for a ramp rule.
-   * Successful call would return CREATED(201).
+   * Successful call would return OK(200).
    *
    * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
    **/
@@ -157,15 +157,19 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
                                       final HttpServletResponse resp,
                                       final User user,
                                       final ImageRampRuleService.OperationType type)
-                                      throws ServletException {
+                                      throws ServletException, IOException {
     String requestBody = HttpRequestUtils.getBody(req);
-    RampRuleOwnershipRequestDTO deltaOwnershipRequestDTO;
+    RampRuleOwnershipDTO deltaOwnershipRequestDTO;
     try {
       // while converting to requestDTO, validation on json/required parameters would be performed.
-      deltaOwnershipRequestDTO = utils.convertToDTO(requestBody, RampRuleOwnershipRequestDTO.class);
+      deltaOwnershipRequestDTO = utils.convertToDTO(requestBody, RampRuleOwnershipDTO.class);
       deltaOwnershipRequestDTO.setModifiedBy(user.getUserId());
-      imageRampRuleService.updateOwnership(deltaOwnershipRequestDTO, user, type);
-      resp.setStatus(HttpStatus.SC_OK);
+      String updatedOwners = imageRampRuleService.updateOwnership(deltaOwnershipRequestDTO, user, type);
+      // prepare response
+      RampRuleOwnershipDTO responseModel = new RampRuleOwnershipDTO();
+      responseModel.setOwnerships(updatedOwners);
+      responseModel.setRuleName(deltaOwnershipRequestDTO.getRuleName());
+      sendResponse(resp, HttpServletResponse.SC_OK, responseModel);
     } catch (ImageMgmtException e) {
       LOG.error("failed to update ownerships: " + requestBody);
       resp.setStatus(e.getErrorCode().getCode(), e.getMessage());

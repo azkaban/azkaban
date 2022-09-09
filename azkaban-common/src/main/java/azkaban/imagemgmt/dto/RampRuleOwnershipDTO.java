@@ -15,22 +15,21 @@
  */
 package azkaban.imagemgmt.dto;
 
-import java.util.List;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 
-public class RampRuleOwnershipRequestDTO extends BaseDTO {
+public class RampRuleOwnershipDTO extends BaseDTO {
   // Represents the name of the Ramp rule
   @JsonProperty("ruleName")
   @NotBlank(message = "ruleName cannot be blank.", groups = ValidationOnCreate.class)
-  @NotNull(message = "ruleName cannot be null.")
+  @NotNull(message = "ruleName cannot be null.", groups = ValidationOnCreate.class)
   private String ruleName;
   // Represents the name of the ownerships for the rule
   @JsonProperty("ownerships")
   @NotBlank(message = "rule ownerships cannot be blank.", groups = ValidationOnCreate.class)
-  @NotNull(message = "rule ownerships cannot be null.")
+  @NotNull(message = "rule ownerships cannot be null.", groups = ValidationOnCreate.class)
   private String ownerships;
 
   public void setRuleName(String ruleName) {

@@ -18,7 +18,7 @@ package azkaban.imagemgmt.services;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.RampRuleDao;
-import azkaban.imagemgmt.dto.RampRuleOwnershipRequestDTO;
+import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import joptsimple.internal.Strings;
 import org.apache.log4j.Logger;
 
 /**
@@ -117,7 +118,11 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
    * @throws ImageMgmtValidationException when user does not have permission
    * */
   @Override
-  public void createHpFlowRule(final RampRuleOwnershipRequestDTO hpFlowRuleRequestDTO, final User user) {
+  public void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleRequestDTO, final User user) {
+    if (hpFlowRuleRequestDTO.getOwnerships() == null || hpFlowRuleRequestDTO.getOwnerships().isEmpty()) {
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST,
+          "missing ownerships, please specify valid ldap user");
+    }
     List<String> ruleOwners = Arrays.asList(hpFlowRuleRequestDTO.getOwnerships().split(","));
     permissionManager.validateIdentity(ruleOwners);
     ImageRampRule rampRule = new ImageRampRule.Builder()
@@ -131,7 +136,7 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
   }
 
   /**
-   * Update Ramp Rule ownership based on {@link RampRuleOwnershipRequestDTO} from user request to add/remove owners,
+   * Update Ramp Rule ownership based on {@link RampRuleOwnershipDTO} from user request to add/remove owners,
    * generate new owner list and update at DB.
    * Only azkaban admin or existing owners has the permission.
    *
@@ -140,9 +145,9 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
    * @param operationType Add/Remove owners
    * @throws ImageMgmtDaoException when DB update fail
    * @throws ImageMgmtValidationException when user does not have permission
-   * */
+   * @return newOwners */
   @Override
-  public void updateOwnership(final RampRuleOwnershipRequestDTO ruleOwnershipDTO, final User user,
+  public String updateOwnership(final RampRuleOwnershipDTO ruleOwnershipDTO, final User user,
       final OperationType operationType) {
     Set<String> existingOwners = rampRuleDao.getOwners(ruleOwnershipDTO.getRuleName());
     // validate current user has permission to change owner
@@ -160,14 +165,15 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
           .collect(Collectors.toSet());
         String newOwners = String.join(",", existingOwners).concat(",").concat(String.join(",", missingLdaps));
         rampRuleDao.updateOwnerships(newOwners, ruleOwnershipDTO.getRuleName(), ruleOwnershipDTO.getModifiedBy());
-        break;
+        return newOwners;
       case REMOVE:
         Set<String> alteredOwnership = existingOwners.stream()
             .filter(owner -> !deltaOwners.contains(owner)).collect(Collectors.toSet());
         String newOwnership = String.join(",", alteredOwnership);
         rampRuleDao.updateOwnerships(newOwnership, ruleOwnershipDTO.getRuleName(), ruleOwnershipDTO.getModifiedBy());
-        break;
+        return newOwnership;
     }
+    return Strings.EMPTY;
   }
 
   @Override

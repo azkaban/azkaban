@@ -15,7 +15,7 @@
  */
 package azkaban.imagemgmt.services;
 
-import azkaban.imagemgmt.dto.RampRuleOwnershipRequestDTO;
+import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampRule;
@@ -41,25 +41,25 @@ public interface ImageRampRuleService {
 
   /**
    * Create an HP Flow exclusive Rule to denying all image Types,
-   * validation performed based on {@link RampRuleOwnershipRequestDTO} and convert to {@link ImageRampRule}
+   * validation performed based on {@link RampRuleOwnershipDTO} and convert to {@link ImageRampRule}
    *
    * @param hpFlowRuleRequestDTO
    * @param user
    * @throws ImageMgmtException
    * */
-  void createHpFlowRule(final RampRuleOwnershipRequestDTO hpFlowRuleRequestDTO, final User user);
+  void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleRequestDTO, final User user);
 
   /**
    * Update the rule with ownerships, only existing owners have the permission to add/remove new owners,
    * ownerships should be provided using "," as delimiter, otherwise validation will fail.
-   * validation performed based on {@link RampRuleOwnershipRequestDTO} and invoke DB.
+   * validation performed based on {@link RampRuleOwnershipDTO} and invoke DB.
    *
    * @param RuleOwnershipDTO
    * @param user
    * @param operationType
    * @throws ImageMgmtException
-   * */
-  void updateOwnership(final RampRuleOwnershipRequestDTO RuleOwnershipDTO, final User user,
+   * @return*/
+  String updateOwnership(final RampRuleOwnershipDTO RuleOwnershipDTO, final User user,
       final OperationType operationType);
 
   void deleteRule(final String ruleName);

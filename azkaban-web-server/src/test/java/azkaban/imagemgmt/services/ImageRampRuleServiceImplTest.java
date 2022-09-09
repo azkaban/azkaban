@@ -22,7 +22,7 @@ import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.daos.RampRuleDao;
 import azkaban.imagemgmt.daos.RampRuleDaoImpl;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
-import azkaban.imagemgmt.dto.RampRuleOwnershipRequestDTO;
+import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.permission.PermissionManager;
@@ -93,7 +93,7 @@ public class ImageRampRuleServiceImplTest {
   public void testCreateHPFlowRule() {
     User user = new User("testUser");
     final String json = JSONUtils.readJsonFileAsString("image_management/hp_flow_rule.json");
-    final RampRuleOwnershipRequestDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleOwnershipRequestDTO.class);
+    final RampRuleOwnershipDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleOwnershipDTO.class);
     ImageOwnership ownership = new ImageOwnership();
     Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
     user.addRole("admin");
@@ -108,26 +108,57 @@ public class ImageRampRuleServiceImplTest {
   }
 
   @Test
-  public void testUpdateRuleOwner() {
-    User user = new User("testUser");
-    final String json = JSONUtils.readJsonFileAsString("image_management/hp_flow_rule.json");
-    final RampRuleOwnershipRequestDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleOwnershipRequestDTO.class);
+  public void testAddRuleOwners() {
+    User user = new User("testAdminUser");
+    final String json = JSONUtils.readJsonFileAsString("image_management/flow_owners_update.json");
+    final RampRuleOwnershipDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleOwnershipDTO.class);
     ImageOwnership ownership = new ImageOwnership();
     Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
     user.addRole("admin");
     ownership.setOwner(user.getUserId());
     ownership.setRole(ImageOwnership.Role.ADMIN);
-
-    Set<String> existingOwners = new HashSet<>();
-    existingOwners.add("testUser");
-    when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
-
     when(_userManager.getRole(any())).thenReturn(role);
     when(_userManager.validateGroup(any())).thenReturn(true);
+
+    String existingOwner1 = "user2";
+    String existingOwner2 = "user3";
+    Set<String> existingOwners = new HashSet<>();
+    existingOwners.add(existingOwner1);
+    existingOwners.add(existingOwner2);
+    when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
     when(_rampRuleDao.updateOwnerships(any(), any(), any())).thenReturn(1);
-    assertThatCode(() -> _rampRuleService.updateOwnership(requestDTO, user, ImageRampRuleService.OperationType.ADD))
-        .doesNotThrowAnyException();
+
+    String updatedOwner = _rampRuleService.updateOwnership(requestDTO, user, ImageRampRuleService.OperationType.ADD);
+    assertThat(updatedOwner).contains(existingOwner1, existingOwner2);
+    assertThat(updatedOwner).contains("user1");
   }
+
+  @Test
+  public void testRemoveRuleOwners() {
+    User user = new User("testAdminUser");
+    final String json = JSONUtils.readJsonFileAsString("image_management/flow_owners_update.json");
+    final RampRuleOwnershipDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleOwnershipDTO.class);
+    ImageOwnership ownership = new ImageOwnership();
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    user.addRole("admin");
+    ownership.setOwner(user.getUserId());
+    ownership.setRole(ImageOwnership.Role.ADMIN);
+    when(_userManager.getRole(any())).thenReturn(role);
+    when(_userManager.validateGroup(any())).thenReturn(true);
+
+    String existingOwner1 = "user2";
+    String existingOwner2 = "user3";
+    Set<String> existingOwners = new HashSet<>();
+    existingOwners.add(existingOwner1);
+    existingOwners.add(existingOwner2);
+    when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
+    when(_rampRuleDao.updateOwnerships(any(), any(), any())).thenReturn(1);
+
+    String updatedOwner = _rampRuleService.updateOwnership(requestDTO, user, ImageRampRuleService.OperationType.REMOVE);
+    assertThat(updatedOwner).contains(existingOwner2);
+    assertThat(updatedOwner).doesNotContain("user1");
+  }
+
 
   @Test
   public void testInvalidImageName() {
