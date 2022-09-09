@@ -387,7 +387,7 @@ public class JdbcProjectImplTest {
 
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.uploadProjectProperties(project, list);
+    this.loader.uploadProjectProperties(project, project.getVersion(), list);
 
     final Map<String, Props> propsMap = this.loader
         .fetchProjectProperties(project.getId(), project.getVersion());

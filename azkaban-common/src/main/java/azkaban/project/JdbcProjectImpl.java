@@ -790,11 +790,12 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   @Override
-  public void uploadProjectProperties(final Project project, final List<Props> properties)
+  public void uploadProjectProperties(final Project project,
+      final int projectVersionOverride, final List<Props> properties)
       throws ProjectManagerException {
     for (final Props props : properties) {
       try {
-        uploadProjectProperty(project, props.getSource(), props);
+        uploadProjectProperty(project, projectVersionOverride, props.getSource(), props);
       } catch (final IOException e) {
         throw new ProjectManagerException("Error uploading project property file", e);
       }
@@ -838,12 +839,18 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   private void uploadProjectProperty(final Project project, final String name, final Props props)
       throws ProjectManagerException, IOException {
+    uploadProjectProperty(project, project.getVersion(), name, props);
+  }
+
+  private void uploadProjectProperty(final Project project, final int projectVersionOverride,
+      final String name, final Props props)
+      throws ProjectManagerException, IOException {
     final String INSERT_PROPERTIES =
         "INSERT INTO project_properties (project_id, version, name, modified_time, encoding_type, property) values (?,?,?,?,?,?)";
 
     final byte[] propsData = getBytes(props);
     try {
-      this.dbOperator.update(INSERT_PROPERTIES, project.getId(), project.getVersion(), name,
+      this.dbOperator.update(INSERT_PROPERTIES, project.getId(), projectVersionOverride, name,
           System.currentTimeMillis(),
           this.defaultEncodingType.getNumVal(), propsData);
     } catch (final SQLException e) {

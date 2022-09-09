@@ -272,23 +272,24 @@ class AzkabanProjectLoader {
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
       project.setFlows(flows);
 
-      // Set the project version before upload of project files happens so that the files use
-      // new version.
-      project.setVersion(newProjectVersion);
-
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
-        log.info("Uploading Job properties");
-        this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
+        log.info("Uploading Job properties for project " + archive.getName());
+        this.projectLoader.uploadProjectProperties(project, newProjectVersion, new ArrayList<>(
             directoryFlowLoader.getJobPropsMap().values()));
-        log.info("Uploading Props properties");
-        this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
+        log.info("Uploading Props properties for project " + archive.getName());
+        this.projectLoader.uploadProjectProperties(project, newProjectVersion,
+            directoryFlowLoader.getPropsList());
 
       } else if (loader instanceof DirectoryYamlFlowLoader) {
         uploadFlowFilesRecursively(projectDir, project, newProjectVersion);
       } else {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
+
+      // Set the project version after upload of project files happens to ensure newer version
+      // project properties file exist before project version is incremented.
+      project.setVersion(newProjectVersion);
 
       // CAUTION : Always change the project version as the last item to make
       // sure all the project related files are uploaded.
