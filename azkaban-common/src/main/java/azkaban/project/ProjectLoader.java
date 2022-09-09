@@ -175,8 +175,10 @@ public interface ProjectLoader {
 
   /**
    * Upload Project properties. Map contains key value of path and properties
+   * projectVersionOverride is used to override default project.getVersion() to ensure correct
+   * ordering of project upload call.
    */
-  void uploadProjectProperties(Project project, List<Props> properties)
+  void uploadProjectProperties(Project project, int projectVersionOverride, List<Props> properties)
       throws ProjectManagerException;
 
   /**
