@@ -29,6 +29,8 @@ dependencies {
     compileOnly deps.hadoopAuth
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopHdfs
+    compile deps.hadoopMRClientCommon
+    compile deps.hadoopMRClientCore
     compile deps.httpclient
     compile deps.jetty
     compile deps.jettyUtil
