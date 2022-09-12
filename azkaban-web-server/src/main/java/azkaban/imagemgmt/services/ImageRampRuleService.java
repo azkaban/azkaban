@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.services;
 
+import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampRule;
@@ -29,7 +30,8 @@ public interface ImageRampRuleService {
 
   /**
    * Create a normal exclusive Rule for a certain version of an image type,
-   * validation performed before insert into DB.
+   * validation performed based on {@link ImageRampRuleRequestDTO} and convert to {@link ImageRampRule}
+   * before insert into DB.
    *
    * @param rampRuleRequestDTO
    * @param ldapUser
@@ -37,11 +39,37 @@ public interface ImageRampRuleService {
    * */
   void createRule(final ImageRampRuleRequestDTO rampRuleRequestDTO, final User ldapUser);
 
-  void createHpFlowRule(final ImageRampRule rule);
+  /**
+   * Create an HP Flow exclusive Rule to denying all image Types,
+   * validation performed based on {@link RampRuleOwnershipDTO} and convert to {@link ImageRampRule}
+   *
+   * @param hpFlowRuleOwnershipRequestDTO
+   * @param user
+   * @throws ImageMgmtException
+   * */
+  void createHpFlowRule(final RampRuleOwnershipDTO hpFlowRuleOwnershipRequestDTO, final User user);
+
+  /**
+   * Update the rule with ownerships, only existing owners have the permission to add/remove new owners,
+   * ownerships should be provided using "," as delimiter, otherwise validation will fail.
+   * validation performed based on {@link RampRuleOwnershipDTO} and invoke DB.
+   *
+   * @param RuleOwnershipDTO
+   * @param user
+   * @param operationType
+   * @throws ImageMgmtException
+   * @return*/
+  String updateRuleOwnership(final RampRuleOwnershipDTO RuleOwnershipDTO, final User user,
+      final OperationType operationType);
 
   void deleteRule(final String ruleName);
 
   void addFlowsToRule(final List<String> flowIds, final String ruleName);
 
   void updateVersionOnRule(final String newVersion, final String ruleName);
+
+  enum OperationType {
+    ADD(),
+    REMOVE()
+  }
 }

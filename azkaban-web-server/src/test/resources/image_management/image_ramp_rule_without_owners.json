@@ -1,6 +1,5 @@
 {
   "ruleName": "daliSparkExclude",
   "imageName": "az-platform-image",
-  "imageVersion": "0.0.421",
-  "ownerships": "shwei"
+  "imageVersion": "0.0.421"
 }
