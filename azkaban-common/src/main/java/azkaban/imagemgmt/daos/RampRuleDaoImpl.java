@@ -44,9 +44,12 @@ public class RampRuleDaoImpl implements RampRuleDao {
   private static final Logger LOG = Logger.getLogger(RampRuleDaoImpl.class);
   private final DatabaseOperator databaseOperator;
 
-  private static String INSERT_RAMP_RULE = "INSERT into ramp_rules "
+  private static final String INSERT_RAMP_RULE = "INSERT into ramp_rules "
       + "(rule_name, image_name, image_version, owners, is_HP, created_by, created_on, modified_by, modified_on)"
       + " values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  private static final String UPDATE_RULE_OWNERSHIP = "UPDATE ramp_rules "
+      + "SET owners=?, modified_by=?, modified_on=? WHERE rule_name=?";
 
   @Inject
   public RampRuleDaoImpl(final DatabaseOperator databaseOperator) {
@@ -93,9 +96,50 @@ public class RampRuleDaoImpl implements RampRuleDao {
     }
   }
 
+  /**
+   * update column owners from table ramp_rules along with modification metadata.
+   *
+   * @param newOwners
+   * @param ruleName
+   * @param modifiedBy
+   * @return int - id of the DB entry
+   * @throws ImageMgmtDaoException
+   */
   @Override
-  public String getOwners(final String ruleName) {
-    return null;
+  public int updateOwnerships(final String newOwners, final String ruleName, final String modifiedBy) {
+    try {
+      // validation should already done
+      return this.databaseOperator.update(UPDATE_RULE_OWNERSHIP,
+          newOwners, modifiedBy, Timestamp.valueOf(LocalDateTime.now()), ruleName);
+    } catch (SQLException e) {
+      LOG.error("Error in updating ownership " + newOwners);
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
+          "Error in updating ownership with " + e.getMessage());
+    }
+  }
+
+  /**
+   * Query table ramp_rules to get owners of Ramp rule.
+   * Serves as the source of truth for rule ownership management.
+   *
+   * @param ruleName - ruleName in {@see ImageRampRule}
+   * @return owners of the ramp rule.
+   */
+  @Override
+  public Set<String> getOwners(final String ruleName) {
+    try {
+      List<ImageRampRule> rampRules = databaseOperator.query(
+          FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID, new FetchRampRuleHandler(), ruleName);
+      if (rampRules.isEmpty()) {
+        throw new ImageMgmtDaoException("ramp rule not found with ruleName: " + ruleName);
+      }
+      // ramp rule should be unique
+      String owners = rampRules.get(0).getOwners();
+      return new HashSet<>(Arrays.asList(owners.split(",")));
+    } catch (SQLException e) {
+      LOG.error("Unable to fetch the hp flow ownership", e);
+      throw new ImageMgmtDaoException("failed to fetch hp flow owners into DB.");
+    }
   }
 
   @Override

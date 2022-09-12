@@ -747,7 +747,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     if (permissionManager.isAzkabanAdmin(user)) {
       return true;
     }
-    return permissionManager.hasPermission(imageTypeName, user.getUserId(), type);
+    return permissionManager.hasPermissionForImageType(imageTypeName, user.getUserId(), type);
   }
 
 
