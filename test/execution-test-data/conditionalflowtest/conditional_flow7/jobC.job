@@ -1,0 +1,5 @@
+type=test
+fail=false
+seconds=0
+condition=${jobA:unknownprops} == 'bar'
+dependencies=jobA
