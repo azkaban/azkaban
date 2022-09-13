@@ -43,7 +43,7 @@ public class ContainerFlowCriteria {
     this.fileLocation = azkProps.getString(Constants.
         ContainerizedDispatchManagerProperties.CONTAINERIZED_FLOW_FILTER_FILE, null);
     this.logger = logger;
-    loadFlowFilter();
+    loadFlowFilter(new HashMap<>());
   }
 
   /**
@@ -51,19 +51,17 @@ public class ContainerFlowCriteria {
    */
   public void reloadFlowFilter() {
     // Reset the filter map
-    flows = new HashMap<>(1);
-    loadFlowFilter();
+    loadFlowFilter(new HashMap<>());
   }
 
   @VisibleForTesting
   public void reloadFlowFilter(final String fileLocation) {
     // Reset the filter map
-    flows = new HashMap<>(1);
-    loadFlowFilter(fileLocation);
+    loadFlowFilter(new HashMap<>(), fileLocation);
   }
 
-  private void loadFlowFilter() {
-    loadFlowFilter(this.fileLocation);
+  private void loadFlowFilter(final Map<String, Set<String >> flowMap) {
+    loadFlowFilter(flowMap, this.fileLocation);
   }
 
   /**
@@ -71,7 +69,7 @@ public class ContainerFlowCriteria {
    * on best effort basis. i.e, if a flow name is not correctly formatted, it
    * is ignored.
    */
-  private void loadFlowFilter(final String fileLocation) {
+  private void loadFlowFilter(final Map<String, Set<String>> flowMap, final String fileLocation) {
     // Basic checks
     if (fileLocation == null) {
       return;
@@ -87,12 +85,14 @@ public class ContainerFlowCriteria {
       for (String line; (line = reader.readLine()) != null;) {
         line = line.trim();
         List<String> flowFQN = Arrays.asList(line.split(":"));
-        validateAndAdd(flowFQN);
+        validateAndAdd(flowFQN, flowMap);
       }
     } catch (final IOException e) {
       // Log and ignore
       logger.info("Caught exception while reading the file." + e);
     }
+    // Set the flow map
+    this.flows = flowMap;
   }
 
   /** Validate flowFQN and add it to flows map.
@@ -100,7 +100,7 @@ public class ContainerFlowCriteria {
    * <project name> when entire project needs to be in the filter and
    * <project name>:<flow name>.
    */
-  private void validateAndAdd(final List<String> flowFQN) {
+  private void validateAndAdd(final List<String> flowFQN, final Map<String, Set<String>> flowMap) {
     if (!(flowFQN.size() == 1 || flowFQN.size() == 2)) {
       return;
     }
@@ -108,17 +108,17 @@ public class ContainerFlowCriteria {
     final String project = flowFQN.get(0);
     if (flowFQN.size() == 1) {
       // Entire project is in the filter.
-      this.flows.put(project, null);
+      flowMap.put(project, null);
       return;
     }
 
     // Handle the case when the FQN also contains flow name
-    if (!this.flows.containsKey(project)) {
+    if (!flowMap.containsKey(project)) {
       // Make an entry for the project
-      this.flows.put(project, new HashSet<>(1));
+      flowMap.put(project, new HashSet<>(1));
     }
 
-    this.flows.get(project).add(flowFQN.get(1));
+    flowMap.get(project).add(flowFQN.get(1));
   }
 
   /**
