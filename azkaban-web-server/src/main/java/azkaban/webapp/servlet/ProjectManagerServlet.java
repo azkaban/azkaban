@@ -23,6 +23,7 @@ import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.ImmutableFlowProps;
@@ -1954,6 +1955,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       });
 
       registerErrorsAndWarningsFromValidationReport(resp, ret, reports);
+      // Reload the flow_filter to ensure if this project is added to the file, then the filter is current.
+      if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+        ContainerizedDispatchManager containerizedDispatchManager = (ContainerizedDispatchManager) this.executorManagerAdapter;
+        containerizedDispatchManager.getContainerFlowCriteria().reloadFlowFilter();
+      }
     } catch (final Exception e) {
       logger.info("Installation Failed.", e);
       String error = e.getMessage();
