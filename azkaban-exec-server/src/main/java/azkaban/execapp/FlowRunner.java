@@ -1201,9 +1201,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     while (variableMatcher.find()) {
       final String value = findValueForJobVariable(node, variableMatcher.group(1),
           variableMatcher.group(2));
-      if (value != null) {
-        replaced = replaced.replace(variableMatcher.group(), "'" + value + "'");
-      }
+      replaced = replaced.replace(variableMatcher.group(), "'" + value + "'");
       this.logger.info("Resolved condition of " + node.getId() + " is " + replaced);
     }
 
@@ -1211,9 +1209,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return evaluateExpression(replaced);
   }
 
-  @Nonnull
-  private String findValueForJobVariable(final ExecutableNode node, final String jobName, final
-  String variable) {
+  private String findValueForJobVariable(final ExecutableNode node, final String jobName,
+      final String variable) {
     // Get job output props
     final ExecutableNode target = node.getParentFlow().getExecutableNode(jobName);
     if (target == null) {
@@ -1224,10 +1221,12 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
     final Props outputProps = target.getOutputProps();
     if (outputProps == null) {
-      throw new IllegalStateException("No output properties were generated for job " + jobName + ".");
+      this.logger.warn("No output properties were generated for job " + jobName + ".");
+      return null;
     }
     if (!outputProps.containsKey(variable)) {
-      throw new IllegalStateException("No variable named " + variable + " found in job " + jobName + " output parameters. Properties: " + outputProps);
+      this.logger.warn("No variable named " + variable + " found in job " + jobName + " output parameters. Properties: " + outputProps);
+      return null;
     }
 
     return outputProps.get(variable);

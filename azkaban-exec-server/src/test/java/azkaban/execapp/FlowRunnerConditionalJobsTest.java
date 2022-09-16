@@ -141,6 +141,21 @@ public class FlowRunnerConditionalJobsTest extends FlowRunnerTestBase {
     assertFlowStatus(flow, Status.SUCCEEDED);
   }
 
+  @Test
+  public void runFlowOnMissingJobOutputProp() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_7, flowProps, "jobD");
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    // Don't put any output prop here to simulate missing job output prop scenario
+    final Props generatedProperties = new Props();
+    InteractiveTestJob.getTestJob((CONDITIONAL_FLOW_7 + ":") + "jobA").succeedJob(generatedProperties);
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.CANCELLED);
+    assertStatus(flow, "jobC", Status.CANCELLED);
+    assertStatus(flow, "jobD", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
   /**
    * JobB has defined "condition: var fImport = new JavaImporter(java.io.File); with(fImport) { var
    * f = new File('new'); f.createNewFile(); }"
