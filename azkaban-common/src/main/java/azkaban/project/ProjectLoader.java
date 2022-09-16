@@ -234,6 +234,15 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
+   * Check if given flow is included in given project.
+   * The project must be active.
+   *
+   * @return true, if the flow exists in the project;
+   *         false, otherwise
+   * */
+  boolean isFlowInProject(String projectName, String flowId);
+
+  /**
    * Retrieve projects corresponding to ids specified in a list.
    */
   List<Project> fetchProjectById(List<Integer> ids) throws ProjectManagerException;

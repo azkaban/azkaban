@@ -18,9 +18,11 @@ package azkaban.imagemgmt.services;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.RampRuleDao;
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ErrorCode;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exception.ImageMgmtInvalidPermissionException;
@@ -28,6 +30,8 @@ import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.user.User;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -51,16 +55,19 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
   private final ImageTypeDao imageTypeDao;
   private final ImageVersionDao imageVersionDao;
   private final PermissionManager permissionManager;
+  private final ProjectLoader projectLoader;
 
   @Inject
   public ImageRampRuleServiceImpl(final RampRuleDao rampRuleDao,
                                   final ImageTypeDao imageTypeDao,
                                   final ImageVersionDao imageVersionDao,
-                                  final PermissionManager permissionManager) {
+                                  final PermissionManager permissionManager,
+                                  final ProjectLoader projectLoader) {
     this.rampRuleDao = rampRuleDao;
     this.imageTypeDao = imageTypeDao;
     this.imageVersionDao = imageVersionDao;
     this.permissionManager = permissionManager;
+    this.projectLoader = projectLoader;
   }
 
   /**
@@ -182,9 +189,40 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
 
   }
 
+  /**
+   * add flows into ramp rules. Validation will be performed based on owner list, active project and valid flows.
+   * call Dao layer to insert flow to image deny metadata into DB.
+   *
+   * @param flowIds
+   * @param ruleName
+   * @param user
+   * */
   @Override
-  public void addFlowsToRule(final List<String> flowIds, final String ruleName) {
+  public void addFlowsToRule(final List<ProjectFlow> flowIds, final String ruleName, final User user) {
+    // validate permission
+    final Set<String> owners = rampRuleDao.getOwners(ruleName);
+    if (!permissionManager.hasPermission(user, owners)) {
+      log.error("current user "+ user.getUserId() + " does not have permission to add flows to Ramp rule");
+      throw new ImageMgmtInvalidPermissionException(ErrorCode.UNAUTHORIZED,
+          "current user "+ user.getUserId() + " does not have permission to add flows to Ramp rule");
+    }
+    // validate flowId is correct (valid and in right format)
+    try {
+      for (final ProjectFlow flowId : flowIds) {
+        // validate flows and projects exist and flows are in the active project
+        if (!projectLoader.isFlowInProject(flowId.projectName, flowId.flowName)) {
+          log.error("flowId " + flowId + " invalid, either project or flow not exist or active.");
+          throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST,
+              "flowId " + flowId + " invalid, either project or flow not exist or active.");
+        }
+      }
+    } catch (ProjectManagerException e) {
+      log.error("failed to validate inputs" + e);
+      throw new ImageMgmtException(ErrorCode.BAD_REQUEST, "failed to validate inputs: " + e.getMessage());
+    }
 
+    // insert into flow.deny.list table with record {flowId, denyMode, denyVersions, ruleName}
+    rampRuleDao.addFlowDenyInfo(flowIds, ruleName);
   }
 
   @Override

@@ -1070,6 +1070,24 @@ public class JdbcProjectImpl implements ProjectLoader {
     return !data.isEmpty();
   }
 
+  @Override
+  public boolean isFlowInProject(String projectName, String flowId) {
+    Project project = fetchProjectByName(projectName);
+    if (project == null) {
+      logger.info("Can not find active project " + projectName);
+      return false;
+    }
+    try {
+      List<Flow> flow = dbOperator.query(ProjectFlowsResultHandler.SELECT_PROJECT_FLOW,
+          new ProjectFlowsResultHandler(), project.getId(),
+          project.getVersion(), flowId);
+      return flow != null && !flow.isEmpty();
+    } catch (SQLException e) {
+      logger.error(e);
+      throw new ProjectManagerException("Failing to get flow " + flowId + " in project: " + projectName, e);
+    }
+  }
+
   /**
    * Returns list of Projects with ids that match with any id specified in the list of ids passed as
    * a parameter.

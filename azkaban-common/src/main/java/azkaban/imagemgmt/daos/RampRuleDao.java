@@ -15,7 +15,11 @@
  */
 package azkaban.imagemgmt.daos;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.models.ImageRampRule;
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
+import java.util.List;
 import java.util.Set;
 
 
@@ -64,6 +68,14 @@ public interface RampRuleDao {
   Set<String> getOwners(final String ruleName);
 
   /**
+   * Query table ramp_rules to get image ramp rule associated with given ruleName.
+   *
+   * @param ruleName - ruleName in {@see ImageRampRule}
+   * @return image ramp rule.
+   */
+  ImageRampRule getRampRule(final String ruleName);
+
+  /**
    * delete the ramp_rules to get owners of Ramp rule.
    *
    * @param ruleName - ruleName in {@see ImageRampRule}
@@ -71,4 +83,18 @@ public interface RampRuleDao {
    */
   void deleteRampRule(final String ruleName);
 
+  /**
+   * create one to one mappings from flow to deny image information into table flow_deny_lists.
+   * flowIds will be converted into format project.flow to match {@link ExecutableFlow#getFlowName()}.
+   *
+   * @param flowIds - list of flowIds in {@link ProjectFlow}
+   * @param ruleName - ruleName in {@see ImageRampRule}
+   * @throws azkaban.imagemgmt.exception.ImageMgmtDaoException
+   */
+  int addFlowDenyInfo(final List<ProjectFlow> flowIds, final String ruleName);
+
+  enum DenyMode {
+    ALL, // deny all versions, used for HP flow ramp rule
+    PARTIAL // deny partial versions, versions need to be specified in normal ramp rule
+  }
 }
