@@ -94,10 +94,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
     for (var i = 0; i < nodes.length; ++i) {
       var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 
-      if (node.status == 'READY') {
-        continue;
-      }
-
       //var nodeId = node.id.replace(".", "\\\\.");
       var row = node.joblistrow;
       if (!row) {
