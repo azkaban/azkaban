@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.servlets;
 
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
@@ -55,6 +56,7 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
   private final static String CREATE_HP_FLOW_RULE_URI = "/imageRampRule/createHPFlowRule";
   private final static String ADD_OWNERS_URI = "/imageRampRule/addOwners";
   private final static String REMOVE_OWNERS_URI = "/imageRampRule/removeOwners";
+  private final static String ADD_FLOWS_TO_RULE_URI = "/imageRampRule/addFlowsToRule";
 
   public ImageRampRuleServlet() {
     super(new ArrayList<>());
@@ -77,9 +79,9 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws ServletException, IOException {
-      String requestURI = req.getRequestURI();
+      final String requestURI = req.getRequestURI();
       LOG.info("handle request from post uri: " + requestURI);
-      User user = session.getUser();
+      final User user = session.getUser();
       switch (requestURI) {
         case CREATE_RULE_URI:
           handleCreateRampRule(req, resp, user);
@@ -92,6 +94,9 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
           break;
         case REMOVE_OWNERS_URI:
           handleUpdateOwnerships(req, resp, user, ImageRampRuleService.OperationType.REMOVE);
+          break;
+        case ADD_FLOWS_TO_RULE_URI:
+          handleAddFlowsToRule(req, resp, user);
           break;
       }
 
@@ -176,4 +181,25 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  /**
+   * Add a list of flowIds to the rule.
+   * flowIds will come with projectName and flowName.
+   * Successful call would return OK(200).
+   *
+   * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
+   **/
+  private void handleAddFlowsToRule(final HttpServletRequest req,
+                                    final HttpServletResponse resp,
+                                    final User user) throws ServletException {
+    String requestBody = HttpRequestUtils.getBody(req);
+    RampRuleFlowsDTO rampRuleFlowsDTO;
+    try {
+      rampRuleFlowsDTO = utils.convertToDTO(requestBody, RampRuleFlowsDTO.class);
+      imageRampRuleService.addFlowsToRule(rampRuleFlowsDTO.getFlowIds(), rampRuleFlowsDTO.getRuleName(), user);
+      resp.setStatus(HttpServletResponse.SC_OK);
+    } catch (ImageMgmtException e) {
+      LOG.error("fail to add flow to the rule: " + requestBody);
+      resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
+    }
+  }
 }
