@@ -49,6 +49,8 @@ public class JobCallbackRequestMaker {
   private static final int DEFAULT_TIME_OUT_MS = 3000;
   private static final int DEFAULT_RESPONSE_WAIT_TIME_OUT_MS = 5000;
   private static final int MAX_RESPONSE_LINE_TO_PRINT = 50;
+  private static final int MAX_CALLBACK_RETRY_COUNT = 3;
+  private static final int CALLBACK_RETRY_INTERVAL_MS = 5000; // 5s
 
   private static final int DEFAULT_THREAD_POOL_SIZE = 10;
 
@@ -146,30 +148,40 @@ public class JobCallbackRequestMaker {
           this.futureRequestExecutionService.execute(httpRequest,
               HttpClientContext.create(), new LoggingResponseHandler(logger));
 
-      try {
-        // get with timeout
-        final Integer statusCode =
-            task.get(this.responseWaitTimeoutMS, TimeUnit.MILLISECONDS);
+      for (int retryAttempt = 1; retryAttempt <= MAX_CALLBACK_RETRY_COUNT; retryAttempt++) {
+        try {
+          // get with timeout
+          final Integer statusCode =
+              task.get(this.responseWaitTimeoutMS, TimeUnit.MILLISECONDS);
 
-        logger.info("http callback status code for " + jobId + ": " + statusCode);
-      } catch (final TimeoutException timeOutEx) {
-        logger
-            .warn("Job callback target took longer "
-                    + (this.responseWaitTimeoutMS / 1000) + " seconds to respond for: " + jobId,
-                timeOutEx);
-      } catch (final ExecutionException ee) {
-        if (ee.getCause() instanceof SocketTimeoutException) {
-          logger.warn("Job callback target took longer "
-              + (this.responseWaitTimeoutMS / 1000) + " seconds to respond", ee);
-        } else {
+          logger.info("http callback status code for " + jobId + ": " + statusCode);
+          break;
+        } catch (final TimeoutException timeOutEx) {
+          logger
+              .warn("Job callback target took longer "
+                      + (this.responseWaitTimeoutMS / 1000) + " seconds to respond for: " + jobId +
+                      ". Current retry attempt: " + retryAttempt + "/" + MAX_CALLBACK_RETRY_COUNT, timeOutEx);
+        } catch (final ExecutionException ee) {
+          if (ee.getCause() instanceof SocketTimeoutException) {
+            logger.warn("Job callback target took longer "
+                + (this.responseWaitTimeoutMS / 1000) + " seconds to respond" +
+                ". Current retry attempt: " + retryAttempt + "/" + MAX_CALLBACK_RETRY_COUNT, ee);
+          } else {
+            logger.warn(
+                "Failed to execute job callback for: " + jobId +
+                    ". Current retry attempt: " + retryAttempt + "/" + MAX_CALLBACK_RETRY_COUNT, ee);
+          }
+        } catch (final Throwable e) {
           logger.warn(
-              "Failed to execute job callback for: " + jobId,
-              ee);
+              "Failed to execute job callback for: " + jobId +
+                  ". Current retry attempt: " + retryAttempt + "/" + MAX_CALLBACK_RETRY_COUNT, e);
         }
-      } catch (final Throwable e) {
-        logger.warn(
-            "Failed to execute job callback for: " + jobId,
-            e);
+
+        try {
+          Thread.sleep(CALLBACK_RETRY_INTERVAL_MS);
+        } catch (final InterruptedException e) {
+          logger.error("Sleep interrupted", e);
+        }
       }
     }
   }
