@@ -16,9 +16,12 @@
 package azkaban.imagemgmt.daos;
 
 import azkaban.db.DatabaseOperator;
+import azkaban.db.SQLTransaction;
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.models.ImageRampRule;
+import azkaban.imagemgmt.models.RampRuleDenyList;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -35,6 +38,7 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 import org.bouncycastle.util.Strings;
 
+
 /**
  * Dao Implementation for access DB of table ramp_rules.
  * Create/update/delete/get RampRule or partial RampRule metadata. {@link ImageRampRule}
@@ -50,6 +54,11 @@ public class RampRuleDaoImpl implements RampRuleDao {
 
   private static final String UPDATE_RULE_OWNERSHIP = "UPDATE ramp_rules "
       + "SET owners=?, modified_by=?, modified_on=? WHERE rule_name=?";
+
+  private static final String INSERT_FLOW_DENY_LIST = "INSERT into flow_deny_lists "
+      + "(flow_id, deny_mode, deny_version, rule_name) values (?, ?, ?, ?)";
+  private static final String INSERT_HP_DENY_LIST = "INSERT into flow_deny_lists "
+      + "(flow_id, deny_mode, rule_name) values (?, ?, ?)";
 
   @Inject
   public RampRuleDaoImpl(final DatabaseOperator databaseOperator) {
@@ -72,12 +81,12 @@ public class RampRuleDaoImpl implements RampRuleDao {
     try {
       // duplicated rule should be forbidden as client side error, which needs a separate check to
       // avoid it falls into normal SQL Exception as server error.
-      List<ImageRampRule> rampRules = databaseOperator.query(
+      final ImageRampRule imageRampRule = databaseOperator.query(
           FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID, new FetchRampRuleHandler(), rampRule.getRuleName());
-      if (!rampRules.isEmpty()) {
-        LOG.error("Error in create ramp rule on duplicate ruleName: " + rampRule.getRuleName());
+      if (imageRampRule != null) {
+        LOG.error("Error in create ramp rule on duplicate ruleName: " + imageRampRule.getRuleName());
         throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
-            "Error in create ramp rule on duplicate ruleName: " + rampRule.getRuleName());
+            "Error in create ramp rule on duplicate ruleName: " + imageRampRule.getRuleName());
       }
       return this.databaseOperator.update(INSERT_RAMP_RULE,
           rampRule.getRuleName(),
@@ -127,18 +136,31 @@ public class RampRuleDaoImpl implements RampRuleDao {
    */
   @Override
   public Set<String> getOwners(final String ruleName) {
+    final ImageRampRule rampRule = getRampRule(ruleName);
+    String owners = rampRule.getOwners();
+    return new HashSet<>(Arrays.asList(owners.split(",")));
+  }
+
+  /**
+   * Get Unique ramp rule based on given ruleName.
+   * Fetched results would be converted into model {@link ImageRampRule}
+   *
+   * @param ruleName - ruleName in {@link ImageRampRule}
+   * @return the ramp rule.
+   */
+  @Override
+  public ImageRampRule getRampRule(String ruleName) {
     try {
-      List<ImageRampRule> rampRules = databaseOperator.query(
-          FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID, new FetchRampRuleHandler(), ruleName);
-      if (rampRules.isEmpty()) {
+      final ImageRampRule rampRule = databaseOperator.query(FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID,
+          new FetchRampRuleHandler(), ruleName);
+      if (rampRule == null) {
+        LOG.error("Can not find ramp rule at the ruleName: " + ruleName);
         throw new ImageMgmtDaoException("ramp rule not found with ruleName: " + ruleName);
       }
-      // ramp rule should be unique
-      String owners = rampRules.get(0).getOwners();
-      return new HashSet<>(Arrays.asList(owners.split(",")));
+      return rampRule;
     } catch (SQLException e) {
-      LOG.error("Unable to fetch the hp flow ownership", e);
-      throw new ImageMgmtDaoException("failed to fetch hp flow owners into DB.");
+      LOG.error("Unable to fetch the ramp rule", e);
+      throw new ImageMgmtDaoException("failed to fetch Ramp Rule from DB." + e);
     }
   }
 
@@ -147,35 +169,141 @@ public class RampRuleDaoImpl implements RampRuleDao {
 
   }
 
-  public static class FetchRampRuleHandler implements ResultSetHandler<List<ImageRampRule>> {
+  /**
+   * Map FlowId (project.flow) with denying information (denyMode or denyVersion) and insert them into DB.
+   * Deduplication performed in same rule with same flow to avoid DB inflation.
+   *
+   * @param flowIds
+   * @param ruleName
+   * @return int - id of the DB entry
+   */
+  @Override
+  public int addFlowDenyInfo(final List<ProjectFlow> flowIds, final String ruleName) {
+    // query ramp_rules to get ramp rule information
+    // based on ramp rule to generate mappings with flowId as key
+    final SQLTransaction<Long> fetchRampRuleAndUpdateDenyList = transOperator -> {
+      final ImageRampRule imageRampRule =
+          transOperator.query(FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID, new FetchRampRuleHandler(), ruleName);
+      if (imageRampRule == null) {
+        LOG.error("fail to find the existing ruleName: " + ruleName);
+        throw new ImageMgmtDaoException("ramp rule not found with ruleName: " + ruleName);
+      }
+      // insert HP flows: <flowId, denyMode.ALL, ruleName> based on whether HP flow
+      if (imageRampRule.isHPRule()) {
+        LOG.info("handling add flows for HP Flow Rule: " + ruleName);
+        for (final ProjectFlow flowId : flowIds) {
+          // avoid duplicate insert HP flows, use <flowId, denyMode, ruleName> to identity duplicates.
+          // in case one rule deleted, the others still exist
+          if (transOperator.query(
+                FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_MODE,
+                new FetchFlowDenyListHandler(), flowId.toString(), DenyMode.ALL.name(), ruleName)
+              .isEmpty()) {
+            transOperator.update(INSERT_HP_DENY_LIST, flowId.toString(), DenyMode.ALL.name(), ruleName);
+          }
+        }
+      } else {
+        // insert normal flows: <flowId, denyMode.PARTIAL, ruleName>
+        final String denyVersion = String.join(":", imageRampRule.getImageName(), imageRampRule.getImageVersion());
+        LOG.info("handling add flows for normal Flow Rule: " + ruleName + " with denyVersion: " + denyVersion);
+        for (final ProjectFlow flowId : flowIds) {
+          // avoid duplicate insert, use <flowId, denyVersion, ruleName> to identity duplicates.
+          // in case one got deleted, the others should not get impacted
+          if (transOperator.query(
+                  FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_VERSION,
+                  new FetchFlowDenyListHandler(), flowId.toString(), denyVersion, ruleName)
+              .isEmpty()) {
+            transOperator.update(INSERT_FLOW_DENY_LIST, flowId.toString(), DenyMode.PARTIAL.name(), denyVersion, ruleName);
+          }
+        }
+      }
+      // end if
+      transOperator.getConnection().commit();
+      return transOperator.getLastInsertId();
+    };
+    // end SQL transaction operator
+    int batchInsertId = 0;
+    try {
+      batchInsertId = this.databaseOperator.transaction(fetchRampRuleAndUpdateDenyList).intValue();
+      if (batchInsertId == 0) {
+        LOG.warn(String.format("creating no new flow deny list based on rule: %s, "
+                + "flowList: %s. Might due to deny rule already exists", ruleName, flowIds));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            String.format("flows already exists in the rule: %s, " + "flowList: %s.", ruleName,
+                flowIds));
+      }
+      if (batchInsertId < 0) {
+        LOG.warn(String.format("Error on inserting into DB based on rule: %s, "
+            + "flowList: %s.", ruleName, flowIds));
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST,
+            String.format("Exception while creating flow deny list based on rule: %s, " + "flowList: %s.", ruleName,
+                flowIds));
+      }
+      return batchInsertId;
+    } catch (final SQLException e) {
+      LOG.error("Unable to create the flow deny list metadata", e);
+      throw new ImageMgmtDaoException("Exception while creating the flow deny list metadata: " + e.getMessage());
+    }
+  }
+
+  public static class FetchRampRuleHandler implements ResultSetHandler<ImageRampRule> {
 
     private static final String FETCH_RAMP_RULE_BY_ID =
         "SELECT rule_name, image_name, image_version, owners, is_HP"
             + " FROM ramp_rules WHERE rule_name = ?";
 
     @Override
-    public List<ImageRampRule> handle(final ResultSet rs) throws SQLException {
+    public ImageRampRule handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return null;
+      }
+      final String ruleName = rs.getString("rule_name");
+      final String imageName = rs.getString("image_name");
+      final String imageVersion = rs.getString("image_version");
+      final String owners = rs.getString("owners");
+      final boolean isHP = rs.getBoolean("is_HP");
+      Set<String> ownerLists = new HashSet<>(Arrays.asList(Strings.split(owners, ',')));
+      return new ImageRampRule.Builder()
+          .setRuleName(ruleName)
+          .setImageName(imageName)
+          .setImageVersion(imageVersion)
+          .setOwners(ownerLists)
+          .setHPRule(isHP)
+          .build();
+    }
+  }
+
+  public static class FetchFlowDenyListHandler implements ResultSetHandler<List<RampRuleDenyList>> {
+
+    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_MODE =
+        "SELECT flow_id, deny_mode, deny_version, rule_name"
+            + " FROM flow_deny_lists WHERE flow_id = ? and deny_mode = ? and rule_name = ?";
+    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_VERSION =
+        "SELECT flow_id, deny_mode, deny_version, rule_name"
+            + " FROM flow_deny_lists WHERE flow_id = ? and deny_version = ? and rule_name = ?";
+    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID =
+        "SELECT flow_id, deny_mode, deny_version, rule_name"
+            + " FROM flow_deny_lists WHERE flow_id = ?";
+
+    @Override
+    public List<RampRuleDenyList> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
-      final List<ImageRampRule> imageRampRules = new ArrayList<>();
+      final List<RampRuleDenyList> denyLists = new ArrayList<>();
       do {
         final String ruleName = rs.getString("rule_name");
-        final String imageName = rs.getString("image_name");
-        final String imageVersion = rs.getString("image_version");
-        final String owners = rs.getString("owners");
-        final boolean isHP = rs.getBoolean("is_HP");
-        Set<String> ownerLists = new HashSet<>(Arrays.asList(Strings.split(owners, ',')));
-        final ImageRampRule imageRampRule = new ImageRampRule.Builder()
+        final String flowId = rs.getString("flow_id");
+        final String denyMode = rs.getString("deny_mode");
+        final String denyVersion = rs.getString("deny_version");
+        final RampRuleDenyList denyList = new RampRuleDenyList.Builder()
+            .setFlowId(flowId)
             .setRuleName(ruleName)
-            .setImageName(imageName)
-            .setImageVersion(imageVersion)
-            .setOwners(ownerLists)
-            .setHPRule(isHP)
+            .setDenyMode(denyMode)
+            .setDenyVersion(denyVersion)
             .build();
-        imageRampRules.add(imageRampRule);
+        denyLists.add(denyList);
       } while (rs.next());
-      return imageRampRules;
+      return denyLists;
     }
   }
 }

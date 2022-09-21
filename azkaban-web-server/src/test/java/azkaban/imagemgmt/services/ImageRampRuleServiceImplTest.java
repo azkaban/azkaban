@@ -22,12 +22,15 @@ import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
 import azkaban.imagemgmt.daos.RampRuleDao;
 import azkaban.imagemgmt.daos.RampRuleDaoImpl;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.utils.ConverterUtils;
+import azkaban.project.JdbcProjectImpl;
+import azkaban.project.ProjectLoader;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
@@ -53,6 +56,7 @@ public class ImageRampRuleServiceImplTest {
   private UserManager _userManager;
   private ImageRampRuleService _rampRuleService;
   private PermissionManager _permissionManager;
+  private ProjectLoader _projectLoader;
 
   private ConverterUtils _converterUtils;
 
@@ -63,8 +67,10 @@ public class ImageRampRuleServiceImplTest {
     this._imageVersionDao = mock(ImageVersionDaoImpl.class);
     this._userManager = mock(XmlUserManager.class);
     this._permissionManager = new PermissionManagerImpl(_imageTypeDao, _userManager);
+    this._projectLoader = mock(JdbcProjectImpl.class);
     this._rampRuleService =
-        new ImageRampRuleServiceImpl(_rampRuleDao, _imageTypeDao, _imageVersionDao, _permissionManager);
+        new ImageRampRuleServiceImpl(_rampRuleDao, _imageTypeDao, _imageVersionDao, _permissionManager,
+            _projectLoader);
     this._converterUtils = new ConverterUtils(new ObjectMapper());
   }
 
@@ -159,7 +165,6 @@ public class ImageRampRuleServiceImplTest {
     assertThat(updatedOwner).doesNotContain("user1");
   }
 
-
   @Test
   public void testInvalidImageName() {
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule_invalid.json");
@@ -195,5 +200,58 @@ public class ImageRampRuleServiceImplTest {
         .hasMessageContaining("unauthorized user");
   }
 
+  @Test
+  public void testAddFlowsToRule() {
+    final String json = JSONUtils.readJsonFileAsString("image_management/add_flows_to_rule.json");
+    final RampRuleFlowsDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleFlowsDTO.class);
+    User user = new User("testAdminUser");
+    user.addRole("admin");
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    when(_userManager.getRole(any())).thenReturn(role);
+
+    String existingOwner1 = "testAdminUser";
+    Set<String> existingOwners = new HashSet<>();
+    existingOwners.add(existingOwner1);
+    when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
+    when(_projectLoader.isFlowInProject(any(), any())).thenReturn(true);
+    assertThatCode(() -> _rampRuleService.addFlowsToRule(requestDTO.getFlowIds(), requestDTO.getRuleName(), user))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  public void testAddFlowsToRuleInvalidFlowId() {
+    final String json = JSONUtils.readJsonFileAsString("image_management/add_flows_to_rule_invalid.json");
+    final RampRuleFlowsDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleFlowsDTO.class);
+    User user = new User("testAdminUser");
+    user.addRole("admin");
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    when(_userManager.getRole(any())).thenReturn(role);
+
+    String existingOwner1 = "testAdminUser";
+    Set<String> existingOwners = new HashSet<>();
+    existingOwners.add(existingOwner1);
+    when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
+    when(_projectLoader.isFlowInProject(any(), any())).thenReturn(false);
+    assertThatCode(() -> _rampRuleService.addFlowsToRule(requestDTO.getFlowIds(), requestDTO.getRuleName(), user))
+        .hasMessageContaining("either project or flow not exist or active");
+  }
+
+  @Test
+  public void testAddFlowsToRuleNonExistedProject() {
+    final String json = JSONUtils.readJsonFileAsString("image_management/add_flows_to_rule_invalid.json");
+    final RampRuleFlowsDTO requestDTO = _converterUtils.convertToDTO(json, RampRuleFlowsDTO.class);
+    User user = new User("testAdminUser");
+    user.addRole("admin");
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    when(_userManager.getRole(any())).thenReturn(role);
+
+    String existingOwner1 = "testAdminUser";
+    Set<String> existingOwners = new HashSet<>();
+    existingOwners.add(existingOwner1);
+    when(_rampRuleDao.getOwners(requestDTO.getRuleName())).thenReturn(existingOwners);
+    when(_projectLoader.fetchProjectByName(any())).thenReturn(null);
+    assertThatCode(() -> _rampRuleService.addFlowsToRule(requestDTO.getFlowIds(), requestDTO.getRuleName(), user))
+        .hasMessageContaining("either project or flow not exist or active");
+  }
 
 }

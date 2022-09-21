@@ -15,6 +15,7 @@
  */
 package azkaban.imagemgmt.services;
 
+import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.exception.ImageMgmtException;
@@ -58,13 +59,22 @@ public interface ImageRampRuleService {
    * @param user
    * @param operationType
    * @throws ImageMgmtException
-   * @return*/
+   * @return owners of ramp rule
+   * */
   String updateRuleOwnership(final RampRuleOwnershipDTO RuleOwnershipDTO, final User user,
       final OperationType operationType);
 
   void deleteRule(final String ruleName);
 
-  void addFlowsToRule(final List<String> flowIds, final String ruleName);
+  /**
+   * add flows into ramp rules. Validation will be performed based on owner list, active project and valid flows.
+   * call Dao layer to insert flow to image deny metadata into DB.
+   *
+   * @param flowIds - flows to be added into ramp rule
+   * @param ruleName - name in {@link ImageRampRule}
+   * @param user - used to validate
+   * */
+  void addFlowsToRule(final List<ProjectFlow> flowIds, final String ruleName, final User user);
 
   void updateVersionOnRule(final String newVersion, final String ruleName);
 
