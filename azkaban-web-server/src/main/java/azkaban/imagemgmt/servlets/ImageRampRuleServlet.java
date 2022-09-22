@@ -18,7 +18,9 @@ package azkaban.imagemgmt.servlets;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.services.ImageRampRuleService;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
@@ -57,6 +59,8 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
   private final static String ADD_OWNERS_URI = "/imageRampRule/addOwners";
   private final static String REMOVE_OWNERS_URI = "/imageRampRule/removeOwners";
   private final static String ADD_FLOWS_TO_RULE_URI = "/imageRampRule/addFlowsToRule";
+  private final static String UPDATE_VERSION_ON_RULE_URI = "/imageRampRule/updateVersion";
+  private final static String DELETE_RULE_URI = "/imageRampRule/deleteRule";
 
   public ImageRampRuleServlet() {
     super(new ArrayList<>());
@@ -97,6 +101,12 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
           break;
         case ADD_FLOWS_TO_RULE_URI:
           handleAddFlowsToRule(req, resp, user);
+          break;
+        case UPDATE_VERSION_ON_RULE_URI:
+          handleUpdateVersionOnRule(req, resp, user);
+          break;
+        case DELETE_RULE_URI:
+          handleDeleteRule(req, resp, user);
           break;
       }
 
@@ -199,6 +209,57 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
       resp.setStatus(HttpServletResponse.SC_OK);
     } catch (ImageMgmtException e) {
       LOG.error("fail to add flow to the rule: " + requestBody);
+      resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
+    }
+  }
+
+  /**
+   * Updates a ramp rule's version based on given ruleName and version in parameters.
+   * Successful call would return OK(200).
+   *
+   * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
+   **/
+  private void handleUpdateVersionOnRule(final HttpServletRequest req,
+                                         final HttpServletResponse resp,
+                                         final User user) {
+    final String ruleName = req.getParameter("ruleName");
+    if (ruleName == null || ruleName.length() == 0) {
+      LOG.error("ruleName must not be null or empty");
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST, "ruleName must not be null or empty");
+    }
+    final String version = req.getParameter("version");
+    if (version == null || version.length() == 0) {
+      LOG.error("version must not be null or empty");
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST, "version must not be null or empty");
+    }
+    try {
+      imageRampRuleService.updateVersionOnRule(version, ruleName, user);
+      resp.setStatus(HttpServletResponse.SC_OK);
+    } catch (ImageMgmtException e) {
+      LOG.error("fail to update version {} by rule {}", version, ruleName);
+      resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
+    }
+  }
+
+  /**
+   * Delete a ramp rule.
+   * Successful call would return OK(200).
+   *
+   * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
+   **/
+  private void handleDeleteRule(final HttpServletRequest req,
+                                final HttpServletResponse resp,
+                                final User user) {
+    final String ruleName = req.getParameter("ruleName");
+    if (ruleName == null || ruleName.length() == 0) {
+      LOG.error("ruleName must not be null or empty");
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST, "ruleName must not be null or empty");
+    }
+    try {
+      imageRampRuleService.deleteRule(ruleName, user);
+      resp.setStatus(HttpServletResponse.SC_OK);
+    } catch (ImageMgmtException e) {
+      LOG.error("fail to delete Rule {}", ruleName);
       resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
     }
   }

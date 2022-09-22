@@ -25,6 +25,7 @@ import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.models.ImageOwnership;
+import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.permission.PermissionManagerImpl;
@@ -80,7 +81,7 @@ public class ImageRampRuleServiceImplTest {
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule.json");
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
     when(_imageTypeDao.getImageTypeByName(requestDTO.getImageName())).thenReturn(Optional.of(new ImageType()));
-    when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(true);
+    when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(false);
     ImageOwnership ownership = new ImageOwnership();
     Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
     user.addRole("admin");
@@ -179,7 +180,7 @@ public class ImageRampRuleServiceImplTest {
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule_invalid.json");
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
     when(_imageTypeDao.getImageTypeByName(requestDTO.getImageName())).thenReturn(Optional.of(new ImageType()));
-    when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(false);
+    when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(true);
     assertThatCode(() -> _rampRuleService.createRule(requestDTO, new User("testUser")))
         .hasMessageContaining("Invalid image version");
   }
@@ -191,7 +192,7 @@ public class ImageRampRuleServiceImplTest {
     final String json = JSONUtils.readJsonFileAsString("image_management/image_ramp_rule_without_owners.json");
     final ImageRampRuleRequestDTO requestDTO = _converterUtils.convertToDTO(json, ImageRampRuleRequestDTO.class);
     when(_imageTypeDao.getImageTypeByName(requestDTO.getImageName())).thenReturn(Optional.of(new ImageType()));
-    when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(true);
+    when(_imageVersionDao.isInvalidVersion(requestDTO.getImageName(), requestDTO.getImageVersion())).thenReturn(false);
     ImageOwnership ownership = new ImageOwnership();
     ownership.setOwner(group);
     when(_imageTypeDao.getImageTypeOwnership(requestDTO.getImageName())).thenReturn(Collections.singletonList(ownership));
@@ -254,4 +255,77 @@ public class ImageRampRuleServiceImplTest {
         .hasMessageContaining("either project or flow not exist or active");
   }
 
+  @Test
+  public void testUpdateVersionOnHPRule() {
+    String ruleName = "testRule";
+    String imageName = "testImageName";
+    String imageVersion = "0.0.1";
+    User user = new User("testAdminUser");
+    user.addRole("admin");
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    when(_userManager.getRole(any())).thenReturn(role);
+
+    String curUser = "testAdminUser";
+    Set<String> owners = new HashSet<>();
+    owners.add(curUser);
+    ImageRampRule mockedRule = new ImageRampRule.Builder()
+        .setHPRule(true)
+        .setRuleName(ruleName)
+        .setImageName(imageName)
+        .setImageVersion(imageVersion)
+        .setOwners(owners)
+        .build();
+    when(_rampRuleDao.getRampRule(ruleName)).thenReturn(mockedRule);
+    assertThatCode(() -> _rampRuleService.updateVersionOnRule("0.0.2", ruleName, user))
+        .hasMessageContaining("Can't update version on a HP flow rule");
+  }
+
+  @Test
+  public void testUpdateVersionOnNormalRule() {
+    String ruleName = "testRule";
+    String imageName = "testImageName";
+    String imageVersion = "0.0.1";
+    User user = new User("testAdminUser");
+    user.addRole("admin");
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    when(_userManager.getRole(any())).thenReturn(role);
+
+    String curUser = "testAdminUser";
+    Set<String> owners = new HashSet<>();
+    owners.add(curUser);
+    ImageRampRule mockedRule = new ImageRampRule.Builder()
+        .setHPRule(false)
+        .setRuleName(ruleName)
+        .setImageName(imageName)
+        .setImageVersion(imageVersion)
+        .setOwners(owners)
+        .build();
+    when(_rampRuleDao.getRampRule(ruleName)).thenReturn(mockedRule);
+    assertThatCode(() -> _rampRuleService.updateVersionOnRule("0.0.2", ruleName, user))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  public void testDeleteRampRule() {
+    String ruleName = "testRule";
+    String imageName = "testImageName";
+    String imageVersion = "0.0.1";
+    User user = new User("testAdminUser");
+    user.addRole("admin");
+    Role role = new Role(user.getUserId(), new Permission(Permission.Type.ADMIN));
+    when(_userManager.getRole(any())).thenReturn(role);
+
+    String curUser = "testAdminUser";
+    Set<String> owners = new HashSet<>();
+    owners.add(curUser);
+    ImageRampRule mockedRule = new ImageRampRule.Builder()
+        .setHPRule(false)
+        .setRuleName(ruleName)
+        .setImageName(imageName)
+        .setImageVersion(imageVersion)
+        .setOwners(owners)
+        .build();
+    when(_rampRuleDao.getRampRule(ruleName)).thenReturn(mockedRule);
+    assertThatCode(() -> _rampRuleService.deleteRule(ruleName, user)).doesNotThrowAnyException();
+  }
 }

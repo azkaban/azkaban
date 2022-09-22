@@ -18,6 +18,7 @@ package azkaban.imagemgmt.services;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
+import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.user.User;
@@ -64,7 +65,14 @@ public interface ImageRampRuleService {
   String updateRuleOwnership(final RampRuleOwnershipDTO RuleOwnershipDTO, final User user,
       final OperationType operationType);
 
-  void deleteRule(final String ruleName);
+  /**
+   * Delete ramp rule by given ruleName.
+   *
+   * @param ruleName - ruleName in {@link ImageRampRule}
+   * @param user - user must have the permission to delete
+   * @throws ImageMgmtDaoException - failures occur in DB transaction
+   * */
+  void deleteRule(final String ruleName, final User user);
 
   /**
    * add flows into ramp rules. Validation will be performed based on owner list, active project and valid flows.
@@ -76,7 +84,15 @@ public interface ImageRampRuleService {
    * */
   void addFlowsToRule(final List<ProjectFlow> flowIds, final String ruleName, final User user);
 
-  void updateVersionOnRule(final String newVersion, final String ruleName);
+  /**
+   * Update normal ramp rule's version based on given ruleName.
+   *
+   * @param ruleName - ruleName in {@link ImageRampRule}
+   * @param newVersion- new version to be updated
+   * @param user - user must have the permission to operate
+   * @throws ImageMgmtException - failures on updating HPFlowRule or DB transaction
+   * */
+  void updateVersionOnRule(final String newVersion, final String ruleName, final User user);
 
   enum OperationType {
     ADD(),
