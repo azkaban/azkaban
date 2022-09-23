@@ -95,6 +95,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -121,6 +122,7 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
   // We check update every 5 minutes, just in case things get stuck. But for the
   // most part, we'll be idling.
   private static final long CHECK_WAIT_MS = 5 * 60 * 1000;
+  private static final int SHUTDOWN_TIMEOUT_IN_MINUTES = 5;
   private final ExecutableFlow flow;
   // Sync object for queuing
   private final Object mainSyncObj = new Object();
@@ -618,7 +620,19 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     }
 
     this.logger.info("Finishing up flow. Awaiting Termination");
-    this.executorService.shutdown();
+
+    boolean result = false;
+    try {
+      this.executorService.shutdown();
+      this.logger.info("Awaiting termination of job runners");
+      result = this.executorService.awaitTermination(
+          SHUTDOWN_TIMEOUT_IN_MINUTES, TimeUnit.MINUTES);
+    } catch (final InterruptedException e) {
+      this.logger.error(e.getMessage());
+    }
+    if (!result) {
+      this.logger.warn("ExecutorService did not shut down cleanly yet. Ignoring it.");
+    }
 
     updateFlow();
     this.logger.info("Finished Flow");

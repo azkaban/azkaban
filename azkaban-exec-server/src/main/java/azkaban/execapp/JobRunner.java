@@ -549,6 +549,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
 
   private void finalizeLogFile(final int attemptNo) {
     closeLogger();
+    this.flowLogger.debug("Logger has been closed");
     if (this.logFile == null) {
       this.flowLogger.info("Log file for job " + this.jobId + " is null");
       return;
@@ -603,6 +604,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
       throw e;
     } finally {
       Thread.currentThread().setContextClassLoader(this.threadClassLoader);
+      this.flowLogger.debug("Main run thread for job " + this.jobId + " is terminated");
     }
   }
 
@@ -670,10 +672,14 @@ public class JobRunner extends JobRunnerBase implements Runnable {
             + " with status " + this.node.getStatus());
 
     try {
+      this.flowLogger.debug("Finalizing log file for job " + this.jobId);
       finalizeLogFile(this.node.getAttempt());
+      this.flowLogger.debug("Finalizing attachment file for job " + this.jobId);
       finalizeAttachmentFile();
+      this.flowLogger.debug("Writing node status to DB for job " + this.jobId);
       writeStatus();
     } finally {
+      this.flowLogger.debug("Firing JOB_FINISHED events for job " + this.jobId);
       try {
         // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
         fireEvent(Event.create(this, EventType.JOB_FINISHED, new EventData(node)), false);
