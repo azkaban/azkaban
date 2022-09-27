@@ -310,9 +310,9 @@ public class TriggerManager extends EventHandler implements
                 this.scannerInterval
                     - (System.currentTimeMillis() - TriggerManager.this.lastRunnerThreadCheckTime);
 
-            if (TriggerManager.this.runnerThreadIdleTime < 0) {
+            if (TriggerManager.this.runnerThreadIdleTime <= 0) {
               logger.error("Trigger manager thread " + this.getName()
-                  + " is too busy!");
+                  + " is too busy! Remaining idle time in ms: " + TriggerManager.this.runnerThreadIdleTime);
             } else {
               TriggerManager.this.syncObj.wait(TriggerManager.this.runnerThreadIdleTime);
             }
