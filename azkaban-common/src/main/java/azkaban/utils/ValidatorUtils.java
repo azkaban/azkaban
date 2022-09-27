@@ -50,4 +50,12 @@ public class ValidatorUtils {
         + this.validatorManager.getValidatorsInfo().toString());
     return this.validatorManager.validate(project, folder, props);
   }
+
+  public Map<String, ValidationReport> validateProject(final Project project, final File folder,
+      final Props props, final String validatorName) {
+    logger.info("Validating project " + project.getName()
+        + " using the registered validator "
+        + validatorName);
+    return this.validatorManager.validate(project, folder, props, validatorName);
+  }
 }
