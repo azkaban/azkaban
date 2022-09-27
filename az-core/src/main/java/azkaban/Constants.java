@@ -156,6 +156,9 @@ public class Constants {
   // Append JVM opts to jobtype command
   public static final String AZ_JOBS_JAVA_OPTS = "azkaban.jobs.java.opts";
 
+  // Additional validator
+  public static final String ADDITIONAL_PROJECT_VALIDATOR = "additional.project.validator";
+
   /**
    * File containing param override configs
    * For a directory structure, property files in Proj_Dir used to have lower precedence than A.

@@ -241,6 +241,20 @@ public class XmlValidatorManager implements ValidatorManager {
   }
 
   @Override
+  public Map<String, ValidationReport> validate(final Project project, final File projectDir,
+      final Props additionalProps, final String validatorName) {
+    final Props nonNullAdditionalProps = additionalProps == null ? new Props() : additionalProps;
+
+    final Map<String, ValidationReport> reports = new LinkedHashMap<>();
+    final ProjectValidator validator = this.validators.get(validatorName);
+    if (null != validator) {
+      reports.put(validatorName, validator.validateProject(project, projectDir, nonNullAdditionalProps));
+      logger.info("Validation status of validator " + validatorName + " is " + reports.get(validatorName).getStatus());
+    }
+    return reports;
+  }
+
+  @Override
   public List<String> getValidatorsInfo() {
     final List<String> info = new ArrayList<>();
     for (final String key : this.validators.keySet()) {
