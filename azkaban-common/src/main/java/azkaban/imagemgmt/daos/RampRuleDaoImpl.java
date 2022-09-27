@@ -244,9 +244,8 @@ public class RampRuleDaoImpl implements RampRuleDao {
       return transOperator.getLastInsertId();
     };
     // end SQL transaction operator
-    int batchInsertId;
     try {
-      batchInsertId = this.databaseOperator.transaction(fetchRampRuleAndUpdateDenyList).intValue();
+      int batchInsertId = this.databaseOperator.transaction(fetchRampRuleAndUpdateDenyList).intValue();
       if (batchInsertId == 0) {
         LOG.warn(String.format("creating no new flow deny list based on rule: %s, "
                 + "flowList: %s. Might due to deny rule already exists", ruleName, flowIds));
