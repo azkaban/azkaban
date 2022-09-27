@@ -168,6 +168,11 @@ class AzkabanProjectLoader {
       persistProject(project, loader, archive, folder, startupDependenciesOrNull, uploader,
           uploaderIPAddr);
 
+      // Run additional validators if required.
+      if (this.props.containsKey(Constants.ADDITIONAL_PROJECT_VALIDATOR)) {
+        this.validatorUtils.validateProject(project, folder, additionalProps,
+            this.props.getString(Constants.ADDITIONAL_PROJECT_VALIDATOR));
+      }
       if (isThinProject) {
         // Mark that we uploaded a thin zip in the metrics.
         commonMetrics.markUploadThinProject();
