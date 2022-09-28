@@ -20,7 +20,6 @@ import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
-import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.models.RampRuleDenyList;
 import java.sql.ResultSet;
@@ -48,6 +47,8 @@ import org.bouncycastle.util.Strings;
 public class RampRuleDaoImpl implements RampRuleDao {
   private static final Logger LOG = Logger.getLogger(RampRuleDaoImpl.class);
   private final DatabaseOperator databaseOperator;
+
+  private static final String IMAGE_VERSION_DELIMITER = ":";
 
   private static final String INSERT_RAMP_RULE = "INSERT into ramp_rules "
       + "(rule_name, image_name, image_version, owners, is_HP, created_by, created_on, modified_by, modified_on)"
@@ -78,8 +79,27 @@ public class RampRuleDaoImpl implements RampRuleDao {
   }
 
   @Override
-  public boolean isHPFlowRule(final String ruleName) {
-    return false;
+  public boolean isExcludedByRampRule(final String flowName, final String imageName, final String imageVersion) {
+    final String targetImageVersion = String.join(IMAGE_VERSION_DELIMITER, imageName, imageVersion);
+    try {
+      List<RampRuleDenyList> rampRuleDenyLists = databaseOperator.query(
+          FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID,
+          new FetchFlowDenyListHandler(), flowName);
+      for (RampRuleDenyList rampRuleDenyList : rampRuleDenyLists) {
+        // denyMode.ALL means this flow is an HP flow,
+        // if denyMode is not set to ALL then it must have denyVersion, then match given image version
+        // the flow will be excluded too
+        if (rampRuleDenyList.getDenyMode().equals(DenyMode.ALL)) {
+          return true;
+        } else if (rampRuleDenyList.getDenyVersion().equals(targetImageVersion)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (SQLException e) {
+      LOG.error("fail to query ramp rule deny list: " + e);
+      throw new ImageMgmtDaoException("fail to query ramp rule deny list: " + e.getMessage());
+    }
   }
 
   /**
@@ -218,7 +238,7 @@ public class RampRuleDaoImpl implements RampRuleDao {
           // avoid duplicate insert HP flows, use <flowId, denyMode, ruleName> to identity duplicates.
           // in case one rule deleted, the others still exist
           if (transOperator.query(
-                FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_MODE,
+                FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID_DENY_MODE_RULE_NAME,
                 new FetchFlowDenyListHandler(), flowId.toString(), DenyMode.ALL.name(), ruleName)
               .isEmpty()) {
             transOperator.update(INSERT_HP_DENY_LIST, flowId.toString(), DenyMode.ALL.name(), ruleName);
@@ -226,13 +246,13 @@ public class RampRuleDaoImpl implements RampRuleDao {
         }
       } else {
         // insert normal flows: <flowId, denyMode.PARTIAL, ruleName>
-        final String denyVersion = String.join(":", imageRampRule.getImageName(), imageRampRule.getImageVersion());
+        final String denyVersion = String.join(IMAGE_VERSION_DELIMITER, imageRampRule.getImageName(), imageRampRule.getImageVersion());
         LOG.info("handling add flows for normal Flow Rule: " + ruleName + " with denyVersion: " + denyVersion);
         for (final ProjectFlow flowId : flowIds) {
           // avoid duplicate insert, use <flowId, denyVersion, ruleName> to identity duplicates.
           // in case one got deleted, the others should not get impacted
           if (transOperator.query(
-                  FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_VERSION,
+                  FetchFlowDenyListHandler.FETCH_FLOW_DENY_LIST_BY_FLOW_ID_DENY_VERSION_RULE_NAME,
                   new FetchFlowDenyListHandler(), flowId.toString(), denyVersion, ruleName)
               .isEmpty()) {
             transOperator.update(INSERT_FLOW_DENY_LIST, flowId.toString(), DenyMode.PARTIAL.name(), denyVersion, ruleName);
@@ -281,7 +301,7 @@ public class RampRuleDaoImpl implements RampRuleDao {
     final SQLTransaction<Long> fetchRampRuleAndUpdateDenyList = transOperator -> {
       final ImageRampRule imageRampRule =
           transOperator.query(FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID, new FetchRampRuleHandler(), ruleName);
-      final String newDenyVersion = String.join(":", imageRampRule.getImageName(), newVersion);
+      final String newDenyVersion = String.join(IMAGE_VERSION_DELIMITER, imageRampRule.getImageName(), newVersion);
       if (!newVersion.equals(imageRampRule.getImageVersion())) {
         transOperator.update(UPDATE_VERSION_ON_RAMP_RULE,
             newVersion, user, Timestamp.valueOf(LocalDateTime.now()), ruleName);
@@ -328,10 +348,10 @@ public class RampRuleDaoImpl implements RampRuleDao {
 
   public static class FetchFlowDenyListHandler implements ResultSetHandler<List<RampRuleDenyList>> {
 
-    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_MODE =
+    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID_DENY_MODE_RULE_NAME =
         "SELECT flow_id, deny_mode, deny_version, rule_name"
             + " FROM flow_deny_lists WHERE flow_id = ? and deny_mode = ? and rule_name = ?";
-    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID_AND_DENY_VERSION =
+    private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID_DENY_VERSION_RULE_NAME =
         "SELECT flow_id, deny_mode, deny_version, rule_name"
             + " FROM flow_deny_lists WHERE flow_id = ? and deny_version = ? and rule_name = ?";
     private static final String FETCH_FLOW_DENY_LIST_BY_FLOW_ID =

@@ -16,7 +16,6 @@
 package azkaban.imagemgmt.daos;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import java.util.List;
@@ -30,13 +29,17 @@ import java.util.Set;
 public interface RampRuleDao {
 
   /**
-   * Query table ramp_rules to check whether a HPFlowRule .
+   * Query table flow_deny_lists to check whether a given flow is defined under a Ramp rule under two cases:
+   * - having {@link DenyMode#ALL}
+   * - having {@link DenyMode#PARTIAL} and with a deny_version (imageName.imageVersion)
    *
-   * @param ruleName - ruleName in {@see ImageRampRule}
-   * @return true - if ramp rule is setup for HP Flows, denying any ramp up plan;
-   *         false - if ramp rule is normal rule, regulate only on certain image version.
+   * @param flowName - flowName in {@link ExecutableFlow#getFlowName()}
+   * @param imageName - image type name
+   * @param imageVersion - image type version
+   * @return true - if given flow is regulated under a ramp rule;
+   *         false - otherwise.
    */
-  boolean isHPFlowRule(final String ruleName);
+  boolean isExcludedByRampRule(final String flowName, final String imageName, final String imageVersion);
 
   /**
    * Insert Image Ramp Rule metadata into DB.
