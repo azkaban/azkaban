@@ -20,6 +20,7 @@ import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO.ProjectFlow;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.models.ImageRampRule;
 import azkaban.imagemgmt.models.RampRuleDenyList;
 import java.sql.ResultSet;
@@ -55,8 +56,19 @@ public class RampRuleDaoImpl implements RampRuleDao {
   private static final String UPDATE_RULE_OWNERSHIP = "UPDATE ramp_rules "
       + "SET owners=?, modified_by=?, modified_on=? WHERE rule_name=?";
 
+  private static final String UPDATE_VERSION_ON_RAMP_RULE = "UPDATE ramp_rules "
+      + "SET image_version=?, modified_by=?, modified_on=? WHERE rule_name=?";
+
+  private static final String DELETE_RULE_ON_RAMP_RULE = "DELETE from ramp_rules where rule_name = ?";
+
+  private static final String DELETE_FLOW_DENY_LIST = "DELETE from flow_deny_lists where rule_name = ?";
+
+  private static final String UPDATE_VERSION_ON_DENY_LIST = "UPDATE flow_deny_lists "
+      + "SET deny_version=? WHERE rule_name=?";
+
   private static final String INSERT_FLOW_DENY_LIST = "INSERT into flow_deny_lists "
       + "(flow_id, deny_mode, deny_version, rule_name) values (?, ?, ?, ?)";
+
   private static final String INSERT_HP_DENY_LIST = "INSERT into flow_deny_lists "
       + "(flow_id, deny_mode, rule_name) values (?, ?, ?)";
 
@@ -155,7 +167,7 @@ public class RampRuleDaoImpl implements RampRuleDao {
           new FetchRampRuleHandler(), ruleName);
       if (rampRule == null) {
         LOG.error("Can not find ramp rule at the ruleName: " + ruleName);
-        throw new ImageMgmtDaoException("ramp rule not found with ruleName: " + ruleName);
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "ramp rule not found with ruleName: " + ruleName);
       }
       return rampRule;
     } catch (SQLException e) {
@@ -166,7 +178,18 @@ public class RampRuleDaoImpl implements RampRuleDao {
 
   @Override
   public void deleteRampRule(final String ruleName) {
-
+    final SQLTransaction<Long> deleteRampRuleAndFlowDenyList = transOperator -> {
+      transOperator.update(DELETE_RULE_ON_RAMP_RULE, ruleName);
+      transOperator.update(DELETE_FLOW_DENY_LIST, ruleName);
+      transOperator.getConnection().commit();
+      return transOperator.getLastInsertId();
+    };
+    try {
+      databaseOperator.transaction(deleteRampRuleAndFlowDenyList);
+    } catch (SQLException e) {
+      LOG.error("failed to delete ramp rule: " + ruleName);
+      throw new ImageMgmtDaoException("Error in deleting data based on ramp rule: " + ruleName);
+    }
   }
 
   /**
@@ -221,9 +244,8 @@ public class RampRuleDaoImpl implements RampRuleDao {
       return transOperator.getLastInsertId();
     };
     // end SQL transaction operator
-    int batchInsertId = 0;
     try {
-      batchInsertId = this.databaseOperator.transaction(fetchRampRuleAndUpdateDenyList).intValue();
+      int batchInsertId = this.databaseOperator.transaction(fetchRampRuleAndUpdateDenyList).intValue();
       if (batchInsertId == 0) {
         LOG.warn(String.format("creating no new flow deny list based on rule: %s, "
                 + "flowList: %s. Might due to deny rule already exists", ruleName, flowIds));
@@ -242,6 +264,38 @@ public class RampRuleDaoImpl implements RampRuleDao {
     } catch (final SQLException e) {
       LOG.error("Unable to create the flow deny list metadata", e);
       throw new ImageMgmtDaoException("Exception while creating the flow deny list metadata: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Update version on the rule, both table flow_deny_lists and ramp_rules got refreshed data.
+   * It will fetch ramp_rules to get metadata and operate UPDATE on both in a single transaction.
+   *
+   * @param newVersion
+   * @param ruleName - ruleName in {@see ImageRampRule}
+   * @param user
+   * @throws azkaban.imagemgmt.exception.ImageMgmtDaoException
+   */
+  @Override
+  public void updateVersionOnRule(final String newVersion, final String ruleName, final String user) {
+    final SQLTransaction<Long> fetchRampRuleAndUpdateDenyList = transOperator -> {
+      final ImageRampRule imageRampRule =
+          transOperator.query(FetchRampRuleHandler.FETCH_RAMP_RULE_BY_ID, new FetchRampRuleHandler(), ruleName);
+      final String newDenyVersion = String.join(":", imageRampRule.getImageName(), newVersion);
+      if (!newVersion.equals(imageRampRule.getImageVersion())) {
+        transOperator.update(UPDATE_VERSION_ON_RAMP_RULE,
+            newVersion, user, Timestamp.valueOf(LocalDateTime.now()), ruleName);
+        transOperator.update(UPDATE_VERSION_ON_DENY_LIST, newDenyVersion, ruleName);
+      }
+      transOperator.getConnection().commit();
+      return transOperator.getLastInsertId();
+    };
+    // end SQL transaction operator
+    try {
+      this.databaseOperator.transaction(fetchRampRuleAndUpdateDenyList);
+    } catch (final SQLException e) {
+      LOG.error("Unable to update the ramp rule metadata", e);
+      throw new ImageMgmtDaoException("Unable to update the ramp rule version: " + e.getMessage());
     }
   }
 
