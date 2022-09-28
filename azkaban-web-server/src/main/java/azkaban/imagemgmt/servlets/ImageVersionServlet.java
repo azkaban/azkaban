@@ -171,6 +171,14 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
             + " null. Must provide valid imageType to create image version.");
       }
+      // Validate Image Path, insuring path is for correct image
+      final String imagePath = imageVersion.getPath().toLowerCase();
+      if(!imagePath.contains(imageType.toLowerCase())) {
+        if(!imageType.equals("azkaban-config")) {
+          throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "The image type name must"
+              + " be included in the path");
+        }
+      }
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image version "
             + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
