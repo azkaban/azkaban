@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.security.KeyStore;
 import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
@@ -100,6 +101,9 @@ public abstract class HadoopSecurityManager {
 
   public abstract void cancelTokens(File tokenFile, String userToProxy,
       Logger logger) throws HadoopSecurityManagerException;
+
+  public abstract Credentials getTokens(File tokenFile, Logger logger)
+      throws HadoopSecurityManagerException;
 
   public abstract void prefetchToken(File tokenFile, Props props, Logger logger)
       throws HadoopSecurityManagerException;
