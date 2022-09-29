@@ -158,6 +158,7 @@ public class HadoopProxy {
     if (tokenFile == null) {
       return; // do null check for tokenFile
     }
-    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(jobProps, tokenFile, logger);
+    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(this.hadoopSecurityManager, jobProps,
+        tokenFile, logger);
   }
 }

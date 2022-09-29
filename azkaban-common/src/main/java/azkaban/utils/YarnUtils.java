@@ -71,10 +71,12 @@ public class YarnUtils {
    * using the resources passed in with props.
    *
    * @param props the properties to create a YarnClient, the path to the "yarn-site.xml" to be used
+   * @param log
    */
-  public static YarnClient createYarnClient(Props props) {
+  public static YarnClient createYarnClient(Props props, Logger log) {
     final YarnConfiguration yarnConf = new YarnConfiguration();
     if (props.containsKey(YARN_CONF_DIRECTORY_PROPERTY)) {
+      log.info("Job yarn conf dir: " + props.get(YARN_CONF_DIRECTORY_PROPERTY));
       yarnConf.addResource(
           new Path(props.get(YARN_CONF_DIRECTORY_PROPERTY) + "/" + YARN_CONF_FILENAME));
     }

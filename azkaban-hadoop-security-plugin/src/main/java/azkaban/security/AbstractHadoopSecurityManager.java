@@ -401,12 +401,22 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     final Credentials cred = new Credentials();
 
     try {
+      // cred is being populated
       fetchAllHadoopTokens(userToProxyFQN, userToProxy, props, logger, cred);
       getProxiedUser(userToProxyFQN).doAs((PrivilegedExceptionAction<Void>) () -> {
         registerAllCustomCredentials(userToProxy, props, cred, logger);
         return null;
       });
+
+      logger.info("fetched cred = " + cred);
+      cred.getAllTokens().forEach(t -> {
+        logger.info(String.format("Token = %s, %s, %s ", t.getKind(), t.getService(),
+            Arrays.toString(t.getIdentifier())));
+      });
+      logger.info("cred end");
+
       logger.info("Preparing token file " + tokenFile.getAbsolutePath());
+      // assign userToProxy to the owner of the token file, not the FQN user
       prepareTokenFile(userToProxy, cred, tokenFile, logger,
           props.getString(Constants.ConfigurationKeys.SECURITY_USER_GROUP, "azkaban"));
       // stash them to cancel after use.
@@ -615,6 +625,16 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
       }
     } catch (final Exception e) {
       throw new HadoopSecurityManagerException("Failed to cancel tokens", e);
+    }
+  }
+
+  @Override
+  public Credentials getTokens(File tokenFile, Logger logger)
+      throws HadoopSecurityManagerException {
+    try {
+      return Credentials.readTokenStorageFile(new Path(tokenFile.toURI()), this.conf);
+    } catch (final Exception e) {
+      throw new HadoopSecurityManagerException("Failed to get tokens from file", e);
     }
   }
 
