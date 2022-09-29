@@ -20,9 +20,7 @@ import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_
 import java.io.File;
 
 import azkaban.utils.Utils;
-import joptsimple.internal.Strings;
 import org.apache.log4j.Logger;
-import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
 import azkaban.utils.Props;
@@ -160,10 +158,6 @@ public class HadoopProxy {
     if (tokenFile == null) {
       return; // do null check for tokenFile
     }
-
-    final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
-    logger.info("Log file path is: " + logFilePath);
-
-    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(logFilePath, jobProps, tokenFile, logger);
+    HadoopJobUtils.proxyUserKillAllSpawnedHadoopJobs(jobProps, tokenFile, logger);
   }
 }
