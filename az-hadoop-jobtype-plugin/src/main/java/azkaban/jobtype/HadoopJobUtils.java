@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -344,7 +345,8 @@ public class HadoopJobUtils {
    *                  is in the environmental variable
    * @param log       a usable logger
    */
-  public static void proxyUserKillAllSpawnedHadoopJobs(final Props jobProps,
+  public static void proxyUserKillAllSpawnedHadoopJobs(
+      HadoopSecurityManager hadoopSecurityManager, final Props jobProps,
       final File tokenFile, final Logger log) {
 
     final Properties properties = new Properties();
@@ -353,7 +355,7 @@ public class HadoopJobUtils {
     try {
       if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
         final UserGroupInformation proxyUser =
-            HadoopSecureWrapperUtils.setupProxyUser(properties,
+            HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
                 tokenFile.getAbsolutePath(), log);
         proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
           @Override
@@ -374,7 +376,7 @@ public class HadoopJobUtils {
     final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
     log.info("Log file path is: " + logFilePath);
     Set<String> allSpawnedJobAppIDs = findApplicationIdFromLog(logFilePath, log);
-    YarnClient yarnClient = YarnUtils.createYarnClient(jobProps);
+    YarnClient yarnClient = YarnUtils.createYarnClient(jobProps, log);
     YarnUtils.killAllAppsOnCluster(yarnClient, allSpawnedJobAppIDs, log);
   }
 
