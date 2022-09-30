@@ -186,7 +186,8 @@ public class FlowRampManager implements EventListener<Event>, ThreadPoolExecutin
   public void handleEvent(Event event) {
     if (!isRampFeatureActivated()) return;
 
-    if (event.getType() == EventType.FLOW_STARTED || event.getType() == EventType.FLOW_FINISHED) {
+    if (event.getData().getNode() instanceof ExecutableFlow &&
+        (event.getType() == EventType.FLOW_STARTED || event.getType() == EventType.FLOW_FINISHED)) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       logFlowEvent(flowRunner, event.getType());
     }

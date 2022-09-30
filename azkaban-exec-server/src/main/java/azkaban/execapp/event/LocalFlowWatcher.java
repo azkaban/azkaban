@@ -21,6 +21,7 @@ import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.JobRunner;
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.spi.EventType;
 
@@ -72,7 +73,7 @@ public class LocalFlowWatcher extends FlowWatcher {
           getLogger().info(node + " looks like " + node.getStatus());
           handleJobStatusChange(node.getNestedId(), node.getStatus());
         }
-      } else if (event.getType() == EventType.FLOW_FINISHED) {
+      } else if (event.getData().getNode() instanceof ExecutableFlow && event.getType() == EventType.FLOW_FINISHED) {
         stopWatcher();
       }
     }

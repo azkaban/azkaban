@@ -178,6 +178,8 @@ public class Constants {
   public static class EventReporterConstants {
 
     public static final String FLOW_NAME = "flowName";
+    public static final String SUBFLOW_NAME = "subflowName";
+    public static final String IS_ROOT_FLOW = "isRootFlow";
     public static final String AZ_HOST = "azkabanHost";
     public static final String AZ_WEBSERVER = "azkabanWebserver";
     public static final String PROJECT_NAME = "projectName";

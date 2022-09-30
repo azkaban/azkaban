@@ -694,6 +694,9 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
 
   @Override
   public void handleEvent(final Event event) {
+    if (!(event.getData().getNode() instanceof ExecutableFlow)) {
+      return;
+    }
     if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
