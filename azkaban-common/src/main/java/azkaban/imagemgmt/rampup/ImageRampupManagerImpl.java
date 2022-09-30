@@ -21,7 +21,9 @@ import azkaban.executor.container.ContainerImplUtils;
 import azkaban.imagemgmt.daos.ImageRampupDao;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageVersionDao;
+import azkaban.imagemgmt.daos.RampRuleDao;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
+import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageRampup;
 import azkaban.imagemgmt.models.ImageType;
@@ -69,6 +71,7 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   private final ImageTypeDao imageTypeDao;
   private final ImageVersionDao imageVersionDao;
   private final ImageRampupDao imageRampupDao;
+  private final RampRuleDao imageRampRuleDao;
   private static final String MSG_RANDOM_RAMPUP_VERSION_SELECTION = "The version selection is "
       + "based on deterministic rampup.";
   private static final String MSG_ACTIVE_VERSION_SELECTION = "The version selection is "
@@ -82,10 +85,12 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   @Inject
   public ImageRampupManagerImpl(final ImageRampupDao imageRampupDao,
       final ImageVersionDao imageVersionDao,
-      final ImageTypeDao imageTypeDao) {
+      final ImageTypeDao imageTypeDao,
+      final RampRuleDao imageRampRule) {
     this.imageRampupDao = imageRampupDao;
     this.imageVersionDao = imageVersionDao;
     this.imageTypeDao = imageTypeDao;
+    this.imageRampRuleDao = imageRampRule;
   }
 
   @Override
@@ -228,10 +233,11 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       final Set<String> imageTypes,
       final Map<String, List<ImageRampup>> imageTypeRampups,
       final Set<String> remainingImageTypes) {
-    final Set<String> imageTypeSet = imageTypeRampups.keySet();
-    log.info("Found active rampup for the image types {} ", imageTypeSet);
+    final Set<String> rampupImageTypeSet = imageTypeRampups.keySet();
+    log.info("Found active rampup for the image types {} ", rampupImageTypeSet);
     final Map<String, ImageVersionMetadata> imageTypeVersionMap = new TreeMap<>(
         String.CASE_INSENSITIVE_ORDER);
+    // select current flow's image versions based on ramp up plan and ramp rule(exclusive list)
     final Map<String, ImageVersion> imageTypeRampupVersionMap =
         this.processAndGetRampupVersion(flow, imageTypeRampups);
     imageTypeRampupVersionMap
@@ -272,6 +278,8 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   /**
    * Method to process the rampup list and get the rampup version based on rampup logic for
    * the given image types in the rampup map.
+   * If there is a ramp rule defined for this ramp up plan, the image version would be deselected
+   * and use the current active version instead.
    *
    * @param imageTypeRampups
    * @return Map<String, ImageVersion>
@@ -279,16 +287,16 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
   private Map<String, ImageVersion> processAndGetRampupVersion(
       final ExecutableFlow flow,
       final Map<String, List<ImageRampup>> imageTypeRampups) {
-    final Set<String> imageTypeSet = imageTypeRampups.keySet();
-    log.info("Found active rampup for the image types {} ", imageTypeSet);
+    final Set<String> rampupImageTypeSet = imageTypeRampups.keySet();
+    log.info("Found active rampup for the image types {} ", rampupImageTypeSet);
     final Map<String, ImageVersion> imageTypeRampupVersionMap =
         new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    if (imageTypeSet.isEmpty()) {
+    if (rampupImageTypeSet.isEmpty()) {
       log.warn("No active rampup found for the image types");
       return imageTypeRampupVersionMap;
     }
-    log.info("Found active rampup for the image types {} ", imageTypeSet);
-    for (final String imageTypeName : imageTypeSet) {
+    log.info("Found active rampup for the image types {} ", rampupImageTypeSet);
+    for (final String imageTypeName : rampupImageTypeSet) {
       final List<ImageRampup> imageRampupList = imageTypeRampups.get(imageTypeName);
       if (imageRampupList.isEmpty()) {
         log.info("ImageRampupList was empty, so continue");
@@ -310,13 +318,22 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
           final int rampupPercentage = imageRampup.getRampupPercentage();
           if (flowNameHashValMapping >= prevRampupPercentage + 1
               && flowNameHashValMapping <= prevRampupPercentage + rampupPercentage) {
-            imageTypeRampupVersionMap.put(imageTypeName,
-                this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion())
-                    .orElseThrow(() -> new ImageMgmtException(
-                        String.format("Unable to fetch version %s from image " + "versions table.",
-                            imageRampup.getImageVersion()))));
-            log.debug("The image version {} is selected for image type {} with rampup percentage {}",
-                imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
+            // when flow is excluded by a ramp rule, will use default active version for that image type
+            if (imageRampRuleDao.isExcludedByRampRule(
+                flow.getFlowName(), imageTypeName, imageRampup.getImageVersion())) {
+              imageTypeRampupVersionMap.put(imageTypeName, fetchActiveImageVersion(imageTypeName)
+                  .orElseThrow(() -> new ImageMgmtDaoException(
+                      "fail to find active image version for {}" + imageTypeName)));
+              log.debug("The image version {} is deselected for image type {} with rampup percentage {} "
+                      + "and use active current one",
+                  imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
+            } else {
+              imageTypeRampupVersionMap.put(imageTypeName,
+                  this.fetchImageVersion(imageTypeName, imageRampup.getImageVersion())
+                      .orElseThrow(() -> new ImageMgmtException(
+                          String.format("Unable to fetch version %s from image " + "versions table.", imageRampup.getImageVersion()))));
+              log.debug("The image version {} is selected for image type {} with rampup percentage {}", imageRampup.getImageVersion(), imageTypeName, rampupPercentage);
+            }
             break;
           }
           log.info("ImageTypeRampupVersionMap: " + imageTypeRampupVersionMap);
@@ -401,6 +418,25 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       }
     }
     return Optional.empty();
+  }
+
+  /**
+   * Method to fetch active image version based on given image type.
+   *
+   * @param imageType
+   * @return Optional<ImageVersion>
+   */
+  private Optional<ImageVersion> fetchActiveImageVersion(String imageType) {
+      Set<String> imageTypeSet = new HashSet<>();
+      imageTypeSet.add(imageType);
+      List<ImageVersion> imageVersions = imageVersionDao.getActiveVersionByImageTypes(imageTypeSet);
+      if (imageVersions.isEmpty()) {
+        log.debug("found no active image version for {}", imageType);
+        return Optional.empty();
+      } else {
+        log.debug("fetch active image version {} for {}", imageVersions.get(0).getVersion(), imageType);
+        return Optional.of(imageVersions.get(0));
+      }
   }
 
   /**

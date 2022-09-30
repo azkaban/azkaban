@@ -1,0 +1,21 @@
+[
+  {
+    "imagePath": "path_az-platform-image",
+    "imageVersion": "0.1.199",
+    "imageType": "az-platform-image",
+    "description": "az platform image",
+    "versionState": "ACTIVE",
+    "releaseTag": "0.1.199"
+  },
+  {
+    "imagePath": "path_azkaban-core",
+    "imageVersion": "3.6.1",
+    "imageType": "azkaban_core",
+    "description": "az core image",
+    "versionState": "ACTIVE",
+    "releaseTag": "3.6.1"
+  }
+]
+
+
+
