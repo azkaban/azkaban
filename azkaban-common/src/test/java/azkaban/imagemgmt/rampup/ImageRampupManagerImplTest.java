@@ -30,6 +30,8 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
+import azkaban.imagemgmt.daos.RampRuleDao;
+import azkaban.imagemgmt.daos.RampRuleDaoImpl;
 import azkaban.imagemgmt.dto.ImageMetadataRequest;
 import azkaban.imagemgmt.dto.ImageTypeDTO;
 import azkaban.imagemgmt.dto.ImageVersionDTO;
@@ -42,6 +44,7 @@ import azkaban.imagemgmt.version.VersionInfo;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.TestUtils;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,7 @@ public class ImageRampupManagerImplTest {
   private ImageTypeDao imageTypeDao;
   private ImageVersionDao imageVersionDao;
   private ImageRampupDao imageRampupDao;
+  private RampRuleDao rampRuleDao;
   private ObjectMapper objectMapper;
   private ImageRampupManager imageRampupManger;
   private Converter<ImageTypeDTO, ImageTypeDTO, ImageType> imageTypeConverter;
@@ -74,11 +78,12 @@ public class ImageRampupManagerImplTest {
     this.imageTypeDao = mock(ImageTypeDaoImpl.class);
     this.imageVersionDao = mock(ImageVersionDaoImpl.class);
     this.imageRampupDao = mock(ImageRampupDaoImpl.class);
+    this.rampRuleDao = mock(RampRuleDaoImpl.class);
     this.imageTypeConverter = new ImageTypeConverter();
     this.imageVersionConverter = new ImageVersionConverter();
     this.converterUtils = new ConverterUtils(this.objectMapper);
     this.imageRampupManger = new ImageRampupManagerImpl(this.imageRampupDao, this.imageVersionDao,
-        this.imageTypeDao);
+        this.imageTypeDao, this.rampRuleDao);
   }
 
   /**
@@ -352,6 +357,45 @@ public class ImageRampupManagerImplTest {
     Assert.assertEquals("4.1.2", imageTypeVersionMap.get("pig_job"));
     Assert.assertNotNull(imageTypeVersionMap.get("hadoop_job"));
     Assert.assertEquals("5.1.5", imageTypeVersionMap.get("hadoop_job"));
+  }
+
+  @Test
+  public void testFetchVersionByImageTypesWithRampRule() throws Exception {
+    final String jsonInput = JSONUtils.readJsonFileAsString("image_management/image_type_rampups2.json");
+    final Map<String, List<ImageRampup>> imageTypeRampups = convertToRampupMap(jsonInput);
+    final Set<String> imageTypes = new TreeSet<>();
+    String imageTypeName1 = "az-platform-image";
+    imageTypes.add(imageTypeName1);
+    imageTypes.add("azkaban_core");
+    when(this.imageRampupDao.getRampupByImageTypes(any(Set.class))).thenReturn(imageTypeRampups);
+
+    final String jsonImageTypeActiveVersion = JSONUtils.readJsonFileAsString(
+        "image_management/test_image_type_active_version.json");
+    final List<ImageVersionDTO> activeImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeActiveVersion, ImageVersionDTO.class);
+    final List<ImageVersion> activeImageVersions =
+        this.imageVersionConverter.convertToDataModels(activeImageVersionDTOs);
+    final String jsonImageTypeNewAndRampupVersion = JSONUtils.readJsonFileAsString(
+        "image_management/all_image_types_new_and_rampup_version.json");
+    final List<ImageVersionDTO> newAndRampupImageVersionDTOs = converterUtils.convertToDTOs(
+        jsonImageTypeNewAndRampupVersion, ImageVersionDTO.class);
+    final List<ImageVersion> newAndRampupImageVersions =
+        this.imageVersionConverter.convertToDataModels(newAndRampupImageVersionDTOs);
+    when(this.imageVersionDao.findImageVersions(any(ImageMetadataRequest.class))).thenReturn(newAndRampupImageVersions);
+
+    // test only imageTypeName1 is rule out by a ramp rule, while others (azkaban-core) remain uneffected
+    String testProject = "exectest1";
+    String testFlow = "exec1";
+    final ExecutableFlow flow = TestUtils
+        .createTestExecutableFlow(testProject, testFlow, DispatchMethod.CONTAINERIZED);
+    when(rampRuleDao.isExcludedByRampRule(flow.getFlowName(), imageTypeName1,
+        imageTypeRampups.get(imageTypeName1).get(0).getImageVersion())).thenReturn(true);
+    ImageVersion activeImageVersion1 = activeImageVersions.get(0);
+    when(imageVersionDao.getActiveVersionByImageTypes(any(Set.class))).thenReturn(Collections.singletonList(activeImageVersion1));
+    Map<String, VersionInfo> imageTypeVersionMap = this.imageRampupManger
+        .getVersionByImageTypes(flow, imageTypes, new HashSet<>());
+    Assert.assertEquals("0.1.199", imageTypeVersionMap.get(imageTypeName1).getVersion());
+    Assert.assertEquals("3.6.2", imageTypeRampups.get("azkaban_core").get(0).getImageVersion());
   }
 
   private Map<String, List<ImageRampup>> convertToRampupMap(final String input) {
