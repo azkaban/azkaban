@@ -87,7 +87,8 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
       .getImageTypeByName(rampRuleRequest.getImageName())
         .orElseThrow(() -> new ImageMgmtInvalidInputException(ErrorCode.NOT_FOUND, String.format("Unable to"
             + " fetch image type metadata. Invalid image type: %s.", rampRuleRequest.getImageName())));
-    if (!this.imageVersionDao.isInvalidVersion(rampRuleRequest.getImageName(), rampRuleRequest.getImageVersion())) {
+    if (this.imageVersionDao.isInvalidVersion(rampRuleRequest.getImageName(), rampRuleRequest.getImageVersion())) {
+      log.error("fail to validate image version: " + rampRuleRequest.getImageVersion());
       throw new ImageMgmtInvalidInputException(ErrorCode.NOT_FOUND, String.format(
           "Unable to fetch image version metadata. Invalid image version: %s.", rampRuleRequest.getImageVersion()));
     }
@@ -184,9 +185,22 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
     return Strings.EMPTY;
   }
 
+  /**
+   * delete ramp rule's metadata based on given ruleName
+   *
+   * @param ruleName - ruleName in {@link ImageRampRule}
+   * @param user - user to operate
+   * */
   @Override
-  public void deleteRule(final String ruleName) {
-
+  public void deleteRule(final String ruleName, final User user) {
+    // validate permission
+    final Set<String> owners = rampRuleDao.getOwners(ruleName);
+    if (!permissionManager.hasPermission(user, owners)) {
+      log.error("current user "+ user.getUserId() + " does not have permission to delete ramp rule");
+      throw new ImageMgmtInvalidPermissionException(ErrorCode.UNAUTHORIZED,
+          "current user "+ user.getUserId() + " does not have permission to ramp rule");
+    }
+    rampRuleDao.deleteRampRule(ruleName);
   }
 
   /**
@@ -225,8 +239,34 @@ public class ImageRampRuleServiceImpl implements ImageRampRuleService {
     rampRuleDao.addFlowDenyInfo(flowIds, ruleName);
   }
 
+  /**
+   * Update normal ramp rule's version based on given ruleName, validated based on current user.
+   *
+   * @param ruleName - ruleName in {@link ImageRampRule}
+   * @param newVersion - new version to be updated
+   * @param user - user must have the permission to operate
+   * @throws ImageMgmtException
+   * */
   @Override
-  public void updateVersionOnRule(final String newVersion, final String ruleName) {
+  public void updateVersionOnRule(final String newVersion, final String ruleName, final User user) {
+    // validate permission
+    final ImageRampRule imageRampRule = rampRuleDao.getRampRule(ruleName);
+    final Set<String> owners = new HashSet<>(Arrays.asList(imageRampRule.getOwners().split(",")));
+    if (!permissionManager.hasPermission(user, owners)) {
+      log.error("current user "+ user.getUserId() + " does not have permission to add flows to Ramp rule");
+      throw new ImageMgmtInvalidPermissionException(ErrorCode.UNAUTHORIZED,
+          "current user "+ user.getUserId() + " does not have permission to add flows to Ramp rule");
+    }
+    if (imageRampRule.isHPRule()) {
+      log.error("Can't update version on a HP flow rule");
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST, "Can't update version on a HP flow rule");
+    }
+    if (this.imageVersionDao.isInvalidVersion(imageRampRule.getImageName(), newVersion)) {
+      log.error("fail to validate image version: " + newVersion);
+      throw new ImageMgmtInvalidInputException(ErrorCode.NOT_FOUND, String.format(
+          "Unable to fetch image version metadata. Invalid image version: %s.", newVersion));
+    }
 
+    rampRuleDao.updateVersionOnRule(newVersion, ruleName, user.getUserId());
   }
 }

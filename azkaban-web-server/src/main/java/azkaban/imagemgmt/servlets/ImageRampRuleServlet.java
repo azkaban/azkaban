@@ -18,7 +18,9 @@ package azkaban.imagemgmt.servlets;
 import azkaban.imagemgmt.dto.RampRuleFlowsDTO;
 import azkaban.imagemgmt.dto.RampRuleOwnershipDTO;
 import azkaban.imagemgmt.dto.ImageRampRuleRequestDTO;
+import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtInvalidInputException;
 import azkaban.imagemgmt.services.ImageRampRuleService;
 import azkaban.imagemgmt.utils.ConverterUtils;
 import azkaban.server.HttpRequestUtils;
@@ -38,11 +40,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This servlet exposes the REST APIs such as create, delete and update rampup for image type.
- * Currently only supports:
+ * Current only supports:
  * Create Image Ramp Rule API: POST /imageRampRule/createRule
  * Create Image Ramp Rule API for HP flows: POST /imageRampRule/createHPFlowRule
  * Add managed flows into rule: POST /imageRampRule/addFlowsToRule
- * Modify image version on Rule: POST /imageRampRule/updateVersionOnRule
+ * Modify image version on Rule: POST /imageRampRule/updateVersion
  * Delete rule: POST /imageRampRule/deleteRule
  * Modify ownerships: POST /imageRampRule/addOwners or POST /imageRampRule/removeOwners
  */
@@ -52,11 +54,18 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
   private ImageRampRuleService imageRampRuleService;
   private ConverterUtils utils;
 
+  /* URIs */
   private final static String CREATE_RULE_URI = "/imageRampRule/createRule";
   private final static String CREATE_HP_FLOW_RULE_URI = "/imageRampRule/createHPFlowRule";
   private final static String ADD_OWNERS_URI = "/imageRampRule/addOwners";
   private final static String REMOVE_OWNERS_URI = "/imageRampRule/removeOwners";
   private final static String ADD_FLOWS_TO_RULE_URI = "/imageRampRule/addFlowsToRule";
+  private final static String UPDATE_VERSION_ON_RULE_URI = "/imageRampRule/updateVersion";
+  private final static String DELETE_RULE_URI = "/imageRampRule/deleteRule";
+
+  /* Params */
+  private final static String RULE_NAME = "ruleName";
+  private final static String VERSION = "version";
 
   public ImageRampRuleServlet() {
     super(new ArrayList<>());
@@ -97,6 +106,12 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
           break;
         case ADD_FLOWS_TO_RULE_URI:
           handleAddFlowsToRule(req, resp, user);
+          break;
+        case UPDATE_VERSION_ON_RULE_URI:
+          handleUpdateVersionOnRule(req, resp, user);
+          break;
+        case DELETE_RULE_URI:
+          handleDeleteRule(req, resp, user);
           break;
       }
 
@@ -202,4 +217,60 @@ public class ImageRampRuleServlet extends LoginAbstractAzkabanServlet {
       resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
     }
   }
+
+  /**
+   * Updates a ramp rule's version based on given ruleName and version in parameters.
+   * Successful call would return OK(200).
+   *
+   * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
+   **/
+  private void handleUpdateVersionOnRule(final HttpServletRequest req,
+                                         final HttpServletResponse resp,
+                                         final User user) {
+    try {
+      final String ruleName = getReqParam(req, RULE_NAME);
+      final String version = getReqParam(req, VERSION);
+      imageRampRuleService.updateVersionOnRule(version, ruleName, user);
+      resp.setStatus(HttpServletResponse.SC_OK);
+    } catch (ImageMgmtException e) {
+      LOG.error("fail to update version by rule " + req);
+      resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
+    }
+  }
+
+  /**
+   * Delete a ramp rule.
+   * Successful call would return OK(200).
+   *
+   * @throws ImageMgmtException with different ErrorCode, and the detailed error message.
+   **/
+  private void handleDeleteRule(final HttpServletRequest req,
+                                final HttpServletResponse resp,
+                                final User user) {
+    try {
+      final String ruleName = getReqParam(req, RULE_NAME);
+      imageRampRuleService.deleteRule(ruleName, user);
+      resp.setStatus(HttpServletResponse.SC_OK);
+    } catch (ImageMgmtException e) {
+      LOG.error("fail to delete rule " + req);
+      resp.setStatus(e.getErrorCode().getCode(), e.getMessage());
+    }
+  }
+
+  /**
+   * Fetch RuleName parameter from request.
+   *
+   * @param req - Http request {@link HttpServletRequest}
+   * @return targetParam values
+   * @throws ImageMgmtInvalidInputException if not found required param
+   * */
+  private String getReqParam(final HttpServletRequest req, final String requiredParam) {
+    final String ruleName = req.getParameter(requiredParam);
+    if (ruleName == null || ruleName.length() == 0) {
+      LOG.error("{} must not be null or empty", requiredParam);
+      throw new ImageMgmtInvalidInputException(ErrorCode.BAD_REQUEST, requiredParam +" must not be null or empty");
+    }
+    return ruleName;
+  }
+
 }

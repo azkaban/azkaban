@@ -93,6 +93,16 @@ public interface RampRuleDao {
    */
   int addFlowDenyInfo(final List<ProjectFlow> flowIds, final String ruleName);
 
+  /**
+   * Update version on the rule, both table flow_deny_lists and ramp_rules got refreshed data.
+   *
+   * @param version - new version to be updated
+   * @param ruleName - ruleName in {@see ImageRampRule}
+   * @param user
+   * @throws azkaban.imagemgmt.exception.ImageMgmtDaoException
+   */
+  void updateVersionOnRule(final String version, final String ruleName, String user);
+
   enum DenyMode {
     ALL, // deny all versions, used for HP flow ramp rule
     PARTIAL // deny partial versions, versions need to be specified in normal ramp rule
