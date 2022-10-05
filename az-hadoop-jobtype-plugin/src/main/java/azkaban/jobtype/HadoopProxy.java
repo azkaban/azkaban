@@ -143,9 +143,6 @@ public class HadoopProxy {
     } catch (Exception e) {
       logger.error(e.getCause() + e.getMessage());
     }
-    if (tokenFile.exists()) {
-      tokenFile.delete();
-    }
   }
 
   /**
