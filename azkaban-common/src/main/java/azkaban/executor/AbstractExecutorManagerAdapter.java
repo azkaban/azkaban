@@ -24,6 +24,7 @@ import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
+import azkaban.executor.container.ContainerizedImpl;
 import azkaban.flow.FlowUtils;
 import azkaban.jobcallback.JobCallbackManager;
 import azkaban.logs.ExecutionLogsLoader;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
@@ -599,38 +601,50 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         executionReference.getDispatchMethod() == DispatchMethod.CONTAINERIZED ? Status.KILLED :
             Status.FAILED;
     if (!isExecutionReachable(executionReference, userId)) {
+      final String finalizingReason = "Cancel action has been called but the flow is unreachable.";
       logger.info("Finalizing executable flow as execution is unreachable: " + executionReference
           .getExecId());
-      ExecutionControllerUtils.finalizeFlow(this, this.projectManager, this.executorLoader,
-          this.alerterHolder,
-          executableFlow, "Cancel action has been called but the flow is unreachable.", null,
+      handleCancelFlowManually(executionReference, executableFlow, finalizingReason, null,
           finalizingStatus);
-      // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
-      // so we need to manually send one here.
-      this.fireEventListeners(Event.create(executableFlow,
-          EventType.FLOW_FINISHED, new EventData(executableFlow)));
-      // Throwing exception to make the reason appear on the UI.
-      throw new ExecutorManagerException("Flow execution is unreachable. Finalizing the flow.");
     }
 
     try {
       this.apiGateway.callWithReferenceByUser(executionReference, ConnectorParams.CANCEL_ACTION,
           userId);
     } catch (Exception e) {
+      final String finalizingReason = "Unable to gracefully kill the flow execution or flow is "
+          + "unreachable.";
       logger
           .error("Exception occurred while cancelling flow: " + executionReference.getExecId(), e);
-      logger.info("Finalizing executable flow: " + executionReference.getExecId());
-      final String finalizingReason = "Unable to gracefully kill the flow execution.";
-      ExecutionControllerUtils.finalizeFlow(this, this.projectManager, this.executorLoader,
-          this.alerterHolder, executableFlow, finalizingReason, e, finalizingStatus);
-      // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
-      // so we need to manually send one here.
-      this.fireEventListeners(Event.create(executableFlow,
-          EventType.FLOW_FINISHED, new EventData(executableFlow)));
-      // Throwing exception to make the reason appear on the UI.
-      throw new ExecutorManagerException(finalizingReason
-          + " Finalizing the flow.");
+      handleCancelFlowManually(executionReference, executableFlow, finalizingReason, e,
+          finalizingStatus);
     }
+  }
+
+  /**
+   * If executor is unreachable, web server has to kill the flow manually: finalize DB status in
+   * DB, report FLOW_FINISHED events and rethrow the exception back to user.
+   */
+  private void handleCancelFlowManually(ExecutionReference executionReference,
+      ExecutableFlow executableFlow, String reason, Throwable originalError,
+      Status finalizingStatus) throws ExecutorManagerException {
+    logger.info("Finalizing executable flow: " + executionReference.getExecId());
+    finalizeFlow(executableFlow, reason, originalError, finalizingStatus);
+    // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
+    // so we need to manually send one here.
+    this.fireEventListeners(Event.create(executableFlow,
+        EventType.FLOW_FINISHED, new EventData(executableFlow)));
+    // Throwing exception to make the reason appear on the UI.
+    throw new ExecutorManagerException(reason + " Finalizing the flow.");
+  }
+
+  /**
+   * Finalize the flow status in DB.
+   */
+  protected void finalizeFlow(final ExecutableFlow flow, final String reason,
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
+    ExecutionControllerUtils.finalizeFlow(this, this.projectManager, this.executorLoader,
+        this.alerterHolder, flow, reason, originalError, finalFlowStatus);
   }
 
   /**

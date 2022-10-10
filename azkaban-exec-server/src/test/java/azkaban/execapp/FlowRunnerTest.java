@@ -271,6 +271,23 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
+  @Test
+  public void exec1FlowKilledInitially() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+    this.runner.getExecutableFlow().setStatus(Status.KILLED);
+
+    FlowRunnerTestUtil.startThread(this.runner);
+    assertThreadShutDown();
+    assertFlowStatus(this.runner.getExecutableFlow(), Status.KILLED);
+    compareFinishedRuntime(this.runner);
+
+    // Check flowVersion
+    assertFlowVersion(this.runner.getExecutableFlow(), 1.0);
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
+    eventCollector.assertNoEvents();
+  }
+
   @Test(expected = IllegalStateException.class)
   public void cancelThenPause() throws Exception {
     final EventCollectorListener eventCollector = new EventCollectorListener();
