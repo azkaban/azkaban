@@ -15,6 +15,8 @@
  */
 package azkaban.jobtype;
 
+import static azkaban.jobtype.HadoopJobUtils.YARN_KILL_LEGACY;
+import static azkaban.jobtype.HadoopJobUtils.YARN_KILL_VERSION;
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 import java.io.File;
@@ -55,6 +57,10 @@ public class HadoopProxy {
   private void init(Props sysProps, Props jobProps, final Logger logger) {
     shouldProxy = sysProps.getBoolean(HadoopSecurityManager.ENABLE_PROXYING, false);
     jobProps.put(HadoopSecurityManager.ENABLE_PROXYING, Boolean.toString(shouldProxy));
+    if (!jobProps.containsKey(YARN_KILL_VERSION)) {
+      String yarnKillVersion = sysProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
+      jobProps.put(YARN_KILL_VERSION, yarnKillVersion);
+    }
     obtainTokens = sysProps.getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN, false);
     if (shouldProxy) {
       logger.info("Initiating hadoop security manager.");
