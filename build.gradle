@@ -133,7 +133,7 @@ ext.deps = [
     sparkCore            : 'org.apache.spark:spark-core_2.10:1.4.0',
     springTest           : 'org.springframework:spring-test:3.2.18.RELEASE',
     snakeyaml            : 'org.yaml:snakeyaml:1.18',
-    velocity             : 'org.apache.velocity:velocity:1.7',
+    velocity             : 'org.apache.velocity:velocity-engine-core:2.0',
     velocityTools        : 'org.apache.velocity:velocity-tools:2.0',
     bcprov               : 'org.bouncycastle:bcprov-jdk15on:1.54',
     jacksonAnnotation    : 'com.fasterxml.jackson.core:jackson-annotations:2.7.4',
