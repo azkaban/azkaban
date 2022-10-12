@@ -78,7 +78,7 @@
       <div>&nbsp;</div>
       <div class="container">
         <div>
-#if($view-executions)
+#if($viewExecutions)
           <div style="text-align: center;">
   #if($pagePrev)
             <a class="btn btn-primary" href="${context}/reportal?view&amp;id=${project.id}&amp;page=${pagePrev}">Previous page</a>
@@ -116,7 +116,7 @@
             </tbody>
           </table>
 #end
-#if($view-logs)
+#if($viewLogs)
           <table id="report-results" border="0" cellspacing="0" cellpadding="0" class="table table-bordered table-striped">
             <thead>
               <tr>
@@ -142,7 +142,7 @@
             </tbody>
           </table>
 #end
-#if($view-log)
+#if($viewLog)
           <script>
           var execId = ${execid};
           var jobId = "${jobId}";
@@ -159,7 +159,7 @@
             </div>
           </div>
 #end
-#if($view-preview)
+#if($viewPreview)
   #if($files)
     #foreach($file in $files)
       #set($fileName = $file.get("name"))

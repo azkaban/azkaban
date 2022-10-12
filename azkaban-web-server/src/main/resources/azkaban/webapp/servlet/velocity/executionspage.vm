@@ -87,7 +87,7 @@
             #foreach ($flow in $runningFlows)
             <tr>
               <td class="tb-name">
-                $velocityCount
+                $foreach.count
               </td>
               <td class="tb-name">
                 <a href="${context}/executor?execid=${flow.getFirst().executionId}">${flow.getFirst().executionId}</a>
@@ -159,7 +159,7 @@
             #foreach ($flow in $recentlyFinished)
             <tr>
               <td class="tb-name">
-                $velocityCount
+                $foreach.count
               </td>
               <td class="tb-name execId">
                 <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
