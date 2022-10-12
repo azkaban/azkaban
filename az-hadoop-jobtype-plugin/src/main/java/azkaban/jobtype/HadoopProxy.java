@@ -59,8 +59,10 @@ public class HadoopProxy {
     jobProps.put(HadoopSecurityManager.ENABLE_PROXYING, Boolean.toString(shouldProxy));
     if (!jobProps.containsKey(YARN_KILL_VERSION)) {
       String yarnKillVersion = sysProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
+      logger.info("sysProps.YARN_KILL_VERSION is:" + yarnKillVersion);
       jobProps.put(YARN_KILL_VERSION, yarnKillVersion);
     }
+    logger.info("jobProps.YARN_KILL_VERSION is set to:" + jobProps.getString(YARN_KILL_VERSION));
     obtainTokens = sysProps.getBoolean(HadoopSecurityManager.OBTAIN_BINARY_TOKEN, false);
     if (shouldProxy) {
       logger.info("Initiating hadoop security manager.");

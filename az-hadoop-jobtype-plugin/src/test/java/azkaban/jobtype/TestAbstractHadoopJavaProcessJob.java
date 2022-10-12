@@ -2,6 +2,7 @@ package azkaban.jobtype;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
+import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -9,6 +10,8 @@ import static org.assertj.core.api.Assertions.*;
 
 
 public class TestAbstractHadoopJavaProcessJob {
+
+  private static Logger logger = Logger.getLogger(TestAbstractHadoopJavaProcessJob.class);
 
   @BeforeClass
   public static void setUpClass() {
@@ -21,7 +24,7 @@ public class TestAbstractHadoopJavaProcessJob {
     props.put(CommonJobProperties.EXEC_ID, "123");
     props.put(CommonJobProperties.PROJECT_NAME, "project-name");
     props.put(CommonJobProperties.FLOW_ID, "flow-id");
-    AbstractHadoopJavaProcessJob job = new AbstractHadoopJavaProcessJob("test", new Props(), props, null) {};
+    AbstractHadoopJavaProcessJob job = new AbstractHadoopJavaProcessJob("test", new Props(), props, logger) {};
     job.setupHadoopJobProperties();
     assertThat(job.getJobProps().get(HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS))
         .isEqualTo("azkaban.flow.execid:123,azkaban.flow.flowid:flow-id"
@@ -38,7 +41,8 @@ public class TestAbstractHadoopJavaProcessJob {
     props.put(CommonJobProperties.EXEC_ID, "123");
     props.put(CommonJobProperties.PROJECT_NAME, "project-name");
     props.put(CommonJobProperties.FLOW_ID, flowIdBuffer.toString());
-    AbstractHadoopJavaProcessJob job = new AbstractHadoopJavaProcessJob("test2", new Props(), props, null) {};
+    AbstractHadoopJavaProcessJob job = new AbstractHadoopJavaProcessJob("test2", new Props(),
+        props, logger) {};
     job.setupHadoopJobProperties();
     String[] actualTags = job.getJobProps().get(
         HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS)

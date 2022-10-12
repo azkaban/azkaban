@@ -15,6 +15,9 @@
  */
 package azkaban.jobtype;
 
+import static azkaban.utils.YarnUtils.YARN_CONF_DIRECTORY_PROPERTY;
+import static azkaban.utils.YarnUtils.YARN_CONF_FILENAME;
+
 import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.security.commons.HadoopSecurityManagerException;
@@ -46,7 +49,6 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.log4j.Logger;
 import org.apache.hadoop.fs.Path;
-import scala.util.parsing.combinator.testing.Str;
 
 
 /**
@@ -88,16 +90,13 @@ public class HadoopJobUtils {
   public static final String YARN_KILL_VERSION = "yarn.kill.version";
   // values of the yarn kill version flag
   public static final String YARN_KILL_LEGACY = "legacy";
-  public static final String YARN_KILL_TOKEN_FIX = "token_copy";
+  public static final String YARN_KILL_USE_API_WITH_TOKEN = "api_with_token";
 
   protected static final int APPLICATION_TAG_MAX_LENGTH = 100;
   // Root of folder in storage containing startup dependencies
   public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
   // Azkaban property for listing additional namenodes for delegation tokens
   private static final String OTHER_NAMENODES_PROPERTY = "other_namenodes";
-  //Yarn resource configuration directory for the cluster where the job is scheduled by the cluster router
-  private static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
-  private static final String YARN_CONF_FILENAME = "yarn-site.xml";
 
   private HadoopJobUtils() {
   }
@@ -365,9 +364,28 @@ public class HadoopJobUtils {
     final Properties properties = new Properties();
     properties.putAll(jobProps.getFlattened());
 
-    // todo: use feature flag
+    // todo: use feature flag, default to use legacy mode
     String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
-    if (YARN_KILL_LEGACY.equals(yarnKillVersion)) {
+    if (YARN_KILL_USE_API_WITH_TOKEN.equals(yarnKillVersion)){
+      try {
+        if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
+          final UserGroupInformation proxyUser =
+              HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
+                  tokenFile.getAbsolutePath(), log);
+          proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
+            @Override
+            public Void run() throws Exception {
+              findAndKillYarnApps(jobProps, log);
+              return null;
+            }
+          });
+        } else {
+          findAndKillYarnApps(jobProps, log);
+        }
+      } catch (final Throwable t) {
+        log.warn("something happened while trying to kill all spawned jobs", t);
+      }
+    } else {
       final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
       log.info("Log file path is: " + logFilePath);
       try {
@@ -384,25 +402,6 @@ public class HadoopJobUtils {
           });
         } else {
           HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
-        }
-      } catch (final Throwable t) {
-        log.warn("something happened while trying to kill all spawned jobs", t);
-      }
-    } else if (YARN_KILL_TOKEN_FIX.equals(yarnKillVersion)){
-      try {
-        if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
-          final UserGroupInformation proxyUser =
-              HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
-                  tokenFile.getAbsolutePath(), log);
-          proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
-            @Override
-            public Void run() throws Exception {
-              findAndKillYarnApps(jobProps, log);
-              return null;
-            }
-          });
-        } else {
-          findAndKillYarnApps(jobProps, log);
         }
       } catch (final Throwable t) {
         log.warn("something happened while trying to kill all spawned jobs", t);
