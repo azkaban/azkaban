@@ -62,11 +62,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet.P;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ContainerizedDispatchManagerTest {
 
@@ -476,6 +478,7 @@ public class ContainerizedDispatchManagerTest {
     }
     // Verify that the status of flow1 is finalized.
     assertThat(this.flow1.getStatus()).isEqualTo(Status.KILLED);
+    Mockito.verify(this.containerizedImpl, Mockito.times(1)).deleteContainer(flow1.getExecutionId());
     this.flow1.getExecutableNodes().forEach(node -> {
       assertThat(node.getStatus()).isEqualTo(Status.KILLED);
     });
@@ -491,6 +494,9 @@ public class ContainerizedDispatchManagerTest {
     dispatchManager.addListener((event) -> {
       Event flowEvent = (Event) event;
       Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+      try {
+        Mockito.verify(this.containerizedImpl, Mockito.times(1)).deleteContainer(flow1.getExecutionId());
+      } catch (ExecutorManagerException ignored) {}
     });
     dispatchManager.cancelFlow(flow1, this.user.getUserId());
     Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
