@@ -489,11 +489,7 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           ExecutableFlow execFlow =
               ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
           Status originalStatus = execFlow.getStatus();
-          ExecutionControllerUtils.finalizeFlow(ContainerizedDispatchManager.this,
-              ContainerizedDispatchManager.this.projectManager,
-              ContainerizedDispatchManager.this.executorLoader,
-              ContainerizedDispatchManager.this.alerterHolder, execFlow, "Failed to dispatch", e,
-              Status.FAILED);
+          finalizeFlow(execFlow, "Failed to dispatch", e, Status.FAILED);
           logger.info("Finalizing the flow execution ", executionId);
           ExecutionControllerUtils.restartFlow(execFlow, originalStatus);
         } catch (ExecutorManagerException executorManagerException) {
@@ -502,6 +498,20 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           logger.error("Unexpected RuntimeException in ExecutionDispatcher", re);
         }
       }
+    }
+  }
+
+  /**
+   * Finalize the flow status in DB and delete the container.
+   */
+  @Override
+  protected void finalizeFlow(final ExecutableFlow flow, final String reason,
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
+    super.finalizeFlow(flow, reason, originalError, finalFlowStatus);
+    try {
+      this.containerizedImpl.deleteContainer(flow.getExecutionId());
+    } catch (ExecutorManagerException e) {
+      logger.warn("Failed to delete container when finalizing flow with execId " + flow.getExecutionId(), e);
     }
   }
 
