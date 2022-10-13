@@ -93,7 +93,7 @@
               #foreach($sched in $schedules)
               <tr>
                 <td class="tb-name">
-                  $velocityCount
+                  $foreach.count
                 </td>
                 <td>${sched.scheduleId}</td>
                 <td class="tb-name">
@@ -118,13 +118,13 @@
                 <td>
                 ## Changed the style of "Show" button to be consistent with other buttons.
                   <button type="button" class="btn btn-sm btn-info" data-toggle="modal"
-                          data-target="#executionOptions-${velocityCount}">Show
+                          data-target="#executionOptions-${foreach.count}">Show
                   </button>
                 </td>
 
               ## Distinguished executionOptions of each schedule with unique count number to fix
               ## the issue of same display for all schedules
-                <div class="modal fade" id="executionOptions-${velocityCount}" tabindex="-1"
+                <div class="modal fade" id="executionOptions-${foreach.count}" tabindex="-1"
                      role="dialog"
                      aria-labelledby="executionOptionsLabel">
                   <div class="modal-dialog" role="document">
