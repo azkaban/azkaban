@@ -398,14 +398,14 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         }
         // View single log
         if (hasParam(req, "log")) {
-          page.add("view-log", true);
+          page.add("viewLog", true);
           final String jobId = getParam(req, "log");
           page.add("execid", execId);
           page.add("jobId", jobId);
         }
         // List files
         else {
-          page.add("view-logs", true);
+          page.add("viewLogs", true);
           final List<ExecutableNode> jobLogs = ReportalUtil.sortExecutableNodes(exec);
 
           final boolean showDataCollector = hasParam(req, "debug");
@@ -457,7 +457,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
           }
           // Show file previews
           else {
-            page.add("view-preview", true);
+            page.add("viewPreview", true);
 
             try {
               String[] fileList = streamProvider.getFileList(locationFull);
@@ -485,7 +485,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
     // List executions and their data
     else {
-      page.add("view-executions", true);
+      page.add("viewExecutions", true);
       final ArrayList<ExecutableFlow> exFlows = new ArrayList<>();
 
       int pageNumber = 0;

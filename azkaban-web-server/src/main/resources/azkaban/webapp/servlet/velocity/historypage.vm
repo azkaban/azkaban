@@ -103,7 +103,7 @@
               #foreach ($flow in $flowHistory)
               <tr>
                 <td class="tb-name">
-                  $velocityCount
+                  $foreach.count
                 </td>
                 <td class="tb-name execId">
                   <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>

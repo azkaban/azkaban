@@ -77,7 +77,7 @@
             <legend>Variables</legend>
             <fieldset>
     #foreach($variable in $variables)
-      #set($num = $velocityCount - 1)
+      #set($num = $foreach.count - 1)
               <div class="control-group">
                 <label class="control-label">${variable.title}</label>
                 <div class="controls"><input type="text" name="variable${num}" value=""></div>

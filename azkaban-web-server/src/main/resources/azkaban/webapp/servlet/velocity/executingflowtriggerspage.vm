@@ -131,7 +131,7 @@
             #foreach ($trigger in $runningTriggers)
             <tr class="parent" id=${trigger.getId()}>
               <td class="tb-name">
-                $velocityCount
+                $foreach.count
               </td>
               <td>
                 #if (${trigger.getId()})
@@ -286,7 +286,7 @@
             #foreach ($trigger in $recentTriggers)
             <tr class="parent" id=${trigger.getId()}>
               <td class="tb-name">
-                $velocityCount
+                $foreach.count
               </td>
               <td>
                 #if (${trigger.getId()})
