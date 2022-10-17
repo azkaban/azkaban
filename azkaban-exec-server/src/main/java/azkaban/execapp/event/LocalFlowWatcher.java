@@ -73,7 +73,7 @@ public class LocalFlowWatcher extends FlowWatcher {
           getLogger().info(node + " looks like " + node.getStatus());
           handleJobStatusChange(node.getNestedId(), node.getStatus());
         }
-      } else if (event.getData().getNode() instanceof ExecutableFlow && event.getType() == EventType.FLOW_FINISHED) {
+      } else if (event.getData().isRootFlowEvent() && event.getType() == EventType.FLOW_FINISHED) {
         stopWatcher();
       }
     }

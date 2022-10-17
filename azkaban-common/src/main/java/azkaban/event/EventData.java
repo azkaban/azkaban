@@ -1,5 +1,7 @@
 package azkaban.event;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 
@@ -36,6 +38,10 @@ public class EventData {
 
   public ExecutableNode getNode() {
     return this.node;
+  }
+
+  public boolean isRootFlowEvent() {
+    return this.node instanceof ExecutableFlow;
   }
 
   public Status getStatus() {
