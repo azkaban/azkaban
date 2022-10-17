@@ -60,6 +60,7 @@ public class TriggerManagerDeadlockTest {
   private AlerterHolder alertHolder;
   private ExecutionFinalizer executionFinalizer;
   private CommonMetrics commonMetrics;
+  private MetricsManager metricsManager;
 
   @Before
   public void setup() throws ExecutorManagerException, TriggerManagerException {
@@ -71,6 +72,7 @@ public class TriggerManagerDeadlockTest {
     this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
     this.offlineExecutionLogsLoader = new MockExecutionLogsLoader();
     this.apiGateway = mock(ExecutorApiGateway.class);
+    this.metricsManager = mock(MetricsManager.class);
     this.runningExecutions = new RunningExecutions();
     this.updaterStage = new ExecutorManagerUpdaterStage();
     this.alertHolder = mock(AlerterHolder.class);
@@ -78,7 +80,7 @@ public class TriggerManagerDeadlockTest {
         this.updaterStage, this.alertHolder, this.runningExecutions);
     this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = getExecutorManager(props);
-    this.triggerManager = new TriggerManager(props, this.loader, executorManager);
+    this.triggerManager = new TriggerManager(props, this.loader, executorManager, metricsManager);
   }
 
   private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {

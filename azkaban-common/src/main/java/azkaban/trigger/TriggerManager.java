@@ -21,7 +21,9 @@ import static java.util.Objects.requireNonNull;
 import azkaban.event.EventHandler;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.metrics.MetricsManager;
 import azkaban.utils.Props;
+import com.codahale.metrics.Meter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -46,6 +48,8 @@ public class TriggerManager extends EventHandler implements
       new ConcurrentHashMap<>();
 
   private final TriggerScannerThread runnerThread;
+  private MetricsManager metricsManager;
+  private Meter heartbeatMeter;
   private final Object syncObj = new Object();
   private final CheckerTypeLoader checkerTypeLoader;
   private final ActionTypeLoader actionTypeLoader;
@@ -57,7 +61,7 @@ public class TriggerManager extends EventHandler implements
 
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
-      final ExecutorManagerAdapter executorManagerAdapter) throws TriggerManagerException {
+      final ExecutorManagerAdapter executorManagerAdapter, final MetricsManager metricsManager) throws TriggerManagerException {
 
     requireNonNull(props);
     requireNonNull(executorManagerAdapter);
@@ -69,6 +73,8 @@ public class TriggerManager extends EventHandler implements
 
     this.checkerTypeLoader = new CheckerTypeLoader();
     this.actionTypeLoader = new ActionTypeLoader();
+    this.metricsManager = metricsManager;
+    this.heartbeatMeter = this.metricsManager.addMeter("cron-scheduler-heartbeat");
 
     try {
       this.checkerTypeLoader.init(props);
@@ -286,6 +292,7 @@ public class TriggerManager extends EventHandler implements
     @Override
     public void run() {
       while (!this.shutdown) {
+        heartbeatMeter.mark();
         synchronized (TriggerManager.this.syncObj) {
           try {
             TriggerManager.this.lastRunnerThreadCheckTime = System.currentTimeMillis();

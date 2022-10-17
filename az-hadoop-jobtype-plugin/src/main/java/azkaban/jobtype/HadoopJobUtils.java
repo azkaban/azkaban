@@ -16,6 +16,8 @@
 package azkaban.jobtype;
 
 import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
+import static azkaban.utils.YarnUtils.YARN_CONF_DIRECTORY_PROPERTY;
+import static azkaban.utils.YarnUtils.YARN_CONF_FILENAME;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.security.commons.HadoopSecurityManager;
@@ -32,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -43,8 +44,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.log4j.Logger;
+import org.apache.hadoop.fs.Path;
 
 
 /**
@@ -82,6 +87,12 @@ public class HadoopJobUtils {
   public static final String MAPREDUCE_JOB_OTHER_NAMENODES = "mapreduce.job.hdfs-servers";
   // MapReduce config for mapreduce job tags
   public static final String MAPREDUCE_JOB_TAGS = "mapreduce.job.tags";
+
+  public static final String YARN_KILL_VERSION = "yarn.kill.version";
+  // values of the yarn kill version flag
+  public static final String YARN_KILL_LEGACY = "legacy";
+  public static final String YARN_KILL_USE_API_WITH_TOKEN = "api_with_token";
+
   protected static final int APPLICATION_TAG_MAX_LENGTH = 100;
   // Root of folder in storage containing startup dependencies
   public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
@@ -354,24 +365,50 @@ public class HadoopJobUtils {
     final Properties properties = new Properties();
     properties.putAll(jobProps.getFlattened());
 
-    try {
-      if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
-        final UserGroupInformation proxyUser =
-            HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
-                tokenFile.getAbsolutePath(), log);
-        proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
-          @Override
-          public Void run() throws Exception {
-            findAndKillYarnApps(jobProps, log);
-            return null;
-          }
-        });
-      } else {
-        findAndKillYarnApps(jobProps, log);
+    // todo: use feature flag, default to use legacy mode
+    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
+    if (YARN_KILL_USE_API_WITH_TOKEN.equals(yarnKillVersion)){
+      try {
+        if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
+          final UserGroupInformation proxyUser =
+              HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
+                  tokenFile.getAbsolutePath(), log);
+          proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
+            @Override
+            public Void run() throws Exception {
+              findAndKillYarnApps(jobProps, log);
+              return null;
+            }
+          });
+        } else {
+          findAndKillYarnApps(jobProps, log);
+        }
+      } catch (final Throwable t) {
+        log.warn("something happened while trying to kill all spawned jobs", t);
       }
-    } catch (final Throwable t) {
-      log.warn("something happened while trying to kill all spawned jobs", t);
+    } else {
+      final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+      log.info("Log file path is: " + logFilePath);
+      try {
+        if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
+          final UserGroupInformation proxyUser =
+              HadoopSecureWrapperUtils.setupProxyUser(properties,
+                  tokenFile.getAbsolutePath(), log);
+          proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
+            @Override
+            public Void run() throws Exception {
+              HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
+              return null;
+            }
+          });
+        } else {
+          HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
+        }
+      } catch (final Throwable t) {
+        log.warn("something happened while trying to kill all spawned jobs", t);
+      }
     }
+
   }
 
   private static void findAndKillYarnApps(Props jobProps, Logger log) {
@@ -411,6 +448,29 @@ public class HadoopJobUtils {
           jobsToKill));
     }
     return jobsToKill;
+  }
+
+  /**
+   * Pass in a log file, this method will find all the hadoop jobs it has launched, and kills it
+   * <p>
+   * Only works with Hadoop2
+   *
+   * @return a Set<String>. The set will contain the applicationIds that this job tried to kill.
+   */
+  public static Set<String> killAllSpawnedHadoopJobs(final String logFilePath, final Logger log,
+      final Props jobProps) {
+    final Set<String> allSpawnedJobs = findApplicationIdFromLog(logFilePath, log);
+    log.info("applicationIds to kill: " + allSpawnedJobs);
+
+    for (final String appId : allSpawnedJobs) {
+      try {
+        killJobOnCluster(appId, log, jobProps);
+      } catch (final Throwable t) {
+        log.warn("something happened while trying to kill this job: " + appId, t);
+      }
+    }
+
+    return allSpawnedJobs;
   }
 
   /**
@@ -493,6 +553,38 @@ public class HadoopJobUtils {
       }
     }
     return applicationIds;
+  }
+
+  /**
+   * <pre>
+   * Uses YarnClient to kill the job on HDFS.
+   * Using JobClient only works partially:
+   *   If yarn container has started but spark job haven't, it will kill
+   *   If spark job has started, the cancel will hang until the spark job is complete
+   *   If the spark job is complete, it will return immediately, with a job not found on job tracker
+   * </pre>
+   */
+  public static void killJobOnCluster(final String applicationId, final Logger log,
+      final Props jobProps)
+      throws YarnException,
+      IOException {
+
+    final YarnConfiguration yarnConf = new YarnConfiguration();
+    final YarnClient yarnClient = YarnClient.createYarnClient();
+    if (jobProps.containsKey(YARN_CONF_DIRECTORY_PROPERTY)) {
+      yarnConf.addResource(
+          new Path(jobProps.get(YARN_CONF_DIRECTORY_PROPERTY) + "/" + YARN_CONF_FILENAME));
+    }
+    yarnClient.init(yarnConf);
+    yarnClient.start();
+
+    final String[] split = applicationId.split("_");
+    final ApplicationId aid = ApplicationId.newInstance(Long.parseLong(split[1]),
+        Integer.parseInt(split[2]));
+
+    log.info("start klling application: " + aid);
+    yarnClient.killApplication(aid);
+    log.info("successfully killed application: " + aid);
   }
 
   /**

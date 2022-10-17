@@ -331,6 +331,25 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
 
   @Override
   public void run() {
+    // The current thread is used for interrupting blocks
+    this.flowRunnerThread = Thread.currentThread();
+    this.flowRunnerThread.setName("FlowRunner-exec-" + this.flow.getExecutionId());
+
+    // Sanity check if the flow initial status is valid or not.
+    if (Status.isStatusFinished(flow.getStatus())
+        || Status.isStatusRunning(flow.getStatus())) {
+      // These should still be cleaned up
+      if (this.watcher != null) {
+        this.logger.info("Watcher is attached. Stopping watcher.");
+        this.watcher.stopWatcher();
+        this.logger
+            .info("Watcher cancelled status is " + this.watcher.isWatchCancelled());
+      }
+
+      closeLogger();
+      return;
+    }
+
     this.flowStartupDelayTimer = this.execMetrics.getFlowStartupDelayTimerContext();
     try {
       if (this.executorService == null) {
@@ -481,10 +500,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       this.logger.info("Running simulateously with " + this.pipelineExecId
           + ". Pipelining level " + this.pipelineLevel);
     }
-
-    // The current thread is used for interrupting blocks
-    this.flowRunnerThread = Thread.currentThread();
-    this.flowRunnerThread.setName("FlowRunner-exec-" + this.flow.getExecutionId());
   }
 
   private void updateFlow() {
@@ -1598,11 +1613,9 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
     return metaDataFile;
   }
 
-  public boolean isRunnerThreadAlive() {
-    if (this.flowRunnerThread != null) {
-      return this.flowRunnerThread.isAlive();
-    }
-    return false;
+  @VisibleForTesting
+  protected boolean isRunnerThreadShutdown() {
+    return this.flowRunnerThread != null && !this.flowRunnerThread.isAlive();
   }
 
   public int getExecutionId() {

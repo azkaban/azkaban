@@ -114,7 +114,7 @@
             #foreach ($trigger in $flowTriggers)
             <tr class="parent" id=${trigger.getId()}>
               <td class="tb-name">
-                $velocityCount
+                $foreach.count
               </td>
             #*todo chengren311: keep result of vmutils.getProjectName as a variable *#
               <td><a
@@ -146,11 +146,11 @@
               <td>
               ## Changed the style of "Show" button to be consistent with other buttons.
                 <button type="button" class="btn btn-sm btn-info" data-toggle="modal"
-                        data-target="#dependencyList-${velocityCount}">Show
+                        data-target="#dependencyList-${foreach.count}">Show
                 </button>
               </td>
 
-              <div class="modal fade" id="dependencyList-${velocityCount}" tabindex="-1"
+              <div class="modal fade" id="dependencyList-${foreach.count}" tabindex="-1"
                    role="dialog"
                    aria-labelledby="dependencyLabel">
                 <div class="modal-dialog" role="document">

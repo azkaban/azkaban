@@ -87,7 +87,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.mortbay.jetty.Server;
@@ -362,10 +361,11 @@ public class AzkabanWebServerModule extends AbstractModule {
         "velocimacro.permissions.allow.inline.to.replace.global", true);
     engine.setProperty("velocimacro.arguments.strict", true);
     engine.setProperty("runtime.log.invalid.references", devMode);
-    engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
     engine.setProperty("runtime.log.logsystem.log4j.logger",
         Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
+    engine.setProperty("space.gobbling", "bc");
+    engine.setProperty("directive.if.emptycheck", false);
     return engine;
   }
 }
