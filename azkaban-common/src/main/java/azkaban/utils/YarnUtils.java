@@ -27,8 +27,8 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
 public class YarnUtils {
 
   //Yarn resource configuration directory for the cluster where the job is scheduled by the cluster router
-  private static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
-  private static final String YARN_CONF_FILENAME = "yarn-site.xml";
+  public static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
+  public static final String YARN_CONF_FILENAME = "yarn-site.xml";
 
   /**
    * Uses YarnClient to kill the jobs one by one
