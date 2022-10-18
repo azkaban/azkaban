@@ -374,7 +374,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final VersionSet versionSet = this.runner.getExecutableFlow().getVersionSet();
 
     FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
-    Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
+    Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner,
+        this.runner.getExecutableFlow());
 
     Assert.assertEquals("Event metadata not created as expected.", "localhost",
             flowMetadata.get(AZ_WEBSERVER));

@@ -885,7 +885,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
    */
   @Override
   public void handleEvent(final Event event) {
-    if (event.getType() == EventType.FLOW_STARTED) {
+    if (event.getData().isRootFlowEvent() && event.getType() == EventType.FLOW_STARTED) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
 

@@ -1,5 +1,7 @@
 package azkaban.event;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 
@@ -8,6 +10,7 @@ import azkaban.executor.Status;
  */
 public class EventData {
 
+  private final ExecutableNode node;
   private final Status status;
   private final String nestedId;
   private final String jobId;
@@ -22,6 +25,7 @@ public class EventData {
    * @param node node.
    */
   public EventData(final ExecutableNode node) {
+    this.node = node;
     this.status = node.getStatus();
     this.nestedId = node.getNestedId();
     this.jobId = node.getId();
@@ -30,6 +34,14 @@ public class EventData {
     this.projectName = (node.getParentFlow() == null) ? null: node.getParentFlow().getProjectName();
     this.flowName = (node.getParentFlow() == null) ? null: node.getParentFlow().getFlowId();
     this.executionId = (node.getParentFlow() == null) ? -1: node.getParentFlow().getExecutionId();
+  }
+
+  public ExecutableNode getNode() {
+    return this.node;
+  }
+
+  public boolean isRootFlowEvent() {
+    return this.node instanceof ExecutableFlow;
   }
 
   public Status getStatus() {
