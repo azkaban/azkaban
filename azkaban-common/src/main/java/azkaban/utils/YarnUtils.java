@@ -46,43 +46,6 @@ public class YarnUtils {
       YarnApplicationState.RUNNING
   );
 
-  public static Set<String> getAllAliveAppIDsByExecID(final YarnClient yarnClient,
-      final String flowExecID, final Logger log)
-      throws IOException, YarnException {
-    return getAllAliveAppReportsByExecID(yarnClient, flowExecID, log)
-        .stream()
-        .map(ApplicationReport::getApplicationId)
-        .map(ApplicationId::toString).collect(Collectors.toSet());
-  }
-
-  /**
-   * Use the yarnClient to query the unfinished yarn applications, then use the yarnClient to kill
-   * them sequentially
-   *
-   * @param yarnClient the yarnClient already connects to the cluster
-   * @param flowExecID the azkaban flow execution id whose yarn applications needs to be killed
-   * @return the set of all to-be-killed (alive) yarn applications' IDs
-   * @throws IOException   for RPC issue
-   * @throws YarnException for YARN server issue
-   */
-  public static List<ApplicationReport> getAllAliveAppReportsByExecID(final YarnClient yarnClient,
-      final String flowExecID, final Logger log)
-      throws IOException, YarnException {
-
-    // format: tagName:tagValue
-    Set<String> searchTags = ImmutableSet.of(AZKABAN_FLOW_EXEC_ID + ":" + flowExecID);
-
-    log.info(String.format("Searching for alive yarn application reports with tag %s", searchTags));
-    return yarnClient.getApplications(null, YARN_APPLICATION_ALIVE_STATES, searchTags);
-  }
-
-  public static final EnumSet<YarnApplicationState> YARN_APPLICATION_ALIVE_STATES = EnumSet.of(
-      YarnApplicationState.NEW,
-      YarnApplicationState.NEW_SAVING,
-      YarnApplicationState.SUBMITTED,
-      YarnApplicationState.ACCEPTED,
-      YarnApplicationState.RUNNING
-  );
 
   public static Set<String> getAllAliveAppIDsByExecID(final YarnClient yarnClient,
       final String flowExecID, final Logger log)
