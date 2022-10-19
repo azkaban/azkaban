@@ -24,13 +24,13 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
+import azkaban.cluster.ClusterRouter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
-import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
@@ -53,15 +53,18 @@ public class ContainerCleanupManagerTest {
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
   private DummyContainerizationMetricsImpl metrics;
+  private ClusterRouter clusterRouter;
 
   @Before
   public void setup() throws Exception {
     this.props = new Props();
     this.executorLoader = mock(ExecutorLoader.class);
     this.containerImpl = mock(ContainerizedImpl.class);
+    this.clusterRouter = mock(ClusterRouter.class);
+    when(this.clusterRouter.getAllClusters()).thenReturn(ImmutableMap.of());
     this.containerizedDispatchManager = mock(ContainerizedDispatchManager.class);
     this.cleaner = new ContainerCleanupManager(this.props, this.executorLoader,
-        this.containerImpl, this.containerizedDispatchManager, this.metrics);
+        this.clusterRouter, this.containerImpl, this.containerizedDispatchManager, this.metrics);
   }
 
   @Test

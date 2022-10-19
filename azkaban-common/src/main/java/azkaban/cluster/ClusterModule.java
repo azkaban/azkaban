@@ -1,6 +1,5 @@
 package azkaban.cluster;
 
-import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import com.google.inject.AbstractModule;
@@ -14,6 +13,10 @@ import org.apache.hadoop.fs.Path;
 
 public class ClusterModule extends AbstractModule {
 
+  public static final String CLUSTER_CONFIG_DIR = "azkaban.cluster.dir";
+  public static final String CLUSTER_ROUTER_CLASS = "azkaban.cluster.router";
+  public static final String CLUSTER_ROUTER_CONF = "azkaban.cluster.router.conf";
+
   @Override
   protected void configure() {
     bind(ClusterLoader.class).asEagerSingleton();
@@ -23,7 +26,7 @@ public class ClusterModule extends AbstractModule {
   @Provides
   @Named("clusterDir")
   public File getClusterDir(final Props props) {
-    final String clusterDir = props.getString(AzkabanExecutorServer.CLUSTER_CONFIG_DIR, "cluster");
+    final String clusterDir = props.getString(CLUSTER_CONFIG_DIR, "cluster");
     return new File(clusterDir);
   }
 
@@ -31,7 +34,7 @@ public class ClusterModule extends AbstractModule {
   public ClusterRouter getClusterRouter(final Props props, final ClusterRegistry clusterRegistry,
       final Configuration conf)
       throws ClassNotFoundException {
-    final String routerClass = props.getString(AzkabanExecutorServer.CLUSTER_ROUTER_CLASS,
+    final String routerClass = props.getString(CLUSTER_ROUTER_CLASS,
         DisabledClusterRouter.class.getName());
     final Class<?> routerClazz = Class.forName(routerClass);
     return (ClusterRouter) Utils.callConstructor(routerClazz, clusterRegistry, conf);
@@ -45,7 +48,7 @@ public class ClusterModule extends AbstractModule {
     for (Map.Entry<String, String> entry : props.getFlattened().entrySet()) {
       configuration.set(entry.getKey(), entry.getValue());
     }
-    final String routerConfPath = props.getString(AzkabanExecutorServer.CLUSTER_ROUTER_CONF,
+    final String routerConfPath = props.getString(CLUSTER_ROUTER_CONF,
         "router-conf.xml");
     configuration.addResource(new Path(routerConfPath));
     return configuration;

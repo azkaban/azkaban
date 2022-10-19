@@ -19,6 +19,8 @@ import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
 
 import azkaban.Constants.FlowParameters;
+import azkaban.cluster.Cluster;
+import azkaban.cluster.ClusterRouter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
@@ -28,12 +30,15 @@ import azkaban.executor.Status;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.YarnUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -42,6 +47,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +86,7 @@ public class ContainerCleanupManager {
   // Defines the validity duration associated with certain statuses from the
   // submit/start/update time.
   private final ImmutableMap<Status, Pair<Duration, String>> validityMap;
+  private final ClusterRouter clusterRouter;
 
   public ImmutableMap<Status, Pair<Duration, String>> getValidityMap() {
     return this.validityMap;
@@ -86,10 +95,13 @@ public class ContainerCleanupManager {
   private final ContainerizationMetrics containerizationMetrics;
 
   @Inject
-  public ContainerCleanupManager(final Props azkProps, final ExecutorLoader executorLoader,
+  public ContainerCleanupManager(
+      final Props azkProps,
+      final ExecutorLoader executorLoader,
+      final ClusterRouter clusterRouter,
       final ContainerizedImpl containerizedImpl,
-      final ContainerizedDispatchManager containerizedDispatchManager, final
-      ContainerizationMetrics containerizationMetrics) {
+      final ContainerizedDispatchManager containerizedDispatchManager,
+      final ContainerizationMetrics containerizationMetrics) {
     // Get all the intervals
     this.executionCleanupIntervalMin = azkProps
         .getLong(
@@ -111,6 +123,7 @@ public class ContainerCleanupManager {
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;
     this.containerizedImpl = containerizedImpl;
+    this.clusterRouter = clusterRouter;
     this.containerizedDispatchManager = containerizedDispatchManager;
     this.containerizationMetrics = containerizationMetrics;
     long runningFlowValidity = DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS;
@@ -132,6 +145,18 @@ public class ContainerCleanupManager {
         .put(Status.KILLING, new Pair<>(Duration.ofMinutes(maxKillingValidity), UPDATE_TIME))
         .put(Status.FAILED_FINISHING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
+
+    // get yarn config for instance without robin enabled
+    logger.info("AzkProps: hadoop.conf.dir.path=" + azkProps.getString(HADOOP_CONF_DIR_PATH, ""));
+
+    // get config in instance using robin, so as can connect to multiple yarn cluster RMs
+    Map<String, Cluster> allClusters = this.clusterRouter.getAllClusters();
+    for (Entry<String,Cluster> entry: allClusters.entrySet()){
+      logger.info("Now printing cluster named: "+ entry.getKey());
+      Cluster cluster = entry.getValue();
+      logger.debug("Cluster detail: " + cluster);
+      // TODO: get yarn-site.xml info from cluster properties to creation yarnClient accordingly
+    }
   }
 
   public void cleanUpStaleFlows() {

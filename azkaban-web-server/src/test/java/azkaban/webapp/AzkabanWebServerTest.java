@@ -23,6 +23,7 @@ import static azkaban.Constants.ConfigurationKeys.USE_MULTIPLE_EXECUTORS;
 import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.ServiceProviderTest.assertSingleton;
+import static azkaban.cluster.ClusterModule.CLUSTER_CONFIG_DIR;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 import static org.junit.Assert.assertEquals;
@@ -33,6 +34,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.DispatchMethod;
+import azkaban.cluster.ClusterModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.db.DatabaseOperator;
@@ -101,6 +103,8 @@ public class AzkabanWebServerTest {
     final String sqlScriptsDir = getSqlScriptsDir();
     props.put(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptsDir);
 
+    props.put(CLUSTER_CONFIG_DIR, "conf/cluster");
+
     props.put("database.type", "h2");
     props.put("h2.path", "./h2");
 
@@ -132,7 +136,8 @@ public class AzkabanWebServerTest {
   public void testInjection() throws Exception {
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
@@ -177,7 +182,8 @@ public class AzkabanWebServerTest {
   public void testRoutingMapFor() {
     Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
@@ -191,17 +197,24 @@ public class AzkabanWebServerTest {
     Props containerizedProps = new Props(props);
     containerizedProps.put(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
         DispatchMethod.CONTAINERIZED.name());
-    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
-    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH, "src/test"
-        + "/resources/container/kubeconfig");
-    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_REQUIRED, "true");
-    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE,
+        "dev-namespace");
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH,
+        "src/test"
+            + "/resources/container/kubeconfig");
+    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_REQUIRED,
+        "true");
+    containerizedProps.put(
+        ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
         "2");
-    containerizedProps.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST
+    containerizedProps.put(
+        ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST
         , "4Gi");
     injector = Guice.createInjector(
         new AzkabanCommonModule(containerizedProps),
-        new AzkabanWebServerModule(containerizedProps)
+        new AzkabanWebServerModule(containerizedProps),
+        new ClusterModule()
+
     );
     SERVICE_PROVIDER.setInjector(injector);
     webServer = injector.getInstance(AzkabanWebServer.class);
@@ -218,7 +231,8 @@ public class AzkabanWebServerTest {
     props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, DispatchMethod.PUSH.name());
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
@@ -229,10 +243,11 @@ public class AzkabanWebServerTest {
     assertEquals(executorManagerAdapter.getDispatchMethod(), DispatchMethod.PUSH);
 
     // Test for POLL method
-    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"POLL");
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "POLL");
     final Injector pollInjector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(pollInjector);
@@ -249,7 +264,8 @@ public class AzkabanWebServerTest {
     props.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "dev-namespace");
     final Injector containerizedInjector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(containerizedInjector);
@@ -260,10 +276,11 @@ public class AzkabanWebServerTest {
     assertEquals(containerizedInjectorInstance.getDispatchMethod(), DispatchMethod.CONTAINERIZED);
 
     // Test default method
-    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,"UNKNOWN");
+    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "UNKNOWN");
     final Injector defaultInjector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(defaultInjector);
