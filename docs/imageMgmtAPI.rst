@@ -400,7 +400,7 @@ Create a new normal Ramp Rule
 | ``imageName``        | ``String``  | Image type name                                         |
 +----------------------+-------------+---------------------------------------------------------+
 | ``imageVersion``     | ``String``  | Image type Version.                                     |
-|                      |             | Registered and valid version. (New or Active)           |                       |
+|                      |             | Registered and valid version. (New or Active)           |
 +----------------------+-------------+---------------------------------------------------------+
 | ``ownerships``       |  ``String`` | (Optional) List of ldaps, separated by comma;           |
 |                      |             | While not present, use imageType owners as default      |
@@ -420,7 +420,7 @@ Create a new normal Ramp Rule
 
 .. code-block:: guess
 
-     Status: 201 Created
+    Status: 201 Created
 
 .. _create-hp-flow-ramp-rule:
 
@@ -435,8 +435,9 @@ Create an HP flow Ramp Rule
 +======================+=============+=========================================================+
 | ``ruleName``         | ``String``  | User provided name                                      |
 +----------------------+-------------+---------------------------------------------------------+
-| ``ownerships``       | ``String``  | List of ldaps, separated by comma;                       |
+| ``ownerships``       | ``String``  | List of ldaps, separated by comma;                      |
 +----------------------+-------------+---------------------------------------------------------+
+
 Note: ownerships parameter is a required param for HP Flow Rule.
 
 **Example:**
@@ -564,7 +565,7 @@ Delete an existing Ramp Rule
      Status: 200 OK
 
 Ramp Rule ownership management
-***************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Currently, we only support individual user Ldap as owner, this will be deprecated when group Ldap as owner is supported.
 Owners of ramp rule would have permission to operate above APIs, only existing owners would have permission to add/remove owners.
 
