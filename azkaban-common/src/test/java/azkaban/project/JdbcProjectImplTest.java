@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowRecommendation;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.Permission;
@@ -370,6 +371,80 @@ public class JdbcProjectImplTest {
 
     final Props sameProps2 = this.loader.fetchProjectProperty(project, props.getSource());
     Assert.assertEquals(sameProps2.get("key2"), "value9");
+  }
+
+  private void createThreeFlowRecommendations() {
+    createThreeProjects();
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+
+    final String flowId1 = "alwaysOk1";
+    this.loader.createFlowRecommendation(project1.getId(), flowId1);
+    final String flowId2 = "alwaysOk2";
+    this.loader.createFlowRecommendation(project1.getId(), flowId2);
+    final String flowId3 = "alwaysOk2";
+    this.loader.createFlowRecommendation(project2.getId(), flowId3);
+  }
+
+  @Test
+  public void testCreateFlowRecommendation() throws Exception {
+    final int projectId = 1;
+    final String flowId = "alwaysOk";
+    final FlowRecommendation flowRecommendation = this.loader.createFlowRecommendation(projectId, flowId);
+    Assert.assertEquals(flowRecommendation.getProjectId(), projectId);
+    Assert.assertEquals(flowRecommendation.getFlowId(), flowId);
+    Assert.assertNull(flowRecommendation.getCpuRecommendation());
+    Assert.assertNull(flowRecommendation.getMemoryRecommendation());
+    Assert.assertNull(flowRecommendation.getDiskRecommendation());
+  }
+
+  @Test
+  public void testUpdateFlowRecommendation() throws Exception {
+    final int projectId = 1;
+    final String flowId = "alwaysOk1";
+
+    final String cpuRecommendation = "100m";
+    final String memoryRecommendation = "4Gi";
+    final String diskRecommendation = "20Gi";
+
+    final FlowRecommendation flowRecommendation = this.loader.createFlowRecommendation(projectId,
+        flowId);
+
+    flowRecommendation.setCpuRecommendation(cpuRecommendation);
+    flowRecommendation.setMemoryRecommendation(memoryRecommendation);
+    flowRecommendation.setDiskRecommendation(diskRecommendation);
+
+    this.loader.updateFlowRecommendation(flowRecommendation);
+
+    final FlowRecommendation flowRecommendation2 = this.loader.fetchFlowRecommendation(projectId, flowId);
+    Assert.assertEquals(flowRecommendation2.getCpuRecommendation(), cpuRecommendation);
+    Assert.assertEquals(flowRecommendation2.getMemoryRecommendation(), memoryRecommendation);
+    Assert.assertEquals(flowRecommendation2.getDiskRecommendation(), diskRecommendation);
+  }
+
+  @Test
+  public void testFlowRecommendationsForMultipleProjects() throws Exception {
+    createThreeProjects();
+
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    final Project project3 = this.loader.fetchProjectByName("mytestProject3");
+
+    final String flowId1 = "alwaysOk1";
+    this.loader.createFlowRecommendation(project1.getId(), flowId1);
+    final String flowId2 = "alwaysOk2";
+    this.loader.createFlowRecommendation(project1.getId(), flowId2);
+    final String flowId3 = "alwaysOk2";
+    this.loader.createFlowRecommendation(project2.getId(), flowId3);
+
+    final List<Project> projectIdList = Arrays.asList(project1, project2, project3);
+
+    final Map<Project, List<FlowRecommendation>> projectToFlowRecommendations = this.loader
+        .fetchAllFlowRecommendationsForProjects(projectIdList);
+    Assert.assertEquals(projectToFlowRecommendations.size(), 3);
+    Assert.assertEquals(projectToFlowRecommendations.get(project1).size(), 2);
+    Assert.assertEquals(projectToFlowRecommendations.get(project2).size(), 1);
+    Assert.assertEquals(projectToFlowRecommendations.get(project3).size(), 0);
   }
 
   @Test

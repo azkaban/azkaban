@@ -26,6 +26,7 @@ import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowRecommendation;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.scheduler.Schedule;
@@ -536,6 +537,15 @@ public class ProjectManager {
     this.projectLoader.updateFlow(project, flow.getVersion(), flow);
   }
 
+  public FlowRecommendation createFlowRecommendation(final int projectId, final String flowId) throws ProjectManagerException {
+    return this.projectLoader
+        .createFlowRecommendation(projectId, flowId);
+  }
+
+  public void updateFlowRecommendation(final FlowRecommendation flowRecommendation)
+      throws ProjectManagerException {
+    this.projectLoader.updateFlowRecommendation(flowRecommendation);
+  }
 
   public void postProjectEvent(final Project project, final EventType type, final String user,
       final String message) {

@@ -17,6 +17,7 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
+import azkaban.flow.FlowRecommendation;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -159,6 +160,37 @@ public interface ProjectLoader {
    * Fetches all flows for all projects.
    */
   Map<Project, List<Flow>> fetchAllFlowsForProjects(List<Project> projects)
+      throws ProjectManagerException;
+
+  /**
+   * Should create an empty flow recommendation with the given projectId and flowId and adds it to
+   * the data store. It will auto assign a unique id for this flow recommendation if successful.
+   */
+  FlowRecommendation createFlowRecommendation(int projectId, String flowId)
+      throws ProjectManagerException;
+
+  /**
+   * Update one particular flow recommendation
+   */
+  void updateFlowRecommendation(FlowRecommendation flowRecommendation)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches one particular flow recommendation.
+   */
+  FlowRecommendation fetchFlowRecommendation(int projectId, String flowId)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches all flow recommendations for a given project
+   */
+  List<FlowRecommendation> fetchAllProjectFlowRecommendations(Project project)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches all flow recommendations for all projects.
+   */
+  Map<Project, List<FlowRecommendation>> fetchAllFlowRecommendationsForProjects(List<Project> projects)
       throws ProjectManagerException;
 
   /**

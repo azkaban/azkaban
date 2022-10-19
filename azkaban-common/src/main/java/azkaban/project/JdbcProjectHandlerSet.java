@@ -17,6 +17,7 @@ package azkaban.project;
 
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowRecommendation;
 import azkaban.spi.Dependency;
 import azkaban.user.Permission;
 import azkaban.utils.GZIPUtils;
@@ -192,6 +193,42 @@ class JdbcProjectHandlerSet {
       } while (rs.next());
 
       return flows;
+    }
+  }
+
+  public static class ProjectFlowRecommendationsResultHandler implements ResultSetHandler<List<FlowRecommendation>> {
+
+    public static String SELECT_PROJECT_FLOW_RECOMMENDATION =
+        "SELECT id, project_id, flow_id, cpu_recommendation, memory_recommendation, "
+            + "disk_recommendation FROM project_flow_recommendations WHERE project_id=? AND "
+            + "flow_id=?";
+
+    public static String SELECT_ALL_PROJECT_FLOW_RECOMMENDATIONS =
+        "SELECT id, project_id, flow_id, cpu_recommendation, memory_recommendation, "
+            + "disk_recommendation FROM project_flow_recommendations WHERE project_id=?";
+
+    @Override
+    public List<FlowRecommendation> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      final ArrayList<FlowRecommendation> flowRecommendations = new ArrayList<>();
+      do {
+        final int id = rs.getInt(1);
+        final int projectId = rs.getInt(2);
+        final String flowId = rs.getString(3);
+        final String cpuRecommendation = rs.getString(4);
+        final String memoryRecommendation = rs.getString(5);
+        final String diskRecommendation = rs.getString(6);
+
+        final FlowRecommendation flowRecommendation =
+            new FlowRecommendation(id, projectId, flowId, cpuRecommendation, memoryRecommendation,
+                diskRecommendation);
+        flowRecommendations.add(flowRecommendation);
+      } while (rs.next());
+
+      return flowRecommendations;
     }
   }
 
