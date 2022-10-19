@@ -17,6 +17,7 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
+import azkaban.flow.FlowRecommendation;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -63,6 +64,37 @@ public abstract class AbstractProjectCache implements ProjectCache {
     } catch (final ProjectManagerException e) {
       logger.error("Could not load projects flows from store.", e);
       throw new RuntimeException("Could not load projects flows from store.", e);
+    }
+  }
+
+  /**
+   * loadAllFlowRecommendationsForAllProjects  : To load all flow recommendations corresponding to
+   * projects from the database
+   *
+   * @param projects list of Projects to fetch flow recommendations for.
+   */
+  protected void loadAllFlowRecommendations(final List<Project> projects) {
+    try {
+      final Map<Project, List<FlowRecommendation>> projectToFlowRecommendations = this.projectLoader
+          .fetchAllFlowRecommendationsForProjects(projects);
+
+      // Load the flows into the project objects
+      for (final Map.Entry<Project, List<FlowRecommendation>> entry : projectToFlowRecommendations.entrySet()) {
+        final Project project = entry.getKey();
+        synchronized (project) {
+          final List<FlowRecommendation> flowRecommendations = entry.getValue();
+
+          final HashMap<String, FlowRecommendation> flowRecommendationMap = new HashMap<>();
+          for (final FlowRecommendation flowRecommendation : flowRecommendations) {
+            flowRecommendationMap.put(flowRecommendation.getFlowId(), flowRecommendation);
+          }
+
+          project.setFlowRecommendations(flowRecommendationMap);
+        }
+      }
+    } catch (final ProjectManagerException e) {
+      logger.error("Could not load projects flow recommendations from store.", e);
+      throw new RuntimeException("Could not load projects flow recommendations from store.", e);
     }
   }
 
