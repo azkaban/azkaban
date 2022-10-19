@@ -435,7 +435,7 @@ Create an HP flow Ramp Rule
 +======================+=============+=========================================================+
 | ``ruleName``         | ``String``  | User provided name                                      |
 +----------------------+-------------+---------------------------------------------------------+
-| ``ownerships``       | ``String`` | List of ldaps, separated by comma;                       |
+| ``ownerships``       | ``String``  | List of ldaps, separated by comma;                       |
 +----------------------+-------------+---------------------------------------------------------+
 Note: ownerships parameter is a required param for HP Flow Rule.
 
@@ -485,19 +485,19 @@ Add flows into an existing ramp rule
 
 .. code-block:: json
 
-{
-  "ruleName": "azHPFlowRule",
-  "flowIds": [
-    {
-      "projectName": "myAzProject",
-      "flowName": "alwaysOk"
-    },
-    {
-      "projectName": "myAnotherProject",
-      "flowName": "basicFlows"
-    }
-  ]
-}
+   {
+      "ruleName":"azHPFlowRule",
+      "flowIds":[
+         {
+            "projectName":"myAzProject",
+            "flowName":"alwaysOk"
+         },
+         {
+            "projectName":"myAnotherProject",
+            "flowName":"basicFlows"
+         }
+      ]
+   }
 
 **Response:**
 
