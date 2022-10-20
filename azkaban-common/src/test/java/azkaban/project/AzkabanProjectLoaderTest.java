@@ -146,7 +146,7 @@ public class AzkabanProjectLoaderTest {
   }
 
   @Test
-  public void flowRecommendationUnchangedWhenUploadProjectFAT() throws ExecutorManagerException {
+  public void flowResourceRecommendationUnchangedWhenUploadProjectFAT() throws ExecutorManagerException {
     final URL resource = requireNonNull(
         getClass().getClassLoader().getResource("sample_flow_01.zip"));
     final File projectZipFile = new File(resource.getPath());
@@ -166,7 +166,7 @@ public class AzkabanProjectLoaderTest {
   }
 
   @Test
-  public void flowRecommendationChangedWhenUploadProjectFAT() throws ExecutorManagerException {
+  public void flowResourceRecommendationChangedWhenUploadProjectFAT() throws ExecutorManagerException {
     final URL resource = requireNonNull(
         getClass().getClassLoader().getResource("sample_flow_01.zip"));
     final File projectZipFile = new File(resource.getPath());

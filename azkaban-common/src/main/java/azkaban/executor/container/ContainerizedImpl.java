@@ -23,4 +23,8 @@ public interface ContainerizedImpl {
   void createContainer(final int executionId) throws ExecutorManagerException;
   void deleteContainer(final int executionId) throws ExecutorManagerException;
   Set<Integer> getContainersByDuration(final Duration containerDuration) throws ExecutorManagerException;
+  void setVPARampUp(int rampUp);
+  int getVPARampUp();
+  void setVPAEnabled(boolean enabled);
+  boolean getVPAEnabled();
 }
