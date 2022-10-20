@@ -30,6 +30,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
@@ -52,6 +53,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,6 +107,11 @@ public class AzkabanProjectLoaderTest {
         this.archiveUnthinner, this.validatorUtils);
   }
 
+  @After
+  public void cleanUp() {
+    this.project.setFlowResourceRecommendations(new HashMap<>());
+  }
+
   @Test
   public void uploadProjectFAT() throws ExecutorManagerException {
     when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
@@ -124,6 +132,8 @@ public class AzkabanProjectLoaderTest {
         .uploadProject(this.project, projectZipFile, "zip", uploader, null,
             IPv4));
 
+    // Flow resource recommendations are newly created and inserted.
+    Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 1);
     // startupDependencies should be null - because it does not exist!
     verify(this.projectStorageManager)
         .uploadProject(this.project, this.VERSION + 1, projectZipFile,
@@ -133,6 +143,46 @@ public class AzkabanProjectLoaderTest {
 
     // Verify that the archiveUnthinner was never called
     verify(this.archiveUnthinner, never()).validateThinProject(any(), any(), any(), any());
+  }
+
+  @Test
+  public void flowRecommendationUnchangedWhenUploadProjectFAT() throws ExecutorManagerException {
+    final URL resource = requireNonNull(
+        getClass().getClassLoader().getResource("sample_flow_01.zip"));
+    final File projectZipFile = new File(resource.getPath());
+    final User uploader = new User("test_user");
+
+    // same flow as the flow just uploaded
+    this.project.setFlowResourceRecommendations(new HashMap<String, FlowResourceRecommendation>(){{
+      put("shell_end", new FlowResourceRecommendation(1, 1, "shell_end"));
+    }});
+
+    this.project.setVersion(this.VERSION);
+    checkValidationReport(this.azkabanProjectLoader
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv4));
+
+    Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 1);
+  }
+
+  @Test
+  public void flowRecommendationChangedWhenUploadProjectFAT() throws ExecutorManagerException {
+    final URL resource = requireNonNull(
+        getClass().getClassLoader().getResource("sample_flow_01.zip"));
+    final File projectZipFile = new File(resource.getPath());
+    final User uploader = new User("test_user");
+
+    // different flow as the flow just uploaded
+    this.project.setFlowResourceRecommendations(new HashMap<String, FlowResourceRecommendation>(){{
+      put("a", new FlowResourceRecommendation(1, 1, "a"));
+    }});
+
+    this.project.setVersion(this.VERSION);
+    checkValidationReport(this.azkabanProjectLoader
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv4));
+
+    Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 2);
   }
 
   @Test
