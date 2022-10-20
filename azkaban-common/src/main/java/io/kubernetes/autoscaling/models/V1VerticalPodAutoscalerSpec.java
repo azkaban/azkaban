@@ -14,6 +14,7 @@
 package io.kubernetes.autoscaling.models;
 
 import io.kubernetes.client.openapi.models.V1DeploymentSpec;
+import io.kubernetes.client.openapi.models.V1LabelSelector;
 import java.util.Objects;
 import com.google.gson.annotations.SerializedName;
 import io.swagger.annotations.ApiModel;
@@ -34,6 +35,10 @@ public class V1VerticalPodAutoscalerSpec {
   public static final String SERIALIZED_NAME_RESOURCE_POLICY = "resourcePolicy";
   @SerializedName(SERIALIZED_NAME_RESOURCE_POLICY)
   private V1VerticalPodAutoscalerSpecResourcePolicy resourcePolicy;
+
+  public static final String SERIALIZED_NAME_SELECTOR = "selector";
+  @SerializedName("selector")
+  private V1LabelSelector selector;
 
   public static final String SERIALIZED_NAME_TARGET_REF = "targetRef";
   @SerializedName(SERIALIZED_NAME_TARGET_REF)
@@ -95,6 +100,19 @@ public class V1VerticalPodAutoscalerSpec {
 
   public void setResourcePolicy(V1VerticalPodAutoscalerSpecResourcePolicy resourcePolicy) {
     this.resourcePolicy = resourcePolicy;
+  }
+
+  public V1VerticalPodAutoscalerSpec selector(V1LabelSelector selector) {
+    this.selector = selector;
+    return this;
+  }
+
+  public V1LabelSelector getSelector() {
+    return this.selector;
+  }
+
+  public void setSelector(V1LabelSelector selector) {
+    this.selector = selector;
   }
 
   public V1VerticalPodAutoscalerSpec targetRef(V1beta2VerticalPodAutoscalerSpecTargetRef targetRef) {
