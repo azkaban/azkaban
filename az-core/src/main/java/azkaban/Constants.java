@@ -727,6 +727,13 @@ public class Constants {
     public static final String KUBERNETES_SERVICE_CREATION_TIMEOUT_MS = KUBERNETES_SERVICE_PREFIX +
         "creation.timeout.ms";
 
+    // Kubernetes vpa related properties
+    public static final String KUBERNETES_VPA_PREFIX = AZKABAN_KUBERNETES_PREFIX + "vpa.";
+    public static final String KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_S =
+        KUBERNETES_VPA_PREFIX + "max.allowed.no.recommendation.since.creation.s";
+    public static final String KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S =
+        KUBERNETES_VPA_PREFIX + "max.allowed.get.recommendation.timeout.s";
+
     // Kubernetes Watch related properties
     public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";
     public static final String KUBERNETES_WATCH_ENABLED = KUBERNETES_WATCH_PREFIX + "enabled";

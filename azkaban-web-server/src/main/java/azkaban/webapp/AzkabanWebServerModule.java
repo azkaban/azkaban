@@ -33,6 +33,8 @@ import azkaban.executor.OnExecutionEventListener;
 import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedWatch;
 import azkaban.executor.FlowStatusChangeEventListener;
+import azkaban.executor.container.KubernetesVPARecommender;
+import azkaban.executor.container.VPARecommender;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
@@ -169,6 +171,7 @@ public class AzkabanWebServerModule extends AbstractModule {
       case POLL:
         return ExecutionController.class;
       case CONTAINERIZED:
+        bind(VPARecommender.class).to(KubernetesVPARecommender.class);
         bind(ContainerizedImpl.class).to(resolveContainerizedImpl());
         bind(ContainerizedWatch.class).to(KubernetesWatch.class);
         return ContainerizedDispatchManager.class;
