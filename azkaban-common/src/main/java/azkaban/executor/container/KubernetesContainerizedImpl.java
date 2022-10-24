@@ -543,9 +543,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               // the overridden version exists/registered on Azkaban database. Hence, it follows a
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
+              final Set<State> imageVersionState = getImageVersionState(flowParams);
               final VersionInfo versionInfo = this.imageRampupManager.getVersionInfo(imageType,
                   flowParams.get(imageTypeOverrideParam(imageType)),
-                  State.getNewAndActiveStateFilter());
+                  imageVersionState);
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
                   versionInfo.getVersion());
@@ -860,8 +861,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private void setupDevPod(final Map<String, String> envVariables,
       final Map<String, String> flowParam) {
-    if (flowParam != null && !flowParam.isEmpty() && flowParam
-        .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
+    if (isDevPod(flowParam)) {
       envVariables.put(ContainerizedDispatchManagerProperties.ENV_ENABLE_DEV_POD,
           flowParam.get(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD));
     }
@@ -1025,8 +1025,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private static void logPodSpecYaml(final int executionId, final Object podObject,
       final Map<String, String> flowParam, String message) {
     final String podSpecYaml = Yaml.dump(podObject).trim();
-    if (flowParam != null && !flowParam.isEmpty() && flowParam
-        .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
+    if (isDevPod(flowParam)) {
       logger.info(message, executionId, podSpecYaml);
     } else {
       logger.debug(message, executionId, podSpecYaml);
@@ -1276,5 +1275,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private String getPodName(final int executionId) {
     return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
+  }
+
+  private final Set<State> getImageVersionState(Map<String, String> flowParams) {
+    if (isDevPod(flowParams)) {
+      return new HashSet<State>();
+    } else {
+      return State.getAllStates();
+    }
+  }
+
+  private static final boolean isDevPod(Map<String, String> flowParam) {
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
+        .containsKey(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD)) {
+      return true;
+    }
+    return false;
   }
 }
