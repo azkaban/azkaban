@@ -30,7 +30,9 @@ import azkaban.db.DatabaseTransOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.project.JdbcProjectHandlerSet.FlowFileResultHandler;
+import azkaban.project.JdbcProjectHandlerSet.ProjectFlowResourceRecommendationsResultHandler;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -799,6 +801,84 @@ public class JdbcProjectImpl implements ProjectLoader {
       } catch (final IOException e) {
         throw new ProjectManagerException("Error uploading project property file", e);
       }
+    }
+  }
+
+  @Override
+  public synchronized FlowResourceRecommendation createFlowResourceRecommendation(final int projectId, final String flowId)
+      throws ProjectManagerException {
+    logger.info("Creating flow recommendation " + flowId);
+    final String INSERT_FLOW_RESOURCE_RECOMMENDATION =
+        "INSERT INTO project_flow_resource_recommendations (project_id, flow_id, modified_time) values (?,?,?)";
+
+    final SQLTransaction<Integer> insertFlowResourceRecommendation = transOperator ->
+        transOperator.update(INSERT_FLOW_RESOURCE_RECOMMENDATION, projectId, flowId, System.currentTimeMillis());;
+
+    // Insert flow recommendation
+    try {
+      final int numRowsInserted = this.dbOperator.transaction(insertFlowResourceRecommendation);
+      if (numRowsInserted == 0) {
+        throw new ProjectManagerException("No flow resource recommendations have been inserted.");
+      }
+    } catch (final SQLException ex) {
+      logger.error(INSERT_FLOW_RESOURCE_RECOMMENDATION + " failed.", ex);
+      throw new ProjectManagerException("Insert flow recommendation " + flowId + " for existing "
+          + "project failed. ", ex);
+    }
+    return fetchFlowResourceRecommendation(projectId, flowId);
+  }
+
+  @Override
+  public void updateFlowResourceRecommendation(final FlowResourceRecommendation flowResourceRecommendation)
+      throws ProjectManagerException {
+    logger.info("Updating flow recommendation " + flowResourceRecommendation.getId());
+    final String UPDATE_FLOW =
+        "UPDATE project_flow_resource_recommendations SET cpu_recommendation=?,memory_recommendation=?,"
+            + "disk_recommendation=?,modified_time=? WHERE id=?";
+    try {
+      this.dbOperator
+          .update(UPDATE_FLOW, flowResourceRecommendation.getCpuRecommendation(),
+              flowResourceRecommendation.getMemoryRecommendation(),
+              flowResourceRecommendation.getDiskRecommendation(), System.currentTimeMillis(),
+              flowResourceRecommendation.getId());
+    } catch (final SQLException e) {
+      logger.error("Error updating flow recommendation", e);
+      throw new ProjectManagerException("Error updating flow recommendation " + flowResourceRecommendation.getId(), e);
+    }
+  }
+
+  @Override
+  public FlowResourceRecommendation fetchFlowResourceRecommendation(final int projectId, final String flowId)
+      throws ProjectManagerException {
+    logger.info("Fetching flow recommendation. ProjectId: " + projectId + ", FlowId: " + flowId);
+    try {
+      return this.dbOperator
+          .query(ProjectFlowResourceRecommendationsResultHandler.SELECT_PROJECT_FLOW_RESOURCE_RECOMMENDATION,
+              new ProjectFlowResourceRecommendationsResultHandler(), projectId, flowId).get(0);
+    } catch (final SQLException | IndexOutOfBoundsException e) {
+      logger.error("Error fetching flow recommendation", e);
+      throw new ProjectManagerException("Error fetching flow recommendation. ProjectId: " + projectId + ", FlowId: " + flowId, e);
+    }
+  }
+
+  @Override
+  public Map<Project, List<FlowResourceRecommendation>> fetchAllFlowResourceRecommendationsForProjects(final List<Project> projects)
+      throws ProjectManagerException {
+    final SQLTransaction<Map<Project, List<FlowResourceRecommendation>>> transaction = transOperator -> {
+      final Map<Project, List<FlowResourceRecommendation>> projectToFlows = new HashMap();
+      for (final Project p : projects) {
+        projectToFlows.put(p, transOperator
+            .query(ProjectFlowResourceRecommendationsResultHandler.SELECT_ALL_PROJECT_FLOW_RESOURCE_RECOMMENDATIONS,
+                new ProjectFlowResourceRecommendationsResultHandler(), p.getId()));
+      }
+      return projectToFlows;
+    };
+
+    try {
+      return this.dbOperator.transaction(transaction);
+    } catch (final SQLException e) {
+      throw new ProjectManagerException(
+          "Error fetching flow resource recommendations for " + projects.size() + " project(s).", e);
     }
   }
 
