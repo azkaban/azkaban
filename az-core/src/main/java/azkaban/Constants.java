@@ -729,10 +729,10 @@ public class Constants {
 
     // Kubernetes vpa related properties
     public static final String KUBERNETES_VPA_PREFIX = AZKABAN_KUBERNETES_PREFIX + "vpa.";
-    public static final String KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_S =
-        KUBERNETES_VPA_PREFIX + "max.allowed.no.recommendation.since.creation.s";
-    public static final String KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S =
-        KUBERNETES_VPA_PREFIX + "max.allowed.get.recommendation.timeout.s";
+    public static final String KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC =
+        KUBERNETES_VPA_PREFIX + "max.allowed.no.recommendation.since.creation.sec";
+    public static final String KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC =
+        KUBERNETES_VPA_PREFIX + "max.allowed.get.recommendation.timeout.sec";
 
     // Kubernetes Watch related properties
     public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";

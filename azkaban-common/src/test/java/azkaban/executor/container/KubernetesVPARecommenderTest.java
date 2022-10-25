@@ -1,6 +1,6 @@
 package azkaban.executor.container;
 
-import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S;
+import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,7 +47,7 @@ public class KubernetesVPARecommenderTest {
   public void setUp() throws Exception {
     final ClassLoader currentClassLoader = getClass().getClassLoader();
     // Set higher timeout in unit tests in case of flaky tests
-    this.props.put(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S, 60 * 60);
+    this.props.put(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC, 60 * 60);
     this.apiClient = mock(ApiClient.class);
     this.kubernetesVPARecommender = new KubernetesVPARecommender(this.props, this.apiClient);
     this.vpaWithoutRecommendationRecent = Yaml.loadAs(new File(currentClassLoader.getResource(
@@ -144,7 +144,7 @@ public class KubernetesVPARecommenderTest {
   @Test(expected = ExecutorManagerException.class)
   public void throwTimeoutExceptionIfProcessTakesTooLong() throws Exception {
     // Trigger timeout sooner
-    this.props.put(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S, 30);
+    this.props.put(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC, 30);
     this.kubernetesVPARecommender = new KubernetesVPARecommender(this.props, this.apiClient);
 
     when(this.apiClient.execute(any(), any())).thenAnswer(i -> {

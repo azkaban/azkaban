@@ -1,7 +1,7 @@
 package azkaban.executor.container;
 
-import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S;
-import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_S;
+import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC;
+import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC;
 
 import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.Props;
@@ -46,9 +46,9 @@ public class KubernetesVPARecommender implements VPARecommender {
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesVPARecommender.class);
 
-  private static final int DEFAULT_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_S =
+  private static final int DEFAULT_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC =
       20 * 60;
-  private static final int DEFAULT_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S = 120;
+  private static final int DEFAULT_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC = 120;
 
   private static final String VPA_API_VERSION = "autoscaling.k8s.io/v1";
   private static final String VPA_KIND = "VerticalPodAutoscaler";
@@ -56,19 +56,19 @@ public class KubernetesVPARecommender implements VPARecommender {
   private static final String VPA_CPU_KEY = "cpu";
   private static final String VPA_MEMORY_KEY = "memory";
 
-  private final int maxAllowedNoRecommendationSinceCreationS;
+  private final int maxAllowedNoRecommendationSinceCreationSec;
   // Complete get recommendation function within this timeout.
-  private final int maxAllowedGetRecommendationTimeoutS;
+  private final int maxAllowedGetRecommendationTimeoutSec;
   private final KubernetesVPARecommenderV1Api kubernetesVPARecommenderV1Api;
 
   @Inject
   public KubernetesVPARecommender(final Props azkProps, final ApiClient client) {
-    this.maxAllowedNoRecommendationSinceCreationS =
-        azkProps.getInt(KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_S,
-            DEFAULT_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_S);
-    this.maxAllowedGetRecommendationTimeoutS =
-        azkProps.getInt(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S,
-            DEFAULT_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_S);
+    this.maxAllowedNoRecommendationSinceCreationSec =
+        azkProps.getInt(KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC,
+            DEFAULT_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC);
+    this.maxAllowedGetRecommendationTimeoutSec =
+        azkProps.getInt(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC,
+            DEFAULT_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC);
     this.kubernetesVPARecommenderV1Api = new KubernetesVPARecommenderV1Api(client);
   }
 
@@ -130,14 +130,14 @@ public class KubernetesVPARecommender implements VPARecommender {
           throw e;
         }
 
-        try {
-          // If VPA object is newly created: no recommendation yet and should return null.
-          if (vpaObject.getMetadata() == null || vpaObject.getMetadata().getCreationTimestamp() == null ||
-              Duration.between(vpaObject.getMetadata().getCreationTimestamp(), OffsetDateTime.now())
-                  .compareTo(Duration.ofSeconds(KubernetesVPARecommender.this.maxAllowedNoRecommendationSinceCreationS)) < 0) {
-            return null;
-          }
+        // If VPA object is newly created: no recommendation yet and should return null.
+        if (vpaObject.getMetadata() == null || vpaObject.getMetadata().getCreationTimestamp() == null ||
+            Duration.between(vpaObject.getMetadata().getCreationTimestamp(), OffsetDateTime.now())
+                .compareTo(Duration.ofSeconds(KubernetesVPARecommender.this.maxAllowedNoRecommendationSinceCreationSec)) < 0) {
+          return null;
+        }
 
+        try {
           final Map<String, Object> recommendation =
               vpaObject.getStatus().getRecommendation().getContainerRecommendations()
                   .stream()
@@ -181,7 +181,7 @@ public class KubernetesVPARecommender implements VPARecommender {
         }
       });
 
-      return handler.get(maxAllowedGetRecommendationTimeoutS, TimeUnit.SECONDS);
+      return handler.get(maxAllowedGetRecommendationTimeoutSec, TimeUnit.SECONDS);
     } catch (Exception e) {
       throw new ExecutorManagerException(e);
     } finally {
