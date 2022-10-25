@@ -19,13 +19,14 @@ package azkaban.project;
 import azkaban.ServiceProvider;
 import azkaban.event.EventHandler;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowRecommendation;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import com.google.common.collect.ImmutableMap;
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +56,8 @@ public class Project extends EventHandler {
   private String lastModifiedUser;
   private String source;
   private Map<String, Flow> flows = new HashMap<>();
-  // flowRecommendations map shouldn't be ImmutableMap.
-  private HashMap<String, FlowRecommendation> flowRecommendations = new HashMap<>();
+  // flowResourceRecommendations map shouldn't be ImmutableMap.
+  private HashMap<String, FlowResourceRecommendation> flowResourceRecommendations = new HashMap<>();
   private Map<String, Object> metadata = new HashMap<>();
   private static final Logger logger = LoggerFactory.getLogger(Project.class);
   // Added event listener for sending project events
@@ -155,20 +156,16 @@ public class Project extends EventHandler {
     this.flows = ImmutableMap.copyOf(flows);
   }
 
-  public FlowRecommendation getFlowRecommendation(final String flowId) {
-    if (this.flowRecommendations == null) {
-      return null;
-    }
-
-    return this.flowRecommendations.get(flowId);
+  public FlowResourceRecommendation getFlowResourceRecommendation(final String flowId) {
+    return this.flowResourceRecommendations.get(flowId);
   }
 
-  public Map<String, FlowRecommendation> getFlowRecommendationMap() {
-    return this.flowRecommendations;
+  public Map<String, FlowResourceRecommendation> getFlowResourceRecommendationMap() {
+    return this.flowResourceRecommendations;
   }
 
-  public void setFlowRecommendations(final HashMap<String, FlowRecommendation> flowRecommendations) {
-    this.flowRecommendations = flowRecommendations;
+  public void setFlowResourceRecommendations(@Nonnull final HashMap<String, FlowResourceRecommendation> flowResourceRecommendations) {
+    this.flowResourceRecommendations = flowResourceRecommendations;
   }
 
   public Permission getCollectivePermission(final User user) {

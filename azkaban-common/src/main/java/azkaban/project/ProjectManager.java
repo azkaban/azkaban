@@ -26,7 +26,7 @@ import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowRecommendation;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.scheduler.Schedule;
@@ -537,14 +537,14 @@ public class ProjectManager {
     this.projectLoader.updateFlow(project, flow.getVersion(), flow);
   }
 
-  public FlowRecommendation createFlowRecommendation(final int projectId, final String flowId) throws ProjectManagerException {
+  public FlowResourceRecommendation createFlowResourceRecommendation(final int projectId, final String flowId) throws ProjectManagerException {
     return this.projectLoader
-        .createFlowRecommendation(projectId, flowId);
+        .createFlowResourceRecommendation(projectId, flowId);
   }
 
-  public void updateFlowRecommendation(final FlowRecommendation flowRecommendation)
+  public void updateFlowResourceRecommendation(final FlowResourceRecommendation flowResourceRecommendation)
       throws ProjectManagerException {
-    this.projectLoader.updateFlowRecommendation(flowRecommendation);
+    this.projectLoader.updateFlowResourceRecommendation(flowResourceRecommendation);
   }
 
   public void postProjectEvent(final Project project, final EventType type, final String user,

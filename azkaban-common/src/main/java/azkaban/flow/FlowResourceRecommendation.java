@@ -1,6 +1,6 @@
 package azkaban.flow;
 
-public class FlowRecommendation {
+public class FlowResourceRecommendation {
   private int id;
   private int projectId;
   private String flowId;
@@ -8,7 +8,7 @@ public class FlowRecommendation {
   private String memoryRecommendation;
   private String diskRecommendation;
 
-  public FlowRecommendation(
+  public FlowResourceRecommendation(
       final int id,
       final int projectId,
       final String flowId
@@ -16,7 +16,7 @@ public class FlowRecommendation {
     this(id, projectId, flowId, null, null, null);
   }
 
-  public FlowRecommendation(
+  public FlowResourceRecommendation(
       final int id,
       final int projectId,
       final String flowId,

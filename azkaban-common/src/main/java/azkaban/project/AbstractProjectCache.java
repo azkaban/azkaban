@@ -17,7 +17,7 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
-import azkaban.flow.FlowRecommendation;
+import azkaban.flow.FlowResourceRecommendation;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,33 +68,33 @@ public abstract class AbstractProjectCache implements ProjectCache {
   }
 
   /**
-   * loadAllFlowRecommendationsForAllProjects  : To load all flow recommendations corresponding to
+   * loadAllFlowResourceRecommendationsForAllProjects  : To load all flow resource recommendations corresponding to
    * projects from the database
    *
-   * @param projects list of Projects to fetch flow recommendations for.
+   * @param projects list of Projects to fetch flow resource recommendations for.
    */
-  protected void loadAllFlowRecommendations(final List<Project> projects) {
+  protected void loadAllFlowResourceRecommendations(final List<Project> projects) {
     try {
-      final Map<Project, List<FlowRecommendation>> projectToFlowRecommendations = this.projectLoader
-          .fetchAllFlowRecommendationsForProjects(projects);
+      final Map<Project, List<FlowResourceRecommendation>> projectToFlowResourceRecommendations = this.projectLoader
+          .fetchAllFlowResourceRecommendationsForProjects(projects);
 
       // Load the flows into the project objects
-      for (final Map.Entry<Project, List<FlowRecommendation>> entry : projectToFlowRecommendations.entrySet()) {
+      for (final Map.Entry<Project, List<FlowResourceRecommendation>> entry : projectToFlowResourceRecommendations.entrySet()) {
         final Project project = entry.getKey();
         synchronized (project) {
-          final List<FlowRecommendation> flowRecommendations = entry.getValue();
+          final List<FlowResourceRecommendation> flowResourceRecommendations = entry.getValue();
 
-          final HashMap<String, FlowRecommendation> flowRecommendationMap = new HashMap<>();
-          for (final FlowRecommendation flowRecommendation : flowRecommendations) {
-            flowRecommendationMap.put(flowRecommendation.getFlowId(), flowRecommendation);
+          final HashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap = new HashMap<>();
+          for (final FlowResourceRecommendation flowResourceRecommendation : flowResourceRecommendations) {
+            flowResourceRecommendationMap.put(flowResourceRecommendation.getFlowId(), flowResourceRecommendation);
           }
 
-          project.setFlowRecommendations(flowRecommendationMap);
+          project.setFlowResourceRecommendations(flowResourceRecommendationMap);
         }
       }
     } catch (final ProjectManagerException e) {
-      logger.error("Could not load projects flow recommendations from store.", e);
-      throw new RuntimeException("Could not load projects flow recommendations from store.", e);
+      logger.error("Could not load projects flow resource recommendations from store.", e);
+      throw new RuntimeException("Could not load projects flow resource recommendations from store.", e);
     }
   }
 

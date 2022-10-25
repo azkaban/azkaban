@@ -17,7 +17,7 @@ package azkaban.project;
 
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowRecommendation;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.spi.Dependency;
 import azkaban.user.Permission;
 import azkaban.utils.GZIPUtils;
@@ -196,24 +196,24 @@ class JdbcProjectHandlerSet {
     }
   }
 
-  public static class ProjectFlowRecommendationsResultHandler implements ResultSetHandler<List<FlowRecommendation>> {
+  public static class ProjectFlowResourceRecommendationsResultHandler implements ResultSetHandler<List<FlowResourceRecommendation>> {
 
-    public static String SELECT_PROJECT_FLOW_RECOMMENDATION =
+    public static String SELECT_PROJECT_FLOW_RESOURCE_RECOMMENDATION =
         "SELECT id, project_id, flow_id, cpu_recommendation, memory_recommendation, "
-            + "disk_recommendation FROM project_flow_recommendations WHERE project_id=? AND "
+            + "disk_recommendation FROM project_flow_resource_recommendations WHERE project_id=? AND "
             + "flow_id=?";
 
-    public static String SELECT_ALL_PROJECT_FLOW_RECOMMENDATIONS =
+    public static String SELECT_ALL_PROJECT_FLOW_RESOURCE_RECOMMENDATIONS =
         "SELECT id, project_id, flow_id, cpu_recommendation, memory_recommendation, "
-            + "disk_recommendation FROM project_flow_recommendations WHERE project_id=?";
+            + "disk_recommendation FROM project_flow_resource_recommendations WHERE project_id=?";
 
     @Override
-    public List<FlowRecommendation> handle(final ResultSet rs) throws SQLException {
+    public List<FlowResourceRecommendation> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
         return Collections.emptyList();
       }
 
-      final ArrayList<FlowRecommendation> flowRecommendations = new ArrayList<>();
+      final ArrayList<FlowResourceRecommendation> flowResourceRecommendations = new ArrayList<>();
       do {
         final int id = rs.getInt(1);
         final int projectId = rs.getInt(2);
@@ -222,13 +222,13 @@ class JdbcProjectHandlerSet {
         final String memoryRecommendation = rs.getString(5);
         final String diskRecommendation = rs.getString(6);
 
-        final FlowRecommendation flowRecommendation =
-            new FlowRecommendation(id, projectId, flowId, cpuRecommendation, memoryRecommendation,
+        final FlowResourceRecommendation flowResourceRecommendation =
+            new FlowResourceRecommendation(id, projectId, flowId, cpuRecommendation, memoryRecommendation,
                 diskRecommendation);
-        flowRecommendations.add(flowRecommendation);
+        flowResourceRecommendations.add(flowResourceRecommendation);
       } while (rs.next());
 
-      return flowRecommendations;
+      return flowResourceRecommendations;
     }
   }
 

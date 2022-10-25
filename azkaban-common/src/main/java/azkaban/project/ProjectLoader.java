@@ -17,7 +17,7 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
-import azkaban.flow.FlowRecommendation;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -165,32 +165,40 @@ public interface ProjectLoader {
   /**
    * Should create an empty flow recommendation with the given projectId and flowId and adds it to
    * the data store. It will auto assign a unique id for this flow recommendation if successful.
+   *
+   * @param projectId project ID
+   * @param flowId   flow id
+   * @return FlowResourceRecommendation flow resource recommendation
    */
-  FlowRecommendation createFlowRecommendation(int projectId, String flowId)
+  FlowResourceRecommendation createFlowResourceRecommendation(int projectId, String flowId)
       throws ProjectManagerException;
 
   /**
    * Update one particular flow recommendation
+   *
+   * @param flowResourceRecommendation flow resource recommendation
    */
-  void updateFlowRecommendation(FlowRecommendation flowRecommendation)
+  void updateFlowResourceRecommendation(FlowResourceRecommendation flowResourceRecommendation)
       throws ProjectManagerException;
 
   /**
    * Fetches one particular flow recommendation.
+   *
+   * @param projectId project ID
+   * @param flowId   flow id
+   * @return FlowResourceRecommendation flow resource recommendation
    */
-  FlowRecommendation fetchFlowRecommendation(int projectId, String flowId)
+  FlowResourceRecommendation fetchFlowResourceRecommendation(int projectId, String flowId)
       throws ProjectManagerException;
 
   /**
-   * Fetches all flow recommendations for a given project
+   * Fetches all flow resource recommendations for all projects.
+   *
+   * @param projects List of projects
+   * @return Map<Project, List<FlowResourceRecommendation>> a map of project to flow resource
+   * recommendations
    */
-  List<FlowRecommendation> fetchAllProjectFlowRecommendations(Project project)
-      throws ProjectManagerException;
-
-  /**
-   * Fetches all flow recommendations for all projects.
-   */
-  Map<Project, List<FlowRecommendation>> fetchAllFlowRecommendationsForProjects(List<Project> projects)
+  Map<Project, List<FlowResourceRecommendation>> fetchAllFlowResourceRecommendationsForProjects(List<Project> projects)
       throws ProjectManagerException;
 
   /**
