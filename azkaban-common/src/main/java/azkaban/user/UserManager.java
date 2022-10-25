@@ -44,6 +44,14 @@ public interface UserManager {
    * Returns true if the group is valid. This is used when adding permissions for groups.
    */
   public boolean validateGroup(String group);
+  /**
+   * Check whether a given group is a valid ldap group account.
+   *
+   * @param group Ldap group account name
+   * @return True, if given group is a valid ldap group.
+   *         False, otherwise
+   * */
+  public boolean validateLdapGroup(String group);
 
   /**
    * Returns the user role. This may return null.
