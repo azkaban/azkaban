@@ -201,8 +201,14 @@ public class ImageRampupManagerImpl implements ImageRampupManager {
       return new VersionInfo(optionalImageVersion.get().getVersion(),
           optionalImageVersion.get().getPath(), optionalImageVersion.get().getState());
     } else {
+      if(stateFilter.isEmpty() || stateFilter == null) {
+        throw new ImageMgmtException(String.format("Unable to get VersionInfo for image type: %s, "
+            + "image version: %s", imageType, imageVersion));
+      }
+      String states = stateFilter.stream().map(i -> i.toString()).collect(Collectors.joining(","));
       throw new ImageMgmtException(String.format("Unable to get VersionInfo for image type: %s, "
-          + "image version: %s with NEW or ACTIVE state.", imageType, imageVersion));
+          + "image version: %s that is in one of the following states: %s.", imageType,
+          imageVersion, states));
     }
   }
 

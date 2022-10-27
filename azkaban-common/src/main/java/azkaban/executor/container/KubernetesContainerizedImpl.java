@@ -543,10 +543,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               // the overridden version exists/registered on Azkaban database. Hence, it follows a
               // fail fast mechanism to throw exception if the version does not exist for the
               // given image type.
-              final Set<State> imageVersionState = getImageVersionState(flowParams);
+              final Set<State> allowedImageStates = getImageVersionState(flowParams);
               final VersionInfo versionInfo = this.imageRampupManager.getVersionInfo(imageType,
                   flowParams.get(imageTypeOverrideParam(imageType)),
-                  imageVersionState);
+                  allowedImageStates);
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
                   versionInfo.getVersion());
@@ -612,9 +612,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
               logger.info("User overridden image type {} of version {} is used", imageType,
                   versionInfo.getVersion());
             } else {
+              final Set<State> allowedImageStates = getImageVersionState(flowParams);
               versionInfo = this.imageRampupManager.getVersionInfo(imageType,
                   flowParams.get(imageTypeVersionOverrideParam),
-                  State.getNewAndActiveStateFilter());
+                  allowedImageStates);
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
                   versionInfo.getVersion());
@@ -1279,9 +1280,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   private final Set<State> getImageVersionState(Map<String, String> flowParams) {
     if (isDevPod(flowParams)) {
-      return new HashSet<State>();
-    } else {
       return State.getAllStates();
+    } else {
+      return State.getNewAndActiveStateFilter();
     }
   }
 

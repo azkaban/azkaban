@@ -198,7 +198,11 @@ public class ImageVersion extends BaseModel {
       return newActiveAndTestState;
     }
 
-
+    /**
+     * A Set of All States
+     *
+     * @return Set<State>
+     */
     public static Set<State> getAllStates() {
       return Arrays.stream(State.values()).collect(Collectors.toSet());
     }
