@@ -37,6 +37,9 @@ public class YarnUtils {
   //Yarn resource configuration directory for the cluster where the job is scheduled by the cluster router
   public static final String YARN_CONF_DIRECTORY_PROPERTY = "env.YARN_CONF_DIR";
   public static final String YARN_CONF_FILENAME = "yarn-site.xml";
+  public static final String YARN_APP_TIMEOUT_PROPERTY_NAME = "yarn.client.application-client"
+      + "-protocol.poll-timeout-ms";
+  public static final Integer YARN_APP_TIMEOUT_IN_MILLIONSECONDS = 5000;
 
   public static final EnumSet<YarnApplicationState> YARN_APPLICATION_ALIVE_STATES = EnumSet.of(
       YarnApplicationState.NEW,
@@ -127,6 +130,8 @@ public class YarnUtils {
       yarnConf.addResource(
           new Path(props.get(YARN_CONF_DIRECTORY_PROPERTY) + "/" + YARN_CONF_FILENAME));
     }
+
+    yarnConf.setLong(YARN_APP_TIMEOUT_PROPERTY_NAME, YARN_APP_TIMEOUT_IN_MILLIONSECONDS);
     final YarnClient yarnClient = YarnClient.createYarnClient();
     yarnClient.init(yarnConf);
     yarnClient.start();
