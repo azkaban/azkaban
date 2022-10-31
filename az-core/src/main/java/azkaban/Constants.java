@@ -683,7 +683,7 @@ public class Constants {
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
-        KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "name";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
