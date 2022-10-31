@@ -1,0 +1,25 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  creationTimestamp: "2022-10-13T00:38:19Z"
+  generation: 234
+  name: fc-vpa-azkaban-123
+  namespace: default
+  resourceVersion: "1234554321"
+  selfLink: /apis/autoscaling.k8s.io/v1/namespaces/default/verticalpodautoscalers/fc-vpa-azkaban-123
+  uid: 12345678-1234-1234-1234-123456654321
+spec:
+  resourcePolicy:
+    containerPolicies:
+      - containerName: az-platform-image
+        minAllowed:
+          cpu: "500m"
+          memory: 4Gi
+        maxAllowed:
+          cpu: "8"
+          memory: 64Gi
+  selector:
+    matchLabels:
+      flow-vpa: fc-vpa-azkaban-123
+  updatePolicy:
+    updateMode: "Off"

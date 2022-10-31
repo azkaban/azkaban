@@ -32,5 +32,5 @@ env:
     - GRADLE_OPTS="-Xms128m"
 
 after_success:
-  - ./gradlew coveralls --no-daemon
+  - travis_wait 30 ./gradlew coveralls --no-daemon
   - bash <(curl -s https://codecov.io/bash)
