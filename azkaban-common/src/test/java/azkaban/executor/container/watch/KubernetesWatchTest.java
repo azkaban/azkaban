@@ -273,7 +273,7 @@ public class KubernetesWatchTest {
     AzPodStatusDrivingListener statusDriver = statusDriverWithListener(loggingListener);
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
@@ -304,12 +304,12 @@ public class KubernetesWatchTest {
     // Run all the events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
@@ -343,7 +343,7 @@ public class KubernetesWatchTest {
     // Run events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
@@ -385,7 +385,7 @@ public class KubernetesWatchTest {
     // Run events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously DISPATCHING flow has been finalized to a failure state.
@@ -428,7 +428,7 @@ public class KubernetesWatchTest {
     // Run events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously DISPATCHING flow has been finalized to a failure state.
@@ -462,7 +462,7 @@ public class KubernetesWatchTest {
     // Run all the events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
@@ -504,7 +504,7 @@ public class KubernetesWatchTest {
     // Process events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
