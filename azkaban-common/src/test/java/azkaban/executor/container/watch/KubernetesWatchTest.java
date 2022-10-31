@@ -17,6 +17,8 @@ package azkaban.executor.container.watch;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,8 +42,12 @@ import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.KubernetesWatch.PodWatchParams;
+import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -61,6 +67,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +80,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,10 +118,13 @@ public class KubernetesWatchTest {
   private static int EXECUTION_ID_WITH_SUCCEESS = 280;
   private static int EXECUTION_ID_WITH_INIT_FAILURE = 740;
   private static int EXECUTION_ID_WITH_CREATE_CONTAINER_ERROR = 420;
+  private static int EXECUTION_ID_WITH_OOM_KILLED = 789;
   private static int EXECUTION_ID_WITH_INVALID_TRANSITIONS = 999;
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
   private static final String DEFAULT_FLOW_NAME = "exec1";
+  private static final String DEFAULT_FLOW_MEMORY_RECOMMENDATION = "6.25Gi";
+  private static final String EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION = "13421772800"; // 12.5Gi
 
   private static final ImmutableList<AzPodStatus> TRANSITION_SEQUENCE_WITH_SUCCESS = ImmutableList.of(
       AzPodStatus.AZ_POD_REQUESTED,
@@ -127,6 +138,9 @@ public class KubernetesWatchTest {
   private ContainerizationMetrics containerizationMetrics = new DummyContainerizationMetricsImpl();
   private OnContainerizedExecutionEventListener onExecutionEventListener = mock(
       OnContainerizedExecutionEventListener.class);
+  private Flow flow = new Flow(DEFAULT_FLOW_NAME);
+  private Project project = mock(Project.class);
+  private ProjectManager projectManager = mock(ProjectManager.class);
   private Map<String, String> flowParam = ImmutableMap.of(FlowParameters
       .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true");
   private EventListener eventListener = new DummyEventListener();
@@ -135,6 +149,12 @@ public class KubernetesWatchTest {
   public void setUp() throws Exception {
     this.defaultApiClient = Config.defaultClient();
     ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+
+    final FlowResourceRecommendation flowResourceRecommendation = new FlowResourceRecommendation(1, project.getId(),
+        DEFAULT_FLOW_NAME, "1", DEFAULT_FLOW_MEMORY_RECOMMENDATION, "20Gi");
+    when(project.getFlowResourceRecommendation(any())).thenReturn(flowResourceRecommendation);
+    when(project.getFlow(any())).thenReturn(flow);
+    when(projectManager.getProject(anyInt())).thenReturn(project);
   }
 
   private KubernetesWatch kubernetesWatchWithMockListener() {
@@ -183,7 +203,7 @@ public class KubernetesWatchTest {
   }
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
-    return new FlowStatusManagerListener(azkProps, null, mockedContainerizedImpl(),
+    return new FlowStatusManagerListener(azkProps, projectManager, mockedContainerizedImpl(),
         mockedExecutorLoader(), mock(AlerterHolder.class), containerizationMetrics, eventListener);
   }
 
@@ -253,7 +273,7 @@ public class KubernetesWatchTest {
     AzPodStatusDrivingListener statusDriver = statusDriverWithListener(loggingListener);
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
@@ -284,18 +304,21 @@ public class KubernetesWatchTest {
     // Run all the events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
     verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
-    assertThat(flow1.getStatus()).isEqualTo(Status.EXECUTION_STOPPED);
+    assertFlowExecutionStopped(flow1);
 
     // Verify the Pod deletion API is invoked.
     verify(updatingListener.getContainerizedImpl()).deleteContainer(EXECUTION_ID_WITH_SUCCEESS);
 
     // Sanity check for asserting the sequence in which events were received.
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
+
+    // Verify that flow resource recommendation is not doubled
+    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
   }
 
   @Test
@@ -320,7 +343,7 @@ public class KubernetesWatchTest {
     // Run events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously RUNNING flow has been finalized to a failure state.
@@ -332,6 +355,9 @@ public class KubernetesWatchTest {
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+
+    // Verify that flow resource recommendation is not doubled
+    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
   }
 
   @Test
@@ -359,7 +385,7 @@ public class KubernetesWatchTest {
     // Run events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously DISPATCHING flow has been finalized to a failure state.
@@ -372,6 +398,53 @@ public class KubernetesWatchTest {
 
     // Verify that the flow is restarted.
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+
+    // Verify that flow resource recommendation is not doubled
+    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
+  }
+
+  @Test
+  public void testFlowManagerListenerOOMKilled() throws Exception {
+    // Setup a FlowUpdatingListener
+    Props azkProps = new Props();
+    FlowStatusManagerListener updatingListener = flowStatusUpdatingListener(azkProps);
+    // Verify EXECUTION_STOPPED flow life cycle event is emitted
+    assertExecutionStoppedFlowEvent(updatingListener);
+    AzPodStatusDrivingListener statusDriver = new AzPodStatusDrivingListener(azkProps);
+    statusDriver.registerAzPodStatusListener(updatingListener);
+
+    // Mocked flow in RUNNING state. OOMKilled event will be processed for this
+    // execution. The extracted AzPodStatus will be AZ_POD_APP_FAILURE.
+    ExecutableFlow flow1 = createExecutableFlow(EXECUTION_ID_WITH_OOM_KILLED,
+        Status.RUNNING);
+    // set flow parameter to allow restart from EXECUTION_STOPPED
+    final ExecutionOptions options = flow1.getExecutionOptions();
+    options.addAllFlowParameters(flowParam);
+    flow1.setExecutionOptions(options);
+    when(updatingListener.getExecutorLoader()
+        .fetchExecutableFlow(EXECUTION_ID_WITH_OOM_KILLED))
+        .thenReturn(flow1);
+
+    // Run events through the registered listeners.
+    Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
+    PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
+        DEFAULT_MAX_INIT_COUNT);
+    kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
+
+    // Verify that the previously DISPATCHING flow has been finalized to a failure state.
+    verify(updatingListener.getExecutorLoader()).updateExecutableFlow(flow1);
+    assertFlowExecutionStopped(flow1);
+
+    // Verify the Pod deletion API is invoked.
+    verify(updatingListener.getContainerizedImpl())
+        .deleteContainer(EXECUTION_ID_WITH_OOM_KILLED);
+
+    // Verify that the flow is restarted.
+    verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
+
+    // Verify that flow resource recommendation is doubled
+    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION);
+    verify(projectManager, Mockito.times(1)).updateFlowResourceRecommendation(any());
   }
 
   // Validates that the callbacks are processed in ContainerStatusMetricsHandlerListener
@@ -389,7 +462,7 @@ public class KubernetesWatchTest {
     // Run all the events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify pod statuses are handled by ContainerStatusMetricsHandlerListener to emit status
@@ -431,7 +504,7 @@ public class KubernetesWatchTest {
     // Process events through the registered listeners.
     Watch<V1Pod> fileBackedWatch = fileBackedWatch(Config.defaultClient());
     PreInitializedWatch kubernetesWatch = defaultPreInitializedWatch(statusDriver, fileBackedWatch,
-        1);
+        DEFAULT_MAX_INIT_COUNT);
     kubernetesWatch.launchPodWatch().join(DEFAULT_WATCH_COMPLETION_TIMEOUT_MILLIS);
 
     // Verify that the previously RUNNING flow has been finalized to a terminal state, and sub
@@ -450,8 +523,10 @@ public class KubernetesWatchTest {
   private void assertExecutionStoppedFlowEvent(final FlowStatusManagerListener updatingListener) {
     updatingListener.addListener((event) -> {
       Event flowEvent = (Event) event;
-      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
-      Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
+      if (flowEvent.getType().isFlowEventType()) {
+        Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+        Assert.assertEquals(Status.EXECUTION_STOPPED, flowEvent.getData().getStatus());
+      }
     });
   }
 
