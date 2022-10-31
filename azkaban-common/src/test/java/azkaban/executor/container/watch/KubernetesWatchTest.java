@@ -123,8 +123,8 @@ public class KubernetesWatchTest {
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
   private static final String DEFAULT_FLOW_NAME = "exec1";
-  private static final String DEFAULT_FLOW_MEMORY_RECOMMENDATION = "8Gi";
-  private static final String EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION = "16Gi";
+  private static final String DEFAULT_FLOW_MEMORY_RECOMMENDATION = "6.25Gi";
+  private static final String EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION = "13421772800"; // 12.5Gi
 
   private static final ImmutableList<AzPodStatus> TRANSITION_SEQUENCE_WITH_SUCCESS = ImmutableList.of(
       AzPodStatus.AZ_POD_REQUESTED,
