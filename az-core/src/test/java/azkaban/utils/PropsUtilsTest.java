@@ -50,6 +50,7 @@ public class PropsUtilsTest {
     props.put("res2", "${their} ${letter}");
     props.put("res7", "${my} ${res5}");
 
+
     propsParent.put("res3", "${your} ${their} ${res4}");
     propsGrandParent.put("res4", "${letter}");
     propsGrandParent.put("res5", "${their}");
@@ -63,6 +64,22 @@ public class PropsUtilsTest {
     Assert.assertEquals("ears", resolved.get("res5"));
     Assert.assertEquals(" t eyes eyes ears ears", resolved.get("res6"));
     Assert.assertEquals("name ears", resolved.get("res7"));
+  }
+
+  @Test
+  public void testResolveProps() throws IOException {
+    final Props props = new Props();
+
+    props.put("spark.version.sparky", "2.3.0");
+    props.put("spark.version", "${spark.version.${spark.branch}}");
+    props.put("spark.branch", "${test}");
+    props.put("test", "sparky");
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    final Props resolved = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals("${A}",resolved.get("B"));
+    Assert.assertEquals("${A}", resolved.get("C"));
+    Assert.assertEquals("2.3.0",resolved.get("spark.version"));
   }
 
   @Test
