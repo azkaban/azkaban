@@ -22,8 +22,12 @@ import static azkaban.executor.container.KubernetesContainerizedImpl.EXECUTION_I
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
+import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodStatus;
+import io.kubernetes.client.proto.V1.ContainerStatus;
 import io.kubernetes.client.util.Watch;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,18 +74,22 @@ public class AzPodStatusMetadata {
    * AzPodStatusMetadata}
    */
   public static class FlowPodMetadata {
+    private static final String KUBERNETES_OOM_KILLED_REASON = "OOMKilled";
     private final String executionId;
     private final String clusterName;
     private final boolean isCleanupDisabled;
+    private final boolean isOOMKilled;
 
-    private FlowPodMetadata(String executionId, String clusterName, boolean isCleanupDisabled) {
+    private FlowPodMetadata(String executionId, String clusterName, boolean isCleanupDisabled,
+        boolean isOOMKilled) {
       this.executionId = executionId;
       this.clusterName = clusterName;
       this.isCleanupDisabled = isCleanupDisabled;
+      this.isOOMKilled = isOOMKilled;
     }
 
     public FlowPodMetadata(String executionId, String clusterName) {
-      this(executionId, clusterName, false);
+      this(executionId, clusterName, false, false);
     }
 
     public String getExecutionId() {
@@ -96,15 +104,21 @@ public class AzPodStatusMetadata {
       return this.isCleanupDisabled;
     }
 
+    public boolean isOOMKilled() {
+      return this.isOOMKilled;
+    }
+
     public static Optional<FlowPodMetadata> extract(AzPodStatusExtractor podStatusExtractor) {
       requireNonNull(podStatusExtractor.getV1Pod(), "pod must not be null");
       requireNonNull(podStatusExtractor.getV1Pod().getMetadata(), "pod metadata must not be null");
       requireNonNull(podStatusExtractor.getV1Pod().getMetadata().getName(), "pod name must not be null");
 
       String podName = podStatusExtractor.getV1Pod().getMetadata().getName();
+      V1PodStatus v1PodStatus = podStatusExtractor.getV1PodStatus();
       String executionId = null;
       String clusterName = null;
       boolean isCleanupDisabled = false;
+      boolean isOOMKilled = false;
 
       if (podStatusExtractor.getV1Pod().getMetadata().getLabels() == null) {
         logger.warn("No labels found for pod: " + podName);
@@ -136,7 +150,19 @@ public class AzPodStatusMetadata {
         logger.debug(format("Label %s is not found for pod %s", DISABLE_CLEANUP_LABEL_NAME,
             podName));
       }
-      return Optional.of(new FlowPodMetadata(executionId, clusterName, isCleanupDisabled));
+
+      // Only check for OOMKilled status for app container.
+      // OOMKilled logic comes from:
+      // https://github.com/xing/kubernetes-oom-event-generator/blob/2ceca4509eb415b3056fb6b942057fb36702721f/src/controller/controller.go#L150
+      try {
+        isOOMKilled =
+            podStatusExtractor.getV1PodStatus().getContainerStatuses().get(0).getState().getTerminated().getReason().equals(KUBERNETES_OOM_KILLED_REASON);
+      } catch (Exception e) {
+        logger.debug(format("Terminated reason not found for pod %s, podStatus %s", podName,
+            v1PodStatus), e);
+      }
+
+      return Optional.of(new FlowPodMetadata(executionId, clusterName, isCleanupDisabled, isOOMKilled));
     }
   }
 }

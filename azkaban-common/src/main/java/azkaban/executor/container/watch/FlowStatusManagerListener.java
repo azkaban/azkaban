@@ -31,8 +31,10 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.watch.AzPodStatus.TransitionValidator;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.jobcallback.JobCallbackManager;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
@@ -42,6 +44,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.QuantityFormatException;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -280,6 +285,9 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       } else {
         logger.warn ("Containerization metrics are not initialized");
       }
+
+      doubleMemoryRecommendationIfOOMKilled(executableFlow, event);
+
       ExecutionControllerUtils.finalizeFlow(this, this.projectManager, executorLoader,
           alerterHolder, executableFlow, reason, null, Status.EXECUTION_STOPPED);
       // Emit EXECUTION_STOPPED flow event
@@ -292,6 +300,30 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
     return Optional.of(originalStatus);
   }
 
+  private void doubleMemoryRecommendationIfOOMKilled(final ExecutableFlow executableFlow,
+      final AzPodStatusMetadata event) {
+    try {
+      if (event.getFlowPodMetadata().isPresent() && event.getFlowPodMetadata().get().isOOMKilled()) {
+        final Project project = this.projectManager.getProject(executableFlow.getProjectId());
+        logger.info("Doubling memory recommendation for execId " + executableFlow.getExecutionId());
+        synchronized (project) {
+          final FlowResourceRecommendation flowResourceRecommendation = project
+              .getFlowResourceRecommendation(executableFlow.getFlowId());
+          if (flowResourceRecommendation != null && flowResourceRecommendation.getMemoryRecommendation() != null) {
+            final Quantity oldQuantity = new Quantity(flowResourceRecommendation.getMemoryRecommendation());
+            final Quantity newQuantity =
+                new Quantity(oldQuantity.getNumber().multiply(new BigDecimal(2)),
+                oldQuantity.getFormat());
+
+            flowResourceRecommendation.setMemoryRecommendation(newQuantity.toSuffixedString());
+            this.projectManager.updateFlowResourceRecommendation(flowResourceRecommendation);
+          }
+        }
+      }
+    } catch (QuantityFormatException e) {
+     logger.error("Failed to parse quantity when doubling memory recommendation for execId " + executableFlow.getExecutionId());
+    }
+  }
   /**
    * Delete the the flow pod and any other related objects (such as services).
    *
