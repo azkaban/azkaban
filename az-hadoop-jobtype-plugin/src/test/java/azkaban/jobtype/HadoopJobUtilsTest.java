@@ -1,6 +1,8 @@
 package azkaban.jobtype;
 
 import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
+import static azkaban.jobtype.HadoopJobUtils.YARN_KILL_USE_API_WITH_TOKEN;
+import static azkaban.jobtype.HadoopJobUtils.YARN_KILL_VERSION;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,11 +31,53 @@ public class HadoopJobUtilsTest {
 
   final private Logger log = Logger.getLogger(HadoopJobUtilsTest.class);
 
+  @Test
+  public void testGetApplicationIDsDefaultToScanLogForAppID() throws IOException, YarnException {
+    Props props = new Props();
+    // property missing, will default to log scanning
+    // props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
+    props.put(CommonJobProperties.JOB_LOG_FILE, "dummy/file/path");
+    YarnClient mockClient = Mockito.mock(YarnClient.class);
+
+    PowerMockito.mockStatic(HadoopJobUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("findApplicationIdFromLog")) {
+        return ImmutableSet.of("application_6789_6789", "application_9876_9876");
+      }
+      return invocation.callRealMethod();
+    });
+
+    // invoke
+    Set<String> actual = HadoopJobUtils.getApplicationIDsToKill(mockClient, props, log);
+    assertTrue(
+        actual.containsAll(ImmutableSet.of("application_6789_6789", "application_9876_9876")));
+  }
+
+  @Test(expected = Exception.class)
+  public void testGetApplicationIDsDefaultToScanLogForAppIDFailed() throws IOException,
+      YarnException {
+    Props props = new Props();
+    // property missing, will default to log scanning
+    // props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
+    props.put(CommonJobProperties.JOB_LOG_FILE, "dummy/file/path");
+    YarnClient mockClient = Mockito.mock(YarnClient.class);
+
+    PowerMockito.mockStatic(HadoopJobUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("findApplicationIdFromLog")) {
+        throw new Exception("Ops");
+      }
+      return invocation.callRealMethod();
+    });
+
+    // invoke
+    HadoopJobUtils.getApplicationIDsToKill(mockClient, props, log);
+  }
+
   @Test(expected = UndefinedPropertyException.class)
   public void testGetApplicationIDsToKillNoExecID() throws IOException, YarnException {
     Props props = new Props();
     // property missing
     // props.put(AZKABAN_FLOW_EXEC_ID, "dummy-id-1");
+    props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
     YarnClient mockClient = Mockito.mock(YarnClient.class);
 
     // invoke
@@ -44,6 +88,7 @@ public class HadoopJobUtilsTest {
   public void testGetApplicationIDsToKillYarnApiCallSucceed() throws IOException, YarnException {
     Props props = new Props();
     props.put(AZKABAN_FLOW_EXEC_ID, "dummy-id-1");
+    props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
     YarnClient mockClient = Mockito.mock(YarnClient.class);
 
     PowerMockito.mockStatic(YarnUtils.class);
@@ -61,7 +106,8 @@ public class HadoopJobUtilsTest {
       YarnException {
     Props props = new Props();
     props.put(AZKABAN_FLOW_EXEC_ID, "dummy-id-1");
-    // property missing
+    props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
+// property missing
     // props.put(CommonJobProperties.JOB_LOG_FILE, "dummy/file/path");
 
     YarnClient mockClient = Mockito.mock(YarnClient.class);
@@ -79,6 +125,7 @@ public class HadoopJobUtilsTest {
       YarnException {
     Props props = new Props();
     props.put(AZKABAN_FLOW_EXEC_ID, "dummy-id-1");
+    props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
     props.put(CommonJobProperties.JOB_LOG_FILE, "dummy/file/path");
 
     YarnClient mockClient = Mockito.mock(YarnClient.class);
@@ -105,6 +152,7 @@ public class HadoopJobUtilsTest {
       YarnException {
     Props props = new Props();
     props.put(AZKABAN_FLOW_EXEC_ID, "dummy-id-1");
+    props.put(YARN_KILL_VERSION, YARN_KILL_USE_API_WITH_TOKEN);
     props.put(CommonJobProperties.JOB_LOG_FILE, "dummy/file/path");
 
     YarnClient mockClient = Mockito.mock(YarnClient.class);
