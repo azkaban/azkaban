@@ -25,6 +25,7 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
+import azkaban.cluster.ClusterModule;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutionControllerUtils;
@@ -253,7 +254,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
     launch(injector.getInstance(AzkabanWebServer.class));
