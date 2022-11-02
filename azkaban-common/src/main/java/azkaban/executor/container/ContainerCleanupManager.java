@@ -17,7 +17,10 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
+import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
 import static azkaban.utils.YarnUtils.YARN_CONF_DIRECTORY_PROPERTY;
+import static azkaban.utils.YarnUtils.createYarnClient;
+import static azkaban.utils.YarnUtils.getAllAliveAppReportsByExecIDs;
 
 import azkaban.Constants.FlowParameters;
 import azkaban.cluster.Cluster;
@@ -34,6 +37,7 @@ import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +51,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -284,7 +293,39 @@ public class ContainerCleanupManager {
     logger.info("Get the set of all executions: " +
         toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
+    if (executionStoppedFlows.isEmpty()) {
+      logger.info("No execution needs to kill yarn application, exit");
+      return;
+    }
+
     // TODO: For each of yarn clusters: get applications and kill those in the above set
+    for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
+      logger.info("clean up yarn applications in cluster:" + entry.getValue().clusterId);
+      cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
+    }
+  }
+
+  private void cleanUpYarnApplicationsInCluster(Set<Integer> toBeCleanedContainers,
+      Cluster cluster) {
+    org.apache.log4j.Logger apacheLogger =
+        org.apache.log4j.Logger.getLogger(ContainerCleanupManager.class);
+
+    List<ApplicationReport> aliveApplications;
+    try {
+      logger.info("Getting all yarn apps for cluster:" + cluster.getClusterId());
+      YarnClient yarnClient = createYarnClient(cluster.getProperties(), apacheLogger);
+      aliveApplications = getAllAliveAppReportsByExecIDs(
+          yarnClient, toBeCleanedContainers, apacheLogger);
+      logger.info("aliveApplications.size() = " + aliveApplications.size());
+      logger.info("appsToBeKilled = " +
+          aliveApplications.stream().map(app -> app.getApplicationId().toString())
+              .collect(Collectors.joining(",")));
+    } catch (Exception e) {
+      logger.error("fail to get yarn applications by execution IDs", e);
+      return;
+    }
+
+    // todo: kill the apps asynchronously
   }
 
   /**
