@@ -17,6 +17,7 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
+import static azkaban.utils.YarnUtils.YARN_CONF_DIRECTORY_PROPERTY;
 
 import azkaban.Constants.FlowParameters;
 import azkaban.cluster.Cluster;
@@ -30,12 +31,11 @@ import azkaban.executor.Status;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import azkaban.utils.YarnUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.hadoop.yarn.api.records.ApplicationReport;
-import org.apache.hadoop.yarn.client.api.YarnClient;
-import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +84,9 @@ public class ContainerCleanupManager {
   // Defines the validity duration associated with certain statuses from the
   // submit/start/update time.
   private final ImmutableMap<Status, Pair<Duration, String>> validityMap;
+  private final ImmutableMap<Status, Pair<Duration, String>> executionStoppedMap;
   private final ClusterRouter clusterRouter;
+  private Map<String, Cluster> allClusters = new HashMap<>();
 
   public ImmutableMap<Status, Pair<Duration, String>> getValidityMap() {
     return this.validityMap;
@@ -117,6 +117,7 @@ public class ContainerCleanupManager {
         AZKABAN_MAX_FLOW_PREPARING_MINS, DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS);
     int maxKillingValidity = azkProps.getInt(
         AZKABAN_MAX_FLOW_KILLING_MINS, DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS);
+    // check for flows execution_stopped within 15 minutes
     int maxExecStoppedValidity = azkProps.getInt(
         AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS, DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS);
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
@@ -146,16 +147,28 @@ public class ContainerCleanupManager {
         .put(Status.FAILED_FINISHING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
 
+    this.executionStoppedMap = new Builder<Status, Pair<Duration, String>>()
+        .put(Status.EXECUTION_STOPPED,
+            new Pair<>(Duration.ofMinutes(maxExecStoppedValidity), UPDATE_TIME))
+        .build();
+
     // get yarn config for instance without robin enabled
     logger.info("AzkProps: hadoop.conf.dir.path=" + azkProps.getString(HADOOP_CONF_DIR_PATH, ""));
 
     // get config in instance using robin, so as can connect to multiple yarn cluster RMs
-    Map<String, Cluster> allClusters = this.clusterRouter.getAllClusters();
-    for (Entry<String,Cluster> entry: allClusters.entrySet()){
-      logger.info("Now printing cluster named: "+ entry.getKey());
+    for (Entry<String, Cluster> entry : this.clusterRouter.getAllClusters().entrySet()) {
+      logger.info("Now printing cluster named: " + entry.getKey());
       Cluster cluster = entry.getValue();
-      logger.debug("Cluster detail: " + cluster);
-      // TODO: get yarn-site.xml info from cluster properties to creation yarnClient accordingly
+      logger.info("Cluster detail: " + cluster);
+      if (!cluster.getProperties().containsKey(YARN_CONF_DIRECTORY_PROPERTY)) {
+        logger.warn("Cluster has no " + YARN_CONF_DIRECTORY_PROPERTY + "defined, skipping");
+        continue;
+      }
+      // this is to avoid "default" cluster collides with other clusters in the map
+      String yarnConfDir = cluster.getProperties().getString(YARN_CONF_DIRECTORY_PROPERTY, null);
+      if (!allClusters.containsKey(yarnConfDir)) {
+        allClusters.put(yarnConfDir, cluster);
+      }
     }
   }
 
@@ -165,21 +178,35 @@ public class ContainerCleanupManager {
   }
 
   /**
-   * From all pods in the current namespace and Azkaban cluster, select the pods whose executions
-   * are not in unfinished statuses, e.g. DISPATCHING, PREPARING, RUNNING, PAUSED, KILLING,
-   * FAILED_FINISHING in DB, and delete the pods & services to release resources
+   * Delete the still alive pods & services of those terminated flows to release resources
    */
   public void cleanUpContainersInTerminalStatuses() {
     logger.info("Cleaning up pods of terminated flow executions");
+    Set<Integer> containers = getContainersOfTerminatedFlows();
+
+    for (int executionId : containers) {
+      logger.info("Cleaning up the stale pod and service for finished execution: {}",
+          executionId);
+      deleteContainerQuietly(executionId);
+    }
+  }
+
+  /**
+   * From all pods in the current namespace and Azkaban cluster, select the pods whose executions
+   * are not in unfinished statuses, e.g. DISPATCHING, PREPARING, RUNNING, PAUSED, KILLING,
+   * FAILED_FINISHING in DB (select pods whose executions are finished/terminated)
+   */
+  public Set<Integer> getContainersOfTerminatedFlows() {
     Set<Integer> activeFlows = new HashSet<>();
     Set<Integer> currentNameSpacedPods = new HashSet<>();
+    Set<Integer> result = new HashSet<>();
 
     // The unfinished statuses DISPATCHING, PREPARING, RUNNING, PAUSED, KILLING, FAILED_FINISHING.
     // This map will be used to find out all executions of above statuses where
     // submit_time < current system time - 0 from the DB
     ImmutableMap<Status, Pair<Duration, String>> unFinishedStatusesMap =
-        this.validityMap.keySet().stream().collect(ImmutableMap.toImmutableMap(e->e,
-            e->new Pair<>(Duration.ZERO, SUBMIT_TIME)));
+        this.validityMap.keySet().stream().collect(ImmutableMap.toImmutableMap(e -> e,
+            e -> new Pair<>(Duration.ZERO, SUBMIT_TIME)));
 
     // Obtain all pods in current namespace which are dispatched from current Azkaban cluster
     try {
@@ -194,17 +221,70 @@ public class ContainerCleanupManager {
             unFinishedStatusesMap);
         activeFlows.addAll(flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
       } catch (final ExecutorManagerException e) {
-        logger.error("Unable to obtain current flows executions of status {}", status, e);
+        logger.error("Unable to obtain current flows executions of status {}, cannot cross-check "
+                + "to-be-killed pods, returning", status, e);
+        return result;
       }
     }
-    // Delete the pod if its execution status is finished
+
+    // cross-check: the pod needs to be cleaned up if its execution status is finished
     for (int executionId : currentNameSpacedPods) {
       if (!activeFlows.contains(executionId)) {
-        logger.info("Cleaning up the stale pod and service for finished execution: {}",
-            executionId);
-        deleteContainerQuietly(executionId);
+        result.add(executionId);
       }
     }
+    return result;
+  }
+
+  /**
+   * Get the flows of EXECUTION_STOPPED status
+   */
+  @NotNull
+  Set<Integer> getExecutionStoppedFlows() {
+    Set<Integer> executionStoppedFlows = new HashSet<>();
+    if (this.executionStoppedMap.containsKey(Status.EXECUTION_STOPPED)) {
+      try {
+        List<ExecutableFlow> flows = this.executorLoader.fetchFreshFlowsForStatus(
+            Status.EXECUTION_STOPPED, this.executionStoppedMap);
+        executionStoppedFlows.addAll(
+            flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
+      } catch (final ExecutorManagerException e) {
+        logger.error("Unable to obtain current flows executions of Status.EXECUTION_STOPPED", e);
+      }
+    }
+    return executionStoppedFlows;
+  }
+
+  /**
+   * Find the executions that their yarn applications needs to be killed, then find the set of to be
+   * killed yarn applications, and kill them.
+   */
+  public void cleanUpDanglingYarnApplications() {
+    /*
+      1. find those executions of status EXECUTION_STOPPED status within a recent period
+      2. find those executions being killed but the pod is still unfinished, and delete the pods
+      3. for each of the yarn clusters, do:
+        i. get all unfinished yarn applications
+        ii. filter and get the yarn applications that within the union set of above executions
+        iii. kill these yarn applications
+     */
+    logger.info("cleanUpDanglingYarnApplications start ");
+
+    Set<Integer> executionStoppedFlows = getExecutionStoppedFlows();
+    logger.info("Get executionStoppedFlows: " +
+        executionStoppedFlows.stream().map(Object::toString).collect(Collectors.joining(",")));
+
+    // get those flows terminated but containers are still alive (failed to properly killed)
+    Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
+    logger.info("Get terminatedContainers: " +
+        toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+
+    // combine both sets
+    toBeCleanedContainers.addAll(executionStoppedFlows);
+    logger.info("Get the set of all executions: " +
+        toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+
+    // TODO: For each of yarn clusters: get applications and kill those in the above set
   }
 
   /**
@@ -317,6 +397,10 @@ public class ContainerCleanupManager {
         this.executionCleanupIntervalMin, TimeUnit.MINUTES);
     this.cleanupService.scheduleAtFixedRate(this::cleanUpContainersInTerminalStatuses, 0L,
         this.containerCleanupIntervalMin, TimeUnit.MINUTES);
+
+    // TODO: currently run-once for development; change to a fixed schedule after development
+    //  complete
+    this.cleanupService.schedule(this::cleanUpDanglingYarnApplications, 0L, TimeUnit.MINUTES);
   }
 
   /**
