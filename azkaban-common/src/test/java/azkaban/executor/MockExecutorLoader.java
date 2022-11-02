@@ -429,6 +429,13 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException{
+    throw new ExecutorManagerException("Method Not Implemented!");
+  }
+
+  @Override
   // TODO(anish-mal) To be used in a future unit test, once System calls to obtain
   // current time have been replaced by Clocks. Clocks are needed in order to write
   // unit tests for duration based features. Without it, the tests end up being flaky.
