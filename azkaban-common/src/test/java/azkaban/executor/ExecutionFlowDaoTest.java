@@ -268,9 +268,10 @@ public class ExecutionFlowDaoTest {
     // Flow executions in PREPARING state
     final long lessThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5);
     final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", lessThan15Minutes,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(), DispatchMethod.POLL);
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(),
+        DispatchMethod.CONTAINERIZED);
 
-    final long olderThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(15);
+    final long olderThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(20);
     final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", olderThan15Minutes,
         ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(), DispatchMethod.POLL);
 
@@ -296,7 +297,7 @@ public class ExecutionFlowDaoTest {
     // Test staleness in PREPARING state
     final List<ExecutableFlow> staleFlowsInPreparing =
         this.executionFlowDao.fetchStaleFlowsForStatus(Status.PREPARING, validityMap);
-    // Only containerized executions submitted more than 15 mins ago should be returned
+    // Only containerized executions submitted ** MORE than ** 15 mins ago should be returned
     assertThat(staleFlowsInPreparing.size()).isEqualTo(1);
     assertTwoFlowSame(flow3, staleFlowsInPreparing.get(0));
 
@@ -306,6 +307,20 @@ public class ExecutionFlowDaoTest {
     // Only the first flow in the RUNNING state should be returned.
     assertThat(staleFlowsInRunning.size()).isEqualTo(1);
     assertTwoFlowSame(flow4, staleFlowsInRunning.get(0));
+
+    // Test freshness in PREPARING state
+    final List<ExecutableFlow> freshFlowsInPreparing =
+        this.executionFlowDao.fetchFreshFlowsForStatus(Status.PREPARING, validityMap);
+    // Only containerized executions submitted ** LESS-EQUAL than ** 15 mins ago should be returned
+    assertThat(staleFlowsInPreparing.size()).isEqualTo(1);
+    assertTwoFlowSame(flow1, freshFlowsInPreparing.get(0));
+
+    // Test freshness in RUNNING state
+    final List<ExecutableFlow> freshFlowsInRunning =
+        this.executionFlowDao.fetchFreshFlowsForStatus(Status.RUNNING, validityMap);
+    // Only the second flow in the RUNNING state should be returned.
+    assertThat(staleFlowsInRunning.size()).isEqualTo(1);
+    assertTwoFlowSame(flow5, freshFlowsInRunning.get(0));
   }
 
   @Test

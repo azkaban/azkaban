@@ -108,6 +108,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException{
+    return this.executionFlowDao.fetchFreshFlowsForStatus(status,validityMap);
+  }
+
+  @Override
   public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
     return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
