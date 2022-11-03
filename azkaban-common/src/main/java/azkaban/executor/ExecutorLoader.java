@@ -255,6 +255,15 @@ public interface ExecutorLoader {
       String>> validityMap)
       throws ExecutorManagerException;
 
+  /**
+   * This method is used to get those flows which are fresh. Freshness is determined based on the
+   * validity of the status.
+   * @param status
+   */
+  List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException;
+
   List<ExecutableFlow> fetchAgedQueuedFlows(
       final Duration minAge) throws ExecutorManagerException;
 
