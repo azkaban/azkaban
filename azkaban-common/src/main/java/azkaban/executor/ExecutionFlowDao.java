@@ -180,15 +180,16 @@ public class ExecutionFlowDao {
     final String validityFrom = validity.getSecond();
     final long beforeInMillis = System.currentTimeMillis() - validityDuration.toMillis();
 
-    // For status PREPARING (20), validityDuration is 15 Mins and validityFrom is "submit_time"
+    // For status PREPARING (20), to find stale flows, validityDuration is 15 Mins and validityFrom
+    // is "submit_time", and they query will be:
     // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef
-    // WHERE status=20 AND submit_time>0 AND submit_time>beforeInMillis
+    // WHERE status=20 AND submit_time>0 AND submit_time<beforeInMillis
     final StringBuilder query = new StringBuilder()
         .append(FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY)
         .append(" WHERE status=? ")
         .append(" AND dispatch_method=?")
         .append(" AND " + validityFrom + ">0")
-        .append(" AND " + validityFrom + (looksForStale ? "<" : ">=") +"?");
+        .append(" AND " + validityFrom + (looksForStale ? "<" : ">=") + "?");
     try {
       return this.dbOperator.query(query.toString(), new FetchExecutableFlows(),
           status.getNumVal(), DispatchMethod.CONTAINERIZED.getNumVal(), beforeInMillis);
@@ -348,7 +349,7 @@ public class ExecutionFlowDao {
     } catch (final RuntimeException re) {
       flow.setStatus(Status.FAILED);
       // Likely due to serialization error
-      if (data == null && re instanceof NullPointerException) {
+      if ( data == null && re instanceof NullPointerException) {
         logger.warn("Failed to serialize executable flow for " + flow.getExecutionId());
         logger.warn("NPE stacktrace" + ExceptionUtils.getStackTrace(re));
       }
@@ -367,7 +368,7 @@ public class ExecutionFlowDao {
   }
 
   private void updateExecutableFlowStatusInDB(final ExecutableFlow flow)
-      throws ExecutorManagerException {
+    throws ExecutorManagerException {
     final String UPDATE_FLOW_STATUS = "UPDATE execution_flows SET status = ?, update_time = ? "
         + "where exec_id = ?";
 
@@ -426,7 +427,7 @@ public class ExecutionFlowDao {
 
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
           new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), dispatchMethod.getNumVal(),
-          executorId);
+              executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
@@ -456,15 +457,12 @@ public class ExecutionFlowDao {
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
       int execId = -1;
-      final boolean hasLocked = this.mysqlNamedLock.getLock(transOperator, POLLING_LOCK_NAME,
-          GET_LOCK_TIMEOUT_IN_SECONDS);
-      logger.info(
-          "ExecutionFlow polling lock value: " + hasLocked + " for executorId: " + executorId);
+      final boolean hasLocked = this.mysqlNamedLock.getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
+      logger.info("ExecutionFlow polling lock value: " + hasLocked + " for executorId: " + executorId);
       if (hasLocked) {
         try {
           final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-              new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(),
-              dispatchMethod.getNumVal(),
+              new SelectFromExecutionFlows(), Status.PREPARING.getNumVal(), dispatchMethod.getNumVal(),
               executorId);
           if (CollectionUtils.isNotEmpty(execIds)) {
             execId = execIds.get(0);
@@ -489,11 +487,10 @@ public class ExecutionFlowDao {
   }
 
   /**
-   * This method is used to select executions in batch. It will apply lock and fetch executions. It
-   * will also update the status of those executions as mentioned in updatedStatus field.
-   *
-   * @param batchEnabled  If set to true, fetch the executions in batch
-   * @param limit         Limit in case of batch fetch
+   * This method is used to select executions in batch. It will apply lock and fetch executions.
+   * It will also update the status of those executions as mentioned in updatedStatus field.
+   * @param batchEnabled If set to true, fetch the executions in batch
+   * @param limit Limit in case of batch fetch
    * @param updatedStatus Update the status of executions as mentioned in this field. It can be
    *                      READY of PREPARING based on whichever is the starting state for any
    *                      dispatch method.
@@ -518,8 +515,7 @@ public class ExecutionFlowDao {
           if (batchEnabled) {
             execIds = transOperator.query(String
                     .format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal(),
-                dispatchMethod.getNumVal(), limit);
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), limit);
           } else {
             execIds = transOperator.query(
                 String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
