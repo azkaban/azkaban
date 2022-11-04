@@ -688,6 +688,8 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.recommendation.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
+    // Provide min allowed cpu for ramping up VPA in case if unfortunately VPA gives incorrect extremely
+    // low CPU recommendation. This config can be removed in the future once VPA feature is stable.
     public static final String KUBERNETES_FLOW_CONTAINER_MIN_ALLOWED_CPU =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "min.allowed.cpu";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
@@ -699,6 +701,9 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.recommendation.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
+    // Provide min allowed memory for ramping up VPA in case if unfortunately VPA gives incorrect
+    // extremely low memory recommendation. This config can be removed in the future once VPA
+    // feature is stable.
     public static final String KUBERNETES_FLOW_CONTAINER_MIN_ALLOWED_MEMORY =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "min.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =

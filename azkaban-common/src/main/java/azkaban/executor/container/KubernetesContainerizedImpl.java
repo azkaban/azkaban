@@ -50,6 +50,7 @@ import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -149,6 +150,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
   private static final int DEFAULT_EXECUTION_ID = -1;
 
+  private static final VPARecommendation EMPTY_VPA_RECOMMENDATION = new VPARecommendation(null,
+      null);
+
   private final String namespace;
   private final ApiClient client;
   private final CoreV1Api coreV1Api;
@@ -197,6 +201,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String azkabanConfigImageName;
   private final ProjectManager projectManager;
   private final VPARecommender vpaRecommender;
+  private final VPARecommendation maxVpaRecommendation;
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -337,6 +342,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getBoolean(
             ContainerizedDispatchManagerProperties.KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT,
             false);
+    this.maxVpaRecommendation = new VPARecommendation(this.maxAllowedCPU,
+        this.maxAllowedMemory);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
   }
@@ -696,9 +703,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Get CPU and memory requested for a flow container
     final VPARecommendation vpaRecommendation = getFlowContainerRecommendedRequests(executableFlow,
         flowResourceRecommendation);
-    logger.info(String.format("VPA Recommendation for %s is %s, %s", executionId,
-        vpaRecommendation == null ? null : vpaRecommendation.getCpuRecommendation(),
-        vpaRecommendation == null ? null : vpaRecommendation.getMemoryRecommendation()));
+    logger.info("VPA Recommendation for {} is: cpuRecommendation {}, memoryRecommendation {}",
+        executionId, vpaRecommendation == null ? null : vpaRecommendation.getCpuRecommendation(),
+        vpaRecommendation == null ? null : vpaRecommendation.getMemoryRecommendation());
     final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam,
         vpaRecommendation.getCpuRecommendation());
     final String flowContainerCPULimit =
@@ -760,13 +767,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   @VisibleForTesting
   VPARecommendation getFlowContainerRecommendedRequests(final ExecutableFlow executableFlow,
       final FlowResourceRecommendation flowResourceRecommendation) {
-    final VPARecommendation emptyVpaRecommendation = new VPARecommendation(null, null);
-    final VPARecommendation maxVpaRecommendation = new VPARecommendation(this.maxAllowedCPU,
-        this.maxAllowedMemory);
-
     // VPA is disabled globally: do not create VPA object.
     if (!this.vpaEnabled) {
-      return emptyVpaRecommendation;
+      return EMPTY_VPA_RECOMMENDATION;
     }
 
     try {
@@ -779,7 +782,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
       // Migration/Rollout purpose: set up VPA objects even though the feature is not ramped up.
       if (!IsVPAEnabledForFlow(executableFlow)) {
-        return emptyVpaRecommendation;
+        return EMPTY_VPA_RECOMMENDATION;
       }
 
       if (vpaRecommendation == null) {
@@ -795,8 +798,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       }
 
       return vpaRecommendation;
-    } catch (Exception e) {
-      logger.error("Cannot apply resource recommendation from VPA for execId " + executableFlow
+    } catch (ExecutorManagerException | ProjectManagerException e) {
+      logger.error("Cannot apply resource recommendation from VPA for execId {}", executableFlow
           .getExecutionId(), e);
       // It is fine if cpu recommendation or memory recommendation is null here.
       return new VPARecommendation(flowResourceRecommendation.getCpuRecommendation(),
@@ -934,7 +937,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       return quantity1.getNumber().compareTo(quantity2.getNumber()) < 0 ? -1 : 1;
     } catch (final Exception e) { // only user requested resource in flow
       // parameter could result in exception
-      logger.error("Exception while parsing requested resource: " + resource1 + "," + resource2);
+      logger.error("Exception while parsing requested resource: {}, {}",
+          resource1, resource2);
     }
     // Resources cannot be compared, e.g. resources are different (cpu vs. memory) or
     // exception encountered when parsing resource string
@@ -1217,6 +1221,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     mapBuilder.put(CLUSTER_LABEL_NAME, this.clusterName);
     mapBuilder.put(EXECUTION_ID_LABEL_NAME, EXECUTION_ID_LABEL_PREFIX + executionId);
     mapBuilder.put(APP_LABEL_NAME, POD_APPLICATION_TAG);
+    // Each azkaban execution pod will share the same flow vpa label if it comes from the same
+    // azkaban flow. This label is used for VPA to map multiple azkaban execution pods with one
+    // azkaban flow.
+    // In VPA, each VPA object will have its own label selector to choose all pods having the
+    // same flow vpa label so that it can provide resource recommendation to one azkaban flow.
     mapBuilder.put(FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendation));
 
     // Note that the service label must match the selector used for the corresponding service
@@ -1251,41 +1260,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return selectorBuilder.toString();
   }
 
-  /**
-   * Set vertical pod autoscaler ramp up rate
-   *
-   * @param rampUp
-   */
   @Override
   public void setVPARampUp(final int rampUp) {
     this.vpaRampUp = rampUp;
   }
 
-  /**
-   * Return vertical pod autoscaler ramp up rate
-   *
-   * @return vpa ramp up rate
-   */
   @Override
   public int getVPARampUp() {
     return this.vpaRampUp;
   }
 
-  /**
-   * Set vertical pod autoscaler enabled status
-   *
-   * @param enabled vpa enabled status
-   */
   @Override
   public void setVPAEnabled(final boolean enabled) {
     this.vpaEnabled = enabled;
   }
 
-  /**
-   * Return vertical pod autoscaler enabled status
-   *
-   * @return vpa enabled status
-   */
   @Override
   public boolean getVPAEnabled() {
     return this.vpaEnabled;
