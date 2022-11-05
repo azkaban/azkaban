@@ -26,6 +26,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import com.google.common.collect.ImmutableMap;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class Project extends EventHandler {
   private String source;
   private Map<String, Flow> flows = new HashMap<>();
   // flowResourceRecommendations map shouldn't be ImmutableMap.
-  private HashMap<String, FlowResourceRecommendation> flowResourceRecommendations = new HashMap<>();
+  private ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendations = new ConcurrentHashMap<>();
   private Map<String, Object> metadata = new HashMap<>();
   private static final Logger logger = LoggerFactory.getLogger(Project.class);
   // Added event listener for sending project events
@@ -160,12 +161,8 @@ public class Project extends EventHandler {
     return this.flowResourceRecommendations.get(flowId);
   }
 
-  public Map<String, FlowResourceRecommendation> getFlowResourceRecommendationMap() {
+  public ConcurrentHashMap<String, FlowResourceRecommendation> getFlowResourceRecommendationMap() {
     return this.flowResourceRecommendations;
-  }
-
-  public void setFlowResourceRecommendations(@Nonnull final HashMap<String, FlowResourceRecommendation> flowResourceRecommendations) {
-    this.flowResourceRecommendations = flowResourceRecommendations;
   }
 
   public Permission getCollectivePermission(final User user) {

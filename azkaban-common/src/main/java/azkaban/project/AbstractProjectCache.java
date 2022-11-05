@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,15 +82,13 @@ public abstract class AbstractProjectCache implements ProjectCache {
       // Load the flows into the project objects
       for (final Map.Entry<Project, List<FlowResourceRecommendation>> entry : projectToFlowResourceRecommendations.entrySet()) {
         final Project project = entry.getKey();
-        synchronized (project) {
-          final List<FlowResourceRecommendation> flowResourceRecommendations = entry.getValue();
+        final List<FlowResourceRecommendation> flowResourceRecommendations = entry.getValue();
 
-          final HashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap = new HashMap<>();
-          for (final FlowResourceRecommendation flowResourceRecommendation : flowResourceRecommendations) {
-            flowResourceRecommendationMap.put(flowResourceRecommendation.getFlowId(), flowResourceRecommendation);
-          }
-
-          project.setFlowResourceRecommendations(flowResourceRecommendationMap);
+        final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+            project.getFlowResourceRecommendationMap();
+        for (final FlowResourceRecommendation flowResourceRecommendation : flowResourceRecommendations) {
+          flowResourceRecommendationMap.put(flowResourceRecommendation.getFlowId(),
+              flowResourceRecommendation);
         }
       }
     } catch (final ProjectManagerException e) {

@@ -95,6 +95,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.junit.AfterClass;
@@ -131,6 +132,10 @@ public class KubernetesContainerizedImplTest {
   private static final String MAX_ALLOWED_MEMORY = "32Gi";
   private static final FlowResourceRecommendation DEFAULT_FLOW_RECOMMENDATION =
       new FlowResourceRecommendation(1, 1, "flow", null, null, null);
+  private static final ConcurrentHashMap<String, FlowResourceRecommendation> DEFAULT_FLOW_RECOMMENDATION_MAP = new ConcurrentHashMap<String, FlowResourceRecommendation>() {{
+    put(DEFAULT_FLOW_RECOMMENDATION.getFlowId(), DEFAULT_FLOW_RECOMMENDATION);
+  }};
+
   public static final String DEPENDENCY1 = "dependency1";
   public static final int CPU_LIMIT_MULTIPLIER = 1;
   public static final int MEMORY_LIMIT_MULTIPLIER = 1;
@@ -451,9 +456,11 @@ public class KubernetesContainerizedImplTest {
     final VersionSet versionSet = this.kubernetesContainerizedImpl
         .fetchVersionSet(flow.getExecutionId(), flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = this.kubernetesContainerizedImpl
-        .createPodSpec(flow, DEFAULT_FLOW_RECOMMENDATION, versionSet, jobTypes, dependencyTypes, flowParam);
+        .createPodSpec(flow, DEFAULT_FLOW_RECOMMENDATION, DEFAULT_FLOW_RECOMMENDATION_MAP,
+            versionSet, jobTypes, dependencyTypes, flowParam);
     final V1ObjectMeta podMetadata =
-        this.kubernetesContainerizedImpl.createPodMetadata(flow, DEFAULT_FLOW_RECOMMENDATION, flowParam);
+        this.kubernetesContainerizedImpl.createPodMetadata(flow, DEFAULT_FLOW_RECOMMENDATION.getId(),
+            flowParam);
     // Set custom labels and annotations
     ImmutableMap<String, String> annotations = ImmutableMap.of(
         "akey1", "aval1",

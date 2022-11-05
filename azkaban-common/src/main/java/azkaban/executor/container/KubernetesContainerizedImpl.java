@@ -89,6 +89,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -681,6 +682,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * @param executableFlow
    * @param flowResourceRecommendation
+   * @param flowResourceRecommendationMap
    * @param versionSet
    * @param jobTypes
    * @param dependencyTypes
@@ -689,7 +691,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   @VisibleForTesting
   V1PodSpec createPodSpec(final ExecutableFlow executableFlow,
-      final FlowResourceRecommendation flowResourceRecommendation, final VersionSet versionSet,
+      final FlowResourceRecommendation flowResourceRecommendation,
+      final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap,
+      final VersionSet versionSet,
       final SortedSet<String> jobTypes, final Set<String> dependencyTypes,
       final Map<String, String> flowParam)
       throws ExecutorManagerException {
@@ -701,7 +705,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
     // Get CPU and memory requested for a flow container
     final VPARecommendation vpaRecommendation = getFlowContainerRecommendedRequests(executableFlow,
-        flowResourceRecommendation);
+        flowResourceRecommendation, flowResourceRecommendationMap);
     logger.info("VPA Recommendation for {} is: cpuRecommendation {}, memoryRecommendation {}",
         executionId, vpaRecommendation == null ? null : vpaRecommendation.getCpuRecommendation(),
         vpaRecommendation == null ? null : vpaRecommendation.getMemoryRecommendation());
@@ -746,11 +750,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   @VisibleForTesting
   V1ObjectMeta createPodMetadata(final ExecutableFlow executableFlow,
-      final FlowResourceRecommendation flowResourceRecommendation, Map<String, String> flowParam) {
+      final int flowResourceRecommendationId, Map<String, String> flowParam) {
     return new V1ObjectMetaBuilder()
         .withName(getPodName(executableFlow.getExecutionId()))
         .withNamespace(this.namespace)
-        .addToLabels(getLabelsForPod(executableFlow, flowResourceRecommendation, flowParam))
+        .addToLabels(getLabelsForPod(executableFlow, flowResourceRecommendationId, flowParam))
         .addToAnnotations(getAnnotationsForPod())
         .build();
   }
@@ -761,11 +765,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    *
    * @param executableFlow
    * @param flowResourceRecommendation
+   * @param flowResourceRecommendationMap it is used for updating flowResourceRecommendation
    * @return Nullable CPU request and nullable memory request for a flow container
    */
   @VisibleForTesting
   VPARecommendation getFlowContainerRecommendedRequests(final ExecutableFlow executableFlow,
-      final FlowResourceRecommendation flowResourceRecommendation) {
+      final FlowResourceRecommendation flowResourceRecommendation,
+      final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap) {
     // VPA is disabled globally: do not create VPA object.
     if (!this.vpaEnabled) {
       return EMPTY_VPA_RECOMMENDATION;
@@ -775,8 +781,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       // Top-down approach to apply maxAllowedMemory first and then find the optimal memory request
       final VPARecommendation vpaRecommendation =
           this.vpaRecommender.getFlowContainerRecommendedRequests(this.namespace,
-              FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendation), this.flowContainerName,
-              this.cpuRecommendationMultiplier, this.memoryRecommendationMultiplier, this.minAllowedCPU,
+              FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendation.getId()),
+              this.flowContainerName, this.cpuRecommendationMultiplier,
+              this.memoryRecommendationMultiplier, this.minAllowedCPU,
               this.minAllowedMemory, this.maxAllowedCPU, this.maxAllowedMemory);
 
       // Migration/Rollout purpose: set up VPA objects even though the feature is not ramped up.
@@ -792,6 +799,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           !vpaRecommendation.getMemoryRecommendation().equals(flowResourceRecommendation.getMemoryRecommendation())) {
         flowResourceRecommendation.setCpuRecommendation(vpaRecommendation.getCpuRecommendation());
         flowResourceRecommendation.setMemoryRecommendation(vpaRecommendation.getMemoryRecommendation());
+        // Atomic lock-free update
+        flowResourceRecommendationMap.put(flowResourceRecommendation.getFlowId(),
+            flowResourceRecommendation);
         // We may choose to update DB periodically instead of every time.
         this.projectManager.updateFlowResourceRecommendation(flowResourceRecommendation);
       }
@@ -1077,26 +1087,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param executionId
    * @throws ExecutorManagerException
    */
-  private void createPod(final int executionId) throws ExecutorManagerException {
+  private void createPod(final int executionId)
+      throws ExecutorManagerException {
     // Fetch execution flow from execution Id.
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
-    FlowResourceRecommendation flowResourceRecommendation;
     // Fetch flow resource recommendation for the given execution flow
-    Project project = this.projectManager.getProject(flow.getProjectId());
-    synchronized (project) {
-      final Map<String, FlowResourceRecommendation> flowResourceRecommendationMap =
-          project.getFlowResourceRecommendationMap();
-      flowResourceRecommendation = flowResourceRecommendationMap.get(flow.getFlowId());
-      // Migration: for all old flows, flow resource recommendation hasn't been generated yet in the DB
-      if (flowResourceRecommendation == null) {
-        flowResourceRecommendation =
-            this.projectManager.createFlowResourceRecommendation(flow.getProjectId(),
-                flow.getFlowId());
-
-        flowResourceRecommendationMap.put(flow.getFlowId(), flowResourceRecommendation);
-      }
-    }
-
+    final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+        this.projectManager.getProject(flow.getProjectId()).getFlowResourceRecommendationMap();
+    // Migration: for all old flows, flow resource recommendation hasn't been generated yet in the DB
+    // Ensures flowResourceRecommendation is atomically cloned. Cloning ensures any modification
+    // to flowResourceRecommendation will not affect the value stored in flowResourceRecommendationMap
+    final FlowResourceRecommendation flowResourceRecommendation =
+        flowResourceRecommendationMap.computeIfAbsent(flow.getFlowId(), flowId ->
+        this.projectManager.createFlowResourceRecommendation(flow.getProjectId(),
+            flowId)).clone();
+    flowResourceRecommendationMap.putIfAbsent(flow.getFlowId(), flowResourceRecommendation);
 
     // Step 1: Fetch set of jobTypes for a flow from executionId
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
@@ -1121,10 +1126,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
-    final V1PodSpec podSpec = createPodSpec(flow, flowResourceRecommendation, versionSet, jobTypes,
-        this.dependencyTypes, flowParam);
+    final V1PodSpec podSpec = createPodSpec(flow, flowResourceRecommendation,
+        flowResourceRecommendationMap, versionSet,
+        jobTypes, this.dependencyTypes, flowParam);
     setSATokenAutomount(podSpec);
-    final V1ObjectMeta podMetadata = createPodMetadata(flow, flowResourceRecommendation, flowParam);
+    final V1ObjectMeta podMetadata = createPodMetadata(flow, flowResourceRecommendation.getId(),
+        flowParam);
 
     // If a pod-template is provided, merge its component definitions into the podSpec.
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {
@@ -1214,7 +1221,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private ImmutableMap getLabelsForPod(final ExecutableFlow executableFlow,
-      final FlowResourceRecommendation flowResourceRecommendation, Map<String, String> flowParam) {
+      final int flowResourceRecommendationId, Map<String, String> flowParam) {
     final int executionId = executableFlow.getExecutionId();
     final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
     mapBuilder.put(CLUSTER_LABEL_NAME, this.clusterName);
@@ -1225,7 +1232,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // azkaban flow.
     // In VPA, each VPA object will have its own label selector to choose all pods having the
     // same flow vpa label so that it can provide resource recommendation to one azkaban flow.
-    mapBuilder.put(FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendation));
+    mapBuilder.put(FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendationId));
 
     // Note that the service label must match the selector used for the corresponding service
     if (isServiceRequired()) {
@@ -1462,11 +1469,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * This method is used to get vpa name. It will be created using vpa name prefix, azkaban
    * cluster name and flow resource recommendation id.
    *
-   * @param recommendation
+   * @param recommendationId
    * @return
    */
-  private String getVPAName(final FlowResourceRecommendation recommendation) {
-    return String.join("-", this.vpaPrefix, this.clusterName, String.valueOf(recommendation.getId()));
+  private String getVPAName(final int recommendationId) {
+    return String.join("-", this.vpaPrefix, this.clusterName, String.valueOf(recommendationId));
   }
 
   /**
