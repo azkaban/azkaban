@@ -28,6 +28,7 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.executor.container.ContainerizedImpl;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.FlowTriggerService;
@@ -94,6 +95,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private FlowTriggerService flowTriggerService;
   private ExecutorManagerAdapter executorManagerAdapter;
+  private ContainerizedImpl containerizedImpl;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
 
@@ -108,6 +110,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.executorManagerAdapter = server.getExecutorManager();
+    if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+      this.containerizedImpl =
+          ((ContainerizedDispatchManager) this.executorManagerAdapter).getContainerizedImpl();
+    }
     this.scheduleManager = server.getScheduleManager();
     this.flowTriggerService = server.getFlowTriggerService();
   }
@@ -1068,6 +1074,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
               "ExecutorManagerAdapter is not of type: " + ContainerizedDispatchManager.class
                   .getName());
         }
+      } else if (propType.equals("containerizedImpl")) {
+        if (this.containerizedImpl != null) {
+          updateContainerizedImplProps(req, ret);
+        } else {
+          ret.put("error", "ContainerizedImpl is null");
+        }
       } else if (propType.equals("general")) {
         updateGeneralProps(req, ret);
       } else {
@@ -1084,7 +1096,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     ContainerizedDispatchManager containerizedDispatchManager = (ContainerizedDispatchManager) this.executorManagerAdapter;
     String subType = getParam(req, "subType");
-    ContainerPropUpdate containerPropUpdate = ContainerPropUpdate.fromParam(subType);
+    PropUpdate containerPropUpdate = PropUpdate.fromParam(subType);
     String val = getParam(req, "val");
     switch (containerPropUpdate) {
       case UPDATE_ALLOW_LIST:
@@ -1119,13 +1131,31 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  private void updateContainerizedImplProps(final HttpServletRequest req,
+      final HashMap<String, Object> ret)
+      throws ServletException {
+    String subType = getParam(req, "subType");
+    PropUpdate propUpdate = PropUpdate.fromParam(subType);
+    String val = getParam(req, "val");
+    switch (propUpdate) {
+      case UPDATE_VPA_RAMP_UP:
+        this.containerizedImpl.setVPARampUp(Integer.parseInt(val));
+        break;
+      case UPDATE_VPA_ENABLED:
+        this.containerizedImpl.setVPAEnabled(Boolean.parseBoolean(val));
+        break;
+      default:
+        break;
+    }
+  }
+
   private void updateGeneralProps(final HttpServletRequest req,
       final HashMap<String, Object> ret)
       throws ServletException {
     String subType = getParam(req, "subType");
-    GeneralPropUpdate generalPropUpdate = GeneralPropUpdate.fromParam(subType);
+    PropUpdate propUpdate = PropUpdate.fromParam(subType);
     String val = getParam(req, "val");
-    switch (generalPropUpdate) {
+    switch (propUpdate) {
       case ENABLE_OFFLINE_LOGS_LOADER:
         this.executorManagerAdapter.enableOfflineLogsLoader(Boolean.parseBoolean(val));
         break;
@@ -1161,42 +1191,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   }
 }
 
-enum ContainerPropUpdate {
+enum PropUpdate {
   UPDATE_ALLOW_LIST("updateAllowList"),
   APPEND_ALLOW_LIST("appendAllowList"),
   REMOVE_FROM_ALLOW_LIST("removeFromAllowList"),
   UPDATE_RAMP_UP("updateRampUp"),
   APPEND_DENY_LIST("appendDenyList"),
   REMOVE_FROM_DENY_LIST("removeFromDenyList"),
-  RELOAD_FLOW_FILTER("reloadFlowFilter");
-
-  private final String param;
-
-  ContainerPropUpdate(String param) {
-    this.param = param;
-  }
-
-  public String getParam() {
-    return param;
-  }
-
-  public static ContainerPropUpdate fromParam(String param) {
-    for (ContainerPropUpdate value : ContainerPropUpdate.values()) {
-      if (value.getParam().equals(param)) {
-        return value;
-      }
-    }
-    throw new IllegalArgumentException(
-        "No ContainerPropUpdate corresponding to param value " + param);
-  }
-}
-
-enum GeneralPropUpdate {
+  RELOAD_FLOW_FILTER("reloadFlowFilter"),
+  UPDATE_VPA_RAMP_UP("updateVPARampUp"),
+  UPDATE_VPA_ENABLED("updateVPAEnabled"),
   ENABLE_OFFLINE_LOGS_LOADER("enableOfflineLogsLoader");
 
   private final String param;
 
-  GeneralPropUpdate(String param) {
+  PropUpdate(String param) {
     this.param = param;
   }
 
@@ -1204,13 +1213,13 @@ enum GeneralPropUpdate {
     return param;
   }
 
-  public static GeneralPropUpdate fromParam(String param) {
-    for (GeneralPropUpdate value : GeneralPropUpdate.values()) {
+  public static PropUpdate fromParam(String param) {
+    for (PropUpdate value : PropUpdate.values()) {
       if (value.getParam().equals(param)) {
         return value;
       }
     }
     throw new IllegalArgumentException(
-        "No GeneralPropUpdate corresponding to param value " + param);
+        "No PropUpdate corresponding to param value " + param);
   }
 }

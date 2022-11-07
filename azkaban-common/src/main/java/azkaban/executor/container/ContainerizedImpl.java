@@ -23,4 +23,33 @@ public interface ContainerizedImpl {
   void createContainer(final int executionId) throws ExecutorManagerException;
   void deleteContainer(final int executionId) throws ExecutorManagerException;
   Set<Integer> getContainersByDuration(final Duration containerDuration) throws ExecutorManagerException;
+
+  /**
+   * Set up ramp up rate for VPA feature. For example, if rampUp is 10%, 10% of flows will be
+   * guided by VPA to determine flow resource limits.
+   *
+   * @param rampUp VPA rampUp rate: e.g. 0, 10, 20, 100
+   */
+  void setVPARampUp(int rampUp);
+
+  /**
+   * Get the current VPA ramp up rate.
+   *
+   * @return current VPA ramp up rate
+   */
+  int getVPARampUp();
+
+  /**
+   * Globally enable or disable VPA feature. It takes precedence over the VPA ramp up rate.
+   *
+   * @param enabled VPA enabled status
+   */
+  void setVPAEnabled(boolean enabled);
+
+  /**
+   * Get the current VPA enabled status.
+   *
+   * @return VPA enabled status
+   */
+  boolean getVPAEnabled();
 }

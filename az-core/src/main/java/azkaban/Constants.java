@@ -684,15 +684,28 @@ public class Constants {
         "flow.container.";
     public static final String KUBERNETES_FLOW_CONTAINER_NAME =
         KUBERNETES_FLOW_CONTAINER_PREFIX + ".name";
+    public static final String KUBERNETES_FLOW_CONTAINER_CPU_RECOMMENDATION_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.recommendation.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "cpu.limit.multiplier";
+    // Provide min allowed cpu for ramping up VPA in case if unfortunately VPA gives incorrect extremely
+    // low CPU recommendation. This config can be removed in the future once VPA feature is stable.
+    public static final String KUBERNETES_FLOW_CONTAINER_MIN_ALLOWED_CPU =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "min.allowed.cpu";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.cpu";
     public static final String KUBERNETES_FLOW_CONTAINER_CPU_REQUEST =
         KUBERNETES_FLOW_CONTAINER_PREFIX +
             "cpu.request";
+    public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_RECOMMENDATION_MULTIPLIER =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.recommendation.multiplier";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "memory.limit.multiplier";
+    // Provide min allowed memory for ramping up VPA in case if unfortunately VPA gives incorrect
+    // extremely low memory recommendation. This config can be removed in the future once VPA
+    // feature is stable.
+    public static final String KUBERNETES_FLOW_CONTAINER_MIN_ALLOWED_MEMORY =
+        KUBERNETES_FLOW_CONTAINER_PREFIX + "min.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "max.allowed.memory";
     public static final String KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST =
@@ -738,6 +751,12 @@ public class Constants {
         KUBERNETES_VPA_PREFIX + "max.allowed.no.recommendation.since.creation.sec";
     public static final String KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC =
         KUBERNETES_VPA_PREFIX + "max.allowed.get.recommendation.timeout.sec";
+    public static final String KUBERNETES_VPA_NAME_PREFIX = KUBERNETES_VPA_PREFIX +
+        "name.prefix";
+    public static final String KUBERNETES_VPA_RAMPUP =
+        KUBERNETES_VPA_PREFIX + "rampup";
+    public static final String KUBERNETES_VPA_ENABLED =
+        KUBERNETES_VPA_PREFIX + "enabled";
 
     // Kubernetes Watch related properties
     public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";

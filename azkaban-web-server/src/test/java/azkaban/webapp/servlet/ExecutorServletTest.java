@@ -19,12 +19,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.DummyEventListener;
+import azkaban.executor.container.ContainerizedImpl;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
@@ -36,6 +40,8 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Assert;
@@ -220,5 +226,55 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     this.req.addParameter("val","false");
     this.executorServlet.handlePost(this.req, this.res, this.session);
     assertFalse(abstractExecutorManagerAdapter.isOfflineLogsLoaderEnabled());
+  }
+
+  @Test
+  public void testPostAjaxUpdateContainerizedImplProperty() throws Exception {
+    AtomicInteger vpaRampup = new AtomicInteger(0);
+    AtomicBoolean vpaEnabled = new AtomicBoolean(true);
+    ContainerizedImpl containerizedImpl = mock(ContainerizedImpl.class);
+    Mockito.when(containerizedImpl.getVPARampUp()).thenReturn(vpaRampup.get());
+    Mockito.when(containerizedImpl.getVPAEnabled()).thenReturn(vpaEnabled.get());
+
+    doAnswer(invocation -> {
+      vpaRampup.set(invocation.getArgument(0));
+      return null;
+    }).when(containerizedImpl).setVPARampUp(anyInt());
+
+    doAnswer(invocation -> {
+      vpaEnabled.set(invocation.getArgument(0));
+      return null;
+    }).when(containerizedImpl).setVPAEnabled(anyBoolean());
+
+    ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
+        new Props(), null, null, null, null, null,
+        null, containerizedImpl, null, null, new DummyEventListener(),
+        new DummyContainerizationMetricsImpl(), null);
+    Mockito.when(this.azkabanWebServer.getExecutorManager())
+        .thenReturn(containerizedDispatchManager);
+    this.executorServlet.init(this.servletConfig);
+
+    this.req.addParameter("ajax", "updateProp");
+    this.req.addParameter("propType", "containerizedImpl");
+    this.req.addParameter("subType", "updateVPARampUp");
+    this.req.addParameter("val", "100");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertEquals(vpaRampup.get(), 100);
+
+    this.req.removeParameter("val");
+    this.req.addParameter("val", "0");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertEquals(vpaRampup.get(), 0);
+
+    this.req.removeParameter("subType");
+    this.req.addParameter("subType", "updateVPAEnabled");
+    this.req.addParameter("val", "false");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertFalse(vpaEnabled.get());
+
+    this.req.removeParameter("val");
+    this.req.addParameter("val", "true");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertTrue(vpaEnabled.get());
   }
 }
