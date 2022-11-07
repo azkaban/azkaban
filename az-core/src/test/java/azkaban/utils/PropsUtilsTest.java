@@ -66,6 +66,22 @@ public class PropsUtilsTest {
   }
 
   @Test
+  public void testResolveProps() throws IOException {
+    final Props props = new Props();
+
+    props.put("spark.version.sparky", "2.3.0");
+    props.put("spark.version", "${spark.version.${spark.branch}}");
+    props.put("spark.branch", "${test}");
+    props.put("test", "sparky");
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    final Props resolved = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals("${A}",resolved.get("B"));
+    Assert.assertEquals("${A}", resolved.get("C"));
+    Assert.assertEquals("2.3.0",resolved.get("spark.version"));
+  }
+
+  @Test
   public void testInvalidSyntax() throws Exception {
     final Props propsGrandParent = new Props();
     final Props propsParent = new Props(propsGrandParent);
