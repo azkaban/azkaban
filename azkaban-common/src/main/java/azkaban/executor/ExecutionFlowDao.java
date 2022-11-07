@@ -147,6 +147,30 @@ public class ExecutionFlowDao {
   public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
       final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException {
+    return fetchFlowsForStatusWithTimeValidity(status, validityMap, true);
+  }
+
+
+  public List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException {
+    return fetchFlowsForStatusWithTimeValidity(status, validityMap, false);
+  }
+
+  /**
+   *
+   * @param status the status of flows you want
+   * @param validityMap contains the status as key, the value is a pair, defining timestamp by
+   *                    subtracting a duration from now, and what event time (submit/start/update)
+   *                    this timestamp is comparing with
+   * @param looksForStale if true return flows is stale comparing to this timestamp, else find
+   *                      flows fresher than this timestamp
+   */
+  List<ExecutableFlow> fetchFlowsForStatusWithTimeValidity(
+      final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap,
+      boolean looksForStale)
+      throws ExecutorManagerException {
     if (!validityMap.containsKey(status)) {
       throw new ExecutorManagerException(
           "Validity duration is not defined for status: " + status.name());
@@ -156,7 +180,8 @@ public class ExecutionFlowDao {
     final String validityFrom = validity.getSecond();
     final long beforeInMillis = System.currentTimeMillis() - validityDuration.toMillis();
 
-    // For status PREPARING (20), validityDuration is 15 Mins and validityFrom is "submit_time"
+    // For status PREPARING (20), to find stale flows, validityDuration is 15 Mins and validityFrom
+    // is "submit_time", and they query will be:
     // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef
     // WHERE status=20 AND submit_time>0 AND submit_time<beforeInMillis
     final StringBuilder query = new StringBuilder()
@@ -164,7 +189,7 @@ public class ExecutionFlowDao {
         .append(" WHERE status=? ")
         .append(" AND dispatch_method=?")
         .append(" AND " + validityFrom + ">0")
-        .append(" AND " + validityFrom + "<?");
+        .append(" AND " + validityFrom + (looksForStale ? "<" : ">=") + "?");
     try {
       return this.dbOperator.query(query.toString(), new FetchExecutableFlows(),
           status.getNumVal(), DispatchMethod.CONTAINERIZED.getNumVal(), beforeInMillis);
@@ -494,7 +519,8 @@ public class ExecutionFlowDao {
           } else {
             execIds = transOperator.query(
                 String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal());
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(),
+                dispatchMethod.getNumVal());
           }
           if (CollectionUtils.isNotEmpty(execIds)) {
             executions.addAll(execIds);
@@ -532,6 +558,7 @@ public class ExecutionFlowDao {
 
   /**
    * Updates version set id for the given executionId
+   *
    * @param executionId
    * @param versionSetId
    * @return int

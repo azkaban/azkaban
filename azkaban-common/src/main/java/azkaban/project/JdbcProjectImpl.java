@@ -807,14 +807,14 @@ public class JdbcProjectImpl implements ProjectLoader {
   @Override
   public synchronized FlowResourceRecommendation createFlowResourceRecommendation(final int projectId, final String flowId)
       throws ProjectManagerException {
-    logger.info("Creating flow recommendation " + flowId);
+    logger.info("Creating flow resource recommendation " + flowId);
     final String INSERT_FLOW_RESOURCE_RECOMMENDATION =
         "INSERT INTO project_flow_resource_recommendations (project_id, flow_id, modified_time) values (?,?,?)";
 
     final SQLTransaction<Integer> insertFlowResourceRecommendation = transOperator ->
         transOperator.update(INSERT_FLOW_RESOURCE_RECOMMENDATION, projectId, flowId, System.currentTimeMillis());;
 
-    // Insert flow recommendation
+    // Insert flow resource recommendation
     try {
       final int numRowsInserted = this.dbOperator.transaction(insertFlowResourceRecommendation);
       if (numRowsInserted == 0) {
@@ -822,7 +822,7 @@ public class JdbcProjectImpl implements ProjectLoader {
       }
     } catch (final SQLException ex) {
       logger.error(INSERT_FLOW_RESOURCE_RECOMMENDATION + " failed.", ex);
-      throw new ProjectManagerException("Insert flow recommendation " + flowId + " for existing "
+      throw new ProjectManagerException("Insert flow resource recommendation " + flowId + " for existing "
           + "project failed. ", ex);
     }
     return fetchFlowResourceRecommendation(projectId, flowId);
@@ -831,7 +831,7 @@ public class JdbcProjectImpl implements ProjectLoader {
   @Override
   public void updateFlowResourceRecommendation(final FlowResourceRecommendation flowResourceRecommendation)
       throws ProjectManagerException {
-    logger.info("Updating flow recommendation " + flowResourceRecommendation.getId());
+    logger.info("Updating flow resource recommendation " + flowResourceRecommendation.getId());
     final String UPDATE_FLOW =
         "UPDATE project_flow_resource_recommendations SET cpu_recommendation=?,memory_recommendation=?,"
             + "disk_recommendation=?,modified_time=? WHERE id=?";
@@ -842,22 +842,22 @@ public class JdbcProjectImpl implements ProjectLoader {
               flowResourceRecommendation.getDiskRecommendation(), System.currentTimeMillis(),
               flowResourceRecommendation.getId());
     } catch (final SQLException e) {
-      logger.error("Error updating flow recommendation", e);
-      throw new ProjectManagerException("Error updating flow recommendation " + flowResourceRecommendation.getId(), e);
+      logger.error("Error updating flow resource recommendation", e);
+      throw new ProjectManagerException("Error updating flow resource recommendation " + flowResourceRecommendation.getId(), e);
     }
   }
 
   @Override
   public FlowResourceRecommendation fetchFlowResourceRecommendation(final int projectId, final String flowId)
       throws ProjectManagerException {
-    logger.info("Fetching flow recommendation. ProjectId: " + projectId + ", FlowId: " + flowId);
+    logger.info("Fetching flow resource recommendation. ProjectId: " + projectId + ", FlowId: " + flowId);
     try {
       return this.dbOperator
           .query(ProjectFlowResourceRecommendationsResultHandler.SELECT_PROJECT_FLOW_RESOURCE_RECOMMENDATION,
               new ProjectFlowResourceRecommendationsResultHandler(), projectId, flowId).get(0);
     } catch (final SQLException | IndexOutOfBoundsException e) {
-      logger.error("Error fetching flow recommendation", e);
-      throw new ProjectManagerException("Error fetching flow recommendation. ProjectId: " + projectId + ", FlowId: " + flowId, e);
+      logger.error("Error fetching flow resource recommendation", e);
+      throw new ProjectManagerException("Error fetching flow resource recommendation. ProjectId: " + projectId + ", FlowId: " + flowId, e);
     }
   }
 

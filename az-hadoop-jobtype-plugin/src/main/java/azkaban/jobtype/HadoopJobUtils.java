@@ -366,48 +366,25 @@ public class HadoopJobUtils {
     properties.putAll(jobProps.getFlattened());
 
     // todo: use feature flag, default to use legacy mode
-    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
-    if (YARN_KILL_USE_API_WITH_TOKEN.equals(yarnKillVersion)){
-      try {
-        if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
-          final UserGroupInformation proxyUser =
-              HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
-                  tokenFile.getAbsolutePath(), log);
-          proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
-            @Override
-            public Void run() throws Exception {
-              findAndKillYarnApps(jobProps, log);
-              return null;
-            }
-          });
-        } else {
-          findAndKillYarnApps(jobProps, log);
-        }
-      } catch (final Throwable t) {
-        log.warn("something happened while trying to kill all spawned jobs", t);
+    try {
+      if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
+        final UserGroupInformation proxyUser =
+            HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
+                tokenFile.getAbsolutePath(), log);
+        proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
+          @Override
+          public Void run() throws Exception {
+            findAndKillYarnApps(jobProps, log);
+            return null;
+          }
+        });
+      } else {
+        findAndKillYarnApps(jobProps, log);
       }
-    } else {
-      final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
-      log.info("Log file path is: " + logFilePath);
-      try {
-        if (HadoopSecureWrapperUtils.shouldProxy(properties)) {
-          final UserGroupInformation proxyUser =
-              HadoopSecureWrapperUtils.setupProxyUser(properties,
-                  tokenFile.getAbsolutePath(), log);
-          proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
-            @Override
-            public Void run() throws Exception {
-              HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
-              return null;
-            }
-          });
-        } else {
-          HadoopJobUtils.killAllSpawnedHadoopJobs(logFilePath, log, jobProps);
-        }
-      } catch (final Throwable t) {
-        log.warn("something happened while trying to kill all spawned jobs", t);
-      }
+    } catch (final Throwable t) {
+      log.warn("something happened while trying to kill all spawned jobs", t);
     }
+
 
   }
 
@@ -421,9 +398,9 @@ public class HadoopJobUtils {
 
 
   /**
-   * Get the yarn applications' ids that needs to be killed (the ones alive / spawned).
-   * First use yarn client to call the cluster, if it fails,
-   * fallback to scan the job log file to look for application ids
+   * Get the yarn applications' ids that needs to be killed (the ones alive / spawned). First use
+   * yarn client to call the cluster, if it fails, fallback to scan the job log file to look for
+   * application ids
    *
    * @param yarnClient the started client
    * @param jobProps   should contain flow execution id, and the job log file's path
@@ -433,19 +410,25 @@ public class HadoopJobUtils {
   public static Set<String> getApplicationIDsToKill(YarnClient yarnClient, Props jobProps,
       final Logger log) {
     Set<String> jobsToKill;
-    try {
-      jobsToKill = YarnUtils.getAllAliveAppIDsByExecID(yarnClient,
-          jobProps.getString(AZKABAN_FLOW_EXEC_ID), log);
-      log.info(String.format("Get alive yarn application IDs from yarn cluster: %s", jobsToKill));
-    } catch (Exception e) {
-      log.warn("fail to get application-ids from yarn, fallback to scan logfile", e);
+    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
+    if (YARN_KILL_USE_API_WITH_TOKEN.equals(yarnKillVersion)) {
+      try {
+        jobsToKill = YarnUtils.getAllAliveAppIDsByExecID(yarnClient,
+            jobProps.getString(AZKABAN_FLOW_EXEC_ID), log);
+        log.info(String.format("Get alive yarn application IDs from yarn cluster: %s", jobsToKill));
+      } catch (Exception e) {
+        log.warn("fail to get application-ids from yarn, fallback to scan logfile", e);
 
+        final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
+        log.info("The job log file path is: " + logFilePath);
+
+        jobsToKill = findApplicationIdFromLog(logFilePath, log);
+        log.info(String.format("Get all spawned yarn application IDs from job log file: %s",
+            jobsToKill));
+      }
+    } else{
       final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
-      log.info("The job log file path is: " + logFilePath);
-
       jobsToKill = findApplicationIdFromLog(logFilePath, log);
-      log.info(String.format("Get all spawned yarn application IDs from job log file: %s",
-          jobsToKill));
     }
     return jobsToKill;
   }
