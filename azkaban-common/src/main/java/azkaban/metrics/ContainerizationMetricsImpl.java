@@ -33,7 +33,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Meter podCompleted, podRequested, podScheduled, initContainerRunning,
       appContainerStarting, podReady, podInitFailure, podAppFailure;
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
-  private Meter executionStopped, containerDispatchFail;
+  private Meter executionStopped, oomKilled, containerDispatchFail, vpaRecommenderFail;
   private Histogram timeToDispatch;
   private volatile boolean isInitialized = false;
 
@@ -57,7 +57,9 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.flowSubmitToContainer = this.metricsManager.addMeter("Flow-Submit-To-Container-Meter");
     this.timeToDispatch = this.metricsManager.addHistogram("Time-To-Dispatch-Pod-Histogram");
     this.executionStopped = this.metricsManager.addMeter("Execution-Stopped-Meter");
+    this.oomKilled = this.metricsManager.addMeter("OOM-Killed-Meter");
     this.containerDispatchFail = this.metricsManager.addMeter("Container-Dispatch-Fail-Meter");
+    this.vpaRecommenderFail = this.metricsManager.addMeter("VPA-Recommender-Fail-Meter");
   }
 
   @Override
@@ -128,5 +130,11 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   public void markExecutionStopped() { executionStopped.mark(); }
 
   @Override
+  public void markOOMKilled() { oomKilled.mark(); }
+
+  @Override
   public void markContainerDispatchFail() { containerDispatchFail.mark(); }
+
+  @Override
+  public void markVPARecommenderFail() { vpaRecommenderFail.mark(); }
 }
