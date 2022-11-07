@@ -55,7 +55,6 @@ import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -607,7 +606,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
                     .valueOf(flowParams.get(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION)))) {
               versionInfo = this.imageRampupManager.getVersionInfo(imageType,
                   flowParams.get(imageTypeVersionOverrideParam),
-                  State.getNewActiveAndTestStateFilter());
+                  State.getNewActiveTestAndStableStateFilter());
               overlayMap.put(imageType, versionInfo);
               logger.info("User overridden image type {} of version {} is used", imageType,
                   versionInfo.getVersion());
@@ -1282,7 +1281,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (isDevPod(flowParams)) {
       return State.getAllStates();
     } else {
-      return State.getNewAndActiveStateFilter();
+      return State.getNewActiveAndStableStateFilter();
     }
   }
 

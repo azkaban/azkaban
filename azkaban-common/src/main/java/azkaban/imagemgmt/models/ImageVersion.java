@@ -166,36 +166,36 @@ public class ImageVersion extends BaseModel {
     /**
      * Create set of new and active state
      */
-    private static final Set<State> newAndActiveState =
+    private static final Set<State> newActiveAndStableState =
         Arrays.stream(State.values())
-            .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)))
+            .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE) || state.equals(State.STABLE)))
             .collect(Collectors.toSet());
 
     /**
      * Create set of new, active and test state
      */
-    private static final Set<State> newActiveAndTestState =
+    private static final Set<State> newActiveTestAndStableState =
         Arrays.stream(State.values())
             .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)
-                || state.equals(State.TEST)))
+                || state.equals(State.TEST) || state.equals(State.STABLE)))
             .collect(Collectors.toSet());
 
     /**
-     * Gets a set with NEW and ACTIVE state
+     * Gets a set with NEW, ACTIVE, or STABLE state
      *
      * @return Set<State>
      */
-    public static Set<State> getNewAndActiveStateFilter() {
-      return newAndActiveState;
+    public static Set<State> getNewActiveAndStableStateFilter() {
+      return newActiveAndStableState;
     }
 
     /**
-     * Gets a set with NEW, ACTIVE and TEST state
+     * Gets a set with NEW, ACTIVE, STABLE and TEST state
      *
      * @return Set<State>
      */
-    public static Set<State> getNewActiveAndTestStateFilter() {
-      return newActiveAndTestState;
+    public static Set<State> getNewActiveTestAndStableStateFilter() {
+      return newActiveTestAndStableState;
     }
 
     /**
