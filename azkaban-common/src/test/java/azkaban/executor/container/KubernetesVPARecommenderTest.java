@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import azkaban.executor.ExecutorManagerException;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.Props;
 import io.kubernetes.autoscaling.models.V1VerticalPodAutoscaler;
 import io.kubernetes.client.openapi.ApiClient;
@@ -35,6 +37,7 @@ public class KubernetesVPARecommenderTest {
   private static final String MAX_ALLOWED_MEMORY = "64Gi";
   private static final String EXPECTED_CPU_RECOMMENDATION_AFTER_MULTIPLIER = "1250m";
   private static final String EXPECTED_MEMORY_RECOMMENDATION_AFTER_MULTIPLIER = "10737418240";
+  private ContainerizationMetrics containerizationMetrics;
   private KubernetesVPARecommender kubernetesVPARecommender;
   private Props props = new Props();
   private ApiClient apiClient;
@@ -49,7 +52,8 @@ public class KubernetesVPARecommenderTest {
     // Set higher timeout in unit tests in case of flaky tests
     this.props.put(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC, 60 * 60);
     this.apiClient = mock(ApiClient.class);
-    this.kubernetesVPARecommender = new KubernetesVPARecommender(this.props, this.apiClient);
+    this.containerizationMetrics = new DummyContainerizationMetricsImpl();
+    this.kubernetesVPARecommender = new KubernetesVPARecommender(this.props, this.apiClient, this.containerizationMetrics);
     this.vpaWithoutRecommendationRecent = Yaml.loadAs(new File(currentClassLoader.getResource(
             "vpa_without_recommendation.yaml").getFile()), V1VerticalPodAutoscaler.class);
     this.vpaWithoutRecommendationRecent.setMetadata(this.vpaWithoutRecommendationRecent.getMetadata().creationTimestamp(
@@ -145,7 +149,7 @@ public class KubernetesVPARecommenderTest {
   public void throwTimeoutExceptionIfProcessTakesTooLong() throws Exception {
     // Trigger timeout sooner
     this.props.put(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC, 30);
-    this.kubernetesVPARecommender = new KubernetesVPARecommender(this.props, this.apiClient);
+    this.kubernetesVPARecommender = new KubernetesVPARecommender(this.props, this.apiClient, this.containerizationMetrics);
 
     when(this.apiClient.execute(any(), any())).thenAnswer(i -> {
       Thread.sleep(3 * 60 * 1000);

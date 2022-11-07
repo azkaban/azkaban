@@ -94,7 +94,17 @@ public interface ContainerizationMetrics {
   void markExecutionStopped();
 
   /**
+   * Record number of flow executions stopped due to app container OOM killed
+   */
+  void markOOMKilled();
+
+  /**
    * Record number of container dispatch failure
    */
   void markContainerDispatchFail();
+
+  /**
+   * Record number of vpa recommender get recommendation failure
+   */
+  void markVPARecommenderFail();
 }

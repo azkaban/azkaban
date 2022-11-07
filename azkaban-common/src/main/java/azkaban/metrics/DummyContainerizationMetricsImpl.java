@@ -88,6 +88,14 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
   }
 
   @Override
+  public void markOOMKilled() {
+  }
+
+  @Override
   public void markContainerDispatchFail() {
+  }
+
+  @Override
+  public void markVPARecommenderFail() {
   }
 }
