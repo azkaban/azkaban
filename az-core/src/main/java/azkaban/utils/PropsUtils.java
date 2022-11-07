@@ -245,12 +245,13 @@ public class PropsUtils {
 
       resolvedProps.put(key, replacedValue);
     }
-    for(String key: resolvedProps.getKeySet()) {
-      String value = resolvedProps.get(key);
+    for(final String key: resolvedProps.getKeySet()) {
+      final String value = resolvedProps.get(key);
       if(value.contains("${")) {
         Matcher m = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
         if(m.find(0) && resolvedProps.containsKey(m.group(1))) {
-          String replacement = resolveVariableReplacement(value, resolvedProps, visitedVariables,
+          final String replacement = resolveVariableReplacement(value, resolvedProps,
+              visitedVariables,
               allowUndefined);
           resolvedProps.put(key, replacement);
         }

@@ -50,7 +50,6 @@ public class PropsUtilsTest {
     props.put("res2", "${their} ${letter}");
     props.put("res7", "${my} ${res5}");
 
-
     propsParent.put("res3", "${your} ${their} ${res4}");
     propsGrandParent.put("res4", "${letter}");
     propsGrandParent.put("res5", "${their}");
