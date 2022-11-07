@@ -9,6 +9,7 @@ metadata:
     cluster: azkaban
     execution-id: execid-1
     app: azkaban-exec-server
+    flow-vpa: fc-vpa-azkaban-1
     service: flow-azkaban-1
     lkey1: template-lvalue1
     lkey2: lvalue2

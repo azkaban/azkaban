@@ -320,7 +320,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
           }
         }
       }
-    } catch (QuantityFormatException e) {
+    } catch (Exception e) {
      logger.error("Failed to parse quantity when doubling memory recommendation for execId " + executableFlow.getExecutionId());
     }
   }

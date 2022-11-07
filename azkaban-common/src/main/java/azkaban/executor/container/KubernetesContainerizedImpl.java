@@ -38,6 +38,8 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.watch.KubernetesWatch;
+import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
@@ -45,7 +47,10 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -74,14 +79,18 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
@@ -99,12 +108,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DEFAULT_FLOW_CONTAINER_NAME_PREFIX = "az-platform-image";
   public static final String DEFAULT_POD_NAME_PREFIX = "fc-dep";
   public static final String DEFAULT_SERVICE_NAME_PREFIX = "fc-svc";
+  public static final String DEFAULT_VPA_NAME_PREFIX = "fc-vpa";
   public static final String DEFAULT_CLUSTER_NAME = "azkaban";
+  public static final String DEFAULT_MIN_CPU = "500m";
+  public static final String DEFAULT_MIN_MEMORY = "3Gi";
   public static final String DEFAULT_MAX_CPU = "8";
   public static final String DEFAULT_MAX_MEMORY = "64Gi";
   public static final String DEFAULT_CPU_REQUEST = "1";
   public static final String DEFAULT_MEMORY_REQUEST = "2Gi";
+  // Expected: 90% usage for buffering
+  public static final double DEFAULT_CPU_RECOMMENDATION_MULTIPLIER = 1.1;
   public static final int DEFAULT_CPU_LIMIT_MULTIPLIER = 1;
+  // Expected: 70% usage for buffering
+  public static final double DEFAULT_MEMORY_RECOMMENDATION_MULTIPLIER = 1.4;
   public static final int DEFAULT_MEMORY_LIMIT_MULTIPLIER = 1;
   public static final String DEFAULT_DISK_REQUEST = "12Gi";
   public static final String DEFAULT_MAX_DISK = "50Gi";
@@ -125,12 +141,16 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String POD_APPLICATION_TAG = "azkaban-exec-server";
   public static final String CLUSTER_LABEL_NAME = "cluster";
   public static final String APP_LABEL_NAME = "app";
+  public static final String FLOW_VPA_LABEL_NAME = "flow-vpa";
   public static final String EXECUTION_ID_LABEL_NAME = "execution-id";
   public static final String EXECUTION_ID_LABEL_PREFIX = "execid-";
   public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
   private static final int DEFAULT_EXECUTION_ID = -1;
+
+  private static final VPARecommendation EMPTY_VPA_RECOMMENDATION = new VPARecommendation(null,
+      null);
 
   private final String namespace;
   private final ApiClient client;
@@ -139,14 +159,21 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ExecutorLoader executorLoader;
   private final String podPrefix;
   private final String servicePrefix;
+  private final String vpaPrefix;
   private final String clusterName;
   private final String clusterEnv;
   private final String flowContainerName;
+  private int vpaRampUp;
+  private boolean vpaEnabled;
+  private final double cpuRecommendationMultiplier;
   private int cpuLimitMultiplier;
-  private final String cpuRequest;
+  private final String defaultCpuRequest;
+  private final String minAllowedCPU;
   private final String maxAllowedCPU;
+  private final double memoryRecommendationMultiplier;
   private int memoryLimitMultiplier;
-  private final String memoryRequest;
+  private final String defaultMemoryRequest;
+  private final String minAllowedMemory;
   private final String maxAllowedMemory;
   private final String diskRequest;
   private final String maxAllowedDisk;
@@ -171,8 +198,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ContainerizationMetrics containerizationMetrics;
   private final String azkabanBaseImageName;
   private final String azkabanConfigImageName;
-  private final ProjectLoader projectLoader;
-
+  private final ProjectManager projectManager;
+  private final VPARecommender vpaRecommender;
+  private final VPARecommendation maxVpaRecommendation;
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -185,7 +213,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final KubernetesWatch kubernetesWatch,
       final EventListener eventListener,
       final ContainerizationMetrics containerizationMetrics,
-      final ProjectLoader projectLoader)
+      final ProjectManager projectManager,
+      final VPARecommender vpaRecommender,
+      final ApiClient client)
       throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.executorLoader = executorLoader;
@@ -194,7 +224,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.kubernetesWatch = kubernetesWatch;
     this.eventListener = eventListener;
     this.containerizationMetrics = containerizationMetrics;
-    this.projectLoader = projectLoader;
+    this.projectManager = projectManager;
+    this.vpaRecommender = vpaRecommender;
+    this.client = client;
+    this.coreV1Api = new CoreV1Api(this.client);
     this.addListener(this.eventListener);
     this.namespace = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
@@ -208,25 +241,46 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.servicePrefix = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_NAME_PREFIX,
             DEFAULT_SERVICE_NAME_PREFIX);
+    this.vpaPrefix = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_VPA_NAME_PREFIX,
+            DEFAULT_VPA_NAME_PREFIX);
     this.clusterName = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
     // This is utilized to set AZ_CLUSTER ENV variable to the POD containers.
     this.clusterEnv = this.azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_ENV,
         this.clusterName);
-    this.cpuRequest = this.azkProps
+    this.vpaRampUp =
+        this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_VPA_RAMPUP,
+        0);
+    this.vpaEnabled =
+        this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_VPA_ENABLED,
+            true);
+    this.defaultCpuRequest = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_REQUEST,
             DEFAULT_CPU_REQUEST);
     this.cpuLimitMultiplier = this.azkProps
         .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_LIMIT_MULTIPLIER,
             DEFAULT_CPU_LIMIT_MULTIPLIER);
+    this.cpuRecommendationMultiplier = this.azkProps
+        .getDouble(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_CPU_RECOMMENDATION_MULTIPLIER,
+            DEFAULT_CPU_RECOMMENDATION_MULTIPLIER);
+    this.minAllowedCPU = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MIN_ALLOWED_CPU
+            , DEFAULT_MIN_CPU);
     this.maxAllowedCPU = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_CPU
             , DEFAULT_MAX_CPU);
-    this.memoryRequest = this.azkProps.getString(ContainerizedDispatchManagerProperties.
+    this.defaultMemoryRequest = this.azkProps.getString(ContainerizedDispatchManagerProperties.
             KUBERNETES_FLOW_CONTAINER_MEMORY_REQUEST, DEFAULT_MEMORY_REQUEST);
+    this.memoryRecommendationMultiplier = this.azkProps
+        .getDouble(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_RECOMMENDATION_MULTIPLIER,
+            DEFAULT_MEMORY_RECOMMENDATION_MULTIPLIER);
     this.memoryLimitMultiplier = this.azkProps
         .getInt(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MEMORY_LIMIT_MULTIPLIER,
             DEFAULT_MEMORY_LIMIT_MULTIPLIER);
+    this.minAllowedMemory = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MIN_ALLOWED_MEMORY
+            , DEFAULT_MIN_MEMORY);
     this.maxAllowedMemory = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
             DEFAULT_MAX_MEMORY);
@@ -287,21 +341,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getBoolean(
             ContainerizedDispatchManagerProperties.KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT,
             false);
-    try {
-      // Path to the configuration file for Kubernetes which contains information about
-      // Kubernetes API Server and identity for authentication
-      final String kubeConfigPath = this.azkProps
-          .getString(ContainerizedDispatchManagerProperties.KUBERNETES_KUBE_CONFIG_PATH);
-      logger.info("Kube config path is : {}", kubeConfigPath);
-      this.client =
-          ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(
-              Files.newBufferedReader(Paths.get(kubeConfigPath), Charset.defaultCharset())))
-              .build();
-      this.coreV1Api = new CoreV1Api(this.client);
-    } catch (final IOException exception) {
-      logger.error("Unable to read kube config file: {}", exception.getMessage());
-      throw new ExecutorManagerException(exception);
-    }
+    this.maxVpaRecommendation = new VPARecommendation(this.maxAllowedCPU,
+        this.maxAllowedMemory);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
   }
@@ -638,7 +679,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   /**
-   * @param executionId
+   * @param executableFlow
+   * @param flowResourceRecommendation
    * @param versionSet
    * @param jobTypes
    * @param dependencyTypes
@@ -646,22 +688,32 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @throws ExecutorManagerException
    */
   @VisibleForTesting
-  V1PodSpec createPodSpec(final int executionId, final VersionSet versionSet,
+  V1PodSpec createPodSpec(final ExecutableFlow executableFlow,
+      final FlowResourceRecommendation flowResourceRecommendation, final VersionSet versionSet,
       final SortedSet<String> jobTypes, final Set<String> dependencyTypes,
       final Map<String, String> flowParam)
       throws ExecutorManagerException {
+    // Gets execution id
+    final int executionId = executableFlow.getExecutionId();
     // Gets azkaban base image full path containing version.
     final String azkabanBaseImageFullPath = getAzkabanBaseImageFullPath(versionSet);
     // TODO: check if we need full path for config as well.
     final String azkabanConfigVersion = getAzkabanConfigVersion(versionSet);
     // Get CPU and memory requested for a flow container
-    final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam);
+    final VPARecommendation vpaRecommendation = getFlowContainerRecommendedRequests(executableFlow,
+        flowResourceRecommendation);
+    logger.info("VPA Recommendation for {} is: cpuRecommendation {}, memoryRecommendation {}",
+        executionId, vpaRecommendation == null ? null : vpaRecommendation.getCpuRecommendation(),
+        vpaRecommendation == null ? null : vpaRecommendation.getMemoryRecommendation());
+    final String flowContainerCPURequest = getFlowContainerCPURequest(flowParam,
+        vpaRecommendation.getCpuRecommendation());
     final String flowContainerCPULimit =
-        getResourceLimitFromResourceRequest(flowContainerCPURequest, this.cpuRequest,
+        getResourceLimitFromResourceRequest(flowContainerCPURequest, this.defaultCpuRequest,
             this.cpuLimitMultiplier);
-    final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam);
+    final String flowContainerMemoryRequest = getFlowContainerMemoryRequest(flowParam,
+        vpaRecommendation.getMemoryRecommendation());
     final String flowContainerMemoryLimit = getResourceLimitFromResourceRequest(
-        flowContainerMemoryRequest, this.memoryRequest,
+        flowContainerMemoryRequest, this.defaultMemoryRequest,
         this.memoryLimitMultiplier);
     final String flowContainerDiskRequest = getFlowContainerDiskRequest(flowParam);
     logger.info("Creating pod for execution-id: " + executionId);
@@ -693,65 +745,150 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   }
 
   @VisibleForTesting
-  V1ObjectMeta createPodMetadata(final int executionId, Map<String, String> flowParam) {
+  V1ObjectMeta createPodMetadata(final ExecutableFlow executableFlow,
+      final FlowResourceRecommendation flowResourceRecommendation, Map<String, String> flowParam) {
     return new V1ObjectMetaBuilder()
-        .withName(getPodName(executionId))
+        .withName(getPodName(executableFlow.getExecutionId()))
         .withNamespace(this.namespace)
-        .addToLabels(getLabelsForPod(executionId, flowParam))
+        .addToLabels(getLabelsForPod(executableFlow, flowResourceRecommendation, flowParam))
         .addToAnnotations(getAnnotationsForPod())
         .build();
   }
 
   /**
+   * Create FlowResourceRecommendation if not exist; Get recommended requests from VPA; Persist
+   * recommendation to DB for caching if changed.
+   *
+   * @param executableFlow
+   * @param flowResourceRecommendation
+   * @return Nullable CPU request and nullable memory request for a flow container
+   */
+  @VisibleForTesting
+  VPARecommendation getFlowContainerRecommendedRequests(final ExecutableFlow executableFlow,
+      final FlowResourceRecommendation flowResourceRecommendation) {
+    // VPA is disabled globally: do not create VPA object.
+    if (!this.vpaEnabled) {
+      return EMPTY_VPA_RECOMMENDATION;
+    }
+
+    try {
+      // Top-down approach to apply maxAllowedMemory first and then find the optimal memory request
+      final VPARecommendation vpaRecommendation =
+          this.vpaRecommender.getFlowContainerRecommendedRequests(this.namespace,
+              FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendation), this.flowContainerName,
+              this.cpuRecommendationMultiplier, this.memoryRecommendationMultiplier, this.minAllowedCPU,
+              this.minAllowedMemory, this.maxAllowedCPU, this.maxAllowedMemory);
+
+      // Migration/Rollout purpose: set up VPA objects even though the feature is not ramped up.
+      if (!IsVPAEnabledForFlow(executableFlow)) {
+        return EMPTY_VPA_RECOMMENDATION;
+      }
+
+      if (vpaRecommendation == null) {
+          return maxVpaRecommendation;
+      }
+
+      if (!vpaRecommendation.getCpuRecommendation().equals(flowResourceRecommendation.getCpuRecommendation()) ||
+          !vpaRecommendation.getMemoryRecommendation().equals(flowResourceRecommendation.getMemoryRecommendation())) {
+        flowResourceRecommendation.setCpuRecommendation(vpaRecommendation.getCpuRecommendation());
+        flowResourceRecommendation.setMemoryRecommendation(vpaRecommendation.getMemoryRecommendation());
+        // We may choose to update DB periodically instead of every time.
+        this.projectManager.updateFlowResourceRecommendation(flowResourceRecommendation);
+      }
+
+      return vpaRecommendation;
+    } catch (ExecutorManagerException | ProjectManagerException e) {
+      logger.error("Cannot apply resource recommendation from VPA for execId {}", executableFlow
+          .getExecutionId(), e);
+      // It is fine if cpu recommendation or memory recommendation is null here.
+      return new VPARecommendation(flowResourceRecommendation.getCpuRecommendation(),
+          flowResourceRecommendation.getMemoryRecommendation());
+    }
+  }
+
+  /**
    * This method is used to get cpu request for a flow container. Precedence is defined below. a)
-   * Use CPU request set in flow parameter constrained by max allowed cpu set in config b) Use cpu
-   * request set in system properties or default which is set in @cpuRequest.
+   * Use max(CPU request set in flow parameter, CPU request recommendation value from VPA) b) Use
+   * cpu request set in system properties or default which is set in @cpuRequest.
+   * Above result is constrained by min&max allowed cpu set in config.
    *
    * @param flowParam
+   * @param CPURequestFromVPA
    * @return CPU request for a flow container
    */
   @VisibleForTesting
-  String getFlowContainerCPURequest(final Map<String, String> flowParam) {
-    if (flowParam == null || flowParam.isEmpty() || !flowParam
+  String getFlowContainerCPURequest(final Map<String, String> flowParam,
+      @Nullable final String CPURequestFromVPA) {
+    String cpuRequest = getRawFlowContainerCPURequest(flowParam, CPURequestFromVPA);
+    if (compareResources(cpuRequest, this.minAllowedCPU) <= 0) {
+      return this.minAllowedCPU;
+    } else if (compareResources(cpuRequest, this.maxAllowedCPU) >= 0) {
+      return this.maxAllowedCPU;
+    }
+    return cpuRequest;
+  }
+
+  private String getRawFlowContainerCPURequest(final Map<String, String> flowParam,
+      @Nullable final String CPURequestFromVPA) {
+    String cpuRequest = null;
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST)) {
-      return this.cpuRequest;
+      cpuRequest = flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
+
+      if (!isValidResource(cpuRequest)) {
+        cpuRequest = null;
+      }
     }
-    String userCPURequest =
-        flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST);
-    int resourceCompare = compareResources(this.maxAllowedCPU, userCPURequest);
-    if (resourceCompare < 0) { // user requested cpu exceeds max allowed cpu
-      userCPURequest = this.maxAllowedCPU;
-    } else if (resourceCompare ==0) {// if user requested memory has an parse error, or resource
-      // type is not correct, cpu request set in the config should be used
-      userCPURequest = this.cpuRequest;
+
+    if (CPURequestFromVPA != null && isValidResource(CPURequestFromVPA) && (cpuRequest == null ||
+        compareResources(cpuRequest, CPURequestFromVPA) < 0)) {
+      cpuRequest = CPURequestFromVPA;
     }
-    return userCPURequest;
+
+    return cpuRequest != null ? cpuRequest : this.defaultCpuRequest;
   }
 
   /**
    * This method is used to get memory request for a flow container. Precedence is defined below. a)
-   * Use memory request set in flow parameter constrained by max allowed memory set in config b) Use
-   * memory request set in system properties or default which is set in @memoryRequest
+   * Use max(memory request set in flow parameter, memory request recommendation value from VPA) b)
+   * Use memory request set in system properties or default which is set in @memoryRequest
+   * Above result is constrained by min&max allowed cpu set in config.
    *
    * @param flowParam
+   * @param memoryRequestFromVPA
    * @return Memory request for a flow container
    */
   @VisibleForTesting
-  String getFlowContainerMemoryRequest(final Map<String, String> flowParam) {
-    if (flowParam == null || flowParam.isEmpty() || !flowParam
+  String getFlowContainerMemoryRequest(final Map<String, String> flowParam,
+      @Nullable final String memoryRequestFromVPA) {
+    String memoryRequest = getRawFlowContainerMemoryRequest(flowParam, memoryRequestFromVPA);
+    if (compareResources(memoryRequest, this.minAllowedMemory) <= 0) {
+      return this.minAllowedMemory;
+    } else if (compareResources(memoryRequest, this.maxAllowedMemory) >= 0) {
+      return this.maxAllowedMemory;
+    }
+    return memoryRequest;
+  }
+
+  private String getRawFlowContainerMemoryRequest(final Map<String, String> flowParam,
+      @Nullable final String memoryRequestFromVPA) {
+    String memoryRequest = null;
+    if (flowParam != null && !flowParam.isEmpty() && flowParam
         .containsKey(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST)) {
-      return this.memoryRequest;
+      memoryRequest =
+          flowParam.get(Constants.FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
+
+      if (!isValidResource(memoryRequest)) {
+        memoryRequest = null;
+      }
     }
-    String userMemoryRequest =
-        flowParam.get(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST);
-    int resourceCompare = compareResources(this.maxAllowedMemory, userMemoryRequest);
-    if (resourceCompare < 0) { // user requested memory exceeds max allowed memory
-      userMemoryRequest = this.maxAllowedMemory;
-    } else if (resourceCompare == 0) {// if user requested memory has an parse error, or resource
-      // type is not correct, memory request set in the config should be used
-      userMemoryRequest = this.memoryRequest;
+
+    if (memoryRequestFromVPA != null && isValidResource(memoryRequestFromVPA) && (memoryRequest == null ||
+        compareResources(memoryRequest, memoryRequestFromVPA) < 0)) {
+      memoryRequest = memoryRequestFromVPA;
     }
-    return userMemoryRequest;
+
+    return memoryRequest != null ? memoryRequest : this.defaultMemoryRequest;
   }
 
   /**
@@ -787,26 +924,33 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * requested resource):
    * 1) if resource 1 >= resource 2, return 1;
    * 2) if resource 1 < resource 2, return -1;
-   * 3) if resource 1 cannot be compared with resource 2, e.g. parse error, mis-matching resource
-   * types, return 0;
+   * 3) if resource 1 cannot be compared with resource 2, e.g. parse error, return 0;
    * The format of a Kubernetes quantity indicates the type of resource, e.g. cpu, memory.
    * @param resource1
    * @param resource2
    * @return
    */
-  private int compareResources (final String resource1, final String resource2) {
+  private static int compareResources(final String resource1, final String resource2) {
     try {
       final Quantity quantity1 = new Quantity(resource1), quantity2 = new Quantity(resource2);
-      if (quantity1.getFormat() == quantity2.getFormat()) {
-        return quantity1.getNumber().compareTo(quantity2.getNumber()) < 0 ? -1 : 1;
-      }
-    } catch (final QuantityFormatException qe) { // only user requested resource in flow
+      return quantity1.getNumber().compareTo(quantity2.getNumber()) < 0 ? -1 : 1;
+    } catch (final Exception e) { // only user requested resource in flow
       // parameter could result in exception
-      logger.error("QuantityFormatException while parsing user requested resource: " + resource2);
+      logger.error("Exception while parsing requested resource: {}, {}",
+          resource1, resource2);
     }
     // Resources cannot be compared, e.g. resources are different (cpu vs. memory) or
     // exception encountered when parsing resource string
     return 0;
+  }
+
+  private static boolean isValidResource(final String resource) {
+    try {
+      new Quantity(resource);
+    } catch (final Exception e) {
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -936,6 +1080,24 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private void createPod(final int executionId) throws ExecutorManagerException {
     // Fetch execution flow from execution Id.
     final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
+    FlowResourceRecommendation flowResourceRecommendation;
+    // Fetch flow resource recommendation for the given execution flow
+    Project project = this.projectManager.getProject(flow.getProjectId());
+    synchronized (project) {
+      final Map<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+          project.getFlowResourceRecommendationMap();
+      flowResourceRecommendation = flowResourceRecommendationMap.get(flow.getFlowId());
+      // Migration: for all old flows, flow resource recommendation hasn't been generated yet in the DB
+      if (flowResourceRecommendation == null) {
+        flowResourceRecommendation =
+            this.projectManager.createFlowResourceRecommendation(flow.getProjectId(),
+                flow.getFlowId());
+
+        flowResourceRecommendationMap.put(flow.getFlowId(), flowResourceRecommendation);
+      }
+    }
+
+
     // Step 1: Fetch set of jobTypes for a flow from executionId
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     logger
@@ -959,9 +1121,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
-    final V1PodSpec podSpec = createPodSpec(executionId, versionSet, jobTypes, this.dependencyTypes, flowParam);
+    final V1PodSpec podSpec = createPodSpec(flow, flowResourceRecommendation, versionSet, jobTypes,
+        this.dependencyTypes, flowParam);
     setSATokenAutomount(podSpec);
-    final V1ObjectMeta podMetadata = createPodMetadata(executionId, flowParam);
+    final V1ObjectMeta podMetadata = createPodMetadata(flow, flowResourceRecommendation, flowParam);
 
     // If a pod-template is provided, merge its component definitions into the podSpec.
     if (StringUtils.isNotEmpty(this.podTemplatePath)) {
@@ -1050,11 +1213,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    *
    * @return
    */
-  private ImmutableMap getLabelsForPod(final int executionId, Map<String, String> flowParam) {
+  private ImmutableMap getLabelsForPod(final ExecutableFlow executableFlow,
+      final FlowResourceRecommendation flowResourceRecommendation, Map<String, String> flowParam) {
+    final int executionId = executableFlow.getExecutionId();
     final ImmutableMap.Builder mapBuilder = ImmutableMap.builder();
     mapBuilder.put(CLUSTER_LABEL_NAME, this.clusterName);
     mapBuilder.put(EXECUTION_ID_LABEL_NAME, EXECUTION_ID_LABEL_PREFIX + executionId);
     mapBuilder.put(APP_LABEL_NAME, POD_APPLICATION_TAG);
+    // Each azkaban execution pod will share the same flow vpa label if it comes from the same
+    // azkaban flow. This label is used for VPA to map multiple azkaban execution pods with one
+    // azkaban flow.
+    // In VPA, each VPA object will have its own label selector to choose all pods having the
+    // same flow vpa label so that it can provide resource recommendation to one azkaban flow.
+    mapBuilder.put(FLOW_VPA_LABEL_NAME, this.getVPAName(flowResourceRecommendation));
 
     // Note that the service label must match the selector used for the corresponding service
     if (isServiceRequired()) {
@@ -1086,6 +1257,38 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     selectorBuilder.append(CLUSTER_LABEL_NAME + "=" + clusterName).append(",")
         .append(APP_LABEL_NAME + "=" + POD_APPLICATION_TAG);
     return selectorBuilder.toString();
+  }
+
+  @Override
+  public void setVPARampUp(final int rampUp) {
+    this.vpaRampUp = rampUp;
+  }
+
+  @Override
+  public int getVPARampUp() {
+    return this.vpaRampUp;
+  }
+
+  @Override
+  public void setVPAEnabled(final boolean enabled) {
+    this.vpaEnabled = enabled;
+  }
+
+  @Override
+  public boolean getVPAEnabled() {
+    return this.vpaEnabled;
+  }
+
+  /**
+   * Return a boolean value indicates whether vertical pod autoscaler is enabled for a given flow
+   * based on ramp up rate and global vpa enabled flag
+   *
+   * @param executableFlow
+   * @return vpa enable status
+   */
+  private boolean IsVPAEnabledForFlow(ExecutableFlow executableFlow) {
+    int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(executableFlow);
+    return vpaEnabled && flowNameHashValMapping <= this.vpaRampUp;
   }
 
   /**
@@ -1253,6 +1456,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
           e.getResponseBody());
       throw new ExecutorManagerException(e);
     }
+  }
+
+  /**
+   * This method is used to get vpa name. It will be created using vpa name prefix, azkaban
+   * cluster name and flow resource recommendation id.
+   *
+   * @param recommendation
+   * @return
+   */
+  private String getVPAName(final FlowResourceRecommendation recommendation) {
+    return String.join("-", this.vpaPrefix, this.clusterName, String.valueOf(recommendation.getId()));
   }
 
   /**

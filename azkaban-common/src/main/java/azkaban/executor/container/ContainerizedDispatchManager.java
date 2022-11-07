@@ -118,6 +118,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
     this.executorHealthChecker = Optional.ofNullable(executorHealthChecker);
   }
 
+  public ContainerizedImpl getContainerizedImpl() {
+    return this.containerizedImpl;
+  }
+
   public ContainerJobTypeCriteria getContainerJobTypeCriteria() {
     return this.containerJobTypeCriteria;
   }
