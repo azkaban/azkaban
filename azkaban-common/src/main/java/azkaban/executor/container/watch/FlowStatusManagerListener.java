@@ -304,6 +304,12 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       final AzPodStatusMetadata event) {
     try {
       if (event.getFlowPodMetadata().isPresent() && event.getFlowPodMetadata().get().isOOMKilled()) {
+        if (containerizationMetrics.isInitialized()) {
+          containerizationMetrics.markOOMKilled();
+        } else {
+          logger.warn("Containerization metrics are not initialized");
+        }
+
         final Project project = this.projectManager.getProject(executableFlow.getProjectId());
         logger.info("Doubling memory recommendation for execId " + executableFlow.getExecutionId());
         synchronized (project) {

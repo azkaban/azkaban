@@ -4,6 +4,7 @@ import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETE
 import static azkaban.Constants.ContainerizedDispatchManagerProperties.KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC;
 
 import azkaban.executor.ExecutorManagerException;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import io.kubernetes.autoscaling.models.V1VerticalPodAutoscaler;
@@ -60,9 +61,11 @@ public class KubernetesVPARecommender implements VPARecommender {
   // Complete get recommendation function within this timeout.
   private final int maxAllowedGetRecommendationTimeoutSec;
   private final KubernetesVPARecommenderV1Api kubernetesVPARecommenderV1Api;
+  private final ContainerizationMetrics containerizationMetrics;
 
   @Inject
-  public KubernetesVPARecommender(final Props azkProps, final ApiClient client) {
+  public KubernetesVPARecommender(final Props azkProps, final ApiClient client, final
+      ContainerizationMetrics containerizationMetrics) {
     this.maxAllowedNoRecommendationSinceCreationSec =
         azkProps.getInt(KUBERNETES_VPA_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC,
             DEFAULT_MAX_ALLOWED_NO_RECOMMENDATION_SINCE_CREATION_SEC);
@@ -70,6 +73,7 @@ public class KubernetesVPARecommender implements VPARecommender {
         azkProps.getInt(KUBERNETES_VPA_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC,
             DEFAULT_MAX_ALLOWED_GET_RECOMMENDATION_TIMEOUT_SEC);
     this.kubernetesVPARecommenderV1Api = new KubernetesVPARecommenderV1Api(client);
+    this.containerizationMetrics = containerizationMetrics;
   }
 
   private void createVPAObject(final String namespace, final String flowVPALabelName,
@@ -183,6 +187,12 @@ public class KubernetesVPARecommender implements VPARecommender {
 
       return handler.get(maxAllowedGetRecommendationTimeoutSec, TimeUnit.SECONDS);
     } catch (Exception e) {
+      if (containerizationMetrics.isInitialized()) {
+        containerizationMetrics.markVPARecommenderFail();
+      } else {
+        logger.warn("Containerization metrics are not initialized");
+      }
+
       throw new ExecutorManagerException(e);
     } finally {
       executor.shutdownNow();
