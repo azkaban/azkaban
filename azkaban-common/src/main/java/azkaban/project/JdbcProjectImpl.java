@@ -807,7 +807,7 @@ public class JdbcProjectImpl implements ProjectLoader {
   @Override
   public synchronized FlowResourceRecommendation createFlowResourceRecommendation(final int projectId, final String flowId)
       throws ProjectManagerException {
-    logger.info("Creating flow resource recommendation " + flowId);
+    logger.info("Creating flow resource recommendation. ProjectId: " + projectId + ", FlowId: " + flowId);
     final String INSERT_FLOW_RESOURCE_RECOMMENDATION =
         "INSERT INTO project_flow_resource_recommendations (project_id, flow_id, modified_time) values (?,?,?)";
 
@@ -821,9 +821,10 @@ public class JdbcProjectImpl implements ProjectLoader {
         throw new ProjectManagerException("No flow resource recommendations have been inserted.");
       }
     } catch (final SQLException ex) {
-      logger.error(INSERT_FLOW_RESOURCE_RECOMMENDATION + " failed.", ex);
-      throw new ProjectManagerException("Insert flow resource recommendation " + flowId + " for existing "
-          + "project failed. ", ex);
+      // Possibly failed due to duplicate key. If not, fetchFlowResourceRecommendation will
+      // return another exception back.
+      logger.warn("Insert flow resource recommendation projectId: " + projectId + ", flowId: " + flowId
+          + " for existing project failed.", ex);
     }
     return fetchFlowResourceRecommendation(projectId, flowId);
   }

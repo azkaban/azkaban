@@ -48,6 +48,7 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.QuantityFormatException;
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -311,25 +312,38 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
         }
 
         final Project project = this.projectManager.getProject(executableFlow.getProjectId());
+        final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+            project.getFlowResourceRecommendationMap();
         logger.info("Doubling memory recommendation for execId " + executableFlow.getExecutionId());
-        synchronized (project) {
-          final FlowResourceRecommendation flowResourceRecommendation = project
-              .getFlowResourceRecommendation(executableFlow.getFlowId());
-          if (flowResourceRecommendation != null && flowResourceRecommendation.getMemoryRecommendation() != null) {
-            final Quantity oldQuantity = new Quantity(flowResourceRecommendation.getMemoryRecommendation());
+        final FlowResourceRecommendation flowResourceRecommendation =
+            flowResourceRecommendationMap.computeIfPresent(executableFlow.getFlowId(),
+            (flowId, recommendation) -> {
+          // Do not update the same object while computing a new mapping.
+          final FlowResourceRecommendation clone = recommendation.clone();
+
+          if (clone.getMemoryRecommendation() != null) {
+            final Quantity oldQuantity = new Quantity(clone.getMemoryRecommendation());
             final Quantity newQuantity =
                 new Quantity(oldQuantity.getNumber().multiply(new BigDecimal(2)),
-                oldQuantity.getFormat());
+                    oldQuantity.getFormat());
 
-            flowResourceRecommendation.setMemoryRecommendation(newQuantity.toSuffixedString());
-            this.projectManager.updateFlowResourceRecommendation(flowResourceRecommendation);
+            clone.setMemoryRecommendation(newQuantity.toSuffixedString());
           }
+          return clone;
+        });
+
+        // present
+        if (flowResourceRecommendation != null) {
+          flowResourceRecommendationMap.put(executableFlow.getFlowId(),
+              flowResourceRecommendation);
+          this.projectManager.updateFlowResourceRecommendation(flowResourceRecommendation);
         }
       }
     } catch (Exception e) {
      logger.error("Failed to parse quantity when doubling memory recommendation for execId " + executableFlow.getExecutionId());
     }
   }
+
   /**
    * Delete the the flow pod and any other related objects (such as services).
    *

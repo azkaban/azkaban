@@ -1,6 +1,6 @@
 package azkaban.flow;
 
-public class FlowResourceRecommendation {
+public class FlowResourceRecommendation implements Cloneable {
   private int id;
   private int projectId;
   private String flowId;
@@ -75,4 +75,14 @@ public class FlowResourceRecommendation {
     this.diskRecommendation = diskRecommendation;
   }
 
+  // Deep copy
+  @Override
+  public FlowResourceRecommendation clone() {
+    try {
+      return (FlowResourceRecommendation) super.clone();
+    } catch (CloneNotSupportedException e) {
+      // this shouldn't happen, since we are Cloneable
+      throw new InternalError(e);
+    }
+  }
 }
