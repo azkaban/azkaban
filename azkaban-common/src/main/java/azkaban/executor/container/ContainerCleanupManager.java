@@ -179,7 +179,6 @@ public class ContainerCleanupManager {
         .build();
 
     // get yarn config for instance without robin enabled
-    logger.info("AzkProps: hadoop.conf.dir.path=" + azkProps.getString(HADOOP_CONF_DIR_PATH, ""));
 
     // get config in instance using robin, so as can connect to multiple yarn cluster RMs
     for (Entry<String, Cluster> entry : this.clusterRouter.getAllClusters().entrySet()) {
@@ -195,6 +194,17 @@ public class ContainerCleanupManager {
       if (!allClusters.containsKey(yarnConfDir)) {
         allClusters.put(yarnConfDir, cluster);
       }
+    }
+    if (allClusters.isEmpty()) {
+      String hadoopConfDir = azkProps.getString(HADOOP_CONF_DIR_PATH, "");
+      if (hadoopConfDir.isEmpty()) {
+        logger.warn("No Cluster config or default hadoop-conf-dir-path specified,"
+            + " yarn app cleanup will not work");
+        return;
+      }
+      logger.info("AzkProps: hadoop.conf.dir.path=" + hadoopConfDir);
+      Props defaultClusterProps = Props.of(YARN_CONF_DIRECTORY_PROPERTY, hadoopConfDir);
+      allClusters.put(hadoopConfDir, new Cluster("default", defaultClusterProps));
     }
   }
 
