@@ -399,6 +399,19 @@ public class JdbcProjectImplTest {
   }
 
   @Test
+  public void testCreateFlowResourceRecommendationTwice() throws Exception {
+    final int projectId = 1;
+    final String flowId = "alwaysOk";
+    this.loader.createFlowResourceRecommendation(projectId, flowId);
+    final FlowResourceRecommendation flowResourceRecommendation = this.loader.createFlowResourceRecommendation(projectId, flowId);
+    Assert.assertEquals(flowResourceRecommendation.getProjectId(), projectId);
+    Assert.assertEquals(flowResourceRecommendation.getFlowId(), flowId);
+    Assert.assertNull(flowResourceRecommendation.getCpuRecommendation());
+    Assert.assertNull(flowResourceRecommendation.getMemoryRecommendation());
+    Assert.assertNull(flowResourceRecommendation.getDiskRecommendation());
+  }
+
+  @Test
   public void testUpdateFlowResourceRecommendation() throws Exception {
     final int projectId = 1;
     final String flowId = "alwaysOk1";

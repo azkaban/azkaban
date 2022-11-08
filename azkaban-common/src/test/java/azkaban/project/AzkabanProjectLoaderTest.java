@@ -109,11 +109,16 @@ public class AzkabanProjectLoaderTest {
 
   @After
   public void cleanUp() {
-    this.project.setFlowResourceRecommendations(new HashMap<>());
+    this.project.getFlowResourceRecommendationMap().clear();
   }
 
   @Test
   public void uploadProjectFAT() throws ExecutorManagerException {
+    when(this.projectLoader.createFlowResourceRecommendation(anyInt(), anyString())).thenAnswer(i -> {
+      final int projectId = i.getArgument(0, Integer.class);
+      final String flowId = i.getArgument(1, String.class);
+      return new FlowResourceRecommendation(10, projectId, flowId);
+    });
     when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
 
     final URL resource = requireNonNull(
@@ -143,6 +148,9 @@ public class AzkabanProjectLoaderTest {
 
     // Verify that the archiveUnthinner was never called
     verify(this.archiveUnthinner, never()).validateThinProject(any(), any(), any(), any());
+    verify(this.projectLoader)
+        .createFlowResourceRecommendation(eq(this.project.getId()),
+            eq(this.project.getFlows().get(0).getId()));
   }
 
   @Test
@@ -153,9 +161,8 @@ public class AzkabanProjectLoaderTest {
     final User uploader = new User("test_user");
 
     // same flow as the flow just uploaded
-    this.project.setFlowResourceRecommendations(new HashMap<String, FlowResourceRecommendation>(){{
-      put("shell_end", new FlowResourceRecommendation(1, 1, "shell_end"));
-    }});
+    this.project.getFlowResourceRecommendationMap().put("shell_end", new FlowResourceRecommendation(1, 1
+      , "shell_end"));
 
     this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
@@ -167,15 +174,18 @@ public class AzkabanProjectLoaderTest {
 
   @Test
   public void flowResourceRecommendationChangedWhenUploadProjectFAT() throws ExecutorManagerException {
+    when(this.projectLoader.createFlowResourceRecommendation(anyInt(), anyString())).thenAnswer(i -> {
+      final int projectId = i.getArgument(0, Integer.class);
+      final String flowId = i.getArgument(1, String.class);
+      return new FlowResourceRecommendation(10, projectId, flowId);
+    });
     final URL resource = requireNonNull(
         getClass().getClassLoader().getResource("sample_flow_01.zip"));
     final File projectZipFile = new File(resource.getPath());
     final User uploader = new User("test_user");
 
     // different flow as the flow just uploaded
-    this.project.setFlowResourceRecommendations(new HashMap<String, FlowResourceRecommendation>(){{
-      put("a", new FlowResourceRecommendation(1, 1, "a"));
-    }});
+    this.project.getFlowResourceRecommendationMap().put("a", new FlowResourceRecommendation(1, 1, "a"));
 
     this.project.setVersion(this.VERSION);
     checkValidationReport(this.azkabanProjectLoader
@@ -183,6 +193,9 @@ public class AzkabanProjectLoaderTest {
             IPv4));
 
     Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 2);
+    verify(this.projectLoader)
+        .createFlowResourceRecommendation(eq(this.project.getId()),
+            eq(this.project.getFlows().get(0).getId()));
   }
 
   @Test
@@ -333,6 +346,12 @@ public class AzkabanProjectLoaderTest {
 
   @Test
   public void uploadProjectWithYamlFilesFAT() throws Exception {
+    when(this.projectLoader.createFlowResourceRecommendation(anyInt(), anyString())).thenAnswer(i -> {
+      final int projectId = i.getArgument(0, Integer.class);
+      final String flowId = i.getArgument(1, String.class);
+      return new FlowResourceRecommendation(10, projectId, flowId);
+    });
+
     final File projectZipFile = ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YAML_DIR, PROJECT_ZIP);
     final int flowVersion = 0;
     final User uploader = new User("test_user");
@@ -350,7 +369,9 @@ public class AzkabanProjectLoaderTest {
             null, uploader, IPv6);
     verify(this.projectLoader)
         .uploadFlowFile(eq(this.ID), eq(this.VERSION + 1), any(File.class), eq(flowVersion + 1));
-
+    verify(this.projectLoader)
+        .createFlowResourceRecommendation(eq(this.project.getId()),
+            eq(this.project.getFlows().get(0).getId()));
   }
 
   private void checkValidationReport(final Map<String, ValidationReport> validationReportMap) {

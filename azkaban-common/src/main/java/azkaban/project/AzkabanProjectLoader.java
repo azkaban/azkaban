@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
@@ -278,7 +279,7 @@ class AzkabanProjectLoader {
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
       project.setFlows(flows);
 
-      final Map<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+      final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
           project.getFlowResourceRecommendationMap();
 
       final List<String> flowResourceRecommendationsToCreate = flows
@@ -288,10 +289,12 @@ class AzkabanProjectLoader {
           .collect(Collectors.toList());
 
       if (!flowResourceRecommendationsToCreate.isEmpty()) {
-        flowResourceRecommendationsToCreate.forEach(flowId ->
-                flowResourceRecommendationMap.put(flowId,
-                    this.projectLoader.createFlowResourceRecommendation(project.getId(), flowId))
-            );
+        flowResourceRecommendationsToCreate.forEach(flowId -> {
+              final FlowResourceRecommendation flowResourceRecommendation =
+                  flowResourceRecommendationMap.computeIfAbsent(flowId, fid ->
+                      this.projectLoader.createFlowResourceRecommendation(project.getId(), fid));
+              flowResourceRecommendationMap.putIfAbsent(flowId, flowResourceRecommendation);
+        });
       }
 
       // Set the project version before upload of project files happens so that the files use

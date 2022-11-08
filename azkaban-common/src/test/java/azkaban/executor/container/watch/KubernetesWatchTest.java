@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -122,7 +123,8 @@ public class KubernetesWatchTest {
   private static int EXECUTION_ID_WITH_INVALID_TRANSITIONS = 999;
 
   private static final String DEFAULT_PROJECT_NAME = "exectest1";
-  private static final String DEFAULT_FLOW_NAME = "exec1";
+  private static final String DEFAULT_FLOW_FILE_NAME = "exec1";
+  private static final String DEFAULT_FLOW_NAME = "derived-member-data";
   private static final String DEFAULT_FLOW_MEMORY_RECOMMENDATION = "6.25Gi";
   private static final String EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION = "13421772800"; // 12.5Gi
 
@@ -152,7 +154,11 @@ public class KubernetesWatchTest {
 
     final FlowResourceRecommendation flowResourceRecommendation = new FlowResourceRecommendation(1, project.getId(),
         DEFAULT_FLOW_NAME, "1", DEFAULT_FLOW_MEMORY_RECOMMENDATION, "20Gi");
-    when(project.getFlowResourceRecommendation(any())).thenReturn(flowResourceRecommendation);
+    final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+        new ConcurrentHashMap<>();
+    flowResourceRecommendationMap.put(flowResourceRecommendation.getFlowId(),
+        flowResourceRecommendation);
+    when(project.getFlowResourceRecommendationMap()).thenReturn(flowResourceRecommendationMap);
     when(project.getFlow(any())).thenReturn(flow);
     when(projectManager.getProject(anyInt())).thenReturn(project);
   }
@@ -199,7 +205,7 @@ public class KubernetesWatchTest {
 
   private ExecutableFlow createExecutableFlow(int executionId,
       azkaban.executor.Status flowStatus) throws Exception {
-    return createExecutableFlow(executionId, flowStatus, DEFAULT_FLOW_NAME, DEFAULT_PROJECT_NAME);
+    return createExecutableFlow(executionId, flowStatus, DEFAULT_FLOW_FILE_NAME, DEFAULT_PROJECT_NAME);
   }
 
   private FlowStatusManagerListener flowStatusUpdatingListener(Props azkProps) {
@@ -318,7 +324,7 @@ public class KubernetesWatchTest {
     assertPodEventSequence(PODNAME_WITH_SUCCESS, loggingListener, TRANSITION_SEQUENCE_WITH_SUCCESS);
 
     // Verify that flow resource recommendation is not doubled
-    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
+    Assert.assertEquals(project.getFlowResourceRecommendationMap().get(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
   }
 
   @Test
@@ -357,7 +363,7 @@ public class KubernetesWatchTest {
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
 
     // Verify that flow resource recommendation is not doubled
-    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
+    Assert.assertEquals(project.getFlowResourceRecommendationMap().get(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
   }
 
   @Test
@@ -400,7 +406,7 @@ public class KubernetesWatchTest {
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
 
     // Verify that flow resource recommendation is not doubled
-    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
+    Assert.assertEquals(project.getFlowResourceRecommendationMap().get(DEFAULT_FLOW_NAME).getMemoryRecommendation(), DEFAULT_FLOW_MEMORY_RECOMMENDATION);
   }
 
   @Test
@@ -443,7 +449,7 @@ public class KubernetesWatchTest {
     verify(onExecutionEventListener).onExecutionEvent(flow1, Constants.RESTART_FLOW);
 
     // Verify that flow resource recommendation is doubled
-    Assert.assertEquals(project.getFlowResourceRecommendation(DEFAULT_FLOW_NAME).getMemoryRecommendation(), EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION);
+    Assert.assertEquals(project.getFlowResourceRecommendationMap().get(DEFAULT_FLOW_NAME).getMemoryRecommendation(), EXPECTED_DOUBLED_FLOW_MEMORY_RECOMMENDATION);
     verify(projectManager, Mockito.times(1)).updateFlowResourceRecommendation(any());
   }
 

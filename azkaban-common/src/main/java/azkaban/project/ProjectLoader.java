@@ -163,8 +163,10 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Should create an empty flow resource recommendation with the given projectId and flowId and adds it to
-   * the data store. It will auto assign a unique id for this flow resource recommendation if successful.
+   * If not exist, should create an empty flow resource recommendation with the given projectId and
+   * flowId and adds it to the data store. It will auto assign a unique id for this flow resource
+   * recommendation if successful.
+   * If exist, fetch the flow resource recommendation directly.
    *
    * @param projectId project ID
    * @param flowId   flow id
