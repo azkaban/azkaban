@@ -503,8 +503,14 @@ public class ContainerCleanupManager {
         this.executionCleanupIntervalMin, TimeUnit.MINUTES);
     this.cleanupService.scheduleAtFixedRate(this::cleanUpContainersInTerminalStatuses, 0L,
         this.containerCleanupIntervalMin, TimeUnit.MINUTES);
-    this.cleanupService.scheduleAtFixedRate(this::cleanUpDanglingYarnApplications, 0L,
-        this.yarnAppCleanupIntervalMin, TimeUnit.MINUTES);
+    if (this.yarnAppCleanupIntervalMin <= 0) {
+      logger.warn("Yarn application cleanup schedule not started: "
+          + "invalid time interval " + this.yarnAppCleanupIntervalMin + ", please correct value "
+          + ContainerizedDispatchManagerProperties.CONTAINERIZED_YARN_APPLICATION_CLEANUP_INTERVAL_MIN);
+    } else {
+      this.cleanupService.scheduleAtFixedRate(this::cleanUpDanglingYarnApplications, 0L,
+          this.yarnAppCleanupIntervalMin, TimeUnit.MINUTES);
+    }
   }
 
   /**
