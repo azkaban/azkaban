@@ -178,8 +178,6 @@ public class ContainerCleanupManager {
             new Pair<>(Duration.ofMinutes(maxExecStoppedValidity), UPDATE_TIME))
         .build();
 
-    // get yarn config for instance without robin enabled
-
     // get config in instance using robin, so as can connect to multiple yarn cluster RMs
     for (Entry<String, Cluster> entry : this.clusterRouter.getAllClusters().entrySet()) {
       logger.info("Now printing cluster named: " + entry.getKey());
@@ -196,6 +194,7 @@ public class ContainerCleanupManager {
       }
     }
     if (allClusters.isEmpty()) {
+      // get yarn config for instance without robin enabled
       String hadoopConfDir = azkProps.getString(HADOOP_CONF_DIR_PATH, "");
       if (hadoopConfDir.isEmpty()) {
         logger.warn("No Cluster config or default hadoop-conf-dir-path specified,"
@@ -209,21 +208,31 @@ public class ContainerCleanupManager {
   }
 
   public void cleanUpStaleFlows() {
-    this.validityMap.entrySet().stream().filter(e -> !e.getValue().getFirst().isNegative()).map(
-        Entry::getKey).forEach(this::cleanUpStaleFlows);
+    try {
+      this.validityMap.entrySet().stream().filter(e -> !e.getValue().getFirst().isNegative()).map(
+          Entry::getKey).forEach(this::cleanUpStaleFlows);
+    } catch (Throwable t) {
+      logger.warn("Encounter unexpected throwable during cleanup stale flows, "
+          + "skipping one schedule run", t);
+    }
   }
 
   /**
    * Delete the still alive pods & services of those terminated flows to release resources
    */
   public void cleanUpContainersInTerminalStatuses() {
-    logger.info("Cleaning up pods of terminated flow executions");
-    Set<Integer> containers = getContainersOfTerminatedFlows();
+    try {
+      logger.info("Cleaning up pods of terminated flow executions");
+      Set<Integer> containers = getContainersOfTerminatedFlows();
 
-    for (int executionId : containers) {
-      logger.info("Cleaning up the stale pod and service for finished execution: {}",
-          executionId);
-      deleteContainerQuietly(executionId);
+      for (int executionId : containers) {
+        logger.info("Cleaning up the stale pod and service for finished execution: {}",
+            executionId);
+        deleteContainerQuietly(executionId);
+      }
+    } catch (Throwable t) {
+      logger.warn("Encounter unexpected throwable during cleanup containers in terminal statuses, "
+          + "skipping one schedule run", t);
     }
   }
 
@@ -305,31 +314,36 @@ public class ContainerCleanupManager {
         ii. filter and get the yarn applications that within the union set of above executions
         iii. kill these yarn applications
      */
-    logger.info("cleanUpDanglingYarnApplications start ");
+    try {
+      logger.info("cleanUpDanglingYarnApplications start ");
 
-    Set<Integer> executionStoppedFlows = getExecutionStoppedFlows();
-    logger.info("Get executionStoppedFlows: " +
-        executionStoppedFlows.stream().map(Object::toString).collect(Collectors.joining(",")));
+      Set<Integer> executionStoppedFlows = getExecutionStoppedFlows();
+      logger.info("Get executionStoppedFlows: " +
+          executionStoppedFlows.stream().map(Object::toString).collect(Collectors.joining(",")));
 
-    // get those flows terminated but containers are still alive (failed to properly killed)
-    Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
-    logger.info("Get terminatedContainers: " +
-        toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+      // get those flows terminated but containers are still alive (failed to properly killed)
+      Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
+      logger.info("Get terminatedContainers: " +
+          toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
-    // combine both sets
-    toBeCleanedContainers.addAll(executionStoppedFlows);
-    logger.info("Get the set of all executions: " +
-        toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+      // combine both sets
+      toBeCleanedContainers.addAll(executionStoppedFlows);
+      logger.info("Get the set of all executions: " +
+          toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
-    if (toBeCleanedContainers.isEmpty()) {
-      logger.info("No execution needs to kill yarn application, exit");
-      return;
-    }
+      if (toBeCleanedContainers.isEmpty()) {
+        logger.info("No execution needs to kill yarn application, exit");
+        return;
+      }
 
-    // For each of yarn clusters: find applications of the above executionIDs and kill them
-    for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
-      logger.info("clean up yarn applications in cluster:" + entry.getValue().clusterId);
-      cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
+      // For each of yarn clusters: find applications of the above executionIDs and kill them
+      for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
+        logger.info("clean up yarn applications in cluster:" + entry.getValue().clusterId);
+        cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
+      }
+    } catch (Throwable t) {
+      logger.warn("Encounter unexpected throwable during cleanup dangling yarn app, "
+          + "skipping one schedule run", t);
     }
   }
 
@@ -387,8 +401,10 @@ public class ContainerCleanupManager {
     // report the kill results
     logger.info("Successfully killed yarn applications: " + appsSuccessfulKilled.entrySet().stream()
         .filter(Entry::getValue).map(Entry::getKey).collect(Collectors.joining(",")));
-    logger.warn("Failed to kill Yarn applications: " + appsSuccessfulKilled.entrySet().stream()
-        .filter(entry -> !entry.getValue()).map(Entry::getKey).collect(Collectors.joining(",")));
+    if (appsSuccessfulKilled.containsValue(false)) {
+      logger.warn("Failed to kill Yarn applications: " + appsSuccessfulKilled.entrySet().stream()
+          .filter(entry -> !entry.getValue()).map(Entry::getKey).collect(Collectors.joining(",")));
+    }
   }
 
 
@@ -421,6 +437,7 @@ public class ContainerCleanupManager {
         this.containerizationMetrics.markContainerDispatchFail();
       }
     }
+
   }
 
   /**
