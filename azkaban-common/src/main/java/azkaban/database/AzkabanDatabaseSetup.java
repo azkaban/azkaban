@@ -238,16 +238,16 @@ public class AzkabanDatabaseSetup {
         // this doesn't work because the file actually contains multiple tables and the file name
         // pattern doesn't match with any of those. Until this new file the convention has been that
         // each file has a single table and the file name matches the table name.
-        if ("quartz-tables-all".equals(tableName)) {
-          if (!this.installedVersions.containsKey("quartz-tables-all")) {
+        if ("quartz-tables-all-mysql".equals(tableName) || "quartz-tables-all-postgresql".equals(tableName)) {
+          if (!this.installedVersions.containsKey("quartz-tables-all-mysql") || !this.installedVersions.containsKey("quartz-tables-all-postgresql")) {
             this.missingTables.add(tableName);
           } else {
             continue;
           }
         }
         // TODO same as above
-        if ("containerization-tables-all".equals(tableName)) {
-          if (!this.installedVersions.containsKey("containerization-tables-all")) {
+        if ("containerization-tables-all-mysql".equals(tableName) || "containerization-tables-all-postgresql".equals(tableName)) {
+          if (!this.installedVersions.containsKey("containerization-tables-all-mysql") || !this.installedVersions.containsKey("containerization-tables-all-postgresql")) {
             this.missingTables.add(tableName);
           } else {
             continue;

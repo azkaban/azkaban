@@ -107,14 +107,13 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
       final MetricsManager metricsManager,
       @Named(EXEC_JETTY_SERVER) final Server server,
       @Named(EXEC_ROOT_CONTEXT) final Context root) {
-    this.props = props;
-    this.executionLoader = executionLoader;
-    this.runnerManager = runnerManager;
-    this.rampManager = rampManager;
-
-    this.metricsManager = metricsManager;
-    this.server = server;
-    this.root = root;
+      this.props = props;
+      this.executionLoader = executionLoader;
+      this.runnerManager = runnerManager;
+      this.rampManager = rampManager;
+      this.metricsManager = metricsManager;
+      this.server = server;
+      this.root = root;
   }
 
   /**

@@ -5,6 +5,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -102,6 +103,9 @@ public final class UserUtils {
         } catch (final InterruptedException ie) {
           log.warn(ie.toString());
           Thread.currentThread().interrupt();
+          return;
+        } catch (final ClosedWatchServiceException cwe){
+          log.error(cwe.getMessage());
           return;
         }
 

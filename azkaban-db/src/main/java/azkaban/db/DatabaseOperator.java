@@ -22,6 +22,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import javax.inject.Inject;
+import javax.sql.DataSource;
+
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -108,6 +110,14 @@ public class DatabaseOperator {
     }
   }
 
+  private boolean isMysqlDeadlock(DataSource ds, SQLException ex){
+   return ds instanceof MySQLDataSource && ex.getErrorCode() == MySQLDataSource.MYSQL_ER_LOCK_DEADLOCK;
+  }
+
+  private boolean isPostgresDeadlock(DataSource ds, SQLException ex){
+    return ds instanceof PostgreSQLDataSource && ex.getSQLState().equals(PostgreSQLDataSource.POSTGRES_ER_LOCK_DEADLOCK);
+  }
+
   /**
    * Executes the given AZ related INSERT, UPDATE, or DELETE SQL statement.
    * it will call {@link AzkabanDataSource#getConnection()} inside
@@ -127,8 +137,12 @@ public class DatabaseOperator {
         return this.queryRunner.update(updateClause, params);
       } catch (final SQLException ex) {
         exception = ex;
-        if (this.queryRunner.getDataSource() instanceof MySQLDataSource &&
-            ex.getErrorCode() == MySQLDataSource.MYSQL_ER_LOCK_DEADLOCK) {
+        AzkabanDataSource ds = (AzkabanDataSource) queryRunner.getDataSource();
+        if (ds.isClosed()) {
+          errorMsg = "datasource is closed";
+          break;
+        }
+        if (isMysqlDeadlock(ds, ex) || isPostgresDeadlock(ds, ex)) {
           retryCount++;
           logger.warn("Deadlock detected when trying to execute: " + updateClause + " with values: "
               + Arrays.toString(params));

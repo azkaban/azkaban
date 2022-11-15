@@ -531,6 +531,14 @@ public class JdbcProjectImpl implements ProjectLoader {
         this.dbOperator
             .update(INSERT_PROJECT_PERMISSION, project.getId(), updateTime, name, perm.toFlags(),
                 isGroup);
+      } else if (this.dbOperator.getDataSource().allowsOnConflict()) {
+        final String INSERT_PROJECT_PERMISSION =
+            "INSERT INTO project_permissions (project_id, modified_time, name, permissions, isGroup) values (?,?,?,?,?)"
+                + "ON CONFLICT (project_id, name, isGroup) "
+                + "DO UPDATE SET modified_time = EXCLUDED.modified_time, permissions = EXCLUDED.permissions";
+        this.dbOperator
+            .update(INSERT_PROJECT_PERMISSION, project.getId(), updateTime, name, perm.toFlags(),
+                isGroup);
       } else {
         final String MERGE_PROJECT_PERMISSION =
             "MERGE INTO project_permissions (project_id, modified_time, name, permissions, isGroup) KEY (project_id, name) values (?,?,?,?,?)";

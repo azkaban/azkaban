@@ -784,9 +784,11 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
                   this.activeExecutorRefreshWindowInFlows);
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);
+          } catch (InterruptedException ie){
+            Thread.currentThread().interrupt();
+            ExecutorManager.logger.warn("QueueProcessorThread Interrupted. Probably to shut down");
           } catch (final Exception e) {
-            ExecutorManager.logger.error(
-                "QueueProcessorThread Interrupted. Probably to shut down.", e);
+            ExecutorManager.logger.error(e.getMessage());
           }
         }
       }

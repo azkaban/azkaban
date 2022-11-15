@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 LinkedIn Corp.
+ * Copyright 2021 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,45 +17,50 @@ package azkaban.db;
 
 import azkaban.utils.Props;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.log4j.Logger;
 
 @Singleton
-public class MySQLDataSource extends AzkabanDataSource {
+public class PostgreSQLDataSource extends AzkabanDataSource {
 
-  public static final int MYSQL_ER_LOCK_DEADLOCK = 1213;
+  private static final Logger logger = Logger.getLogger(PostgreSQLDataSource.class);
+  public static final String POSTGRES_ER_LOCK_DEADLOCK = "40P01";
+  private boolean shutdown;
 
-  private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
   private final DBMetrics dbMetrics;
 
   @Inject
-  public MySQLDataSource(final Props props, final DBMetrics dbMetrics) {
+  public PostgreSQLDataSource(final Props props, final DBMetrics dbMetrics) {
     super();
     this.dbMetrics = dbMetrics;
 
-    final int port = props.getInt("mysql.port");
-    final String host = props.getString("mysql.host");
-    final String dbName = props.getString("mysql.database");
-    final String user = props.getString("mysql.user");
-    final String password = props.getString("mysql.password");
-    final int numConnections = props.getInt("mysql.numconnections");
+    final int port = props.getInt("postgresql.port");
+    final String host = props.getString("postgresql.host");
+    final String dbName = props.getString("postgresql.database");
+    final String user = props.getString("postgresql.user");
+    final String password = props.getString("postgresql.password");
+    final int numConnections = props.getInt("postgresql.numconnections");
+    final String urlSuffix = props.getString("postgresql.url.suffix");
 
-    final String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
+    final String url = "jdbc:postgresql://" + (host + ":" + port + "/" + dbName + urlSuffix);
     addConnectionProperty("useUnicode", "yes");
     addConnectionProperty("characterEncoding", "UTF-8");
-    setDriverClassName("com.mysql.cj.jdbc.Driver");
-    addConnectionProperty("sessionVariables", "sql_mode=ANSI");
+    setDriverClassName("org.postgresql.Driver");
     setUsername(user);
     setPassword(password);
     setUrl(url);
     setMaxTotal(numConnections);
     setValidationQuery("/* ping */ select 1");
     setTestOnBorrow(true);
+  }
+
+  @Override
+  public synchronized void close() throws SQLException {
+    super.close();
+    this.shutdown = true;
   }
 
   /**
@@ -69,7 +74,7 @@ public class MySQLDataSource extends AzkabanDataSource {
     final long startMs = System.currentTimeMillis();
     Connection connection = null;
     int retryAttempt = 1;
-    while (retryAttempt < AzDBUtil.MAX_DB_RETRY_COUNT) {
+    while (!shutdown && retryAttempt < AzDBUtil.MAX_DB_RETRY_COUNT) {
       try {
         /**
          * when DB connection could not be fetched (e.g., network issue), or connection can not be validated,
@@ -80,12 +85,10 @@ public class MySQLDataSource extends AzkabanDataSource {
         connection = createDataSource().getConnection();
 
         /**
-         * If connection is null or connection is read only, retry to find available connection.
-         * When DB fails over from master to slave, master is set to read-only mode. We must keep
-         * finding correct data source and sql connection.
+         * If connection is null, retry to find available connection.
          */
-        if (connection == null || isReadOnly(connection)) {
-          throw new SQLException("Failed to find DB connection Or connection is read only. ");
+        if (connection == null) {
+          throw new SQLException("Failed to find DB connection. ");
         } else {
 
           // Evalaute how long it takes to get DB Connection.
@@ -117,41 +120,32 @@ public class MySQLDataSource extends AzkabanDataSource {
     return connection;
   }
 
-  private boolean isReadOnly(final Connection conn) throws SQLException {
-    final Statement stmt = conn.createStatement();
-    final ResultSet rs = stmt.executeQuery("SELECT @@global.read_only");
-    if (rs.next()) {
-      final int value = rs.getInt(1);
-      return value != 0;
-    }
-    throw new SQLException("can not fetch read only value from DB");
-  }
-
   private void sleep(final long milliseconds) {
     try {
       Thread.sleep(milliseconds);
     } catch (final InterruptedException e) {
       logger.error("Sleep interrupted", e);
+      Thread.currentThread().interrupt();
     }
   }
 
   @Override
   public String getDBType() {
-    return "mysql";
+    return "postgresql";
   }
 
   @Override
   public boolean allowsOnDuplicateKey() {
-    return true;
-  }
-
-  @Override
-  public boolean allowsOnConflict() {
     return false;
   }
 
   @Override
+  public boolean allowsOnConflict() {
+    return true;
+  }
+
+  @Override
   public String getLastInsertIdQuery() {
-    return "SELECT LAST_INSERT_ID();";
+    return "SELECT LASTVAL()";
   }
 }

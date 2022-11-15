@@ -44,6 +44,7 @@ dependencies {
     compile deps.metricsCore
     compile deps.metricsJvm
     compile deps.mysqlConnector
+    compile deps.postgresqlConnector
     compile deps.snakeyaml
     compile deps.velocity
     compile deps.kafkaLog4jAppender

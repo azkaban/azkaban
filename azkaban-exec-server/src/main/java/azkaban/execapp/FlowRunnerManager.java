@@ -943,6 +943,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
    */
   public void shutdown() {
     LOGGER.warn("Shutting down FlowRunnerManager...");
+    this.cleanerThread.shutdown();
     if (isPollDispatchMethodEnabled()) {
       this.pollingService.shutdown();
     }
@@ -965,6 +966,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
    * finish but interrupts all threads.
    */
   public void shutdownNow() {
+    this.cleanerThread.shutdown();
     LOGGER.warn("Shutting down FlowRunnerManager now...");
     if (isPollDispatchMethodEnabled()) {
       this.pollingService.shutdown();

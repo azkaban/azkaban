@@ -60,6 +60,8 @@ dependencies {
     compile deps.velocityTools
 
     testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
+    testCompile(project(path: ':azkaban-exec-server'))
+
     testCompile deps.collections
 
     //AZ web module tests need to access classes defined in azkaban-common test module
@@ -71,8 +73,18 @@ dependencies {
     testCompile(project(path: ':az-flow-trigger-dependency-plugin', configuration: 'testCompile'))
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
+    testCompile group: 'com.opentable.components', name: 'otj-pg-embedded', version: '0.13.3'
+    testCompile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.3'
     testRuntime deps.h2
 }
+
+test.dependsOn installDist
+
+task copyCommonPrivate(type: Copy) {
+    from "../azkaban-exec-server/src/main/resources/commonprivate.properties"
+    into "${buildDir}/jobtypes"
+}
+test.dependsOn copyCommonPrivate
 
 sourceSets {
     main {
