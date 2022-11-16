@@ -463,11 +463,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       return LogData.createLogDataFromObject(result);
     } else {
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0,
-          offset, length, exFlow.getEndTime());
+          offset, length, exFlow.getStartTime(), exFlow.getEndTime());
       // Return offline logs if nearline logs are empty
       if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() && logData == null) {
         return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), "", 0,
-            offset, length, exFlow.getEndTime());
+            offset, length, exFlow.getStartTime(), exFlow.getEndTime());
       }
       return logData;
     }
@@ -494,11 +494,11 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       return LogData.createLogDataFromObject(result);
     } else {
       LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId,
-          attempt, offset, length, exFlow.getEndTime());
+          attempt, offset, length, exFlow.getStartTime(), exFlow.getEndTime());
       // Return offline logs if nearline logs are empty
       if (!nearlineOnly && offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() && logData == null) {
         return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), jobId,
-            attempt, offset, length, exFlow.getEndTime());
+            attempt, offset, length, exFlow.getStartTime(), exFlow.getEndTime());
       }
       return logData;
     }

@@ -34,7 +34,7 @@ public class MockExecutionLogsLoader implements ExecutionLogsLoader {
 
   @Override
   public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte, final int endByte, final long flowEndTime) throws ExecutorManagerException {
+      final int startByte, final int endByte, final long flowStartTime, final long flowEndTime) throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
