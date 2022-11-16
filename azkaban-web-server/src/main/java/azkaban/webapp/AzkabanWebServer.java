@@ -55,6 +55,7 @@ import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.AzkabanServer;
@@ -167,6 +168,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final ExecutorManagerAdapter executorManagerAdapter;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
+  private final MissedSchedulesManager missedSchedulesManager;
   private final WebMetrics webMetrics;
   private final Props props;
   private final SessionCache sessionCache;
@@ -184,6 +186,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
+      final MissedSchedulesManager missedSchedulesManager,
       final WebMetrics webMetrics,
       final SessionCache sessionCache,
       final UserManager userManager,
@@ -203,6 +206,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
         "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
+    this.missedSchedulesManager = requireNonNull(missedSchedulesManager, "missScheduleManager is null");
     this.webMetrics = requireNonNull(webMetrics, "webMetrics is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
@@ -551,7 +555,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     startWebMetrics();
     startContainerMetrics();
     this.containerCleanupManager.ifPresent(ContainerCleanupManager::start);
-
+    this.missedSchedulesManager.start();
 
     if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
@@ -773,6 +777,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.executorManagerAdapter.shutdown();
     this.containerCleanupManager.ifPresent(ContainerCleanupManager::shutdown);
     try {
+      this.missedSchedulesManager.stop();
       this.server.stop();
     } catch (final Exception e) {
       // Catch all while closing server
