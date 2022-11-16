@@ -323,7 +323,7 @@ public class ContainerCleanupManager {
     }
   }
 
-  private void cleanUpYarnApplicationsInCluster(Set<Integer> toBeCleanedContainers,
+  void cleanUpYarnApplicationsInCluster(Set<Integer> toBeCleanedContainers,
       Cluster cluster) {
     org.apache.log4j.Logger apacheLogger =
         org.apache.log4j.Logger.getLogger(ContainerCleanupManager.class);
