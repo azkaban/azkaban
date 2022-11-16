@@ -16,14 +16,17 @@
 package azkaban.executor.container;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
+import azkaban.cluster.Cluster;
 import azkaban.cluster.ClusterRouter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
@@ -34,18 +37,29 @@ import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.utils.Props;
+import azkaban.utils.YarnUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({YarnUtils.class})
 public class ContainerCleanupManagerTest {
 
   private Props props;
@@ -152,7 +166,7 @@ public class ContainerCleanupManagerTest {
     when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
     this.cleaner.cleanUpContainersInTerminalStatuses();
     verify(this.containerImpl).deleteContainer(1001);
-    verify(this.containerImpl, Mockito.times(0)).deleteContainer(1000);
+    verify(this.containerImpl, times(0)).deleteContainer(1000);
   }
 
   @Test
@@ -221,5 +235,65 @@ public class ContainerCleanupManagerTest {
 
     Set<Integer> executionStoppedFlows = this.cleaner.getExecutionStoppedFlows();
     Assert.assertTrue(executionStoppedFlows.isEmpty());
+  }
+
+  @Test
+  public void testCleanUpYarnApplicationsInClusterSucceed()
+      throws Exception {
+    PowerMockito.mockStatic(YarnUtils.class);
+    YarnClient mockClient = mock(YarnClient.class);
+    when(YarnUtils.createYarnClient(any(), any())).thenReturn(mockClient);
+    ApplicationReport ap1 = mock(ApplicationReport.class),
+        ap2 = mock(ApplicationReport.class),
+        ap3 = mock(ApplicationReport.class);
+    when(YarnUtils.getAllAliveAppReportsByExecIDs(any(), any(), any())).thenReturn(
+        ImmutableList.of(ap1, ap2, ap3)
+    );
+    PowerMockito.doNothing().when(YarnUtils.class,
+        "killApplicationAsProxyUser", any(), any(), any());
+
+    this.cleaner.cleanUpYarnApplicationsInCluster(
+        ImmutableSet.of(), new Cluster("abc", new Props()));
+  }
+
+
+  @Test
+  public void testCleanUpYarnApplicationsInClusterKillPartialSucceed()
+      throws Exception {
+    PowerMockito.mockStatic(YarnUtils.class);
+    YarnClient mockClient = mock(YarnClient.class);
+    when(YarnUtils.createYarnClient(any(), any())).thenReturn(mockClient);
+    ApplicationReport ap1 = mock(ApplicationReport.class),
+        ap2 = mock(ApplicationReport.class),
+        ap3 = mock(ApplicationReport.class);
+    when(YarnUtils.getAllAliveAppReportsByExecIDs(any(), any(), any())).thenReturn(
+        ImmutableList.of(ap1, ap2, ap3)
+    );
+    PowerMockito.doNothing().when(YarnUtils.class,
+        "killApplicationAsProxyUser", any(), eq(ap1), any());
+    PowerMockito.doNothing().when(YarnUtils.class,
+        "killApplicationAsProxyUser", any(), eq(ap2), any());
+    // exception
+    PowerMockito.doThrow(new RuntimeException("ops")).when(YarnUtils.class,
+        "killApplicationAsProxyUser", any(), eq(ap1), any());
+
+    this.cleaner.cleanUpYarnApplicationsInCluster(
+        ImmutableSet.of(), new Cluster("abc", new Props()));
+  }
+
+  @Test
+  public void testCleanUpYarnApplicationsInClusterFailGetApplications()
+      throws Exception {
+    PowerMockito.mockStatic(YarnUtils.class);
+    YarnClient mockClient = mock(YarnClient.class);
+    when(YarnUtils.createYarnClient(any(), any())).thenReturn(mockClient);
+    when(YarnUtils.getAllAliveAppReportsByExecIDs(any(), any(), any()))
+        .thenThrow(new IOException("ops"));
+//    // this will never be called
+//    PowerMockito.doNothing().when(YarnUtils.class,
+//        "killApplicationAsProxyUser", any(), any(), any());
+
+    this.cleaner.cleanUpYarnApplicationsInCluster(
+        ImmutableSet.of(), new Cluster("abc", new Props()));
   }
 }

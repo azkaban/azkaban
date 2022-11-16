@@ -17,14 +17,19 @@ package azkaban.utils;
 
 import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
 
+import azkaban.cluster.Cluster;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.log4j.Logger;
@@ -87,7 +92,7 @@ public class YarnUtils {
   public static List<ApplicationReport> getAllAliveAppReportsByExecIDs(final YarnClient yarnClient,
       final Set<Integer> flowExecIDs, final Logger log)
       throws IOException, YarnException {
-    if (flowExecIDs.isEmpty()){
+    if (flowExecIDs.isEmpty()) {
       return Collections.emptyList();
     }
 
@@ -135,6 +140,35 @@ public class YarnUtils {
     log.info("start killing application: " + aid);
     yarnClient.killApplication(aid);
     log.info("successfully killed application: " + aid);
+  }
+
+  public static void killApplicationAsProxyUser(Cluster cluster,
+      ApplicationReport app, final Logger log)
+      throws IOException, InterruptedException {
+    try {
+      UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
+          app.getUser(), UserGroupInformation.getLoginUser());
+      proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
+        @Override
+        public Void run() throws Exception {
+
+          log.info("proxy as user: " + proxyUser);
+          for (Token<?> token : proxyUser.getTokens()) {
+            proxyUser.addToken(token);
+            log.info(String.format("proxyUser.token = %s, %s, %s ", token.getKind(),
+                token.getService(),
+                Arrays.toString(token.getIdentifier())));
+          }
+
+          YarnClient yarnClient = createYarnClient(cluster.getProperties(), log);
+          yarnClient.killApplication(app.getApplicationId());
+          return null;
+        }
+      });
+    } catch (Exception e) {
+      log.warn("Fail to killApplication as proxy user " + app.getUser(), e);
+      throw new RuntimeException("Fail to killApplication as proxy user " + app.getUser(), e);
+    }
   }
 
   /**

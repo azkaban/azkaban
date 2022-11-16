@@ -17,7 +17,6 @@ package azkaban.executor.container;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.Constants.ContainerizedDispatchManagerProperties;
-import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
 import static azkaban.utils.YarnUtils.YARN_CONF_DIRECTORY_PROPERTY;
 import static azkaban.utils.YarnUtils.createYarnClient;
 import static azkaban.utils.YarnUtils.getAllAliveAppReportsByExecIDs;
@@ -34,10 +33,10 @@ import azkaban.executor.Status;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.YarnUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,15 +44,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.token.Token;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.jetbrains.annotations.NotNull;
@@ -74,14 +72,21 @@ public class ContainerCleanupManager {
   private static final Logger logger = LoggerFactory.getLogger(ContainerCleanupManager.class);
   private static final Duration DEFAULT_STALE_EXECUTION_CLEANUP_INTERVAL = Duration.ofMinutes(10);
   private static final Duration DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL = Duration.ofMinutes(60);
+  private static final Duration DEFAULT_YARN_APP_CLEANUP_INTERVAL = Duration.ofMinutes(10);
   private static final int DEFAULT_AZKABAN_MAX_FLOW_DISPATCHING_MINS = 10;
   private static final int DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS = 15;
   private static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = 10 * 24 * 60; // 10 days
   private static final int DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS = 15;
   private static final int DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS = 15;
+  private static final int DEFAULT_AZKABAN_YARN_BATCH_KILL_TIMEOUT_IN_MINUTE = 10;
+  private static final int DEFAULT_AZKABAN_YARN_BATCH_KILL_PARALLELISM = 5;
 
   private final long executionCleanupIntervalMin;
   private final long containerCleanupIntervalMin;
+  private final long yarnAppCleanupIntervalMin;
+  private final int yarnAppKillTimeoutMin;
+  private final int yarnAppKillParallelism;
+
   private final ScheduledExecutorService cleanupService;
   private final ExecutorLoader executorLoader;
   private final ContainerizedImpl containerizedImpl;
@@ -119,6 +124,15 @@ public class ContainerCleanupManager {
     this.containerCleanupIntervalMin = azkProps.getLong(
         ContainerizedDispatchManagerProperties.CONTAINERIZED_STALE_CONTAINER_CLEANUP_INTERVAL_MIN,
         DEFAULT_STALE_CONTAINER_CLEANUP_INTERVAL.toMinutes());
+    this.yarnAppCleanupIntervalMin = azkProps.getLong(
+        ContainerizedDispatchManagerProperties.CONTAINERIZED_YARN_APPLICATION_CLEANUP_INTERVAL_MIN,
+        DEFAULT_YARN_APP_CLEANUP_INTERVAL.toMinutes());
+    this.yarnAppKillTimeoutMin = azkProps.getInt(
+        ContainerizedDispatchManagerProperties.CONTAINERIZED_YARN_APPLICATION_CLEANUP_TIMEOUT_MIN,
+        DEFAULT_AZKABAN_YARN_BATCH_KILL_TIMEOUT_IN_MINUTE);
+    this.yarnAppKillParallelism = azkProps.getInt(
+        ContainerizedDispatchManagerProperties.CONTAINERIZED_YARN_APPLICATION_CLEANUP_PARALLELISM,
+        DEFAULT_AZKABAN_YARN_BATCH_KILL_PARALLELISM);
     // Get all the validity durations for the validityMap
     int maxDispatchingValidity = azkProps.getInt(
         AZKABAN_MAX_FLOW_DISPATCHING_MINS, DEFAULT_AZKABAN_MAX_FLOW_DISPATCHING_MINS);
@@ -129,6 +143,7 @@ public class ContainerCleanupManager {
     // check for flows execution_stopped within 15 minutes
     int maxExecStoppedValidity = azkProps.getInt(
         AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS, DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS);
+
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
     this.executorLoader = executorLoader;
@@ -148,12 +163,14 @@ public class ContainerCleanupManager {
 
     this.validityMap = new Builder<Status,
         Pair<Duration, String>>()
-        .put(Status.DISPATCHING, new Pair<>(Duration.ofMinutes(maxDispatchingValidity), SUBMIT_TIME))
+        .put(Status.DISPATCHING,
+            new Pair<>(Duration.ofMinutes(maxDispatchingValidity), SUBMIT_TIME))
         .put(Status.PREPARING, new Pair<>(Duration.ofMinutes(maxPreparingValidity), SUBMIT_TIME))
         .put(Status.RUNNING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .put(Status.PAUSED, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .put(Status.KILLING, new Pair<>(Duration.ofMinutes(maxKillingValidity), UPDATE_TIME))
-        .put(Status.FAILED_FINISHING, new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
+        .put(Status.FAILED_FINISHING,
+            new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
 
     this.executionStoppedMap = new Builder<Status, Pair<Duration, String>>()
@@ -228,10 +245,11 @@ public class ContainerCleanupManager {
       try {
         List<ExecutableFlow> flows = this.executorLoader.fetchStaleFlowsForStatus(status,
             unFinishedStatusesMap);
-        activeFlows.addAll(flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
+        activeFlows.addAll(
+            flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
       } catch (final ExecutorManagerException e) {
         logger.error("Unable to obtain current flows executions of status {}, cannot cross-check "
-                + "to-be-killed pods, returning", status, e);
+            + "to-be-killed pods, returning", status, e);
         return result;
       }
     }
@@ -293,19 +311,19 @@ public class ContainerCleanupManager {
     logger.info("Get the set of all executions: " +
         toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
-    if (executionStoppedFlows.isEmpty()) {
+    if (toBeCleanedContainers.isEmpty()) {
       logger.info("No execution needs to kill yarn application, exit");
       return;
     }
 
-    // TODO: For each of yarn clusters: get applications and kill those in the above set
+    // For each of yarn clusters: find applications of the above executionIDs and kill them
     for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
       logger.info("clean up yarn applications in cluster:" + entry.getValue().clusterId);
       cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
     }
   }
 
-  private void cleanUpYarnApplicationsInCluster(Set<Integer> toBeCleanedContainers,
+  void cleanUpYarnApplicationsInCluster(Set<Integer> toBeCleanedContainers,
       Cluster cluster) {
     org.apache.log4j.Logger apacheLogger =
         org.apache.log4j.Logger.getLogger(ContainerCleanupManager.class);
@@ -325,8 +343,44 @@ public class ContainerCleanupManager {
       return;
     }
 
-    // todo: kill the apps asynchronously
+    // Use a fix thread pool to concurrently kill yarn apps
+    Map<String, Boolean> appsSuccessfulKilled = new ConcurrentHashMap<>();
+    aliveApplications.forEach(
+        app -> appsSuccessfulKilled.put(app.getApplicationId().toString(), false));
+
+    ExecutorService yarnKillThreadPool = Executors.newFixedThreadPool(this.yarnAppKillParallelism);
+    aliveApplications.forEach(app ->
+        yarnKillThreadPool.execute(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              YarnUtils.killApplicationAsProxyUser(cluster, app, apacheLogger);
+              appsSuccessfulKilled.put(app.getApplicationId().toString(), true);
+            } catch (Exception e) {
+              logger.warn("Error killing yarn application: " + app.getApplicationId(), e);
+            }
+          }
+        })
+    );
+    // wait for them to finish for up to a <timeout value> period of time
+    try {
+      yarnKillThreadPool.shutdown();
+      if (yarnKillThreadPool.awaitTermination(this.yarnAppKillTimeoutMin, TimeUnit.MINUTES)) {
+        logger.info("Yarn application killing threads all successfully terminated");
+      } else {
+        logger.info("Yarn application killing threads not all terminated as expected");
+      }
+    } catch (InterruptedException e) {
+      logger.warn("Error awaiting the termination of all the Yarn application killing threads", e);
+    }
+
+    // report the kill results
+    logger.info("Successfully killed yarn applications: " + appsSuccessfulKilled.entrySet().stream()
+        .filter(Entry::getValue).map(Entry::getKey).collect(Collectors.joining(",")));
+    logger.warn("Failed to kill Yarn applications: " + appsSuccessfulKilled.entrySet().stream()
+        .filter(entry -> !entry.getValue()).map(Entry::getKey).collect(Collectors.joining(",")));
   }
+
 
   /**
    * Try cleaning the stale flows for a given status. This will try to cancel the flow, if
@@ -402,6 +456,7 @@ public class ContainerCleanupManager {
 
   /**
    * Quietly retry flow if it is terminated in statuses prior to RUNNING
+   *
    * @param flow
    * @param originalStatus
    */
@@ -438,10 +493,8 @@ public class ContainerCleanupManager {
         this.executionCleanupIntervalMin, TimeUnit.MINUTES);
     this.cleanupService.scheduleAtFixedRate(this::cleanUpContainersInTerminalStatuses, 0L,
         this.containerCleanupIntervalMin, TimeUnit.MINUTES);
-
-    // TODO: currently run-once for development; change to a fixed schedule after development
-    //  complete
-    this.cleanupService.schedule(this::cleanUpDanglingYarnApplications, 0L, TimeUnit.MINUTES);
+    this.cleanupService.scheduleAtFixedRate(this::cleanUpDanglingYarnApplications, 0L,
+        this.yarnAppCleanupIntervalMin, TimeUnit.MINUTES);
   }
 
   /**
