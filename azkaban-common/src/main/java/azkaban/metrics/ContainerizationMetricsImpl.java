@@ -159,7 +159,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
   @Override
   public void markYarnGetApplicationsFail() {
-    this.yarnGetApplicationsFail.mark();
+    yarnGetApplicationsFail.mark();
   }
 
   @Override
