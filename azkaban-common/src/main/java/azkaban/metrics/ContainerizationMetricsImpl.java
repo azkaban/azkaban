@@ -34,7 +34,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
       appContainerStarting, podReady, podInitFailure, podAppFailure;
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
   private Meter executionStopped, oomKilled, containerDispatchFail, vpaRecommenderFail,
-      yarnApplicationKillFail;
+      yarnGetApplicationsFail, yarnApplicationKillFail;
   private Histogram timeToDispatch;
   private volatile boolean isInitialized = false;
 
@@ -61,6 +61,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.oomKilled = this.metricsManager.addMeter("OOM-Killed-Meter");
     this.containerDispatchFail = this.metricsManager.addMeter("Container-Dispatch-Fail-Meter");
     this.vpaRecommenderFail = this.metricsManager.addMeter("VPA-Recommender-Fail-Meter");
+    this.yarnGetApplicationsFail = this.metricsManager.addMeter("Yarn-Get-Applications-Fail-Meter");
     this.yarnApplicationKillFail = this.metricsManager.addMeter("Yarn-Application-Kill-Fail-Meter");
   }
 
@@ -154,6 +155,11 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   @Override
   public void markVPARecommenderFail() {
     vpaRecommenderFail.mark();
+  }
+
+  @Override
+  public void markYarnGetApplicationsFail() {
+    this.yarnGetApplicationsFail.mark();
   }
 
   @Override

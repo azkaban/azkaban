@@ -366,6 +366,7 @@ public class ContainerCleanupManager {
     } catch (Exception e) {
       logger.error("fail to get yarn applications by execution IDs from cluster "
           + cluster.getClusterId() + ", exiting", e);
+      containerizationMetrics.markYarnGetApplicationsFail();
       return;
     }
 
