@@ -17,7 +17,7 @@ public class JdbcExecutionLogsLoader implements ExecutionLogsLoader {
 
   @Override
   public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte, final int length, final long flowEndTime) throws ExecutorManagerException {
+      final int startByte, final int length, final long flowStartTime, final long flowEndTime) throws ExecutorManagerException {
 
     return this.executionLogsDao.fetchLogs(execId, name, attempt, startByte, length);
   }
