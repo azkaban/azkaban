@@ -54,6 +54,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
+  public static final String IS_OOM_Killed_PARAM = "isOOMKilled";
+  public static final String IS_VPA_Enabled_PARAM = "isVPAEnabled";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String EXECUTION_SOURCE = "executionSource";
   public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
@@ -77,6 +79,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
   private boolean isLocked;
+  private boolean isOOMKilled = false;
+  private boolean isVPAEnabled = false;
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
   private String flowLockErrorMessage;
   // For Flow_Status_Changed event
@@ -266,6 +270,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setLocked(boolean locked) { this.isLocked = locked; }
 
+  public boolean isOOMKilled() { return this.isOOMKilled; }
+
+  public void setOOMKilled(boolean oomKilled) { this.isOOMKilled = oomKilled; }
+
+  public boolean isVPAEnabled() { return this.isVPAEnabled; }
+
+  public void setVPAEnabled(boolean vpaEnabled) { this.isVPAEnabled = vpaEnabled; }
+
   public String getFlowLockErrorMessage() {
     return this.flowLockErrorMessage;
   }
@@ -317,6 +329,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+    flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
+    flowObj.put(IS_VPA_Enabled_PARAM, this.isVPAEnabled);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
     flowObj.put(FLOW_DISPATCH_METHOD, getDispatchMethod().getNumVal());
 
@@ -388,6 +402,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
+    this.setOOMKilled(flowObj.getBool(IS_OOM_Killed_PARAM, false));
+    this.setVPAEnabled(flowObj.getBool(IS_VPA_Enabled_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
     // Dispatch Method default is POLL
     this.setDispatchMethod(DispatchMethod.fromNumVal(flowObj.getInt(FLOW_DISPATCH_METHOD,

@@ -199,6 +199,8 @@ public class Constants {
     public static final String FLOW_PAUSE_DURATION = "flowPauseDuration";
     public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
     public static final String EXECUTION_RETRIED_BY_AZKABAN = "executionRetriedByAzkaban";
+    public static final String IS_OOM_KILLED = "isOOMKilled";
+    public static final String IS_POD_SIZE_AUTOSCALING_ENABLED = "isPodSizeAutoscaled";
     public static final String ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY =
         "originalFlowExecutionIdBeforeRetry";
     public static final String SLA_OPTIONS = "slaOptions";
