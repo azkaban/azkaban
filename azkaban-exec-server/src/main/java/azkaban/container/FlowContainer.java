@@ -351,6 +351,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
 
     // Log the versionSet for this flow execution
     logVersionSet(flow);
+    logVPAEnabled(flow);
 
     createFlowRunner(flow);
     setResourceUtilization();
@@ -757,6 +758,18 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
       logger.error("VersionSet is not set for the flow");
     } else {
       logger.info("VersionSet: " + ServerUtils.getVersionSetJsonString(versionSet));
+    }
+  }
+
+  /**
+   * Log if this flow execution pod is autoscaled by VPA
+   * @param flow Executable flow.
+   */
+  private void logVPAEnabled(final ExecutableFlow flow) {
+    if (flow.isVPAEnabled()) {
+      logger.info(String.format("This flow execution pod %s is autoscaled by Azkaban. If this "
+              + "execution ends with Out-Of-Memory Killed, please reach out to Azkaban team for "
+              + "help.", flow.getExecutionId()));
     }
   }
 
