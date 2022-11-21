@@ -13,6 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+// this is to verify the full deployment process can work
+// will prevent merging linkedin-specific thing to open source repo
+apply plugin: 'li-java'
 dependencies {
     compile project(':az-core')
     compile project(':azkaban-spi')
@@ -43,7 +46,13 @@ dependencies {
     compile deps.math3
     compile deps.metricsCore
     compile deps.metricsJvm
-    compile deps.mysqlConnector
+    
+    // this is to verify the full deployment process can work
+    // will prevent merging linkedin-specific thing to open source repo
+    // compile deps.mysqlConnector
+    runtime spec.product.'li-mysql-connector-java'.'li-mysql-connector-java'
+    runtime spec.product.'li-mysql-connector-java'.'li-mysql-driver'
+
     compile deps.snakeyaml
     compile deps.velocity
     compile deps.kafkaLog4jAppender

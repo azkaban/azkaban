@@ -48,7 +48,8 @@ public class MySQLDataSource extends AzkabanDataSource {
     final String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
     addConnectionProperty("useUnicode", "yes");
     addConnectionProperty("characterEncoding", "UTF-8");
-    setDriverClassName("com.mysql.cj.jdbc.Driver");
+    // setDriverClassName("com.mysql.cj.jdbc.Driver");
+    setDriverClassName("com.linkedin.mysql.Driver");
     setUsername(user);
     setPassword(password);
     setUrl(url);
