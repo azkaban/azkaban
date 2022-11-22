@@ -34,7 +34,7 @@ public class DaemonThreadFactory implements ThreadFactory {
 
   @Override
   public Thread newThread(Runnable r) {
-    Thread t = new Thread(r, namePrefix + "-t" + threadNumber.getAndIncrement());
+    Thread t = new Thread(r, this.namePrefix + "-" + this.threadNumber.getAndIncrement());
     t.setDaemon(true);
     return t;
   }

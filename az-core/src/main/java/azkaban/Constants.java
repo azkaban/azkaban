@@ -180,9 +180,8 @@ public class Constants {
   /**
    * Missed Schedule Props
    * */
-  public static final String MISSED_SCHEDULE_MANAGER_ENABLED = "azkaban.miss.schedule.manager.enabled";
-  public static final String MISSED_SCHEDULE_THREAD_POOL_SIZE = "azkaban.miss.schedule.task.threads";
-  public static final String MISSED_SCHEDULE_THREAD_IDLE_TIME = "azkaban.miss.schedule.each.thread.idle.time";
+  public static final String MISSED_SCHEDULE_MANAGER_ENABLED = "azkaban.missed.schedule.manager.enabled";
+  public static final String MISSED_SCHEDULE_THREAD_POOL_SIZE = "azkaban.missed.schedule.task.threads";
   public static final boolean DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE = false;
 
 

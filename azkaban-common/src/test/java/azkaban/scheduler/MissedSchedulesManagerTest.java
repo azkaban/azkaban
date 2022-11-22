@@ -49,6 +49,7 @@ public class MissedSchedulesManagerTest {
     Props azkProps = new Props();
     azkProps.put(Constants.MISSED_SCHEDULE_MANAGER_ENABLED, "true");
     _missedSchedulesManager = new MissedSchedulesManager(azkProps, projectManager, emailer);
+    _missedSchedulesManager.start();
   }
 
   @After
@@ -75,11 +76,7 @@ public class MissedSchedulesManagerTest {
     when(executeFlowAction.getProjectName()).thenReturn(projectName);
     when(projectManager.getProject(projectName)).thenReturn(project);
     // verify task is added into queue
-    _missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false);
-    Assertions.assertThat(_missedSchedulesManager.isTaskQueueEmpty()).isFalse();
+    Assertions.assertThat(_missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false)).isTrue();
 
-    // verify email body contains project, flow, and date information
-    MissedSchedulesManager.MissedScheduleTaskQueueNode node = _missedSchedulesManager.peekFirstTask();
-    Assertions.assertThat(node.getEmailMessage()).contains(projectName, flowName, new Date(curTime).toString());
   }
 }
