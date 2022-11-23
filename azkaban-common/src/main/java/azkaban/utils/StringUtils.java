@@ -16,9 +16,13 @@
 
 package azkaban.utils;
 
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 
 public class StringUtils {
 
@@ -104,5 +108,19 @@ public class StringUtils {
       return true;
     }
     return  (value.trim().isEmpty());
+  }
+
+  /**
+   * Chain timestamps using "," into human-readable string.
+   *
+   * @param timestamps Epoch timestamps in milliseconds
+   * @return chained String
+   * */
+  public static String formatTimestamps(List<Long> timestamps) {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    List<String> datesFromTimestamps = timestamps.stream()
+        .map(t -> sdf.format(new Date(t)))
+        .collect(Collectors.toList());
+    return String.join(",", datesFromTimestamps);
   }
 }
