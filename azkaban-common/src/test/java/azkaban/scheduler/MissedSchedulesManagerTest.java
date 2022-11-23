@@ -17,6 +17,7 @@
 package azkaban.scheduler;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -75,6 +76,7 @@ public class MissedSchedulesManagerTest {
     when(executeFlowAction.getFlowName()).thenReturn(flowName);
     when(executeFlowAction.getProjectName()).thenReturn(projectName);
     when(projectManager.getProject(projectName)).thenReturn(project);
+    when(executeFlowAction.getExecutionOptions()).thenReturn(new ExecutionOptions());
     // verify task is added into queue
     Assertions.assertThat(_missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false)).isTrue();
 
