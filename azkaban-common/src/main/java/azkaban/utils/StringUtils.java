@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
+
 public class StringUtils {
 
   public static final char SINGLE_QUOTE = '\'';
@@ -105,4 +106,5 @@ public class StringUtils {
     }
     return  (value.trim().isEmpty());
   }
+
 }
