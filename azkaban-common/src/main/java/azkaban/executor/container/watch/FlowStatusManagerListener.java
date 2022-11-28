@@ -287,7 +287,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
         logger.warn ("Containerization metrics are not initialized");
       }
 
-      doubleMemoryRecommendationIfOOMKilled(executableFlow, event);
+      handleOOMKilledIfNeeded(executableFlow, event);
 
       ExecutionControllerUtils.finalizeFlow(this, this.projectManager, executorLoader,
           alerterHolder, executableFlow, reason, null, Status.EXECUTION_STOPPED);
@@ -301,7 +301,7 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
     return Optional.of(originalStatus);
   }
 
-  private void doubleMemoryRecommendationIfOOMKilled(final ExecutableFlow executableFlow,
+  private void handleOOMKilledIfNeeded(final ExecutableFlow executableFlow,
       final AzPodStatusMetadata event) {
     try {
       if (event.getFlowPodMetadata().isPresent() && event.getFlowPodMetadata().get().isOOMKilled()) {
@@ -310,6 +310,8 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
         } else {
           logger.warn("Containerization metrics are not initialized");
         }
+
+        executableFlow.setOOMKilled(true);
 
         final Project project = this.projectManager.getProject(executableFlow.getProjectId());
         final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
