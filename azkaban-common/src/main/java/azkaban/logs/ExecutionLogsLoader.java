@@ -12,9 +12,9 @@ public interface ExecutionLogsLoader {
   // FlowEndTime is needed for offline logs to tell if the logs are complete or not considering
   // every offline logging platform has decent amount of delay from when log-is-sent to when
   // log-is-available.
-  // FlowStartTime and FlowEndTime timeboxing can help accelerate log search/query.
+  // flowSubmitTime and FlowEndTime timeboxing can help accelerate log search/query.
   LogData fetchLogs(int execId, String name, int attempt, int startByte,
-      int length, long flowStartTime, long flowEndTime) throws ExecutorManagerException;
+      int length, long flowSubmitTime, long flowEndTime) throws ExecutorManagerException;
 
   int removeExecutionLogsByTime(long millis, int recordCleanupLimit)
       throws ExecutorManagerException;
