@@ -91,7 +91,7 @@ public class ImageRampRuleServiceImplTest {
 
     when(_userManager.getRole(any())).thenReturn(role);
     when(_userManager.validateUserGroupMembership(any(), any())).thenReturn(true);
-    when(_userManager.validateGroup(any())).thenReturn(true);
+    when(_userManager.validateLdapGroup(any())).thenReturn(true);
     when(_rampRuleDao.addRampRule(any())).thenReturn(1);
     assertThatCode(() -> _rampRuleService.createRule(requestDTO, user)).doesNotThrowAnyException();
   }
@@ -109,7 +109,7 @@ public class ImageRampRuleServiceImplTest {
 
     when(_userManager.getRole(any())).thenReturn(role);
     when(_userManager.validateUserGroupMembership(any(), any())).thenReturn(true);
-    when(_userManager.validateGroup(any())).thenReturn(true);
+    when(_userManager.validateLdapGroup(any())).thenReturn(true);
     when(_rampRuleDao.addRampRule(any())).thenReturn(1);
     assertThatCode(() -> _rampRuleService.createHpFlowRule(requestDTO, user)).doesNotThrowAnyException();
   }
@@ -125,7 +125,7 @@ public class ImageRampRuleServiceImplTest {
     ownership.setOwner(user.getUserId());
     ownership.setRole(ImageOwnership.Role.ADMIN);
     when(_userManager.getRole(any())).thenReturn(role);
-    when(_userManager.validateGroup(any())).thenReturn(true);
+    when(_userManager.validateLdapGroup(any())).thenReturn(true);
 
     String existingOwner1 = "user2";
     String existingOwner2 = "user3";
@@ -151,7 +151,7 @@ public class ImageRampRuleServiceImplTest {
     ownership.setOwner(user.getUserId());
     ownership.setRole(ImageOwnership.Role.ADMIN);
     when(_userManager.getRole(any())).thenReturn(role);
-    when(_userManager.validateGroup(any())).thenReturn(true);
+    when(_userManager.validateLdapGroup(any())).thenReturn(true);
 
     String existingOwner1 = "user2";
     String existingOwner2 = "user3";

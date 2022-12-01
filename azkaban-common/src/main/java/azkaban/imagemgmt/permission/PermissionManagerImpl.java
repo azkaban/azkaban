@@ -127,7 +127,7 @@ public class PermissionManagerImpl implements PermissionManager {
   @Override
   public void validateIdentity(List<String> ids) {
     Set<String> invalids = ids.stream()
-        .filter(id -> !userManager.validateGroup(id) && !userManager.validateUser(id))
+        .filter(id -> !userManager.validateLdapGroup(id) && !userManager.validateUser(id))
         .collect(Collectors.toSet());
     if (!invalids.isEmpty()) {
       log.error("Invalid identity: " + invalids);
