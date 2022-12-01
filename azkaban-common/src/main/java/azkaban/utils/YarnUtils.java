@@ -19,6 +19,7 @@ import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID;
 
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -60,8 +61,7 @@ public class YarnUtils {
   }
 
   /**
-   * Use the yarnClient to query the unfinished yarn applications, then use the yarnClient to kill
-   * them sequentially
+   * Use the yarnClient to query the unfinished yarn applications for 1 flow execution
    *
    * @param yarnClient the yarnClient already connects to the cluster
    * @param flowExecID the azkaban flow execution id whose yarn applications needs to be killed
@@ -79,6 +79,27 @@ public class YarnUtils {
     log.info(String.format("Searching for alive yarn application reports with tag %s", searchTags));
     return yarnClient.getApplications(null, YARN_APPLICATION_ALIVE_STATES, searchTags);
   }
+
+  /**
+   * Use the yarnClient to query the unfinished yarn applications using a set of flow execution IDs
+   * (the union of yarn applications tagged with any of the flow execution IDs)
+   */
+  public static List<ApplicationReport> getAllAliveAppReportsByExecIDs(final YarnClient yarnClient,
+      final Set<Integer> flowExecIDs, final Logger log)
+      throws IOException, YarnException {
+    if (flowExecIDs.isEmpty()){
+      return Collections.emptyList();
+    }
+
+    Set<String> searchTags = flowExecIDs.stream()
+        .map(id -> AZKABAN_FLOW_EXEC_ID + ":" + id)
+        .collect(Collectors.toSet());
+    log.info(String.format("Searching for alive yarn application reports with tags %s",
+        searchTags));
+
+    return yarnClient.getApplications(null, YARN_APPLICATION_ALIVE_STATES, searchTags);
+  }
+
 
   /**
    * Uses YarnClient to kill the jobs one by one
