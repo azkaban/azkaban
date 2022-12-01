@@ -15,15 +15,15 @@ buildscript {
 // manage NodeJS distributions, use them from there.
 // ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
 plugins {
-    id "com.moowork.node" version "1.2.0"
+    id "com.github.node-gradle.node" version "3.3.0"
 }
 
 node {
     // Version of node to use.
-    version = '8.10.0'
+    version = '16.15.1'
 
     // Version of npm to use.
-    npmVersion = '5.6.0'
+    npmVersion = ''
 
     // Base URL for fetching node distributions (change if you have a mirror).
     distBaseUrl = 'https://nodejs.org/dist'
