@@ -806,6 +806,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         this.projectManager.updateFlowResourceRecommendation(flowResourceRecommendation);
       }
 
+      executableFlow.setVPAEnabled(true);
       return vpaRecommendation;
     } catch (ExecutorManagerException | ProjectManagerException e) {
       logger.error("Cannot apply resource recommendation from VPA for execId {}", executableFlow
