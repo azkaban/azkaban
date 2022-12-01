@@ -177,6 +177,14 @@ public class Constants {
    */
   public static final String PARAM_OVERRIDE_FILE = "param_override.properties";
 
+  /**
+   * Missed Schedule Props
+   * */
+  public static final String MISSED_SCHEDULE_MANAGER_ENABLED = "azkaban.missed.schedule.manager.enabled";
+  public static final String MISSED_SCHEDULE_THREAD_POOL_SIZE = "azkaban.missed.schedule.task.threads";
+  public static final boolean DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE = false;
+
+
   // Azkaban event reporter constants
   public static class EventReporterConstants {
 
