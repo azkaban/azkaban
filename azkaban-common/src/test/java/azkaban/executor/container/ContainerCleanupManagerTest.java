@@ -29,6 +29,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.OnContainerizedExecutionEventListener;
 import azkaban.executor.Status;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
@@ -152,5 +153,73 @@ public class ContainerCleanupManagerTest {
     this.cleaner.cleanUpContainersInTerminalStatuses();
     verify(this.containerImpl).deleteContainer(1001);
     verify(this.containerImpl, Mockito.times(0)).deleteContainer(1000);
+  }
+
+  @Test
+  public void testGetContainersOfTerminatedFlows() throws Exception {
+    Set<Integer> pods = new HashSet<>();
+    pods.add(1000);
+    pods.add(1001);
+    // execution 1000 is alive, which means 1001 is to be terminated
+    final ExecutableFlow flow = new ExecutableFlow();
+    flow.setExecutionId(1000);
+    flow.setStatus(Status.PREPARING);
+    flow.setSubmitUser("dummy-user");
+    flow.setExecutionOptions(new ExecutionOptions());
+    final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
+    executableFlows.add(flow);
+
+    when(this.executorLoader
+        .fetchStaleFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
+        .thenReturn(executableFlows);
+    when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
+
+    Set<Integer> containersOfTerminatedFlows = this.cleaner.getContainersOfTerminatedFlows();
+    Assert.assertTrue(containersOfTerminatedFlows.contains(1001));
+    Assert.assertFalse(containersOfTerminatedFlows.contains(1000));
+  }
+
+  @Test
+  public void testGetContainersOfTerminatedFlowsFailFetchExecutionByStatus() throws Exception {
+    Set<Integer> pods = new HashSet<>();
+    pods.add(1000);
+    pods.add(1001);
+
+    when(this.executorLoader
+        .fetchStaleFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
+        .thenThrow(new ExecutorManagerException("ops"));
+    when(this.containerImpl.getContainersByDuration(Duration.ZERO)).thenReturn(pods);
+
+    Set<Integer> containersOfTerminatedFlows = this.cleaner.getContainersOfTerminatedFlows();
+    Assert.assertTrue(containersOfTerminatedFlows.isEmpty());
+  }
+
+  @Test
+  public void testGetExecutionStoppedFlows() throws ExecutorManagerException {
+    final ExecutableFlow flow = new ExecutableFlow();
+    flow.setExecutionId(1000);
+    flow.setStatus(Status.EXECUTION_STOPPED);
+    flow.setSubmitUser("dummy-user");
+    flow.setExecutionOptions(new ExecutionOptions());
+    final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
+    executableFlows.add(flow);
+
+    when(this.executorLoader
+        .fetchFreshFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
+        .thenReturn(executableFlows);
+
+    Set<Integer> executionStoppedFlows = this.cleaner.getExecutionStoppedFlows();
+    Assert.assertTrue(executionStoppedFlows.contains(1000));
+    Assert.assertEquals(1, executionStoppedFlows.size());
+  }
+
+  @Test
+  public void testGetExecutionStoppedFlowsFail() throws ExecutorManagerException {
+    when(this.executorLoader
+        .fetchFreshFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
+        .thenThrow(new ExecutorManagerException("ops"));
+
+    Set<Integer> executionStoppedFlows = this.cleaner.getExecutionStoppedFlows();
+    Assert.assertTrue(executionStoppedFlows.isEmpty());
   }
 }
