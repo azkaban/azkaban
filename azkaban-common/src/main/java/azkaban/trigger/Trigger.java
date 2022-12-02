@@ -18,6 +18,8 @@ package azkaban.trigger;
 
 import static java.util.Objects.requireNonNull;
 
+import azkaban.scheduler.MissedSchedulesManager;
+import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.JSONUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ public class Trigger {
 
   private static final Logger logger = Logger.getLogger(Trigger.class);
   private static ActionTypeLoader actionTypeLoader;
+  private static MissedSchedulesManager missedSchedulesManager;
   private final long submitTime;
   private final String submitUser;
   private final String source;
@@ -83,6 +86,10 @@ public class Trigger {
 
   public static synchronized void setActionTypeLoader(final ActionTypeLoader loader) {
     Trigger.actionTypeLoader = loader;
+  }
+
+  public static synchronized void setMissedScheduleManager(final MissedSchedulesManager missedSchedulesManager) {
+    Trigger.missedSchedulesManager = missedSchedulesManager;
   }
 
   public static Trigger fromJson(final Object obj) throws Exception {
@@ -287,6 +294,23 @@ public class Trigger {
   public void resetTriggerConditions() {
     this.triggerCondition.resetCheckers();
     updateNextCheckTime();
+  }
+
+  public void sendTaskToMissedScheduleManager() {
+    if (this.triggerCondition.getMissedCheckTimes().isEmpty()) {
+      return;
+    }
+    for (final TriggerAction action : actions) {
+      if (action instanceof ExecuteFlowAction) {
+        // when successfully send task to missedScheduleManager, clear the missed schedule times
+        if (missedSchedulesManager.addMissedSchedule(
+            this.triggerCondition.getMissedCheckTimes(), (ExecuteFlowAction) action, false)) {
+          this.triggerCondition.getMissedCheckTimes().clear();
+        } else {
+          logger.error("failed to add miss schedule task for trigger " + this);
+        }
+      }
+    }
   }
 
   public void resetExpireCondition() {

@@ -222,6 +222,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
         Trigger t = null;
         try {
           t = Trigger.fromJson(jsonObj);
+          // if detecting any miss schedules, send task to missScheduleManager
+          t.sendTaskToMissedScheduleManager();
           triggers.add(t);
         } catch (final Exception e) {
           logger.error("Failed to load trigger " + triggerId, e);

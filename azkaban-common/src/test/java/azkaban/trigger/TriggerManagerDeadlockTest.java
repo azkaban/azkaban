@@ -35,6 +35,7 @@ import azkaban.logs.ExecutionLogsLoader;
 import azkaban.logs.MockExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.utils.Props;
 import com.codahale.metrics.MetricRegistry;
@@ -80,7 +81,8 @@ public class TriggerManagerDeadlockTest {
         this.updaterStage, this.alertHolder, this.runningExecutions);
     this.commonMetrics = new CommonMetrics(new MetricsManager(new MetricRegistry()));
     final ExecutorManager executorManager = getExecutorManager(props);
-    this.triggerManager = new TriggerManager(props, this.loader, executorManager, metricsManager);
+    MissedSchedulesManager missedSchedulesManager = mock(MissedSchedulesManager.class);
+    this.triggerManager = new TriggerManager(props, this.loader, executorManager, metricsManager, missedSchedulesManager);
   }
 
   private ExecutorManager getExecutorManager(final Props props) throws ExecutorManagerException {
