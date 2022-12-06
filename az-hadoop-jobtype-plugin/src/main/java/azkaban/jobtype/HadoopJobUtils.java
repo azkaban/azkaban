@@ -90,6 +90,7 @@ public class HadoopJobUtils {
 
   public static final String YARN_KILL_VERSION = "yarn.kill.version";
   // values of the yarn kill version flag
+  public static final String YARN_KILL_DISABLED = "disabled";
   public static final String YARN_KILL_LEGACY = "legacy";
   public static final String YARN_KILL_USE_API_WITH_TOKEN = "api_with_token";
 
@@ -389,6 +390,11 @@ public class HadoopJobUtils {
   }
 
   private static void findAndKillYarnApps(Props jobProps, Logger log) {
+    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY).trim();
+    if (YARN_KILL_DISABLED.equals(yarnKillVersion)) {
+      log.warn("Yarn application kill is disabled, skip finding and killing yarn apps");
+      return;
+    }
     final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
     log.info("Log file path is: " + logFilePath);
     YarnClient yarnClient = YarnUtils.createYarnClient(jobProps, log);
@@ -410,7 +416,7 @@ public class HadoopJobUtils {
   public static Set<String> getApplicationIDsToKill(YarnClient yarnClient, Props jobProps,
       final Logger log) {
     Set<String> jobsToKill;
-    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
+    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY).trim();
     if (YARN_KILL_USE_API_WITH_TOKEN.equals(yarnKillVersion)) {
       try {
         jobsToKill = YarnUtils.getAllAliveAppIDsByExecID(yarnClient,
@@ -426,7 +432,7 @@ public class HadoopJobUtils {
         log.info(String.format("Get all spawned yarn application IDs from job log file: %s",
             jobsToKill));
       }
-    } else{
+    } else {
       final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
       jobsToKill = findApplicationIdFromLog(logFilePath, log);
     }
