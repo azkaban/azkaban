@@ -88,10 +88,15 @@ public class HadoopJobUtils {
   // MapReduce config for mapreduce job tags
   public static final String MAPREDUCE_JOB_TAGS = "mapreduce.job.tags";
 
+  // feature version key, resides in jobProps, also can be config from properties file
   public static final String YARN_KILL_VERSION = "yarn.kill.version";
   // values of the yarn kill version flag
+  // get the application IDs by reading the job log (default value)
   public static final String YARN_KILL_LEGACY = "legacy";
+  // get the application IDs by calling the getApplications() API with tokens loaded in yarnClient
   public static final String YARN_KILL_USE_API_WITH_TOKEN = "api_with_token";
+  // disabling the whole yarn kill feature, skip killing the applications
+  public static final String YARN_KILL_DISABLED = "disabled";
 
   protected static final int APPLICATION_TAG_MAX_LENGTH = 100;
   // Root of folder in storage containing startup dependencies
@@ -389,6 +394,12 @@ public class HadoopJobUtils {
   }
 
   private static void findAndKillYarnApps(Props jobProps, Logger log) {
+    // if set to "disabled", skip the whole yarn application kill logic
+    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY).trim();
+    if (YARN_KILL_DISABLED.equals(yarnKillVersion)) {
+      log.warn("Yarn application kill is disabled, skip finding and killing yarn apps");
+      return;
+    }
     final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
     log.info("Log file path is: " + logFilePath);
     YarnClient yarnClient = YarnUtils.createYarnClient(jobProps, log);
@@ -410,7 +421,7 @@ public class HadoopJobUtils {
   public static Set<String> getApplicationIDsToKill(YarnClient yarnClient, Props jobProps,
       final Logger log) {
     Set<String> jobsToKill;
-    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY);
+    String yarnKillVersion = jobProps.getString(YARN_KILL_VERSION, YARN_KILL_LEGACY).trim();
     if (YARN_KILL_USE_API_WITH_TOKEN.equals(yarnKillVersion)) {
       try {
         jobsToKill = YarnUtils.getAllAliveAppIDsByExecID(yarnClient,
@@ -426,7 +437,7 @@ public class HadoopJobUtils {
         log.info(String.format("Get all spawned yarn application IDs from job log file: %s",
             jobsToKill));
       }
-    } else{
+    } else {
       final String logFilePath = jobProps.getString(CommonJobProperties.JOB_LOG_FILE);
       jobsToKill = findApplicationIdFromLog(logFilePath, log);
     }
