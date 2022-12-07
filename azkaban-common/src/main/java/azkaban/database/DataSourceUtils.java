@@ -44,10 +44,12 @@ public class DataSourceUtils {
       final String database = props.getString("mysql.database");
       final String user = props.getString("mysql.user");
       final String password = props.getString("mysql.password");
+      final String driverClassName = props.getString("mysql.driverclassname",
+          "com.mysql.cj.jdbc.Driver");
       final int numConnections = props.getInt("mysql.numconnections");
 
       dataSource =
-          getMySQLDataSource(host, port, database, user, password,
+          getMySQLDataSource(host, port, database, user, password, driverClassName,
               numConnections);
     } else if (databaseType.equals("h2")) {
       final String path = props.getString("h2.path");
@@ -63,8 +65,9 @@ public class DataSourceUtils {
    * Create a MySQL DataSource
    */
   public static AzkabanDataSource getMySQLDataSource(final String host, final Integer port,
-      final String dbName, final String user, final String password, final Integer numConnections) {
-    return new MySQLBasicDataSource(host, port, dbName, user, password,
+      final String dbName, final String user, final String password,
+      String driverClassName, final Integer numConnections) {
+    return new MySQLBasicDataSource(host, port, dbName, user, password, driverClassName,
         numConnections);
   }
 
@@ -109,13 +112,14 @@ public class DataSourceUtils {
     private final String url;
 
     private MySQLBasicDataSource(final String host, final int port, final String dbName,
-        final String user, final String password, final int numConnections) {
+        final String user, final String password, String driverClassName,
+        final int numConnections) {
       super();
 
       this.url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
       addConnectionProperty("useUnicode", "yes");
       addConnectionProperty("characterEncoding", "UTF-8");
-      setDriverClassName("com.mysql.cj.jdbc.Driver");
+      setDriverClassName(driverClassName);
       setUsername(user);
       setPassword(password);
       setUrl(this.url);
