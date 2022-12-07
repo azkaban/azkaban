@@ -77,6 +77,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
+  private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
+  private static final String EMPTY_STRING = "";
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
@@ -343,12 +345,44 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
 
-    final List<Schedule> schedules;
-    try {
-      schedules = this.scheduleManager.getSchedules();
-    } catch (final ScheduleManagerException e) {
-      throw new ServletException(e);
+    List<Schedule> schedules = null;
+
+    if (hasParam(req, "advfilter")) {
+      final String projContain = getParam(req, "projcontain");
+      final String flowContain = getParam(req, "flowcontain");
+      final String submitUserContain = getParam(req, "submitusercontain");
+
+      final String nextExecBegin = getParam(req, "nextexecbegin");
+      final long nextExecBeginTime =
+          EMPTY_STRING.equals(nextExecBegin) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+              .parseDateTime(nextExecBegin).getMillis();
+
+      final String nextExecEnd = getParam(req, "nextexecend");
+      final long nextExecEndTime =
+          EMPTY_STRING.equals(nextExecEnd) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+              .parseDateTime(nextExecEnd).getMillis();
+
+      try {
+        schedules = this.scheduleManager.getSchedules(projContain, flowContain, submitUserContain,
+            nextExecBeginTime, nextExecEndTime);
+      } catch (final ScheduleManagerException e) {
+        throw new ServletException(e);
+      }
+    }  else if (hasParam(req, "search")) {
+      final String flowContain = getParam(req, "searchterm");
+      try {
+        schedules = this.scheduleManager.getSchedules(EMPTY_STRING, flowContain, EMPTY_STRING, -1, -1);
+      } catch (final ScheduleManagerException e) {
+        throw new ServletException(e);
+      }
+    } else {
+      try {
+        schedules = this.scheduleManager.getSchedules();
+      } catch (final ScheduleManagerException e) {
+        throw new ServletException(e);
+      }
     }
+
     page.add("schedules", schedules);
     page.render();
   }

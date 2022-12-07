@@ -56,7 +56,27 @@
 
   <div class="az-page-header">
     <div class="container-full">
-      <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
+      <div class="row">
+        <div class="header-title">
+          <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
+        </div>
+        <div class="header-control">
+          <form id="search-form" method="get" class="form-inline header-form" role="form">
+            <input type="hidden" name="search" value="true">
+            <div class="form-group">
+              <div class="input-group">
+              <input type="text" id="searchtextbox"
+                     placeholder="flow name containing ..." value=#if($search_term) "$esc.html(${search_term})" #else
+                "" #end class="form-control input-sm" name="searchterm">
+                <span class="input-group-btn">
+                    <button class="btn btn-primary btn-sm">Quick Search</button>
+                    <button type="button" class="btn btn-success btn-sm" id="adv-filter-btn">Advanced Filter</button>
+                  </span>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -168,6 +188,67 @@
         </table>
       </div><!-- /col-xs-12 -->
     </div><!-- /row -->
+
+  ## Advanced Filter Modal.
+
+    <div class="modal" id="adv-filter">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;
+            </button>
+            <h4 class="modal-title">Advanced Filter</h4>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger" id="adv-filter-error-msg">$error_msg</div>
+            <fieldset class="form-horizontal">
+              <div class="form-group">
+                <label for="projcontain" class="col-sm-2 control-label">Project</label>
+                <div class="col-sm-10">
+                  <input id="projcontain" type="text" placeholder="Project name containing ..."
+                         value="" class="form-control" name="projcontain">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="flowcontain" class="col-sm-2 control-label">Flow</label>
+                <div class="col-sm-10">
+                  <input id="flowcontain" type="text" placeholder="Flow name containing ..."
+                         value="" class="form-control" name="flowcontain">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="submitusercontain" class="col-sm-2 control-label">Submit User</label>
+                <div class="col-sm-10">
+                  <input id="submitusercontain" type="text" placeholder="Submit User name containing
+                   ..."
+                         value="" class="form-control" name="submitusercontain">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="nextexecbegin" class="col-sm-12">Next Execution Time</label>
+              </div>
+              <div class="form-group">
+                <label for="nextexecbegin" class="col-sm-2 control-label">Between</label>
+                <div class="col-sm-4">
+                  <input type="text" id="nextexecbegin" value=""
+                         class="ui-datetime-container form-control">
+                </div>
+                <label for="nextexecend"
+                       class="col-sm-2 control-label control-label-center">and</label>
+                <div class="col-sm-4">
+                  <input type="text" id="nextexecend" value=""
+                         class="ui-datetime-container form-control">
+                </div>
+              </div>
+            </fieldset>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button class="btn btn-success" id="filter-btn">Filter</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   ## Set SLA modal.
 

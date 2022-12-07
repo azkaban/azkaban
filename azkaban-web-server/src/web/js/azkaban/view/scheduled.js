@@ -16,8 +16,49 @@
 
 $.namespace('azkaban');
 
+var advFilterView;
+azkaban.AdvFilterView = Backbone.View.extend({
+  events: {
+    "click #filter-btn": "handleAdvFilter"
+  },
+
+  initialize: function (settings) {
+    $('#nextexecbegin').datetimepicker();
+    $('#nextexecend').datetimepicker();
+    $('#nextexecbegin').on('change.dp', function (e) {
+      $('#nextexecend').data('DateTimePicker').setStartDate(e.date);
+    });
+    $('#nextexecend').on('change.dp', function (e) {
+      $('#nextexecbegin').data('DateTimePicker').setEndDate(e.date);
+    });
+    $('#adv-filter-error-msg').hide();
+  },
+
+  handleAdvFilter: function (evt) {
+    console.log("handleAdv");
+    var projcontain = $('#projcontain').val();
+    var flowcontain = $('#flowcontain').val();
+    var submitusercontain = $('#submitusercontain').val();
+    var nextexecbegin = $('#nextexecbegin').val();
+    var nextexecend = $('#nextexecend').val();
+
+    console.log("filtering history");
+
+    var scheduleURL = contextURL + "/schedule"
+
+    var requestURL = scheduleURL + "?advfilter=true" + "&projcontain="
+        + projcontain + "&flowcontain=" + flowcontain + "&submitusercontain="
+        + submitusercontain + "&nextexecbegin=" + nextexecbegin + "&nextexecend=" + nextexecend;
+    window.location = requestURL;
+  },
+
+  render: function () {
+  }
+});
+
 var slaView;
 var tableSorterView;
+
 $(function () {
   slaView = new azkaban.ChangeSlaView({el: $('#sla-options')});
   tableSorterView = new azkaban.TableSorter({el: $('#scheduledFlowsTbl')});
@@ -27,4 +68,9 @@ $(function () {
   //$('#addSlaBtn').click( function() {
   //  slaView.show();
   //});
+
+  filterView = new azkaban.AdvFilterView({el: $('#adv-filter')});
+  $('#adv-filter-btn').click(function () {
+    $('#adv-filter').modal();
+  });
 });
