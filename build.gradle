@@ -35,10 +35,10 @@ plugins {
 
 // https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
 gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-    }
+  buildScan {
+    termsOfServiceUrl = "https://gradle.com/terms-of-service"
+    termsOfServiceAgree = "yes"
+  }
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
@@ -141,10 +141,10 @@ ext.deps = [
     jasypt               : 'org.jasypt:jasypt:1.9.2',
     jacksonCore          : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
     jsonassert           : 'org.skyscreamer:jsonassert:1.5.0',
-    systemRules         : 'com.github.stefanbirkner:system-rules:1.19.0',
+    systemRules          : 'com.github.stefanbirkner:system-rules:1.19.0',
     javaxValidation      : 'javax.validation:validation-api:2.0.1.Final',
     hibernateValidator   : 'org.hibernate:hibernate-validator:6.1.5.Final',
-    failsafe             : 'dev.failsafe:failsafe:3.2.4' ]
+    failsafe             : 'dev.failsafe:failsafe:3.2.4']
 
 subprojects {
   apply plugin: 'java'
@@ -204,7 +204,6 @@ subprojects {
       // NOTE! For some reason anything more than 1 doesn't work well for azkaban build:
       // any maxParallelForks > 1 seems to make `./gradlew cleanTest test` ~4 times slower
       maxParallelForks = 1
-      maxHeapSize '2g'
     }
   }
 
@@ -221,7 +220,6 @@ subprojects {
   tasks.withType(JavaCompile) {
     options.compilerArgs += ["-Werror"]
   }
-
 
   /**
    * Print test execution summary when informational logging is enabled.*/
@@ -256,8 +254,8 @@ if (System.env.TRAVIS == 'true') {
     tasks.withType(Test) {
       // Reduce the memory pressure on the Travis CI to reduce build failures.
       maxParallelForks = 2
-      minHeapSize = '128m'
-      maxHeapSize '2g'
+      minHeapSize = '512m'
+      maxHeapSize = '4g'
       outputs.upToDateWhen { false }
     }
   }
