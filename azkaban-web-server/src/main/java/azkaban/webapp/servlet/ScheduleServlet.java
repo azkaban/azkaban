@@ -22,6 +22,7 @@ import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.CronCalculator;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
@@ -586,7 +587,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     final long endSchedTime = getLongParam(req, "endSchedTime",
-        Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+        new CronCalculator(cronExpression).getUpperBound().getTime());
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (final Exception e) {
