@@ -16,6 +16,7 @@
 
 package azkaban.trigger;
 
+import azkaban.trigger.builtin.BasicTimeChecker;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.apache.commons.jexl2.MapContext;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
+
 public class Condition {
 
   private static final Logger logger = Logger.getLogger(Condition.class);
@@ -34,19 +36,28 @@ public class Condition {
   private static CheckerTypeLoader checkerLoader = null;
   private final MapContext context = new MapContext();
   private Expression expression;
-  private Map<String, ConditionChecker> checkers =
-      new HashMap<>();
+  private Map<String, ConditionChecker> checkers = new HashMap<>();
   private Long nextCheckTime = -1L;
+  private List<Long> missedCheckTimes = new ArrayList<>();
 
+  /**
+   * Used when creating a new trigger instance (both triggerCond and expireCond) from schedule,
+   * it does not need to count missed schedules.
+   * */
   public Condition(final Map<String, ConditionChecker> checkers, final String expr) {
     setCheckers(checkers);
     this.expression = jexl.createExpression(expr);
     updateNextCheckTime();
   }
 
-  public Condition(final Map<String, ConditionChecker> checkers, final String expr,
-      final long nextCheckTime) {
+  /**
+   * Used when reload Trigger from DB.
+   * It's possible to have missed schedule from last check point.
+   * */
+  public Condition(final Map<String, ConditionChecker> checkers, final String expr, final long nextCheckTime,
+      final List<Long> missedCheckTimes) {
     this.nextCheckTime = nextCheckTime;
+    this.missedCheckTimes = missedCheckTimes;
     setCheckers(checkers);
     this.expression = jexl.createExpression(expr);
   }
@@ -62,25 +73,24 @@ public class Condition {
 
     final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
     Condition cond = null;
-
+    List<Long> missedCheckTimes = new ArrayList<>();
     try {
-      final Map<String, ConditionChecker> checkers =
-          new HashMap<>();
+      final Map<String, ConditionChecker> checkers = new HashMap<>();
       final List<Object> checkersJson = (List<Object>) jsonObj.get("checkers");
       for (final Object oneCheckerJson : checkersJson) {
-        final Map<String, Object> oneChecker =
-            (HashMap<String, Object>) oneCheckerJson;
+        final Map<String, Object> oneChecker = (HashMap<String, Object>) oneCheckerJson;
         final String type = (String) oneChecker.get("type");
-        final ConditionChecker ck =
-            checkerLoader.createCheckerFromJson(type,
-                oneChecker.get("checkerJson"));
+        final ConditionChecker ck = checkerLoader.createCheckerFromJson(type, oneChecker.get("checkerJson"));
         checkers.put(ck.getId(), ck);
+        // there is only one BasicTimeChecker associated with each condition
+        if (ck instanceof BasicTimeChecker && ck.getId().equals("BasicTimeChecker_1")) {
+          missedCheckTimes = (((BasicTimeChecker) ck).getMissedCheckTimesBeforeNow());
+        }
       }
       final String expr = (String) jsonObj.get("expression");
       final Long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
 
-      cond = new Condition(checkers, expr, nextCheckTime);
-
+      cond = new Condition(checkers, expr, nextCheckTime, missedCheckTimes);
     } catch (final Exception e) {
       e.printStackTrace();
       logger.error("Failed to recreate condition from json.", e);
@@ -92,6 +102,10 @@ public class Condition {
 
   public long getNextCheckTime() {
     return this.nextCheckTime;
+  }
+
+  public List<Long> getMissedCheckTimes() {
+    return this.missedCheckTimes;
   }
 
   public Map<String, ConditionChecker> getCheckers() {
@@ -117,10 +131,12 @@ public class Condition {
   public void resetCheckers() {
     for (final ConditionChecker checker : this.checkers.values()) {
       checker.reset();
+      if (checker instanceof BasicTimeChecker) {
+        this.missedCheckTimes = ((BasicTimeChecker) checker).getMissedCheckTimesBeforeNow();
+      }
     }
     updateNextCheckTime();
-    logger.info("Done resetting checkers. The next check time will be "
-        + new DateTime(this.nextCheckTime));
+    logger.info("Done resetting checkers. The next check time will be " + new DateTime(this.nextCheckTime));
   }
 
   public String getExpression() {
@@ -154,5 +170,4 @@ public class Condition {
 
     return jsonObj;
   }
-
 }

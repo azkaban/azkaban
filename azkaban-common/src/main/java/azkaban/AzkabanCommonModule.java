@@ -54,6 +54,7 @@ import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectCache;
 import azkaban.project.ProjectLoader;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
@@ -115,6 +116,7 @@ public class AzkabanCommonModule extends AbstractModule {
       return new OsCpuUtil(Math.max(1, (cpuLoadPeriodSec * 1000) / pollingIntervalMs));
     });
     bindImageManagementDependencies();
+    bind(MissedSchedulesManager.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
