@@ -22,6 +22,7 @@ import azkaban.event.EventHandler;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.metrics.MetricsManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.utils.Props;
 import com.codahale.metrics.Meter;
 import java.util.ArrayList;
@@ -61,7 +62,8 @@ public class TriggerManager extends EventHandler implements
 
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
-      final ExecutorManagerAdapter executorManagerAdapter, final MetricsManager metricsManager) throws TriggerManagerException {
+      final ExecutorManagerAdapter executorManagerAdapter, final MetricsManager metricsManager,
+      final MissedSchedulesManager missedScheduleManager) throws TriggerManagerException {
 
     requireNonNull(props);
     requireNonNull(executorManagerAdapter);
@@ -85,6 +87,7 @@ public class TriggerManager extends EventHandler implements
 
     Condition.setCheckerLoader(this.checkerTypeLoader);
     Trigger.setActionTypeLoader(this.actionTypeLoader);
+    Trigger.setMissedScheduleManager(missedScheduleManager);
 
     logger.info("TriggerManager loaded.");
   }
@@ -384,6 +387,7 @@ public class TriggerManager extends EventHandler implements
 
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
+        t.sendTaskToMissedScheduleManager();
       } else {
         logger.info("NextCheckTime did not change. Setting status to expired for trigger"
             + t.getTriggerId());

@@ -135,7 +135,6 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
     bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
     bind(EventListener.class).to(resolveEventListenerClass()).in(Scopes.SINGLETON);
-    bind(MissedSchedulesManager.class).in(Scopes.SINGLETON);
     // Implement container metrics based on dispatch method
     bind(ContainerizationMetrics.class).to(resolveContainerMetricsClass()).in(Scopes.SINGLETON);
 

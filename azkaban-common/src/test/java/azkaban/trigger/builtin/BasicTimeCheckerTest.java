@@ -14,33 +14,35 @@
  * the License.
  */
 
-package azkaban.trigger;
+package azkaban.trigger.builtin;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.trigger.Condition;
+import azkaban.trigger.ConditionChecker;
 import azkaban.utils.TimeUtils;
+import azkaban.utils.Utils;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+
+
 public class BasicTimeCheckerTest {
 
-
   private Condition getCondition(final BasicTimeChecker timeChecker) {
-    final Map<String, ConditionChecker> checkers =
-        new HashMap<>();
+    final Map<String, ConditionChecker> checkers = new HashMap<>();
     checkers.put(timeChecker.getId(), timeChecker);
     final String expr = timeChecker.getId() + ".eval()";
 
     return new Condition(checkers, expr);
   }
-
 
   /**
    * This test manipulates global states (time) in org.joda.time.DateTimeUtils . Thus this test can
@@ -56,8 +58,7 @@ public class BasicTimeCheckerTest {
 
     DateTimeUtils.setCurrentMillisFixed(baseTimeInMilliSeconds);
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", baseTimeInMilliSeconds,
-            DateTimeZone.UTC, true, true, period, null);
+        new BasicTimeChecker("BasicTimeChecker_1", baseTimeInMilliSeconds, DateTimeZone.UTC, true, true, period, null);
     final Condition cond = getCondition(timeChecker);
     assertFalse(cond.isMet());
 
@@ -86,8 +87,7 @@ public class BasicTimeCheckerTest {
     final String cronExpression = "0 0 0 31 12 ? 2050";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
-            now.getZone(), true, true, null, cronExpression);
+        new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(), now.getZone(), true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
     final Condition cond = getCondition(timeChecker);
@@ -114,15 +114,14 @@ public class BasicTimeCheckerTest {
     final String cronExpression = "0 30 10 8 3 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
-            DateTimeZone.UTC, true, true, null, cronExpression);
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(), DateTimeZone.UTC, true, true, null,
+            cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
     final Condition cond = getCondition(timeChecker);
 
     final DateTime spring2020UTC = new DateTime(2020, 3, 8, 10, 30, 0, DateTimeZone.UTC);
-    final DateTime spring2020PDT = new DateTime(2020, 3, 8, 3, 30, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime spring2020PDT = new DateTime(2020, 3, 8, 3, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == spring2020UTC.getMillis());
     assertTrue(cond.getNextCheckTime() == spring2020PDT.getMillis());
   }
@@ -144,14 +143,13 @@ public class BasicTimeCheckerTest {
     final String cronExpression = "0 30 2 8,9 3 ? 2020";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
-            DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(), DateTimeZone.forID("America/Los_Angeles"),
+            true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
     final Condition cond = getCondition(timeChecker);
 
-    final DateTime aTime = new DateTime(2020, 3, 9, 2, 30, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime aTime = new DateTime(2020, 3, 9, 2, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == aTime.getMillis());
   }
 
@@ -176,18 +174,16 @@ public class BasicTimeCheckerTest {
     final String cronExpression = "0 0 1 4,5 11 ? 2029";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
-            DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(), DateTimeZone.forID("America/Los_Angeles"),
+            true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
     final Condition cond = getCondition(timeChecker);
 
     final DateTime winter2020 = new DateTime(2029, 11, 4, 9, 0, 0, DateTimeZone.UTC);
 
-    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 1, 0, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
-    final DateTime winter2020_3 = new DateTime(2029, 11, 4, 2, 0, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 1, 0, 0, DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime winter2020_3 = new DateTime(2029, 11, 4, 2, 0, 0, DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
 
     // Both 1 and 2 o'clock can not pass the test. Based on milliseconds we got,
@@ -197,7 +193,6 @@ public class BasicTimeCheckerTest {
     assertFalse(cond.getNextCheckTime() == winter2020_2.getMillis());
     assertFalse(cond.getNextCheckTime() == winter2020_3.getMillis());
   }
-
 
   /**
    * Test when PDT-->PST happens in 2020. -7:00 -> -8:00 See details why confusion happens during
@@ -219,22 +214,20 @@ public class BasicTimeCheckerTest {
     final String cronExpression = "0 59 0 4,5 11 ? 2029";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
-            DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(), DateTimeZone.forID("America/Los_Angeles"),
+            true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
     final Condition cond = getCondition(timeChecker);
 
     // 7:59 UTC == 0:59 PDT (difference is 7 hours)
     final DateTime winter2020 = new DateTime(2029, 11, 4, 7, 59, 0, DateTimeZone.UTC);
-    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 0, 59, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 0, 59, 0, DateTimeZone.forID("America/Los_Angeles"));
 
     // Local time remains the same.
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
     assertTrue(cond.getNextCheckTime() == winter2020_2.getMillis());
   }
-
 
   /**
    * Test when PDT-->PST happens in 2020. -7:00 -> -8:00 See details why confusion happens during
@@ -256,8 +249,8 @@ public class BasicTimeCheckerTest {
     final String cronExpression = "0 30 1 4,5 11 ? 2029";
 
     final BasicTimeChecker timeChecker =
-        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(),
-            DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(), DateTimeZone.forID("America/Los_Angeles"),
+            true, true, null, cronExpression);
     System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
 
     final Condition cond = getCondition(timeChecker);
@@ -265,14 +258,69 @@ public class BasicTimeCheckerTest {
     // 9:30 UTC == 1:30 PST (difference is 8 hours)
     final DateTime winter2020 = new DateTime(2029, 11, 4, 9, 30, 0, DateTimeZone.UTC);
 
-    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 1, 30, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
-    final DateTime winter2020_3 = new DateTime(2029, 11, 4, 2, 30, 0,
-        DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime winter2020_2 = new DateTime(2029, 11, 4, 1, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
+    final DateTime winter2020_3 = new DateTime(2029, 11, 4, 2, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
 
     // Both 1:30 and 2:30 can not pass the test.
     assertFalse(cond.getNextCheckTime() == winter2020_2.getMillis());
     assertFalse(cond.getNextCheckTime() == winter2020_3.getMillis());
+  }
+
+  @Test
+  public void testMissedScheduleExpiredTrigger() {
+    // first check date is 2022/01/01 00:00
+    final DateTime pastTime = new DateTime(2022, 1, 1, 00, 00, 0, DateTimeZone.UTC);
+    // trigger every 10 minute at first hour(00:00:00 ~ 00:59:59) of 2022/01/01
+    final String cronExpression = "0 0/10 0 1 JAN ? 2022";
+
+    final BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecker_1", pastTime.getMillis(), DateTimeZone.UTC, pastTime.getMillis(), true,
+            true, null, cronExpression);
+
+    final List<Long> missed = timeChecker.getMissedCheckTimesBeforeNow();
+    Assertions.assertThat(missed.size()).isEqualTo(0);
+    Assertions.assertThat(timeChecker.getNextCheckTime()).isEqualTo(pastTime.getMillis());
+  }
+
+  @Test
+  public void testMissedScheduleRecoverFromDB() {
+    final DateTime now = DateTime.now();
+    // first check time was 5 minutes ago
+    final DateTime firstCheck = now.minusMinutes(5);
+    // trigger every 30 minute
+    final String cronExpression = "0 */30 * ? * * *";
+    final Date nextValidTime = Utils.parseCronExpression(cronExpression, DateTimeZone.forID("America/Los_Angeles"))
+        .getNextValidTimeAfter(now.toDate());
+
+    final BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecker_1", firstCheck.getMillis(), DateTimeZone.forID("America/Los_Angeles"),
+            firstCheck.getMillis(), true, true, null, cronExpression);
+    timeChecker.updateNextCheckTime();
+
+    final List<Long> missed = timeChecker.getMissedCheckTimesBeforeNow();
+    Assertions.assertThat(missed.size()).isEqualTo(1);
+    Assertions.assertThat(missed.get(0)).isEqualTo(firstCheck.getMillis());
+    Assertions.assertThat(timeChecker.getNextCheckTime()).isEqualTo(nextValidTime.getTime());
+  }
+
+  @Test
+  public void testMissedScheduleOnReset() {
+    final DateTime now = DateTime.now();
+    // first check time was 5 minutes ago
+    final DateTime firstCheck = now.minusMinutes(5);
+    // trigger every 30 minute
+    final String cronExpression = "0 */30 * ? * * *";
+    final Date nextValidTime = Utils.parseCronExpression(cronExpression, DateTimeZone.forID("America/Los_Angeles"))
+        .getNextValidTimeAfter(now.toDate());
+
+    final BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecker_1", firstCheck.getMillis(), DateTimeZone.forID("America/Los_Angeles"),
+            firstCheck.getMillis(), true, true, null, cronExpression);
+    timeChecker.reset();
+
+    final List<Long> missed = timeChecker.getMissedCheckTimesBeforeNow();
+    Assertions.assertThat(missed.size()).isEqualTo(0);
+    Assertions.assertThat(timeChecker.getNextCheckTime()).isEqualTo(nextValidTime.getTime());
   }
 }

@@ -28,6 +28,7 @@ import azkaban.flow.Flow;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
@@ -76,7 +77,9 @@ public class TriggerManagerTest {
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
     final Props props = new Props();
     props.put("trigger.scan.interval", 300);
-    this.triggerManager = new TriggerManager(props, triggerLoader, executorManagerAdapter, metricsManager);
+    MissedSchedulesManager missedScheduleManager = mock(MissedSchedulesManager.class);
+    this.triggerManager = new TriggerManager(props, triggerLoader, executorManagerAdapter, metricsManager,
+        missedScheduleManager);
     this.triggerManager.registerCheckerType(ThresholdChecker.type,
         ThresholdChecker.class);
     this.triggerManager.registerActionType(DummyTriggerAction.type,
