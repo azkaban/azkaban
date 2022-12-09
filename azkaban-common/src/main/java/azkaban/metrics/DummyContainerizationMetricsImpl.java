@@ -98,4 +98,13 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
   @Override
   public void markVPARecommenderFail() {
   }
+
+  @Override
+  public void markYarnGetApplicationsFail() {
+
+  }
+
+  @Override
+  public void markYarnApplicationKillFail(long n) {
+  }
 }

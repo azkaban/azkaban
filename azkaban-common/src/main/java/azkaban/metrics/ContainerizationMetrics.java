@@ -107,4 +107,14 @@ public interface ContainerizationMetrics {
    * Record number of vpa recommender get recommendation failure
    */
   void markVPARecommenderFail();
+
+  /**
+   * Record number of get yarn application failure
+   */
+  void markYarnGetApplicationsFail();
+
+  /**
+   * Record number of killing yarn application failure
+   */
+  void markYarnApplicationKillFail(long n);
 }

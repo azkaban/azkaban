@@ -33,7 +33,8 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Meter podCompleted, podRequested, podScheduled, initContainerRunning,
       appContainerStarting, podReady, podInitFailure, podAppFailure;
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
-  private Meter executionStopped, oomKilled, containerDispatchFail, vpaRecommenderFail;
+  private Meter executionStopped, oomKilled, containerDispatchFail, vpaRecommenderFail,
+      yarnGetApplicationsFail, yarnApplicationKillFail;
   private Histogram timeToDispatch;
   private volatile boolean isInitialized = false;
 
@@ -60,6 +61,8 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.oomKilled = this.metricsManager.addMeter("OOM-Killed-Meter");
     this.containerDispatchFail = this.metricsManager.addMeter("Container-Dispatch-Fail-Meter");
     this.vpaRecommenderFail = this.metricsManager.addMeter("VPA-Recommender-Fail-Meter");
+    this.yarnGetApplicationsFail = this.metricsManager.addMeter("Yarn-Get-Applications-Fail-Meter");
+    this.yarnApplicationKillFail = this.metricsManager.addMeter("Yarn-Application-Kill-Fail-Meter");
   }
 
   @Override
@@ -104,7 +107,9 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   }
 
   @Override
-  public void markPodReady() { this.podReady.mark(); }
+  public void markPodReady() {
+    this.podReady.mark();
+  }
 
   @Override
   public void markPodInitFailure() {
@@ -118,23 +123,47 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
 
   @Override
-  public void addTimeToDispatch(final long time) { timeToDispatch.update(time); }
+  public void addTimeToDispatch(final long time) {
+    timeToDispatch.update(time);
+  }
 
   @Override
-  public void markFlowSubmitToExecutor() { flowSubmitToExecutor.mark(); }
+  public void markFlowSubmitToExecutor() {
+    flowSubmitToExecutor.mark();
+  }
 
   @Override
-  public void markFlowSubmitToContainer() { flowSubmitToContainer.mark(); }
+  public void markFlowSubmitToContainer() {
+    flowSubmitToContainer.mark();
+  }
 
   @Override
-  public void markExecutionStopped() { executionStopped.mark(); }
+  public void markExecutionStopped() {
+    executionStopped.mark();
+  }
 
   @Override
-  public void markOOMKilled() { oomKilled.mark(); }
+  public void markOOMKilled() {
+    oomKilled.mark();
+  }
 
   @Override
-  public void markContainerDispatchFail() { containerDispatchFail.mark(); }
+  public void markContainerDispatchFail() {
+    containerDispatchFail.mark();
+  }
 
   @Override
-  public void markVPARecommenderFail() { vpaRecommenderFail.mark(); }
+  public void markVPARecommenderFail() {
+    vpaRecommenderFail.mark();
+  }
+
+  @Override
+  public void markYarnGetApplicationsFail() {
+    yarnGetApplicationsFail.mark();
+  }
+
+  @Override
+  public void markYarnApplicationKillFail(long n) {
+    yarnApplicationKillFail.mark(n);
+  }
 }
