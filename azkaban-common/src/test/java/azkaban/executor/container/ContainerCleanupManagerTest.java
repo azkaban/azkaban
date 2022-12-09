@@ -67,7 +67,7 @@ public class ContainerCleanupManagerTest {
   private ContainerizedImpl containerImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
   private ContainerCleanupManager cleaner;
-  private DummyContainerizationMetricsImpl metrics;
+  private DummyContainerizationMetricsImpl metrics = new DummyContainerizationMetricsImpl();
   private ClusterRouter clusterRouter;
 
   @Before

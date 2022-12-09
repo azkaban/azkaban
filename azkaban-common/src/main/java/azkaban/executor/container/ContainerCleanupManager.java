@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -338,7 +339,7 @@ public class ContainerCleanupManager {
 
       // For each of yarn clusters: find applications of the above executionIDs and kill them
       for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
-        logger.info("clean up yarn applications in cluster:" + entry.getValue().clusterId);
+        logger.info("clean up yarn applications in cluster:" + entry.getValue().getClusterId());
         cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
       }
     } catch (Throwable t) {
@@ -354,7 +355,7 @@ public class ContainerCleanupManager {
 
     List<ApplicationReport> aliveApplications;
     try {
-      logger.info("Getting all yarn apps for cluster:" + cluster.getClusterId());
+      logger.debug("Getting all yarn apps for cluster:" + cluster.getClusterId());
       YarnClient yarnClient = createYarnClient(cluster.getProperties(), apacheLogger);
       aliveApplications = getAllAliveAppReportsByExecIDs(
           yarnClient, toBeCleanedContainers, apacheLogger);
@@ -363,7 +364,9 @@ public class ContainerCleanupManager {
           aliveApplications.stream().map(app -> app.getApplicationId().toString())
               .collect(Collectors.joining(",")));
     } catch (Exception e) {
-      logger.error("fail to get yarn applications by execution IDs", e);
+      logger.error("fail to get yarn applications by execution IDs from cluster "
+          + cluster.getClusterId() + ", exiting", e);
+      containerizationMetrics.markYarnGetApplicationsFail();
       return;
     }
 
@@ -372,7 +375,8 @@ public class ContainerCleanupManager {
     aliveApplications.forEach(
         app -> appsSuccessfulKilled.put(app.getApplicationId().toString(), false));
 
-    ExecutorService yarnKillThreadPool = Executors.newFixedThreadPool(this.yarnAppKillParallelism);
+    ExecutorService yarnKillThreadPool = Executors.newFixedThreadPool(
+        this.yarnAppKillParallelism);
     aliveApplications.forEach(app ->
         yarnKillThreadPool.execute(new Runnable() {
           @Override
@@ -395,15 +399,19 @@ public class ContainerCleanupManager {
         logger.info("Yarn application killing threads not all terminated as expected");
       }
     } catch (InterruptedException e) {
-      logger.warn("Error awaiting the termination of all the Yarn application killing threads", e);
+      logger.warn("Error awaiting the termination of all the Yarn application killing threads",
+          e);
     }
 
     // report the kill results
-    logger.info("Successfully killed yarn applications: " + appsSuccessfulKilled.entrySet().stream()
-        .filter(Entry::getValue).map(Entry::getKey).collect(Collectors.joining(",")));
+    logger.info(
+        "Successfully killed yarn applications: " + appsSuccessfulKilled.entrySet().stream()
+            .filter(Entry::getValue).map(Entry::getKey).collect(Collectors.joining(",")));
     if (appsSuccessfulKilled.containsValue(false)) {
-      logger.warn("Failed to kill Yarn applications: " + appsSuccessfulKilled.entrySet().stream()
-          .filter(entry -> !entry.getValue()).map(Entry::getKey).collect(Collectors.joining(",")));
+      List<String> failed = appsSuccessfulKilled.entrySet().stream()
+          .filter(entry -> !entry.getValue()).map(Entry::getKey).collect(Collectors.toList());
+      logger.warn("Failed to kill Yarn applications: " + String.join(",", failed));
+      containerizationMetrics.markYarnApplicationKillFail(failed.size());
     }
   }
 
