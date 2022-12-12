@@ -23,6 +23,7 @@ package azkaban.container.models;
  * categories of init containers.
  */
 public enum InitContainerType {
+  SECURITY("security-init","security-volume", "PROXY_USER_LIST"),
   JOBTYPE("jobtype-init-", "jobtype-volume-", "JOBTYPE_MOUNT_PATH"),
   DEPENDENCY("dependency-init-", "dependency-volume-", "DEPENDENCY_MOUNT_PATH");
 

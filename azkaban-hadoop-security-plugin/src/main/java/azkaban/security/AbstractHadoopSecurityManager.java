@@ -38,6 +38,7 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -358,6 +359,17 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     final KeyStore keyStore = customCredential.getKeyStore();
     KeyStoreManager.getInstance().setKeyStore(keyStore);
     return keyStore;
+  }
+  @Override
+  public Map<String,KeyStore> getKeyStoreMap(final Props props) {
+    logger.info("Prefetching KeyStore for the flow");
+    final Credentials cred = new Credentials();
+    final CredentialProviderWithKeyStoreMap customCredential = (CredentialProviderWithKeyStoreMap)
+        getCustomCredentialProvider(props, cred, logger,
+            Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+    final Map<String,KeyStore> keyStoreMap = customCredential.getKeyStoreMap();
+    KeyStoreManager.getInstance().setKeyStoreMap(keyStoreMap);
+    return keyStoreMap;
   }
 
   /**

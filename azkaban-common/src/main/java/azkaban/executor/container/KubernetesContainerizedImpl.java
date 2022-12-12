@@ -189,6 +189,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String initMountPathPrefixForDependencies;
   private final String appMountPathPrefixForDependencies;
   private final boolean saTokenAutoMount;
+  private final boolean prefetchAllCredentials;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
       String.CASE_INSENSITIVE_ORDER);
   private final String secretName;
@@ -344,6 +345,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             false);
     this.maxVpaRecommendation = new VPARecommendation(this.maxAllowedCPU,
         this.maxAllowedMemory);
+    this.prefetchAllCredentials = this.azkProps
+        .getBoolean(ContainerizedDispatchManagerProperties.PREFETCH_PROXY_USER_CERTIFICATES,
+            false);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
   }
@@ -1323,6 +1327,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final AzKubernetesV1SpecBuilder v1SpecBuilder,
       final VersionSet versionSet)
       throws ExecutorManagerException {
+    final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(executionId);
+    final Set<String> proxyUserList = flow.getProxyUsers();
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.
@@ -1350,6 +1356,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       } catch (final Exception e) {
         throw new ExecutorManagerException("Did not find the version string for image type: " +
             dependency + " in versionSet");
+      }
+    }
+    if (this.prefetchAllCredentials) {
+      try {
+        final String imageFullPath =
+            versionSet.getVersion("security-init").get().pathWithVersion();
+        v1SpecBuilder.addInitContainerType(imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
+            InitContainerType.SECURITY, proxyUserList);
+      } catch (final Exception e) {
+        throw new ExecutorManagerException("Did not find security image. Failed Proxy User Init "
+            + "container");
       }
     }
   }

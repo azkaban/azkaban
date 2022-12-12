@@ -1,5 +1,6 @@
 package azkaban.utils;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_KAFKA_PROXY_USER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED;
 
@@ -42,13 +43,15 @@ public class KafkaLog4jUtils {
       final Class<?> kafkaLog4jAppenderClass =
           props.getClass(AZKABAN_LOGGING_KAFKA_CLASS_PARAM, KafkaLog4jAppender.class);
       logger.info("Loading kafka log4j appender class " + kafkaLog4jAppenderClass.getName());
+      final String kafkaKeyStoreName =
+          props.getString(AZKABAN_KAFKA_PROXY_USER, "azkafka");
 
       KafkaLog4jAppender kafkaLog4jAppender;
       try {
         // Pass in KeyStore for Kafka authentication if possible.
         final Constructor<?> kafkaLog4jAppenderClassConstructorWithKeyStore =
             kafkaLog4jAppenderClass.getConstructor(KeyStore.class);
-        KeyStore keyStore = KeyStoreManager.getInstance().getKeyStore();
+        KeyStore keyStore = KeyStoreManager.getInstance().getKeyStoreMap().get(kafkaKeyStoreName);
         Preconditions.checkNotNull(keyStore);
         kafkaLog4jAppender =
             (KafkaLog4jAppender) kafkaLog4jAppenderClassConstructorWithKeyStore.newInstance(keyStore);
