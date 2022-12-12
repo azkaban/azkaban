@@ -213,8 +213,7 @@ public class FlowRunnerTestUtil {
     // Add version set to executable flow
     exFlow.setVersionSet(createVersionSet());
     final FlowRunner runner = createFromExecutableFlow(eventCollector, exFlow, options,
-        new HashMap<>(),
-        new Props());
+        new HashMap<>(), new Props(), mock(AlerterHolder.class));
     runner.setFlowWatcher(watcher);
     return runner;
   }
@@ -232,25 +231,25 @@ public class FlowRunnerTestUtil {
 
   public FlowRunner createFromFlowMap(final String flowName,
       final HashMap<String, String> flowParams) throws Exception {
-    return createFromFlowMap(null, flowName, null, flowParams, new Props());
+    return createFromFlowMap(null, flowName, null, flowParams, new Props(),
+        mock(AlerterHolder.class));
   }
 
   public FlowRunner createFromFlowMap(final String flowName, final ExecutionOptions options,
       final Map<String, String> flowParams, final Props azkabanProps) throws Exception {
     return createFromFlowMap(null, flowName, options, flowParams,
-        azkabanProps);
+        azkabanProps, mock(AlerterHolder.class));
   }
 
   public FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
-      final String flowName, final ExecutionOptions options,
-      final Map<String, String> flowParams, final Props azkabanProps)
-      throws Exception {
+      final String flowName, final ExecutionOptions options, final Map<String, String> flowParams,
+      final Props azkabanProps, final AlerterHolder alerterHolder) throws Exception {
     LOG.info("Creating a FlowRunner for flow '" + flowName + "'");
     final Flow flow = this.flowMap.get(flowName);
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
     exFlow.setSubmitUser("submitUser");
     return createFromExecutableFlow(eventCollector, exFlow, options, flowParams,
-        azkabanProps);
+        azkabanProps, alerterHolder);
   }
 
   public FlowRunner createFromFlowMap(final String flowName, final FailureAction action)
@@ -265,13 +264,13 @@ public class FlowRunnerTestUtil {
     final Map<String, String> flowParams = new HashMap<>();
     flowParams.put(InteractiveTestJob.JOB_ID_PREFIX, jobIdPrefix);
     return createFromFlowMap(new EventCollectorListener(), flowName, options, flowParams,
-        azkabanProps);
+        azkabanProps, mock(AlerterHolder.class));
   }
 
   private FlowRunner createFromExecutableFlow(final EventCollectorListener eventCollector,
       final ExecutableFlow exFlow, final ExecutionOptions options,
-      final Map<String, String> flowParams, final Props azkabanProps)
-      throws Exception {
+      final Map<String, String> flowParams, final Props azkabanProps,
+      final AlerterHolder alerterHolder) throws Exception {
     final int exId = id++;
     exFlow.setExecutionPath(this.workingDir.getPath());
     exFlow.setExecutionId(exId);
@@ -286,8 +285,7 @@ public class FlowRunnerTestUtil {
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final FlowRunner runner =
         new FlowRunner(exFlow, this.executorLoader, this.executionLogsLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics,
-            execMetrics);
+            this.jobtypeManager, azkabanProps, null, alerterHolder, commonMetrics, execMetrics);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }
