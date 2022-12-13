@@ -209,32 +209,44 @@ public class ContainerCleanupManagerTest {
   }
 
   @Test
-  public void testGetExecutionStoppedFlows() throws ExecutorManagerException {
-    final ExecutableFlow flow = new ExecutableFlow();
-    flow.setExecutionId(1000);
-    flow.setStatus(Status.EXECUTION_STOPPED);
-    flow.setSubmitUser("dummy-user");
-    flow.setExecutionOptions(new ExecutionOptions());
-    final ArrayList<ExecutableFlow> executableFlows = new ArrayList<>();
-    executableFlows.add(flow);
+  public void testGetRecentKilledFlows() throws ExecutorManagerException {
+    final ExecutableFlow flow1 = new ExecutableFlow();
+    flow1.setExecutionId(1000);
+    flow1.setStatus(Status.EXECUTION_STOPPED);
+    flow1.setSubmitUser("dummy-user");
+    flow1.setExecutionOptions(new ExecutionOptions());
+    final ArrayList<ExecutableFlow> execStoppedFlows = new ArrayList<>();
+    execStoppedFlows.add(flow1);
+
+    final ExecutableFlow flow2 = new ExecutableFlow();
+    flow2.setExecutionId(2000);
+    flow2.setStatus(Status.FAILED);
+    flow2.setSubmitUser("dummy-user");
+    flow2.setExecutionOptions(new ExecutionOptions());
+    final ArrayList<ExecutableFlow> failedFlows = new ArrayList<>();
+    failedFlows.add(flow2);
 
     when(this.executorLoader
-        .fetchFreshFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
-        .thenReturn(executableFlows);
+        .fetchFreshFlowsForStatus(eq(Status.EXECUTION_STOPPED), any(ImmutableMap.class)))
+        .thenReturn(execStoppedFlows);
+    when(this.executorLoader
+        .fetchFreshFlowsForStatus(eq(Status.FAILED), any(ImmutableMap.class)))
+        .thenReturn(failedFlows);
 
-    Set<Integer> executionStoppedFlows = this.cleaner.getExecutionStoppedFlows();
-    Assert.assertTrue(executionStoppedFlows.contains(1000));
-    Assert.assertEquals(1, executionStoppedFlows.size());
+    Set<Integer> recentKilledFlows = this.cleaner.getRecentKilledFlows();
+    Assert.assertTrue(recentKilledFlows.contains(1000));
+    Assert.assertTrue(recentKilledFlows.contains(2000));
+    Assert.assertEquals(2, recentKilledFlows.size());
   }
 
   @Test
-  public void testGetExecutionStoppedFlowsFail() throws ExecutorManagerException {
+  public void testGetRecentKilledFlowsException() throws ExecutorManagerException {
     when(this.executorLoader
         .fetchFreshFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
         .thenThrow(new ExecutorManagerException("ops"));
 
-    Set<Integer> executionStoppedFlows = this.cleaner.getExecutionStoppedFlows();
-    Assert.assertTrue(executionStoppedFlows.isEmpty());
+    Set<Integer> recentKilledFlows = this.cleaner.getRecentKilledFlows();
+    Assert.assertTrue(recentKilledFlows.isEmpty());
   }
 
   @Test
