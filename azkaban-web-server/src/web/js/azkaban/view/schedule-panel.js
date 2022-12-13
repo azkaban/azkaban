@@ -40,8 +40,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     var scheduleURL = contextURL + "/schedule"
     var scheduleData = flowExecuteDialogView.getExecutionOptionData();
 
-    console.log("Creating schedule for " + projectName + "."
-        + scheduleData.flow);
+    console.log("Creating schedule for " + projectName + "." + scheduleData.flow);
 
     var currentMomentTime = moment();
     var scheduleTime = currentMomentTime.utc().format('h,mm,A,') + "UTC";
@@ -50,6 +49,9 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
+    scheduleData.backExecuteOnce = $("#back-execute-on-missed-schedule").is(':checked');
+
+    console.log("backExecute Checked Operation detected " + scheduleData.backExecuteOnce);
 
     // Currently, All cron expression will be based on server timezone.
     // Later we might implement a feature support cron under various timezones, depending on the future use cases.
@@ -60,12 +62,11 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     var retSignal = validateQuartzStr(scheduleData.cronExpression);
 
     if (retSignal == "NUM_FIELDS_ERROR") {
-      messageDialogView.show("Cron Syntax Error",
-          "A valid Quartz Cron Expression should have 6 or 7 fields.");
+      messageDialogView.show("Cron Syntax Error", "A valid Quartz Cron Expression should have 6 or 7 fields.");
       return;
     } else if (retSignal == "DOW_DOM_STAR_ERROR") {
-      messageDialogView.show(
-          "Cron Syntax Error", "Currently Quartz doesn't support specifying both a day-of-week and a day-of-month value"
+      messageDialogView.show("Cron Syntax Error",
+          "Currently Quartz doesn't support specifying both a day-of-week and a day-of-month value"
           + "(you must use the ‘?’ character in one of these fields). <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\" target=\"_blank\">Detailed Explanation</a>");
       return;
     }
@@ -74,8 +75,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
       if (data.error) {
         schedulePanelView.hideSchedulePanel();
         messageDialogView.show("Error Scheduling Flow", data.error);
-      }
-      else {
+      } else {
         schedulePanelView.hideSchedulePanel();
         messageDialogView.show("Flow Scheduled", data.message, function () {
           window.location.href = scheduleURL;
@@ -202,6 +202,7 @@ $(function () {
     $('#instructions tbody tr:last th').html("");
     $('#instructions tbody tr:last td').html("This field is optional");
   });
+
 });
 
 function resetLabelColor() {
@@ -224,10 +225,8 @@ var cron_translate_id = "#cronTranslate";
 var cron_translate_warning_id = "#translationWarning";
 
 function updateOutput() {
-  $(cron_output_id).val($(cron_minutes_id).val() + " " + $(cron_hours_id).val() + " " +
-      $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " +
-      $(cron_dow_id).val() + " " + $(cron_year_id).val()
-  );
+  $(cron_output_id).val($(cron_minutes_id).val() + " " + $(cron_hours_id).val() + " " + $(cron_dom_id).val() + " " + $(
+      cron_months_id).val() + " " + $(cron_dow_id).val() + " " + $(cron_year_id).val());
   updateExpression();
 }
 
@@ -250,13 +249,11 @@ function updateExpression() {
 
   //Transform the moment time to UTC Date time (required by later.js)
   var serverTimeInJsDateFormat = new Date();
-  serverTimeInJsDateFormat.setUTCHours(serverTime.get('hour'),
-      serverTime.get('minute'), 0, 0);
-  serverTimeInJsDateFormat.setUTCMonth(serverTime.get('month'),
-      serverTime.get('date'));
+  serverTimeInJsDateFormat.setUTCHours(serverTime.get('hour'), serverTime.get('minute'), 0, 0);
+  serverTimeInJsDateFormat.setUTCMonth(serverTime.get('month'), serverTime.get('date'));
 
   //Calculate the following 10 occurrences based on the current server time.
-  for(var i = 9; i >= 0; i--) {
+  for (var i = 9; i >= 0; i--) {
     // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
     // We transform from current browser-timezone-time to Server timezone.
     // Then we let serverTimeInJsDateFormat is equal to the server time.
@@ -267,7 +264,7 @@ function updateExpression() {
 
       // Get the time. The original occurrence time string is like: "2016-09-09T05:00:00.999",
       // We trim the string to ignore milliseconds.
-      var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-6) + '</li>';
+      var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length - 6) + '</li>';
       $('#nextRecurId').append(nextTime);
 
       serverTimeInJsDateFormat = occurrence;
@@ -280,6 +277,6 @@ function updateExpression() {
     }
   }
 
-  $('#nextRecurLabel').html("Next " + $('#nextRecurId li').length +
-		  " scheduled executions for this cron expression only:");
+  $('#nextRecurLabel').html(
+      "Next " + $('#nextRecurId li').length + " scheduled executions for this cron expression only:");
 }
