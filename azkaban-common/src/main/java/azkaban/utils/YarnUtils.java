@@ -26,6 +26,11 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -107,17 +112,32 @@ public class YarnUtils {
 
 
   /**
-   * Uses YarnClient to kill the jobs one by one
+   * Uses YarnClient to kill the jobs one by one, each kill has a timeout
    */
   public static void killAllAppsOnCluster(YarnClient yarnClient, Set<String> applicationIDs,
       Logger log) {
     log.info(String.format("Killing applications: %s", applicationIDs));
+    ExecutorService executor = Executors.newSingleThreadExecutor();
 
     for (final String appId : applicationIDs) {
+      Future<?> future = executor.submit(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            YarnUtils.killAppOnCluster(yarnClient, appId, log);
+          } catch (final Throwable t) {
+            log.warn("something happened while trying to kill this job: " + appId, t);
+          }
+        }
+      });
+      // wait for the kill with a timeout
       try {
-        YarnUtils.killAppOnCluster(yarnClient, appId, log);
-      } catch (final Throwable t) {
-        log.warn("something happened while trying to kill this job: " + appId, t);
+        future.get(YARN_APP_TIMEOUT_IN_MILLIONSECONDS, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException e) {
+        log.warn("Timed out killing the yarn app " + appId + ", cancelling the runnable...");
+        future.cancel(true);
+      } catch (Exception e) {
+        log.warn("Exception trying to get the future killing this job: " + appId);
       }
     }
   }
