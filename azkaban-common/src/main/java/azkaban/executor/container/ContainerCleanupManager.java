@@ -300,7 +300,7 @@ public class ContainerCleanupManager {
    * killing, failed, failed_finishing, failed_succeeded, canceled)
    */
   @NotNull
-  Set<Integer> getRecentKilledFlows() {
+  Set<Integer> getRecentTerminationFlows() {
     Set<Integer> recentKilledFlows = new HashSet<>();
     this.recentTerminatedStatusMap.forEach((status, value) -> {
       try {
@@ -308,8 +308,10 @@ public class ContainerCleanupManager {
             status, this.recentTerminatedStatusMap);
         recentKilledFlows.addAll(
             flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
+        logger.error("Got recent termination flows executions of Status " + status + ": " +
+            flows.stream().map(Object::toString).collect(Collectors.joining(",")));
       } catch (final ExecutorManagerException e) {
-        logger.error("Unable to obtain current flows executions of Status.EXECUTION_STOPPED", e);
+        logger.error("Unable to obtain current flows executions of Status " + status, e);
       }
     });
     return recentKilledFlows;
@@ -331,18 +333,15 @@ public class ContainerCleanupManager {
     try {
       logger.info("cleanUpDanglingYarnApplications start ");
 
-      Set<Integer> executionStoppedFlows = getRecentKilledFlows();
-      logger.info("Get executionStoppedFlows: " +
-          executionStoppedFlows.stream().map(Object::toString).collect(Collectors.joining(",")));
-
+      Set<Integer> recentTerminationFlows = getRecentTerminationFlows();
       // get those flows terminated but containers are still alive (failed to properly killed)
       Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
       logger.info("Get terminatedContainers: " +
           toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
       // combine both sets
-      toBeCleanedContainers.addAll(executionStoppedFlows);
-      logger.info("Get the set of all executions: " +
+      toBeCleanedContainers.addAll(recentTerminationFlows);
+      logger.info("The whole set of all executions to clean yarn apps: " +
           toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
       if (toBeCleanedContainers.isEmpty()) {
