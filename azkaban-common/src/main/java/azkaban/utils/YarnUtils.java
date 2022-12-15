@@ -154,6 +154,20 @@ public class YarnUtils {
   public static void killAppOnCluster(final YarnClient yarnClient, final String applicationId,
       final Logger log) throws YarnException, IOException {
 
+    UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+    log.info("killAppOnCluster.getCurrentUser = " + ugi);
+    for (Token<?> token : ugi.getCredentials().getAllTokens()) {
+      log.info(String.format("killAppOnCluster.getCurrentUser.Token = %s, %s", token.getKind(), token.getService()));
+    }
+    log.info("killAppOnCluster.getCurrentUser.Token --- end");
+
+    ugi = UserGroupInformation.getLoginUser();
+    log.info("killAppOnCluster.getLoginUser = " + ugi);
+    for (Token<?> token : ugi.getCredentials().getAllTokens()) {
+      log.info(String.format("killAppOnCluster.getLoginUser.Token = %s, %s", token.getKind(), token.getService()));
+    }
+    log.info("killAppOnCluster.getLoginUser.Token --- end");
+
     final String[] split = applicationId.split("_");
     final ApplicationId aid = ApplicationId.newInstance(Long.parseLong(split[1]),
         Integer.parseInt(split[2]));
