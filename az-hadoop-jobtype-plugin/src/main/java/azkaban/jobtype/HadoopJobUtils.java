@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -44,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -376,9 +378,56 @@ public class HadoopJobUtils {
         final UserGroupInformation proxyUser =
             HadoopSecureWrapperUtils.setupProxyUserWithHSM(hadoopSecurityManager, properties,
                 tokenFile.getAbsolutePath(), log);
+
+        log.debug("proxyUserKillAllSpawnedHadoopJobs.proxyUser = " + proxyUser);
+        for (Token<?> token : proxyUser.getCredentials().getAllTokens()) {
+          log.debug(String.format("proxyUserKillAllSpawnedHadoopJobs.proxyUser.Token = %s, %s",
+              token.getKind(), token.getService()));
+        }
+        log.debug("proxyUserKillAllSpawnedHadoopJobs.proxyUser.Token --- end");
+
+        UserGroupInformation ugi0 = UserGroupInformation.getCurrentUser();
+        log.debug("proxyUserKillAllSpawnedHadoopJobs.getCurrentUser = " + ugi0);
+        for (Token<?> token : ugi0.getCredentials().getAllTokens()) {
+          log.debug(String.format("proxyUserKillAllSpawnedHadoopJobs.getCurrentUser.Token = %s, %s",
+              token.getKind(), token.getService()));
+        }
+        log.debug("proxyUserKillAllSpawnedHadoopJobs.getCurrentUser.Token --- end");
+
+        ugi0 = UserGroupInformation.getLoginUser();
+        log.debug("proxyUserKillAllSpawnedHadoopJobs.getLoginUser = " + ugi0);
+        for (Token<?> token : ugi0.getCredentials().getAllTokens()) {
+          log.debug(String.format("proxyUserKillAllSpawnedHadoopJobs.getLoginUser.Token = %s, %s",
+              token.getKind(), token.getService()));
+        }
+        log.debug("proxyUserKillAllSpawnedHadoopJobs.getLoginUser.Token --- end");
+
         proxyUser.doAs(new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {
+            log.debug("doAs.run.proxyUser = " + proxyUser);
+            for (Token<?> token : proxyUser.getCredentials().getAllTokens()) {
+              log.debug(String.format("doAs.run.proxyUser.Token = %s, %s", token.getKind(),
+                  token.getService()));
+            }
+            log.debug("doAs.run.proxyUser.Token --- end");
+
+            UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+            log.debug("doAs.run.getCurrentUser = " + ugi);
+            for (Token<?> token : ugi.getCredentials().getAllTokens()) {
+              log.debug(String.format("doAs.run.getCurrentUser.Token = %s, %s", token.getKind(),
+                  token.getService()));
+            }
+            log.debug("doAs.run.getCurrentUser.Token --- end");
+
+            ugi = UserGroupInformation.getLoginUser();
+            log.debug("doAs.run.getLoginUser = " + ugi);
+            for (Token<?> token : ugi.getCredentials().getAllTokens()) {
+              log.debug(String.format("doAs.run.getLoginUser.Token = %s, %s", token.getKind(),
+                  token.getService()));
+            }
+            log.debug("doAs.run.getLoginUser.Token --- end");
+
             findAndKillYarnApps(jobProps, log);
             return null;
           }

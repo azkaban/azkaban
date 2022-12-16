@@ -76,7 +76,15 @@ public class HadoopSecureWrapperUtils {
       log.info(String.format("Token = %s, %s, %s ", token.getKind(), token.getService(),
           Arrays.toString(token.getIdentifier())));
     }
-    proxyUser.addCredentials(loginUser.getCredentials());
+    // Suspecting .addCredentials() method overwrites the tokens loaded with the above for loop, 
+    // causing RM delegation tokens missing in the UGI and yarn kill application failed and stuck
+    // proxyUser.addCredentials(loginUser.getCredentials());
+
+    log.debug("after copy from login User");
+    for (Token<?> token : proxyUser.getCredentials().getAllTokens()) {
+      log.debug(String.format("proxyUser.Token = %s, %s", token.getKind(), token.getService()));
+    }
+    log.debug("after copy from login User --- end");
 
     // read tokens from the file and put into proxyUser
     if (hadoopSecurityManager != null) {
@@ -85,11 +93,19 @@ public class HadoopSecureWrapperUtils {
           proxyUser));
       for (Token<?> token : creds.getAllTokens()) {
         proxyUser.addToken(token);
-        log.info(String.format("Token = %s, %s, %s ", token.getKind(), token.getService(),
-            Arrays.toString(token.getIdentifier())));
+        log.info(String.format("Token = %s, %s", token.getKind(), token.getService()));
       }
-      proxyUser.addCredentials(creds);
+      // Suspecting .addCredentials() method overwrites the tokens loaded with the above for loop, 
+      // causing RM delegation tokens missing in the UGI and yarn kill application failed and stuck
+      // proxyUser.addCredentials(creds);
     }
+
+    log.debug("after copy from token file");
+    for (Token<?> token : proxyUser.getCredentials().getAllTokens()) {
+      log.debug(String.format("proxyUser.Token = %s, %s", token.getKind(), token.getService()));
+    }
+    log.debug("after copy from token file --- end");
+
 
     log.info("token copy finished for " + loginUser.getUserName());
     return proxyUser;
