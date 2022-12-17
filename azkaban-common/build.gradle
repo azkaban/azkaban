@@ -20,7 +20,8 @@ dependencies {
     compile project(':cached-http-filesystem')
 
     compile deps.collections
-    compile deps.dbcp2
+//    compile deps.dbcp2
+    compile deps.hikariCP
     compile deps.dbutils
     compile deps.fileupload
     compile deps.guava

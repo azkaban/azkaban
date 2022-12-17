@@ -16,11 +16,13 @@
 
 package azkaban.database;
 
-import org.apache.commons.dbcp2.BasicDataSource;
+//import org.apache.commons.dbcp2.BasicDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 
-public abstract class AzkabanDataSource extends BasicDataSource {
-
-  public abstract boolean allowsOnDuplicateKey();
+public abstract class AzkabanDataSource extends HikariDataSource {
 
   public abstract String getDBType();
+
+  public abstract boolean allowsOnDuplicateKey();
 }
+

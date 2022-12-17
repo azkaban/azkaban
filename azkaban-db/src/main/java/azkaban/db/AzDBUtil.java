@@ -19,7 +19,7 @@ package azkaban.db;
 public class AzDBUtil {
 
   // A very big Integer
-  static final int MAX_DB_RETRY_COUNT = 999999;
+  public static final int MAX_DB_RETRY_COUNT = 999999;
 
   static final int MAX_RETRIES_ON_DEADLOCK = 3;
 

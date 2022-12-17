@@ -16,6 +16,7 @@
 
 package azkaban.database;
 
+import azkaban.db.AzDBUtil;
 import azkaban.utils.Props;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -117,15 +118,25 @@ public class DataSourceUtils {
       super();
 
       this.url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
-      addConnectionProperty("useUnicode", "yes");
-      addConnectionProperty("characterEncoding", "UTF-8");
+//      addConnectionProperty("useUnicode", "yes");
+//      addConnectionProperty("characterEncoding", "UTF-8");
+//      setDriverClassName(driverClassName);
+//      setUsername(user);
+//      setPassword(password);
+//      setUrl(this.url);
+//      setMaxTotal(numConnections);
+//      setValidationQuery("/* ping */ select 1");
+//      setTestOnBorrow(true);
+      setJdbcUrl(url);
       setDriverClassName(driverClassName);
       setUsername(user);
       setPassword(password);
-      setUrl(this.url);
-      setMaxTotal(numConnections);
-      setValidationQuery("/* ping */ select 1");
-      setTestOnBorrow(true);
+      setMinimumIdle(0);
+      setMaximumPoolSize(numConnections);
+      setConnectionTestQuery("/* ping */ select 1");
+      setInitializationFailTimeout(AzDBUtil.MAX_DB_RETRY_COUNT * 1000L * 15);
+      addDataSourceProperty("useUnicode", "yes");
+      addDataSourceProperty("characterEncoding", "UTF-8");
     }
 
     @Override
@@ -148,7 +159,7 @@ public class DataSourceUtils {
       super();
       final String url = "jdbc:h2:file:" + filePath + ";IGNORECASE=TRUE";
       setDriverClassName("org.h2.Driver");
-      setUrl(url);
+      setJdbcUrl(url);
     }
 
     @Override

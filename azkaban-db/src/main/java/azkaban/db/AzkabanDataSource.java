@@ -15,9 +15,10 @@
  */
 package azkaban.db;
 
-import org.apache.commons.dbcp2.BasicDataSource;
+//import org.apache.commons.dbcp2.BasicDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 
-public abstract class AzkabanDataSource extends BasicDataSource {
+public abstract class AzkabanDataSource extends HikariDataSource {
 
   public abstract String getDBType();
 

@@ -31,7 +31,7 @@ public class H2FileDataSource extends AzkabanDataSource {
     final Path h2DbPath = Paths.get(filePath).toAbsolutePath();
     final String url = "jdbc:h2:file:" + h2DbPath + ";IGNORECASE=TRUE";
     setDriverClassName("org.h2.Driver");
-    setUrl(url);
+    setJdbcUrl(url);
   }
 
   @Override
