@@ -25,6 +25,7 @@ import azkaban.metrics.MetricsManager;
 import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.utils.Props;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,22 +36,23 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 
+
 @Singleton
-public class TriggerManager extends EventHandler implements
-    TriggerManagerAdapter {
+public class TriggerManager extends EventHandler implements TriggerManagerAdapter {
 
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
   private static final Logger logger = Logger.getLogger(TriggerManager.class);
-  private static final Map<Integer, Trigger> triggerIdMap =
-      new ConcurrentHashMap<>();
-
+  private static final Map<Integer, Trigger> triggerIdMap = new ConcurrentHashMap<>();
   private final TriggerScannerThread runnerThread;
-  private MetricsManager metricsManager;
-  private Meter heartbeatMeter;
+  private final MetricsManager metricsManager;
+  private final Meter heartbeatMeter;
+  private final Timer scannerThreadLatencyMetrics;
   private final Object syncObj = new Object();
   private final CheckerTypeLoader checkerTypeLoader;
   private final ActionTypeLoader actionTypeLoader;
@@ -69,14 +71,15 @@ public class TriggerManager extends EventHandler implements
     requireNonNull(executorManagerAdapter);
     this.triggerLoader = requireNonNull(triggerLoader);
 
-    final long scannerInterval =
-        props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);
+    final long scannerInterval = props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);
     this.runnerThread = new TriggerScannerThread(scannerInterval);
 
     this.checkerTypeLoader = new CheckerTypeLoader();
     this.actionTypeLoader = new ActionTypeLoader();
     this.metricsManager = metricsManager;
     this.heartbeatMeter = this.metricsManager.addMeter("cron-scheduler-heartbeat");
+    this.scannerThreadLatencyMetrics = this.metricsManager.addTimer("cron-scheduler-thread-latency");
+    this.metricsManager.addGauge("cron-schedules-count-gauge", this.runnerThread.triggerSize());
 
     try {
       this.checkerTypeLoader.init(props);
@@ -106,7 +109,6 @@ public class TriggerManager extends EventHandler implements
       logger.error(e);
       throw new TriggerManagerException(e);
     }
-
     this.runnerThread.start();
   }
 
@@ -275,8 +277,12 @@ public class TriggerManager extends EventHandler implements
       this.scannerInterval = scannerInterval;
     }
 
+    private Supplier<Integer> triggerSize() {
+      return this.triggers::size;
+    }
+
     public void shutdown() {
-      logger.error("Shutting down trigger manager thread " + this.getName());
+      TriggerManager.logger.error("Shutting down trigger manager thread " + this.getName());
       this.shutdown = true;
       this.interrupt();
     }
@@ -295,7 +301,7 @@ public class TriggerManager extends EventHandler implements
     @Override
     public void run() {
       while (!this.shutdown) {
-        heartbeatMeter.mark();
+        TriggerManager.this.heartbeatMeter.mark();
         synchronized (TriggerManager.this.syncObj) {
           try {
             TriggerManager.this.lastRunnerThreadCheckTime = System.currentTimeMillis();
@@ -308,26 +314,28 @@ public class TriggerManager extends EventHandler implements
               checkAllTriggers();
             } catch (final Exception e) {
               e.printStackTrace();
-              logger.error(e.getMessage());
+              TriggerManager.logger.error(e.getMessage());
             } catch (final Throwable t) {
               t.printStackTrace();
-              logger.error(t.getMessage());
+              TriggerManager.logger.error(t.getMessage());
             }
 
             TriggerManager.this.scannerStage = "Done flipping all triggers.";
+            final long triggerScanTime = System.currentTimeMillis() - TriggerManager.this.lastRunnerThreadCheckTime;
+            TriggerManager.this.scannerThreadLatencyMetrics.update(triggerScanTime, TimeUnit.MILLISECONDS);
 
-            TriggerManager.this.runnerThreadIdleTime =
-                this.scannerInterval
-                    - (System.currentTimeMillis() - TriggerManager.this.lastRunnerThreadCheckTime);
+            TriggerManager.this.runnerThreadIdleTime = this.scannerInterval - triggerScanTime;
 
             if (TriggerManager.this.runnerThreadIdleTime <= 0) {
-              logger.error("Trigger manager thread " + this.getName()
-                  + " is too busy! Remaining idle time in ms: " + TriggerManager.this.runnerThreadIdleTime);
+              TriggerManager.logger.error(
+                  "Trigger manager thread " + this.getName() + " is too busy! Remaining idle time in ms: "
+                      + TriggerManager.this.runnerThreadIdleTime);
             } else {
               TriggerManager.this.syncObj.wait(TriggerManager.this.runnerThreadIdleTime);
+              TriggerManager.logger.debug("trigger manager wait on " + TriggerManager.this.runnerThreadIdleTime);
             }
           } catch (final InterruptedException e) {
-            logger.info("Interrupted. Probably to shut down.");
+            TriggerManager.logger.info("Interrupted. Probably to shut down.");
           }
         }
       }
@@ -347,8 +355,7 @@ public class TriggerManager extends EventHandler implements
              * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
              * the previous ExpireCondition and this commit's ExpireCondition.
              */
-            if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t
-                .expireConditionMet()) {
+            if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.expireConditionMet()) {
               onTriggerPause(t);
             } else if (t.triggerConditionMet()) {
               onTriggerTrigger(t);
@@ -361,7 +368,7 @@ public class TriggerManager extends EventHandler implements
           }
         } catch (final Throwable th) {
           //skip this trigger, moving on to the next one
-          logger.error("Failed to process trigger with id : " + t, th);
+          TriggerManager.logger.error("Failed to process trigger with id : " + t, th);
         }
       }
     }
@@ -370,18 +377,17 @@ public class TriggerManager extends EventHandler implements
       final List<TriggerAction> actions = t.getTriggerActions();
       for (final TriggerAction action : actions) {
         try {
-          logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
+          TriggerManager.logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
           action.doAction();
         } catch (final ExecutorManagerException e) {
           if (e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
-            logger.info("Skipped action [" + action.getDescription() + "] for [" + t +
-                "] because: " + e.getMessage());
+            TriggerManager.logger.info(
+                "Skipped action [" + action.getDescription() + "] for [" + t + "] because: " + e.getMessage());
           } else {
-            logger.error("Failed to do action [" + action.getDescription() + "] for [" + t + "]",
-                e);
+            TriggerManager.logger.error("Failed to do action [" + action.getDescription() + "] for [" + t + "]", e);
           }
         } catch (final Throwable th) {
-          logger.error("Failed to do action [" + action.getDescription() + "] for [" + t + "]", th);
+          TriggerManager.logger.error("Failed to do action [" + action.getDescription() + "] for [" + t + "]", th);
         }
       }
 
@@ -389,8 +395,8 @@ public class TriggerManager extends EventHandler implements
         t.resetTriggerConditions();
         t.sendTaskToMissedScheduleManager();
       } else {
-        logger.info("NextCheckTime did not change. Setting status to expired for trigger"
-            + t.getTriggerId());
+        TriggerManager.logger.info(
+            "NextCheckTime did not change. Setting status to expired for trigger" + t.getTriggerId());
         t.setStatus(TriggerStatus.EXPIRED);
       }
       try {
@@ -404,15 +410,15 @@ public class TriggerManager extends EventHandler implements
       final List<TriggerAction> expireActions = t.getExpireActions();
       for (final TriggerAction action : expireActions) {
         try {
-          logger.info("Doing expire actions for " + action.getDescription() + " for " + t);
+          TriggerManager.logger.info("Doing expire actions for " + action.getDescription() + " for " + t);
           action.doAction();
         } catch (final Exception e) {
-          logger.error("Failed to do expire action " + action.getDescription() + " for " + t, e);
+          TriggerManager.logger.error("Failed to do expire action " + action.getDescription() + " for " + t, e);
         } catch (final Throwable th) {
-          logger.error("Failed to do expire action " + action.getDescription() + " for " + t, th);
+          TriggerManager.logger.error("Failed to do expire action " + action.getDescription() + " for " + t, th);
         }
       }
-      logger.info("Pausing Trigger " + t.getDescription());
+      TriggerManager.logger.info("Pausing Trigger " + t.getDescription());
       t.setStatus(TriggerStatus.PAUSED);
       try {
         TriggerManager.this.triggerLoader.updateTrigger(t);
@@ -457,13 +463,13 @@ public class TriggerManager extends EventHandler implements
 
     @Override
     public int getNumTriggers() {
-      return triggerIdMap.size();
+      return TriggerManager.triggerIdMap.size();
     }
 
     @Override
     public String getTriggerSources() {
       final Set<String> sources = new HashSet<>();
-      for (final Trigger t : triggerIdMap.values()) {
+      for (final Trigger t : TriggerManager.triggerIdMap.values()) {
         sources.add(t.getSource());
       }
       return sources.toString();
@@ -471,7 +477,7 @@ public class TriggerManager extends EventHandler implements
 
     @Override
     public String getTriggerIds() {
-      return triggerIdMap.keySet().toString();
+      return TriggerManager.triggerIdMap.keySet().toString();
     }
 
     @Override
@@ -488,6 +494,5 @@ public class TriggerManager extends EventHandler implements
     public String getScannerThreadStage() {
       return TriggerManager.this.scannerStage;
     }
-
   }
 }
