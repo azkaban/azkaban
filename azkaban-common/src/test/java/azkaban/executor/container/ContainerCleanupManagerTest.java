@@ -233,7 +233,7 @@ public class ContainerCleanupManagerTest {
         .fetchFreshFlowsForStatus(eq(Status.FAILED), any(ImmutableMap.class)))
         .thenReturn(failedFlows);
 
-    Set<Integer> recentTerminationFlows = this.cleaner.getRecentTerminationFlows();
+    Set<Integer> recentTerminationFlows = this.cleaner.getRecentlyTerminatedFlows();
     Assert.assertTrue(recentTerminationFlows.contains(1000));
     Assert.assertTrue(recentTerminationFlows.contains(2000));
     Assert.assertEquals(2, recentTerminationFlows.size());
@@ -245,7 +245,7 @@ public class ContainerCleanupManagerTest {
         .fetchFreshFlowsForStatus(any(Status.class), any(ImmutableMap.class)))
         .thenThrow(new ExecutorManagerException("ops"));
 
-    Set<Integer> recentTerminationFlows = this.cleaner.getRecentTerminationFlows();
+    Set<Integer> recentTerminationFlows = this.cleaner.getRecentlyTerminatedFlows();
     Assert.assertTrue(recentTerminationFlows.isEmpty());
   }
 

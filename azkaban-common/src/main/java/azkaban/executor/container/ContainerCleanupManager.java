@@ -300,21 +300,21 @@ public class ContainerCleanupManager {
    * killing, failed, failed_finishing, failed_succeeded, canceled)
    */
   @NotNull
-  Set<Integer> getRecentTerminationFlows() {
-    Set<Integer> recentKilledFlows = new HashSet<>();
+  Set<Integer> getRecentlyTerminatedFlows() {
+    Set<Integer> recentlyTerminatedFlows = new HashSet<>();
     this.recentTerminatedStatusMap.forEach((status, value) -> {
       try {
         List<ExecutableFlow> flows = this.executorLoader.fetchFreshFlowsForStatus(
             status, this.recentTerminatedStatusMap);
-        recentKilledFlows.addAll(
+        recentlyTerminatedFlows.addAll(
             flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
-        logger.error("Got recent termination flows executions of Status " + status + ": " +
+        logger.info("Got recently terminated flows executions of Status " + status + ": " +
             flows.stream().map(Object::toString).collect(Collectors.joining(",")));
       } catch (final ExecutorManagerException e) {
         logger.error("Unable to obtain current flows executions of Status " + status, e);
       }
     });
-    return recentKilledFlows;
+    return recentlyTerminatedFlows;
   }
 
   /**
@@ -333,14 +333,14 @@ public class ContainerCleanupManager {
     try {
       logger.info("cleanUpDanglingYarnApplications start ");
 
-      Set<Integer> recentTerminationFlows = getRecentTerminationFlows();
+      Set<Integer> recentlyTerminatedFlows = getRecentlyTerminatedFlows();
       // get those flows terminated but containers are still alive (failed to properly killed)
       Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
       logger.info("Get terminatedContainers: " +
           toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
       // combine both sets
-      toBeCleanedContainers.addAll(recentTerminationFlows);
+      toBeCleanedContainers.addAll(recentlyTerminatedFlows);
       logger.info("The whole set of all executions to clean yarn apps: " +
           toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
