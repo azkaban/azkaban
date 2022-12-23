@@ -82,8 +82,7 @@ public class FetchActiveFlowDao {
     final int port = rs.getInt("port");
     final Executor executor;
     if (host == null) {
-      logger.warn("Executor id " + executorId + " (on execution " +
-          exFlow.getExecutionId() + ") wasn't found");
+      logger.debug("Executor id " + executorId + " (on execution " + exFlow.getExecutionId() + ") wasn't found");
       executor = null;
     } else {
       final boolean executorStatus = rs.getBoolean("executorStatus");
@@ -196,7 +195,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")";
+            + FetchActiveFlowDao.getTerminatingStatusesString() + ")";
 
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =
@@ -207,7 +206,7 @@ public class FetchActiveFlowDao {
             + " executors et ON ex.executor_id = et.id"
             + " WHERE dispatch_method = ? "
             + " AND ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")"
+            + FetchActiveFlowDao.getTerminatingStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
@@ -250,7 +249,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")";
+            + FetchActiveFlowDao.getTerminatingStatusesString() + ")";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -284,7 +283,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
-            + getTerminatingStatusesString() + ")"
+            + FetchActiveFlowDao.getTerminatingStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
