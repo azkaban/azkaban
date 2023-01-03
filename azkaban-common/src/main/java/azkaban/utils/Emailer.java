@@ -131,6 +131,11 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnError(final ExecutableFlow flow, final String... extraReasons) {
+    final List<String> emailRecipients = flow.getExecutionOptions().getFailureEmails();
+    if (emailRecipients == null || emailRecipients.isEmpty()) {
+      return;
+    }
+
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     List<ExecutableFlow> last72hoursExecutions = new ArrayList<>();
@@ -152,6 +157,11 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnSuccess(final ExecutableFlow flow) {
+    final List<String> emailRecipients = flow.getExecutionOptions().getSuccessEmails();
+    if (emailRecipients == null || emailRecipients.isEmpty()) {
+      return;
+    }
+
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createSuccessEmail(flow, message, this.azkabanName,

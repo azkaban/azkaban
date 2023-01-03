@@ -24,12 +24,14 @@ import static org.mockito.Mockito.when;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.alert.Alerter;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
+import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import java.io.File;
 import java.util.Arrays;
@@ -129,15 +131,18 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
   @Test
   public void testAlertOnFlowFinished() throws Exception {
     setUp(ALERT_FLOW_YAML_DIR, ALERT_FLOW_YAML_FILE);
-    final Alerter mailAlerter = mock(Alerter.class);
-    final ExecutionOptions executionOptions = new ExecutionOptions();
-    executionOptions.setFailureEmails(Arrays.asList("test@example.com"));
+
+    final Emailer emailAlerter = mock(Emailer.class);
     final Props azkabanProps = new Props();
     azkabanProps.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "POLL");
-    this.runner = this.testUtil
-        .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
+    final AlerterHolder alerterHolder = new AlerterHolder(azkabanProps, emailAlerter);
+
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setFailureEmails(Arrays.asList("test@example.com"));
+
+    this.runner = this.testUtil.createFromFlowMap(null, ALERT_FLOW_NAME, executionOptions,
+        new HashMap<>(), azkabanProps, alerterHolder);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    when(this.runner.getAlerterHolder().get("email")).thenReturn(mailAlerter);
     final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     InteractiveTestJob.getTestJob("jobA").failJob();
     assertFlowStatus(flow, Status.FAILED_FINISHING);
@@ -146,21 +151,24 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("jobC").succeedJob();
     assertFlowStatus(flow, Status.FAILED);
     thread.join();
-    verify(mailAlerter).alertOnError(flow, "Flow finished");
+    verify(emailAlerter).alertOnError(flow, "Flow finished");
   }
 
   @Test
   public void testAlertOnFirstError() throws Exception {
     setUp(ALERT_FLOW_YAML_DIR, ALERT_FLOW_YAML_FILE);
-    final Alerter mailAlerter = mock(Alerter.class);
-    final ExecutionOptions executionOptions = new ExecutionOptions();
-    executionOptions.setNotifyOnFirstFailure(true);
+
+    final Emailer emailAlerter = mock(Emailer.class);
     final Props azkabanProps = new Props();
     azkabanProps.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, "POLL");
-    this.runner = this.testUtil
-        .createFromFlowMap(ALERT_FLOW_NAME, executionOptions, new HashMap<>(), azkabanProps);
+    final AlerterHolder alerterHolder = new AlerterHolder(azkabanProps, emailAlerter);
+
+    final ExecutionOptions executionOptions = new ExecutionOptions();
+    executionOptions.setNotifyOnFirstFailure(true);
+
+    this.runner = this.testUtil.createFromFlowMap(null, ALERT_FLOW_NAME, executionOptions,
+        new HashMap<>(), azkabanProps, alerterHolder);
     final ExecutableFlow flow = this.runner.getExecutableFlow();
-    when(this.runner.getAlerterHolder().get("email")).thenReturn(mailAlerter);
     final Thread thread = FlowRunnerTestUtil.startThread(this.runner);
     InteractiveTestJob.getTestJob("jobA").failJob();
     assertFlowStatus(flow, Status.FAILED_FINISHING);
@@ -169,7 +177,7 @@ public class FlowRunnerYamlTest extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("jobC").succeedJob();
     assertFlowStatus(flow, Status.FAILED);
     thread.join();
-    verify(mailAlerter, times(1)).alertOnFirstError(flow);
+    verify(emailAlerter, times(1)).alertOnFirstError(flow);
   }
 
   private void setUp(final String projectDir, final String flowYamlFile) throws Exception {
