@@ -1005,6 +1005,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+    exflow.setUploadUser(project.getUploadUser());
     exflow.setSubmitUser(user.getUserId());
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 

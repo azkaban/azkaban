@@ -72,6 +72,7 @@ public class TriggerInstanceProcessor {
       final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
       // execute the flow with default execution option(concurrency option being "ignore
       // currently running")
+      executableFlow.setUploadUser(project.getUploadUser());
       executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_EVENT);
       this.executorManager.submitExecutableFlow(executableFlow, triggerInst.getSubmitUser());
       triggerInst.setFlowExecId(executableFlow.getExecutionId());
