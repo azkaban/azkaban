@@ -35,6 +35,7 @@ import azkaban.logs.MockExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
+import azkaban.utils.Emailer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -80,16 +81,15 @@ public class ExecutorManagerTest {
   private ExecutionReference ref2;
   private AlerterHolder alertHolder;
   private ExecutorApiGateway apiGateway;
-  private Alerter mailAlerter;
+  private Emailer mailAlerter;
   private RunningExecutions runningExecutions;
   private ExecutorManagerUpdaterStage updaterStage;
 
   @Before
   public void setup() {
     this.props = new Props();
-    this.mailAlerter = mock(Alerter.class);
-    this.alertHolder = mock(AlerterHolder.class);
-    when(this.alertHolder.get("email")).thenReturn(this.mailAlerter);
+    this.mailAlerter = mock(Emailer.class);
+    this.alertHolder = new AlerterHolder(this.props, this.mailAlerter);
     this.executorLoader = new MockExecutorLoader();
     this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
     this.offlineExecutionLogsLoader = new MockExecutionLogsLoader();

@@ -11,12 +11,15 @@ import static org.mockito.Mockito.when;
 import azkaban.DispatchMethod;
 import azkaban.alert.Alerter;
 import azkaban.metrics.CommonMetrics;
+import azkaban.utils.Emailer;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.validation.constraints.Email;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -33,18 +36,17 @@ public class RunningExecutionsUpdaterTest {
   @Mock
   ExecutorManagerUpdaterStage updaterStage;
   @Mock
-  AlerterHolder alerterHolder;
-  @Mock
   CommonMetrics commonMetrics;
   @Mock
   ExecutorApiGateway apiGateway;
   @Mock
   ExecutionFinalizer executionFinalizer;
   @Mock
-  private Alerter mailAlerter;
+  private Emailer mailAlerter;
   @Mock
   private ExecutorLoader executorLoader;
 
+  private AlerterHolder alerterHolder;
   private ExecutableFlow execution;
   private RunningExecutions runningExecutions;
   private Executor activeExecutor;
@@ -54,6 +56,7 @@ public class RunningExecutionsUpdaterTest {
   @Before
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
+    this.alerterHolder = new AlerterHolder(new Props(), this.mailAlerter);
     this.execution = new ExecutableFlow();
     this.execution.setExecutionId(EXECUTION_ID_77);
     this.activeExecutor = new Executor(1, "activeExecutor-1", 9999, true);
@@ -63,7 +66,6 @@ public class RunningExecutionsUpdaterTest {
     this.updater = new RunningExecutionsUpdater(this.updaterStage, this.alerterHolder,
         this.commonMetrics, this.apiGateway, this.runningExecutions, this.executionFinalizer,
         this.executorLoader);
-    when(this.alerterHolder.get("email")).thenReturn(this.mailAlerter);
   }
 
   @After
