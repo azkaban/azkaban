@@ -55,6 +55,7 @@ public class Project extends EventHandler {
   private long createTimestamp;
   private long lastModifiedTimestamp;
   private String lastModifiedUser;
+  private String uploadUser;
   private String source;
   private Map<String, Flow> flows = new HashMap<>();
   // flowResourceRecommendations map shouldn't be ImmutableMap.
@@ -87,6 +88,7 @@ public class Project extends EventHandler {
     final String description = (String) projectObject.get("description");
     final String lastModifiedUser = (String) projectObject.get("lastModifiedUser");
     final long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
+    final String uploadUser = (String) projectObject.get("uploadUser");
     final long lastModifiedTimestamp =
         coerceToLong(projectObject.get("lastModifiedTimestamp"));
     final String source = (String) projectObject.get("source");
@@ -103,6 +105,7 @@ public class Project extends EventHandler {
     project.setLastModifiedTimestamp(lastModifiedTimestamp);
     project.setLastModifiedUser(lastModifiedUser);
     project.setActive(active);
+    project.setUploadUser(uploadUser);
 
     if (source != null) {
       project.setSource(source);
@@ -339,6 +342,7 @@ public class Project extends EventHandler {
     projectObject.put("lastModifiedTimestamp", this.lastModifiedTimestamp);
     projectObject.put("lastModifiedUser", this.lastModifiedUser);
     projectObject.put("version", this.version);
+    projectObject.put("uploadUser", this.uploadUser);
 
     if (!this.active) {
       projectObject.put("active", false);
@@ -364,6 +368,13 @@ public class Project extends EventHandler {
 
   public void setLastModifiedUser(final String lastModifiedUser) {
     this.lastModifiedUser = lastModifiedUser;
+  }
+
+  public void setUploadUser(final String uploadUser) {
+    this.uploadUser = uploadUser;
+  }
+  public String getUploadUser() {
+    return this.uploadUser;
   }
 
   @Override

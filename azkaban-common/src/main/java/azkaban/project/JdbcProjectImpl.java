@@ -1186,8 +1186,9 @@ public class JdbcProjectImpl implements ProjectLoader {
     final String name = StringUtils.join(ids, ',').toString();
     final String SELECT_PROJECT_BY_IDS = "SELECT "
         + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
-        + "prm.name, prm.permissions, prm.isGroup "
+        + "prm.name, prm.permissions, prm.isGroup, prjver.uploader "
         + "FROM projects prj "
+        + "LEFT JOIN project_versions prjver ON prj.id = prjver.project_id "
         + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id in (" + name
         + ")";
     try {

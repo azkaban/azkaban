@@ -72,6 +72,7 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
           props.getString(JETTY_HOSTNAME, "localhost")));
     }
     metaData.put(EventReporterConstants.PROJECT_NAME, flow.getProjectName());
+    metaData.put(EventReporterConstants.PROJECT_FILE_UPLOAD_USER, flow.getUploadUser());
     metaData.put(EventReporterConstants.SUBMIT_USER, flow.getSubmitUser());
     metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(flow.getExecutionId()));
     metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(flow.getSubmitTime()));

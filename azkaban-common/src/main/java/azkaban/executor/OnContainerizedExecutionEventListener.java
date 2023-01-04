@@ -56,6 +56,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
     executableFlow.setSubmitUser(exFlow.getSubmitUser());
     executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
+    executableFlow.setUploadUser(project.getUploadUser());
     // Set up flow ExecutionOptions
     final ExecutionOptions options = exFlow.getExecutionOptions();
     if(!options.isFailureEmailsOverridden()) {
