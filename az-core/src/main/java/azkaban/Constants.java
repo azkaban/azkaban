@@ -307,7 +307,6 @@ public class Constants {
     public static final String SPARK_HISTORY_SERVER_JOB_URL = "azkaban.server.external.spark_history_server_job_url";
 
     // Configures the Kafka appender for logging user jobs and flows.
-    public static final String AZKABAN_KAFKA_PROXY_USER = "azkaban.kafka.proxy.user";
     public static final String AZKABAN_LOGGING_KAFKA_ENABLED = "azkaban.logging.kafka.enabled";
     public static final String AZKABAN_LOGGING_KAFKA_CLASS_PARAM = "azkaban.logging.kafka.class";
     public static final String AZKABAN_LOGGING_KAFKA_BROKERS = "azkaban.logging.kafka.brokers";
