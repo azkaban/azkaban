@@ -1178,6 +1178,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
     exflow.addAllProxyUsers(project.getProxyUsers());
+    exflow.setUploadUser(project.getUploadUser());
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options = exflow.getExecutionOptions();

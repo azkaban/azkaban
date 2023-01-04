@@ -208,7 +208,7 @@ public class ExecuteFlowAction implements TriggerAction {
     }
 
     exflow.setExecutionOptions(this.executionOptions);
-
+    exflow.setUploadUser(project.getUploadUser());
     logger.info("Invoking flow " + project.getName() + "." + this.flowName);
     executorManagerAdapter.submitExecutableFlow(exflow, this.submitUser);
     logger.info("Invoked flow " + project.getName() + "." + this.flowName);

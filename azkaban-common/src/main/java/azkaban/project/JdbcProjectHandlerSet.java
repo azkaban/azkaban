@@ -50,9 +50,10 @@ class JdbcProjectHandlerSet {
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 
     private static final String BASE_QUERY = "SELECT "
-      + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
-      + "prm.name, prm.permissions, prm.isGroup "
-      + "FROM projects prj ";
+        + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj"
+        + ".last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+        + "prm.name, prm.permissions, prm.isGroup, prjver.uploader "
+        + "FROM projects prj LEFT JOIN project_versions prjver ON prj.id = prjver.project_id ";
 
     // Still return the project if it has no associated permissions
     public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
@@ -129,6 +130,11 @@ class JdbcProjectHandlerSet {
         final String username = rs.getString(11);
         final int permissionFlag = rs.getInt(12);
         final boolean isGroup = rs.getBoolean(13);
+        final String uploader = rs.getString(14);
+        // Setting upload user in project Object
+        if (uploader != null) {
+          projects.get(id).setUploadUser(uploader);
+        }
         // If username is not null, add the permission to the project
         // If username is null, we can assume that this row was returned without any associated permission
         // i.e. this project had no associated permissions.
