@@ -486,7 +486,7 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
         throw new RuntimeException("Failed to get hadoop security manager!"
             + e.getCause(), e);
       }
-      if (commonPluginLoadProps.getBoolean("use.polp.keystores")){
+      if (commonPluginLoadProps.getBoolean("use.polp.keystores", false)){
         final Map<String, KeyStore> keyStoreMap =
             hadoopSecurityManager.getKeyStoreMap(commonPluginLoadProps);
         if (keyStoreMap == null) {

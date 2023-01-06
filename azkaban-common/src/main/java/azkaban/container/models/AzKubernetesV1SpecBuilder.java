@@ -161,7 +161,8 @@ public class AzKubernetesV1SpecBuilder {
         LOGGER.debug("Added init container to the pod spec");
         return this;
     }
-    public AzKubernetesV1SpecBuilder addInitContainerType(String image, ImagePullPolicy imagePullPolicy,
+    public AzKubernetesV1SpecBuilder addSecurityInitContainer(String image,
+        ImagePullPolicy imagePullPolicy,
         final InitContainerType initContainerType, Set<String> proxyUserList ) {
         V1EnvVar proxyUserEnv = new V1EnvVarBuilder()
             .withName(initContainerType.mountPathKey)
