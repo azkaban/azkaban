@@ -1368,7 +1368,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (this.prefetchAllCredentials) {
       try {
         final String imageFullPath =
-            versionSet.getVersion(InitContainerType.SECURITY.initPrefix).get().pathWithVersion();
+            versionSet.getVersion(this.azkabanSecurityInitImageName).get().pathWithVersion();
         v1SpecBuilder.addSecurityInitContainer(imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
             InitContainerType.SECURITY, proxyUserList);
       } catch (final Exception e) {
