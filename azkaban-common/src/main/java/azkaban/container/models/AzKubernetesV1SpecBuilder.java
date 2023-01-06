@@ -34,6 +34,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMountBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +161,22 @@ public class AzKubernetesV1SpecBuilder {
         LOGGER.debug("Added init container to the pod spec");
         return this;
     }
-
+    public AzKubernetesV1SpecBuilder addSecurityInitContainer(String image,
+        ImagePullPolicy imagePullPolicy,
+        final InitContainerType initContainerType, Set<String> proxyUserList ) {
+        V1EnvVar proxyUserEnv = new V1EnvVarBuilder()
+            .withName(initContainerType.mountPathKey)
+            .withValue(String.join(",", proxyUserList))
+            .build();
+        V1Container initContainer = new V1ContainerBuilder()
+            .withName(initContainerType.initPrefix)
+            .addToEnv(proxyUserEnv)
+            .withImagePullPolicy(imagePullPolicy.getPolicyVal())
+            .withImage(image)
+            .build();
+        this.initContainers.add(initContainer);
+        return this;
+    }
     /**
      * This method adds a HostPath volume to the pod-spec and also mounts the volume to the flow
      * container.

@@ -686,6 +686,9 @@ public class Constants {
         "azkaban-base.image.name";
     public static final String KUBERNETES_POD_AZKABAN_CONFIG_IMAGE_NAME =
         AZKABAN_KUBERNETES_PREFIX + "azkaban-config.image.name";
+    public static final String KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME =
+        AZKABAN_KUBERNETES_PREFIX + "azkaban-security-init.image.name";
+
     public static final String KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT =
         KUBERNETES_POD_PREFIX + "service.account.token.automount";
 
@@ -733,6 +736,8 @@ public class Constants {
 
     public static final String KUBERNETES_INIT_MOUNT_PATH_FOR_JOBTYPES =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
+    public static final String PREFETCH_PROXY_USER_CERTIFICATES =
+        AZKABAN_CONTAINERIZED_PREFIX + "prefetch.certificates";
     public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
     public static final String KUBERNETES_POD_TEMPLATE_PATH =
@@ -798,6 +803,7 @@ public class Constants {
     public static final String ENV_ENABLE_DEV_POD = "ENABLE_DEV_POD";
     public static final String ENV_CPU_REQUEST = "CPU_REQUEST";
     public static final String ENV_MEMORY_REQUEST = "MEMORY_REQUEST";
+
   }
 
   public static class LogConstants {

@@ -486,11 +486,20 @@ public class FlowContainer implements IFlowRunnerManager, IMBeanRegistrable, Eve
         throw new RuntimeException("Failed to get hadoop security manager!"
             + e.getCause(), e);
       }
-
-      final KeyStore keyStore = hadoopSecurityManager.getKeyStore(commonPluginLoadProps);
-      if (keyStore == null) {
-        logger.error("Failed to Prefetch KeyStore");
-        throw new ExecutorManagerException("Failed to Prefetch KeyStore");
+      if (commonPluginLoadProps.getBoolean("use.polp.keystores", false)){
+        final Map<String, KeyStore> keyStoreMap =
+            hadoopSecurityManager.getKeyStoreMap(commonPluginLoadProps);
+        if (keyStoreMap == null) {
+          logger.error("Failed to Prefetch KeyStore Map of Proxy Users");
+          throw new ExecutorManagerException("Failed to Prefetch KeyStore Map of Proxy Users");
+        }
+      }
+      else {
+        final KeyStore keyStore = hadoopSecurityManager.getKeyStore(commonPluginLoadProps);
+        if (keyStore == null) {
+          logger.error("Failed to Prefetch KeyStore");
+          throw new ExecutorManagerException("Failed to Prefetch KeyStore");
+        }
       }
       logger.info("In-memory Keystore is setup, delete the cert file");
       // Delete the cert file from disk as the KeyStore is already cached above.
