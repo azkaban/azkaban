@@ -85,7 +85,7 @@ Multiple Executor Mode Parameters
 |                                                      | list of hard filters  |                       |
 |                                                      | to be used while      |                       |
 |                                                      | dispatching. To be    |                       |
-|                                                      | chosen from          |                       |
+|                                                      | chosen from           |                       |
 |                                                      | StaticRemaining,      |                       |
 |                                                      | FlowSize,             |                       |
 |                                                      | MinimumFreeMemory and |                       |
@@ -314,18 +314,18 @@ Executor Server Properties
 |                                           | executions            |                       |
 +-------------------------------------------+-----------------------+-----------------------+
 | executor.flow.threads                     | The number of         | 30                    |
-|                                           | simultaneous flows     |                       |
+|                                           | simultaneous flows    |                       |
 |                                           | that can be run.      |                       |
 |                                           | These threads are     |                       |
 |                                           | mostly idle.          |                       |
-+-----------------------+-----------------------+-----------------------+
++-------------------------------------------+-----------------------+-----------------------+
 | job.log.chunk.size                        | For rolling job logs. | 5MB                   |
 |                                           | The chuck size for    |                       |
 |                                           | each roll over        |                       |
 +-------------------------------------------+-----------------------+-----------------------+
 | job.log.backup.index                      | The number of log     | 4                     |
 |                                           | chunks. The max size  |                       |
-|                                           | of each log is then  |                       |
+|                                           | of each log is then   |                       |
 |                                           | the index \*          |                       |
 |                                           | chunksize             |                       |
 +-------------------------------------------+-----------------------+-----------------------+
