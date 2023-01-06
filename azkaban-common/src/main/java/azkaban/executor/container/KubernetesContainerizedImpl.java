@@ -152,6 +152,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   private static final VPARecommendation EMPTY_VPA_RECOMMENDATION = new VPARecommendation(null,
       null);
+  private static final String DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME = "azkaban-security-init";
 
   private final String namespace;
   private final ApiClient client;
@@ -189,6 +190,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String initMountPathPrefixForDependencies;
   private final String appMountPathPrefixForDependencies;
   private final boolean saTokenAutoMount;
+  private final boolean prefetchAllCredentials;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
       String.CASE_INSENSITIVE_ORDER);
   private final String secretName;
@@ -205,6 +207,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
+  private final String azkabanSecurityInitImageName;
 
   @Inject
   public KubernetesContainerizedImpl(final Props azkProps,
@@ -344,6 +347,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             false);
     this.maxVpaRecommendation = new VPARecommendation(this.maxAllowedCPU,
         this.maxAllowedMemory);
+    this.prefetchAllCredentials = this.azkProps
+        .getBoolean(ContainerizedDispatchManagerProperties.PREFETCH_PROXY_USER_CERTIFICATES,
+            false);
+    this.azkabanSecurityInitImageName = this.azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME,
+            DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
   }
@@ -740,7 +749,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     addEnvVariablesToSpecBuilder(v1SpecBuilder, envVariables);
 
     // Create init container yaml file for each jobType and dependency
-    addInitContainers(executionId, jobTypes, dependencyTypes, v1SpecBuilder, versionSet);
+    addInitContainers(executableFlow, jobTypes, dependencyTypes, v1SpecBuilder,
+        versionSet);
 
 
     // Add volume with secrets mounted
@@ -1126,6 +1136,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     allImageTypes.add(this.azkabanConfigImageName);
     allImageTypes.addAll(jobTypes);
     allImageTypes.addAll(this.dependencyTypes);
+    allImageTypes.add(this.azkabanSecurityInitImageName);
     final VersionSet versionSet = fetchVersionSet(executionId, flowParam, allImageTypes, flow);
     final V1PodSpec podSpec = createPodSpec(flow, flowResourceRecommendation,
         flowResourceRecommendationMap, versionSet,
@@ -1311,18 +1322,20 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   /**
    * TODO: Check if we need to turn everything into lower case?
    *
-   * @param executionId
+   * @param executableFlow
    * @param jobTypes
    * @param dependencyTypes
    * @param v1SpecBuilder
    * @param versionSet
    * @throws ExecutorManagerException
    */
-  private void addInitContainers(final int executionId,
+  private void addInitContainers(final ExecutableFlow executableFlow,
       final Set<String> jobTypes, final Set<String> dependencyTypes,
       final AzKubernetesV1SpecBuilder v1SpecBuilder,
       final VersionSet versionSet)
       throws ExecutorManagerException {
+    final ExecutableFlow flow = executableFlow;
+    final Set<String> proxyUserList = flow.getProxyUsers();
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.
@@ -1350,6 +1363,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       } catch (final Exception e) {
         throw new ExecutorManagerException("Did not find the version string for image type: " +
             dependency + " in versionSet");
+      }
+    }
+    if (this.prefetchAllCredentials) {
+      try {
+        final String imageFullPath =
+            versionSet.getVersion(this.azkabanSecurityInitImageName).get().pathWithVersion();
+        v1SpecBuilder.addSecurityInitContainer(imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
+            InitContainerType.SECURITY, proxyUserList);
+      } catch (final Exception e) {
+        throw new ExecutorManagerException("Did not find security image. Failed Proxy User Init "
+            + "container");
       }
     }
   }

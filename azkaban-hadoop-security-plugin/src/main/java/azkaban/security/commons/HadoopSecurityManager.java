@@ -20,6 +20,7 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.security.KeyStore;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.Credentials;
@@ -109,4 +110,6 @@ public abstract class HadoopSecurityManager {
       throws HadoopSecurityManagerException;
 
   public abstract KeyStore getKeyStore(final Props props);
+
+  public abstract Map<String, KeyStore> getKeyStoreMap(Props commonPluginLoadProps);
 }
