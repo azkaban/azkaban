@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -309,7 +310,8 @@ public class ContainerCleanupManager {
         recentlyTerminatedFlows.addAll(
             flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
         logger.info("Got recently terminated flows executions of Status " + status + ": " +
-            flows.stream().map(Object::toString).collect(Collectors.joining(",")));
+            flows.stream().map(ExecutableFlow::getExecutionId).map(Objects::toString)
+                .collect(Collectors.joining(",")));
       } catch (final ExecutorManagerException e) {
         logger.error("Unable to obtain current flows executions of Status " + status, e);
       }
