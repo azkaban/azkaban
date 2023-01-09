@@ -79,7 +79,7 @@ public class MetricsManager {
     this.registry.register(name, (Gauge<T>) gaugeFunc::get);
   }
 
-  /*
+  /**
    * A {@link azkaban.metrics.CounterGauge} is a custom gauge which reports the number of events
    * in the last reporting interval.
    */

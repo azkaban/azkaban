@@ -19,7 +19,9 @@ package azkaban.metrics;
 import azkaban.utils.Props;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,8 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
   private Meter executionStopped, oomKilled, containerDispatchFail, vpaRecommenderFail,
       yarnGetApplicationsFail, yarnApplicationKillFail;
+  private Meter cleanupStaleFlowHeartBeat, cleanupContainerHeartBeat, cleanupYarnAppHeartBeat;
+  private Timer cleanupStaleFlowTimer, cleanupContainerTimer, cleanupYarnAppTimer;
   private Histogram timeToDispatch;
   private volatile boolean isInitialized = false;
 
@@ -63,6 +67,15 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.vpaRecommenderFail = this.metricsManager.addMeter("VPA-Recommender-Fail-Meter");
     this.yarnGetApplicationsFail = this.metricsManager.addMeter("Yarn-Get-Applications-Fail-Meter");
     this.yarnApplicationKillFail = this.metricsManager.addMeter("Yarn-Application-Kill-Fail-Meter");
+    this.cleanupStaleFlowHeartBeat = this.metricsManager.addMeter("Cleanup-Stale-Flow-Heartbeat"
+        + "-Meter");
+    this.cleanupContainerHeartBeat = this.metricsManager.addMeter("Cleanup-Container-Heartbeat"
+        + "-Meter");
+    this.cleanupYarnAppHeartBeat = this.metricsManager.addMeter("Cleanup-Yarn-Application-Heartbeat"
+        + "-Meter");
+    this.cleanupStaleFlowTimer = this.metricsManager.addTimer("Cleanup-Stale-Flow-Timer");
+    this.cleanupContainerTimer = this.metricsManager.addTimer("Cleanup-Container-Timer");
+    this.cleanupYarnAppTimer = this.metricsManager.addTimer("Cleanup-Yarn-Application-Timer");
   }
 
   @Override
@@ -165,5 +178,35 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   @Override
   public void markYarnApplicationKillFail(long n) {
     yarnApplicationKillFail.mark(n);
+  }
+
+  @Override
+  public void sendCleanupStaleFlowHeartBeat() {
+    cleanupStaleFlowHeartBeat.mark();
+  }
+
+  @Override
+  public void sendCleanupContainerHeartBeat() {
+    cleanupContainerHeartBeat.mark();
+  }
+
+  @Override
+  public void sendCleanupYarnApplicationHeartBeat() {
+    cleanupYarnAppHeartBeat.mark();
+  }
+
+  @Override
+  public void recordCleanupStaleFlowTimer(long duration, TimeUnit unit){
+    cleanupStaleFlowTimer.update(duration, unit);
+  }
+
+  @Override
+  public void recordCleanupContainerTimer(long duration, TimeUnit unit){
+    cleanupContainerTimer.update(duration, unit);
+  }
+
+  @Override
+  public void recordCleanupYarnApplicationTimer(long duration, TimeUnit unit){
+    cleanupYarnAppTimer.update(duration, unit);
   }
 }

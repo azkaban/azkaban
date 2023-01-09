@@ -17,6 +17,7 @@
 package azkaban.metrics;
 
 import azkaban.utils.Props;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Defines all the metrics emitted by containerized executions
@@ -117,4 +118,16 @@ public interface ContainerizationMetrics {
    * Record number of killing yarn application failure
    */
   void markYarnApplicationKillFail(long n);
+
+  void sendCleanupContainerHeartBeat();
+
+  void sendCleanupStaleFlowHeartBeat();
+
+  void sendCleanupYarnApplicationHeartBeat();
+
+  void recordCleanupStaleFlowTimer(long duration, TimeUnit unit);
+
+  void recordCleanupContainerTimer(long duration, TimeUnit unit);
+
+  void recordCleanupYarnApplicationTimer(long duration, TimeUnit unit);
 }
