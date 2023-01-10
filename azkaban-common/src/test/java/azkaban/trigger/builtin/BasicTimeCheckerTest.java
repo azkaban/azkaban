@@ -286,8 +286,8 @@ public class BasicTimeCheckerTest {
   @Test
   public void testMissedScheduleRecoverFromDB() {
     final DateTime now = DateTime.now();
-    // first check time was 5 minutes ago
-    final DateTime firstCheck = now.minusMinutes(5);
+    // first check time was 1s ago
+    final DateTime firstCheck = now.minusSeconds(1);
     // trigger every 30 minute
     final String cronExpression = "0 */30 * ? * * *";
     final Date nextValidTime = Utils.parseCronExpression(cronExpression, DateTimeZone.forID("America/Los_Angeles"))
@@ -307,8 +307,8 @@ public class BasicTimeCheckerTest {
   @Test
   public void testMissedScheduleOnReset() {
     final DateTime now = DateTime.now();
-    // first check time was 5 minutes ago
-    final DateTime firstCheck = now.minusMinutes(5);
+    // first check time was 1s ago
+    final DateTime firstCheck = now.minusSeconds(1);
     // trigger every 30 minute
     final String cronExpression = "0 */30 * ? * * *";
     final Date nextValidTime = Utils.parseCronExpression(cronExpression, DateTimeZone.forID("America/Los_Angeles"))
