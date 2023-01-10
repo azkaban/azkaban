@@ -336,17 +336,26 @@ public class ContainerCleanupManager {
       logger.info("cleanUpDanglingYarnApplications start ");
 
       Set<Integer> recentlyTerminatedFlows = getRecentlyTerminatedFlows();
+      StringBuffer sb1 = new StringBuffer();
+      recentlyTerminatedFlows.forEach(f -> {
+        sb1.append(f);
+        sb1.append(",");
+      });
+      logger.info("Get recentlyTerminatedFlows: " + sb1);
+
       // get those flows terminated but containers are still alive (failed to properly killed)
-      Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
-      logger.info("Get terminatedContainers: " +
-          toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+      Set<Integer> toBeCleanedFlows = getContainersOfTerminatedFlows();
+      StringBuffer sb2 = new StringBuffer();
+      toBeCleanedFlows.forEach(f -> {
+        sb2.append(f);
+        sb2.append(",");
+      });
+      logger.info("Get containersOfTerminatedFlows: " + sb2);
 
       // combine both sets
-      toBeCleanedContainers.addAll(recentlyTerminatedFlows);
-      logger.info("The whole set of all executions to clean yarn apps: " +
-          toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+      toBeCleanedFlows.addAll(recentlyTerminatedFlows);
 
-      if (toBeCleanedContainers.isEmpty()) {
+      if (toBeCleanedFlows.isEmpty()) {
         logger.info("No execution needs to kill yarn application, exit");
         return;
       }
@@ -354,7 +363,7 @@ public class ContainerCleanupManager {
       // For each of yarn clusters: find applications of the above executionIDs and kill them
       for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
         logger.info("clean up yarn applications in cluster:" + entry.getValue().getClusterId());
-        cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
+        cleanUpYarnApplicationsInCluster(toBeCleanedFlows, entry.getValue());
       }
     } catch (Throwable t) {
       logger.warn("Encounter unexpected throwable during cleanup dangling yarn app, "
