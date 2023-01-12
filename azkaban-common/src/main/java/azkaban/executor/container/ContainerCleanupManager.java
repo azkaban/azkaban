@@ -38,12 +38,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -78,7 +78,7 @@ public class ContainerCleanupManager {
   private static final int DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS = 15;
   private static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = 10 * 24 * 60; // 10 days
   private static final int DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS = 15;
-  private static final int DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS = 15;
+  private static final int DEFAULT_AZKABAN_FLOW_RECENT_TERMINATION_MINS = 15;
   private static final int DEFAULT_AZKABAN_YARN_BATCH_KILL_TIMEOUT_IN_MINUTE = 10;
   private static final int DEFAULT_AZKABAN_YARN_BATCH_KILL_PARALLELISM = 5;
 
@@ -99,7 +99,7 @@ public class ContainerCleanupManager {
   // Defines the validity duration associated with certain statuses from the
   // submit/start/update time.
   private final ImmutableMap<Status, Pair<Duration, String>> validityMap;
-  private final ImmutableMap<Status, Pair<Duration, String>> executionStoppedMap;
+  private final ImmutableMap<Status, Pair<Duration, String>> recentTerminatedStatusMap;
   private final ClusterRouter clusterRouter;
   private Map<String, Cluster> allClusters = new HashMap<>();
 
@@ -141,9 +141,10 @@ public class ContainerCleanupManager {
         AZKABAN_MAX_FLOW_PREPARING_MINS, DEFAULT_AZKABAN_MAX_FLOW_PREPARINGING_MINS);
     int maxKillingValidity = azkProps.getInt(
         AZKABAN_MAX_FLOW_KILLING_MINS, DEFAULT_AZKABAN_MAX_FLOW_KILLING_MINS);
-    // check for flows execution_stopped within 15 minutes
-    int maxExecStoppedValidity = azkProps.getInt(
-        AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS, DEFAULT_AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS);
+    // check for recently (last 15 minutes) terminated flows: status in (execution_stopped, killed,
+    // killing, failed, failed_finishing, failed_succeeded, canceled)
+    int recentTerminationValidity = azkProps.getInt(
+        AZKABAN_FLOW_RECENT_TERMINATION_MINS, DEFAULT_AZKABAN_FLOW_RECENT_TERMINATION_MINS);
 
     this.cleanupService = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("azk-container-cleanup").build());
@@ -174,9 +175,21 @@ public class ContainerCleanupManager {
             new Pair<>(Duration.ofMinutes(runningFlowValidity), START_TIME))
         .build();
 
-    this.executionStoppedMap = new Builder<Status, Pair<Duration, String>>()
+    this.recentTerminatedStatusMap = new Builder<Status, Pair<Duration, String>>()
         .put(Status.EXECUTION_STOPPED,
-            new Pair<>(Duration.ofMinutes(maxExecStoppedValidity), UPDATE_TIME))
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
+        .put(Status.KILLED,
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
+        .put(Status.KILLING,
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
+        .put(Status.FAILED,
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
+        .put(Status.FAILED_FINISHING,
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
+        .put(Status.FAILED_SUCCEEDED,
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
+        .put(Status.CANCELLED,
+            new Pair<>(Duration.ofMinutes(recentTerminationValidity), UPDATE_TIME))
         .build();
 
     // get config in instance using robin, so as can connect to multiple yarn cluster RMs
@@ -284,22 +297,26 @@ public class ContainerCleanupManager {
   }
 
   /**
-   * Get the flows of EXECUTION_STOPPED status
+   * Get the flows recently (last 15 minutes) terminated: status in (execution_stopped, killed,
+   * killing, failed, failed_finishing, failed_succeeded, canceled)
    */
   @NotNull
-  Set<Integer> getExecutionStoppedFlows() {
-    Set<Integer> executionStoppedFlows = new HashSet<>();
-    if (this.executionStoppedMap.containsKey(Status.EXECUTION_STOPPED)) {
+  Set<Integer> getRecentlyTerminatedFlows() {
+    Set<Integer> recentlyTerminatedFlows = new HashSet<>();
+    this.recentTerminatedStatusMap.forEach((status, value) -> {
       try {
         List<ExecutableFlow> flows = this.executorLoader.fetchFreshFlowsForStatus(
-            Status.EXECUTION_STOPPED, this.executionStoppedMap);
-        executionStoppedFlows.addAll(
+            status, this.recentTerminatedStatusMap);
+        recentlyTerminatedFlows.addAll(
             flows.stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toSet()));
+        logger.info("Got recently terminated flows executions of Status " + status + ": " +
+            flows.stream().map(ExecutableFlow::getExecutionId).map(Objects::toString)
+                .collect(Collectors.joining(",")));
       } catch (final ExecutorManagerException e) {
-        logger.error("Unable to obtain current flows executions of Status.EXECUTION_STOPPED", e);
+        logger.error("Unable to obtain current flows executions of Status " + status, e);
       }
-    }
-    return executionStoppedFlows;
+    });
+    return recentlyTerminatedFlows;
   }
 
   /**
@@ -318,21 +335,27 @@ public class ContainerCleanupManager {
     try {
       logger.info("cleanUpDanglingYarnApplications start ");
 
-      Set<Integer> executionStoppedFlows = getExecutionStoppedFlows();
-      logger.info("Get executionStoppedFlows: " +
-          executionStoppedFlows.stream().map(Object::toString).collect(Collectors.joining(",")));
+      Set<Integer> recentlyTerminatedFlows = getRecentlyTerminatedFlows();
+      StringBuffer sb1 = new StringBuffer();
+      recentlyTerminatedFlows.forEach(f -> {
+        sb1.append(f);
+        sb1.append(",");
+      });
+      logger.info("Get recentlyTerminatedFlows: " + sb1);
 
       // get those flows terminated but containers are still alive (failed to properly killed)
-      Set<Integer> toBeCleanedContainers = getContainersOfTerminatedFlows();
-      logger.info("Get terminatedContainers: " +
-          toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+      Set<Integer> toBeCleanedFlows = getContainersOfTerminatedFlows();
+      StringBuffer sb2 = new StringBuffer();
+      toBeCleanedFlows.forEach(f -> {
+        sb2.append(f);
+        sb2.append(",");
+      });
+      logger.info("Get containersOfTerminatedFlows: " + sb2);
 
       // combine both sets
-      toBeCleanedContainers.addAll(executionStoppedFlows);
-      logger.info("Get the set of all executions: " +
-          toBeCleanedContainers.stream().map(Object::toString).collect(Collectors.joining(",")));
+      toBeCleanedFlows.addAll(recentlyTerminatedFlows);
 
-      if (toBeCleanedContainers.isEmpty()) {
+      if (toBeCleanedFlows.isEmpty()) {
         logger.info("No execution needs to kill yarn application, exit");
         return;
       }
@@ -340,7 +363,7 @@ public class ContainerCleanupManager {
       // For each of yarn clusters: find applications of the above executionIDs and kill them
       for (Entry<String, Cluster> entry : this.allClusters.entrySet()) {
         logger.info("clean up yarn applications in cluster:" + entry.getValue().getClusterId());
-        cleanUpYarnApplicationsInCluster(toBeCleanedContainers, entry.getValue());
+        cleanUpYarnApplicationsInCluster(toBeCleanedFlows, entry.getValue());
       }
     } catch (Throwable t) {
       logger.warn("Encounter unexpected throwable during cleanup dangling yarn app, "
