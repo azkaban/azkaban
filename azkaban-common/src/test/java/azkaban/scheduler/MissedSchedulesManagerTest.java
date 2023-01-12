@@ -19,11 +19,13 @@ package azkaban.scheduler;
 import azkaban.Constants;
 import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Emailer;
 import azkaban.utils.Props;
+import com.codahale.metrics.Counter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -41,44 +43,51 @@ import static org.mockito.Mockito.*;
 public class MissedSchedulesManagerTest {
   MissedSchedulesManager _missedSchedulesManager;
   ProjectManager projectManager;
+  MetricsManager metricsManager;
+  Counter fakeCounter;
   Emailer emailer;
 
   @Before
   public void setup() {
     this.projectManager = mock(ProjectManager.class);
     this.emailer = mock(Emailer.class);
-    Props azkProps = new Props();
+    this.metricsManager = mock(MetricsManager.class);
+    this.fakeCounter = new Counter();
+    final Props azkProps = new Props();
     azkProps.put(Constants.MISSED_SCHEDULE_MANAGER_ENABLED, "true");
-    _missedSchedulesManager = new MissedSchedulesManager(azkProps, projectManager, emailer);
-    _missedSchedulesManager.start();
+    when(this.metricsManager.addCounter(any())).thenReturn(this.fakeCounter);
+
+    this._missedSchedulesManager = new MissedSchedulesManager(azkProps, this.projectManager, this.emailer,
+        this.metricsManager);
+    this._missedSchedulesManager.start();
   }
 
   @After
   public void cleanup() throws InterruptedException {
-    _missedSchedulesManager.stop();
+    this._missedSchedulesManager.stop();
   }
 
   @Test
   public void testAddSchedule() {
-    List<Long> timestamps = new ArrayList<>();
-    long curTime = System.currentTimeMillis();
+    final List<Long> timestamps = new ArrayList<>();
+    final long curTime = System.currentTimeMillis();
     timestamps.add(curTime);
-    ExecuteFlowAction executeFlowAction = mock(ExecuteFlowAction.class);
-    String projectName = "testProjectName";
-    Project project = new Project(1111, projectName);
-    String flowName = "testFlow";
-    Flow flow = new Flow(flowName);
-    String emailAddress = "azkaban_dev@linkedin.com";
+    final ExecuteFlowAction executeFlowAction = mock(ExecuteFlowAction.class);
+    final String projectName = "testProjectName";
+    final Project project = new Project(1111, projectName);
+    final String flowName = "testFlow";
+    final Flow flow = new Flow(flowName);
+    final String emailAddress = "azkaban_dev@linkedin.com";
     flow.addFailureEmails(Collections.singletonList(emailAddress));
-    Map<String, Flow> flowMap = new HashMap<>();
+    final Map<String, Flow> flowMap = new HashMap<>();
     flowMap.put(flowName, flow);
     project.setFlows(flowMap);
     when(executeFlowAction.getFlowName()).thenReturn(flowName);
     when(executeFlowAction.getProjectName()).thenReturn(projectName);
-    when(projectManager.getProject(projectName)).thenReturn(project);
+    when(this.projectManager.getProject(projectName)).thenReturn(project);
     when(executeFlowAction.getExecutionOptions()).thenReturn(new ExecutionOptions());
     // verify task is added into queue
-    Assertions.assertThat(_missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false)).isTrue();
+    Assertions.assertThat(this._missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false)).isTrue();
 
   }
 }
