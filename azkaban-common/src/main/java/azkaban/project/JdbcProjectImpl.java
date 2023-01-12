@@ -78,10 +78,13 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   private static final int CHUCK_SIZE = 1024 * 1024 * 10;
   // Flow yaml files are usually small, set size limitation to 10 MB should be sufficient for now.
-  private static final int MAX_FLOW_FILE_SIZE_IN_BYTES = 1024 * 1024 * 10;
+  private static final int MAX_FLOW_FILE_SIZE_IN_MB_DEFAULT = 10;
+
+  public static final String MAX_FLOW_FILE_SIZE_KEY = "max.flow.file.size.mb";
   private final DatabaseOperator dbOperator;
   private final File tempDir;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
+  private final int maxFlowFileSizeInBytes;
 
   @Inject
   public JdbcProjectImpl(final Props props, final DatabaseOperator databaseOperator) {
@@ -95,6 +98,9 @@ public class JdbcProjectImpl implements ProjectLoader {
         logger.info("project temporary folder already existed.");
       }
     }
+    int maxFlowFileSizeInMB = props.getInt(MAX_FLOW_FILE_SIZE_KEY, MAX_FLOW_FILE_SIZE_IN_MB_DEFAULT);
+    maxFlowFileSizeInBytes = maxFlowFileSizeInMB * 1024 * 1024;
+    logger.info("Maximum size of the flow file in bytes is " + maxFlowFileSizeInBytes);
   }
 
   @Override
@@ -1049,11 +1055,12 @@ public class JdbcProjectImpl implements ProjectLoader {
             "Uploading flow file %s, version %d for project %d, version %d, file length is [%d bytes]",
             flowFile.getName(), flowVersion, projectId, projectVersion, flowFile.length()));
 
-    if (flowFile.length() > MAX_FLOW_FILE_SIZE_IN_BYTES) {
-      throw new ProjectManagerException("Flow file length exceeds 10 MB limit.");
+    if (flowFile.length() > maxFlowFileSizeInBytes) {
+      int maxFlowFileSizeInMB = maxFlowFileSizeInBytes / (1024 * 1024);
+      throw new ProjectManagerException("Flow file length exceeds " + maxFlowFileSizeInMB + " MB limit.");
     }
 
-    final byte[] buffer = new byte[MAX_FLOW_FILE_SIZE_IN_BYTES];
+    final byte[] buffer = new byte[maxFlowFileSizeInBytes];
     final String INSERT_FLOW_FILES =
         "INSERT INTO project_flow_files (project_id, project_version, flow_name, flow_version, "
             + "modified_time, "
