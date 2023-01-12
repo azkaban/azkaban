@@ -389,7 +389,7 @@ public class Constants {
     // Max flow KILLING time in mins.
     public static final String AZKABAN_MAX_FLOW_KILLING_MINS = "azkaban.server.flow.max.killing.minutes";
     // Max flow EXECUTION_STOPPED time in mins.
-    public static final String AZKABAN_MAX_FLOW_EXEC_STOPPED_MINS = "azkaban.server.flow.max.exec_stopped.minutes";
+    public static final String AZKABAN_FLOW_RECENT_TERMINATION_MINS = "azkaban.server.flow.recent.termination.minutes";
 
     // Maximum number of tries to download a dependency (no more retry attempts will be made after this many download failures)
     public static final String AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES = "azkaban.dependency.max.download.tries";
