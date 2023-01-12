@@ -15,9 +15,11 @@
  */
 package azkaban.project;
 
+import static azkaban.project.JdbcProjectImpl.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.*;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.flow.Flow;
@@ -44,6 +46,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 
 public class JdbcProjectImplTest {
@@ -138,6 +141,21 @@ public class JdbcProjectImplTest {
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getFileName(), SAMPLE_FILE);
     Assert.assertEquals(fileHandler.getUploader(), "uploadUser1");
+  }
+
+  @Test(expected = ProjectManagerException.class)
+  public void testUploadFlowFileWithConfigurableFlowFileSize() {
+    /* creating local objects so that the instance variables are not affected */
+    Props propsLocal = new Props();
+    propsLocal.put(MAX_FLOW_FILE_SIZE_KEY, 1);
+    JdbcProjectImpl loaderLocal = new JdbcProjectImpl(propsLocal, dbOperator);
+    final File testFile = Mockito.mock(File.class);
+    /**
+     * By default, the file size limit is 10 MB. We have changed the default to 1MB in this test.
+     * and we pretend the file size to be 2MB. So this will throw an exception.
+     */
+    when(testFile.length()).thenReturn(2 * 1024 * 1024L);
+    loaderLocal.uploadFlowFile(1, 1, testFile, 1);
   }
 
   @Test(expected = ProjectManagerException.class)
