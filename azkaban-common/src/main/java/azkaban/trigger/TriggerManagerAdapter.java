@@ -18,6 +18,8 @@ package azkaban.trigger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 
 public interface TriggerManagerAdapter {
 
@@ -29,11 +31,10 @@ public interface TriggerManagerAdapter {
   public void updateTrigger(Trigger t, String user)
       throws TriggerManagerException;
 
-  public List<Trigger> getAllTriggerUpdates(long lastUpdateTime)
-      throws TriggerManagerException;
-
   public List<Trigger> getTriggerUpdates(String triggerSource,
-      long lastUpdateTime) throws TriggerManagerException;
+      Map<Integer, Long> triggerToLastCheckTime) throws TriggerManagerException;
+
+  public Optional<Trigger> getUpdatedTriggerById(final int triggerId, final long lastUpdateTime);
 
   public List<Trigger> getTriggers(String trigegerSource);
 

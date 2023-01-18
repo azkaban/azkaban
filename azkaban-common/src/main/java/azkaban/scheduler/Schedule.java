@@ -20,6 +20,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
 import java.util.Date;
+import java.util.concurrent.locks.ReentrantLock;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
@@ -44,6 +45,8 @@ public class Schedule {
   private int scheduleId;
   private long nextExecTime;
   private ExecutionOptions executionOptions;
+
+  private ReentrantLock lock = new ReentrantLock();
 
   public Schedule(final int scheduleId,
       final int projectId,
@@ -242,5 +245,13 @@ public class Schedule {
 
   public long getEndSchedTime() {
     return this.endSchedTime;
+  }
+
+  public void lock() {
+    this.lock.lock();
+  }
+
+  public void unlock() {
+    this.lock.unlock();
   }
 }

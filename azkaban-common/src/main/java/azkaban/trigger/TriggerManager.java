@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +54,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   private final MetricsManager metricsManager;
   private final Meter heartbeatMeter;
   private final Timer scannerThreadLatencyMetrics;
-  private final Object syncObj = new Object();
   private final CheckerTypeLoader checkerTypeLoader;
   private final ActionTypeLoader actionTypeLoader;
   private final TriggerLoader triggerLoader;
@@ -121,53 +121,53 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   }
 
   public void insertTrigger(final Trigger t) throws TriggerManagerException {
+    t.lock();
     logger.info("Inserting trigger " + t + " in TriggerManager");
-    synchronized (this.syncObj) {
-      try {
-        this.triggerLoader.addTrigger(t);
-      } catch (final TriggerLoaderException e) {
-        throw new TriggerManagerException(e);
-      }
+    try {
+      this.triggerLoader.addTrigger(t);
       this.runnerThread.addTrigger(t);
       triggerIdMap.put(t.getTriggerId(), t);
+    } catch (final TriggerLoaderException e) {
+      throw new TriggerManagerException(e);
+    } finally {
+      t.unlock();
     }
   }
 
   public void removeTrigger(final int id) throws TriggerManagerException {
     logger.info("Removing trigger with id: " + id + " from TriggerManager");
-    synchronized (this.syncObj) {
-      final Trigger t = triggerIdMap.get(id);
-      if (t != null) {
-        removeTrigger(triggerIdMap.get(id));
-      }
-    }
+    final Trigger t = triggerIdMap.get(id);
+    removeTrigger(triggerIdMap.get(id));
   }
 
   public void updateTrigger(final Trigger t) throws TriggerManagerException {
+    t.lock();
     logger.info("Updating trigger " + t + " in TriggerManager");
-    synchronized (this.syncObj) {
-      this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
-      this.runnerThread.addTrigger(t);
-      triggerIdMap.put(t.getTriggerId(), t);
-      try {
-        this.triggerLoader.updateTrigger(t);
-      } catch (final TriggerLoaderException e) {
-        throw new TriggerManagerException(e);
-      }
+    this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
+    this.runnerThread.addTrigger(t);
+    triggerIdMap.put(t.getTriggerId(), t);
+    try {
+      this.triggerLoader.updateTrigger(t);
+    } catch (final TriggerLoaderException e) {
+      throw new TriggerManagerException(e);
+    } finally {
+      t.unlock();
     }
   }
 
   public void removeTrigger(final Trigger t) throws TriggerManagerException {
+    t.lock();
     logger.info("Removing trigger " + t + " from TriggerManager");
-    synchronized (this.syncObj) {
-      this.runnerThread.deleteTrigger(t);
-      triggerIdMap.remove(t.getTriggerId());
-      try {
-        t.stopCheckers();
-        this.triggerLoader.removeTrigger(t);
-      } catch (final TriggerLoaderException e) {
-        throw new TriggerManagerException(e);
-      }
+
+    this.runnerThread.deleteTrigger(t);
+    triggerIdMap.remove(t.getTriggerId());
+    try {
+      t.stopCheckers();
+      this.triggerLoader.removeTrigger(t);
+    } catch (final TriggerLoaderException e) {
+      throw new TriggerManagerException(e);
+    } finally {
+      t.unlock();
     }
   }
 
@@ -180,9 +180,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   }
 
   public Trigger getTrigger(final int triggerId) {
-    synchronized (this.syncObj) {
-      return triggerIdMap.get(triggerId);
-    }
+    return triggerIdMap.get(triggerId);
   }
 
   public void expireTrigger(final int triggerId) {
@@ -203,27 +201,23 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
   @Override
   public List<Trigger> getTriggerUpdates(final String triggerSource,
-      final long lastUpdateTime) throws TriggerManagerException {
+      final Map<Integer, Long> triggerToLastCheckTime) throws TriggerManagerException {
     final List<Trigger> triggers = new ArrayList<>();
     for (final Trigger t : triggerIdMap.values()) {
+      t.lock();
       if (t.getSource().equals(triggerSource)
-          && t.getLastModifyTime() > lastUpdateTime) {
+          && t.getLastModifyTime() > triggerToLastCheckTime.getOrDefault(t.getTriggerId(), -1l)) {
         triggers.add(t);
       }
+      t.unlock();
     }
     return triggers;
   }
 
   @Override
-  public List<Trigger> getAllTriggerUpdates(final long lastUpdateTime)
-      throws TriggerManagerException {
-    final List<Trigger> triggers = new ArrayList<>();
-    for (final Trigger t : triggerIdMap.values()) {
-      if (t.getLastModifyTime() > lastUpdateTime) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
+  public Optional<Trigger> getUpdatedTriggerById(final int triggerId, final long lastUpdateTime) {
+    Trigger t = triggerIdMap.get(triggerId);
+    return t.getLastModifyTime() > lastUpdateTime ? Optional.of(t) : Optional.empty();
   }
 
   @Override
@@ -288,10 +282,8 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     }
 
     public void addTrigger(final Trigger t) {
-      synchronized (TriggerManager.this.syncObj) {
-        t.updateNextCheckTime();
-        this.triggers.add(t);
-      }
+      t.updateNextCheckTime();
+      this.triggers.add(t);
     }
 
     public void deleteTrigger(final Trigger t) {
@@ -302,7 +294,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     public void run() {
       while (!this.shutdown) {
         TriggerManager.this.heartbeatMeter.mark();
-        synchronized (TriggerManager.this.syncObj) {
           try {
             TriggerManager.this.lastRunnerThreadCheckTime = System.currentTimeMillis();
 
@@ -331,19 +322,20 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
                   "Trigger manager thread " + this.getName() + " is too busy! Remaining idle time in ms: "
                       + TriggerManager.this.runnerThreadIdleTime);
             } else {
-              TriggerManager.this.syncObj.wait(TriggerManager.this.runnerThreadIdleTime);
+              Thread.sleep(TriggerManager.this.runnerThreadIdleTime);
               TriggerManager.logger.debug("trigger manager wait on " + TriggerManager.this.runnerThreadIdleTime);
             }
           } catch (final InterruptedException e) {
             TriggerManager.logger.info("Interrupted. Probably to shut down.");
           }
-        }
+
       }
     }
 
     private void checkAllTriggers() throws TriggerManagerException {
       // sweep through the rest of them
       for (final Trigger t : this.triggers) {
+        t.lock();
         try {
           TriggerManager.this.scannerStage = "Checking for trigger " + t.getTriggerId();
 
@@ -369,6 +361,8 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         } catch (final Throwable th) {
           //skip this trigger, moving on to the next one
           TriggerManager.logger.error("Failed to process trigger with id : " + t, th);
+        } finally {
+          t.unlock();
         }
       }
     }
