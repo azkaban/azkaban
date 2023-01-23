@@ -222,12 +222,18 @@ public class ContainerCleanupManager {
   }
 
   public void cleanUpStaleFlows() {
+    long startTime = System.currentTimeMillis();
     try {
       this.validityMap.entrySet().stream().filter(e -> !e.getValue().getFirst().isNegative()).map(
           Entry::getKey).forEach(this::cleanUpStaleFlows);
+
+      this.containerizationMetrics.sendCleanupStaleFlowHeartBeat();
     } catch (Throwable t) {
       logger.warn("Encounter unexpected throwable during cleanup stale flows, "
           + "skipping one schedule run", t);
+    } finally {
+      this.containerizationMetrics.recordCleanupStaleFlowTimer(
+          System.currentTimeMillis() - startTime, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -235,6 +241,7 @@ public class ContainerCleanupManager {
    * Delete the still alive pods & services of those terminated flows to release resources
    */
   public void cleanUpContainersInTerminalStatuses() {
+    long startTime = System.currentTimeMillis();
     try {
       logger.info("Cleaning up pods of terminated flow executions");
       Set<Integer> containers = getContainersOfTerminatedFlows();
@@ -244,9 +251,14 @@ public class ContainerCleanupManager {
             executionId);
         deleteContainerQuietly(executionId);
       }
+
+      this.containerizationMetrics.sendCleanupContainerHeartBeat();
     } catch (Throwable t) {
       logger.warn("Encounter unexpected throwable during cleanup containers in terminal statuses, "
           + "skipping one schedule run", t);
+    } finally {
+      this.containerizationMetrics.recordCleanupContainerTimer(
+          System.currentTimeMillis() - startTime, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -324,6 +336,8 @@ public class ContainerCleanupManager {
    * killed yarn applications, and kill them.
    */
   public void cleanUpDanglingYarnApplications() {
+    long startTime = System.currentTimeMillis();
+
     /*
       1. find those executions of status EXECUTION_STOPPED status within a recent period
       2. find those executions being killed but the pod is still unfinished, and delete the pods
@@ -365,9 +379,15 @@ public class ContainerCleanupManager {
         logger.info("clean up yarn applications in cluster:" + entry.getValue().getClusterId());
         cleanUpYarnApplicationsInCluster(toBeCleanedFlows, entry.getValue());
       }
+
+      this.containerizationMetrics.sendCleanupYarnApplicationHeartBeat();
     } catch (Throwable t) {
       logger.warn("Encounter unexpected throwable during cleanup dangling yarn app, "
           + "skipping one schedule run", t);
+    }
+    finally {
+      this.containerizationMetrics.recordCleanupYarnApplicationTimer(
+          System.currentTimeMillis() - startTime, TimeUnit.MILLISECONDS);
     }
   }
 
