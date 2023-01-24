@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.sla.SlaOption.SlaOptionBuilder;
 import azkaban.utils.JSONUtils;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.time.Duration;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.assertj.core.util.Maps;
 import org.junit.Test;
 
 /** Test SlaOption */
@@ -44,29 +46,32 @@ public class SlaOptionTest {
     final Set<SlaAction> actions = Collections.singleton(SlaAction.ALERT);
     final List<String> emails = Collections.singletonList("test@email.com");
     final Duration duration = Duration.ofHours(1);
+    final Map<String, Map<String, String>> alertersConfigs = ImmutableMap.of(
+        "myAlerter", ImmutableMap.of("prop1", "value1"));
     // negative test: null flow
     assertThatThrownBy(() -> new SlaOption(SlaType.JOB_FINISH, null, job, duration,
-        actions, emails)).isInstanceOf(NullPointerException.class);
+        actions, emails, alertersConfigs)).isInstanceOf(NullPointerException.class);
 
     // negative test: null type
     assertThatThrownBy(() -> new SlaOption(null, flow, job, duration,
-        actions, emails)).isInstanceOf(NullPointerException.class);
+        actions, emails, alertersConfigs)).isInstanceOf(NullPointerException.class);
 
     // negative test: null action
     assertThatThrownBy(() -> new SlaOption(SlaType.JOB_FINISH, flow, job, duration,
-        null, emails)).isInstanceOf(NullPointerException.class);
+        null, emails, alertersConfigs)).isInstanceOf(NullPointerException.class);
 
     // negative test: null duration
     assertThatThrownBy(() -> new SlaOption(SlaType.JOB_FINISH, flow, job, null,
-        actions, emails)).isInstanceOf(NullPointerException.class);
+        actions, emails, alertersConfigs)).isInstanceOf(NullPointerException.class);
 
     // negative test: empty action
     assertThatThrownBy(() -> new SlaOption(SlaType.JOB_FINISH, flow, job, duration,
-        Collections.emptySet(), emails)).isInstanceOf(IllegalStateException.class);
+        Collections.emptySet(), emails, alertersConfigs)).isInstanceOf(IllegalStateException.class);
 
     SlaOption slaOption = new SlaOption(SlaType.JOB_FINISH, flow, job, duration,
-        actions, emails);
+        actions, emails, alertersConfigs);
     assertThat(slaOption.getEmails()).isEqualTo(emails);
+    assertThat(slaOption.getAlertersConfigs()).isEqualTo(alertersConfigs);
     assertThat(slaOption.getType()).isEqualTo(SlaType.JOB_FINISH);
     assertThat(slaOption.getDuration()).isEqualTo(duration);
     assertThat(slaOption.getFlowName()).isEqualTo(flow);
@@ -135,6 +140,7 @@ public class SlaOptionTest {
     deprecatedInfo.put(SlaOptionDeprecated.INFO_JOB_NAME, "job");
     deprecatedInfo.put(SlaOptionDeprecated.INFO_DURATION, "60m");
     deprecatedInfo.put(SlaOptionDeprecated.INFO_EMAIL_LIST, emails);
+    deprecatedInfo.put(SlaOptionDeprecated.INFO_ALERTERS_CONFIGS, ImmutableMap.of());
 
     SlaOptionDeprecated slaOptionDeprecated = new SlaOptionDeprecated(SlaOptionDeprecated
         .TYPE_JOB_FINISH, deprecatedActions, deprecatedInfo);

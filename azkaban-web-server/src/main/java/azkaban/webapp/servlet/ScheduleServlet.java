@@ -207,9 +207,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      final String emailStr = getParam(req, PARAM_SLA_EMAILS);
-      final Map<String, String> settings = getParamGroup(req, PARAM_SETTINGS);
-      final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(sched.getFlowName(), emailStr, settings);
+      final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(req, sched.getFlowName(), PARAM_SETTINGS);
 
       if (slaOptions.isEmpty()) {
         throw new ScheduleManagerException(
