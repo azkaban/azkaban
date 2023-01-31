@@ -108,11 +108,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
     }
   }
 
-  /**
-   * TODO: Don't understand why we need synchronized here.
-   */
   @Override
-  public synchronized void addTrigger(final Trigger t) throws TriggerLoaderException {
+  public void addTrigger(final Trigger t) throws TriggerLoaderException {
     logger.info("Inserting trigger " + t.toString() + " into db.");
 
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
