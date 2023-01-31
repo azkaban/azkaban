@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -50,6 +51,8 @@ public class Trigger {
   private boolean resetOnExpire = true;
 
   private long nextCheckTime = -1;
+
+  private ReentrantLock lock = new ReentrantLock();
 
   private Trigger() throws TriggerManagerException {
     throw new TriggerManagerException("Triggers should always be specified");
@@ -320,6 +323,14 @@ public class Trigger {
 
   public List<TriggerAction> getTriggerActions() {
     return this.actions;
+  }
+
+  public void lock() {
+    this.lock.lock();
+  }
+
+  public void unlock() {
+    this.lock.unlock();
   }
 
   public Map<String, Object> toJson() {

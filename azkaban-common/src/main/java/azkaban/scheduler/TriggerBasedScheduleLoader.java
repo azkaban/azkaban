@@ -26,6 +26,8 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +44,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
   private final String triggerSource;
 
-  private long lastUpdateTime = -1;
+
+  private Map<Integer, Long> scheduleIdToLastCheckTime = new ConcurrentHashMap<>();
 
   @Inject
   public TriggerBasedScheduleLoader(final TriggerManager triggerManager) {
@@ -200,25 +203,36 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   }
 
   @Override
-  public synchronized List<Schedule> loadUpdatedSchedules()
+  public List<Schedule> loadUpdatedSchedules()
       throws ScheduleManagerException {
     final List<Trigger> triggers;
     try {
       triggers =
-          this.triggerManager.getTriggerUpdates(this.triggerSource, this.lastUpdateTime);
+          this.triggerManager.getTriggerUpdates(this.triggerSource, scheduleIdToLastCheckTime);
     } catch (final TriggerManagerException e) {
       e.printStackTrace();
       throw new ScheduleManagerException(e);
     }
     final List<Schedule> schedules = new ArrayList<>();
     for (final Trigger t : triggers) {
-      this.lastUpdateTime = Math.max(this.lastUpdateTime, t.getLastModifyTime());
+      scheduleIdToLastCheckTime.put(t.getTriggerId(),
+          Math.max(scheduleIdToLastCheckTime.getOrDefault(t.getTriggerId(), -1l), t.getLastModifyTime()));
       final Schedule s = triggerToSchedule(t);
       schedules.add(s);
       logger.info("loaded schedule for "
           + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");
     }
     return schedules;
+  }
+  @Override
+  public Optional<Schedule> loadUpdateSchedule(Schedule s) throws ScheduleManagerException {
+    long lastCheckTime = scheduleIdToLastCheckTime.getOrDefault(s.getScheduleId(), -1l);
+    Optional<Trigger> trigger = this.triggerManager.getUpdatedTriggerById(s.getScheduleId(), lastCheckTime);
+    if (trigger.isPresent()) {
+      scheduleIdToLastCheckTime.put(s.getScheduleId(), trigger.get().getLastModifyTime());
+      return Optional.of(triggerToSchedule(trigger.get()));
+    }
+    return Optional.empty();
   }
 
 }
