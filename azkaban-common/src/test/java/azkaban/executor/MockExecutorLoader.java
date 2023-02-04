@@ -165,6 +165,9 @@ public class MockExecutorLoader implements ExecutorLoader {
   public void updateExecutableNode(final ExecutableNode node)
       throws ExecutorManagerException {
     final ExecutableNode foundNode = this.nodes.get(node.getId());
+    if (foundNode == null) {
+      return;
+    }
     foundNode.setEndTime(node.getEndTime());
     foundNode.setStartTime(node.getStartTime());
     foundNode.setStatus(node.getStatus());
