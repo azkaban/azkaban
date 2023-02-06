@@ -132,7 +132,7 @@ public class ExecutionControllerUtils {
         // If it's marked finished, we're good. If not, we fail everything and then mark it
         // finished.
         if (!isFinished(dsFlow)) {
-          failEverything(eventHandler, projectManager, dsFlow, finalFlowStatus);
+          failEverything(eventHandler, projectManager, dsFlow, finalFlowStatus, executorLoader);
           executorLoader.updateExecutableFlow(dsFlow);
         }
         // flow will be used for event reporter afterwards, thus the final status needs to be set
@@ -310,8 +310,8 @@ public class ExecutionControllerUtils {
    */
   @Deprecated
   public static void failEverything(final ExecutableFlow exFlow,
-      final Status finalFlowStatus) {
-    failEverything(null, null, exFlow, finalFlowStatus);
+      final Status finalFlowStatus, final ExecutorLoader executorLoader) {
+    failEverything(null, null, exFlow, finalFlowStatus, executorLoader);
   }
 
   /**
@@ -324,7 +324,7 @@ public class ExecutionControllerUtils {
    */
   public static void failEverything(final EventHandler eventHandler,
       final ProjectManager projectManager, final ExecutableFlow exFlow,
-      final Status finalFlowStatus) {
+      final Status finalFlowStatus, final ExecutorLoader executorLoader) {
     final long time = System.currentTimeMillis();
     final Map<ExecutableNode, Status> nodeToOrigStatus = new HashMap<>();
     final Queue<ExecutableNode> queue = new LinkedList<>();
@@ -372,6 +372,11 @@ public class ExecutionControllerUtils {
         }
         if (node.getEndTime() == -1) {
           node.setEndTime(time);
+        }
+        try {
+          executorLoader.updateExecutableNode(node);
+        } catch (ExecutorManagerException e) {
+          logger.error("fail to update job status in DB, ", e);
         }
       }
     }
