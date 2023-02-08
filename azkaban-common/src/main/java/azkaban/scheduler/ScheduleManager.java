@@ -165,7 +165,7 @@ public class ScheduleManager implements TriggerAgent {
       final ExecutionOptions execOptions) {
     final Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
         firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
-        submitTime, submitUser, execOptions, null);
+        submitTime, submitUser, execOptions, null, false);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null
@@ -189,14 +189,16 @@ public class ScheduleManager implements TriggerAgent {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions execOptions,
-      final String cronExpression) {
+      final String cronExpression,
+      final boolean backExecuteOnceOnMiss) {
     final Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
             firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
-            submitTime, submitUser, execOptions, cronExpression);
+            submitTime, submitUser, execOptions, cronExpression, backExecuteOnceOnMiss);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
-            + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);
+            + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression
+            + " with back execute " + (backExecuteOnceOnMiss ? "enabled" : "disabled"));
 
     insertSchedule(sched);
     return sched;

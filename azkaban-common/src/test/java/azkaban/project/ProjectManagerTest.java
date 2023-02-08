@@ -219,7 +219,7 @@ public class ProjectManagerTest {
     final Schedule schedule =
             new Schedule(0, project.getId(), project.getName(), flowName, "schedule",
                     firstSchedTime.getMillis(), endSchedTime, timezone, null, DateTime.now().getMillis(),
-                    firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), null, cronExpression);
+                    firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), null, cronExpression, false);
     manager.postScheduleEvent(project, azkaban.spi.EventType.SCHEDULE_CREATED, user,
             schedule, null);
   }

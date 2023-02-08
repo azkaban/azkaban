@@ -580,7 +580,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final Schedule schedule =
         this.scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName, "ready", firstSchedTime.getMillis(),
             endSchedTime, firstSchedTime.getZone(), DateTime.now().getMillis(), firstSchedTime.getMillis(),
-            firstSchedTime.getMillis(), user.getUserId(), flowOptions, cronExpression);
+            firstSchedTime.getMillis(), user.getUserId(), flowOptions, cronExpression, backExecutionOnceEnabled);
 
     logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName + " (" + projectId + ")"
         + "] with backExecuteOnceOnMiss " + (backExecutionOnceEnabled ? "enabled" : "disabled"));

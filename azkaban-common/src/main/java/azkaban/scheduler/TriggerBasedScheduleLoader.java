@@ -73,6 +73,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     } else {
       t.setResetOnTrigger(false);
     }
+    t.setBackExecuteOnceOnMiss(s.isBackExecuteOnceOnMiss());
     return t;
   }
 
@@ -161,7 +162,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           t.getSubmitTime(),
           t.getSubmitUser(),
           act.getExecutionOptions(),
-          triggerTimeChecker.getCronExpression());
+          triggerTimeChecker.getCronExpression(),
+          t.isBackExecuteOnceOnMiss());
     } else {
       logger.error("Failed to parse schedule from trigger!");
       throw new ScheduleManagerException(
