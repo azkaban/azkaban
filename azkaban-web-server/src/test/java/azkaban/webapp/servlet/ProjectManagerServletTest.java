@@ -71,13 +71,13 @@ public class ProjectManagerServletTest {
     final List<Schedule> schedules = new ArrayList<>();
     final long now = System.currentTimeMillis();
     final Schedule sched1 = new Schedule(1, 1, "myTestProject", "basic_flow_renamed", "ready", now,
-        now, null, null, now, now, now, "testUser1", null, null);
+        now, null, null, now, now, now, "testUser1", null, null, false);
     schedules.add(sched1);
     final Schedule sched2 = new Schedule(2, 1, "myTestProject", "basic_flow2", "ready", now + 20,
-        now + 20, null, null, now + 20, now + 20, now + 20, "testUser1", null, null);
+        now + 20, null, null, now + 20, now + 20, now + 20, "testUser1", null, null, false);
     schedules.add(sched2);
     final Schedule sched3 = new Schedule(3, 3, "anotherTestProject", "anotherFlow", "ready",
-        now + 30, now + 30, null, null, now + 30, now + 30, now + 30, "testUser3", null, null);
+        now + 30, now + 30, null, null, now + 30, now + 30, now + 30, "testUser3", null, null, false);
     schedules.add(sched3);
 
     when(this.scheduleManager.getSchedules()).thenReturn(new ArrayList<>(schedules));

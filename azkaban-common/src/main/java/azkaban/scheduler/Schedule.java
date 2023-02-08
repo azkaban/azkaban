@@ -42,6 +42,7 @@ public class Schedule {
   private final long submitTime;
   private final String cronExpression;
   private final boolean skipPastOccurrences = true;
+  private final boolean backExecuteOnceOnMiss;
   private int scheduleId;
   private long nextExecTime;
   private ExecutionOptions executionOptions;
@@ -62,7 +63,8 @@ public class Schedule {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions executionOptions,
-      final String cronExpression) {
+      final String cronExpression,
+      final boolean backExecuteOnceOnMiss) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
@@ -78,6 +80,7 @@ public class Schedule {
     this.submitTime = submitTime;
     this.executionOptions = executionOptions;
     this.cronExpression = cronExpression;
+    this.backExecuteOnceOnMiss = backExecuteOnceOnMiss;
   }
 
   public ExecutionOptions getExecutionOptions() {
@@ -92,6 +95,9 @@ public class Schedule {
     return this.projectName + "." + this.flowName + " (" + this.projectId + ")";
   }
 
+  public boolean isBackExecuteOnceOnMiss() {
+    return backExecuteOnceOnMiss;
+  }
   @Override
   public String toString() {
 

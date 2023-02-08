@@ -61,9 +61,9 @@ public class MissedSchedulesManager {
   // parameters to adjust MissScheduler
   private final int threadPoolSize;
   private final int DEFAULT_THREAD_POOL_SIZE = 5;
-  private final MetricsManager metricsManager;
   private final Counter emailCounter;
   private final Counter missScheduleCounter;
+  private final Counter backExecutionCounter;
 
   @Inject
   public MissedSchedulesManager(final Props azkProps,
@@ -74,9 +74,9 @@ public class MissedSchedulesManager {
     this.emailer = emailer;
     this.threadPoolSize = azkProps.getInt(Constants.MISSED_SCHEDULE_THREAD_POOL_SIZE, this.DEFAULT_THREAD_POOL_SIZE);
     this.missedSchedulesManagerEnabled = azkProps.getBoolean(Constants.MISSED_SCHEDULE_MANAGER_ENABLED, false);
-    this.metricsManager = metricsManager;
     this.emailCounter = metricsManager.addCounter("missed-schedule-email-notification-count");
     this.missScheduleCounter = metricsManager.addCounter("missed-schedule-count");
+    this.backExecutionCounter = metricsManager.addCounter("missed-schedule-back-execution-count");
     if (this.missedSchedulesManagerEnabled && this.threadPoolSize <= 0) {
       final String errorMsg =
           "MissedSchedulesManager is enabled but thread pool size is not positive: " + this.threadPoolSize;
@@ -110,15 +110,18 @@ public class MissedSchedulesManager {
     if (action.getExecutionOptions().isFailureEmailsOverridden()) {
       emailRecipients = action.getExecutionOptions().getFailureEmails();
     }
-    this.missScheduleCounter.inc(missedScheduleTimesInMs.size());
-    this.emailCounter.inc();
 
     try {
       final Future taskFuture = this.missedSchedulesExecutor.submit(
           new MissedSchedulesOperationTask(missedScheduleTimesInMs, this.emailer, emailRecipients, backExecutionEnabled,
               action));
+      this.missScheduleCounter.inc(missedScheduleTimesInMs.size());
+      if (!emailRecipients.isEmpty()) {
+        this.emailCounter.inc();
+      }
       if (backExecutionEnabled) {
-        LOG.info("Missed schedule task submitted with emailer {} and action {}", emailRecipients, action);
+        this.backExecutionCounter.inc();
+        LOG.info("Missed schedule task submitted with email recipients {} and action {}", emailRecipients, action);
       }
       return true;
     } catch (final RejectedExecutionException e) {
@@ -177,7 +180,8 @@ public class MissedSchedulesManager {
       final String missScheduleTimestampToDate = formatTimestamps(missedScheduleTimes);
       final MessageFormat messageFormat = new MessageFormat("This is an auto generated email to notify to flow owners"
           + " that the flow {0} in project {1} has scheduled the executions on {2} but failed to trigger on time. " + (
-          backExecutionEnabled ? "Back execution will start soon as you enabled the config." : ""));
+          backExecutionEnabled ? "Back execution will start soon as you enabled the config "
+              + "'Back Execute Once When missed Schedule Detects' through UI."  : ""));
 
       this.emailMessage = messageFormat.format(
           new Object[]{executeFlowAction.getFlowName(), executeFlowAction.getProjectName(),

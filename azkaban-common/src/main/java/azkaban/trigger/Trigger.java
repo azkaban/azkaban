@@ -49,6 +49,7 @@ public class Trigger {
   private Map<String, Object> context = new HashMap<>();
   private boolean resetOnTrigger = true;
   private boolean resetOnExpire = true;
+  private boolean backExecuteOnceOnMiss = false;
 
   private long nextCheckTime = -1;
 
@@ -133,6 +134,7 @@ public class Trigger {
           Boolean.valueOf((String) jsonObj.get("resetOnTrigger"));
       final boolean resetOnExpire =
           Boolean.valueOf((String) jsonObj.get("resetOnExpire"));
+      final boolean backExecuteOnceOnMiss = Boolean.valueOf((String) jsonObj.get("backExecuteOnceOnMiss"));
       final String submitUser = (String) jsonObj.get("submitUser");
       final String source = (String) jsonObj.get("source");
       final long submitTime = Long.valueOf((String) jsonObj.get("submitTime"));
@@ -176,6 +178,7 @@ public class Trigger {
       trigger.setResetOnExpire(resetOnExpire);
       trigger.setResetOnTrigger(resetOnTrigger);
       trigger.setStatus(status);
+      trigger.setBackExecuteOnceOnMiss(backExecuteOnceOnMiss);
     } catch (final Exception e) {
       e.printStackTrace();
       logger.error("Failed to decode the trigger.", e);
@@ -262,6 +265,14 @@ public class Trigger {
     this.resetOnTrigger = resetOnTrigger;
   }
 
+  public void setBackExecuteOnceOnMiss(final boolean backExecuteOnceOnMiss) {
+    this.backExecuteOnceOnMiss = backExecuteOnceOnMiss;
+  }
+
+  public boolean isBackExecuteOnceOnMiss() {
+    return backExecuteOnceOnMiss;
+  }
+
   public boolean isResetOnExpire() {
     return this.resetOnExpire;
   }
@@ -307,7 +318,7 @@ public class Trigger {
       if (action instanceof ExecuteFlowAction) {
         // when successfully send task to missedScheduleManager, clear the missed schedule times
         if (missedSchedulesManager.addMissedSchedule(
-            this.triggerCondition.getMissedCheckTimes(), (ExecuteFlowAction) action, false)) {
+            this.triggerCondition.getMissedCheckTimes(), (ExecuteFlowAction) action, this.backExecuteOnceOnMiss)) {
           this.triggerCondition.getMissedCheckTimes().clear();
         } else {
           logger.error("failed to add miss schedule task for trigger " + this);
@@ -356,6 +367,7 @@ public class Trigger {
 
     jsonObj.put("resetOnTrigger", String.valueOf(this.resetOnTrigger));
     jsonObj.put("resetOnExpire", String.valueOf(this.resetOnExpire));
+    jsonObj.put("backExecuteOnceOnMiss", String.valueOf(this.backExecuteOnceOnMiss));
     jsonObj.put("submitUser", this.submitUser);
     jsonObj.put("source", this.source);
     jsonObj.put("submitTime", String.valueOf(this.submitTime));
