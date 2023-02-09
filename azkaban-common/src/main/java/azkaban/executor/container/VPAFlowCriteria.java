@@ -45,6 +45,20 @@ public class VPAFlowCriteria {
     loadFlowFilter(new HashMap<>());
   }
 
+  /**
+   * Reloads the in-memory flows map with the flow filter file.
+   */
+  public void reloadFlowFilter() {
+    // Reset the filter map
+    loadFlowFilter(new HashMap<>());
+  }
+
+  @VisibleForTesting
+  public void reloadFlowFilter(final String fileLocation) {
+    // Reset the filter map
+    loadFlowFilter(new HashMap<>(), fileLocation);
+  }
+
   private void loadFlowFilter(final Map<String, Set<String>> flowMap) {
     loadFlowFilter(flowMap, this.fileLocation);
   }

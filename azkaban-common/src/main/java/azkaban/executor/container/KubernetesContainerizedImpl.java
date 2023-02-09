@@ -1300,6 +1300,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return this.vpaEnabled;
   }
 
+  @Override
+  public VPAFlowCriteria getVPAFlowCriteria() {
+    return this.vpaFlowCriteria;
+  }
+
   /**
    * Return a boolean value indicates whether vertical pod autoscaler is enabled for a given flow
    * based on ramp up rate and global vpa enabled flag
