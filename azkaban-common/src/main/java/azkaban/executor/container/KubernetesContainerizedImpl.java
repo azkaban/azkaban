@@ -204,6 +204,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ProjectManager projectManager;
   private final VPARecommender vpaRecommender;
   private final VPARecommendation maxVpaRecommendation;
+  private final VPAFlowCriteria vpaFlowCriteria;
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -353,6 +354,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.azkabanSecurityInitImageName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME,
             DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME);
+    this.vpaFlowCriteria = new VPAFlowCriteria(azkProps, logger);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
   }
@@ -1307,7 +1309,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private boolean IsVPAEnabledForFlow(ExecutableFlow executableFlow) {
     int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(executableFlow);
-    return vpaEnabled && flowNameHashValMapping <= this.vpaRampUp;
+    return vpaEnabled && flowNameHashValMapping <= this.vpaRampUp && this.vpaFlowCriteria.IsVPAEnabledForFlow(executableFlow);
   }
 
   /**
