@@ -186,11 +186,11 @@ public final class HttpRequestUtilsTest {
     final List<SlaOption> slaOptions = options.getSlaOptions();
     final List<SlaOption> expected = Arrays.asList(
         new SlaOption(SlaType.FLOW_FINISH, "test-flow", "", Duration.ofMinutes(150),
-            ImmutableSet.of(SlaAction.ALERT), ImmutableList.of()),
+            ImmutableSet.of(SlaAction.ALERT), ImmutableList.of(), ImmutableMap.of()),
         new SlaOption(SlaType.JOB_SUCCEED, "test-flow", "test_job", Duration.ofMinutes(720),
-            ImmutableSet.of(SlaAction.KILL), ImmutableList.of()),
+            ImmutableSet.of(SlaAction.KILL), ImmutableList.of(), ImmutableMap.of()),
         new SlaOption(SlaType.FLOW_SUCCEED, "test-flow", "", Duration.ofMinutes(720),
-            ImmutableSet.of(SlaAction.ALERT, SlaAction.KILL), ImmutableList.of())
+            ImmutableSet.of(SlaAction.ALERT, SlaAction.KILL), ImmutableList.of(), ImmutableMap.of())
     );
     Assert.assertEquals(expected, slaOptions);
   }
@@ -204,7 +204,23 @@ public final class HttpRequestUtilsTest {
     final List<SlaOption> slaOptions = options.getSlaOptions();
     final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "test-flow",
         "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
-        ImmutableList.of("sla1@example.com", "sla2@example.com")));
+        ImmutableList.of("sla1@example.com", "sla2@example.com"), ImmutableMap.of()));
+    Assert.assertEquals(expected, slaOptions);
+  }
+
+  @Test
+  public void testParseFlowOptionsSlaWithAlertersConfigs() throws Exception {
+    final HttpServletRequest req = mockRequestWithSla(ImmutableMap.of(
+        "slaSettings[1]", ",FINISH,2:30,true,false",
+        "slaAlerters[email][recipients]", "sla1@example.com,sla2@example.com",
+        "slaAlerters[myAlerter][prop1]", "value1"));
+    final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req, "test-flow");
+    final List<SlaOption> slaOptions = options.getSlaOptions();
+    final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "test-flow",
+        "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
+        ImmutableList.of("sla1@example.com", "sla2@example.com"), ImmutableMap.of(
+            "myAlerter", ImmutableMap.of("prop1", "value1")
+    )));
     Assert.assertEquals(expected, slaOptions);
   }
 

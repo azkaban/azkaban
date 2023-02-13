@@ -33,6 +33,7 @@ import azkaban.flow.Flow;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.sla.SlaType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
@@ -47,10 +48,14 @@ import javax.inject.Singleton;
 import javax.mail.internet.AddressException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 @Singleton
 public class Emailer extends AbstractMailer implements Alerter {
 
+  private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MM/dd, YYYY HH:mm");
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
   private static final Logger logger = Logger.getLogger(Emailer.class);
@@ -110,11 +115,11 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   @Override
-  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
+  public void alertOnSla(final ExecutableFlow flow, final SlaOption slaOption) {
     final String subject =
         "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
-    final List<String> emailList =
-        (List<String>) slaOption.getEmails();
+    final String slaMessage = createSlaMessage(flow, slaOption, getAzkabanURL());
+    final List<String> emailList = slaOption.getEmails();
     logger.info("Sending SLA email " + slaMessage);
     sendEmail(emailList, subject, slaMessage);
   }
@@ -230,6 +235,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   /**
    * Alert user when a job property is overridden in a project
+   *
    * @param project
    * @param flow
    * @param eventData
@@ -286,6 +292,40 @@ public class Emailer extends AbstractMailer implements Alerter {
           this.commonMetrics.markSendEmailFail();
         }
       }
+    }
+  }
+
+  /**
+   * Construct the message for the SLA.
+   *
+   * @param execFlow the executable flow.
+   * @return the SLA message.
+   */
+  public static String createSlaMessage(final ExecutableFlow execFlow, final SlaOption slaOption,
+      final String azkabanUrl) {
+    final int execId = execFlow.getExecutionId();
+    final String durationStr = slaOption.durationToString(slaOption.getDuration());
+    final String executionUrl = String.format("%s/executor?execid=%d", azkabanUrl, execId);
+    final String executionLink = String.format("<a href=\"%s\">%s Execution Link</a>",
+        executionUrl, execFlow.getFlowId());
+
+    final SlaType slaType = slaOption.getType();
+    switch (slaType.getComponent()) {
+      case FLOW:
+        final String basicinfo =
+            String.format("SLA Alert: Your flow %s failed to %s within %s<br/>%s<br/>",
+                slaOption.getFlowName(), slaType.getStatus(), durationStr, executionLink);
+        final String expected = String.format(
+            "Here are details : <br/>Flow %s in execution %d is expected to FINISH within %s from %s<br/>",
+            slaOption.getFlowName(), execId, durationStr,
+            fmt.print(new DateTime(execFlow.getStartTime())));
+        final String actual = String.format("Actual flow status is %s", execFlow.getStatus());
+        return basicinfo + expected + actual;
+      case JOB:
+        return String.format("SLA Alert: Your job %s failed to %s within %s in execution %d</br>%s",
+            slaOption.getJobName(), slaType.getStatus(), durationStr, execId, executionLink);
+      default:
+        return String.format("Unrecognized SLA component type %s", slaType.getComponent());
     }
   }
 
