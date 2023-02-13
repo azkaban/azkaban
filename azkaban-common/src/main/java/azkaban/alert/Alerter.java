@@ -22,6 +22,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.utils.Emailer;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,13 @@ public interface Alerter {
 
   void alertOnFirstError(ExecutableFlow exflow) throws Exception;
 
-  void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
+  @Deprecated
+  default void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception { }
+
+  default void alertOnSla(ExecutableFlow exflow, SlaOption slaOption) throws Exception {
+    final String slaMessage = Emailer.createSlaMessage(exflow, slaOption, getAzkabanURL());
+    alertOnSla(slaOption, slaMessage);
+  }
 
   void alertOnFailedUpdate(Executor executor, List<ExecutableFlow> executions,
       ExecutorManagerException e);
@@ -44,5 +51,8 @@ public interface Alerter {
 
   void alertOnJobPropertyOverridden(Project project, Flow flow, Map<String, Object> metaData);
 
-  String getAzkabanURL();
+  @Deprecated
+  default String getAzkabanURL() {
+    return "";
+  };
 }

@@ -44,11 +44,9 @@ import org.apache.commons.lang.StringUtils;
 
 public class HttpRequestUtils {
 
-  public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SLA_SETTINGS = "slaSettings";
 
-  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req,
-      final String flowName)
+  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req, final String flowName)
       throws ServletException {
     final ExecutionOptions execOptions = new ExecutionOptions();
 
@@ -116,11 +114,7 @@ public class HttpRequestUtils {
       execOptions.setMailCreator(mailCreator);
     }
 
-    final Map<String, String> slaSettings = getParamGroup(req, PARAM_SLA_SETTINGS);
-    // emails param is optional
-    final String emailStr = getParam(req, PARAM_SLA_EMAILS, null);
-    final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(flowName, emailStr,
-        slaSettings);
+    final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(req, flowName, PARAM_SLA_SETTINGS);
     if (!slaOptions.isEmpty()) {
       execOptions.setSlaOptions(slaOptions);
     }
@@ -352,10 +346,14 @@ public class HttpRequestUtils {
 
     final HashMap<String, String> groupParam = new HashMap<>();
     while (enumerate.hasMoreElements()) {
-      final String str = (String) enumerate.nextElement();
+      final String str = enumerate.nextElement();
       if (str.startsWith(matchString)) {
-        groupParam.put(str.substring(matchString.length(), str.length() - 1),
-            request.getParameter(str));
+        try {
+          groupParam.put(str.substring(matchString.length(), str.length() - 1),
+              request.getParameter(str));
+        } catch (IndexOutOfBoundsException e) {
+          throw new ServletException(String.format("Param group %s is invalid.", groupName), e);
+        }
       }
 
     }
@@ -366,7 +364,7 @@ public class HttpRequestUtils {
    * Read params like groupName[level1Key][level2Key]: value
    */
   public static Map<String, Map<String, String>> getMapParamGroup(final HttpServletRequest request,
-      final String groupName) {
+      final String groupName) throws ServletException {
     final Enumeration<String> enumerate = request.getParameterNames();
     final String matchString = groupName + "[";
 
@@ -374,13 +372,17 @@ public class HttpRequestUtils {
     while (enumerate.hasMoreElements()) {
       final String str = enumerate.nextElement();
       if (str.startsWith(matchString)) {
-        final int level1KeyEnd = str.indexOf("]");
+        try {
+          final int level1KeyEnd = str.indexOf("]");
 
-        final String level1Key = str.substring(matchString.length(), level1KeyEnd);
-        groupParam.putIfAbsent(level1Key, new HashMap<>());
+          final String level1Key = str.substring(matchString.length(), level1KeyEnd);
+          groupParam.putIfAbsent(level1Key, new HashMap<>());
 
-        final String level2Key = str.substring(level1KeyEnd + 2, str.length() - 1);
-        groupParam.get(level1Key).put(level2Key, request.getParameter(str));
+          final String level2Key = str.substring(level1KeyEnd + 2, str.length() - 1);
+          groupParam.get(level1Key).put(level2Key, request.getParameter(str));
+        } catch (IndexOutOfBoundsException e) {
+          throw new ServletException(String.format("Param group %s is invalid.", groupName), e);
+        }
       }
 
     }

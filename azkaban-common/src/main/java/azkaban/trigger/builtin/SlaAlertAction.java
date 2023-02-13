@@ -103,19 +103,14 @@ public class SlaAlertAction implements TriggerAction {
   public void doAction() throws Exception {
     logger.info("Alerting on sla failure.");
     if (slaOption.hasAlert()) {
-      final Alerter alerter = this.alerters.get(SlaOption.ALERT_TYPE_EMAIL);
-      if (alerter != null) {
+      final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
+      this.alerters.forEach((String alerterName, Alerter alerter) -> {
         try {
-          final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
-          alerter.alertOnSla(this.slaOption, slaOption.createSlaMessage(flow, alerter.getAzkabanURL()));
+          alerter.alertOnSla(flow, this.slaOption);
         } catch (final Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to alert by " + SlaOption.ALERT_TYPE_EMAIL);
+          logger.error("Failed to alert on SLA breach for execution " + flow.getExecutionId(), e);
         }
-      } else {
-        logger.error("Alerter type " + SlaOption.ALERT_TYPE_EMAIL
-            + " doesn't exist. Failed to alert.");
-      }
+      });
     }
   }
 

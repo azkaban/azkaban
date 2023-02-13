@@ -15,6 +15,10 @@
  */
 package azkaban.server;
 
+import static azkaban.server.HttpRequestUtils.getMapParamGroup;
+import static azkaban.server.HttpRequestUtils.getParam;
+import static azkaban.server.HttpRequestUtils.getParamGroup;
+
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaOption.SlaOptionBuilder;
@@ -26,28 +30,52 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
+
 
 public class SlaRequestUtils {
 
+  public static final String PARAM_SLA_EMAILS = "slaEmails";
+  public static final String PARAM_SLA_ALERTERS = "slaAlerters";
   public static final String SLA_STATUS_SUCCESS = "SUCCESS";
   private static final Logger logger = Logger.getLogger(SlaRequestUtils.class);
 
-  public static List<SlaOption> parseSlaOptions(final String flowName, final String emailStr,
-      final Map<String, String> settings) throws ServletException {
-    final List<String> slaEmails;
-    if (emailStr == null) {
-      slaEmails = Arrays.asList();
+  public static List<SlaOption> parseSlaOptions(final HttpServletRequest req, final String flowName,
+      final String settingsParamName) throws ServletException {
+    final Map<String, String> settings = getParamGroup(req, settingsParamName);
+    final Map<String, Map<String, String>> alertersConfigs = getMapParamGroup(req, PARAM_SLA_ALERTERS);
+    String slaEmailsStr = getParam(req, PARAM_SLA_EMAILS, null);
+
+    // Don't allow combining old & new in the same request:
+    // This ensures that there's no need to handle possible conflicts between 'slaEmails' and
+    // 'slaAlerters[email][recipients]'.
+    if (slaEmailsStr != null && !alertersConfigs.isEmpty()) {
+      throw new ServletException("The legacy slaEmails param is not allowed in combination with "
+          + "the slaAlerters param group. Please, set 'slaAlerters[email][recipients]' instead of "
+          + "'slaEmails'.");
+    }
+
+    // TODO ypadron: migrate legacy email alert handling to the alerter plugins approach.
+    //  Treat email is a built-in alerter.
+    final Map<String, String> emailAlerterConfigs = alertersConfigs.remove("email");
+    if (emailAlerterConfigs != null) {
+      slaEmailsStr = emailAlerterConfigs.get("recipients");
+    }
+
+    final List<String> emailAlerterRecipients;
+    if (slaEmailsStr == null) {
+      emailAlerterRecipients = Arrays.asList();
     } else {
-      final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-      slaEmails = Arrays.asList(emailSplit);
+      final String[] emailSplit = slaEmailsStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+      emailAlerterRecipients = Arrays.asList(emailSplit);
     }
 
     final List<SlaOption> slaOptions = new ArrayList<>();
     for (final String set : settings.keySet()) {
       final SlaOption slaOption;
       try {
-        slaOption = parseSlaSetting(settings.get(set), flowName, slaEmails);
+        slaOption = parseSlaSetting(settings.get(set), flowName, emailAlerterRecipients, alertersConfigs);
       } catch (final Exception e) {
         throw new ServletException(
             "Error parsing SLA setting '" + settings.get(set) + "': " + e.toString(), e);
@@ -57,8 +85,8 @@ public class SlaRequestUtils {
     return slaOptions;
   }
 
-  private static SlaOption parseSlaSetting(final String set, final String flowName,
-      final List<String> emails) throws ServletException {
+  private static SlaOption parseSlaSetting(final String set, final String flowName, final List<String> emails,
+      final Map<String, Map<String, String>> alertersConfigs) throws ServletException {
     logger.info("Trying to parse sla with the following set: " + set);
 
     final String[] parts = set.split(",", -1);
@@ -104,7 +132,7 @@ public class SlaRequestUtils {
     logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
         + rule + " Duration:" + duration + " actions:" + actions);
     return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
-        .setEmails(emails).createSlaOption();
+        .setEmails(emails).setAlertersConfigs(alertersConfigs).createSlaOption();
   }
 
   private static Duration parseDuration(final String duration) {

@@ -35,6 +35,7 @@ import azkaban.sla.SlaOption;
 import azkaban.sla.SlaType;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.Arrays;
@@ -88,7 +89,7 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     final List<SlaOption> slaOptions = this.exFlow.getValue().getExecutionOptions().getSlaOptions();
     final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "testFlow",
         "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
-        ImmutableList.of("sla1@example.com", "sla2@example.com")));
+        ImmutableList.of("sla1@example.com", "sla2@example.com"), ImmutableMap.of()));
     Assert.assertEquals(expected, slaOptions);
   }
 
