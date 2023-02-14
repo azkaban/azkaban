@@ -8,6 +8,7 @@ before_install:
   - sudo apt update
   - sudo apt install openjfx
 
+install: travis_wait 30 mvn install
 script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
@@ -28,7 +29,7 @@ notifications:
 
 env:
   global:
-    - GRADLE_OPTS="-Xms512m -Xmx4096m"
+    - GRADLE_OPTS="-Xms512m -Xmx8192m"
 
 after_success:
   # avoid to double trigger test and increase build time
