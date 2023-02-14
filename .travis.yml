@@ -8,7 +8,7 @@ before_install:
   - sudo apt update
   - sudo apt install openjfx
 
-script: travis_wait 30 ./gradlew clean build --scan --no-daemon --info
+script: ./gradlew clean build --scan --no-daemon --info
 
 # see https://docs.travis-ci.com/user/languages/java/#Projects-Using-Gradle
 before_cache:
