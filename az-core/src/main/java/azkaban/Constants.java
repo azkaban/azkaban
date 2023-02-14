@@ -738,6 +738,8 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
     public static final String PREFETCH_PROXY_USER_CERTIFICATES =
         AZKABAN_CONTAINERIZED_PREFIX + "prefetch.certificates";
+    public static final String PREFETCH_JOBTYPE_PROXY_USER_MAP =
+        AZKABAN_CONTAINERIZED_PREFIX + "prefetch.jobtype.user.map";
     public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
     public static final String KUBERNETES_POD_TEMPLATE_PATH =

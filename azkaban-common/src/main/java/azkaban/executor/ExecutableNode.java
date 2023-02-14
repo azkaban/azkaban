@@ -216,6 +216,9 @@ public class ExecutableNode {
   public String getJobSource() {
     return this.jobSource;
   }
+  public void setJobSource(String jobSource) {
+    this.jobSource = jobSource;
+  }
 
   public String getPropsSource() {
     return this.propsSource;

@@ -15,13 +15,21 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.JobProperties.USER_TO_PROXY;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
+import azkaban.utils.Props;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.TreeSet;
 import org.apache.commons.codec.digest.MurmurHash3;
 
@@ -81,5 +89,58 @@ public class ContainerImplUtils {
     // To be utilized for flow deterministic ramp-up
     int flowNameHashVal = Math.abs(MurmurHash3.hash32x86(flowNameBytes));
     return flowNameHashVal % 100 + 1;
+  }
+
+  public static HashSet<String> getProxyUsersForFlow(final ProjectManager projectManager,
+      final ExecutableFlow flow) {
+    final HashSet<String> proxyUsers = new HashSet<>();
+    populateProxyUsersForFlow(flow, flow, projectManager, proxyUsers);
+    return proxyUsers;
+  }
+
+  public static void populateProxyUsersForFlow(final ExecutableFlow flow,
+      final ExecutableNode node, final ProjectManager projectManager, HashSet<String> proxyUsers) {
+    if (node instanceof ExecutableFlowBase) {
+      final ExecutableFlowBase base = (ExecutableFlowBase) node;
+      for (ExecutableNode subNode : base.getExecutableNodes()) {
+        populateProxyUsersForFlow(flow, subNode, projectManager, proxyUsers);
+      }
+    } else {
+      // If a node is disabled, we don't need to initialize its jobType container image when
+      // creating a pod.
+      if (node.getStatus() != Status.DISABLED) {
+        Project project = projectManager.getProject(flow.getProjectId());
+        Flow flowObj = project.getFlow(flow.getFlowId());
+        Props currentNodeProps = projectManager.getProperties(project, flowObj,
+            node.getId(), node.getJobSource());
+        // Get the node level property for proxy user.
+        String userToProxyFromNode = currentNodeProps.getString(USER_TO_PROXY, null);
+        // Get the node level override by user from the UI for proxy user.
+        Props currentNodeJobProps = projectManager.getJobOverrideProperty(project, flowObj,
+            node.getId(), node.getJobSource());
+        String userToProxyFromJobNode = currentNodeJobProps.getString(USER_TO_PROXY, null);
+        if (userToProxyFromJobNode != null) {
+          proxyUsers.add(userToProxyFromJobNode);
+        } else if (userToProxyFromNode != null) {
+          proxyUsers.add(userToProxyFromNode);
+        }
+      }
+    }
+  }
+
+  // Extract the proxy users needed from  PREFETCH_JOBTYPE_PROXY_USER_MAP
+  public static HashSet<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
+      TreeSet<String> jobTypes) {
+    HashSet<String> jobTypeProxyUserSet = new HashSet<>();
+    StringTokenizer st = new StringTokenizer(jobTypePrefetchUserMap, ";");
+    while (st.hasMoreTokens()) {
+      StringTokenizer stInner = new StringTokenizer(st.nextToken(), ",");
+      String jobType = stInner.nextToken();
+      String jobTypeUser = stInner.nextToken();
+      if (jobTypes.contains(jobType)) {
+        jobTypeProxyUserSet.add(jobTypeUser);
+      }
+    }
+    return jobTypeProxyUserSet;
   }
 }

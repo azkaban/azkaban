@@ -165,6 +165,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String clusterName;
   private final String clusterEnv;
   private final String flowContainerName;
+  private final String jobTypePrefetchUserMap;
   private int vpaRampUp;
   private boolean vpaEnabled;
   private final double cpuRecommendationMultiplier;
@@ -353,6 +354,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.azkabanSecurityInitImageName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME,
             DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME);
+    this.jobTypePrefetchUserMap =
+        this.azkProps.getString(ContainerizedDispatchManagerProperties.PREFETCH_JOBTYPE_PROXY_USER_MAP, null);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
   }
@@ -1129,6 +1132,32 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (flowParam != null && !flowParam.isEmpty()) {
       logger.info("ExecId: {}, Flow Parameters are: {}", executionId, flowParam);
     }
+
+    // Check if flow params has user.to.proxy If it does, skip the next step since this overrides
+    // all the project and node properties.
+    HashSet<String> proxyUsersMap = new HashSet<>();
+    if (flowParam != null && flowParam.containsKey("user.to.proxy")) {
+      proxyUsersMap.add(flowParam.get("user.to.proxy"));
+    }
+    else {
+      // If there were no flow parameters get the proxy users for each node by loading the
+      //project DAG
+      proxyUsersMap.addAll(ContainerImplUtils
+          .getProxyUsersForFlow(this.projectManager, flow));
+    }
+    // Finally, if certain jobtypes need specific user credentials we add them to the prefetch list
+    final HashSet<String> jobTypeUsersForFlow =
+        ContainerImplUtils.getJobTypeUsersForFlow(this.jobTypePrefetchUserMap, jobTypes);
+
+    proxyUsersMap.addAll(jobTypeUsersForFlow);
+
+    // We add the submit user as if no proxy user is mentioned the submit user is the proxy user.
+    proxyUsersMap.add(flow.getSubmitUser());
+
+    // Set the collected list of users as a flow object variable to be accessed while creating
+    // pod spec template.
+    flow.setProxyUsersFromFlowObj(proxyUsersMap);
+
     // Create all image types by adding azkaban base image, azkaban config and all job types for
     // the flow.
     final Set<String> allImageTypes = new TreeSet<>();
@@ -1335,7 +1364,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final VersionSet versionSet)
       throws ExecutorManagerException {
     final ExecutableFlow flow = executableFlow;
-    final Set<String> proxyUserList = flow.getProxyUsers();
+    final HashSet<String> proxyUserList = flow.getProxyUsersFromFlowObj();
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.

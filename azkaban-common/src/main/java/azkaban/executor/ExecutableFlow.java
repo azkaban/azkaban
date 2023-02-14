@@ -95,6 +95,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   // For Flows dispatched from a k8s pod
   private VersionSet versionSet;
+  private HashSet<String> proxyUsersFromFlowObj;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -144,8 +145,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.proxyUsers.addAll(proxyUsers);
   }
 
-  public Set<String> getProxyUsers() {
+  public HashSet<String> getProxyUsers() {
     return new HashSet<>(this.proxyUsers);
+  }
+  public HashSet<String> getProxyUsersFromFlowObj(){
+    return this.proxyUsersFromFlowObj;
+  }
+  public void setProxyUsersFromFlowObj(HashSet<String> proxyUsersMap){
+    this.proxyUsersFromFlowObj = proxyUsersMap;
   }
 
   public ExecutionOptions getExecutionOptions() {

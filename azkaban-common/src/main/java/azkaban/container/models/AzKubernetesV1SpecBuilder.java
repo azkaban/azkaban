@@ -32,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1VolumeBuilder;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.openapi.models.V1VolumeMountBuilder;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -163,7 +164,7 @@ public class AzKubernetesV1SpecBuilder {
     }
     public AzKubernetesV1SpecBuilder addSecurityInitContainer(String image,
         ImagePullPolicy imagePullPolicy,
-        final InitContainerType initContainerType, Set<String> proxyUserList ) {
+        final InitContainerType initContainerType, HashSet<String> proxyUserList ) {
         V1EnvVar proxyUserEnv = new V1EnvVarBuilder()
             .withName(initContainerType.mountPathKey)
             .withValue(String.join(",", proxyUserList))
