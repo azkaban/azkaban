@@ -32,13 +32,16 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 
   handleSlaCancel: function () {
     console.log("Clicked cancel button");
-    var scheduleURL = contextURL + "/schedule";
     var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
     var rows = tFlowRules.rows;
     var rowLength = rows.length
     for (var i = 0; i < rowLength - 1; i++) {
       tFlowRules.deleteRow(0);
     }
+    $('[name^="slaAlerters[').each(function() {
+      // TODO: reset value for radio, checkbox and select elements.
+      $(this).val('');
+    });
   },
 
   initFromSched: function (scheduleId, flowName) {
@@ -66,8 +69,18 @@ azkaban.ChangeSlaView = Backbone.View.extend({
         alert(data.error);
         return;
       }
-      if (data.slaEmails) {
-        $('#slaEmails').val(data.slaEmails.join());
+
+      if (data.slaEmails) { // legacy support
+        $('[name="slaAlerters[email][recipients]"]').val(data.slaEmails.join());
+      }
+      if (data.slaAlerters) {
+        for (const [alerter, props] of Object.entries(data.slaAlerters)) {
+          for (const [k,v] of Object.entries(props)) {
+            var formElem = '[name="slaAlerters[' + alerter + '][' + k + ']"]';
+            // TODO: set value for radio, checkbox and select elements.
+            $(formElem).val(v.join());
+          }
+        }
       }
 
       var allJobNames = data.allJobNames;
@@ -152,10 +165,8 @@ azkaban.ChangeSlaView = Backbone.View.extend({
     };
 
     $.get(this.scheduleURL, fetchScheduleData, successHandler, "json");
-
     $('#sla-options').modal();
 
-    //this.schedFlowOptions = sched.flowOptions
     console.log("Loaded schedule info. Ready to set SLA.");
   },
 
@@ -179,7 +190,15 @@ azkaban.ChangeSlaView = Backbone.View.extend({
   },
 
   handleSetSla: function (evt) {
-    var slaEmails = $('#slaEmails').val().trim();
+    var alerters = {};
+    var alertersConfigured = false;
+    $('[name^="slaAlerters[').each(function() {
+      // TODO: get value for radio, checkbox and select elements.
+      var val = $(this).val().trim();
+      alerters[$(this).attr('name')] = val;
+      alertersConfigured ||= val !== "";
+    });
+
     var settings = {};
     var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
     for (var row = 0; row < tFlowRules.rows.length - 1; row++) {
@@ -190,13 +209,12 @@ azkaban.ChangeSlaView = Backbone.View.extend({
       var email = rFlowRule.cells[3].firstChild.checked;
       var kill = rFlowRule.cells[4].firstChild.checked;
       if (!email && !kill) {
-        alert("Unable to create SLA Action. Please set either Kill or Email"
-            + " action");
+        alert("Unable to create SLA. All SLA rules must have an action.");
         return false;
       }
-      if (!email && slaEmails === "") {
-        alert("Unable to create SLA Action. Please provide at least one email"
-            + " address for Email action");
+      if (email && !alertersConfigured) {
+        alert("Unable to create SLA. An alert mechanism must be configured"
+            + " when SLA rules with Alert action are added.");
         return false;
       }
       settings[row] = id + "," + rule + "," + duration + "," + email + ","
@@ -206,9 +224,9 @@ azkaban.ChangeSlaView = Backbone.View.extend({
     var slaData = {
       scheduleId: this.scheduleId,
       ajax: "setSla",
-      slaEmails: slaEmails,
       settings: settings
     };
+    $.extend(slaData, alerters);
 
     var scheduleURL = this.scheduleURL;
     var successHandler = function (data) {
@@ -225,7 +243,6 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 
   handleAddRow: function (evt) {
     var indexToName = this.indexToName;
-    var nameToIndex = this.nameToIndex;
     var indexToText = this.indexToText;
     var ruleBoxOptions = this.ruleBoxOptions;
 

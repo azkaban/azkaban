@@ -34,12 +34,15 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaType;
+import azkaban.utils.HTMLFormElement.HTMLFormElementBuilder;
+import azkaban.utils.HTMLFormElement.HTMLFormElementType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,6 +58,9 @@ import org.joda.time.format.DateTimeFormatter;
 @Singleton
 public class Emailer extends AbstractMailer implements Alerter {
 
+  public static final String ALERTER_NAME = "email";
+  public static final String RECIPIENTS_VIEW_PARAM = "recipients";
+
   private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MM/dd, YYYY HH:mm");
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
@@ -65,6 +71,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String clientPortNumber;
   private final String azkabanName;
   private final ExecutorLoader executorLoader;
+  private final List<HTMLFormElement> htmlParameters;
 
   @Inject
   public Emailer(final Props props, final CommonMetrics commonMetrics,
@@ -96,11 +103,19 @@ public class Emailer extends AbstractMailer implements Alerter {
           props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT,
               props.getInt(ConfigurationKeys.JETTY_PORT, Constants.DEFAULT_PORT_NUMBER)));
     }
+
+    this.htmlParameters = Arrays.asList(new HTMLFormElementBuilder("Recipients",
+        RECIPIENTS_VIEW_PARAM, HTMLFormElementType.TEXTAREA).createHTMLFormElement());
   }
 
   @Override
   public String getAzkabanURL() {
     return this.scheme + "://" + this.clientHostname + ":" + this.clientPortNumber;
+  }
+
+  @Override
+  public List<HTMLFormElement> getViewParameters() {
+    return this.htmlParameters;
   }
 
   /**

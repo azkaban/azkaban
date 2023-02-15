@@ -49,6 +49,7 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserUtils;
+import azkaban.utils.HTMLFormElement;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -147,6 +148,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
+  private Map<String, List<HTMLFormElement>> alerterPlugins;
 
   public ProjectManagerServlet() {
     super(createAPIEndpoints());
@@ -183,6 +185,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES, 8192);
     logger.info("downloadBufferSize: " + this.downloadBufferSize);
+
+    final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
+    server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
+        (alerter.getViewParameters() != null ? alerter.getViewParameters()
+            : Collections.emptyList())));
+    this.alerterPlugins = alerterPlugins;
   }
 
   private static List<AzkabanAPI> createAPIEndpoints() {
@@ -1710,8 +1718,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String flowName = getParam(req, "flow");
 
     final User user = session.getUser();
-    Project project = null;
-    Flow flow = null;
+    Project project;
+    Flow flow;
     try {
       project = this.projectManager.getProject(projectName);
 
@@ -1744,6 +1752,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                   Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE), flow.getId(), projectName);
           page.add("error_message", lockedFlowMsg);
         }
+        page.add("alerterPlugins", this.alerterPlugins);
       }
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());

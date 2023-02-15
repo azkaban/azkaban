@@ -15,6 +15,10 @@
  */
 package azkaban.webapp.servlet;
 
+import static azkaban.Constants.DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE;
+import static azkaban.server.SlaRequestUtils.PARAM_SLA_ALERTERS;
+import static azkaban.server.SlaRequestUtils.PARAM_SLA_EMAILS;
+
 import azkaban.Constants;
 import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
@@ -34,10 +38,13 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.utils.Emailer;
+import azkaban.utils.HTMLFormElement;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +60,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static azkaban.Constants.*;
-
-
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private static final String API_SLA_INFO = "slaInfo";
@@ -67,7 +71,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final String API_SCHEDULE_CRON_FLOW = "scheduleCronFlow";
   private static final String API_REMOVE_SCHED = "removeSched";
 
-  public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
   public static final String PARAM_SETTINGS = "settings";
   public static final String PARAM_ERROR = "error";
@@ -83,6 +86,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+  private Map<String, List<HTMLFormElement>> alerterPlugins;
 
   public ScheduleServlet() {
     super(createAPIEndpoints());
@@ -95,6 +99,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.scheduleManager = server.getScheduleManager();
+    final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
+    server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
+        (alerter.getViewParameters() != null ? alerter.getViewParameters()
+            : Collections.emptyList())));
+    this.alerterPlugins = alerterPlugins;
   }
 
   private static List<AzkabanAPI> createAPIEndpoints() {
@@ -275,29 +284,41 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       final List<SlaOption> slaOptions = sched.getExecutionOptions().getSlaOptions();
-      final ExecutionOptions flowOptions = sched.getExecutionOptions();
-
+      List<String> emailAlerterRecipients;
       if (slaOptions != null && slaOptions.size() > 0) {
-        ret.put(PARAM_SLA_EMAILS, slaOptions.get(0).getEmails());
+        // Alert settings are currently not per SLA rule but global, so using the configs of the
+        // first SLA rule is enough.
+        emailAlerterRecipients = slaOptions.get(0).getEmails();
+
+        final Map<String, Map<String, List<String>>> alertersConfigs = new HashMap<>();
+        alertersConfigs.putAll(slaOptions.get(0).getAlertersConfigs());
+        alertersConfigs.put(Emailer.ALERTER_NAME, Collections.singletonMap(
+            Emailer.RECIPIENTS_VIEW_PARAM, emailAlerterRecipients));
 
         final List<Object> setObj = new ArrayList<>();
         for (final SlaOption slaOption : slaOptions) {
           setObj.add(slaOption.toWebObject());
         }
         ret.put(PARAM_SETTINGS, setObj);
-      } else if (flowOptions != null) {
-        if (flowOptions.getFailureEmails() != null) {
-          final List<String> emails = flowOptions.getFailureEmails();
-          if (emails.size() > 0) {
-            ret.put(PARAM_SLA_EMAILS, emails);
-          }
-        }
+        ret.put(PARAM_SLA_EMAILS, emailAlerterRecipients);
+        ret.put(PARAM_SLA_ALERTERS, alertersConfigs);
       } else {
-        if (flow.getFailureEmails() != null) {
-          final List<String> emails = flow.getFailureEmails();
-          if (emails.size() > 0) {
-            ret.put(PARAM_SLA_EMAILS, emails);
-          }
+        // This API is currently used to retrieve details of existing SLAs as well as to
+        // render the form in the UI to define new SLAs. That's why PARAM_SLA_EMAILS and
+        // PARAM_ALL_JOB_NAMES are returned even if there is no SLA defined for the specified
+        // schedule.
+
+        // Suggest recipients for email alerts when defining new SLAs
+        emailAlerterRecipients = flow.getFailureEmails();
+        final ExecutionOptions flowOptions = sched.getExecutionOptions();
+        List<String> runtimeFailureEmails;
+        if (flowOptions != null && (runtimeFailureEmails = flowOptions.getFailureEmails()) != null
+            && !runtimeFailureEmails.isEmpty()) {
+          emailAlerterRecipients = runtimeFailureEmails;
+        }
+
+        if(!emailAlerterRecipients.isEmpty()) {
+          ret.put(PARAM_SLA_EMAILS, emailAlerterRecipients);
         }
       }
 
@@ -305,7 +326,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       for (final Node n : flow.getNodes()) {
         allJobs.add(n.getId());
       }
-
       ret.put(PARAM_ALL_JOB_NAMES, allJobs);
     } catch (final ServletException e) {
       ret.put(PARAM_ERROR, e);
@@ -322,7 +342,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private void handleGetAllSchedules(final HttpServletRequest req, final HttpServletResponse resp,
       final Session session) throws ServletException, IOException {
-
     final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
 
     final List<Schedule> schedules;
@@ -332,6 +351,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       throw new ServletException(e);
     }
     page.add("schedules", schedules);
+    page.add("alerterPlugins", this.alerterPlugins);
     page.render();
   }
 
