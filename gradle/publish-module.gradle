@@ -1,0 +1,18 @@
+apply from: "$rootDir/gradle/publish-repos.gradle"
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = "sources"
+    from(sourceSets.main.allSource)
+    from(project.sourceSets.main.allSource)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId "com.github.azkaban.azkaban"
+            artifactId project.name
+            from components.java
+            artifact sourcesJar
+        }
+    }
+}

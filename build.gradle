@@ -127,9 +127,12 @@ ext.deps = [
     jacksonCore          : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
     jsonassert           : 'org.skyscreamer:jsonassert:1.5.0']
 
+apply from: "$rootDir/gradle/publish-outer.gradle"
+
 subprojects {
   apply plugin: 'java'
   apply plugin: 'net.ltgt.errorprone'
+  apply from: "$rootDir/gradle/publish-module.gradle"
 
   // Set the same version for all sub-projects to root project version
   version = rootProject.version

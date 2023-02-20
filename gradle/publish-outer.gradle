@@ -1,0 +1,19 @@
+apply from: "$rootDir/gradle/publish-repos.gradle"
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId "com.github.azkaban"
+            artifactId "azkaban"
+            pom.withXml { xml ->
+                def dependenciesNode = xml.asNode().appendNode("dependencies")
+                subprojects.each { proj ->
+                    def dependencyNode = dependenciesNode.appendNode("dependency")
+                    dependencyNode.appendNode("groupId", "com.github.azkaban.azkaban")
+                    dependencyNode.appendNode("artifactId", proj.name)
+                    dependencyNode.appendNode("version", proj.version)
+                }
+            }
+        }
+    }
+}
