@@ -29,6 +29,7 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowProps;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.TriggerInstance;
@@ -57,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -658,6 +660,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", flow.getSuccessEmails());
     ret.put("failureEmails", flow.getFailureEmails());
+    FlowProps flowPropsFile = flow.getAllFlowProps().get(flow.getId() + "/flow.properties");
+    if (flowPropsFile != null) {
+      Props flowProps = flowPropsFile.getProps().local();
+      ret.put("flowParam", new TreeMap<>(flowProps.getFlattened()));
+    }
 
     Schedule sflow = null;
     try {
@@ -698,7 +705,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", options.getSuccessEmails());
     ret.put("failureEmails", options.getFailureEmails());
-    ret.put("flowParam", options.getFlowParameters());
+    ret.put("flowParam", new TreeMap<>(options.getFlowParameters()));
 
     final FailureAction action = options.getFailureAction();
     String failureAction = null;
