@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.ServletConfig;
@@ -750,8 +751,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     for (final String ops : overrideProp.getKeySet()) {
       overrideParams.put(ops, overrideProp.getString(ops));
     }
-    ret.put("generalParams", generalParams);
-    ret.put("overrideParams", overrideParams);
+    ret.put("generalParams", new TreeMap<>(generalParams));
+    ret.put("overrideParams", new TreeMap<>(overrideParams));
   }
 
   private void ajaxSetJobOverrideProperty(final Project project,
@@ -1481,6 +1482,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         parameters.add(new Pair<>(key, value));
       }
 
+      parameters.sort(Comparator.comparing(Pair::getFirst));
       page.add("parameters", parameters);
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());
@@ -1580,6 +1582,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         parameters.add(new Pair<>(key, value));
       }
 
+      parameters.sort(Comparator.comparing(Pair::getFirst));
       page.add("parameters", parameters);
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());
