@@ -1065,6 +1065,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       if (!HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
         ret.put("error", String.format("User %s doesn't have ADMIN permission for updating "
             + "property", user));
+        return;
       }
       String propType = getParam(req, "propType");
       if (propType.equals("containerDispatch")) {
