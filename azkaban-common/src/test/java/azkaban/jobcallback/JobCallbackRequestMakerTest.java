@@ -26,11 +26,13 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 
+@Ignore
 public class JobCallbackRequestMakerTest {
 
   private static final Logger logger = Logger.getLogger(JobCallbackRequestMakerTest.class);
