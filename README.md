@@ -11,32 +11,41 @@ date: [2020-06-01](https://github.com/azkaban/azkaban/commits?until=2020-06-01)
 ImpactInc shall use a 3 digit minor suffix to denote versions from this point forward.   
 e.g. `3.90.001, 3.90.002, etc.`
 
-To increment the version, create an annotated tag with the version number.
+#### To increment the version, create an annotated tag with the version number.
 ```
 git tag -a {VER} -m "Impact fork release {VER}"
 ./gradlew publish
-git push upstream {VER}
+git push origin {VER}
 ```
 
-To deploy a new version of executor and web:
+#### Running locally:
+- `./gradlew installDist`
+- `cd azkaban-solo-server/build/install/azkaban-solo-server`
+- `bin/start-solo.sh` 
+  - Tip 1: Edit bin/start-solo.sh:5 to not pipe output to file so it instead prints to console
+  - Tip 2: Edit bin/internal/internal-start-solo-server.sh:57 to `,suspend=y` if you want to attach debugger
+- [http://localhost:8081](http://localhost:8081) login azkaban / azkaban
+- `bin/shutdown-solo.sh` to shutdown the process
+
+#### Basic deployment steps from local gradle for executor & web:
 ```
 ./gradlew distZip
-scp azkaban-*e*-server/build/distributions/*.zip {SERVER}:
+copy azkaban-*e*-server/build/distributions/*.zip {SERVER}
 ```   
 ```
-sudo su azkaban
-unzip azkaban-exec-server-{VER}.zip -d /opt/azkaban-executor/
-unzip azkaban-web-server-{VER}.zip -d /opt/azkaban-web/
+unzip azkaban-exec-server-{VER}.zip & azkaban-web-server-{VER}.zip to {TARGET}
 restore from previous azkaban-executor: conf/, plugins/, projects/{LATEST} 
 restore from previous azkaban-web: conf/, plugins/
-ln -s azkaban-exec-server-{VER} /opt/azkaban-executor/current
-ln -s azkaban-web-server-{VER} /opt/azkaban-web/current
+symlink {TARGET}/azkaban-exec-server-{VER} and {TARGET}azkaban-web-server-{VER} to current
 ```
 ```
-sudo systemctl restart azkaban-executor
-curl -G "localhost:12321/executor?action=activate" && echo
-sudo systemctl restart azkaban-web
+systemctl restart azkaban-executor & activate it localhost:12321/executor?action=activate
+systemctl restart azkaban-web
 ```
+
+#### Full deployment steps from Jenkins to stage/prod:
+* [Deploy Azkaban](https://github.com/ImpactInc/azkaban-plugins/blob/master/deploy-azkaban.md) - commands to deploy on the server
+* [Deploy both Azkaban & Plugins change](https://github.com/ImpactInc/azkaban-plugins/blob/master/deploy-azkaban-and-plugins.md) - includes commands for deploying azkaban-plugins [repo](https://github.com/ImpactInc/azkaban-plugins)
 ---   
 ---
 # Azkaban 

@@ -62,6 +62,7 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
@@ -84,6 +85,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -645,6 +647,14 @@ public class FlowRunner extends EventHandler implements Runnable {
       if (node instanceof ExecutableFlowBase) {
         final ExecutableFlowBase flow = ((ExecutableFlowBase) node);
         this.logger.info("Running flow '" + flow.getNestedId() + "'.");
+        if (node instanceof ExecutableFlow) {
+          Map<String, String> flowParams = new TreeMap<>(
+            ((ExecutableFlow) flow).getExecutionOptions().getFlowParameters());
+          this.logger.info("Flow params: ");
+          for (Map.Entry<String, String> e : flowParams.entrySet()) {
+            this.logger.info(" " + e.getKey() + " = " + e.getValue());
+          }
+        }
         flow.setStatus(Status.RUNNING);
         // don't overwrite start time of root flows
         if (flow.getStartTime() <= 0) {
@@ -1564,6 +1574,14 @@ public class FlowRunner extends EventHandler implements Runnable {
         }
         final long seconds = (node.getEndTime() - node.getStartTime()) / 1000;
         synchronized (FlowRunner.this.mainSyncObj) {
+          Props flowParams = new Props(null, flow.getExecutionOptions().getFlowParameters());
+          String paramDiff = PropsUtils.getPropertyDiff(flowParams, node.getOutputProps());
+          if (paramDiff.contains("Newly created Properties") || paramDiff.contains("Modified Properties")) {
+            FlowRunner.this.logger.info("Changed flow params:");
+            for (String line : paramDiff.split("\n")) {
+              FlowRunner.this.logger.info(" " + line.replaceAll("-->", " to "));
+            }
+          }
           FlowRunner.this.logger.info("Job " + eventData.getNestedId() + " finished with status "
               + eventData.getStatus() + " in " + seconds + " seconds");
 
