@@ -24,8 +24,6 @@ import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.executor.container.ContainerImplUtils.getJobTypeUsersForFlow;
 import static azkaban.executor.container.ContainerImplUtils.populateProxyUsersForFlow;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -139,8 +137,6 @@ public class KubernetesContainerizedImplTest {
   private static final String MIN_ALLOWED_MEMORY = "1Gi";
   private static final String MAX_ALLOWED_CPU = "4";
   private static final String MAX_ALLOWED_MEMORY = "32Gi";
-  private static final String JOBTYPE_PROXY_USER_MAP = "jobtype1,jobtype1_proxyuser;jobtype2,"
-      + "jobtype2_proxyuser";
   private static final FlowResourceRecommendation DEFAULT_FLOW_RECOMMENDATION =
       new FlowResourceRecommendation(1, 1, "flow", null, null, null);
   private static final ConcurrentHashMap<String, FlowResourceRecommendation> DEFAULT_FLOW_RECOMMENDATION_MAP = new ConcurrentHashMap<String, FlowResourceRecommendation>() {{
@@ -150,6 +146,8 @@ public class KubernetesContainerizedImplTest {
   public static final String DEPENDENCY1 = "dependency1";
   public static final int CPU_LIMIT_MULTIPLIER = 1;
   public static final int MEMORY_LIMIT_MULTIPLIER = 1;
+  private static final String JOBTYPE_PROXY_USER_MAP = "jobtype1,jobtype1_proxyuser;jobtype2,"
+      + "jobtype2_proxyuser";
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -160,7 +158,6 @@ public class KubernetesContainerizedImplTest {
   private static ContainerizationMetrics containerizationMetrics;
 
   private static final Logger log = LoggerFactory.getLogger(KubernetesContainerizedImplTest.class);
-  private ProjectManager projectManager;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -198,11 +195,8 @@ public class KubernetesContainerizedImplTest {
         MAX_ALLOWED_CPU);
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
         MAX_ALLOWED_MEMORY);
-    this.props.put(ContainerizedDispatchManagerProperties.PREFETCH_JOBTYPE_PROXY_USER_MAP,
-        JOBTYPE_PROXY_USER_MAP);
     this.executorLoader = mock(ExecutorLoader.class);
     this.projectLoader = mock(ProjectLoader.class);
-    this.projectManager = mock(ProjectManager.class);
     this.vpaRecommender = mock(VPARecommender.class);
     this.loader = new JdbcVersionSetLoader(this.dbOperator);
     this.client = mock(ApiClient.class);
@@ -233,9 +227,9 @@ public class KubernetesContainerizedImplTest {
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_CPU_REQUEST, cpuRequestedInFlowParam);
     flowParam
         .put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST, memoryRequestedInFlowParam);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam, null)
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam, null)
         .equals(cpuRequestedInFlowParam));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam, null)
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam, null)
         .equals(memoryRequestedInFlowParam));
     // cpu and memory limit are determined dynamically based on requested cpu and memory
     String expectedCPULimit =
@@ -246,8 +240,8 @@ public class KubernetesContainerizedImplTest {
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(memoryRequestedInFlowParam, MEMORY_REQUESTED_IN_PROPS,
                 MEMORY_LIMIT_MULTIPLIER);
-    assertTrue(expectedCPULimit.equals(cpuRequestedInFlowParam));
-    assertTrue(expectedMemoryLimit.equals(memoryRequestedInFlowParam));
+    Assert.assertTrue(expectedCPULimit.equals(cpuRequestedInFlowParam));
+    Assert.assertTrue(expectedMemoryLimit.equals(memoryRequestedInFlowParam));
 
     // User requested cpu and memory that exceed max allowed cpu and memory
     final String greaterThanMaxCPURequestedInFlowParam = "5";
@@ -256,9 +250,9 @@ public class KubernetesContainerizedImplTest {
         greaterThanMaxCPURequestedInFlowParam);
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
         greaterThanMaxMemoryRequestedInFlowParam);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam, null)
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam, null)
         .equals(MAX_ALLOWED_CPU));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam, null).equals(MAX_ALLOWED_MEMORY));
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam, null).equals(MAX_ALLOWED_MEMORY));
     // User requested cpu and memory that are below max allowed cpu and memory
     final String lessThanMinCPURequestedInFlowParam = "1m";
     final String lessThanMinMemoryRequestedInFlowParam = "1Mi";
@@ -266,9 +260,9 @@ public class KubernetesContainerizedImplTest {
         lessThanMinCPURequestedInFlowParam);
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
         lessThanMinMemoryRequestedInFlowParam);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam, null)
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam, null)
         .equals(MIN_ALLOWED_CPU));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
         null).equals(MIN_ALLOWED_MEMORY));
     // cpu and memory limit are determined dynamically based on requested cpu and memory
     expectedCPULimit =
@@ -279,8 +273,8 @@ public class KubernetesContainerizedImplTest {
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(MAX_ALLOWED_MEMORY, MEMORY_REQUESTED_IN_PROPS,
                 MEMORY_LIMIT_MULTIPLIER);
-    assertTrue(expectedCPULimit.equals(MAX_ALLOWED_CPU));
-    assertTrue(expectedMemoryLimit.equals(MAX_ALLOWED_MEMORY));
+    Assert.assertTrue(expectedCPULimit.equals(MAX_ALLOWED_CPU));
+    Assert.assertTrue(expectedMemoryLimit.equals(MAX_ALLOWED_MEMORY));
 
     // User requested memory of different unit, e.g. Ti, Mi
     final String MemoryRequestedInFlowParam1 = "7600Mi";
@@ -288,14 +282,14 @@ public class KubernetesContainerizedImplTest {
         MemoryRequestedInFlowParam1);
     // 7600 Mi = 7.6 Gi is smaller than max allowed memory and higher than min allowed memory, user
     // requested memory should/be used
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
         null).equals(MemoryRequestedInFlowParam1));
     final String MemoryRequestedInFlowParam2 = "0.1Ti";
     flowParam.put(FlowParameters.FLOW_PARAM_FLOW_CONTAINER_MEMORY_REQUEST,
         MemoryRequestedInFlowParam2);
     // 0.1 Ti = 100 Gi > max allowed memory 32 Gi, user requested memory is replaced by max
     // allowed memory
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
         null).equals(MAX_ALLOWED_MEMORY));
 
     // the memory request set by config should be used to get limit
@@ -303,7 +297,7 @@ public class KubernetesContainerizedImplTest {
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(MEMORY_REQUESTED_IN_PROPS, MEMORY_REQUESTED_IN_PROPS,
                 MEMORY_LIMIT_MULTIPLIER);
-    assertTrue(expectedMemoryLimit.equals(MEMORY_REQUESTED_IN_PROPS));
+    Assert.assertTrue(expectedMemoryLimit.equals(MEMORY_REQUESTED_IN_PROPS));
   }
 
   /**
@@ -327,33 +321,33 @@ public class KubernetesContainerizedImplTest {
     // flow resource recommendation cannot be less than min allowed resource limits
     final FlowResourceRecommendation tooSmallFlowResourceRecommendation = new FlowResourceRecommendation(1, 1, "flow",
         "1m", "1Mi", null);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(emptyFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(emptyFlowParam,
         tooSmallFlowResourceRecommendation.getCpuRecommendation()).equals(MIN_ALLOWED_CPU));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(emptyFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(emptyFlowParam,
         tooSmallFlowResourceRecommendation.getMemoryRecommendation()).equals(MIN_ALLOWED_MEMORY));
 
     // flow resource recommendation cannot be greater than max allowed resource limits
     final FlowResourceRecommendation tooLargeFlowResourceRecommendation = new FlowResourceRecommendation(1, 1, "flow",
         "20", "1Ti", null);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(emptyFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(emptyFlowParam,
         tooLargeFlowResourceRecommendation.getCpuRecommendation()).equals(MAX_ALLOWED_CPU));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(emptyFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(emptyFlowParam,
         tooLargeFlowResourceRecommendation.getMemoryRecommendation()).equals(MAX_ALLOWED_MEMORY));
 
     // max of flow resource recommendation and flow param will be taken
     final FlowResourceRecommendation lessThanFlowParamFlowResourceRecommendation = new FlowResourceRecommendation(1, 1,
         "flow", "2", "5Gi", null);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(defaultFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(defaultFlowParam,
         lessThanFlowParamFlowResourceRecommendation.getCpuRecommendation()).equals(cpuRequestedInFlowParam));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(defaultFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(defaultFlowParam,
         lessThanFlowParamFlowResourceRecommendation.getMemoryRecommendation()).equals(memoryRequestedInFlowParam));
 
     // max of flow resource recommendation and flow param will be taken
     final FlowResourceRecommendation greaterThanFlowParamFlowResourceRecommendation = new FlowResourceRecommendation(1, 1,
         "flow", "4", "7Gi", null);
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(defaultFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(defaultFlowParam,
         greaterThanFlowParamFlowResourceRecommendation.getCpuRecommendation()).equals(greaterThanFlowParamFlowResourceRecommendation.getCpuRecommendation()));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(defaultFlowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(defaultFlowParam,
         greaterThanFlowParamFlowResourceRecommendation.getMemoryRecommendation()).equals(greaterThanFlowParamFlowResourceRecommendation.getMemoryRecommendation()));
 
     // Reset it back to 0 for other unit tests.
@@ -369,21 +363,21 @@ public class KubernetesContainerizedImplTest {
   @Test
   public void testCPUAndMemoryRequestedFromProperties() throws Exception {
     final Map<String, String> flowParam = new HashMap<>();
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerCPURequest(flowParam,
         null).equals(CPU_REQUESTED_IN_PROPS));
-    assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
+    Assert.assertTrue(this.kubernetesContainerizedImpl.getFlowContainerMemoryRequest(flowParam,
         null).equals(MEMORY_REQUESTED_IN_PROPS));
     // cpu and memory limit are determined dynamically based on requested cpu and memory
     final String expectedCPULimit =
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(CPU_REQUESTED_IN_PROPS, CPU_REQUESTED_IN_PROPS,
                 CPU_LIMIT_MULTIPLIER);
-    assertTrue(expectedCPULimit.equals(CPU_REQUESTED_IN_PROPS));
+    Assert.assertTrue(expectedCPULimit.equals(CPU_REQUESTED_IN_PROPS));
     final String expectedMemoryLimit =
         this.kubernetesContainerizedImpl
             .getResourceLimitFromResourceRequest(MEMORY_REQUESTED_IN_PROPS, MEMORY_REQUESTED_IN_PROPS,
                 MEMORY_LIMIT_MULTIPLIER);
-    assertTrue(expectedMemoryLimit.equals(MEMORY_REQUESTED_IN_PROPS));
+    Assert.assertTrue(expectedMemoryLimit.equals(MEMORY_REQUESTED_IN_PROPS));
   }
 
   /**
@@ -525,81 +519,6 @@ public class KubernetesContainerizedImplTest {
   }
 
   @Test
-  public void testPopulatingProxyUsersFromProject() throws Exception {
-    final ExecutableFlow flow = createTestFlow();
-    flow.setProjectId(1);
-    final Props flowProps = new Props();
-    ProjectManager projectManager = mock(ProjectManager.class);
-    Project project = mock(Project.class);
-    Flow flowObj = mock(Flow.class);
-    HashSet<String> proxyUsers = new HashSet<>();
-
-    ExecutableNode node1 = new ExecutableNode();
-    node1.setId("node1");
-    node1.setJobSource("job1");
-    node1.setStatus(Status.PREPARING);
-    Props currentNodeProps1 = mock(Props.class);
-    Props currentNodeJobProps1 = mock(Props.class);
-
-
-    when(projectManager.getProject(flow.getProjectId())).thenReturn(project);
-    when(project.getFlow(flow.getFlowId())).thenReturn(flowObj);
-    when(projectManager.getProperties(project, flowObj, node1.getId(), node1.getJobSource()))
-        .thenReturn(currentNodeProps1);
-    when(currentNodeProps1.getString("user.to.proxy", null)).thenReturn("testUser1");
-    when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
-        node1.getJobSource()))
-        .thenReturn(currentNodeJobProps1);
-    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
-
-    // First test when there's no job override user.
-    assertTrue(proxyUsers.contains("testUser1"));
-    assertEquals(1, proxyUsers.size());
-    proxyUsers.clear();
-    when(currentNodeJobProps1.getString("user.to.proxy", null)).thenReturn("overrideUser");
-    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
-
-    // Second test when there is a job override user.
-    assertTrue(proxyUsers.contains("overrideUser"));
-    assertEquals(1, proxyUsers.size());
-
-    // Third test : Adding a second node and testing size of proxy user list to test it has
-    // overrideUser and testUser2
-    ExecutableNode node2 = new ExecutableNode();
-    node2.setId("node2");
-    node2.setJobSource("job2");
-    node2.setStatus(Status.PREPARING);
-    Props currentNodeProps2 = mock(Props.class);
-    Props currentNodeJobProps2 = mock(Props.class);
-    when(projectManager.getProperties(project, flowObj, node2.getId(), node2.getJobSource()))
-        .thenReturn(currentNodeProps2);
-    when(currentNodeProps2.getString("user.to.proxy", null)).thenReturn("testUser2");
-    when(projectManager.getJobOverrideProperty(project, flowObj, node2.getId(),
-        node2.getJobSource()))
-        .thenReturn(currentNodeJobProps2);
-    populateProxyUsersForFlow(flow, node2, projectManager, proxyUsers);
-
-    assertTrue(proxyUsers.contains("testUser2"));
-    assertEquals(2, proxyUsers.size());
-  }
-
-  @Test
-  public void testPopulatingJobTypeUsersForFlow() throws Exception {
-    Set<String> proxyUsers;
-    TreeSet<String> jobTypes = new TreeSet<>();
-    jobTypes.add("jobtype1");
-    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
-    assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
-    assertEquals(1, proxyUsers.size());
-
-    jobTypes.add("jobtype2");
-    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
-    assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
-    assertTrue(proxyUsers.contains("jobtype2_proxyuser"));
-    assertEquals(2, proxyUsers.size());
-
-    }
-  @Test
   public void testVersionSetConstructionWithFlowOverrideParams() throws Exception {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();
     flow.setExecutionId(2);
@@ -707,6 +626,81 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals("6.4", versionSet.getVersion("dependency1").get().getVersion());
   }
 
+  @Test
+  public void testPopulatingProxyUsersFromProject() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    flow.setProjectId(1);
+    ProjectManager projectManager = mock(ProjectManager.class);
+    Project project = mock(Project.class);
+    Flow flowObj = mock(Flow.class);
+    Set<String> proxyUsers = new HashSet<>();
+
+    ExecutableNode node1 = new ExecutableNode();
+    node1.setId("node1");
+    node1.setJobSource("job1");
+    node1.setStatus(Status.PREPARING);
+    Props currentNodeProps1 = mock(Props.class);
+    Props currentNodeJobProps1 = mock(Props.class);
+
+
+    when(projectManager.getProject(flow.getProjectId())).thenReturn(project);
+    when(project.getFlow(flow.getFlowId())).thenReturn(flowObj);
+    when(projectManager.getProperties(project, flowObj, node1.getId(), node1.getJobSource()))
+        .thenReturn(currentNodeProps1);
+    when(currentNodeProps1.getString("user.to.proxy", null)).thenReturn("testUser1");
+    when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
+        node1.getJobSource()))
+        .thenReturn(currentNodeJobProps1);
+    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
+
+    // First test when there's no job override user.
+    Assert.assertTrue(proxyUsers.contains("testUser1"));
+    Assert.assertEquals(1, proxyUsers.size());
+    proxyUsers.clear();
+    when(currentNodeJobProps1.getString("user.to.proxy", null)).thenReturn("overrideUser");
+    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
+
+    // Second test when there is a job override user.
+    Assert.assertTrue(proxyUsers.contains("overrideUser"));
+    Assert.assertEquals(1, proxyUsers.size());
+
+    // Third test : Adding a second node and testing size of proxy user list to test it has
+    // overrideUser and testUser2
+    ExecutableNode node2 = new ExecutableNode();
+    node2.setId("node2");
+    node2.setJobSource("job2");
+    node2.setStatus(Status.PREPARING);
+    Props currentNodeProps2 = mock(Props.class);
+    Props currentNodeJobProps2 = mock(Props.class);
+    when(projectManager.getProperties(project, flowObj, node2.getId(), node2.getJobSource()))
+        .thenReturn(currentNodeProps2);
+    when(currentNodeProps2.getString("user.to.proxy", null)).thenReturn("testUser2");
+    when(projectManager.getJobOverrideProperty(project, flowObj, node2.getId(),
+        node2.getJobSource()))
+        .thenReturn(currentNodeJobProps2);
+    populateProxyUsersForFlow(flow, node2, projectManager, proxyUsers);
+
+    Assert.assertTrue(proxyUsers.contains("testUser2"));
+    Assert.assertEquals(2, proxyUsers.size());
+  }
+
+  @Test
+  public void testPopulatingJobTypeUsersForFlow() throws Exception {
+    Set<String> proxyUsers;
+    TreeSet<String> jobTypes = new TreeSet<>();
+    jobTypes.add("jobtype1");
+    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    Assert.assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
+    Assert.assertEquals(1, proxyUsers.size());
+
+    jobTypes.add("jobtype2");
+    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    Assert.assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
+    Assert.assertTrue(proxyUsers.contains("jobtype2_proxyuser"));
+    Assert.assertEquals(2, proxyUsers.size());
+
+  }
+
   /**
    * Test a preparing flow to be executed in a container, whether the information of execution id,
    * version set, flow status, can be processed by a PodEventListener
@@ -735,8 +729,8 @@ public class KubernetesContainerizedImplTest {
     flow.setVersionSet(versionSet);
     // Test event reported from a pod
     final Map<String, String> metaData = flowStatusChangeEventListener.getFlowMetaData(flow);
-    assertTrue(metaData.get(EXECUTION_ID).equals("2"));
-    assertTrue(metaData.get(FLOW_STATUS).equals("PREPARING"));
+    Assert.assertTrue(metaData.get(EXECUTION_ID).equals("2"));
+    Assert.assertTrue(metaData.get(FLOW_STATUS).equals("PREPARING"));
     final String versionSetJsonString = metaData.get(VERSION_SET);
     final Map<String, String> imageToVersionMap =
         new ObjectMapper().readValue(versionSetJsonString,
@@ -771,7 +765,7 @@ public class KubernetesContainerizedImplTest {
     flow.setFlowPropsAndParams(this.projectLoader);
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
-    assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
+    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
   }
 
@@ -798,7 +792,7 @@ public class KubernetesContainerizedImplTest {
     flow.setFlowPropsAndParams(this.projectLoader);
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
-    assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
+    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("1.2.3", mergedFlowPropsAndParams.get("image.version"));
   }
 
@@ -822,7 +816,7 @@ public class KubernetesContainerizedImplTest {
     flow.setFlowPropsAndParams(this.projectLoader);
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
-    assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
+    Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
     Assert.assertEquals("2.3.4", mergedFlowPropsAndParams.get("image.version"));
   }
 
@@ -866,7 +860,7 @@ public class KubernetesContainerizedImplTest {
     final Set<Integer> staleContainerExecIdSet =
         this.kubernetesContainerizedImpl.getExecutionIdsFromPodList(podList,
         validStartTimeStamp);
-    assertTrue(staleContainerExecIdSet.contains(123));
+    Assert.assertTrue(staleContainerExecIdSet.contains(123));
     Assert.assertFalse(staleContainerExecIdSet.contains(-1));
     Assert.assertFalse(staleContainerExecIdSet.contains(12345));
   }
