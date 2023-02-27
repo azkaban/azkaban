@@ -95,7 +95,7 @@ public class ContainerImplUtils {
 
   public static Set<String> getProxyUsersForFlow(final ProjectManager projectManager,
       final ExecutableFlow flow) {
-    final HashSet<String> proxyUsers = new HashSet<>();
+    final Set<String> proxyUsers = new HashSet<>();
     populateProxyUsersForFlow(flow, flow, projectManager, proxyUsers);
     return proxyUsers;
   }
@@ -141,7 +141,7 @@ public class ContainerImplUtils {
 
   public static Set<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
       TreeSet<String> jobTypes) {
-    HashSet<String> jobTypeProxyUserSet = new HashSet<>();
+    Set<String> jobTypeProxyUserSet = new HashSet<>();
     StringTokenizer st = new StringTokenizer(jobTypePrefetchUserMap, ";");
     while (st.hasMoreTokens()) {
       StringTokenizer stInner = new StringTokenizer(st.nextToken(), ",");

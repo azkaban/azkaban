@@ -95,7 +95,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   // For Flows dispatched from a k8s pod
   private VersionSet versionSet;
-  private HashSet<String> proxyUsersFromFlowObj;
+  private Set<String> proxyUsersFromFlowObj;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();

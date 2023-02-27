@@ -21,6 +21,7 @@ import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.executor.container.ContainerImplUtils.getJobTypeUsersForFlow;
 import static azkaban.executor.container.ContainerImplUtils.populateProxyUsersForFlow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -582,7 +583,22 @@ public class KubernetesContainerizedImplTest {
     assertEquals(2, proxyUsers.size());
   }
 
+  @Test
+  public void testPopulatingJobTypeUsersForFlow() throws Exception {
+    Set<String> proxyUsers;
+    TreeSet<String> jobTypes = new TreeSet<>();
+    jobTypes.add("jobtype1");
+    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
+    assertEquals(1, proxyUsers.size());
 
+    jobTypes.add("jobtype2");
+    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
+    assertTrue(proxyUsers.contains("jobtype2_proxyuser"));
+    assertEquals(2, proxyUsers.size());
+
+    }
   @Test
   public void testVersionSetConstructionWithFlowOverrideParams() throws Exception {
     final ExecutableFlow flow = createFlowWithMultipleJobtypes();

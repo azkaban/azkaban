@@ -1145,11 +1145,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getProxyUsersForFlow(this.projectManager, flow));
 
     // Finally, if certain jobtypes need specific user credentials we add them to the prefetch list
-    final Set<String> jobTypeUsersForFlow =
-        ContainerImplUtils.getJobTypeUsersForFlow(this.jobTypePrefetchUserMap, jobTypes);
-
-    proxyUsersMap.addAll(jobTypeUsersForFlow);
-
+    if (this.jobTypePrefetchUserMap != null) {
+      final Set<String> jobTypeUsersForFlow =
+          ContainerImplUtils.getJobTypeUsersForFlow(this.jobTypePrefetchUserMap, jobTypes);
+          proxyUsersMap.addAll(jobTypeUsersForFlow);
+      }
     // We add the submit user as if no proxy user is mentioned the submit user is the proxy user.
     proxyUsersMap.add(flow.getSubmitUser());
 
