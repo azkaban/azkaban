@@ -145,13 +145,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.proxyUsers.addAll(proxyUsers);
   }
 
-  public HashSet<String> getProxyUsers() {
+  public Set<String> getProxyUsers() {
     return new HashSet<>(this.proxyUsers);
   }
-  public HashSet<String> getProxyUsersFromFlowObj(){
+  public Set<String> getProxyUsersFromFlowObj(){
     return this.proxyUsersFromFlowObj;
   }
-  public void setProxyUsersFromFlowObj(HashSet<String> proxyUsersMap){
+  public void setProxyUsersFromFlowObj(Set<String> proxyUsersMap){
     this.proxyUsersFromFlowObj = proxyUsersMap;
   }
 

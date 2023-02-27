@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.JobProperties.ENABLE_JOB_SSL;
 import static azkaban.Constants.JobProperties.USER_TO_PROXY;
 
 import azkaban.executor.ExecutableFlow;
@@ -27,6 +28,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -91,7 +93,7 @@ public class ContainerImplUtils {
     return flowNameHashVal % 100 + 1;
   }
 
-  public static HashSet<String> getProxyUsersForFlow(final ProjectManager projectManager,
+  public static Set<String> getProxyUsersForFlow(final ProjectManager projectManager,
       final ExecutableFlow flow) {
     final HashSet<String> proxyUsers = new HashSet<>();
     populateProxyUsersForFlow(flow, flow, projectManager, proxyUsers);
@@ -99,7 +101,7 @@ public class ContainerImplUtils {
   }
 
   public static void populateProxyUsersForFlow(final ExecutableFlow flow,
-      final ExecutableNode node, final ProjectManager projectManager, HashSet<String> proxyUsers) {
+      final ExecutableNode node, final ProjectManager projectManager, Set<String> proxyUsers) {
     if (node instanceof ExecutableFlowBase) {
       final ExecutableFlowBase base = (ExecutableFlowBase) node;
       for (ExecutableNode subNode : base.getExecutableNodes()) {
@@ -129,7 +131,15 @@ public class ContainerImplUtils {
   }
 
   // Extract the proxy users needed from  PREFETCH_JOBTYPE_PROXY_USER_MAP
-  public static HashSet<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
+  // This method is being introduced to be able to assign a specific proxy user that will require
+  // custom credentials for a given job type. This allows the jobtype to perform specific checks
+  // without requiring azkaban executor's credentials to do this, once we enforce POLP defined in
+  // https://github.com/azkaban/azkaban/pull/3216
+  // This will parse the jobTypePrefetchUserMap of the format : "jobtype1,jobtype1_proxyuser;
+  // jobtype2,jobtype2_proxyuser" and add the proxy user for a given job if that jobtype is
+  // present in the flow.
+
+  public static Set<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
       TreeSet<String> jobTypes) {
     HashSet<String> jobTypeProxyUserSet = new HashSet<>();
     StringTokenizer st = new StringTokenizer(jobTypePrefetchUserMap, ";");

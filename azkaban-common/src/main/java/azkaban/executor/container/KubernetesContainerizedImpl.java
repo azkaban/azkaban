@@ -1135,18 +1135,17 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
 
     // Check if flow params has user.to.proxy If it does, skip the next step since this overrides
     // all the project and node properties.
-    HashSet<String> proxyUsersMap = new HashSet<>();
+    Set<String> proxyUsersMap = new HashSet<>();
     if (flowParam != null && flowParam.containsKey("user.to.proxy")) {
       proxyUsersMap.add(flowParam.get("user.to.proxy"));
     }
-    else {
-      // If there were no flow parameters get the proxy users for each node by loading the
-      //project DAG
-      proxyUsersMap.addAll(ContainerImplUtils
-          .getProxyUsersForFlow(this.projectManager, flow));
-    }
+    // If there were no flow parameters get the proxy users for each node by loading the
+    //project DAG
+    proxyUsersMap.addAll(ContainerImplUtils
+        .getProxyUsersForFlow(this.projectManager, flow));
+
     // Finally, if certain jobtypes need specific user credentials we add them to the prefetch list
-    final HashSet<String> jobTypeUsersForFlow =
+    final Set<String> jobTypeUsersForFlow =
         ContainerImplUtils.getJobTypeUsersForFlow(this.jobTypePrefetchUserMap, jobTypes);
 
     proxyUsersMap.addAll(jobTypeUsersForFlow);
@@ -1364,7 +1363,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final VersionSet versionSet)
       throws ExecutorManagerException {
     final ExecutableFlow flow = executableFlow;
-    final HashSet<String> proxyUserList = flow.getProxyUsersFromFlowObj();
+    final Set<String> proxyUserList = flow.getProxyUsersFromFlowObj();
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.

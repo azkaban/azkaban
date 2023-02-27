@@ -164,7 +164,7 @@ public class AzKubernetesV1SpecBuilder {
     }
     public AzKubernetesV1SpecBuilder addSecurityInitContainer(String image,
         ImagePullPolicy imagePullPolicy,
-        final InitContainerType initContainerType, HashSet<String> proxyUserList ) {
+        final InitContainerType initContainerType, Set<String> proxyUserList ) {
         V1EnvVar proxyUserEnv = new V1EnvVarBuilder()
             .withName(initContainerType.mountPathKey)
             .withValue(String.join(",", proxyUserList))
