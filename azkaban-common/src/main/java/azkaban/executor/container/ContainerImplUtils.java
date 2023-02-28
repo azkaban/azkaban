@@ -15,13 +15,23 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.JobProperties.ENABLE_JOB_SSL;
+import static azkaban.Constants.JobProperties.USER_TO_PROXY;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
+import azkaban.utils.Props;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.TreeSet;
 import org.apache.commons.codec.digest.MurmurHash3;
 
@@ -81,5 +91,66 @@ public class ContainerImplUtils {
     // To be utilized for flow deterministic ramp-up
     int flowNameHashVal = Math.abs(MurmurHash3.hash32x86(flowNameBytes));
     return flowNameHashVal % 100 + 1;
+  }
+
+  public static Set<String> getProxyUsersForFlow(final ProjectManager projectManager,
+      final ExecutableFlow flow) {
+    final Set<String> proxyUsers = new HashSet<>();
+    populateProxyUsersForFlow(flow, flow, projectManager, proxyUsers);
+    return proxyUsers;
+  }
+
+  public static void populateProxyUsersForFlow(final ExecutableFlow flow,
+      final ExecutableNode node, final ProjectManager projectManager, Set<String> proxyUsers) {
+    if (node instanceof ExecutableFlowBase) {
+      final ExecutableFlowBase base = (ExecutableFlowBase) node;
+      for (ExecutableNode subNode : base.getExecutableNodes()) {
+        populateProxyUsersForFlow(flow, subNode, projectManager, proxyUsers);
+      }
+    } else {
+      // If a node is disabled, we don't need to initialize its jobType container image when
+      // creating a pod.
+      if (node.getStatus() != Status.DISABLED) {
+        Project project = projectManager.getProject(flow.getProjectId());
+        Flow flowObj = project.getFlow(flow.getFlowId());
+        Props currentNodeProps = projectManager.getProperties(project, flowObj,
+            node.getId(), node.getJobSource());
+        // Get the node level property for proxy user.
+        String userToProxyFromNode = currentNodeProps.getString(USER_TO_PROXY, null);
+        // Get the node level override by user from the UI for proxy user.
+        Props currentNodeJobProps = projectManager.getJobOverrideProperty(project, flowObj,
+            node.getId(), node.getJobSource());
+        String userToProxyFromJobNode = currentNodeJobProps.getString(USER_TO_PROXY, null);
+        if (userToProxyFromJobNode != null) {
+          proxyUsers.add(userToProxyFromJobNode);
+        } else if (userToProxyFromNode != null) {
+          proxyUsers.add(userToProxyFromNode);
+        }
+      }
+    }
+  }
+
+  // Extract the proxy users needed from  PREFETCH_JOBTYPE_PROXY_USER_MAP
+  // This method is being introduced to be able to assign a specific proxy user that will require
+  // custom credentials for a given job type. This allows the jobtype to perform specific checks
+  // without requiring azkaban executor's credentials to do this, once we enforce POLP defined in
+  // https://github.com/azkaban/azkaban/pull/3216
+  // This will parse the jobTypePrefetchUserMap of the format : "jobtype1,jobtype1_proxyuser;
+  // jobtype2,jobtype2_proxyuser" and add the proxy user for a given job if that jobtype is
+  // present in the flow.
+
+  public static Set<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
+      TreeSet<String> jobTypes) {
+    Set<String> jobTypeProxyUserSet = new HashSet<>();
+    StringTokenizer st = new StringTokenizer(jobTypePrefetchUserMap, ";");
+    while (st.hasMoreTokens()) {
+      StringTokenizer stInner = new StringTokenizer(st.nextToken(), ",");
+      String jobType = stInner.nextToken();
+      String jobTypeUser = stInner.nextToken();
+      if (jobTypes.contains(jobType)) {
+        jobTypeProxyUserSet.add(jobTypeUser);
+      }
+    }
+    return jobTypeProxyUserSet;
   }
 }

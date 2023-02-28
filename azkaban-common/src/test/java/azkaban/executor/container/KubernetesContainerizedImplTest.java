@@ -21,6 +21,8 @@ import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.executor.container.ContainerImplUtils.getJobTypeUsersForFlow;
+import static azkaban.executor.container.ContainerImplUtils.populateProxyUsersForFlow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -38,10 +40,12 @@ import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.PodTemplateMergeUtils;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.FlowStatusChangeEventListener;
 import azkaban.executor.Status;
+import azkaban.flow.Flow;
 import azkaban.flow.FlowResourceRecommendation;
 import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.converters.ImageRampupPlanConverter;
@@ -70,7 +74,9 @@ import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
 import azkaban.test.Utils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -90,6 +96,7 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -139,6 +146,8 @@ public class KubernetesContainerizedImplTest {
   public static final String DEPENDENCY1 = "dependency1";
   public static final int CPU_LIMIT_MULTIPLIER = 1;
   public static final int MEMORY_LIMIT_MULTIPLIER = 1;
+  private static final String JOBTYPE_PROXY_USER_MAP = "jobtype1,jobtype1_proxyuser;jobtype2,"
+      + "jobtype2_proxyuser";
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -615,6 +624,81 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals("8.0", versionSet.getVersion("spark").get().getVersion());
     Assert.assertEquals("7.1", versionSet.getVersion("kafkaPush").get().getVersion());
     Assert.assertEquals("6.4", versionSet.getVersion("dependency1").get().getVersion());
+  }
+
+  @Test
+  public void testPopulatingProxyUsersFromProject() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    flow.setProjectId(1);
+    ProjectManager projectManager = mock(ProjectManager.class);
+    Project project = mock(Project.class);
+    Flow flowObj = mock(Flow.class);
+    Set<String> proxyUsers = new HashSet<>();
+
+    ExecutableNode node1 = new ExecutableNode();
+    node1.setId("node1");
+    node1.setJobSource("job1");
+    node1.setStatus(Status.PREPARING);
+    Props currentNodeProps1 = mock(Props.class);
+    Props currentNodeJobProps1 = mock(Props.class);
+
+
+    when(projectManager.getProject(flow.getProjectId())).thenReturn(project);
+    when(project.getFlow(flow.getFlowId())).thenReturn(flowObj);
+    when(projectManager.getProperties(project, flowObj, node1.getId(), node1.getJobSource()))
+        .thenReturn(currentNodeProps1);
+    when(currentNodeProps1.getString("user.to.proxy", null)).thenReturn("testUser1");
+    when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
+        node1.getJobSource()))
+        .thenReturn(currentNodeJobProps1);
+    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
+
+    // First test when there's no job override user.
+    Assert.assertTrue(proxyUsers.contains("testUser1"));
+    Assert.assertEquals(1, proxyUsers.size());
+    proxyUsers.clear();
+    when(currentNodeJobProps1.getString("user.to.proxy", null)).thenReturn("overrideUser");
+    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
+
+    // Second test when there is a job override user.
+    Assert.assertTrue(proxyUsers.contains("overrideUser"));
+    Assert.assertEquals(1, proxyUsers.size());
+
+    // Third test : Adding a second node and testing size of proxy user list to test it has
+    // overrideUser and testUser2
+    ExecutableNode node2 = new ExecutableNode();
+    node2.setId("node2");
+    node2.setJobSource("job2");
+    node2.setStatus(Status.PREPARING);
+    Props currentNodeProps2 = mock(Props.class);
+    Props currentNodeJobProps2 = mock(Props.class);
+    when(projectManager.getProperties(project, flowObj, node2.getId(), node2.getJobSource()))
+        .thenReturn(currentNodeProps2);
+    when(currentNodeProps2.getString("user.to.proxy", null)).thenReturn("testUser2");
+    when(projectManager.getJobOverrideProperty(project, flowObj, node2.getId(),
+        node2.getJobSource()))
+        .thenReturn(currentNodeJobProps2);
+    populateProxyUsersForFlow(flow, node2, projectManager, proxyUsers);
+
+    Assert.assertTrue(proxyUsers.contains("testUser2"));
+    Assert.assertEquals(2, proxyUsers.size());
+  }
+
+  @Test
+  public void testPopulatingJobTypeUsersForFlow() throws Exception {
+    Set<String> proxyUsers;
+    TreeSet<String> jobTypes = new TreeSet<>();
+    jobTypes.add("jobtype1");
+    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    Assert.assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
+    Assert.assertEquals(1, proxyUsers.size());
+
+    jobTypes.add("jobtype2");
+    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    Assert.assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
+    Assert.assertTrue(proxyUsers.contains("jobtype2_proxyuser"));
+    Assert.assertEquals(2, proxyUsers.size());
+
   }
 
   /**
