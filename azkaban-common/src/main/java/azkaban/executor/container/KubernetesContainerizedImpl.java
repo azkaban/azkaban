@@ -354,6 +354,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.azkabanSecurityInitImageName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME,
             DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME);
+    this.vpaFlowCriteria = new VPAFlowCriteria(azkProps, logger);
     this.jobTypePrefetchUserMap =
         this.azkProps.getString(ContainerizedDispatchManagerProperties.PREFETCH_JOBTYPE_PROXY_USER_MAP, null);
     // Add all the job types that are readily available as part of azkaban base image.
