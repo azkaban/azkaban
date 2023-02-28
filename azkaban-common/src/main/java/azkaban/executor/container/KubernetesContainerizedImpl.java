@@ -205,6 +205,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final ProjectManager projectManager;
   private final VPARecommender vpaRecommender;
   private final VPARecommendation maxVpaRecommendation;
+  private final VPAFlowCriteria vpaFlowCriteria;
 
   private static final Logger logger = LoggerFactory
       .getLogger(KubernetesContainerizedImpl.class);
@@ -1327,6 +1328,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return this.vpaEnabled;
   }
 
+  @Override
+  public VPAFlowCriteria getVPAFlowCriteria() {
+    return this.vpaFlowCriteria;
+  }
+
   /**
    * Return a boolean value indicates whether vertical pod autoscaler is enabled for a given flow
    * based on ramp up rate and global vpa enabled flag
@@ -1336,7 +1342,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    */
   private boolean IsVPAEnabledForFlow(ExecutableFlow executableFlow) {
     int flowNameHashValMapping = ContainerImplUtils.getFlowNameHashValMapping(executableFlow);
-    return vpaEnabled && flowNameHashValMapping <= this.vpaRampUp;
+    return vpaEnabled && flowNameHashValMapping <= this.vpaRampUp && this.vpaFlowCriteria.IsVPAEnabledForFlow(executableFlow);
   }
 
   /**

@@ -775,6 +775,8 @@ public class Constants {
         KUBERNETES_VPA_PREFIX + "rampup";
     public static final String KUBERNETES_VPA_ENABLED =
         KUBERNETES_VPA_PREFIX + "enabled";
+    public static final String KUBERNETES_VPA_FLOW_FILTER_FILE =
+        KUBERNETES_VPA_PREFIX + "flow.filter.file";
 
     // Kubernetes Watch related properties
     public static final String KUBERNETES_WATCH_PREFIX = AZKABAN_KUBERNETES_PREFIX + "watch.";
