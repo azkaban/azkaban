@@ -1146,6 +1146,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       case UPDATE_VPA_ENABLED:
         this.containerizedImpl.setVPAEnabled(Boolean.parseBoolean(val));
         break;
+      case RELOAD_VPA_FLOW_FILTER:
+        this.containerizedImpl.getVPAFlowCriteria().reloadFlowFilter();
+        break;
       default:
         break;
     }
@@ -1203,6 +1206,7 @@ enum PropUpdate {
   RELOAD_FLOW_FILTER("reloadFlowFilter"),
   UPDATE_VPA_RAMP_UP("updateVPARampUp"),
   UPDATE_VPA_ENABLED("updateVPAEnabled"),
+  RELOAD_VPA_FLOW_FILTER("reloadVPAFlowFilter"),
   ENABLE_OFFLINE_LOGS_LOADER("enableOfflineLogsLoader");
 
   private final String param;
