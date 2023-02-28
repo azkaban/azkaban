@@ -52,4 +52,11 @@ public interface ContainerizedImpl {
    * @return VPA enabled status
    */
   boolean getVPAEnabled();
+
+  /**
+   * Get the VPA flow criteria.
+   *
+   * @return VPA flow criteria
+   */
+  VPAFlowCriteria getVPAFlowCriteria();
 }
