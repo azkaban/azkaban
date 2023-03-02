@@ -651,14 +651,14 @@ public class KubernetesContainerizedImplTest {
     when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
         node1.getJobSource()))
         .thenReturn(currentNodeJobProps1);
-    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
+    populateProxyUsersForFlow(flow, node1, flowObj, project, projectManager, proxyUsers);
 
     // First test when there's no job override user.
     Assert.assertTrue(proxyUsers.contains("testUser1"));
     Assert.assertEquals(1, proxyUsers.size());
     proxyUsers.clear();
     when(currentNodeJobProps1.getString("user.to.proxy", null)).thenReturn("overrideUser");
-    populateProxyUsersForFlow(flow, node1, projectManager, proxyUsers);
+    populateProxyUsersForFlow(flow, node1, flowObj, project, projectManager, proxyUsers);
 
     // Second test when there is a job override user.
     Assert.assertTrue(proxyUsers.contains("overrideUser"));
@@ -678,7 +678,7 @@ public class KubernetesContainerizedImplTest {
     when(projectManager.getJobOverrideProperty(project, flowObj, node2.getId(),
         node2.getJobSource()))
         .thenReturn(currentNodeJobProps2);
-    populateProxyUsersForFlow(flow, node2, projectManager, proxyUsers);
+    populateProxyUsersForFlow(flow, node2, flowObj, project, projectManager, proxyUsers);
 
     Assert.assertTrue(proxyUsers.contains("testUser2"));
     Assert.assertEquals(2, proxyUsers.size());

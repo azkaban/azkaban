@@ -24,6 +24,7 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
@@ -96,34 +97,49 @@ public class ContainerImplUtils {
   public static Set<String> getProxyUsersForFlow(final ProjectManager projectManager,
       final ExecutableFlow flow) {
     final Set<String> proxyUsers = new HashSet<>();
-    populateProxyUsersForFlow(flow, flow, projectManager, proxyUsers);
+    // Get the project and flow Object that needs to be used repeatedly in the DAG.
+    Project project = projectManager.getProject(flow.getProjectId());
+    Flow flowObj = project.getFlow(flow.getFlowId());
+    
+    // Get the flow properties and check if the proxy user is present in the highest level of the
+    // flow and not the job. Passing Null as the Job name is able to get us the top level flow
+    // properties mentioned for the flow.
+    Props flowProps = projectManager.getProperties(project, flowObj,
+        null, flow.getJobSource());
+    if (flowProps != null) {
+      String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, null);
+      if (proxyUserFromFlowProp != null && !proxyUserFromFlowProp.isEmpty()) {
+        proxyUsers.add(proxyUserFromFlowProp);
+      }
+    }
+    // DFS Walk of the Graph to find all the Proxy Users.
+    populateProxyUsersForFlow(flow, flow, flowObj, project, projectManager, proxyUsers);
     return proxyUsers;
   }
 
   public static void populateProxyUsersForFlow(final ExecutableFlow flow,
-      final ExecutableNode node, final ProjectManager projectManager, Set<String> proxyUsers) {
+      final ExecutableNode node, final Flow flowObj, final Project project,
+      final ProjectManager projectManager, Set<String> proxyUsers) {
     if (node instanceof ExecutableFlowBase) {
       final ExecutableFlowBase base = (ExecutableFlowBase) node;
       for (ExecutableNode subNode : base.getExecutableNodes()) {
-        populateProxyUsersForFlow(flow, subNode, projectManager, proxyUsers);
+        populateProxyUsersForFlow(flow, subNode, flowObj, project, projectManager, proxyUsers);
       }
     } else {
       // If a node is disabled, we don't need to initialize its jobType container image when
       // creating a pod.
       if (node.getStatus() != Status.DISABLED) {
-        Project project = projectManager.getProject(flow.getProjectId());
-        Flow flowObj = project.getFlow(flow.getFlowId());
         Props currentNodeProps = projectManager.getProperties(project, flowObj,
             node.getId(), node.getJobSource());
         // Get the node level property for proxy user.
-        String userToProxyFromNode = currentNodeProps.getString(USER_TO_PROXY, null);
+        String userToProxyFromNode = (currentNodeProps != null) ? currentNodeProps.getString(USER_TO_PROXY, null) : null;
         // Get the node level override by user from the UI for proxy user.
         Props currentNodeJobProps = projectManager.getJobOverrideProperty(project, flowObj,
             node.getId(), node.getJobSource());
-        String userToProxyFromJobNode = currentNodeJobProps.getString(USER_TO_PROXY, null);
-        if (userToProxyFromJobNode != null) {
+        String userToProxyFromJobNode = (currentNodeJobProps != null) ? currentNodeJobProps.getString(USER_TO_PROXY, null) : null;
+        if (userToProxyFromJobNode != null && !userToProxyFromJobNode.isEmpty()) {
           proxyUsers.add(userToProxyFromJobNode);
-        } else if (userToProxyFromNode != null) {
+        } else if (userToProxyFromNode != null && !userToProxyFromJobNode.isEmpty()) {
           proxyUsers.add(userToProxyFromNode);
         }
       }
