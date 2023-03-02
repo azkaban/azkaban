@@ -190,6 +190,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String initMountPathPrefixForDependencies;
   private final String appMountPathPrefixForDependencies;
   private final boolean saTokenAutoMount;
+  private final boolean serviceLinks;
   private final boolean prefetchAllCredentials;
   private static final Set<String> INCLUDED_JOB_TYPES = new TreeSet<>(
       String.CASE_INSENSITIVE_ORDER);
@@ -346,6 +347,9 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getBoolean(
             ContainerizedDispatchManagerProperties.KUBERNETES_POD_SERVICE_ACCOUNT_TOKEN_AUTOMOUNT,
             false);
+    this.serviceLinks =
+        this.azkProps.getBoolean(ContainerizedDispatchManagerProperties.KUBERNETES_POD_SERVICE_LINKS,
+        false);
     this.maxVpaRecommendation = new VPARecommendation(this.maxAllowedCPU,
         this.maxAllowedMemory);
     this.prefetchAllCredentials = this.azkProps
@@ -1075,6 +1079,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     podSpec.automountServiceAccountToken(saTokenAutoMount);
   }
 
+  private void setEnableServiceLinks(V1PodSpec podSpec) {
+    podSpec.enableServiceLinks(serviceLinks);
+  }
+
   /**
    * Creates a pod instance.
    * @param podMetadata metadata to use during pod instantiation
@@ -1144,6 +1152,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         flowResourceRecommendationMap, versionSet,
         jobTypes, this.dependencyTypes, flowParam);
     setSATokenAutomount(podSpec);
+    setEnableServiceLinks(podSpec);
     final V1ObjectMeta podMetadata = createPodMetadata(flow, flowResourceRecommendation.getId(),
         flowParam);
 
