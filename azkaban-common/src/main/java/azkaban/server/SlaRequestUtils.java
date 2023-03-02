@@ -164,6 +164,8 @@ public class SlaRequestUtils {
     if (actions.isEmpty()) {
       throw new ServletException("Unable to create SLA as there is no action set");
     }
+    logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
+        + rule + " Duration:" + duration + " actions:" + actions);
     return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
         .setEmails(emails).setAlertersConfigs(alertersConfigs).createSlaOption();
   }
