@@ -30,7 +30,6 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
-import azkaban.server.AzkabanServer;
 import azkaban.server.session.Session;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.User;
