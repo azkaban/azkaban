@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * SLA option, which can be associated with a flow or job.
@@ -62,12 +63,12 @@ public class SlaOption {
   /**
    * Constructor.
    *
-   * @param type the SLA type.
+   * @param type     the SLA type.
    * @param flowName The name of the flow.
-   * @param jobName The name of the job, if the SLA is for a job.
+   * @param jobName  The name of the job, if the SLA is for a job.
    * @param duration The duration (time to wait before the SLA would take effect).
-   * @param actions actions to take for the SLA.
-   * @param emails list of emails to send an alert to, for the SLA.
+   * @param actions  actions to take for the SLA.
+   * @param emails   list of emails to send an alert to, for the SLA.
    */
   public SlaOption(final SlaType type,
       String flowName, String jobName, Duration duration, Set<SlaAction> actions,
@@ -147,7 +148,9 @@ public class SlaOption {
     if (slaOptions != null) {
       final List<Object> slaOptionsObject = new ArrayList<>();
       for (final SlaOption sla : slaOptions) {
-        if (sla == null) continue;
+        if (sla == null) {
+          continue;
+        }
         slaOptionsObject.add(sla.toObject());
       }
       return slaOptionsObject;
@@ -212,7 +215,7 @@ public class SlaOption {
    * @param componentType component Type
    * @return true/false
    */
-  public boolean isComponentType (SlaType.ComponentType componentType) {
+  public boolean isComponentType(final SlaType.ComponentType componentType) {
     return this.type.getComponent() == componentType;
   }
 
@@ -312,23 +315,24 @@ public class SlaOption {
    * @param options a list of SLA options.
    * @return the job level SLA options.
    */
-  public static List<SlaOption> getJobLevelSLAOptions(List<SlaOption> options) {
-    return filterSLAOptionsByComponentType(options, ComponentType.JOB);
+  public static List<SlaOption> getJobLevelSLAOptions(final List<SlaOption> options,
+      final String jobId) {
+    return filterSLAOptions(options, ComponentType.JOB, jobId);
   }
 
   /**
    * @param options a list of SLA options.
    * @return the flow level SLA options.
    */
-  public static List<SlaOption> getFlowLevelSLAOptions(List<SlaOption> options) {
-    return filterSLAOptionsByComponentType(options, ComponentType.FLOW);
+  public static List<SlaOption> getFlowLevelSLAOptions(final List<SlaOption> options) {
+    return filterSLAOptions(options, ComponentType.FLOW, null);
   }
 
-  private static List<SlaOption> filterSLAOptionsByComponentType(
-      List<SlaOption> options, ComponentType componentType) {
-    return options.stream()
-        .filter(option -> option.isComponentType(componentType))
-        .collect(Collectors.toList());
+  private static List<SlaOption> filterSLAOptions(final List<SlaOption> options,
+      final ComponentType componentType, final String jobId) {
+    return options.stream().filter(
+        option -> option.isComponentType(componentType) && StringUtils.equals(option.getJobName(),
+            jobId)).collect(Collectors.toList());
   }
 
   @Override
@@ -376,7 +380,7 @@ public class SlaOption {
     final private String flowName;
     private String jobName = null;
     final private Duration duration;
-    private Set<SlaAction> actions;
+    private final Set<SlaAction> actions;
     private List<String> emails = null;
     private Map<String, Map<String, List<String>>> alertersConfigs = null;
 
