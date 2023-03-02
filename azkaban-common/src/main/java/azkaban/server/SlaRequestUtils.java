@@ -19,6 +19,7 @@ import static azkaban.server.HttpRequestUtils.getMapParamGroup;
 import static azkaban.server.HttpRequestUtils.getParam;
 import static azkaban.server.HttpRequestUtils.getParamGroup;
 
+import azkaban.Constants;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaOption.SlaOptionBuilder;
@@ -50,8 +51,7 @@ public class SlaRequestUtils {
     final Map<String, String> settings = getParamGroup(req, settingsParamName);
     final Map<String, Map<String, String>> alertersParams =
         getMapParamGroup(req, PARAM_SLA_ALERTERS);
-    final String slaEmailsStr = getParam(req, PARAM_SLA_EMAILS,
-        null);
+    final String slaEmailsStr = getParam(req, PARAM_SLA_EMAILS, null);
 
     // Don't allow combining old & new in the same request:
     // This ensures that there's no need to handle possible conflicts between 'slaEmails' and
@@ -112,18 +112,11 @@ public class SlaRequestUtils {
     if (str == null || str.trim().isEmpty()) {
       return Collections.emptyList();
     }
-    String delimRegex = "\\s*,\\s*|\\s*;\\s*";
+    String delimRegex = Constants.ConfigurationKeys.ALERTER_PARAM_VALUE_DELIMITER;
     if (spacesAreDelims) {
       delimRegex = "\\s*,\\s*|\\s*;\\s*|\\s+";
     }
     return Arrays.asList(str.trim().split(delimRegex));
-  }
-
-  public static Set<String> getSetFromString(final String val) {
-    if (val == null || val.trim().length() == 0) {
-      return Collections.emptySet();
-    }
-    return new HashSet<>(Arrays.asList(val.split("\\s*,\\s*")));
   }
 
   private static SlaOption parseSlaSetting(final String set, final String flowName,
@@ -171,8 +164,6 @@ public class SlaRequestUtils {
     if (actions.isEmpty()) {
       throw new ServletException("Unable to create SLA as there is no action set");
     }
-    logger.info("Parsing sla as id:" + id + " type:" + type + " sla:"
-        + rule + " Duration:" + duration + " actions:" + actions);
     return new SlaOptionBuilder(type, flowName, dur).setJobName(id).setActions(actions)
         .setEmails(emails).setAlertersConfigs(alertersConfigs).createSlaOption();
   }
