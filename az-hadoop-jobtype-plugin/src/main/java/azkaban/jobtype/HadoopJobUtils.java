@@ -98,7 +98,7 @@ public class HadoopJobUtils {
   // disabling the whole yarn kill feature, skip killing the applications
   public static final String YARN_KILL_DISABLED = "disabled";
 
-  protected static final int APPLICATION_TAG_MAX_LENGTH = 100;
+  protected static final int APPLICATION_TAG_MAX_LENGTH = 250;
   // Root of folder in storage containing startup dependencies
   public static final String DEPENDENCY_STORAGE_ROOT_PATH_PROP = "dependency.storage.path.prefix";
   // Azkaban property for listing additional namenodes for delegation tokens

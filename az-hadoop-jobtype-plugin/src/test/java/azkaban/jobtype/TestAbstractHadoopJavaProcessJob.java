@@ -35,7 +35,7 @@ public class TestAbstractHadoopJavaProcessJob {
   public void testLongWorkflowIdTag() {
     Props props = new Props();
     StringBuffer flowIdBuffer = new StringBuffer("flow-id");
-    for (int i = 0; i < 150; i++) {
+    for (int i = 0; i < 350; i++) {
       flowIdBuffer.append("f");
     }
     props.put(CommonJobProperties.EXEC_ID, "123");
