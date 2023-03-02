@@ -100,10 +100,11 @@ public class ContainerImplUtils {
     // Get the project and flow Object that needs to be used repeatedly in the DAG.
     Project project = projectManager.getProject(flow.getProjectId());
     Flow flowObj = project.getFlow(flow.getFlowId());
-    
-    // Get the flow properties and check if the proxy user is present in the highest level of the
-    // flow and not the job. Passing Null as the Job name is able to get us the top level flow
-    // properties mentioned for the flow.
+
+    /* Get the flow properties and check if the proxy user is present in the highest level of the
+     flow and not the job. Passing null as the job name is able to get us the top level flow
+     properties mentioned for the flow.*/
+
     Props flowProps = projectManager.getProperties(project, flowObj,
         null, flow.getJobSource());
     if (flowProps != null) {
@@ -146,14 +147,15 @@ public class ContainerImplUtils {
     }
   }
 
-  // Extract the proxy users needed from  PREFETCH_JOBTYPE_PROXY_USER_MAP
-  // This method is being introduced to be able to assign a specific proxy user that will require
-  // custom credentials for a given job type. This allows the jobtype to perform specific checks
-  // without requiring azkaban executor's credentials to do this, once we enforce POLP defined in
-  // https://github.com/azkaban/azkaban/pull/3216
-  // This will parse the jobTypePrefetchUserMap of the format : "jobtype1,jobtype1_proxyuser;
-  // jobtype2,jobtype2_proxyuser" and add the proxy user for a given job if that jobtype is
-  // present in the flow.
+/* Extract the proxy users needed from  PREFETCH_JOBTYPE_PROXY_USER_MAP
+   This method is being introduced to be able to assign a specific proxy user that will require
+   custom credentials for a given job type. This allows the jobtype to perform specific checks
+   without requiring azkaban executor's credentials to do this, once we enforce POLP defined in
+   https://github.com/azkaban/azkaban/pull/3216
+   This will parse the jobTypePrefetchUserMap of the format : "jobtype1,jobtype1_proxyuser;
+   jobtype2,jobtype2_proxyuser" and add the proxy user for a given job if that jobtype is
+   present in the flow.
+ */
 
   public static Set<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
       TreeSet<String> jobTypes) {

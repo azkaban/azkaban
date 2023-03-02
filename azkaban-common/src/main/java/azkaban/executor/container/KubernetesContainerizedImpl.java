@@ -1159,12 +1159,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final boolean prefetchAllProxyUserCredentials =
         flowParam != null && flowParam.containsKey(FlowParameters.PROXY_USER_PREFETCH_ALL) &&
             Boolean.parseBoolean(flowParam.get(FlowParameters.PROXY_USER_PREFETCH_ALL));
-
-    /* As an optimization for not walking through the DAG and making DB queries for large DAGs we
+    /*
+     As an optimization for not walking through the DAG and making DB queries for large DAGs we
      try to check if the proxy users list from the project page is less then a certain threshold.
      If it is, less than this threshold, we simply add all of them. This configuration will be
      custom to a given environment. An option to fetch all of them via the project page is
-     also provided with a flow parameter. */
+     also provided with a flow parameter.
+     */
 
     if (flow.getProxyUsers().size() > this.proxyUserPrefetchThreshold || !prefetchAllProxyUserCredentials) {
         proxyUsersMap.addAll(ContainerImplUtils
