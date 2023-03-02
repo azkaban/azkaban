@@ -93,6 +93,18 @@ public class SlaRequestUtils {
     return slaOptions;
   }
 
+  /**
+   * Transforms a String Map that looks like
+   * {
+   *  "key1", "value1,value2,value3"
+   *  "key2", "value4,value5,value6"
+   * }
+   * into a Map like this:
+   * {
+   *  "key1", ["value1", "value2", "value3"]
+   *  "key2", ["value4", "value5", "value6"]
+   * }
+   */
   private static Map<String, Map<String, List<String>>> getStringListMapFromStringMap(
       final Map<String, Map<String, String>> alertersConfsFromReqParams) {
     final Map<String, Map<String, List<String>>> result = new HashMap<>();
@@ -122,7 +134,6 @@ public class SlaRequestUtils {
   private static SlaOption parseSlaSetting(final String set, final String flowName,
       final List<String> emails,
       final Map<String, Map<String, List<String>>> alertersConfigs) throws ServletException {
-    logger.info("Trying to parse sla with the following set: " + set);
 
     final String[] parts = set.split(",", -1);
     final String id = parts[0];
