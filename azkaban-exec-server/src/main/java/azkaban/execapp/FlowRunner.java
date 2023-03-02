@@ -1724,6 +1724,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.FLOW_NAME, flow.getNestedId());
       if (! (flow instanceof ExecutableFlow)) {
         metaData.put(EventReporterConstants.IS_ROOT_FLOW, "false");
+      } else {
+        metaData.put(EventReporterConstants.IS_ROOT_FLOW, "true");
       }
       // Azkaban executor hostname
       metaData.put(EventReporterConstants.AZ_HOST, props.getString(AZKABAN_SERVER_HOST_NAME,
