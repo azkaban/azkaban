@@ -171,6 +171,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     }
   }
 
+  @Override
   public List<Trigger> getTriggers() {
     return new ArrayList<>(triggerIdMap.values());
   }

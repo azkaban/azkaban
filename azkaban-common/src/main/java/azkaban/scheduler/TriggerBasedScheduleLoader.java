@@ -33,12 +33,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
-  private static final Logger logger = Logger
-      .getLogger(TriggerBasedScheduleLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(TriggerBasedScheduleLoader.class);
 
   private final TriggerManagerAdapter triggerManager;
 
@@ -221,8 +222,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           Math.max(scheduleIdToLastCheckTime.getOrDefault(t.getTriggerId(), -1l), t.getLastModifyTime()));
       final Schedule s = triggerToSchedule(t);
       schedules.add(s);
-      logger.info("loaded schedule for "
-          + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");
+      logger.debug("loaded schedule for {} (project_id: {}, flow_id: {})",
+          s.getScheduleId(), s.getProjectId(), s.getFlowName());
     }
     return schedules;
   }
@@ -237,4 +238,19 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     return Optional.empty();
   }
 
+  /**
+   * Loading all triggers from triggerManager and converted into Schedule.
+   * */
+  @Override
+  public List<Schedule> loadAllSchedules() throws ScheduleManagerException {
+    final List<Trigger> triggers = this.triggerManager.getTriggers();
+    final List<Schedule> schedules = new ArrayList<>();
+    for (final Trigger t : triggers) {
+      final Schedule s = triggerToSchedule(t);
+      schedules.add(s);
+      logger.debug("loaded schedule for {} (project_id: {}, flow_id: {})",
+          s.getScheduleId(), s.getProjectId(), s.getFlowName());
+    }
+    return schedules;
+  }
 }
