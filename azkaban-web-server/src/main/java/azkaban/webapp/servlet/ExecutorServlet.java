@@ -52,6 +52,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -660,10 +661,23 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", flow.getSuccessEmails());
     ret.put("failureEmails", flow.getFailureEmails());
-    FlowProps flowPropsFile = flow.getAllFlowProps().get(flow.getId() + "/flow.properties");
+    String flowPropsPath = flow.getId() + "/flow.properties";
+    FlowProps flowPropsFile = flow.getAllFlowProps().get(flowPropsPath);
     if (flowPropsFile != null) {
-      Props flowProps = flowPropsFile.getProps().local();
-      ret.put("flowParam", new TreeMap<>(flowProps.getFlattened()));
+      try {
+        if (flowPropsFile.getProps() == null) {
+          Props props = getApplication().getServerProps();
+          File rootDir = new File(props.getString("azkaban.project.dir", "projects"));
+          File projectDir = new File(rootDir, project.getId() + "." + project.getVersion());
+          File installedFlowPropsFile = new File(projectDir, flowPropsPath);
+          Props propsFromFile = new Props(null, installedFlowPropsFile);
+          flowPropsFile.setProps(propsFromFile);
+        }
+        Props flowProps = flowPropsFile.getProps().local();
+        ret.put("flowParam", new TreeMap<>(flowProps.getFlattened()));
+      } catch (Exception e) {
+        logger.warn("Unable to load: " + flowPropsPath, e);
+      }
     }
 
     Schedule sflow = null;
