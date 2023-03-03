@@ -95,6 +95,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -449,6 +451,9 @@ public class KubernetesContainerizedImplTest {
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
         .thenReturn(getVersionMap());
+    //Adding empty string to ensure here and asserting they are removed later.
+    flow.setProxyUsersFromFlowObj(new HashSet<>(Arrays.asList("user1",
+        "")));
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
     assert (jobTypes.contains("command"));
@@ -482,6 +487,8 @@ public class KubernetesContainerizedImplTest {
 
     assert (podSpec != null);
     assert (podMetadata != null);
+    // Verifying if empty string were removed from the list
+    Assert.assertEquals(1 ,flow.getProxyUsersFromFlowObj().size());
 
     final V1Pod pod1 =
         this.kubernetesContainerizedImpl.createPodFromMetadataAndSpec(podMetadata, podSpec);
@@ -633,35 +640,40 @@ public class KubernetesContainerizedImplTest {
     ProjectManager projectManager = mock(ProjectManager.class);
     Project project = mock(Project.class);
     Flow flowObj = mock(Flow.class);
+    when(flowObj.toString()).thenReturn(flow.getFlowName());
     Set<String> proxyUsers = new HashSet<>();
 
     ExecutableNode node1 = new ExecutableNode();
     node1.setId("node1");
     node1.setJobSource("job1");
     node1.setStatus(Status.PREPARING);
-    Props currentNodeProps1 = mock(Props.class);
-    Props currentNodeJobProps1 = mock(Props.class);
-
-
+    Props currentNodeProps1 = new Props();
+    Props currentNodeJobProps1 = new Props();
+    currentNodeProps1.put("user.to.proxy", "testUser1");
+    currentNodeJobProps1.put("user.to.proxy", "");
     when(projectManager.getProject(flow.getProjectId())).thenReturn(project);
     when(project.getFlow(flow.getFlowId())).thenReturn(flowObj);
     when(projectManager.getProperties(project, flowObj, node1.getId(), node1.getJobSource()))
         .thenReturn(currentNodeProps1);
-    when(currentNodeProps1.getString("user.to.proxy", null)).thenReturn("testUser1");
+    //when(currentNodeProps1.getString("user.to.proxy", "")).thenReturn("testUser1");
     when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
         node1.getJobSource()))
         .thenReturn(currentNodeJobProps1);
-    populateProxyUsersForFlow(flow, node1, flowObj, project, projectManager, proxyUsers);
+    //when(currentNodeJobProps1.getString("user.to.proxy", "")).thenReturn("");
+    populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
 
     // First test when there's no job override user.
     Assert.assertTrue(proxyUsers.contains("testUser1"));
+    proxyUsers.removeAll(Collections.singleton(""));
     Assert.assertEquals(1, proxyUsers.size());
     proxyUsers.clear();
-    when(currentNodeJobProps1.getString("user.to.proxy", null)).thenReturn("overrideUser");
-    populateProxyUsersForFlow(flow, node1, flowObj, project, projectManager, proxyUsers);
+    //when(currentNodeJobProps1.getString("user.to.proxy", "")).thenReturn("overrideUser");
+    currentNodeJobProps1.put("user.to.proxy", "overrideUser");
+    populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
 
     // Second test when there is a job override user.
     Assert.assertTrue(proxyUsers.contains("overrideUser"));
+    proxyUsers.removeAll(Collections.singleton(""));
     Assert.assertEquals(1, proxyUsers.size());
 
     // Third test : Adding a second node and testing size of proxy user list to test it has
@@ -670,17 +682,21 @@ public class KubernetesContainerizedImplTest {
     node2.setId("node2");
     node2.setJobSource("job2");
     node2.setStatus(Status.PREPARING);
-    Props currentNodeProps2 = mock(Props.class);
-    Props currentNodeJobProps2 = mock(Props.class);
+    Props currentNodeProps2 = new Props();
+    Props currentNodeJobProps2 = new Props();
     when(projectManager.getProperties(project, flowObj, node2.getId(), node2.getJobSource()))
         .thenReturn(currentNodeProps2);
-    when(currentNodeProps2.getString("user.to.proxy", null)).thenReturn("testUser2");
+    currentNodeProps2.put("user.to.proxy", "testUser2");
+    currentNodeJobProps2.put("user.to.proxy", "");
+    //when(currentNodeProps2.getString("user.to.proxy", "")).thenReturn("testUser2");
+
     when(projectManager.getJobOverrideProperty(project, flowObj, node2.getId(),
         node2.getJobSource()))
         .thenReturn(currentNodeJobProps2);
-    populateProxyUsersForFlow(flow, node2, flowObj, project, projectManager, proxyUsers);
+    populateProxyUsersForFlow(node2, flowObj, project, projectManager, proxyUsers);
 
     Assert.assertTrue(proxyUsers.contains("testUser2"));
+    proxyUsers.removeAll(Collections.singleton(""));
     Assert.assertEquals(2, proxyUsers.size());
   }
 

@@ -106,25 +106,24 @@ public class ContainerImplUtils {
      properties mentioned for the flow.*/
 
     Props flowProps = projectManager.getProperties(project, flowObj,
-        null, flow.getJobSource());
+        null, flow.getFlowName());
     if (flowProps != null) {
-      String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, null);
-      if (proxyUserFromFlowProp != null && !proxyUserFromFlowProp.isEmpty()) {
+      String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, "");
+      if (!proxyUserFromFlowProp.isEmpty()) {
         proxyUsers.add(proxyUserFromFlowProp);
       }
     }
     // DFS Walk of the Graph to find all the Proxy Users.
-    populateProxyUsersForFlow(flow, flow, flowObj, project, projectManager, proxyUsers);
+    populateProxyUsersForFlow(flow, flowObj, project, projectManager, proxyUsers);
     return proxyUsers;
   }
 
-  public static void populateProxyUsersForFlow(final ExecutableFlow flow,
-      final ExecutableNode node, final Flow flowObj, final Project project,
-      final ProjectManager projectManager, Set<String> proxyUsers) {
+  public static void populateProxyUsersForFlow(final ExecutableNode node, final Flow flowObj,
+      final Project project, final ProjectManager projectManager, Set<String> proxyUsers) {
     if (node instanceof ExecutableFlowBase) {
       final ExecutableFlowBase base = (ExecutableFlowBase) node;
       for (ExecutableNode subNode : base.getExecutableNodes()) {
-        populateProxyUsersForFlow(flow, subNode, flowObj, project, projectManager, proxyUsers);
+        populateProxyUsersForFlow(subNode, flowObj, project, projectManager, proxyUsers);
       }
     } else {
       // If a node is disabled, we don't need to initialize its jobType container image when
@@ -133,16 +132,15 @@ public class ContainerImplUtils {
         Props currentNodeProps = projectManager.getProperties(project, flowObj,
             node.getId(), node.getJobSource());
         // Get the node level property for proxy user.
-        String userToProxyFromNode = (currentNodeProps != null) ? currentNodeProps.getString(USER_TO_PROXY, null) : null;
+        String userToProxyFromNode = currentNodeProps.getString(USER_TO_PROXY, "");
         // Get the node level override by user from the UI for proxy user.
         Props currentNodeJobProps = projectManager.getJobOverrideProperty(project, flowObj,
             node.getId(), node.getJobSource());
-        String userToProxyFromJobNode = (currentNodeJobProps != null) ? currentNodeJobProps.getString(USER_TO_PROXY, null) : null;
-        if (userToProxyFromJobNode != null && !userToProxyFromJobNode.isEmpty()) {
+        String userToProxyFromJobNode = currentNodeJobProps.getString(USER_TO_PROXY, "");
+        if (!userToProxyFromJobNode.isEmpty()) {
           proxyUsers.add(userToProxyFromJobNode);
-        } else if (userToProxyFromNode != null && !userToProxyFromJobNode.isEmpty()) {
+        } else if (!userToProxyFromNode.isEmpty())
           proxyUsers.add(userToProxyFromNode);
-        }
       }
     }
   }

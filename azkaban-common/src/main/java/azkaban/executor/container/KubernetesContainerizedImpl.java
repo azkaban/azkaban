@@ -79,6 +79,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -1167,11 +1168,13 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
      also provided with a flow parameter.
      */
 
-    if (flow.getProxyUsers().size() > this.proxyUserPrefetchThreshold || !prefetchAllProxyUserCredentials) {
-        proxyUsersMap.addAll(ContainerImplUtils
-            .getProxyUsersForFlow(this.projectManager, flow));
-      }
-      else{
+    if (flow.getProxyUsers().size() > this.proxyUserPrefetchThreshold || prefetchAllProxyUserCredentials) {
+      Instant proxyUserFetchStartTime = Instant.now();
+      proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
+      logger.info("Fetching proxy users from DAG and took: {}",
+          Duration.between(proxyUserFetchStartTime, Instant.now()).getSeconds());
+      } else{
+        logger.info("Fetched proxy users from permissions page");
         proxyUsersMap.addAll(flow.getProxyUsers());
       }
     // If certain jobtypes need specific user credentials we add them to the prefetch list
@@ -1187,8 +1190,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     // Finally, set the collected list of users as a flow object variable to be accessed while
     // creating pod spec template.
     flow.setProxyUsersFromFlowObj(proxyUsersMap);
-    logger.info("Proxy Users determined for this flow are " + String.join(", ", proxyUsersMap));
-
+    logger.info("Proxy Users determined for the flow {} are {}", flow.getFlowId(),
+        String.join(", ", proxyUsersMap));
     // Create all image types by adding azkaban base image, azkaban config and all job types for
     // the flow.
     final Set<String> allImageTypes = new TreeSet<>();
@@ -1211,6 +1214,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         final AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate
             .getInstance(this.podTemplatePath);
         V1PodSpec podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
+        podSpecFromTemplate.getInitContainers();
         logPodSpecYaml(executionId, podSpecFromTemplate, flowParam, "ExecId: {}, PodSpec template "
             + "before merge: {}");
         PodTemplateMergeUtils.mergePodSpec(podSpec, podSpecFromTemplate);
@@ -1401,6 +1405,10 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       throws ExecutorManagerException {
     final ExecutableFlow flow = executableFlow;
     final Set<String> proxyUserList = flow.getProxyUsersFromFlowObj();
+    // Remove all empty strings and null in this set.
+    if (proxyUserList != null ) {
+      proxyUserList.removeAll(Collections.singleton(""));
+    }
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.
@@ -1430,7 +1438,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             dependency + " in versionSet");
       }
     }
-    if (this.prefetchAllCredentials) {
+    if (this.prefetchAllCredentials && proxyUserList.size() > 0) {
       try {
         final String imageFullPath =
             versionSet.getVersion(this.azkabanSecurityInitImageName).get().pathWithVersion();
