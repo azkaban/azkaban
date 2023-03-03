@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.sla.SlaOption.SlaOptionBuilder;
 import azkaban.utils.JSONUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -46,8 +47,8 @@ public class SlaOptionTest {
     final Set<SlaAction> actions = Collections.singleton(SlaAction.ALERT);
     final List<String> emails = Collections.singletonList("test@email.com");
     final Duration duration = Duration.ofHours(1);
-    final Map<String, Map<String, String>> alertersConfigs = ImmutableMap.of(
-        "myAlerter", ImmutableMap.of("prop1", "value1"));
+    final Map<String, Map<String, List<String>>> alertersConfigs = ImmutableMap.of(
+        "myAlerter", ImmutableMap.of("prop1", ImmutableList.of("value1")));
     // negative test: null flow
     assertThatThrownBy(() -> new SlaOption(SlaType.JOB_FINISH, null, job, duration,
         actions, emails, alertersConfigs)).isInstanceOf(NullPointerException.class);

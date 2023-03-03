@@ -219,7 +219,7 @@ public final class HttpRequestUtilsTest {
     final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "test-flow",
         "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
         ImmutableList.of("sla1@example.com", "sla2@example.com"), ImmutableMap.of(
-            "myAlerter", ImmutableMap.of("prop1", "value1")
+            "myAlerter", ImmutableMap.of("prop1", ImmutableList.of("value1"))
     )));
     Assert.assertEquals(expected, slaOptions);
   }

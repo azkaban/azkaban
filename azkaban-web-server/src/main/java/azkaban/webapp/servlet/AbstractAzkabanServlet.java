@@ -19,6 +19,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
+import azkaban.utils.HTMLFormElement.HTMLFormElementType;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
@@ -294,6 +295,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("System", System.class);
     page.add("TimeUtils", TimeUtils.class);
     page.add("WebUtils", WebUtils.class);
+    page.add("HTMLFormElementType_TEXTAREA", HTMLFormElementType.TEXTAREA);
 
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());

@@ -19,16 +19,21 @@ import static azkaban.server.HttpRequestUtils.getMapParamGroup;
 import static azkaban.server.HttpRequestUtils.getParam;
 import static azkaban.server.HttpRequestUtils.getParamGroup;
 
+import azkaban.Constants;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaOption.SlaOptionBuilder;
 import azkaban.sla.SlaType;
+import azkaban.utils.Emailer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
@@ -44,38 +49,41 @@ public class SlaRequestUtils {
   public static List<SlaOption> parseSlaOptions(final HttpServletRequest req, final String flowName,
       final String settingsParamName) throws ServletException {
     final Map<String, String> settings = getParamGroup(req, settingsParamName);
-    final Map<String, Map<String, String>> alertersConfigs = getMapParamGroup(req, PARAM_SLA_ALERTERS);
-    String slaEmailsStr = getParam(req, PARAM_SLA_EMAILS, null);
+    final Map<String, Map<String, String>> alertersParams =
+        getMapParamGroup(req, PARAM_SLA_ALERTERS);
+    final String slaEmailsStr = getParam(req, PARAM_SLA_EMAILS, null);
 
     // Don't allow combining old & new in the same request:
     // This ensures that there's no need to handle possible conflicts between 'slaEmails' and
     // 'slaAlerters[email][recipients]'.
-    if (slaEmailsStr != null && !alertersConfigs.isEmpty()) {
+    if (slaEmailsStr != null && !alertersParams.isEmpty()) {
       throw new ServletException("The legacy slaEmails param is not allowed in combination with "
           + "the slaAlerters param group. Please, set 'slaAlerters[email][recipients]' instead of "
           + "'slaEmails'.");
     }
 
-    // TODO ypadron: migrate legacy email alert handling to the alerter plugins approach.
-    //  Treat email is a built-in alerter.
-    final Map<String, String> emailAlerterConfigs = alertersConfigs.remove("email");
-    if (emailAlerterConfigs != null) {
-      slaEmailsStr = emailAlerterConfigs.get("recipients");
+    if (slaEmailsStr != null) {
+      alertersParams.put(Emailer.ALERTER_NAME, Collections.singletonMap(
+          Emailer.RECIPIENTS_VIEW_PARAM, slaEmailsStr));
     }
-
-    final List<String> emailAlerterRecipients;
-    if (slaEmailsStr == null) {
-      emailAlerterRecipients = Arrays.asList();
-    } else {
-      final String[] emailSplit = slaEmailsStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-      emailAlerterRecipients = Arrays.asList(emailSplit);
+    final Map<String, Map<String, List<String>>> alertersConfigs =
+        getStringListMapFromStringMap(alertersParams);
+    // TODO ypadron: migrate legacy email alert handling to the alerter plugins approach.
+    //  Treat email as a built-in alerter.
+    List<String> emailAlerterRecipients = Collections.emptyList();
+    final Map<String, List<String>> emailAlerterConfigs =
+        alertersConfigs.remove(Emailer.ALERTER_NAME);
+    if (emailAlerterConfigs != null) {
+      emailAlerterRecipients = emailAlerterConfigs.getOrDefault(Emailer.RECIPIENTS_VIEW_PARAM,
+          Collections.emptyList());
     }
 
     final List<SlaOption> slaOptions = new ArrayList<>();
     for (final String set : settings.keySet()) {
       final SlaOption slaOption;
       try {
-        slaOption = parseSlaSetting(settings.get(set), flowName, emailAlerterRecipients, alertersConfigs);
+        slaOption = parseSlaSetting(settings.get(set), flowName, emailAlerterRecipients,
+            alertersConfigs);
       } catch (final Exception e) {
         throw new ServletException(
             "Error parsing SLA setting '" + settings.get(set) + "': " + e.toString(), e);
@@ -85,9 +93,47 @@ public class SlaRequestUtils {
     return slaOptions;
   }
 
-  private static SlaOption parseSlaSetting(final String set, final String flowName, final List<String> emails,
-      final Map<String, Map<String, String>> alertersConfigs) throws ServletException {
-    logger.info("Trying to parse sla with the following set: " + set);
+  /**
+   * Transforms a String Map that looks like
+   * {
+   *  "key1", "value1,value2,value3"
+   *  "key2", "value4,value5,value6"
+   * }
+   * into a Map like this:
+   * {
+   *  "key1", ["value1", "value2", "value3"]
+   *  "key2", ["value4", "value5", "value6"]
+   * }
+   */
+  private static Map<String, Map<String, List<String>>> getStringListMapFromStringMap(
+      final Map<String, Map<String, String>> alertersConfsFromReqParams) {
+    final Map<String, Map<String, List<String>>> result = new HashMap<>();
+    for (final String alerter : alertersConfsFromReqParams.keySet()) {
+      final Map<String, String> alerterConfigs = alertersConfsFromReqParams.get(alerter);
+      final Map<String, List<String>> processedConfigs = new HashMap<>();
+      for (final String propKey : alerterConfigs.keySet()) {
+        processedConfigs.put(propKey, getListFromString(alerterConfigs.get(propKey),
+            alerter.equals(Emailer.ALERTER_NAME)));
+      }
+      result.put(alerter, processedConfigs);
+    }
+    return result;
+  }
+
+  private static List<String> getListFromString(final String str, final boolean spacesAreDelims) {
+    if (str == null || str.trim().isEmpty()) {
+      return Collections.emptyList();
+    }
+    String delimRegex = Constants.ConfigurationKeys.ALERTER_PARAM_VALUE_DELIMITER;
+    if (spacesAreDelims) {
+      delimRegex = "\\s*,\\s*|\\s*;\\s*|\\s+";
+    }
+    return Arrays.asList(str.trim().split(delimRegex));
+  }
+
+  private static SlaOption parseSlaSetting(final String set, final String flowName,
+      final List<String> emails,
+      final Map<String, Map<String, List<String>>> alertersConfigs) throws ServletException {
 
     final String[] parts = set.split(",", -1);
     final String id = parts[0];
