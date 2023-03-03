@@ -1163,12 +1163,12 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     /*
      As an optimization for not walking through the DAG and making DB queries for large DAGs we
      try to check if the proxy users list from the project page is less then a certain threshold.
-     If it is, less than this threshold, we simply add all of them. This configuration will be
+     If it is less than this threshold, we simply add all of them. This configuration will be
      custom to a given environment. An option to fetch all of them via the project page is
      also provided with a flow parameter.
      */
 
-    if (flow.getProxyUsers().size() > this.proxyUserPrefetchThreshold || prefetchAllProxyUserCredentials) {
+    if (flow.getProxyUsers().size() > this.proxyUserPrefetchThreshold || !prefetchAllProxyUserCredentials) {
       Instant proxyUserFetchStartTime = Instant.now();
       proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
       logger.info("Fetching proxy users from DAG and took: {}",
@@ -1406,9 +1406,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final ExecutableFlow flow = executableFlow;
     final Set<String> proxyUserList = flow.getProxyUsersFromFlowObj();
     // Remove all empty strings and null in this set.
-    if (proxyUserList != null ) {
-      proxyUserList.removeAll(Collections.singleton(""));
-    }
+    proxyUserList.removeAll(Collections.singleton(""));
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.
