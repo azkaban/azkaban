@@ -26,7 +26,7 @@
   <script type="text/javascript" src="${context}/js/moment.min.js"></script>
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js?v=1588045179"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js?v=1677633459"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/scheduled.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
   <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
@@ -152,7 +152,7 @@
                   </button>
                 </td>
                 <td>
-                  <button type="button" id="addSlaBtn" class="btn btn-sm btn-primary"
+                  <button type="button" class="btn btn-sm btn-primary addSlaBtn"
                           onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')">
                     Set SLA
                   </button>

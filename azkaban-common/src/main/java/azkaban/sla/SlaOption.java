@@ -57,7 +57,7 @@ public class SlaOption {
   final private Duration duration;
   final private Set<SlaAction> actions;
   final private ImmutableList<String> emails;
-  final private ImmutableMap<String, Map<String, String>> alertersConfigs;
+  final private ImmutableMap<String, Map<String, List<String>>> alertersConfigs;
 
   /**
    * Constructor.
@@ -71,7 +71,7 @@ public class SlaOption {
    */
   public SlaOption(final SlaType type,
       String flowName, String jobName, Duration duration, Set<SlaAction> actions,
-      List<String> emails, Map<String, Map<String, String>> alertersConfigs) {
+      List<String> emails, Map<String, Map<String, List<String>>> alertersConfigs) {
     Preconditions.checkNotNull(type, "type is null");
     Preconditions.checkNotNull(actions, "actions is null");
     Preconditions.checkState(actions.size() > 0, "An action must be specified for the SLA");
@@ -137,8 +137,9 @@ public class SlaOption {
     this.emails = ImmutableList.copyOf(
         (List<String>) slaOption.getInfo().get(SlaOptionDeprecated.INFO_EMAIL_LIST));
 
-    Map<String, Map<String, String>> alertersConfs = (Map<String, Map<String, String>>) slaOption
-        .getInfo().getOrDefault(SlaOptionDeprecated.INFO_ALERTERS_CONFIGS, ImmutableMap.of());
+    Map<String, Map<String, List<String>>> alertersConfs =
+        (Map<String, Map<String, List<String>>>) slaOption.getInfo()
+            .getOrDefault(SlaOptionDeprecated.INFO_ALERTERS_CONFIGS, ImmutableMap.of());
     this.alertersConfigs = ImmutableMap.copyOf(alertersConfs);
   }
 
@@ -201,7 +202,7 @@ public class SlaOption {
     return emails;
   }
 
-  public Map<String, Map<String, String>> getAlertersConfigs() {
+  public Map<String, Map<String, List<String>>> getAlertersConfigs() {
     return this.alertersConfigs;
   }
 
@@ -377,7 +378,7 @@ public class SlaOption {
     final private Duration duration;
     private Set<SlaAction> actions;
     private List<String> emails = null;
-    private Map<String, Map<String, String>> alertersConfigs = null;
+    private Map<String, Map<String, List<String>>> alertersConfigs = null;
 
     public SlaOptionBuilder(SlaType type, String flowName, Duration duration) {
       this.type = type;
@@ -411,7 +412,7 @@ public class SlaOption {
       return this;
     }
 
-    public SlaOptionBuilder setAlertersConfigs(Map<String, Map<String, String>> alertersConfigs) {
+    public SlaOptionBuilder setAlertersConfigs(Map<String, Map<String, List<String>>> alertersConfigs) {
       this.alertersConfigs = alertersConfigs;
       return this;
     }

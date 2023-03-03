@@ -328,6 +328,9 @@ public class Constants {
     public static final String CUSTOM_METRICS_REPORTER_CONFIG_PATH =
         "azkaban.metrics.reporter.config.path";
 
+    // Supported separators in value lists of Alerter plugin parameters.
+    public static final String ALERTER_PARAM_VALUE_DELIMITER = "\\s*,\\s*|\\s*;\\s*";
+
     public static final String MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES = "azkaban.metrics"
         + ".min_age_for_classifying_a_flow_aged_minutes";
 

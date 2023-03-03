@@ -27,6 +27,7 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.cluster.ClusterModule;
 import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
@@ -175,6 +176,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final FlowTriggerScheduler flowTriggerScheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
+  private final AlerterHolder alerterPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
   private final ObjectMapper objectMapper;
   private final ContainerizationMetrics containerizationMetrics;
@@ -185,13 +187,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final Server server,
       final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
+      final ScheduleManager scheduleManager,
       final TriggerManager triggerManager,
       final MissedSchedulesManager missedSchedulesManager,
       final WebMetrics webMetrics,
       final SessionCache sessionCache,
       final UserManager userManager,
-      final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
+      final AlerterHolder alerterPlugins,
       final FlowTriggerScheduler flowTriggerScheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
@@ -205,13 +208,14 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
         "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
-    this.missedSchedulesManager = requireNonNull(missedSchedulesManager, "missScheduleManager is null");
+    this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
+    this.missedSchedulesManager = requireNonNull(missedSchedulesManager, "missScheduleManager is null");
     this.webMetrics = requireNonNull(webMetrics, "webMetrics is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
-    this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
+    this.alerterPlugins = alerterPlugins;
     this.statusService = statusService;
     this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
@@ -726,6 +730,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   private void setTriggerPlugins(final Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
+  }
+
+  public AlerterHolder getAlerterPlugins() {
+    return this.alerterPlugins;
   }
 
   @Override

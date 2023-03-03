@@ -20,7 +20,7 @@
 <link rel="shortcut icon" href="${context}/favicon.ico"/>
 <!-- Bootstrap core CSS -->
 <link href="/css/bootstrap.css" rel="stylesheet">
-<link href="/css/azkaban.css?v=1621010355" rel="stylesheet">
+<link href="/css/azkaban.css?v=1676488120" rel="stylesheet">
 <style type="text/css">
   .navbar-enviro .navbar-enviro-name {
     color: ${azkaban_color};

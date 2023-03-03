@@ -19,24 +19,32 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title">SLA Options</h4>
+        <h4 class="modal-title">SLA Definition</h4>
       </div>
       <div class="modal-body">
-        <h4>SLA Alert Emails</h4>
-        <fieldset>
-          <div class="form-group">
-            <label>SLA Alert Emails</label>
-            <textarea id="slaEmails" class="form-control"></textarea>
-          </div>
-        </fieldset>
-        <h4>Flow SLA Rules</h4>
+        <h4>SLA Alert Settings</h4>
+        #foreach ($alerter in $alerterPlugins.keySet())
+          #foreach ($elem in $alerterPlugins.get($alerter))
+            <fieldset class="sla-alerters">
+              <legend>${alerter} alerts</legend>
+              <div class="form-group">
+                #if($HTMLFormElementType_TEXTAREA == $elem.type)
+                  <label>$elem.label</label>
+                  <textarea name="slaAlerters[$alerter][$elem.name]"
+                          class="form-control">${elem.defaultValue|''}</textarea>
+                #end
+              </div>
+            </fieldset>
+          #end
+        #end
+        <h4>SLA Rules</h4>
         <table class="table table-striped" id="flowRulesTbl">
           <thead>
           <tr>
-            <th>Flow/Job</th>
-            <th>Sla Rule</th>
+            <th>Node</th>
+            <th>Status</th>
             <th>Duration(In HH:MM eg. kill in 10 minutes is 00:10)</th>
-            <th>Email Action</th>
+            <th>Alert Action</th>
             <th>Kill Action</th>
           </tr>
           </thead>

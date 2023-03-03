@@ -23,6 +23,8 @@ import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Emailer;
+import azkaban.utils.HTMLFormElement;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -54,5 +56,13 @@ public interface Alerter {
   @Deprecated
   default String getAzkabanURL() {
     return "";
-  };
+  }
+
+  /**
+   * Parameters users should set to enable alerts on SLA misses via Web UI. Currently used to
+   * render the SLA definition page.
+   */
+  default List<HTMLFormElement> getViewParameters() {
+    return Collections.emptyList();
+  }
 }
