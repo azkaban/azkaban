@@ -236,11 +236,15 @@ public abstract class AbstractProcessJob extends AbstractJob {
       final String content = Streams.asString(reader).trim();
 
       if (!content.isEmpty()) {
-        final Map<String, Object> propMap =
-            (Map<String, Object>) JSONUtils.parseJSONFromString(content);
+        try {
+          final Map<String, Object> propMap =
+                  (Map<String, Object>) JSONUtils.parseJSONFromString(content);
 
-        for (final Map.Entry<String, Object> entry : propMap.entrySet()) {
-          outputProps.put(entry.getKey(), entry.getValue().toString());
+          for (final Map.Entry<String, Object> entry : propMap.entrySet()) {
+            outputProps.put(entry.getKey(), entry.getValue().toString());
+          }
+        } catch (Exception tryAsProperties) {
+          return new Props(null, outputPropertiesFile);
         }
       }
       return outputProps;
