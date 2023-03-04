@@ -123,11 +123,6 @@ public class ExecutableFlowBase extends ExecutableNode {
     return this.flowId;
   }
 
-  // Top level flow file name
-  public String getFlowFileName(){
-    return this.flowId + ".flow";
-  }
-
   public String getFlowName() {
     return String.format(FLOW_ID_FORMAT_PATTERN, this.getProjectName(), this.getFlowId());
   }

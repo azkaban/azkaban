@@ -109,7 +109,7 @@ public class ContainerImplUtils {
      properties. Since there are overridden in most cases, it's usually not required. */
 
     Props flowProps = projectManager.getProperties(project, flowObj,
-        null, flow.getFlowFileName());
+        null, flow.getFlowId());
     if (flowProps != null) {
       String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, "");
       if (!proxyUserFromFlowProp.isEmpty()) {
