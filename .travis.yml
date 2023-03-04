@@ -1,12 +1,18 @@
 language: java
-jdk:
-  - openjdk8
 os: linux
 dist: xenial
 
 before_install:
   - sudo apt update
   - sudo apt install openjfx
+  - sudo apt install \
+  openjfx=8u161-b12-1ubuntu2 \
+  libopenjfx-java=8u161-b12-1ubuntu2 \
+  libopenjfx-jni=8u161-b12-1ubuntu2
+  - sudo apt-mark hold \
+  openjfx \
+  libopenjfx-java \
+  libopenjfx-jni
 
 script: ./gradlew clean build --scan --no-daemon --info
 
