@@ -1406,7 +1406,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       throws ExecutorManagerException {
     final ExecutableFlow flow = executableFlow;
     final Set<String> proxyUserList = flow.getProxyUsersFromFlowObj();
-    // Remove all empty strings and null in this set.
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.

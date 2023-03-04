@@ -654,11 +654,9 @@ public class KubernetesContainerizedImplTest {
     when(project.getFlow(flow.getFlowId())).thenReturn(flowObj);
     when(projectManager.getProperties(project, flowObj, node1.getId(), node1.getJobSource()))
         .thenReturn(currentNodeProps1);
-    //when(currentNodeProps1.getString("user.to.proxy", "")).thenReturn("testUser1");
     when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
         node1.getJobSource()))
         .thenReturn(currentNodeJobProps1);
-    //when(currentNodeJobProps1.getString("user.to.proxy", "")).thenReturn("");
     populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
 
     // First test when there's no job override user.
@@ -670,7 +668,6 @@ public class KubernetesContainerizedImplTest {
     currentNodeProps1.put("user.to.proxy", "");
     populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
     Assert.assertEquals(0, proxyUsers.size());
-    //when(currentNodeJobProps1.getString("user.to.proxy", "")).thenReturn("overrideUser");
     currentNodeJobProps1.put("user.to.proxy", "overrideUser");
     populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
 
@@ -690,8 +687,6 @@ public class KubernetesContainerizedImplTest {
         .thenReturn(currentNodeProps2);
     currentNodeProps2.put("user.to.proxy", "testUser2");
     currentNodeJobProps2.put("user.to.proxy", "");
-    //when(currentNodeProps2.getString("user.to.proxy", "")).thenReturn("testUser2");
-
     when(projectManager.getJobOverrideProperty(project, flowObj, node2.getId(),
         node2.getJobSource()))
         .thenReturn(currentNodeJobProps2);
