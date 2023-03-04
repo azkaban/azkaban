@@ -176,9 +176,9 @@ public class ContainerImplUtils {
       TreeSet<String> jobTypes) {
     Set<String> jobTypeProxyUserSet = new HashSet<>();
     for (String jobType : jobTypes) {
-      String user = jobTypePrefetchUserMap.get(jobType);
-      if (user != null) {
-        jobTypeProxyUserSet.add(user);
+      String proxyUser = jobTypePrefetchUserMap.get(jobType);
+      if (proxyUser != null && !proxyUser.isEmpty()) {
+        jobTypeProxyUserSet.add(proxyUser);
       }
     }
     return jobTypeProxyUserSet;
