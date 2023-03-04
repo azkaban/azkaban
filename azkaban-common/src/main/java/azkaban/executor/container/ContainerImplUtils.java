@@ -29,6 +29,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -115,6 +116,7 @@ public class ContainerImplUtils {
     }
     // DFS Walk of the Graph to find all the Proxy Users.
     populateProxyUsersForFlow(flow, flowObj, project, projectManager, proxyUsers);
+    proxyUsers.removeAll(Collections.singleton(""));
     return proxyUsers;
   }
 
@@ -155,16 +157,28 @@ public class ContainerImplUtils {
    present in the flow.
  */
 
-  public static Set<String> getJobTypeUsersForFlow(String jobTypePrefetchUserMap,
+  public static HashMap<String, String> parseJobTypeUsersForFlow(String jobTypePrefetchUserMap) {
+    HashMap<String, String> jobTypeProxyUserMap = new HashMap<>();
+    if (!jobTypePrefetchUserMap.isEmpty()) {
+      StringTokenizer st = new StringTokenizer(jobTypePrefetchUserMap, ";");
+      String whiteSpaceRegex = "[\\s|\\u00A0]+";
+      while (st.hasMoreTokens()) {
+        StringTokenizer stInner = new StringTokenizer(st.nextToken(), ",");
+        String jobType = stInner.nextToken().replaceAll(whiteSpaceRegex, "");
+        String jobTypeUser = stInner.nextToken().replaceAll(whiteSpaceRegex, "");
+        jobTypeProxyUserMap.put(jobType, jobTypeUser);
+      }
+    }
+    return jobTypeProxyUserMap;
+  }
+
+  public static Set<String> getJobTypeUsersForFlow(HashMap<String, String> jobTypePrefetchUserMap,
       TreeSet<String> jobTypes) {
     Set<String> jobTypeProxyUserSet = new HashSet<>();
-    StringTokenizer st = new StringTokenizer(jobTypePrefetchUserMap, ";");
-    while (st.hasMoreTokens()) {
-      StringTokenizer stInner = new StringTokenizer(st.nextToken(), ",");
-      String jobType = stInner.nextToken();
-      String jobTypeUser = stInner.nextToken();
-      if (jobTypes.contains(jobType)) {
-        jobTypeProxyUserSet.add(jobTypeUser);
+    for (String jobType : jobTypes) {
+      String user = jobTypePrefetchUserMap.get(jobType);
+      if (user != null) {
+        jobTypeProxyUserSet.add(user);
       }
     }
     return jobTypeProxyUserSet;

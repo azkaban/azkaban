@@ -170,7 +170,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String clusterName;
   private final String clusterEnv;
   private final String flowContainerName;
-  private final String jobTypePrefetchUserMap;
+  private final HashMap<String, String> jobTypePrefetchUserMap;
   private final int proxyUserPrefetchThreshold;
   private int vpaRampUp;
   private boolean vpaEnabled;
@@ -362,7 +362,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME,
             DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME);
     this.jobTypePrefetchUserMap =
-        this.azkProps.getString(ContainerizedDispatchManagerProperties.PREFETCH_JOBTYPE_PROXY_USER_MAP, null);
+        ContainerImplUtils.parseJobTypeUsersForFlow(this.azkProps.getString(
+            ContainerizedDispatchManagerProperties.PREFETCH_JOBTYPE_PROXY_USER_MAP, ""));
     this.proxyUserPrefetchThreshold =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.PREFETCH_PROXY_USER_THRESHOLD, DEFAULT_PROXY_USER_THRESHOLD);
     this.vpaFlowCriteria = new VPAFlowCriteria(azkProps, logger);
@@ -1168,14 +1169,14 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
      also provided with a flow parameter.
      */
 
-    if (flow.getProxyUsers().size() > this.proxyUserPrefetchThreshold || !prefetchAllProxyUserCredentials) {
+    if (prefetchAllProxyUserCredentials || flow.getProxyUsers().size() <= this.proxyUserPrefetchThreshold ) {
+      logger.info("Fetched proxy users from permissions page");
+      proxyUsersMap.addAll(flow.getProxyUsers());
+      } else{
       Instant proxyUserFetchStartTime = Instant.now();
       proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
       logger.info("Fetching proxy users from DAG and took: {}",
           Duration.between(proxyUserFetchStartTime, Instant.now()).getSeconds());
-      } else{
-        logger.info("Fetched proxy users from permissions page");
-        proxyUsersMap.addAll(flow.getProxyUsers());
       }
     // If certain jobtypes need specific user credentials we add them to the prefetch list
     if (this.jobTypePrefetchUserMap != null) {
@@ -1406,7 +1407,6 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final ExecutableFlow flow = executableFlow;
     final Set<String> proxyUserList = flow.getProxyUsersFromFlowObj();
     // Remove all empty strings and null in this set.
-    proxyUserList.removeAll(Collections.singleton(""));
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.
@@ -1436,7 +1436,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             dependency + " in versionSet");
       }
     }
-    if (this.prefetchAllCredentials && proxyUserList.size() > 0) {
+    if (this.prefetchAllCredentials) {
       try {
         final String imageFullPath =
             versionSet.getVersion(this.azkabanSecurityInitImageName).get().pathWithVersion();

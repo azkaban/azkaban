@@ -148,8 +148,8 @@ public class KubernetesContainerizedImplTest {
   public static final String DEPENDENCY1 = "dependency1";
   public static final int CPU_LIMIT_MULTIPLIER = 1;
   public static final int MEMORY_LIMIT_MULTIPLIER = 1;
-  private static final String JOBTYPE_PROXY_USER_MAP = "jobtype1,jobtype1_proxyuser;jobtype2,"
-      + "jobtype2_proxyuser";
+  public static final String JOBTYPE_PROXY_USER_MAP = "jobtype1,"
+    + "jobtype1_proxyuser;jobtype2,jobtype2_proxyuser";
   private static Converter<ImageTypeDTO, ImageTypeDTO,
       ImageType> imageTypeConverter;
   private static Converter<ImageVersionDTO, ImageVersionDTO,
@@ -160,6 +160,7 @@ public class KubernetesContainerizedImplTest {
   private static ContainerizationMetrics containerizationMetrics;
 
   private static final Logger log = LoggerFactory.getLogger(KubernetesContainerizedImplTest.class);
+  private HashMap<String, String> jobTypePrefetchUserMap;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -197,6 +198,8 @@ public class KubernetesContainerizedImplTest {
         MAX_ALLOWED_CPU);
     this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_FLOW_CONTAINER_MAX_ALLOWED_MEMORY,
         MAX_ALLOWED_MEMORY);
+    this.jobTypePrefetchUserMap =
+        ContainerImplUtils.parseJobTypeUsersForFlow(this.JOBTYPE_PROXY_USER_MAP);
     this.executorLoader = mock(ExecutorLoader.class);
     this.projectLoader = mock(ProjectLoader.class);
     this.vpaRecommender = mock(VPARecommender.class);
@@ -451,9 +454,6 @@ public class KubernetesContainerizedImplTest {
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     when(imageRampupManager.getVersionByImageTypes(any(), any(Set.class), any(Set.class)))
         .thenReturn(getVersionMap());
-    //Adding empty string to ensure here and asserting they are removed later.
-    flow.setProxyUsersFromFlowObj(new HashSet<>(Arrays.asList("user1",
-        "")));
     final TreeSet<String> jobTypes = ContainerImplUtils.getJobTypesForFlow(flow);
     final Set<String> dependencyTypes = ImmutableSet.of(DEPENDENCY1);
     assert (jobTypes.contains("command"));
@@ -488,7 +488,6 @@ public class KubernetesContainerizedImplTest {
     assert (podSpec != null);
     assert (podMetadata != null);
     // Verifying if empty string were removed from the list
-    Assert.assertEquals(1 ,flow.getProxyUsersFromFlowObj().size());
 
     final V1Pod pod1 =
         this.kubernetesContainerizedImpl.createPodFromMetadataAndSpec(podMetadata, podSpec);
@@ -664,16 +663,19 @@ public class KubernetesContainerizedImplTest {
 
     // First test when there's no job override user.
     Assert.assertTrue(proxyUsers.contains("testUser1"));
-    proxyUsers.removeAll(Collections.singleton(""));
     Assert.assertEquals(1, proxyUsers.size());
     proxyUsers.clear();
+
+    // Test adding a empty string user
+    currentNodeProps1.put("user.to.proxy", "");
+    populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
+    Assert.assertEquals(0, proxyUsers.size());
     //when(currentNodeJobProps1.getString("user.to.proxy", "")).thenReturn("overrideUser");
     currentNodeJobProps1.put("user.to.proxy", "overrideUser");
     populateProxyUsersForFlow(node1, flowObj, project, projectManager, proxyUsers);
 
     // Second test when there is a job override user.
     Assert.assertTrue(proxyUsers.contains("overrideUser"));
-    proxyUsers.removeAll(Collections.singleton(""));
     Assert.assertEquals(1, proxyUsers.size());
 
     // Third test : Adding a second node and testing size of proxy user list to test it has
@@ -696,7 +698,6 @@ public class KubernetesContainerizedImplTest {
     populateProxyUsersForFlow(node2, flowObj, project, projectManager, proxyUsers);
 
     Assert.assertTrue(proxyUsers.contains("testUser2"));
-    proxyUsers.removeAll(Collections.singleton(""));
     Assert.assertEquals(2, proxyUsers.size());
   }
 
@@ -705,12 +706,12 @@ public class KubernetesContainerizedImplTest {
     Set<String> proxyUsers;
     TreeSet<String> jobTypes = new TreeSet<>();
     jobTypes.add("jobtype1");
-    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    proxyUsers = getJobTypeUsersForFlow(jobTypePrefetchUserMap, jobTypes);
     Assert.assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
     Assert.assertEquals(1, proxyUsers.size());
 
     jobTypes.add("jobtype2");
-    proxyUsers = getJobTypeUsersForFlow(JOBTYPE_PROXY_USER_MAP, jobTypes);
+    proxyUsers = getJobTypeUsersForFlow(jobTypePrefetchUserMap, jobTypes);
     Assert.assertTrue(proxyUsers.contains("jobtype1_proxyuser"));
     Assert.assertTrue(proxyUsers.contains("jobtype2_proxyuser"));
     Assert.assertEquals(2, proxyUsers.size());
