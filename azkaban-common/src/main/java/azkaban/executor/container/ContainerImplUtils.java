@@ -104,10 +104,12 @@ public class ContainerImplUtils {
 
     /* Get the flow properties and check if the proxy user is present in the highest level of the
      flow and not the job. Passing null as the job name is able to get us the top level flow
-     properties mentioned for the flow.*/
+     properties mentioned for the flow.
+     We pass null to the job name and get the top level flow file name to fetch the flow
+     properties. Since there are overridden in most cases, it's usually not required. */
 
     Props flowProps = projectManager.getProperties(project, flowObj,
-        null, flow.getFlowName());
+        null, flow.getFlowFileName());
     if (flowProps != null) {
       String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, "");
       if (!proxyUserFromFlowProp.isEmpty()) {
@@ -134,11 +136,13 @@ public class ContainerImplUtils {
         Props currentNodeProps = projectManager.getProperties(project, flowObj,
             node.getId(), node.getJobSource());
         // Get the node level property for proxy user.
-        String userToProxyFromNode = currentNodeProps.getString(USER_TO_PROXY, "");
+        String userToProxyFromNode =
+            currentNodeProps!= null ? currentNodeProps.getString(USER_TO_PROXY, ""): "";
         // Get the node level override by user from the UI for proxy user.
         Props currentNodeJobProps = projectManager.getJobOverrideProperty(project, flowObj,
             node.getId(), node.getJobSource());
-        String userToProxyFromJobNode = currentNodeJobProps.getString(USER_TO_PROXY, "");
+        String userToProxyFromJobNode =
+            currentNodeJobProps != null ? currentNodeJobProps.getString(USER_TO_PROXY, ""): "";
         if (!userToProxyFromJobNode.isEmpty()) {
           proxyUsers.add(userToProxyFromJobNode);
         } else if (!userToProxyFromNode.isEmpty())

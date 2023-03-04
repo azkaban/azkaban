@@ -1175,7 +1175,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       } else{
       Instant proxyUserFetchStartTime = Instant.now();
       proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
-      logger.info("Fetching proxy users from DAG and took: {}",
+      logger.info("Fetching proxy users from DAG and took: {} seconds",
           Duration.between(proxyUserFetchStartTime, Instant.now()).getSeconds());
       }
     // If certain jobtypes need specific user credentials we add them to the prefetch list
