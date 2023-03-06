@@ -312,13 +312,7 @@ public class ProjectManager {
       final String source) throws ProjectManagerException {
     if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
       // Return the properties from the original uploaded flow file.
-      if (jobName != null) {
         return getPropertiesFromFlowFile(flow, jobName, source, 1);
-      } else {
-        // If job is null we intend to fetch the top level flow properties, and flowID does not
-        // have the .flow extension suffix.
-        return getPropertiesFromFlowFile(flow, null, source + Constants.FLOW_FILE_SUFFIX, 1);
-      }
     } else {
       return this.projectLoader.fetchProjectProperty(project, source);
     }

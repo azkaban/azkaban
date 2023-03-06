@@ -18,6 +18,7 @@ package azkaban.executor.container;
 import static azkaban.Constants.JobProperties.ENABLE_JOB_SSL;
 import static azkaban.Constants.JobProperties.USER_TO_PROXY;
 
+import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -104,12 +105,12 @@ public class ContainerImplUtils {
 
     /* Get the flow properties and check if the proxy user is present in the highest level of the
      flow and not the job. Passing null as the job name is able to get us the top level flow
-     properties mentioned for the flow.
-     We pass null to the job name and get the top level flow file name to fetch the flow
-     properties. Since there are overridden in most cases, it's usually not required. */
+     properties mentioned for the flow. Since there are overridden in most cases, it's usually
+     not required. We also append the .flow extension as flow's propSource has not be resolved
+     here, which does include the suffix.  */
 
     Props flowProps = projectManager.getProperties(project, flowObj,
-        null, flow.getFlowId());
+        null, flow.getFlowId() + Constants.FLOW_FILE_SUFFIX);
     if (flowProps != null) {
       String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, "");
       if (!proxyUserFromFlowProp.isEmpty()) {
