@@ -1993,18 +1993,17 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
             }
           }
         }
+        // add job level SLA checker
+        final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
+            .getInstance(TriggerManager.class);
+        triggerManager.addTrigger(FlowRunner.this.flow.getExecutionId(),
+            SlaOption.getJobLevelSLAOptions(
+                FlowRunner.this.flow.getExecutionOptions().getSlaOptions(), eventData.getNestedId()));
 
         if (FlowRunner.this.azkabanEventReporter != null) {
           final JobRunner jobRunner = (JobRunner) event.getRunner();
           FlowRunner.this.azkabanEventReporter.report(event.getType(), getJobMetadata(jobRunner));
         }
-        // add job level checker
-        final TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER
-            .getInstance(TriggerManager.class);
-        triggerManager
-            .addTrigger(FlowRunner.this.flow.getExecutionId(),
-                SlaOption.getJobLevelSLAOptions(
-                    FlowRunner.this.flow.getExecutionOptions().getSlaOptions()));
       }
     }
 
