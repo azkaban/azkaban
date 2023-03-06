@@ -1151,8 +1151,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final V1PodSpec podSpec = createPodSpec(flow, flowResourceRecommendation,
         flowResourceRecommendationMap, versionSet,
         jobTypes, this.dependencyTypes, flowParam);
-    setSATokenAutomount(podSpec);
     setEnableServiceLinks(podSpec);
+    setSATokenAutomount(podSpec);
     final V1ObjectMeta podMetadata = createPodMetadata(flow, flowResourceRecommendation.getId(),
         flowParam);
 

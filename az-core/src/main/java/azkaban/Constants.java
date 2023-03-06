@@ -693,7 +693,7 @@ public class Constants {
         KUBERNETES_POD_PREFIX + "service.account.token.automount";
 
     public static final String KUBERNETES_POD_SERVICE_LINKS =
-        KUBERNETES_POD_PREFIX + "service.account.token.automount";
+        KUBERNETES_POD_PREFIX + "service.account.links";
 
     // Kubernetes flow container related properties
     public static final String KUBERNETES_FLOW_CONTAINER_PREFIX = AZKABAN_KUBERNETES_PREFIX +
