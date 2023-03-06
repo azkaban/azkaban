@@ -26,6 +26,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.ImmutableFlowProps;
+import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
@@ -102,15 +103,25 @@ public class ContainerImplUtils {
     // Get the project and flow Object that needs to be used repeatedly in the DAG.
     Project project = projectManager.getProject(flow.getProjectId());
     Flow flowObj = project.getFlow(flow.getFlowId());
+    String flowFileName = null;
+    Props flowProps;
 
-    /* Get the flow properties and check if the proxy user is present in the highest level of the
+      /* Get the flow properties and check if the proxy user is present in the highest level of the
      flow and not the job. Passing null as the job name is able to get us the top level flow
      properties mentioned for the flow. Since there are overridden in most cases, it's usually
      not required. We also append the .flow extension as flow's propSource has not be resolved
      here, which does include the suffix.  */
 
-    Props flowProps = projectManager.getProperties(project, flowObj,
-        null, flow.getFlowId() + Constants.FLOW_FILE_SUFFIX);
+    if(FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
+      flowFileName = flow.getFlowId() + Constants.FLOW_FILE_SUFFIX;
+    }
+    if (flowFileName != null) {
+      flowProps = projectManager.getProperties(project, flowObj, null, flowFileName);
+    } else{
+      flowProps = projectManager.getProperties(project, flowObj,
+          null, flow.getFlowId());
+      }
+
     // TODO : This probably does not handle flow1.0 properties being fetched correctly. Need to
     //  fix that in the next release.
     if (flowProps != null) {
