@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import azkaban.sla.SlaOption.SlaOptionBuilder;
-import azkaban.utils.JSONUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -33,11 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.assertj.core.util.Maps;
 import org.junit.Test;
 
-/** Test SlaOption */
+/**
+ * Test SlaOption
+ */
 public class SlaOptionTest {
 
   @Test
@@ -82,30 +81,34 @@ public class SlaOptionTest {
   }
 
   @Test
-  public void testSlaActionFiltering() {
-    List<SlaOption> slaOptions = new ArrayList<>();
+  public void testSlaOptionFiltering() {
+    final List<SlaOption> slaOptions = new ArrayList<>();
     slaOptions.add(new SlaOptionBuilder(SlaType.FLOW_FINISH, "flow1", Duration.ofHours(1))
         .setActions(Collections.singleton(SlaAction.KILL)).createSlaOption());
     slaOptions.add(new SlaOptionBuilder(SlaType.FLOW_SUCCEED, "flow2", Duration.ofHours(1))
-        .setActions(Collections.singleton(SlaAction.ALERT)).setEmails(Collections.singletonList
-            ("test@email.com")).createSlaOption());
+        .setActions(Collections.singleton(SlaAction.ALERT))
+        .setEmails(Collections.singletonList("test@email.com")).createSlaOption());
     slaOptions.add(new SlaOptionBuilder(SlaType.JOB_FINISH, "flow3", Duration.ofHours(1))
-        .setActions(Collections.singleton(SlaAction.KILL)).setJobName("job").createSlaOption());
-    slaOptions.add(new SlaOptionBuilder(SlaType.JOB_SUCCEED, "flow4", Duration.ofHours(1))
-        .setActions(Collections.singleton(SlaAction.KILL)).setJobName("job").createSlaOption());
+        .setActions(Collections.singleton(SlaAction.KILL)).setJobName("job1").createSlaOption());
+    slaOptions.add(new SlaOptionBuilder(SlaType.JOB_SUCCEED, "flow3", Duration.ofHours(1))
+        .setActions(Collections.singleton(SlaAction.KILL)).setJobName("job1").createSlaOption());
+    slaOptions.add(new SlaOptionBuilder(SlaType.JOB_SUCCEED, "flow3", Duration.ofHours(1))
+        .setActions(Collections.singleton(SlaAction.KILL)).setJobName("job2").createSlaOption());
 
-    List<SlaOption> flowOptions = SlaOption.getFlowLevelSLAOptions(slaOptions);
+    final List<SlaOption> flowOptions = SlaOption.getFlowLevelSLAOptions(slaOptions);
     assertThat(flowOptions.size()).isEqualTo(2);
-    Set<String> flowNames = flowOptions.stream().map(x -> x.getFlowName()).collect(Collectors.toSet
-        ());
+    final Set<String> flowNames =
+        flowOptions.stream().map(x -> x.getFlowName()).collect(Collectors.toSet());
     assertThat(flowNames.containsAll(Sets.newHashSet("flow1", "flow2"))).isTrue();
 
-    List<SlaOption> jobOptions = SlaOption.getJobLevelSLAOptions(slaOptions);
-    assertThat(flowOptions.size()).isEqualTo(2);
-    Set<String> jobFlowNames = jobOptions.stream().map(x -> x.getFlowName()).collect(Collectors
-        .toSet
-        ());
-    assertThat(jobFlowNames.containsAll(Sets.newHashSet("flow3", "flow4"))).isTrue();
+    final List<SlaOption> jobOptions1 = SlaOption.getJobLevelSLAOptions(slaOptions, "job1");
+    assertThat(jobOptions1.size()).isEqualTo(2);
+    final Set<String> jobNames =
+        jobOptions1.stream().map(x -> x.getJobName()).collect(Collectors.toSet());
+    assertThat(jobNames.containsAll(Collections.singletonList("job1"))).isTrue();
+
+    final List<SlaOption> jobOptions2 = SlaOption.getJobLevelSLAOptions(slaOptions, "inventedJob");
+    assertThat(jobOptions2.size()).isEqualTo(0);
   }
 
   @Test
@@ -118,11 +121,11 @@ public class SlaOptionTest {
         .setJobName("job").setActions(Collections.singleton(SlaAction.KILL))
         .setEmails(Collections.singletonList("test@email.com")).createSlaOption();
 
-    Map<String, Object> webObject = (Map<String, Object>)slaOption.toWebObject();
-    assertThat((String)webObject.get(SlaOption.WEB_DURATION)).isEqualTo(expectedDuration);
-    assertThat((String)webObject.get(SlaOption.WEB_STATUS)).isEqualTo(expectedStatus);
-    assertThat((String)webObject.get(SlaOption.WEB_ID)).isEqualTo(expectedId);
-    assertThat((List<String>)webObject.get(SlaOption.WEB_ACTIONS)).isEqualTo(expectedAction);
+    Map<String, Object> webObject = (Map<String, Object>) slaOption.toWebObject();
+    assertThat((String) webObject.get(SlaOption.WEB_DURATION)).isEqualTo(expectedDuration);
+    assertThat((String) webObject.get(SlaOption.WEB_STATUS)).isEqualTo(expectedStatus);
+    assertThat((String) webObject.get(SlaOption.WEB_ID)).isEqualTo(expectedId);
+    assertThat((List<String>) webObject.get(SlaOption.WEB_ACTIONS)).isEqualTo(expectedAction);
   }
 
   @Test
@@ -152,7 +155,9 @@ public class SlaOptionTest {
     compare(slaOption, slaOption2);
   }
 
-  /** Compare if two {@link SlaOption} are the same */
+  /**
+   * Compare if two {@link SlaOption} are the same
+   */
   private void compare(SlaOption option1, SlaOption option2) {
     assertThat(option1.getType()).isEqualTo(option2.getType());
     assertThat(option1.getDuration()).isEqualTo(option2.getDuration());
