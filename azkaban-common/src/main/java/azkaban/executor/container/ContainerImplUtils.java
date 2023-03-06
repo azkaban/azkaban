@@ -111,6 +111,8 @@ public class ContainerImplUtils {
 
     Props flowProps = projectManager.getProperties(project, flowObj,
         null, flow.getFlowId() + Constants.FLOW_FILE_SUFFIX);
+    // TODO : This probably does not handle flow1.0 properties being fetched correctly. Need to
+    //  fix that in the next release.
     if (flowProps != null) {
       String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, "");
       if (!proxyUserFromFlowProp.isEmpty()) {
