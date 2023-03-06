@@ -34,6 +34,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
@@ -103,8 +105,7 @@ public class ContainerImplUtils {
     // Get the project and flow Object that needs to be used repeatedly in the DAG.
     Project project = projectManager.getProject(flow.getProjectId());
     Flow flowObj = project.getFlow(flow.getFlowId());
-    String flowFileName = null;
-    Props flowProps;
+    Optional<Props> flowProps;
 
       /* Get the flow properties and check if the proxy user is present in the highest level of the
      flow and not the job. Passing null as the job name is able to get us the top level flow
@@ -113,22 +114,17 @@ public class ContainerImplUtils {
      here, which does include the suffix.  */
 
     if(FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
-      flowFileName = flow.getFlowId() + Constants.FLOW_FILE_SUFFIX;
-    }
-    if (flowFileName != null) {
-      flowProps = projectManager.getProperties(project, flowObj, null, flowFileName);
-    } else{
-      flowProps = projectManager.getProperties(project, flowObj,
-          null, flow.getFlowId());
+      flowProps = Optional.ofNullable(projectManager.getProperties(project, flowObj, null,
+          flow.getFlowId() + Constants.FLOW_FILE_SUFFIX));
+      flowProps.ifPresent(s -> proxyUsers.add(s.getString(USER_TO_PROXY, "")));
+    } else {
+      // Handle Flow 1.0 Properties fetch.
+      final Map<String, String> flow10Props = new HashMap<>();
+      for (String propsFile : flowObj.getAllFlowProps().keySet()) {
+        flow10Props
+            .putAll(projectManager.getProperties(project, flowObj, null, propsFile).getFlattened());
       }
-
-    // TODO : This probably does not handle flow1.0 properties being fetched correctly. Need to
-    //  fix that in the next release.
-    if (flowProps != null) {
-      String proxyUserFromFlowProp = flowProps.getString(USER_TO_PROXY, "");
-      if (!proxyUserFromFlowProp.isEmpty()) {
-        proxyUsers.add(proxyUserFromFlowProp);
-      }
+      proxyUsers.add(flow10Props.getOrDefault(USER_TO_PROXY, ""));
     }
     // DFS Walk of the Graph to find all the Proxy Users.
     populateProxyUsersForFlow(flow, flowObj, project, projectManager, proxyUsers);
