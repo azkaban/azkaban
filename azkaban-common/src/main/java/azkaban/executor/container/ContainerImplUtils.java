@@ -15,17 +15,15 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.JobProperties.ENABLE_JOB_SSL;
 import static azkaban.Constants.JobProperties.USER_TO_PROXY;
+import static azkaban.Constants.FLOW_FILE_SUFFIX;
 
-import azkaban.Constants;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
-import azkaban.flow.ImmutableFlowProps;
 import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -115,7 +113,7 @@ public class ContainerImplUtils {
 
     if(FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
       flowProps = Optional.ofNullable(projectManager.getProperties(project, flowObj, null,
-          flow.getFlowId() + Constants.FLOW_FILE_SUFFIX));
+          flow.getFlowId() + FLOW_FILE_SUFFIX));
       flowProps.ifPresent(s -> proxyUsers.add(s.getString(USER_TO_PROXY, "")));
     } else {
       // Handle Flow 1.0 Properties fetch.
