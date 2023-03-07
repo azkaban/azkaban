@@ -22,6 +22,7 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
+import azkaban.Constants.JobProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
 import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
@@ -40,6 +41,7 @@ import azkaban.executor.Status;
 import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowResourceRecommendation;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
@@ -77,9 +79,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -153,6 +157,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private static final VPARecommendation EMPTY_VPA_RECOMMENDATION = new VPARecommendation(null,
       null);
   private static final String DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME = "azkaban-security-init";
+  private static final int DEFAULT_PROXY_USER_THRESHOLD = 5;
 
   private final String namespace;
   private final ApiClient client;
@@ -165,6 +170,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   private final String clusterName;
   private final String clusterEnv;
   private final String flowContainerName;
+  private final HashMap<String, String> jobTypePrefetchUserMap;
+  private final int proxyUserPrefetchThreshold;
   private int vpaRampUp;
   private boolean vpaEnabled;
   private final double cpuRecommendationMultiplier;
@@ -358,6 +365,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     this.azkabanSecurityInitImageName = this.azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_POD_AZKABAN_SECURITY_INIT_IMAGE_NAME,
             DEFAULT_AZKABAN_SECURITY_INIT_IMAGE_NAME);
+    this.jobTypePrefetchUserMap =
+        ContainerImplUtils.parseJobTypeUsersForFlow(this.azkProps.getString(
+            ContainerizedDispatchManagerProperties.PREFETCH_JOBTYPE_PROXY_USER_MAP, ""));
+    this.proxyUserPrefetchThreshold =
+        this.azkProps.getInt(ContainerizedDispatchManagerProperties.PREFETCH_PROXY_USER_THRESHOLD, DEFAULT_PROXY_USER_THRESHOLD);
     this.vpaFlowCriteria = new VPAFlowCriteria(azkProps, logger);
     // Add all the job types that are readily available as part of azkaban base image.
     this.addIncludedJobTypes();
@@ -1139,6 +1151,56 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     if (flowParam != null && !flowParam.isEmpty()) {
       logger.info("ExecId: {}, Flow Parameters are: {}", executionId, flowParam);
     }
+
+    /*
+     The Set proxyUsersMap is being created with the intention of determining all the proxy users
+     prior to pod dispatch.
+     Why this is needed ?
+     -> When we use POLP(Principle of Least Priviledge) , initially introduced in
+     https://github.com/azkaban/azkaban/pull/3216, we need to have a list of users that custom
+     credentials (getCustomCredentialProvider) need to be fetched and registered for, as we will
+     not be able to fetch them at runtime as Azkaban user present in the Azkaban Executor Pod
+     will no longer be able to do so. This prefetching of custom credentials  is performed in
+     the azkaban-security-init container by attaching the proxy users needed to be prefetched as
+     environment variables.
+     */
+    Set<String> proxyUsersMap = new HashSet<>();
+
+    final boolean prefetchAllProxyUserCredentials =
+        flowParam != null && flowParam.containsKey(FlowParameters.PROXY_USER_PREFETCH_ALL) &&
+            Boolean.parseBoolean(flowParam.get(FlowParameters.PROXY_USER_PREFETCH_ALL));
+    /*
+     As an optimization for not walking through the DAG and making DB queries for large DAGs we
+     try to check if the proxy users list from the project page is less then a certain threshold.
+     If it is less than this threshold, we simply add all of them. This configuration will be
+     custom to a given environment. An option to fetch all of them via the project page is
+     also provided with a flow parameter.
+     */
+
+    if (prefetchAllProxyUserCredentials || flow.getProxyUsers().size() <= this.proxyUserPrefetchThreshold ) {
+      logger.info("Fetched proxy users from permissions page");
+      proxyUsersMap.addAll(flow.getProxyUsers());
+      } else{
+      Instant proxyUserFetchStartTime = Instant.now();
+      proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
+      logger.info("Fetching proxy users from DAG and took: {} seconds",
+          Duration.between(proxyUserFetchStartTime, Instant.now()).getSeconds());
+      }
+    // If certain jobtypes need specific user credentials we add them to the prefetch list
+    if (this.jobTypePrefetchUserMap != null) {
+      final Set<String> jobTypeUsersForFlow =
+          ContainerImplUtils.getJobTypeUsersForFlow(this.jobTypePrefetchUserMap, jobTypes);
+          proxyUsersMap.addAll(jobTypeUsersForFlow);
+      }
+    // We add the submit user if, no proxy user is mentioned. The submit user is the proxy user
+    // in this case.
+    proxyUsersMap.add(flow.getSubmitUser());
+
+    // Finally, set the collected list of users as a flow object variable to be accessed while
+    // creating pod spec template.
+    flow.setProxyUsersFromFlowObj(proxyUsersMap);
+    logger.info("Proxy Users determined for the flow {} are {}", flow.getFlowId(),
+        String.join(", ", proxyUsersMap));
     // Create all image types by adding azkaban base image, azkaban config and all job types for
     // the flow.
     final Set<String> allImageTypes = new TreeSet<>();
@@ -1162,6 +1224,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         final AzKubernetesV1PodTemplate podTemplate = AzKubernetesV1PodTemplate
             .getInstance(this.podTemplatePath);
         V1PodSpec podSpecFromTemplate = podTemplate.getPodSpecFromTemplate();
+        podSpecFromTemplate.getInitContainers();
         logPodSpecYaml(executionId, podSpecFromTemplate, flowParam, "ExecId: {}, PodSpec template "
             + "before merge: {}");
         PodTemplateMergeUtils.mergePodSpec(podSpec, podSpecFromTemplate);
@@ -1351,7 +1414,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final VersionSet versionSet)
       throws ExecutorManagerException {
     final ExecutableFlow flow = executableFlow;
-    final Set<String> proxyUserList = flow.getProxyUsers();
+    final Set<String> proxyUserList = flow.getProxyUsersFromFlowObj();
     for (final String jobType : jobTypes) {
       // Skip all the job types that are available in the azkaban base image and create init
       // container for the remaining job types.

@@ -59,6 +59,11 @@ dependencies {
     testCompile deps.commonsCompress
 }
 
+test {
+    minHeapSize = "256m" // initial heap size
+    maxHeapSize = "1024m" // maximum heap size
+}
+
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }

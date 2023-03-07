@@ -744,6 +744,11 @@ public class Constants {
         KUBERNETES_FLOW_CONTAINER_PREFIX + "init.jobtypes.mount.path";
     public static final String PREFETCH_PROXY_USER_CERTIFICATES =
         AZKABAN_CONTAINERIZED_PREFIX + "prefetch.certificates";
+    // Format for the below string is (jobtype1, jobtype1_proxyuser ; jobtype2, jobtype2_proxyuser)
+    public static final String PREFETCH_JOBTYPE_PROXY_USER_MAP =
+        AZKABAN_CONTAINERIZED_PREFIX + "prefetch.jobtype.user.map";
+    public static final String PREFETCH_PROXY_USER_THRESHOLD =
+        AZKABAN_CONTAINERIZED_PREFIX + "prefetch.proxy.user.threshold";
     public static final String KUBERNETES_MOUNT_PATH_FOR_JOBTYPES =
         KUBERNETES_FLOW_CONTAINER_PREFIX + "jobtypes.mount.path";
     public static final String KUBERNETES_POD_TEMPLATE_PATH =
@@ -868,5 +873,6 @@ public class Constants {
 
     public static final String FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED =
         "allow.restart.on.execution.stopped";
+    public static final String PROXY_USER_PREFETCH_ALL = "proxy.user.prefetch.all";
   }
 }
