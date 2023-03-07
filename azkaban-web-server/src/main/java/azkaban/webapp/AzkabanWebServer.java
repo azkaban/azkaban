@@ -482,6 +482,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // always have basic time trigger
     // TODO: find something else to do the job
     getTriggerManager().start();
+    getScheduleManager().start();
 
     // Set up api endpoint metrics
     // At the moment login action doesn't have a dedicated route, any route can be used to
