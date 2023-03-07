@@ -105,11 +105,15 @@ public class ContainerImplUtils {
     Flow flowObj = project.getFlow(flow.getFlowId());
     Optional<Props> flowProps;
 
-      /* Get the flow properties and check if the proxy user is present in the highest level of the
+      /*  Get the flow properties and check if the proxy user is present in the highest level of the
      flow and not the job. Passing null as the job name is able to get us the top level flow
      properties mentioned for the flow. Since there are overridden in most cases, it's usually
      not required. We also append the .flow extension as flow's propSource has not be resolved
-     here, which does include the suffix.  */
+     here, which does include the suffix.
+     TODO (Issues to consider):
+       -Flow id must match the name of the flow file for Flow 2.0.
+       -DB may be called multiple times to fetch Flow 1.0 props.
+      */
 
     if(FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
       flowProps = Optional.ofNullable(projectManager.getProperties(project, flowObj, null,
