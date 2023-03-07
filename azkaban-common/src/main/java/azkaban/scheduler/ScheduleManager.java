@@ -62,17 +62,24 @@ public class ScheduleManager implements TriggerAgent {
     this.loader = loader;
   }
 
-  // Since ScheduleManager was already replaced by TriggerManager, many methods like start are
-  // never used.
-  @Deprecated
+  /**
+   * For historical reasons that migrate schedule to trigger paused in the middle,
+   * we remained with schedules and triggers while they are the same definition but in two different Class.
+   * start() of ScheduleManager handles the local refreshes to fetch triggers to be schedule,
+   * so scheduleManager can respond to ScheduleServlet{@link ScheduleServlet} with response properly.
+   * */
   @Override
-  public void start() throws ScheduleManagerException {
+  public void start() {
+    try {
+      List<Schedule> schedules = this.loader.loadAllSchedules();
+      refreshLocal(schedules);
+    } catch (ScheduleManagerException e) {
+      logger.warn("failed to init ScheduleManager, it might result in schedule not loaded into memory.");
+    }
   }
 
-  // only do this when using external runner
-  private void updateLocal() throws ScheduleManagerException {
-    final List<Schedule> updates = this.loader.loadUpdatedSchedules();
-    for (final Schedule s : updates) {
+  private void refreshLocal(List<Schedule> schedules) {
+    for (final Schedule s : schedules) {
       s.lock();
       if (s.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
         onScheduleExpire(s);
@@ -100,7 +107,8 @@ public class ScheduleManager implements TriggerAgent {
    */
   public List<Schedule> getSchedules()
       throws ScheduleManagerException {
-    updateLocal();
+    final List<Schedule> updates = this.loader.loadUpdatedSchedules();
+    refreshLocal(updates);
     return new ArrayList<>(this.scheduleIDMap.values());
   }
 

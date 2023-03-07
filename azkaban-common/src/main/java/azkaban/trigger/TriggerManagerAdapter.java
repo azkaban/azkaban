@@ -38,6 +38,8 @@ public interface TriggerManagerAdapter {
 
   public List<Trigger> getTriggers(String trigegerSource);
 
+  public List<Trigger> getTriggers();
+
   public void start() throws TriggerManagerException;
 
   public void shutdown();
