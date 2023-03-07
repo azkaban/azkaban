@@ -668,9 +668,10 @@ public class JobRunner extends JobRunnerBase implements Runnable {
       }
     }
 
-    logInfo(
-        "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
-            + " with status " + this.node.getStatus());
+    logInfo(String.format(
+        "Wrapping up %s%s job %s, finished at %d with status %s.", getNodeRetryLog(),
+        this.props.getString("type", "--"), this.jobId, this.node.getEndTime(),
+        this.node.getStatus()));
 
     try {
       this.flowLogger.debug("Finalizing log file for job " + this.jobId);
@@ -685,15 +686,14 @@ public class JobRunner extends JobRunnerBase implements Runnable {
         // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
         fireEvent(Event.create(this, EventType.JOB_FINISHED, new EventData(node)), false);
       } catch (final RuntimeException e) {
-        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
-            + " jobId: " + this.jobId);
-        serverLogger.warn(e.getMessage(), e);
+        serverLogger.warn(String.format("Encountered error while firing the JOB_FINISHED event "
+            + "for job %s in execution %d.", this.jobId, this.executionId), e);
       }
     }
   }
 
   private String getNodeRetryLog() {
-    return this.node.getAttempt() > 0 ? (" retry: " + this.node.getAttempt()) : "";
+    return this.node.getAttempt() > 0 ? String.format("retry %d of ", this.node.getAttempt()) : "";
   }
 
   private void uploadExecutableNode() {
@@ -716,10 +716,10 @@ public class JobRunner extends JobRunnerBase implements Runnable {
         return false;
       }
 
-      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node.getStartTime());
+      logInfo(String.format("Starting %s%s job %s at %d.", getNodeRetryLog(),
+          this.props.getString("type", "--"), this.jobId, this.node.getStartTime()));
 
-      // If it's an embedded flow, we'll add the nested flow info to the job
-      // conf
+      // If it's an embedded flow, we'll add the nested flow info to the job conf
       if (this.node.getExecutableFlow() != this.node.getParentFlow()) {
         final String subFlow = this.node.getPrintableId(":");
         this.props.put(CommonJobProperties.NESTED_FLOW_PATH, subFlow);
@@ -940,18 +940,20 @@ public class JobRunner extends JobRunnerBase implements Runnable {
       synchronized (this.syncObject) {
         if (this.props.getBoolean("job.succeed.on.failure", false)) {
           finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
-          logError("Job run failed, but will treat it like success.");
-          logError(e.getMessage() + " cause: " + e.getCause(), e);
+          logInfo(
+              "The job execution failed, but will be handled as a success based on user configs.");
         } else {
           if (isKilled() || this.node.getStatus() == Status.KILLED) {
             finalStatus = Status.KILLED;
-            logError("Job run killed!", e);
           } else {
             finalStatus = changeStatus(Status.FAILED);
-            logError("Job run failed!", e);
           }
-          logError(e.getMessage() + " cause: " + e.getCause());
         }
+        logInfo("Azkaban job executor finished with: " + e.getCause());
+        serverLogger.info(String.format(
+            "Execution of job with id %s and type %s in execution %d failed with status %s.",
+            this.jobId, this.props.getString("type", "--"), this.executionId,
+            finalStatus), e);
         this.getNode().setFailureMessage(e.toString());
       }
     }
