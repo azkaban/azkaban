@@ -312,7 +312,7 @@ public class ProjectManager {
       final String source) throws ProjectManagerException {
     if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
       // Return the properties from the original uploaded flow file.
-      return getPropertiesFromFlowFile(flow, jobName, source, 1);
+        return getPropertiesFromFlowFile(flow, jobName, source, 1);
     } else {
       return this.projectLoader.fetchProjectProperty(project, source);
     }
