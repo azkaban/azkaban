@@ -1446,10 +1446,11 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     }
     if (this.prefetchAllCredentials) {
       try {
+        final String projectUploadUser = flow.getUploadUser();
         final String imageFullPath =
             versionSet.getVersion(this.azkabanSecurityInitImageName).get().pathWithVersion();
         v1SpecBuilder.addSecurityInitContainer(imageFullPath, ImagePullPolicy.IF_NOT_PRESENT,
-            InitContainerType.SECURITY, proxyUserList);
+            InitContainerType.SECURITY, proxyUserList, projectUploadUser);
       } catch (final Exception e) {
         throw new ExecutorManagerException("Did not find security image. Failed Proxy User Init "
             + "container");

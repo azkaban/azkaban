@@ -163,14 +163,18 @@ public class AzKubernetesV1SpecBuilder {
     }
     public AzKubernetesV1SpecBuilder addSecurityInitContainer(String image,
         ImagePullPolicy imagePullPolicy,
-        final InitContainerType initContainerType, Set<String> proxyUserList ) {
+        final InitContainerType initContainerType, Set<String> proxyUserList, String projectUploadUser ) {
         V1EnvVar proxyUserEnv = new V1EnvVarBuilder()
             .withName(initContainerType.mountPathKey)
             .withValue(String.join(",", proxyUserList))
             .build();
+        V1EnvVar projectUploadUserEnv = new V1EnvVarBuilder()
+            .withName("PROJECT_UPLOAD_USER")
+            .withValue(projectUploadUser)
+            .build();
         V1Container initContainer = new V1ContainerBuilder()
             .withName(initContainerType.initPrefix)
-            .addToEnv(proxyUserEnv)
+            .addToEnv(proxyUserEnv, projectUploadUserEnv)
             .withImagePullPolicy(imagePullPolicy.getPolicyVal())
             .withImage(image)
             .build();
