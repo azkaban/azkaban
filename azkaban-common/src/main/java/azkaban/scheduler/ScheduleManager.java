@@ -270,12 +270,13 @@ public class ScheduleManager implements TriggerAgent {
     try {
       Optional<Schedule> updatedSchedule = loader.loadUpdateSchedule(s);
       if (updatedSchedule.isPresent()) {
-        if (s.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
-          onScheduleExpire(s);
+        Schedule schedule = updatedSchedule.get();
+        if (schedule.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
+          onScheduleExpire(schedule);
         } else {
-          internalSchedule(s);
+          internalSchedule(schedule);
         }
-        return updatedSchedule.get();
+        return schedule;
       }
       return s;
     } finally {
