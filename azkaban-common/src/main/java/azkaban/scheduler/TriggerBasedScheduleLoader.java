@@ -26,6 +26,7 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
@@ -231,7 +232,12 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   public Optional<Schedule> loadUpdateSchedule(Schedule s) throws ScheduleManagerException {
     long lastCheckTime = scheduleIdToLastCheckTime.getOrDefault(s.getScheduleId(), -1l);
     Optional<Trigger> trigger = this.triggerManager.getUpdatedTriggerById(s.getScheduleId(), lastCheckTime);
+    logger.debug("fetch trigger " + s.getScheduleId() + "with map's lastCheckTime" + new Date(lastCheckTime));
     if (trigger.isPresent()) {
+      Trigger triggerIst = trigger.get();
+      logger.debug("fetched updated trigger " + triggerIst.getTriggerId() +
+          "with lastModify in trigger: " + new Date(triggerIst.getLastModifyTime()) +
+          "and trigger's nextExecuteTime: " + new Date(triggerIst.getNextCheckTime()));
       scheduleIdToLastCheckTime.put(s.getScheduleId(), trigger.get().getLastModifyTime());
       return Optional.of(triggerToSchedule(trigger.get()));
     }

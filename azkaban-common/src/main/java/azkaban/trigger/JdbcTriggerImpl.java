@@ -132,8 +132,9 @@ public class JdbcTriggerImpl implements TriggerLoader {
 
   @Override
   public void updateTrigger(final Trigger t) throws TriggerLoaderException {
-    logger.info("Updating trigger " + t.getTriggerId() + " into db.");
     t.setLastModifyTime(System.currentTimeMillis());
+    logger.info("Updating trigger " + t.getTriggerId() + " into db"
+        + " with nextCheckTime " + t.getNextCheckTime() + "and lastModifiedTime " + t.getLastModifyTime());
     updateTrigger(t, this.defaultEncodingType);
   }
 
