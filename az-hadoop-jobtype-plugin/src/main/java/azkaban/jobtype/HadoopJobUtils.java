@@ -70,7 +70,7 @@ import org.apache.hadoop.fs.Path;
  * @see HadoopJavaJob
  */
 public class HadoopJobUtils {
-
+  private static final Logger logger = Logger.getLogger(HadoopJobUtils.class);
   public static final String MATCH_ALL_REGEX = ".*";
   public static final String MATCH_NONE_REGEX = ".^";
   public static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM = "hadoop.security.manager.class";
@@ -664,5 +664,27 @@ public class HadoopJobUtils {
     }
     final Joiner joiner = Joiner.on(',').skipNulls();
     return joiner.join(keysAndValues);
+  }
+
+  public static String constructSubflowTags(final Props props) {
+    if (props.containsKey(CommonJobProperties.NESTED_FLOW_PATH)) {
+      try {
+        // example for nested_flow_path: subflow1:subflow2:job
+        String nestedFlowId = props.getString(CommonJobProperties.NESTED_FLOW_PATH);
+        String[] subflowParts = nestedFlowId.split(":");
+        final String[] keysAndValues = new String[subflowParts.length - 1];
+        for (int i = 0 ; i < keysAndValues.length; i++) {
+          keysAndValues[i] = CommonJobProperties.SUBFLOW_YARN_TAG_PREFIX + (i + 1) + ":" + subflowParts[i];
+        }
+        return Joiner.on(',').skipNulls().join(keysAndValues);
+      } catch (Exception e) {
+        logger.error("failed to construct subflow info with full flow id: " +
+            props.getString(CommonJobProperties.NESTED_FLOW_PATH));
+        return null;
+      }
+
+    } else {
+      return null;
+    }
   }
 }

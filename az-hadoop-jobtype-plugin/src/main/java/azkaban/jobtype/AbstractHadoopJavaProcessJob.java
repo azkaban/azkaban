@@ -84,6 +84,7 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
     };
     Props jobProps = getJobProps();
     String tagList = HadoopJobUtils.constructHadoopTags(jobProps, tagKeys);
+    tagList = Joiner.on(',').skipNulls().join(tagList, HadoopJobUtils.constructSubflowTags(jobProps));
     if (jobProps.containsKey(CommonJobProperties.PROJECT_NAME)
         && jobProps.containsKey(CommonJobProperties.FLOW_ID)) {
       String workflowTag = "workflowid:"
@@ -94,6 +95,7 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
           Math.min(workflowTag.length(), HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH));
       tagList = Joiner.on(',').skipNulls().join(tagList, workflowTag);
     }
+    getLog().info("[HadoopTag] generated job tags: " + tagList);
     getJobProps().put(
         HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS,
         tagList

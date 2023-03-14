@@ -111,6 +111,11 @@ public class CommonJobProperties {
   public static final String NESTED_FLOW_PATH = "azkaban.flow.nested.path";
 
   /**
+   * subflow prefix, normally used in yarn tag as azkaban.subflow.1
+   * */
+  public static final String SUBFLOW_YARN_TAG_PREFIX = "azkaban.subflow.";
+
+  /**
    * The executing job id
    */
   public static final String JOB_ID = "azkaban.job.id";
