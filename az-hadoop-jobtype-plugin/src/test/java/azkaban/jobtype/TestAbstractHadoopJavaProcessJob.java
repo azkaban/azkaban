@@ -65,4 +65,18 @@ public class TestAbstractHadoopJavaProcessJob {
     }
     assertThat(actualTags[3]).isEqualTo(expectedTagBuffer.toString());
   }
+
+  @Test
+  public void testSubFlowTags() {
+    Props props = new Props();
+    props.put(CommonJobProperties.EXEC_ID, "123");
+    props.put(CommonJobProperties.PROJECT_NAME, "project-name");
+    props.put(CommonJobProperties.FLOW_ID, "flow-id");
+    props.put(CommonJobProperties.NESTED_FLOW_PATH, "subflow1:subflow2:subflow3:job");
+    AbstractHadoopJavaProcessJob job = new AbstractHadoopJavaProcessJob("test", new Props(), props, logger) {};
+    job.setupHadoopJobProperties();
+    System.out.println(job.getJobProps().get(HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS));
+    assertThat(job.getJobProps().get(HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS))
+        .contains("azkaban.subflow.1:subflow1,azkaban.subflow.2:subflow2,azkaban.subflow.3:subflow3");
+  }
 }

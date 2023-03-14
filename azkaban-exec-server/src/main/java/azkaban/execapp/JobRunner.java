@@ -69,6 +69,7 @@ import org.apache.log4j.RollingFileAppender;
 
 public class JobRunner extends JobRunnerBase implements Runnable {
   private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
+
   private static final Object logCreatorLock = new Object();
 
   private static final String DEFAULT_LAYOUT =
@@ -765,7 +766,7 @@ public class JobRunner extends JobRunnerBase implements Runnable {
                 props.toString()));
         this.props.putAll(props);
       }
-
+      logInfo("all props for the job: " + this.props);
       try {
         long jobCreationStartMillis = System.currentTimeMillis();
         final JobTypeManager.JobParams jobParams = this.jobtypeManager
