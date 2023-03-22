@@ -559,6 +559,15 @@ public class Constants {
     // Job callback
     public static final String AZKABAN_EXECUTOR_JOBCALLBACK_ENABLED =
         "azkaban.executor.jobcallback.enabled";
+
+    // Executions are permitted to restart on this set of terminated statuses,
+    // normally includes EXECUTION_STOPPED and FAILED
+    public static final String AZKABAN_EXECUTION_RESTARTABLE_STATUS =
+        "azkaban.execution.restartable.status";
+
+    // Executions are permitted to restart this many of times, e.g. "...=3"
+    public static final String AZKABAN_EXECUTION_RESTART_LIMIT =
+        "azkaban.execution.restart.limit";
   }
 
   public static class FlowProperties {
@@ -874,5 +883,15 @@ public class Constants {
     public static final String FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED =
         "allow.restart.on.execution.stopped";
     public static final String PROXY_USER_PREFETCH_ALL = "proxy.user.prefetch.all";
+
+    // Constant to define allow restart on a set of terminated status, extends to more statuses
+    // e.g. "allow.restart.on.status=EXECUTION_STOPPED,FAILED"
+    public static final String FLOW_PARAM_ALLOW_RESTART_ON_STATUS = "allow.execution.restart.on.status";
+
+    // Constant to define how many times can restart the flow to a new execution
+    public static final String FLOW_PARAM_RESTART_COUNT = "execution.restart.count";
+
+    // Constant to define the strategy to restart the execution, default to "restart_from_root",
+    public static final String FLOW_PARAM_RESTART_STRATEGY = "execution.restart.strategy";
   }
 }

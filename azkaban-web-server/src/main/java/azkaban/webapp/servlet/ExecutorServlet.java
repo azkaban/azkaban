@@ -90,6 +90,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final String API_RAMP = "ramp";
   private static final String API_UPDATE_PROP = "updateProp";
 
+  private final Props azProps = getApplication().getServerProps();
+
   private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class.getName());
   private static final long serialVersionUID = 1L;
   private ProjectManager projectManager;
@@ -1012,6 +1014,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final ExecutionOptions options;
     try {
       options = HttpRequestUtils.parseFlowOptions(req, flowId);
+      options.validate(azProps);
     } catch (final ServletException e) {
       logger.info("parseFlowOptions failed", e);
       ret.put("error", "Error parsing flow options: " + e.getMessage());
