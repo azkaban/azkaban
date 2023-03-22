@@ -1010,8 +1010,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options;
+    final Props azProps = getApplication().getServerProps();
     try {
       options = HttpRequestUtils.parseFlowOptions(req, flowId);
+      options.validate(azProps);
     } catch (final ServletException e) {
       logger.info("parseFlowOptions failed", e);
       ret.put("error", "Error parsing flow options: " + e.getMessage());
