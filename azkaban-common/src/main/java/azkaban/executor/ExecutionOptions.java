@@ -175,11 +175,14 @@ public class ExecutionOptions {
     return options;
   }
 
-  public void validate(Props azProps)
+  /**
+   * Validate the ExecutionOption's Flow-Parameters against the application level Properties
+   * @throws ServletException if any of the parameter is invalid
+   */
+  public void validateFlowParameters(Props azProps)
       throws ServletException {
     List<String> errMsg = new ArrayList<>();
 
-    // validate flow parameters
     Map<String, String> flowParameters = this.getFlowParameters();
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
       // allow list defined in azProps

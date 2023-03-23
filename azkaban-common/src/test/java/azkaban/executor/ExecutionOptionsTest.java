@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 LinkedIn, Inc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.executor;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTARTABLE_STATUS;
@@ -25,7 +41,7 @@ public class ExecutionOptionsTest {
   @Test
   public void testValidateFlowParamWithoutAnyFlowParameter() throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
   @Test
@@ -35,7 +51,7 @@ public class ExecutionOptionsTest {
         FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED"
     ));
 
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
   @Test
@@ -46,7 +62,7 @@ public class ExecutionOptionsTest {
     ));
 
     // if not defined, has default value to [EXECUTION_STOPPED, FAILED]
-    options.validate(new Props());
+    options.validateFlowParameters(new Props());
   }
 
   @Test(expected = ServletException.class)
@@ -57,7 +73,7 @@ public class ExecutionOptionsTest {
         FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "KILLED"
     ));
 
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
   @Test
@@ -67,7 +83,7 @@ public class ExecutionOptionsTest {
         FLOW_PARAM_RESTART_COUNT, "1"
     ));
 
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
   @Test(expected = ServletException.class)
@@ -77,7 +93,7 @@ public class ExecutionOptionsTest {
         FLOW_PARAM_RESTART_COUNT, "-11"
     ));
 
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
   @Test(expected = ServletException.class)
@@ -87,7 +103,7 @@ public class ExecutionOptionsTest {
         FLOW_PARAM_RESTART_COUNT, "100000"
     ));
 
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
   @Test
@@ -98,7 +114,7 @@ public class ExecutionOptionsTest {
         FLOW_PARAM_RESTART_COUNT, "2"
     ));
 
-    options.validate(testAzProps);
+    options.validateFlowParameters(testAzProps);
   }
 
 }
