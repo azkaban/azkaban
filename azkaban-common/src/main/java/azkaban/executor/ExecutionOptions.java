@@ -186,31 +186,31 @@ public class ExecutionOptions {
     Map<String, String> flowParameters = this.getFlowParameters();
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
       // allow list defined in azProps
-      List<String> allowedStatues = azProps.getStringList(
+      final List<String> allowedStatuses = azProps.getStringList(
           AZKABAN_EXECUTION_RESTARTABLE_STATUS, DEFAULT_EXECUTION_RESTARTABLE_STATUS);
 
       // user defined list
-      String[] statuses = flowParameters
+      final String[] statuses = flowParameters
           .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
           .split("\\s*,\\s*");
 
       for (String s : statuses) {
-        if (!allowedStatues.contains(s)) {
+        if (!allowedStatuses.contains(s)) {
           errMsg.add(String.format("`%s` is not a valid restartable status, "
-              + "permitted status are %s", s, allowedStatues));
+              + "permitted status are %s", s, allowedStatuses));
         }
       }
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
       // check restart count limit
-      int azRestartCountLimit = azProps.getInt(
+      final int azFlowRestartCountLimit = azProps.getInt(
           AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_EXECUTION_RESTART_LIMIT);
-      int flowRestartCount = Integer.parseInt(
+      final int flowRestartCount = Integer.parseInt(
           flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
-      if (flowRestartCount > azRestartCountLimit || flowRestartCount < 0){
+      if (flowRestartCount > azFlowRestartCountLimit || flowRestartCount < 0){
         errMsg.add(String.format(
             "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
-                + "within [0, %d]", flowRestartCount, azRestartCountLimit));
+                + "within [0, %d]", flowRestartCount, azFlowRestartCountLimit));
       }
     }
 
