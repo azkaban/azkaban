@@ -28,13 +28,17 @@ import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.GsonBuilder;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.servlet.ServletException;
+import joptsimple.internal.Strings;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -176,7 +180,7 @@ public class ExecutionOptions {
    * Validate the ExecutionOption's Flow-Parameters against the application level Properties
    * @throws ServletException if any of the parameter is invalid
    */
-  public void validateFlowParameters(Props azProps)
+  public void validatePreprocessFlowParameters(Props azProps)
       throws ServletException {
     List<String> errMsg = new ArrayList<>();
 
@@ -184,12 +188,22 @@ public class ExecutionOptions {
     if (flowParameters == null || flowParameters.isEmpty()) {
       return;
     }
+    // if ALLOW_RESTART_ON_EXECUTION_STOPPED then ALLOW_RESTART_ON_STATUS += "EXECUTION_STOPPED,"
+    if (Boolean.parseBoolean(
+        flowParameters.getOrDefault(
+            FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))
+    ){
+      flowParameters.put(
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          Status.EXECUTION_STOPPED.name() + "," +
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+      );
+    }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
-
-      // user defined list
-      final String[] statuses = flowParameters
+      // user defined list; remove empty spaces
+      final List<String> statuses = Arrays.stream(flowParameters
           .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
-          .split("\\s*,\\s*");
+          .split("\\s*,\\s*")).filter(s -> !s.trim().isEmpty()).collect(Collectors.toList());
 
       for (String s : statuses) {
         if (!RESTARTABLE_TERMINATED_STATUSES.contains(Status.valueOf(s))) {
@@ -197,6 +211,8 @@ public class ExecutionOptions {
               + "permitted status are %s", s, RESTARTABLE_TERMINATED_STATUSES));
         }
       }
+      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          Strings.join(statuses, ","));
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
       // check restart count limit

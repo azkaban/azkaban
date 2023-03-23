@@ -16,7 +16,8 @@
 
 package azkaban.executor;
 
-import static azkaban.executor.Status.RESTARTABLE_STATUSES;
+import static azkaban.executor.Status.RESTARTABLE_NON_TERMINATED_STATUSES;
+import static azkaban.executor.Status.RESTARTABLE_TERMINATED_STATUSES;
 import static azkaban.executor.Status.StatusBeforeRunningSet;
 import static java.util.Objects.requireNonNull;
 
@@ -33,6 +34,7 @@ import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -175,30 +177,38 @@ public class ExecutionControllerUtils {
    * @param originalStatus
    */
   public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
-    if (!RESTARTABLE_STATUSES.contains(originalStatus)) {
-      return;
+    if (!RESTARTABLE_NON_TERMINATED_STATUSES.contains(originalStatus)
+        && !RESTARTABLE_TERMINATED_STATUSES.contains(originalStatus)) {
+        return;
     }
     final ExecutionOptions options = flow.getExecutionOptions();
     // flow can only be retried once
     if (options == null || options.isExecutionRetried()) {
       return;
     }
-    // If the original execution status is not EXECUTION_STOPPED, it can be retried
-    if (originalStatus != Status.EXECUTION_STOPPED) {
+    // If the original execution status is not EXECUTION_STOPPED but other restartable status, it
+    // can be retried
+    if (RESTARTABLE_NON_TERMINATED_STATUSES.contains(originalStatus)) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId());
       ExecutionControllerUtils.submitRestartFlow(flow);
       return;
     }
-    // If the original execution status is EXECUTION_STOPPED, which indicates the program
-    // detects there's an invalid pod state transition and flow is terminated before final states,
-    // the runtime properties (flow parameters) need to be checked.
+
+    // The runtime properties (flow parameters) need to be checked:
+    // - If the original execution status is EXECUTION_STOPPED (which indicates the program
+    // detects there's an invalid pod state transition and flow is terminated before final states)
     final Map<String, String> flowParams = options.getFlowParameters();
     if (flowParams == null || flowParams.isEmpty()) {
       return;
     }
-    if (Boolean.parseBoolean(flowParams.getOrDefault(FlowParameters
-        .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))) {
-      logger.info("Submitted flow for restart: " + flow.getExecutionId());
+    // user defined restart statuses list
+    final ImmutableSet<String> restartedStatuses = ImmutableSet.copyOf(flowParams
+        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+        .split("\\s*,\\s*"));
+
+    if (restartedStatuses.contains(originalStatus.name())) {
+      logger.info("Submitted flow for restart: " + flow.getExecutionId()
+          + "from originalStatus: " + originalStatus);
       ExecutionControllerUtils.submitRestartFlow(flow);
     }
   }
