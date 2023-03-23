@@ -203,14 +203,14 @@ public class ExecutionOptions {
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
       // check restart count limit
-      final int azFlowRestartCountLimit = azProps.getInt(
+      final int flowRestartCountLimit = azProps.getInt(
           AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_EXECUTION_RESTART_LIMIT);
       final int flowRestartCount = Integer.parseInt(
           flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
-      if (flowRestartCount > azFlowRestartCountLimit || flowRestartCount < 0){
+      if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
         errMsg.add(String.format(
             "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
-                + "within [0, %d]", flowRestartCount, azFlowRestartCountLimit));
+                + "within [0, %d]", flowRestartCount, flowRestartCountLimit));
       }
     }
 
