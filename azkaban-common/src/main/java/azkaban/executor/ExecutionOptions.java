@@ -184,6 +184,9 @@ public class ExecutionOptions {
     List<String> errMsg = new ArrayList<>();
 
     Map<String, String> flowParameters = this.getFlowParameters();
+    if (flowParameters == null || flowParameters.isEmpty()) {
+      return;
+    }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
       // allow list defined in azProps
       final List<String> allowedStatuses = azProps.getStringList(
