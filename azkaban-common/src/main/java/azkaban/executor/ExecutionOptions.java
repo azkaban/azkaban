@@ -200,14 +200,26 @@ public class ExecutionOptions {
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
       // check restart count limit
-      final int flowRestartCountLimit = azProps.getInt(
-          AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
-      final int flowRestartCount = Integer.parseInt(
-          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
-      if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
+      try {
+        final int flowRestartCountLimit = azProps.getInt(
+            AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
+        try {
+          final int flowRestartCount = Integer.parseInt(
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
+          if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
+            errMsg.add(String.format(
+                "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
+                    + "within [0, %d]", flowRestartCount, flowRestartCountLimit));
+          }
+        } catch (NumberFormatException e) {
+          errMsg.add(String.format(
+              "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %s`, should be integer",
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0")));
+        }
+      } catch (NumberFormatException e) {
         errMsg.add(String.format(
-            "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
-                + "within [0, %d]", flowRestartCount, flowRestartCountLimit));
+            "Invalid `" + AZKABAN_EXECUTION_RESTART_LIMIT + " = %s`, should be integer",
+            azProps.get(AZKABAN_EXECUTION_RESTART_LIMIT)));
       }
     }
 
