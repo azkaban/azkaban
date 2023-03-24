@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTARTABLE_STATUS;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS;
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_RESTART_COUNT;
@@ -34,7 +33,6 @@ public class ExecutionOptionsTest {
   @Before
   public void before(){
     testAzProps = new Props();
-    testAzProps.put(AZKABAN_EXECUTION_RESTARTABLE_STATUS, "EXECUTION_STOPPED");
     testAzProps.put(AZKABAN_EXECUTION_RESTART_LIMIT, 2);
   }
 
