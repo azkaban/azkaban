@@ -16,17 +16,16 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTARTABLE_STATUS;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
 import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN;
 import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
+import static azkaban.executor.Status.RESTARTABLE_TERMINATED_STATUSES;
 
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
@@ -49,9 +48,7 @@ public class ExecutionOptions {
   /* override dispatcher selection and use executor id specified */
   public static final String USE_EXECUTOR = "useExecutor";
   public static final int DEFAULT_FLOW_PRIORITY = 5;
-  public static final ImmutableList<String> DEFAULT_EXECUTION_RESTARTABLE_STATUS =
-      ImmutableList.of(Status.EXECUTION_STOPPED.name(), Status.FAILED.name());
-  public static final int DEFAULT_EXECUTION_RESTART_LIMIT = 2;
+  public static final int DEFAULT_FLOW_RESTART_LIMIT = 2;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
   private static final String RUNTIME_PROPERTIES = "runtimeProperties";
@@ -188,9 +185,6 @@ public class ExecutionOptions {
       return;
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
-      // allow list defined in azProps
-      final List<String> allowedStatuses = azProps.getStringList(
-          AZKABAN_EXECUTION_RESTARTABLE_STATUS, DEFAULT_EXECUTION_RESTARTABLE_STATUS);
 
       // user defined list
       final String[] statuses = flowParameters
@@ -198,16 +192,16 @@ public class ExecutionOptions {
           .split("\\s*,\\s*");
 
       for (String s : statuses) {
-        if (!allowedStatuses.contains(s)) {
+        if (!RESTARTABLE_TERMINATED_STATUSES.contains(Status.valueOf(s))) {
           errMsg.add(String.format("`%s` is not a valid restartable status, "
-              + "permitted status are %s", s, allowedStatuses));
+              + "permitted status are %s", s, RESTARTABLE_TERMINATED_STATUSES));
         }
       }
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
       // check restart count limit
       final int flowRestartCountLimit = azProps.getInt(
-          AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_EXECUTION_RESTART_LIMIT);
+          AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
       final int flowRestartCount = Integer.parseInt(
           flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
       if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
