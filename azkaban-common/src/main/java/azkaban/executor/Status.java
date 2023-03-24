@@ -54,6 +54,9 @@ public enum Status {
   public static final ImmutableSet<Status> RESTARTABLE_STATUSES =
       ImmutableSet.of(Status.READY, Status.DISPATCHING, Status.PREPARING, Status.EXECUTION_STOPPED);
 
+  public static final ImmutableSet<Status> RESTARTABLE_TERMINATED_STATUSES =
+      ImmutableSet.of(Status.EXECUTION_STOPPED, Status.FAILED);
+
   private final int numVal;
 
   Status(final int numVal) {

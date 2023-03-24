@@ -16,11 +16,15 @@
 
 package azkaban.executor;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
 import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN;
 import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
+import static azkaban.executor.Status.RESTARTABLE_TERMINATED_STATUSES;
 
+import azkaban.Constants.FlowParameters;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
+import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.GsonBuilder;
@@ -30,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.ServletException;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -43,6 +48,7 @@ public class ExecutionOptions {
   /* override dispatcher selection and use executor id specified */
   public static final String USE_EXECUTOR = "useExecutor";
   public static final int DEFAULT_FLOW_PRIORITY = 5;
+  public static final int DEFAULT_FLOW_RESTART_LIMIT = 2;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
   private static final String RUNTIME_PROPERTIES = "runtimeProperties";
@@ -164,6 +170,64 @@ public class ExecutionOptions {
         options.originalFlowExecutionIdBeforeRetry));
 
     return options;
+  }
+
+  /**
+   * Validate the ExecutionOption's Flow-Parameters against the application level Properties
+   * @throws ServletException if any of the parameter is invalid
+   */
+  public void validateFlowParameters(Props azProps)
+      throws ServletException {
+    List<String> errMsg = new ArrayList<>();
+
+    Map<String, String> flowParameters = this.getFlowParameters();
+    if (flowParameters == null || flowParameters.isEmpty()) {
+      return;
+    }
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
+
+      // user defined list
+      final String[] statuses = flowParameters
+          .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+          .split("\\s*,\\s*");
+
+      for (String s : statuses) {
+        if (!RESTARTABLE_TERMINATED_STATUSES.contains(Status.valueOf(s))) {
+          errMsg.add(String.format("`%s` is not a valid restartable status, "
+              + "permitted status are %s", s, RESTARTABLE_TERMINATED_STATUSES));
+        }
+      }
+    }
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
+      // check restart count limit
+      try {
+        final int flowRestartCountLimit = azProps.getInt(
+            AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
+        try {
+          final int flowRestartCount = Integer.parseInt(
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
+          if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
+            errMsg.add(String.format(
+                "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
+                    + "within [0, %d]", flowRestartCount, flowRestartCountLimit));
+          }
+        } catch (NumberFormatException e) {
+          errMsg.add(String.format(
+              "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %s`, should be integer",
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0")));
+        }
+      } catch (NumberFormatException e) {
+        errMsg.add(String.format(
+            "Invalid `" + AZKABAN_EXECUTION_RESTART_LIMIT + " = %s`, should be integer",
+            azProps.get(AZKABAN_EXECUTION_RESTART_LIMIT)));
+      }
+    }
+
+    // throw exception if there's any error message
+    if (!errMsg.isEmpty()) {
+      throw new ServletException(String.format("ExecutionOptions is invalid, error reasons: %s",
+          errMsg));
+    }
   }
 
   public void addAllFlowParameters(final Map<String, String> flowParam) {
