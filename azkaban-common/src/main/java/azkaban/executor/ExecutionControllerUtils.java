@@ -16,8 +16,8 @@
 
 package azkaban.executor;
 
-import static azkaban.executor.Status.RESTARTABLE_NON_TERMINATED_STATUSES;
-import static azkaban.executor.Status.RESTARTABLE_TERMINATED_STATUSES;
+import static azkaban.executor.Status.RESTARTABLE_NON_TERMINAL_STATUSES;
+import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 import static azkaban.executor.Status.StatusBeforeRunningSet;
 import static java.util.Objects.requireNonNull;
 
@@ -34,14 +34,15 @@ import azkaban.project.ProjectManager;
 import azkaban.spi.EventType;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -177,34 +178,42 @@ public class ExecutionControllerUtils {
    * @param originalStatus
    */
   public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
-    if (!RESTARTABLE_NON_TERMINATED_STATUSES.contains(originalStatus)
-        && !RESTARTABLE_TERMINATED_STATUSES.contains(originalStatus)) {
-        return;
-    }
     final ExecutionOptions options = flow.getExecutionOptions();
     // flow can only be retried once
     if (options == null || options.isExecutionRetried()) {
       return;
     }
-    // If the original execution status is not EXECUTION_STOPPED but other restartable status, it
-    // can be retried
-    if (RESTARTABLE_NON_TERMINATED_STATUSES.contains(originalStatus)) {
+    // If the original execution status is restartable non-terminal status, it can be retried
+    if (RESTARTABLE_NON_TERMINAL_STATUSES.contains(originalStatus)) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId());
       ExecutionControllerUtils.submitRestartFlow(flow);
       return;
     }
 
-    // The runtime properties (flow parameters) need to be checked:
+    // if the original execution status is restartable but is terminal status, we will need to
+    // check the runtime properties (flow parameters):
     // - If the original execution status is EXECUTION_STOPPED (which indicates the program
     // detects there's an invalid pod state transition and flow is terminated before final states)
+    // - Or some other status defined in flow parameters can also be restarted
+    if (!RESTARTABLE_TERMINAL_STATUSES.contains(originalStatus)) {
+      return;
+    }
+
     final Map<String, String> flowParams = options.getFlowParameters();
     if (flowParams == null || flowParams.isEmpty()) {
       return;
     }
     // user defined restart statuses list
-    final ImmutableSet<String> restartedStatuses = ImmutableSet.copyOf(flowParams
+    final Set<String> restartedStatuses = new HashSet<>(Arrays.asList(flowParams
         .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
-        .split("\\s*,\\s*"));
+        .split("\\s*,\\s*")));
+
+    // backwards compatible to flows that historically defined with
+    // "allow.restart.on.execution.stopped"
+    if (Boolean.parseBoolean(flowParams.getOrDefault(
+        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))){
+      restartedStatuses.add(Status.EXECUTION_STOPPED.name());
+    }
 
     if (restartedStatuses.contains(originalStatus.name())) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId()

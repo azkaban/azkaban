@@ -15,7 +15,10 @@
  */
 package azkaban.server;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
+import static azkaban.executor.ExecutionOptions.DEFAULT_FLOW_RESTART_LIMIT;
 import static azkaban.executor.ExecutionOptions.FAILURE_ACTION_OVERRIDE;
+import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
@@ -23,6 +26,7 @@ import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -30,15 +34,19 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import joptsimple.internal.Strings;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -157,6 +165,71 @@ public class HttpRequestUtils {
       }
     }
     return execOptions;
+  }
+
+  /**
+   * Validate the ExecutionOption's Flow-Parameters against the application level Properties
+   * @throws ServletException if any of the parameter is invalid
+   */
+  public static void validatePreprocessFlowParameters(ExecutionOptions options, Props azProps)
+      throws ServletException {
+    List<String> errMsg = new ArrayList<>();
+
+    Map<String, String> flowParameters = options.getFlowParameters();
+    if (flowParameters == null || flowParameters.isEmpty()) {
+      return;
+    }
+    // if ALLOW_RESTART_ON_EXECUTION_STOPPED then ALLOW_RESTART_ON_STATUS += "EXECUTION_STOPPED,"
+    if (Boolean.parseBoolean(
+        flowParameters.getOrDefault(
+            FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))
+    ){
+      flowParameters.put(
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          Status.EXECUTION_STOPPED.name() + "," +
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+      );
+      flowParameters.remove(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED);
+    }
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
+      // user defined list; remove empty spaces
+      final List<String> statuses = Arrays.stream(flowParameters
+          .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+          .split("\\s*,\\s*")).filter(s -> !s.trim().isEmpty()).collect(Collectors.toList());
+
+      for (String s : statuses) {
+        if (!RESTARTABLE_TERMINAL_STATUSES.contains(Status.valueOf(s))) {
+          errMsg.add(String.format("`%s` is not a valid restartable status, "
+              + "permitted status are %s\n", s, RESTARTABLE_TERMINAL_STATUSES));
+        }
+      }
+      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          Strings.join(statuses, ","));
+    }
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
+
+      // check restart count limit
+      try {
+        validateIntegerParam(flowParameters, FlowParameters.FLOW_PARAM_RESTART_COUNT);
+        final int flowRestartCountLimit = azProps.getInt(
+            AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
+        final int flowRestartCount = Integer.parseInt(
+            flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
+        if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
+          errMsg.add(String.format(
+              "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
+                  + "within [0, %d]\n", flowRestartCount, flowRestartCountLimit));
+        }
+      } catch (ExecutorManagerException e) {
+        errMsg.add(e.getMessage());
+      }
+    }
+
+    // throw exception if there's any error message
+    if (!errMsg.isEmpty()) {
+      throw new ServletException(String.format("ExecutionOptions is invalid, error reasons: %s",
+          errMsg));
+    }
   }
 
   /**

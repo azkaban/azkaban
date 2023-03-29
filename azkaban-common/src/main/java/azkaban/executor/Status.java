@@ -51,10 +51,10 @@ public enum Status {
   public static final Set<Status> nonFinishingStatusAfterFlowStartsSet = new TreeSet<>(
       Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
 
-  public static final ImmutableSet<Status> RESTARTABLE_NON_TERMINATED_STATUSES =
+  public static final ImmutableSet<Status> RESTARTABLE_NON_TERMINAL_STATUSES =
       ImmutableSet.of(Status.READY, Status.DISPATCHING, Status.PREPARING);
 
-  public static final ImmutableSet<Status> RESTARTABLE_TERMINATED_STATUSES =
+  public static final ImmutableSet<Status> RESTARTABLE_TERMINAL_STATUSES =
       ImmutableSet.of(Status.EXECUTION_STOPPED, Status.FAILED);
 
   private final int numVal;

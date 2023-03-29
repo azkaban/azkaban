@@ -15,6 +15,10 @@
  */
 package azkaban.server;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_RESTART_COUNT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import azkaban.DispatchMethod;
@@ -28,6 +32,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -46,6 +51,7 @@ import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -55,9 +61,18 @@ import org.mockito.Mockito;
  */
 public final class HttpRequestUtilsTest {
 
+  public static Props testAzProps;
+
+  @Before
+  public void before() {
+    testAzProps = new Props();
+    testAzProps.put(AZKABAN_EXECUTION_RESTART_LIMIT, 2);
+  }
+
   /* Helper method to get a test flow and add required properties */
   public static ExecutableFlow createExecutableFlow() throws IOException {
-    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
+    final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1",
+        DispatchMethod.POLL);
     flow.getExecutionOptions().getFlowParameters()
         .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()
@@ -219,7 +234,7 @@ public final class HttpRequestUtilsTest {
     final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "test-flow",
         "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
         ImmutableList.of("sla1@example.com", "sla2@example.com"), ImmutableMap.of(
-            "myAlerter", ImmutableMap.of("prop1", ImmutableList.of("value1"))
+        "myAlerter", ImmutableMap.of("prop1", ImmutableList.of("value1"))
     )));
     Assert.assertEquals(expected, slaOptions);
   }
@@ -266,6 +281,120 @@ public final class HttpRequestUtilsTest {
     Mockito.when(req.getParameter(Mockito.anyString()))
         .thenAnswer(i -> params.get(i.getArgument(0, String.class)));
     return req;
+  }
+
+
+  @Test
+  public void testValidatePreprocessFlowParamWithoutAnyFlowParameter() throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test
+  public void testValidatePreprocessFlowParamWithGood_ALLOW_RESTART_ON_STATUS()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test
+  public void testValidatePreprocessFlowParamWithDefaultAllowListAndGood_ALLOW_RESTART_ON_STATUS()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED"
+    ));
+
+    // if not defined, has default value to [EXECUTION_STOPPED, FAILED]
+    HttpRequestUtils.validatePreprocessFlowParameters(options, new Props());
+  }
+
+  @Test(expected = ServletException.class)
+  public void testValidatePreprocessFlowParamWithInvalid_ALLOW_RESTART_ON_STATUS()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    // KILLED is not defined
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "KILLED"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test
+  public void testValidatePreprocessFlowParamWithGood_RESTART_COUNT() throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_RESTART_COUNT, "1"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test(expected = ServletException.class)
+  public void testValidatePreprocessFlowParamWithNegative_RESTART_COUNT() throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_RESTART_COUNT, "-11"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test(expected = ServletException.class)
+  public void testValidatePreprocessFlowParamWithExceed_RESTART_COUNT() throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_RESTART_COUNT, "100000"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test
+  public void testValidatePreprocessFlowParamWithAllValidSettings() throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED",
+        FLOW_PARAM_RESTART_COUNT, "2"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+
+  @Test
+  public void testValidatePreprocessFlowParamWithAllowRestartExecutionStopped()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
+        FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+    Map<String, String> result = options.getFlowParameters();
+    Assert.assertTrue(
+        result.get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS).contains("EXECUTION_STOPPED"));
+  }
+
+  @Test
+  public void testValidatePreprocessFlowParamWithNegativeAllowRestartExecutionStopped()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
+        FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+    Map<String, String> result = options.getFlowParameters();
+    Assert.assertFalse(
+        result.get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS).contains("EXECUTION_STOPPED"));
   }
 
 }
