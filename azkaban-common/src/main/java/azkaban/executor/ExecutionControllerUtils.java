@@ -215,6 +215,8 @@ public class ExecutionControllerUtils {
       restartedStatuses.add(Status.EXECUTION_STOPPED.name());
     }
 
+    // TODO: check the "flow.max.retries" number and -= 1
+
     if (restartedStatuses.contains(originalStatus.name())) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId()
           + "from originalStatus: " + originalStatus);
