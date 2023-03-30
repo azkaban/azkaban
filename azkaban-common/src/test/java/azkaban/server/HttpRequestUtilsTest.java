@@ -314,6 +314,19 @@ public final class HttpRequestUtilsTest {
   }
 
   @Test(expected = ServletException.class)
+  public void testValidatePreprocessFlowParamWithBadAzkabanStatus_ALLOW_RESTART_ON_STATUS()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    // KILLED is not defined
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "super-bad-status, not-an-azkaban-status"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+
+  @Test(expected = ServletException.class)
   public void testValidatePreprocessFlowParamWithInvalid_ALLOW_RESTART_ON_STATUS()
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();

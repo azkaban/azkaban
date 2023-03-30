@@ -199,10 +199,16 @@ public class HttpRequestUtils {
               .split("\\s*,\\s*")
       ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
-      for (String s : statuses) {
-        if (!RESTARTABLE_TERMINAL_STATUSES.contains(Status.valueOf(s))) {
-          errMsg.add(String.format("`%s` is not a valid restartable status, "
-              + "permitted status are %s\n", s, RESTARTABLE_TERMINAL_STATUSES));
+      for (String str : statuses) {
+        try{
+          Status status =  Status.valueOf(str);
+          if (!RESTARTABLE_TERMINAL_STATUSES.contains(status)) {
+            errMsg.add(String.format("`%s` is not a valid restartable status, "
+                + "permitted status are %s\n", str, RESTARTABLE_TERMINAL_STATUSES));
+          }
+        } catch (Exception e) {
+          errMsg.add(String.format("`%s` is not a valid Status defined in Azkaban, please "
+                  + "correct\n", str));
         }
       }
       flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
