@@ -43,6 +43,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -192,10 +193,11 @@ public class HttpRequestUtils {
       flowParameters.remove(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED);
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
-      // user defined list; remove empty spaces
-      final List<String> statuses = Arrays.stream(flowParameters
-          .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
-          .split("\\s*,\\s*")).filter(s -> !s.trim().isEmpty()).collect(Collectors.toList());
+      // user defined restart-statuses; remove the empty spaces
+      final Set<String> statuses = Arrays.stream(
+          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+              .split("\\s*,\\s*")
+      ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
       for (String s : statuses) {
         if (!RESTARTABLE_TERMINAL_STATUSES.contains(Status.valueOf(s))) {

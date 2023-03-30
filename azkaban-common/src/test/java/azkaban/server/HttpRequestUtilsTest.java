@@ -319,10 +319,25 @@ public final class HttpRequestUtilsTest {
     ExecutionOptions options = new ExecutionOptions();
     // KILLED is not defined
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "KILLED"
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "KILLED, EXECUTION_STOPPED"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+  }
+
+  @Test
+  public void testValidatePreprocessFlowParamWithBadFormat_ALLOW_RESTART_ON_STATUS()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    // KILLED is not defined
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, ", EXECUTION_STOPPED,, ,    "
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+    Assert.assertEquals(
+        options.getFlowParameters().get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS),
+        "EXECUTION_STOPPED");
   }
 
   @Test
