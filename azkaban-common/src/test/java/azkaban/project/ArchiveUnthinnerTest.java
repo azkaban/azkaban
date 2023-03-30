@@ -124,7 +124,7 @@ public class ArchiveUnthinnerTest {
         }
       });
       return null;
-    }).when(this.dependencyTransferManager).downloadAllDependencies(any(Set.class));
+    }).when(this.dependencyTransferManager).downloadAllDependencies(any(Set.class), eq(project.getName()));
 
     // When the unthinner attempts to get a validationKey for the project, return our sample one.
     when(this.validatorUtils.getCacheKey(eq(this.project), eq(this.projectFolder), any()))
@@ -411,7 +411,7 @@ public class ArchiveUnthinnerTest {
 
     // When we attempt to download the dependencies, throw an error
     doThrow(new DependencyTransferException())
-        .when(this.dependencyTransferManager).downloadAllDependencies(depSetEq(depSetAB));
+        .when(this.dependencyTransferManager).downloadAllDependencies(depSetEq(depSetAB), eq(project.getName()));
 
     // Run the ArchiveUnthinner!
     runUnthinner();

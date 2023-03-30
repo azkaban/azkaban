@@ -702,7 +702,6 @@ public class JdbcProjectImpl implements ProjectLoader {
       throws ProjectManagerException {
     // We do one at a time instead of batch... because well, the batch could be
     // large.
-    logger.info("Uploading flows");
     try {
       for (final Flow flow : flows) {
         uploadFlow(project, version, flow, this.defaultEncodingType);
@@ -752,7 +751,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     final String json = JSONUtils.toJSON(flow.toObject());
     final byte[] data = convertJsonToBytes(encType, json);
 
-    logger.info("Flow upload " + flow.getId() + " is byte size " + data.length);
+    logger.info("Flow upload " + flow.getId() + " in project " + project.getName() + " is byte size " + data.length);
     final String INSERT_FLOW =
         "INSERT INTO project_flows (project_id, version, flow_id, modified_time, encoding_type, json) values (?,?,?,?,?,?)";
     try {

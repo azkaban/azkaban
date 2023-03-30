@@ -70,7 +70,8 @@ public class ContainerizedFlowPreparer extends AbstractFlowPreparer {
   public void setup(final ExecutableFlow flow) throws ExecutorManagerException {
     final ProjectDirectoryMetadata projectDirMetadata = new ProjectDirectoryMetadata(
             flow.getProjectId(),
-            flow.getVersion());
+            flow.getVersion(),
+            flow.getProjectName());
     final long flowPrepStartTime = System.currentTimeMillis();
     final int execId = flow.getExecutionId();
 

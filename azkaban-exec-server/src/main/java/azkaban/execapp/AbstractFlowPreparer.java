@@ -155,7 +155,7 @@ public abstract class AbstractFlowPreparer {
 
     try {
       final long start = System.currentTimeMillis();
-      this.dependencyTransferManager.downloadAllDependencies(depFiles);
+      this.dependencyTransferManager.downloadAllDependencies(depFiles, proj.getProjectName());
       LOGGER.info("Downloading {} JAR dependencies for project {} when preparing "
                       + "execution [execid {}] completed in {} second(s)",
               dependencies.size(), proj, execId, (System.currentTimeMillis() - start) / 1000);

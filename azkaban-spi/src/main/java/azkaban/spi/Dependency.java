@@ -122,6 +122,11 @@ public class Dependency {
   }
 
   @Override
+  public String toString() {
+    return this.fileName + "/" + this.destination;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(this.sha1);
   }

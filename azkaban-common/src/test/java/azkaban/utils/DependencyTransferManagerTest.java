@@ -86,7 +86,7 @@ public class DependencyTransferManagerTest {
   @Test
   public void testDownloadEmptySet() throws Exception {
     // Make sure there are no failures when we download with an empty set (it should do nothing)
-    this.dependencyTransferManager.downloadAllDependencies(Collections.emptySet());
+    this.dependencyTransferManager.downloadAllDependencies(Collections.emptySet(), null);
   }
 
   @Test
@@ -99,7 +99,7 @@ public class DependencyTransferManagerTest {
     }).when(this.storage).getDependency(any());
 
     // Download depA and depB
-    this.dependencyTransferManager.downloadAllDependencies(depSetAB);
+    this.dependencyTransferManager.downloadAllDependencies(depSetAB, null);
 
     // Assert that the content was written to the files
     assertEquals(ThinArchiveTestUtils.getDepAContent(), FileUtils.readFileToString(depA.getFile()));
@@ -115,7 +115,7 @@ public class DependencyTransferManagerTest {
       .doReturn(IOUtils.toInputStream(ThinArchiveTestUtils.getDepAContent())).when(this.storage).getDependency(any());
 
     // Download ONLY depA
-    this.dependencyTransferManager.downloadAllDependencies(depSetA);
+    this.dependencyTransferManager.downloadAllDependencies(depSetA, null);
 
     verify(this.storage, times(2)).getDependency(depEq(depA));
   }
@@ -130,6 +130,6 @@ public class DependencyTransferManagerTest {
       return IOUtils.toInputStream(content);
     }).when(this.storage).getDependency(any());
 
-    this.dependencyTransferManager.downloadAllDependencies(depSetAB);
+    this.dependencyTransferManager.downloadAllDependencies(depSetAB, null);
   }
 }

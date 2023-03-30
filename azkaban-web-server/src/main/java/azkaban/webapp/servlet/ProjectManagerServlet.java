@@ -724,7 +724,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     try {
       for (final Schedule schedule : this.scheduleManager.getSchedules()) {
         if (schedule.getProjectId() == project.getId()) {
-          logger.info("removing schedule " + schedule.getScheduleId());
+          logger.info("removing schedule {} for project {}", schedule.getScheduleId(), project.getName());
           this.scheduleManager.removeSchedule(schedule);
         }
       }
@@ -738,6 +738,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         this.scheduler.unschedule(project);
       }
     } catch (final SchedulerException e) {
+      logger.error("");
       throw new ServletException(e);
     }
   }
@@ -1970,7 +1971,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         containerizedDispatchManager.getContainerFlowCriteria().reloadFlowFilter();
       }
     } catch (final Exception e) {
-      logger.info("Installation Failed.", e);
+      logger.info("Installation Failed for project {}", projectName, e);
       String error = e.getMessage();
       if (error.length() > 512) {
         error = error.substring(0, 512) + "<br>Too many errors to display.<br>";

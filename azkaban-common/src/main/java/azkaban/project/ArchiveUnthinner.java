@@ -124,15 +124,17 @@ public class ArchiveUnthinner {
     Set<Dependency> validCachedDeps = filterValidationStatus(depsToValidationStatus, FileValidationStatus.VALID);
     // newDeps: dependencies that are not in storage and need to be verified
     Set<Dependency> newDeps = filterValidationStatus(depsToValidationStatus, FileValidationStatus.NEW);
+    log.info("[Thin Upload] new Dependencies {} for project {}", dependencies, project.getName());
 
     // Download the new dependencies
-    final Set<DependencyFile> downloadedDeps = downloadDependencyFiles(projectFolder, newDeps);
+    final Set<DependencyFile> downloadedDeps = downloadDependencyFiles(projectFolder, newDeps, project.getName());
 
     // Validate the project
     Map<String, ValidationReport> reports = this.validatorUtils.validateProject(project, projectFolder, additionalValidatorProps);
     if (reports.values().stream().anyMatch(r -> r.getStatus() == ValidationStatus.ERROR)) {
       // No point continuing, this project has been rejected, so just return the validation report
       // and don't waste any more time.
+      log.error("Validation failed for new upload on project {}", project.getName());
       return reports;
     }
 
@@ -237,18 +239,18 @@ public class ArchiveUnthinner {
   }
 
   private Set<DependencyFile> downloadDependencyFiles(final File projectFolder,
-      final Set<Dependency> toDownload) {
+      final Set<Dependency> toDownload, String projectName) {
     final Set<DependencyFile> depFiles = toDownload.stream().map(d -> {
       File downloadedJar = new File(projectFolder, d.getDestination() + File.separator + d.getFileName());
       return d.makeDependencyFile(downloadedJar);
     }).collect(Collectors.toSet());
 
     try {
-      this.dependencyTransferManager.downloadAllDependencies(depFiles);
+      this.dependencyTransferManager.downloadAllDependencies(depFiles, projectName);
     } catch (DependencyTransferException e) {
+      log.error("Error while downloading dependencies {} for project {}", toDownload, projectName, e);
       throw new ProjectManagerException(e.getMessage(), e.getCause());
     }
-
     return depFiles;
   }
 

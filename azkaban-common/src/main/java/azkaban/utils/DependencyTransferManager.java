@@ -28,12 +28,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_DOWNLOAD_THREADPOOL_SIZE;
+import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.utils.ThinArchiveUtils.*;
 
 /**
@@ -47,11 +50,13 @@ public class DependencyTransferManager {
 
   public final int dependencyMaxDownloadTries;
 
+  public final int dependencyDownloadMaxTimeout;
+
   private final Storage storage;
 
   private final ExecutorService threadPool;
 
-  private static final Logger logger = Logger.getLogger(DependencyTransferManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(DependencyTransferManager.class);
 
   @Inject
   public DependencyTransferManager(final Props props, final Storage storage) {
@@ -61,6 +66,7 @@ public class DependencyTransferManager {
         new ThreadFactoryBuilder().setNameFormat("azk-dependency-pool-%d").build());
     this.dependencyMaxDownloadTries =
         props.getInt(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, 2);
+    this.dependencyDownloadMaxTimeout = props.getInt(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, 300);
   }
 
   /**
@@ -77,12 +83,13 @@ public class DependencyTransferManager {
   }
 
   /**
-   * downloads a set of dependencies from an origin. Each downloaded dependency is stored in the file
-   * returned by DependencyFile::getFile.
+   * downloads a set of dependencies from an origin. Each downloaded dependency is stored in the file returned by
+   * DependencyFile::getFile.
    *
-   * @param deps set of DependencyFile to download
+   * @param deps        set of DependencyFile to download
+   * @param projectName name of the project for which the dependencies are being downloaded
    */
-  public void downloadAllDependencies(final Set<DependencyFile> deps) {
+  public void downloadAllDependencies(final Set<DependencyFile> deps, String projectName) {
     if (deps.isEmpty()) {
       // Nothing for us to do!
       return;
@@ -93,45 +100,57 @@ public class DependencyTransferManager {
 
     CompletableFuture[] taskFutures = deps
         .stream()
-        .map(f -> CompletableFuture.runAsync(() -> downloadDependency(f), threadPool))
+        .map(f -> CompletableFuture.runAsync(() -> downloadDependency(f, projectName), threadPool))
         .toArray(CompletableFuture[]::new);
 
     try {
       waitForAllToSucceedOrOneToFail(taskFutures);
-      logger.info("Time taken to download all thin archive dependencies in seconds: " + (System.currentTimeMillis() - startTime) / 1000);
+      logger.info("Time taken to download all thin archive dependencies for project {} in {} ms.",
+          projectName, System.currentTimeMillis() - startTime);
     } catch (InterruptedException e) {
       // No point in continuing, let's stop any future downloads and try to interrupt currently running ones.
-      cancelPendingTasks(taskFutures);
+      logger.error("Download interrupted. Cancelling all pending downloads for project {}.", projectName);
+      cancelPendingTasks(taskFutures, projectName);
       throw new DependencyTransferException("Download interrupted.", e);
     } catch (ExecutionException e) {
       // ^^^ see above comment ^^^
-      cancelPendingTasks(taskFutures);
+      logger.error("Download failed. Cancelling all pending downloads for project {}.", projectName);
+      cancelPendingTasks(taskFutures, projectName);
       if (e.getCause() instanceof DependencyTransferException) {
         throw (DependencyTransferException) e.getCause();
       }
       throw new RuntimeException(e.getCause());
+    } catch (TimeoutException e) {
+      logger.error("Timed out while downloading dependencies for project {}.", projectName, e);
+      cancelPendingTasks(taskFutures, projectName);
+      throw new DependencyTransferException("Timed out while downloading dependencies.", e);
     }
   }
 
-  private void downloadDependency(final DependencyFile f) {
+  private void downloadDependency(final DependencyFile f, String projectName) {
     try {
-      downloadDependency(f, 0);
+      downloadDependency(f, 0, projectName);
+      logger.info("Successfully downloaded dependency {} for project {}.", f.getFileName(), projectName);
     } catch (IOException e) {
+      logger.error("Error while downloading dependency {} for project {}.", f.getFileName(), projectName, e);
       throw new DependencyTransferException("Error while downloading dependency " + f.getFileName(), e);
     } catch (HashNotMatchException e) {
+      logger.error("Checksum did not match when downloading dependency {} for project {}.", f.getFileName(), projectName, e);
       throw new DependencyTransferException("Checksum did not match when downloading dependency " + f.getFileName(), e);
     }
   }
 
   /* Cancel all the not-started tasks which are possibly waiting in the queue */
-  private static void cancelPendingTasks(CompletableFuture[] taskFutures) {
-    logger.error("cancelling the pending tasks because one of the downloads failed");
+  private static void cancelPendingTasks(CompletableFuture[] taskFutures, String projectName) {
+    logger.info("cancelling the pending tasks for project {} because one of the downloads failed.", projectName);
+    boolean cancelled = true;
     for (CompletableFuture future : taskFutures) {
-      future.cancel(false);
+      cancelled &= future.cancel(false);
     }
+    logger.info("{} cancel the pending tasks for project {}.", cancelled ? "Successfully" : "Failed to", projectName);
   }
 
-  private void downloadDependency(final DependencyFile f, final int retries)
+  private void downloadDependency(final DependencyFile f, final int retries, String projectName)
       throws HashNotMatchException, IOException {
     FileOutputStream outputStream = null;
     InputStream inputStream = null;
@@ -146,9 +165,11 @@ public class DependencyTransferManager {
       if (retries + 1 < dependencyMaxDownloadTries) {
         // downloadDependency will overwrite our destination file if attempted again
         exponentialBackoffDelay(retries);
-        downloadDependency(f, retries + 1);
+        downloadDependency(f, retries + 1, projectName);
         return;
       }
+      logger.error("Failed to download dependency file {} for project {} with {} max reties.",
+          f.getFileName(), projectName, dependencyMaxDownloadTries, e);
       throw e;
     } finally {
       IOUtils.closeQuietly(inputStream);
@@ -161,9 +182,11 @@ public class DependencyTransferManager {
       if (retries + 1 < dependencyMaxDownloadTries) {
         // downloadDependency will overwrite our destination file if attempted again
         exponentialBackoffDelay(retries);
-        downloadDependency(f, retries + 1);
+        downloadDependency(f, retries + 1, projectName);
         return;
       }
+      logger.error("Failed to complete hash validation for dependency file {} for project {} with {} max download reties."
+          + " Failing Download", f.getFileName(), projectName, dependencyMaxDownloadTries);
       throw e;
     }
   }
@@ -177,8 +200,12 @@ public class DependencyTransferManager {
     }
   }
 
-  private static void waitForAllToSucceedOrOneToFail(final CompletableFuture<?>[] futures)
-      throws InterruptedException, ExecutionException {
+  /**
+   * Add timeout to the download process.
+   * @throws TimeoutException, if the download process takes longer than the timeout.
+   * */
+  private void waitForAllToSucceedOrOneToFail(final CompletableFuture<?>[] futures)
+      throws InterruptedException, ExecutionException, TimeoutException {
     CompletableFuture<?> failure = new CompletableFuture();
     for (CompletableFuture<?> f : futures) {
       // f = f is redundant, but bug checker throws error if we don't do it because it doesn't like us ignoring a
@@ -190,6 +217,6 @@ public class DependencyTransferManager {
       });
     }
     // Wait for either the failure future to complete, or all of the actual futures to complete.
-    CompletableFuture.anyOf(failure, CompletableFuture.allOf(futures)).get();
+    CompletableFuture.anyOf(failure, CompletableFuture.allOf(futures)).get(dependencyDownloadMaxTimeout, TimeUnit.SECONDS);
   }
 }
