@@ -143,8 +143,8 @@ public class KubernetesWatchTest {
   private Flow flow = new Flow(DEFAULT_FLOW_NAME);
   private Project project = mock(Project.class);
   private ProjectManager projectManager = mock(ProjectManager.class);
-  private Map<String, String> flowParam = ImmutableMap.of(FlowParameters
-      .FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true");
+  private Map<String, String> flowParam = ImmutableMap.of(
+      FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED");
   private EventListener eventListener = new DummyEventListener();
 
   @Before

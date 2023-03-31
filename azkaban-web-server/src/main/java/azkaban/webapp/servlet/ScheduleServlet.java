@@ -40,6 +40,7 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.Emailer;
 import azkaban.utils.HTMLFormElement;
+import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
@@ -478,9 +479,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     ExecutionOptions flowOptions = null;
+    final Props azProps = getApplication().getServerProps();
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req, flowName);
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+      HttpRequestUtils.validatePreprocessFlowParameters(flowOptions, azProps);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
     }
@@ -583,9 +586,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     ExecutionOptions flowOptions = null;
+    final Props azProps = getApplication().getServerProps();
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req, flowName);
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+      HttpRequestUtils.validatePreprocessFlowParameters(flowOptions, azProps);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
     }
