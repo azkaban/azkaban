@@ -18,7 +18,7 @@ package azkaban.server;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED;
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS;
-import static azkaban.Constants.FlowParameters.FLOW_PARAM_RESTART_COUNT;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_MAX_RETRIES;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import azkaban.DispatchMethod;
@@ -357,7 +357,7 @@ public final class HttpRequestUtilsTest {
   public void testValidatePreprocessFlowParamWithGood_RESTART_COUNT() throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_RESTART_COUNT, "1"
+        FLOW_PARAM_MAX_RETRIES, "1"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -367,7 +367,7 @@ public final class HttpRequestUtilsTest {
   public void testValidatePreprocessFlowParamWithNegative_RESTART_COUNT() throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_RESTART_COUNT, "-11"
+        FLOW_PARAM_MAX_RETRIES, "-11"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -377,7 +377,7 @@ public final class HttpRequestUtilsTest {
   public void testValidatePreprocessFlowParamWithExceed_RESTART_COUNT() throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_RESTART_COUNT, "100000"
+        FLOW_PARAM_MAX_RETRIES, "100000"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -388,7 +388,7 @@ public final class HttpRequestUtilsTest {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
         FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED",
-        FLOW_PARAM_RESTART_COUNT, "2"
+        FLOW_PARAM_MAX_RETRIES, "2"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
