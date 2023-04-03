@@ -1,5 +1,7 @@
 package azkaban.executor;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +49,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private static final int projectId = 1;
   private OnExecutionEventListener listener;
 
+  @Before
   public void setup() throws Exception {
     // Set up project and flow
     this.project = new Project(projectId, "testProject");
@@ -61,6 +64,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     final Map<String, String> flowParam = new HashMap<>();
     flowParam.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED");
     flowParam.put(FlowParameters.FLOW_PARAM_DISPATCH_EXECUTION_TO_CONTAINER, "true");
+    executionOptions.setExecutionMaxRetries(3);
     executionOptions.addAllFlowParameters(flowParam);
     this.flow1.setExecutionOptions(executionOptions);
     this.flow1.setDispatchMethod(DispatchMethod.CONTAINERIZED);
@@ -84,6 +88,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     ExecutionControllerUtils.onExecutionEventListener = this.listener;
   }
 
+  @Test
   public void testRestartOnExecutionStopped() throws Exception {
     this.flow1.setStatus(Status.EXECUTION_STOPPED);
 
@@ -97,8 +102,10 @@ public class ExecutionControllerUtilsRestartFlowTest {
 
     final ExecutionOptions options1 = this.flow1.getExecutionOptions();
     assertTrue(options1.isExecutionRetried());
-    final ExecutableFlow flow2 = this.executorLoader.fetchExecutableFlow(executionId);
-    final ExecutionOptions options2 = this.flow1.getExecutionOptions();
+
+    final ExecutionOptions options2 = restartedExFlow.getExecutionOptions();
     assertTrue(options2.isExecutionRetried());
+    assertFalse(options2.executionReachedRetryLimit());
+    assertEquals(2, options2.getExecutionMaxRetries());
   }
 }

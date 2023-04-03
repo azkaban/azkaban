@@ -179,10 +179,16 @@ public class ExecutionControllerUtils {
    */
   public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
     final ExecutionOptions options = flow.getExecutionOptions();
-    // flow can only be retried once
-    if (options == null || options.isExecutionRetried()) {
+    if (options == null) {
+      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
       return;
     }
+    // flow can only retry if not reach the limit
+    if (options.executionReachedRetryLimit()){
+      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has reached its retry limit");
+      return;
+    }
+
     // If the original execution status is restartable non-terminal status, it can be retried
     if (RESTARTABLE_NON_TERMINAL_STATUSES.contains(originalStatus)) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId());
@@ -201,6 +207,7 @@ public class ExecutionControllerUtils {
 
     final Map<String, String> flowParams = options.getFlowParameters();
     if (flowParams == null || flowParams.isEmpty()) {
+      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
       return;
     }
     // user defined restart statuses list

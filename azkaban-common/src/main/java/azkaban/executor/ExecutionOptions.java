@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN;
+import static azkaban.Constants.EventReporterConstants.EXECUTION_MAX_RETRIES;
 import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
 
 import azkaban.executor.mail.DefaultMailCreator;
@@ -68,6 +69,7 @@ public class ExecutionOptions {
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
   private boolean isExecutionRetried = false;
+  private int executionMaxRetries = 0;
   private Integer originalFlowExecutionIdBeforeRetry = null;
 
   private boolean notifyOnFirstFailure = true;
@@ -163,6 +165,7 @@ public class ExecutionOptions {
     options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRIED_BY_AZKABAN, false));
     options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
         options.originalFlowExecutionIdBeforeRetry));
+    options.setExecutionMaxRetries(wrapper.getInt(EXECUTION_MAX_RETRIES, 0));
 
     return options;
   }
@@ -314,6 +317,15 @@ public class ExecutionOptions {
   public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
       executionRetried; }
 
+  public int getExecutionMaxRetries() { return executionMaxRetries; }
+
+  public void setExecutionMaxRetries(int executionMaxRetries) { this.executionMaxRetries =
+      executionMaxRetries; }
+
+  public boolean executionReachedRetryLimit() { return executionMaxRetries <= 0; }
+
+  public void retryOneTime() { this.executionMaxRetries -= 1; }
+
   public Integer getOriginalFlowExecutionIdBeforeRetry() { return originalFlowExecutionIdBeforeRetry; }
 
   public void setOriginalFlowExecutionIdBeforeRetry(Integer originalFlowExecutionIdBeforeRetry) { this.originalFlowExecutionIdBeforeRetry =
@@ -340,6 +352,7 @@ public class ExecutionOptions {
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
     flowOptionObj.put(EXECUTION_RETRIED_BY_AZKABAN, this.isExecutionRetried);
+    flowOptionObj.put(EXECUTION_MAX_RETRIES, this.executionMaxRetries);
     flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }

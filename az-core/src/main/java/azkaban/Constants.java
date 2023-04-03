@@ -207,6 +207,7 @@ public class Constants {
     public static final String FLOW_PAUSE_DURATION = "flowPauseDuration";
     public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
     public static final String EXECUTION_RETRIED_BY_AZKABAN = "executionRetriedByAzkaban";
+    public static final String EXECUTION_MAX_RETRIES = "executionMaxRetries";
     public static final String IS_OOM_KILLED = "isOOMKilled";
     public static final String IS_POD_SIZE_AUTOSCALING_ENABLED = "isPodSizeAutoscaled";
     public static final String ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY =
@@ -883,7 +884,7 @@ public class Constants {
     public static final String FLOW_PARAM_ALLOW_RESTART_ON_STATUS = "flow.retry.statuses";
 
     // Constant to define at most how many times can restart the flow
-    public static final String FLOW_PARAM_RESTART_COUNT = "flow.max.retries";
+    public static final String FLOW_PARAM_MAX_RETRIES = "flow.max.retries";
 
     // Constant to define the strategy to restart the execution, default to "restart_from_root",
     public static final String FLOW_PARAM_RESTART_STRATEGY = "flow.retry.strategy";

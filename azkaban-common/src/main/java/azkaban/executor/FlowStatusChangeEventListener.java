@@ -80,6 +80,8 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
     metaData.put(EventReporterConstants.FLOW_STATUS, flow.getStatus().name());
     metaData.put(EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN,
         String.valueOf(flow.getExecutionOptions().isExecutionRetried()));
+    metaData.put(EventReporterConstants.EXECUTION_MAX_RETRIES,
+        String.valueOf(flow.getExecutionOptions().getExecutionMaxRetries()));
     if (flow.isOOMKilled()) {
       metaData.put(EventReporterConstants.IS_OOM_KILLED,
           String.valueOf(flow.isOOMKilled()));

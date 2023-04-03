@@ -98,7 +98,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -1742,6 +1741,8 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(rootFlow.getSubmitTime()));
       metaData.put(EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN,
           String.valueOf(rootFlow.getExecutionOptions().isExecutionRetried()));
+      metaData.put(EventReporterConstants.EXECUTION_MAX_RETRIES,
+          String.valueOf(rootFlow.getExecutionOptions().getExecutionMaxRetries()));
       if (rootFlow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry() != null) {
         // original flow execution id is set when there is one
         metaData.put(EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
