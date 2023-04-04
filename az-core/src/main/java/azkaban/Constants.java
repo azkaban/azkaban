@@ -883,7 +883,7 @@ public class Constants {
     public static final String FLOW_PARAM_ALLOW_RESTART_ON_STATUS = "flow.retry.statuses";
 
     // Constant to define at most how many times can restart the flow
-    public static final String FLOW_PARAM_RESTART_COUNT = "flow.max.retries";
+    public static final String FLOW_PARAM_MAX_RETRIES = "flow.max.retries";
 
     // Constant to define the strategy to restart the execution, default to "restart_from_root",
     public static final String FLOW_PARAM_RESTART_STRATEGY = "flow.retry.strategy";
