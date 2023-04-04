@@ -43,6 +43,7 @@ public class ExecutionOptions {
   /* override dispatcher selection and use executor id specified */
   public static final String USE_EXECUTOR = "useExecutor";
   public static final int DEFAULT_FLOW_PRIORITY = 5;
+  public static final int DEFAULT_FLOW_RESTART_LIMIT = 2;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
   private static final String RUNTIME_PROPERTIES = "runtimeProperties";
@@ -165,6 +166,7 @@ public class ExecutionOptions {
 
     return options;
   }
+
 
   public void addAllFlowParameters(final Map<String, String> flowParam) {
     this.flowParameters.putAll(flowParam);

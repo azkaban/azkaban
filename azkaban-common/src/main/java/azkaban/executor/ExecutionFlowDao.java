@@ -231,7 +231,7 @@ public class ExecutionFlowDao {
       return this.dbOperator.query(FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_FLOW,
           new FetchRecentlyFinishedFlows(), System.currentTimeMillis() - maxAge.toMillis(),
           Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
-          Status.FAILED.getNumVal());
+          Status.FAILED.getNumVal(), Status.EXECUTION_STOPPED.getNumVal());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching recently finished flows", e);
     }
@@ -728,7 +728,7 @@ public class ExecutionFlowDao {
     // Execution_flows table is already indexed by end_time
     private static final String FETCH_RECENTLY_FINISHED_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "WHERE end_time > ? AND status IN (?, ?, ?)";
+            + "WHERE end_time > ? AND status IN (?, ?, ?, ?)";
 
     @Override
     public List<ExecutableFlow> handle(

@@ -2,19 +2,27 @@ package azkaban.executor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.FlowParameters;
+import azkaban.flow.Flow;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
+import azkaban.utils.YarnUtils;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -330,5 +338,114 @@ public class ExecutionControllerUtilsTest {
     final ExecutableFlow flow = mock(ExecutableFlow.class);
     when(flow.getExecutableNodePath(anyString())).thenReturn(node);
     return flow;
+  }
+
+  @Test
+  public void testRestartFlowSuccess_EXECUTION_STOPPED() {
+    PowerMockito.mockStatic(ExecutionControllerUtils.class);
+    PowerMockito.mockStatic(ExecutionControllerUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("submitRestartFlow")) {
+        return null;
+      }
+      return invocation.callRealMethod();
+    });
+
+    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
+    ExecutableFlow testFlow = createSingleNodeFlow(node);
+
+    ExecutionOptions options = new ExecutionOptions();
+    options.setExecutionRetried(false);
+    options.addAllFlowParameters(ImmutableMap.of(
+        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED"
+    ));
+    when(testFlow.getExecutionOptions()).thenReturn(options);
+
+    ExecutionControllerUtils.restartFlow(testFlow, Status.EXECUTION_STOPPED);
+  }
+
+
+  @Test
+  public void testRestartFlowNoExecutionOptions() {
+    PowerMockito.mockStatic(ExecutionControllerUtils.class);
+    PowerMockito.mockStatic(ExecutionControllerUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("submitRestartFlow")) {
+        // should not see exception because submitRestartFlow should not be called
+        throw new Exception("Ops");
+      }
+      return invocation.callRealMethod();
+    });
+
+    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
+    ExecutableFlow testFlow = createSingleNodeFlow(node);
+    when(testFlow.getExecutionOptions()).thenReturn(null);
+
+    ExecutionControllerUtils.restartFlow(testFlow, Status.EXECUTION_STOPPED);
+  }
+
+  @Test
+  public void testRestartFlowNoExecutionOptionsFlowParameters() {
+    PowerMockito.mockStatic(ExecutionControllerUtils.class);
+    PowerMockito.mockStatic(ExecutionControllerUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("submitRestartFlow")) {
+        // should not see exception because submitRestartFlow should not be called
+        throw new Exception("Ops");
+      }
+      return invocation.callRealMethod();
+    });
+
+    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
+    ExecutableFlow testFlow = createSingleNodeFlow(node);
+    ExecutionOptions options = new ExecutionOptions();
+    options.setExecutionRetried(false);
+    when(testFlow.getExecutionOptions()).thenReturn(options);
+
+    ExecutionControllerUtils.restartFlow(testFlow, Status.EXECUTION_STOPPED);
+  }
+
+  @Test
+  public void testRestartFlow_NoOperation_NotIncludedStatus_KILLED() {
+    PowerMockito.mockStatic(ExecutionControllerUtils.class);
+    PowerMockito.mockStatic(ExecutionControllerUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("submitRestartFlow")) {
+        // should not see exception because submitRestartFlow should not be called
+        throw new Exception("Ops");
+      }
+      return invocation.callRealMethod();
+    });
+
+    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
+    ExecutableFlow testFlow = createSingleNodeFlow(node);
+
+    ExecutionOptions options = new ExecutionOptions();
+    options.setExecutionRetried(false);
+    options.addAllFlowParameters(ImmutableMap.of(
+        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED"
+    ));
+    when(testFlow.getExecutionOptions()).thenReturn(options);
+
+    ExecutionControllerUtils.restartFlow(testFlow, Status.KILLED);
+  }
+
+  @Test
+  public void testRestartFlowSuccess_PREPARING() {
+    PowerMockito.mockStatic(ExecutionControllerUtils.class);
+    PowerMockito.mockStatic(ExecutionControllerUtils.class, invocation -> {
+      if (invocation.getMethod().getName().equals("submitRestartFlow")) {
+        return null;
+      }
+      return invocation.callRealMethod();
+    });
+
+    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
+    ExecutableFlow testFlow = createSingleNodeFlow(node);
+
+    ExecutionOptions options = new ExecutionOptions();
+    options.setExecutionRetried(false);
+    options.addAllFlowParameters(ImmutableMap.of(
+        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED"
+    ));
+    when(testFlow.getExecutionOptions()).thenReturn(options);
+
+    ExecutionControllerUtils.restartFlow(testFlow, Status.PREPARING);
   }
 }
