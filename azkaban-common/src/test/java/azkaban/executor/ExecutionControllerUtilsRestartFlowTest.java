@@ -1,5 +1,6 @@
 package azkaban.executor;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 
@@ -47,6 +47,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private static final int projectId = 1;
   private OnExecutionEventListener listener;
 
+  @Before
   public void setup() throws Exception {
     // Set up project and flow
     this.project = new Project(projectId, "testProject");
@@ -84,21 +85,21 @@ public class ExecutionControllerUtilsRestartFlowTest {
     ExecutionControllerUtils.onExecutionEventListener = this.listener;
   }
 
+  @Test
   public void testRestartOnExecutionStopped() throws Exception {
     this.flow1.setStatus(Status.EXECUTION_STOPPED);
 
     ExecutionControllerUtils.restartFlow(this.flow1);
 
     final ExecutableFlow restartedExFlow = this.executorLoader.fetchExecutableFlow(-1);
-    assertTrue(restartedExFlow.getFlowId().equals(this.flow1.getFlowId()));
-    assertTrue(restartedExFlow.getProjectName().equals(this.project.getName()));
-    assertTrue(restartedExFlow.getSubmitUser().equals(this.flow1.getSubmitUser()));
-    assertTrue(restartedExFlow.getDispatchMethod().equals(DispatchMethod.CONTAINERIZED));
+    assertEquals(restartedExFlow.getFlowId(), this.flow1.getFlowId());
+    assertEquals(restartedExFlow.getProjectName(), this.project.getName());
+    assertEquals(restartedExFlow.getSubmitUser(), this.flow1.getSubmitUser());
+    assertEquals(restartedExFlow.getDispatchMethod(), DispatchMethod.CONTAINERIZED);
+    final ExecutionOptions options2 = restartedExFlow.getExecutionOptions();
+    assertTrue(options2.isExecutionRetried());
 
     final ExecutionOptions options1 = this.flow1.getExecutionOptions();
     assertTrue(options1.isExecutionRetried());
-    final ExecutableFlow flow2 = this.executorLoader.fetchExecutableFlow(executionId);
-    final ExecutionOptions options2 = this.flow1.getExecutionOptions();
-    assertTrue(options2.isExecutionRetried());
   }
 }

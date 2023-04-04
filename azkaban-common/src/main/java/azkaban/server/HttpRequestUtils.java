@@ -214,23 +214,30 @@ public class HttpRequestUtils {
       flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
           Strings.join(statuses, ","));
     }
-    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_COUNT)){
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
 
       // check restart count limit
       try {
-        validateIntegerParam(flowParameters, FlowParameters.FLOW_PARAM_RESTART_COUNT);
+        validateIntegerParam(flowParameters, FlowParameters.FLOW_PARAM_MAX_RETRIES);
         final int flowRestartCountLimit = azProps.getInt(
             AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
-        final int flowRestartCount = Integer.parseInt(
-            flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_RESTART_COUNT, "0"));
-        if (flowRestartCount > flowRestartCountLimit || flowRestartCount < 0){
+        final int flowMaxRetryLimit = Integer.parseInt(
+            flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
+        if (flowMaxRetryLimit > flowRestartCountLimit || flowMaxRetryLimit < 0){
           errMsg.add(String.format(
-              "Invalid `" + FlowParameters.FLOW_PARAM_RESTART_COUNT + " = %d`, value should be "
-                  + "within [0, %d]\n", flowRestartCount, flowRestartCountLimit));
+              "Invalid `" + FlowParameters.FLOW_PARAM_MAX_RETRIES + " = %d`, value should be "
+                  + "within [0, %d]\n", flowMaxRetryLimit, flowRestartCountLimit));
         }
       } catch (ExecutorManagerException e) {
         errMsg.add(e.getMessage());
       }
+    }
+    // doesn't contain FlowParameters.FLOW_PARAM_MAX_RETRIES
+    else if (!options.isExecutionRetried()
+        && flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
+      // if the MAX_RETRIES parameter is empty but set some retry_statuses, default to
+      // give 1 restart
+      flowParameters.put(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1");
     }
 
     // throw exception if there's any error message

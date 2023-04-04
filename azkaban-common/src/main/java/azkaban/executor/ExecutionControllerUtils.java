@@ -168,26 +168,46 @@ public class ExecutionControllerUtils {
   }
 
   /**
-   * This method tries to restart the flow for certain statuses otherwise simply return. There are
-   * three scenarios that this method is called: 1. a flow is cleaned up by ContainerCleanupManager;
-   * 2. a flow has dispatch failure; 3. a flow encounters pod failure Each flow execution can be
-   * retried once. If the original status is EXECUTION_STOPPED, then it will be retried only if
-   * allow.restart.on.execution.stopped is set to true
+   * This method tries to determine whether the flow should be restarted for certain statuses
+   * otherwise simply return.
+   * There are three scenarios that this method is called:
+   * 1. a flow is cleaned up by ContainerCleanupManager;
+   * 2. a flow has dispatch failure;
+   * 3. a flow encounters pod failure Each flow execution can be retried once.
+   * If the original status is EXECUTION_STOPPED or FAILED, then it will be retried only if
+   * "flow.retry.statuses" is defined with the status.
    *
    * @param flow
    * @param originalStatus
    */
-  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
+  static ExecutableFlow getFlowToRestart(final ExecutableFlow flow,
+      final Status originalStatus){
     final ExecutionOptions options = flow.getExecutionOptions();
-    // flow can only be retried once
-    if (options == null || options.isExecutionRetried()) {
-      return;
+    if (options == null) {
+      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
+      return null;
     }
+    final Map<String, String> flowParams = options.getFlowParameters();
+    if (flowParams == null || flowParams.isEmpty()) {
+      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
+      return null;
+    }
+
+    // flow can only retry if not reach the limit
+    final int flowMaxRetryLimit = Integer.parseInt(
+        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
+    if (flowMaxRetryLimit <= 0) {
+      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has exceed retry limit, count = "
+          + flowMaxRetryLimit);
+      return null;
+    }
+    // reduce the count
+    flowParams.put(FlowParameters.FLOW_PARAM_MAX_RETRIES, String.valueOf(flowMaxRetryLimit - 1));
+
     // If the original execution status is restartable non-terminal status, it can be retried
     if (RESTARTABLE_NON_TERMINAL_STATUSES.contains(originalStatus)) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId());
-      ExecutionControllerUtils.submitRestartFlow(flow);
-      return;
+      return flow;
     }
 
     // if the original execution status is restartable but is terminal status, we will need to
@@ -196,13 +216,9 @@ public class ExecutionControllerUtils {
     // detects there's an invalid pod state transition and flow is terminated before final states)
     // - Or some other status defined in flow parameters can also be restarted
     if (!RESTARTABLE_TERMINAL_STATUSES.contains(originalStatus)) {
-      return;
+      return null;
     }
 
-    final Map<String, String> flowParams = options.getFlowParameters();
-    if (flowParams == null || flowParams.isEmpty()) {
-      return;
-    }
     // user defined restart statuses list
     final Set<String> restartedStatuses = new HashSet<>(Arrays.asList(flowParams
         .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
@@ -215,12 +231,18 @@ public class ExecutionControllerUtils {
       restartedStatuses.add(Status.EXECUTION_STOPPED.name());
     }
 
-    // TODO: check the "flow.max.retries" number and -= 1
-
     if (restartedStatuses.contains(originalStatus.name())) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId()
           + "from originalStatus: " + originalStatus);
-      ExecutionControllerUtils.submitRestartFlow(flow);
+      return flow;
+    }
+    return null;
+  }
+
+  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
+    ExecutableFlow flowToRestart = getFlowToRestart(flow, originalStatus);
+    if (flowToRestart != null){
+      ExecutionControllerUtils.submitRestartFlow(flowToRestart);
     }
   }
 
