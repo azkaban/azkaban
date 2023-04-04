@@ -425,4 +425,17 @@ public final class HttpRequestUtilsTest {
         result.get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS).contains("EXECUTION_STOPPED"));
   }
 
+  @Test
+  public void testValidatePreprocessFlowParamWithEmptyMaxRetries()
+      throws ServletException {
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED"
+    ));
+
+    HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
+    Map<String, String> result = options.getFlowParameters();
+    Assert.assertEquals("1", result.get(FLOW_PARAM_MAX_RETRIES));
+  }
+
 }

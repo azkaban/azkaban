@@ -232,6 +232,13 @@ public class HttpRequestUtils {
         errMsg.add(e.getMessage());
       }
     }
+    // doesn't contain FlowParameters.FLOW_PARAM_MAX_RETRIES
+    else if (!options.isExecutionRetried()
+        && flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
+      // if the MAX_RETRIES parameter is empty but set some retry_statuses, default to
+      // give 1 restart
+      flowParameters.put(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1");
+    }
 
     // throw exception if there's any error message
     if (!errMsg.isEmpty()) {
