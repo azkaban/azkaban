@@ -168,22 +168,18 @@ public class ExecutionControllerUtils {
   }
 
   /**
-   * This method tries to restart the flow for certain statuses otherwise simply return. There are
-   * three scenarios that this method is called: 1. a flow is cleaned up by ContainerCleanupManager;
-   * 2. a flow has dispatch failure; 3. a flow encounters pod failure Each flow execution can be
-   * retried once. If the original status is EXECUTION_STOPPED, then it will be retried only if
-   * allow.restart.on.execution.stopped is set to true
+   * This method tries to determine whether the flow should be restarted for certain statuses
+   * otherwise simply return.
+   * There are three scenarios that this method is called:
+   * 1. a flow is cleaned up by ContainerCleanupManager;
+   * 2. a flow has dispatch failure;
+   * 3. a flow encounters pod failure Each flow execution can be retried once.
+   * If the original status is EXECUTION_STOPPED or FAILED, then it will be retried only if
+   * "flow.retry.statuses" is defined with the status.
    *
    * @param flow
    * @param originalStatus
    */
-  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
-    ExecutableFlow flowToRestart = getFlowToRestart(flow, originalStatus);
-    if (flowToRestart != null){
-      ExecutionControllerUtils.submitRestartFlow(flowToRestart);
-    }
-  }
-
   static ExecutableFlow getFlowToRestart(final ExecutableFlow flow,
       final Status originalStatus){
     final ExecutionOptions options = flow.getExecutionOptions();
@@ -241,6 +237,13 @@ public class ExecutionControllerUtils {
       return flow;
     }
     return null;
+  }
+
+  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
+    ExecutableFlow flowToRestart = getFlowToRestart(flow, originalStatus);
+    if (flowToRestart != null){
+      ExecutionControllerUtils.submitRestartFlow(flowToRestart);
+    }
   }
 
   private static void submitRestartFlow(final ExecutableFlow flow) {
