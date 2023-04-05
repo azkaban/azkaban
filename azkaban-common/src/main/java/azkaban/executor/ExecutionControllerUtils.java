@@ -233,7 +233,7 @@ public class ExecutionControllerUtils {
 
     if (restartedStatuses.contains(originalStatus.name())) {
       logger.info("Submitted flow for restart: " + flow.getExecutionId()
-          + "from originalStatus: " + originalStatus);
+          + " from originalStatus: " + originalStatus);
       return flow;
     }
     return null;
