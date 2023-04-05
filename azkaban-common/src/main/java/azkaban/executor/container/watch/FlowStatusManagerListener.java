@@ -298,6 +298,12 @@ public class FlowStatusManagerListener extends EventHandler implements AzPodStat
       // Log event for cases where the flow was not already in a final state
       WatchEventLogger.logWatchEvent(event, "WatchEvent for finalization of execution-id " + executionId);
     }
+    else {
+      // for flow status already finished, can try if still restartable, e.g. FAILED
+      logger.info(String.format("Check and possibly restart flow %s of originalStatus %s",
+          executableFlow.getExecutionId(), originalStatus));
+      ExecutionControllerUtils.restartFlow(executableFlow, originalStatus);
+    }
     return Optional.of(originalStatus);
   }
 
