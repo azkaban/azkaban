@@ -463,8 +463,12 @@ public class JobTypeManager {
       jobProps.putAll(nonOverriddableClusterProps);
       jobProps = PropsUtils.resolveProps(jobProps);
 
-      return new JobParams(jobTypeClass, jobProps, pluginSet.getPluginPrivateProps(jobType),
-          pluginLoadPropsCopy, jobContextClassLoader);
+      Props pluginPrivateProps = pluginSet.getPluginPrivateProps(jobType);
+      if(pluginPrivateProps == null) { // some jobtypes (ie: noop) don't have private properties.
+        pluginPrivateProps = new Props();
+      }
+      return new JobParams(jobTypeClass, jobProps, pluginPrivateProps, pluginLoadPropsCopy,
+          jobContextClassLoader);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());
