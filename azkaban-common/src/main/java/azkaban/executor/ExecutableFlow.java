@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 
+  public static final int DEFAULT_FLOW_RETRY_LIMIT = 2;
+  public static final int DEFAULT_SYSTEM_FLOW_RETRY_LIMIT = 1;
+
   public static final String EXECUTIONID_PARAM = "executionId";
   public static final String EXECUTIONPATH_PARAM = "executionPath";
   public static final String EXECUTIONOPTIONS_PARAM = "executionOptions";
@@ -64,6 +67,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
   private static final String PARAM_OVERRIDE = "param.override.";
   private static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
+  private static final String CUSTOM_RETRIED_TIMES_PARAM = "customRetriedTimes";
+  private static final String SYSTEM_RETRIED_TIMES_PARAM = "systemRetriedTimes";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -89,6 +94,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String failedJobId = "unknown";
   private String modifiedBy = "unknown";
   private DispatchMethod dispatchMethod;
+  // how many times has flow level retry happened - retry defined by user's final status
+  private int customRetriedTimes = 0;
+  // retry due to stuck on "Dispatch/Preparing/Ready" status
+  private int systemRetriedTimes = 0;
 
   // For slaOption information
   private String slaOptionStr = "null";
@@ -306,6 +315,22 @@ public class ExecutableFlow extends ExecutableFlowBase {
     return slaOptionStr;
   }
 
+  public int getCustomRetriedTimes() {
+    return customRetriedTimes;
+  }
+
+  public void setCustomRetriedTimes(int customRetriedTimes) {
+    this.customRetriedTimes = customRetriedTimes;
+  }
+
+  public int getSystemRetriedTimes() {
+    return systemRetriedTimes;
+  }
+
+  public void setSystemRetriedTimes(int systemRetriedTimes) {
+    this.systemRetriedTimes = systemRetriedTimes;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -344,6 +369,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
+    flowObj.put(CUSTOM_RETRIED_TIMES_PARAM, this.customRetriedTimes);
+    flowObj.put(SYSTEM_RETRIED_TIMES_PARAM, this.systemRetriedTimes);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
@@ -408,6 +435,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       }
       this.slaOptionStr = slaBuilder.toString();
     }
+    this.customRetriedTimes = flowObj.getInt(CUSTOM_RETRIED_TIMES_PARAM);
+    this.systemRetriedTimes = flowObj.getInt(SYSTEM_RETRIED_TIMES_PARAM);
 
     if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
       // Checks if flow contains version set information

@@ -43,7 +43,6 @@ public class ExecutionOptions {
   /* override dispatcher selection and use executor id specified */
   public static final String USE_EXECUTOR = "useExecutor";
   public static final int DEFAULT_FLOW_PRIORITY = 5;
-  public static final int DEFAULT_FLOW_RESTART_LIMIT = 2;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
   private static final String RUNTIME_PROPERTIES = "runtimeProperties";
@@ -67,7 +66,6 @@ public class ExecutionOptions {
   public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
-  private boolean isExecutionRetried = false;
   private Integer originalFlowExecutionIdBeforeRetry = null;
 
   private boolean notifyOnFirstFailure = true;
@@ -160,7 +158,6 @@ public class ExecutionOptions {
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
 
-    options.setExecutionRetried(wrapper.getBool(EXECUTION_RETRIED_BY_AZKABAN, false));
     options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
         options.originalFlowExecutionIdBeforeRetry));
 
@@ -309,11 +306,6 @@ public class ExecutionOptions {
     this.slaOptions = slaOptions;
   }
 
-  public boolean isExecutionRetried() { return this.isExecutionRetried; }
-
-  public void setExecutionRetried(boolean executionRetried) { this.isExecutionRetried =
-      executionRetried; }
-
   public Integer getOriginalFlowExecutionIdBeforeRetry() { return originalFlowExecutionIdBeforeRetry; }
 
   public void setOriginalFlowExecutionIdBeforeRetry(Integer originalFlowExecutionIdBeforeRetry) { this.originalFlowExecutionIdBeforeRetry =
@@ -339,7 +331,6 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
-    flowOptionObj.put(EXECUTION_RETRIED_BY_AZKABAN, this.isExecutionRetried);
     flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }

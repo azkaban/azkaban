@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.ExecutableFlow.DEFAULT_SYSTEM_FLOW_RETRY_LIMIT;
 import static azkaban.executor.Status.RESTARTABLE_NON_TERMINAL_STATUSES;
 import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 import static azkaban.executor.Status.StatusBeforeRunningSet;
@@ -170,10 +171,11 @@ public class ExecutionControllerUtils {
   /**
    * This method tries to determine whether the flow should be restarted for certain statuses
    * otherwise simply return.
-   * There are three scenarios that this method is called:
+   * There are 4 scenarios that this method is called:
    * 1. a flow is cleaned up by ContainerCleanupManager;
    * 2. a flow has dispatch failure;
-   * 3. a flow encounters pod failure Each flow execution can be retried once.
+   * 3. a flow encounters pod failure;
+   * 4. a flow finalized normally.
    * If the original status is EXECUTION_STOPPED or FAILED, then it will be retried only if
    * "flow.retry.statuses" is defined with the status.
    *
@@ -184,30 +186,24 @@ public class ExecutionControllerUtils {
       final Status originalStatus){
     final ExecutionOptions options = flow.getExecutionOptions();
     if (options == null) {
-      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
+      logger.debug("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
       return null;
     }
-    final Map<String, String> flowParams = options.getFlowParameters();
-    if (flowParams == null || flowParams.isEmpty()) {
-      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
-      return null;
-    }
-
-    // flow can only retry if not reach the limit
-    final int flowMaxRetryLimit = Integer.parseInt(
-        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
-    if (flowMaxRetryLimit <= 0) {
-      logger.warn("ExecutableFlow: " + flow.getExecutionId() + " has exceed retry limit, count = "
-          + flowMaxRetryLimit);
-      return null;
-    }
-    // reduce the count
-    flowParams.put(FlowParameters.FLOW_PARAM_MAX_RETRIES, String.valueOf(flowMaxRetryLimit - 1));
-
     // If the original execution status is restartable non-terminal status, it can be retried
+    // if the system-retry-times hasn't reached limit
     if (RESTARTABLE_NON_TERMINAL_STATUSES.contains(originalStatus)) {
-      logger.info("Submitted flow for restart: " + flow.getExecutionId());
+      if (flow.getSystemRetriedTimes() >= DEFAULT_SYSTEM_FLOW_RETRY_LIMIT){
+        logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit "
+            + "for non-terminal status, ");
+        return null;
+      }
+      logger.info("Submitting flow for restart: " + flow.getExecutionId());
+      flow.setSystemRetriedTimes(flow.getSystemRetriedTimes() + 1);
       return flow;
+    }
+
+    if (!RESTARTABLE_TERMINAL_STATUSES.contains(originalStatus)) {
+      return null;
     }
 
     // if the original execution status is restartable but is terminal status, we will need to
@@ -215,7 +211,18 @@ public class ExecutionControllerUtils {
     // - If the original execution status is EXECUTION_STOPPED (which indicates the program
     // detects there's an invalid pod state transition and flow is terminated before final states)
     // - Or some other status defined in flow parameters can also be restarted
-    if (!RESTARTABLE_TERMINAL_STATUSES.contains(originalStatus)) {
+    final Map<String, String> flowParams = options.getFlowParameters();
+    if (flowParams == null || flowParams.isEmpty()) {
+      logger.debug("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
+      return null;
+    }
+
+    // flow can only retry if custom-retry-times not reach the limit
+    final int flowMaxRetryLimit = Integer.parseInt(
+        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
+    if (flow.getCustomRetriedTimes() >= flowMaxRetryLimit) {
+      logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit, "
+          + "retried=" + flow.getCustomRetriedTimes() + ", limit= " + flowMaxRetryLimit);
       return null;
     }
 
@@ -232,8 +239,9 @@ public class ExecutionControllerUtils {
     }
 
     if (restartedStatuses.contains(originalStatus.name())) {
-      logger.info("Submitted flow for restart: " + flow.getExecutionId()
-          + " from originalStatus: " + originalStatus);
+      logger.info("Submitting flow for restart: " + flow.getExecutionId()
+          + "from originalStatus: " + originalStatus);
+      flow.setCustomRetriedTimes(flow.getCustomRetriedTimes() + 1);
       return flow;
     }
     return null;
