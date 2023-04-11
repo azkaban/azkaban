@@ -771,6 +771,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     ret.put("nodeStatus", nodeStatus);
     ret.put("disabled", options.getDisabledJobs());
+    ret.put("ExecutionOptions", options);
   }
 
   /**
@@ -1004,7 +1005,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+    ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow,
+        this.executorManagerAdapter, logger);
+
     exflow.setUploadUser(project.getUploadUser());
     exflow.setSubmitUser(user.getUserId());
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
@@ -1019,7 +1022,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", "Error parsing flow options: " + e.getMessage());
       return;
     }
-    exflow.setExecutionOptions(options);
     if (!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());
     }
@@ -1027,6 +1029,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       options.setSuccessEmails(flow.getSuccessEmails());
     }
     options.setMailCreator(flow.getMailCreator());
+
+    exflow.getExecutionOptions().merge(options);
 
     /**
      * If the user has not explicitly overridden the failure action from the UI or

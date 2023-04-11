@@ -17,7 +17,9 @@ package azkaban.executor;
 
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
+import azkaban.project.FlowLoaderUtils;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableMap;
@@ -83,7 +85,12 @@ public class JdbcExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     final ExecutableFlow flow = this.executionFlowDao.fetchExecutableFlow(id);
     if (null != flow) {
-      flow.setFlowPropsAndParams(this.projectLoader);
+      try {
+        flow.setFlowParamsFromProps(
+            FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow));
+      } catch (ProjectManagerException e) {
+        throw new ExecutorManagerException(e);
+      }
     }
     return flow;
   }

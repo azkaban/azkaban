@@ -58,7 +58,7 @@ public class FlowUtilsTest {
   @Test
   public void testCreateExecutableFlow() throws Exception {
     final Flow flow = FlowUtils.getFlow(this.project, "jobe");
-    final ExecutableFlow exFlow = FlowUtils.createExecutableFlow(this.project, flow);
+    final ExecutableFlow exFlow = FlowUtils.createExecutableFlow(this.project, flow, null, null);
     Assert.assertEquals(exFlow.getProjectId(), this.project.getId());
     Assert.assertEquals(exFlow.getFlowId(), flow.getId());
     Assert.assertEquals(exFlow.getProxyUsers(), this.project.getProxyUsers());

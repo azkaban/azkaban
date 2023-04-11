@@ -22,15 +22,17 @@ import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
 import com.google.gson.Gson;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
 
 public class FlowUtils {
 
@@ -104,10 +106,27 @@ public class FlowUtils {
     return flow;
   }
 
-  public static ExecutableFlow createExecutableFlow(final Project project, final Flow flow) {
-    final ExecutableFlow exflow = new ExecutableFlow(project, flow);
-    exflow.addAllProxyUsers(project.getProxyUsers());
-    return exflow;
+  // if pass in executorManagerAdapter, then use it to populate the flow's ExecutionOption
+  public static ExecutableFlow createExecutableFlow(final Project project, final Flow flow,
+   ExecutorManagerAdapter executorManagerAdapter, Logger logger) {
+    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+    exFlow.addAllProxyUsers(project.getProxyUsers());
+
+    if (executorManagerAdapter == null) {
+      return exFlow;
+    }
+    try {
+      executorManagerAdapter.preloadExecutionOptions(exFlow);
+    } catch (Throwable e) {
+      if(logger != null) {
+        logger.warn("Fail to preload ExecutableFlow, continue without loading ExecutionOptions", e);
+      }
+      // having issue, fallback to without loading ExecutionOptions
+      exFlow = new ExecutableFlow(project, flow);
+      exFlow.addAllProxyUsers(project.getProxyUsers());
+    }
+
+    return exFlow;
   }
 
   public static String toJson(final Project proj) {

@@ -24,7 +24,6 @@ import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
-import azkaban.executor.container.ContainerizedImpl;
 import azkaban.flow.FlowUtils;
 import azkaban.jobcallback.JobCallbackManager;
 import azkaban.logs.ExecutionLogsLoader;
@@ -32,6 +31,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.project.ProjectManagerException;
 import azkaban.project.ProjectWhitelist;
 import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
@@ -125,6 +125,16 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   public ExecutableFlow getExecutableFlow(final int execId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchExecutableFlow(execId);
+  }
+
+  @Override
+  public void preloadExecutionOptions(ExecutableFlow exFlow) throws ExecutorManagerException {
+    try {
+      exFlow.setFlowParamsFromProps(this.projectManager.loadPropsForExecutableFlow(exFlow));
+    } catch (ProjectManagerException e) {
+      logger.info("failed to load and set the FlowParameters for ExecutableFlow", e);
+      throw new ExecutorManagerException(e);
+    }
   }
 
   /**

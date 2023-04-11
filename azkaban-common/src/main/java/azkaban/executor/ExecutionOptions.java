@@ -360,6 +360,10 @@ public class ExecutionOptions {
     );
   }
 
+  public void merge(ExecutionOptions overwriteOptions) {
+    // TODO: implement it
+  }
+
   public enum FailureAction {
     FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE;
   }

@@ -69,7 +69,8 @@ public class TriggerInstanceProcessor {
     try {
       final Project project = triggerInst.getProject();
       final Flow flow = FlowUtils.getFlow(project, triggerInst.getFlowId());
-      final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow);
+      final ExecutableFlow executableFlow = FlowUtils.createExecutableFlow(project, flow,
+          this.executorManager, logger);
       // execute the flow with default execution option(concurrency option being "ignore
       // currently running")
       executableFlow.setUploadUser(project.getUploadUser());

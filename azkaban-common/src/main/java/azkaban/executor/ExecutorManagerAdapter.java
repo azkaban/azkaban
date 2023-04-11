@@ -39,6 +39,9 @@ public interface ExecutorManagerAdapter {
   public ExecutableFlow getExecutableFlow(int execId)
       throws ExecutorManagerException;
 
+  // load and set the flow-parameters and other Props to the ExecutableFlow
+  void preloadExecutionOptions(ExecutableFlow exFlow) throws ExecutorManagerException;
+
   public List<Integer> getRunningFlows(int projectId, String flowId);
 
   public List<ExecutableFlow> getRunningFlows();
