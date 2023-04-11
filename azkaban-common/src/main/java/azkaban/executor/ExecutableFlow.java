@@ -67,8 +67,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
   private static final String PARAM_OVERRIDE = "param.override.";
   private static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
-  private static final String CUSTOM_RETRIED_TIMES_PARAM = "customRetriedTimes";
-  private static final String SYSTEM_RETRIED_TIMES_PARAM = "systemRetriedTimes";
+  private static final String USER_DEFINED_RETRY_COUNT_PARAM = "userDefinedRetryCount";
+  private static final String SYSTEM_DEFINED_RETRY_COUNT_PARAM = "systemDefinedRetryCount";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -94,10 +94,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String failedJobId = "unknown";
   private String modifiedBy = "unknown";
   private DispatchMethod dispatchMethod;
-  // how many times has flow level retry happened - retry defined by user's final status
-  private int customRetriedTimes = 0;
-  // retry due to stuck on "Dispatch/Preparing/Ready" status
-  private int systemRetriedTimes = 0;
+  // how many times flow level retry happened over user defined final status
+  private int userDefinedRetryCount = 0;
+  // how many times flow level retry happened due to stuck in "Dispatch/Preparing/Ready" status
+  private int systemDefinedRetryCount = 0;
 
   // For slaOption information
   private String slaOptionStr = "null";
@@ -315,20 +315,20 @@ public class ExecutableFlow extends ExecutableFlowBase {
     return slaOptionStr;
   }
 
-  public int getCustomRetriedTimes() {
-    return customRetriedTimes;
+  public int getUserDefinedRetryCount() {
+    return userDefinedRetryCount;
   }
 
-  public void setCustomRetriedTimes(int customRetriedTimes) {
-    this.customRetriedTimes = customRetriedTimes;
+  public void setUserDefinedRetryCount(int userDefinedRetryCount) {
+    this.userDefinedRetryCount = userDefinedRetryCount;
   }
 
-  public int getSystemRetriedTimes() {
-    return systemRetriedTimes;
+  public int getSystemDefinedRetryCount() {
+    return systemDefinedRetryCount;
   }
 
-  public void setSystemRetriedTimes(int systemRetriedTimes) {
-    this.systemRetriedTimes = systemRetriedTimes;
+  public void setSystemDefinedRetryCount(int systemDefinedRetryCount) {
+    this.systemDefinedRetryCount = systemDefinedRetryCount;
   }
 
   @Override
@@ -369,8 +369,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
-    flowObj.put(CUSTOM_RETRIED_TIMES_PARAM, this.customRetriedTimes);
-    flowObj.put(SYSTEM_RETRIED_TIMES_PARAM, this.systemRetriedTimes);
+    flowObj.put(USER_DEFINED_RETRY_COUNT_PARAM, this.userDefinedRetryCount);
+    flowObj.put(SYSTEM_DEFINED_RETRY_COUNT_PARAM, this.systemDefinedRetryCount);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
@@ -435,8 +435,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       }
       this.slaOptionStr = slaBuilder.toString();
     }
-    this.customRetriedTimes = flowObj.getInt(CUSTOM_RETRIED_TIMES_PARAM);
-    this.systemRetriedTimes = flowObj.getInt(SYSTEM_RETRIED_TIMES_PARAM);
+    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_RETRY_COUNT_PARAM);
+    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_RETRY_COUNT_PARAM);
 
     if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
       // Checks if flow contains version set information

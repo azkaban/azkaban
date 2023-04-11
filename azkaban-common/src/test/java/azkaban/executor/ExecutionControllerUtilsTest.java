@@ -352,7 +352,7 @@ public class ExecutionControllerUtilsTest {
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.EXECUTION_STOPPED);
     assertNotNull(flowToRestart);
-    assertEquals(1, flowToRestart.getSystemRetriedTimes());
+    assertEquals(1, flowToRestart.getSystemDefinedRetryCount());
   }
 
 
@@ -371,7 +371,7 @@ public class ExecutionControllerUtilsTest {
   public void testGetFlowToRestartNoSystemRetriedExceed() {
     final ExecutableNode node = createExecutableNode("testJob", "spark", null);
     ExecutableFlow testFlow = createSingleNodeFlow(node);
-    when(testFlow.getSystemRetriedTimes()).thenReturn(1);
+    when(testFlow.getSystemDefinedRetryCount()).thenReturn(1);
     ExecutionOptions options = new ExecutionOptions();
     when(testFlow.getExecutionOptions()).thenReturn(options);
 
@@ -412,7 +412,7 @@ public class ExecutionControllerUtilsTest {
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.PREPARING);
     assertNotNull(flowToRestart);
-    assertEquals(1, flowToRestart.getCustomRetriedTimes());
+    assertEquals(1, flowToRestart.getUserDefinedRetryCount());
     assertEquals("2",
         flowToRestart
             .getExecutionOptions()

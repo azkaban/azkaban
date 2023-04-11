@@ -192,13 +192,13 @@ public class ExecutionControllerUtils {
     // If the original execution status is restartable non-terminal status, it can be retried
     // if the system-retry-times hasn't reached limit
     if (RESTARTABLE_NON_TERMINAL_STATUSES.contains(originalStatus)) {
-      if (flow.getSystemRetriedTimes() >= DEFAULT_SYSTEM_FLOW_RETRY_LIMIT){
+      if (flow.getSystemDefinedRetryCount() >= DEFAULT_SYSTEM_FLOW_RETRY_LIMIT){
         logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit "
             + "for non-terminal status, ");
         return null;
       }
       logger.info("Submitting flow for restart: " + flow.getExecutionId());
-      flow.setSystemRetriedTimes(flow.getSystemRetriedTimes() + 1);
+      flow.setSystemDefinedRetryCount(flow.getSystemDefinedRetryCount() + 1);
       return flow;
     }
 
@@ -220,9 +220,9 @@ public class ExecutionControllerUtils {
     // flow can only retry if custom-retry-times not reach the limit
     final int flowMaxRetryLimit = Integer.parseInt(
         flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
-    if (flow.getCustomRetriedTimes() >= flowMaxRetryLimit) {
+    if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {
       logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit, "
-          + "retried=" + flow.getCustomRetriedTimes() + ", limit= " + flowMaxRetryLimit);
+          + "retried=" + flow.getUserDefinedRetryCount() + ", limit= " + flowMaxRetryLimit);
       return null;
     }
 
@@ -241,7 +241,7 @@ public class ExecutionControllerUtils {
     if (restartedStatuses.contains(originalStatus.name())) {
       logger.info("Submitting flow for restart: " + flow.getExecutionId()
           + "from originalStatus: " + originalStatus);
-      flow.setCustomRetriedTimes(flow.getCustomRetriedTimes() + 1);
+      flow.setUserDefinedRetryCount(flow.getUserDefinedRetryCount() + 1);
       return flow;
     }
     return null;
