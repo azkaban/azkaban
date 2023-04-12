@@ -1030,7 +1030,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     options.setMailCreator(flow.getMailCreator());
 
-    exflow.getExecutionOptions().merge(options);
+
+    ExecutionOptions merged = exflow.getExecutionOptions().merge(options);
+    exflow.setExecutionOptions(merged);
 
     /**
      * If the user has not explicitly overridden the failure action from the UI or

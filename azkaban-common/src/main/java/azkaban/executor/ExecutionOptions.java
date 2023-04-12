@@ -360,8 +360,9 @@ public class ExecutionOptions {
     );
   }
 
-  public void merge(ExecutionOptions overwriteOptions) {
+  public ExecutionOptions merge(ExecutionOptions overwriteOptions) {
     // TODO: implement it
+    return overwriteOptions;
   }
 
   public enum FailureAction {
