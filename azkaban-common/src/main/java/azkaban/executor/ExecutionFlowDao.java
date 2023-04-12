@@ -179,6 +179,16 @@ public class ExecutionFlowDao {
     }
   }
 
+  public List<Integer> selectQueuedFlows(final Status status)
+      throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_QUEUED_EXECUTABLE_FLOW,
+          new SelectFromExecutionFlows(), status.getNumVal());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows", e);
+    }
+  }
+
   public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
       final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException {
@@ -628,6 +638,9 @@ public class ExecutionFlowDao {
     private static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
         SELECT_EXECUTION_BASE_QUERY + FOR_UPDATE_INACTIVE;
 
+    private static final String SELECT_QUEUED_EXECUTABLE_FLOW =
+        SELECT_EXECUTION_BASE_QUERY + FOR_QUEUED_EXECUTABLE_FLOW;
+
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
@@ -700,9 +713,8 @@ public class ExecutionFlowDao {
       ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
 
     // Select queued unassigned flows
-    private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
-            + " WHERE executor_id is NULL AND status = ?";
+    private static final String FETCH_QUEUED_EXECUTABLE_FLOW_BASE_QUERY = FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BASE_QUERY;
+    private static final String FETCH_QUEUED_EXECUTABLE_FLOW = FETCH_QUEUED_EXECUTABLE_FLOW_BASE_QUERY + FOR_QUEUED_EXECUTABLE_FLOW;
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(final ResultSet rs)
@@ -811,6 +823,8 @@ public class ExecutionFlowDao {
   // Fetch flows that are in preparing state for more than a certain duration.
   private static final String QUEUED_FOR_LONG_TIME =
       "WHERE submit_time < ? AND status = " + Status.PREPARING.getNumVal();
+  private static final String FOR_QUEUED_EXECUTABLE_FLOW =
+      "WHERE executor_id is NULL AND status = ?";
 
   /**
    * Generates a string representing terminating flow status num values: "50, 60, 65, 70"

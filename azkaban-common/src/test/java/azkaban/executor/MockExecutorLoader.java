@@ -431,7 +431,6 @@ public class MockExecutorLoader implements ExecutorLoader {
     return fetchQueuedFlows(Status.PREPARING);
   }
 
-  @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
       throws ExecutorManagerException {
     final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
@@ -443,6 +442,13 @@ public class MockExecutorLoader implements ExecutorLoader {
       }
     }
     return queuedFlows;
+  }
+
+  @Override
+  public List<Integer> selectQueuedFlows(Status status)
+      throws ExecutorManagerException {
+    return this.fetchQueuedFlows(status).stream().map(f -> f.getSecond().getExecutionId()).collect(
+        Collectors.toList());
   }
 
   @Override

@@ -264,6 +264,20 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
+  public void testSelectQueuedFlows() throws Exception {
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", System.currentTimeMillis(),
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", System.currentTimeMillis(),
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
+
+    final List<Integer> selectedQueuedFlows =
+        this.executionFlowDao.selectQueuedFlows(Status.PREPARING);
+    assertThat(selectedQueuedFlows.size()).isEqualTo(2);
+    assert(selectedQueuedFlows.get(0) == flow1.getExecutionId());
+    assert(selectedQueuedFlows.get(1) == flow2.getExecutionId());
+  }
+
+  @Test
   public void testFetchStaleFlows() throws IOException, ExecutorManagerException {
     // Flow executions in PREPARING state
     final long lessThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5);

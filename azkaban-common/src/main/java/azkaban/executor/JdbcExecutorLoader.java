@@ -91,13 +91,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return fetchQueuedFlows(Status.PREPARING);
+    return this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
   }
 
   @Override
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  public List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchQueuedFlows(status);
+    return this.executionFlowDao.selectQueuedFlows(status);
   }
 
   @Override

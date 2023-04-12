@@ -147,8 +147,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   public List<Integer> getQueuedFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     try {
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.DISPATCHING));
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.PREPARING));
+      allIds.addAll(this.executorLoader.selectQueuedFlows(Status.DISPATCHING));
+      allIds.addAll(this.executorLoader.selectQueuedFlows(Status.PREPARING));
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get queued flow ids.", e);
     }

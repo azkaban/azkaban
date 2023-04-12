@@ -238,14 +238,14 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to get flows fetched in Queue. Flows can be in queue in ready, dispatching
+   * This method is used to get flow ids fetched in Queue. Flows can be in queue in ready, dispatching
    * or preparing state while in queue. That is why it is expecting status in parameter.
    *
    * @param status
    * @return
    * @throws ExecutorManagerException
    */
-  List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException;
 
   /**
