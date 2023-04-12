@@ -268,7 +268,7 @@ public interface ExecutorLoader {
       final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException;
 
-  List<ExecutableFlow> fetchAgedQueuedFlows(
+  List<Integer> selectAgedQueuedFlows(
       final Duration minAge) throws ExecutorManagerException;
 
   boolean updateExecutableReference(int execId, long updateTime)

@@ -159,13 +159,13 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
     try {
-      return this.dbOperator.query(FetchExecutableFlows.FETCH_FLOWS_QUEUED_FOR_LONG_TIME,
-          new FetchExecutableFlows(), System.currentTimeMillis() - minAge.toMillis());
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTIONS_QUEUED_FOR_LONG_TIME,
+          new SelectFromExecutionFlows(), System.currentTimeMillis() - minAge.toMillis());
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching aged queued flows", e);
+      throw new ExecutorManagerException("Error selecting aged queued flows", e);
     }
   }
 
@@ -641,6 +641,10 @@ public class ExecutionFlowDao {
     private static final String SELECT_QUEUED_EXECUTABLE_FLOW =
         SELECT_EXECUTION_BASE_QUERY + FOR_QUEUED_EXECUTABLE_FLOW;
 
+    // Select flows that are in preparing state for more than a certain duration.
+    private static final String SELECT_EXECUTIONS_QUEUED_FOR_LONG_TIME =
+        SELECT_EXECUTION_BASE_QUERY + QUEUED_FOR_LONG_TIME;
+
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {
       if (!rs.next()) {
@@ -672,9 +676,6 @@ public class ExecutionFlowDao {
         FETCH_EXECUTABLE_FLOW_BASE_QUERY + FOR_HISTORY_BY_PROJECTID_FLOWID;
     private static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
         FETCH_EXECUTABLE_FLOW_BASE_QUERY + FOR_HISTORY_BY_PROJECTID_FLOWID_STATUS;
-    // Fetch flows that are in preparing state for more than a certain duration.
-    private static final String FETCH_FLOWS_QUEUED_FOR_LONG_TIME =
-        FETCH_EXECUTABLE_FLOW_BASE_QUERY + QUEUED_FOR_LONG_TIME;
 
     @Override
     public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {

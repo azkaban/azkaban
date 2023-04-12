@@ -143,9 +143,9 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     long startTime = System.currentTimeMillis();
     // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
     // all we care about is the count. Write a new class that's more performant and can be used for
-    // metrics. this.executorLoader.fetchAgedQueuedFlows internally calls FetchQueuedExecutableFlows.
+    // metrics. this.executorLoader.selectAgedQueuedFlows internally calls SelectQueuedExecutableFlows.
     try {
-      size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
+      size = this.executorLoader.selectAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
           .size();
       logger.info("Time taken to fetch size of queued flows is " + (System.currentTimeMillis() - startTime) / 1000);
     } catch (final ExecutorManagerException e) {

@@ -115,9 +115,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
+    return this.executionFlowDao.selectAgedQueuedFlows(minAge);
   }
 
   /**
