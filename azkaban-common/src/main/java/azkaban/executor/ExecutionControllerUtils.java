@@ -231,10 +231,17 @@ public class ExecutionControllerUtils {
 
     // flow can only retry if custom-retry-times not reach the limit
     // and for the case where the retry-times not defined, default to 1
-    int flowMaxRetryLimit = 1;
+    int flowMaxRetryLimit = 0;
     if (flowParams.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
-      flowMaxRetryLimit = Integer.parseInt(
-        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
+      flowMaxRetryLimit = Integer.parseInt(flowParams.get(FlowParameters.FLOW_PARAM_MAX_RETRIES));
+    }
+    else if (!restartedStatuses.isEmpty()){
+      logger.info(String.format("ExecutableFlow: %s has `%s=%s but `%s` not set, "
+              + "default to retry once",
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          FlowParameters.FLOW_PARAM_MAX_RETRIES,
+          flow.getExecutionId(), restartedStatuses));
+      flowMaxRetryLimit = 1;
     }
     if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {
       logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit, "

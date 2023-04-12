@@ -435,8 +435,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       }
       this.slaOptionStr = slaBuilder.toString();
     }
-    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_RETRY_COUNT_PARAM);
-    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_RETRY_COUNT_PARAM);
+    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_RETRY_COUNT_PARAM, 0);
+    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_RETRY_COUNT_PARAM, 0);
 
     if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
       // Checks if flow contains version set information
