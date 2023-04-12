@@ -16,10 +16,13 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.Status.TERMINATING_STATUSES;
+
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
+import azkaban.executor.FetchActiveFlowDao.FetchActiveExecutableFlows;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -33,7 +36,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
@@ -100,6 +105,36 @@ public class ExecutionFlowDao {
       updateExecutableFlow(flow);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error creating execution.", e);
+    }
+  }
+
+  /**
+   * Select flows that are not in finished status, including both dispatched and non-dispatched
+   * flows.
+   *
+   * @return unfinished flow exec_ids
+   * @throws ExecutorManagerException the executor manager exception
+   */
+  List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTION_BASE_QUERY
+              + "WHERE status NOT IN ("
+              + getTerminatingStatusesString() + ")",
+          new SelectFromExecutionFlows());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching unfinished flows", e);
+    }
+  }
+
+  List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTION_BASE_QUERY
+              + "WHERE project_id=? AND flow_id=? AND "
+              + "status NOT IN ("
+              + getTerminatingStatusesString() + ")",
+          new SelectFromExecutionFlows(), projectId, flowId);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching unfinished flows", e);
     }
   }
 
@@ -776,4 +811,14 @@ public class ExecutionFlowDao {
   // Fetch flows that are in preparing state for more than a certain duration.
   private static final String QUEUED_FOR_LONG_TIME =
       "WHERE submit_time < ? AND status = " + Status.PREPARING.getNumVal();
+
+  /**
+   * Generates a string representing terminating flow status num values: "50, 60, 65, 70"
+   * @return
+   */
+  static String getTerminatingStatusesString() {
+    final List<Integer> list = TERMINATING_STATUSES.stream().map(Status::getNumVal).collect(
+        Collectors.toList());
+    return StringUtils.join(list, ", ");
+  }
 }

@@ -90,6 +90,27 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    return this.activeFlows.get(executionId);
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .filter(entry -> entry.getValue().getSecond().getProjectId() == projectId && entry.getValue().getSecond().getFlowId().equals(flowId))
+        .map(entry -> entry.getValue().getSecond().getExecutionId())
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .map(entry -> entry.getValue().getSecond().getExecutionId())
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException {
     return this.activeFlows.entrySet().stream()

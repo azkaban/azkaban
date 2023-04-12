@@ -136,9 +136,25 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchUnfinishedFlow(executionId);
+  }
+
+  @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException {
     return this.fetchActiveFlowDao.fetchUnfinishedFlows();
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    return this.executionFlowDao.selectUnfinishedFlows(projectId, flowId);
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    return this.executionFlowDao.selectUnfinishedFlows();
   }
 
   @Override

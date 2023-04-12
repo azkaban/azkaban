@@ -53,6 +53,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -428,58 +429,14 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     return flows;
   }
 
-  /**
-   * Checks whether the given flow has an active (running, non-dispatched) executions {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#isFlowRunning(int, java.lang.String)
-   */
   @Override
-  public boolean isFlowRunning(final int projectId, final String flowId) {
-    boolean isRunning = false;
-    isRunning =
-        isRunning
-            || isFlowRunningHelper(projectId, flowId, this.queuedFlows.getAllEntries());
-    isRunning =
-        isRunning
-            || isFlowRunningHelper(projectId, flowId, this.runningExecutions.get().values());
-    return isRunning;
-  }
-
-  /**
-   * Get all active (running, non-dispatched) flows
-   * <p>
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows()
-   */
-  @Override
-  public List<ExecutableFlow> getRunningFlows() {
-    final ArrayList<ExecutableFlow> flows = new ArrayList<>();
-    getActiveFlowHelper(flows, this.queuedFlows.getAllEntries());
-    getActiveFlowHelper(flows, this.runningExecutions.get().values());
-    return flows;
-  }
-
-  /*
-   * Helper method to get all running flows from a Pair<ExecutionReference,
-   * ExecutableFlow collection
-   */
-  private void getActiveFlowHelper(final ArrayList<ExecutableFlow> flows,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      flows.add(ref.getSecond());
-    }
-  }
-
-  /**
-   * Get execution Ids of all running (unfinished) flows
-   */
-  public String getRunningFlowIds() {
-    final List<Integer> allIds = new ArrayList<>();
-    getRunningFlowsIdsHelper(allIds, this.queuedFlows.getAllEntries());
-    getRunningFlowsIdsHelper(allIds, this.runningExecutions.get().values());
-    Collections.sort(allIds);
-    return allIds.toString();
+  public List<Integer> getRunningFlowIds() {
+    final ArrayList<Integer> flowIDs = new ArrayList<>();
+    flowIDs.addAll(this.queuedFlows.getAllEntries().stream().map(entry -> entry.getSecond().getExecutionId()).collect(
+        Collectors.toList()));
+    flowIDs.addAll(this.runningExecutions.get().values().stream().map(entry -> entry.getSecond().getExecutionId()).collect(
+        Collectors.toList()));
+    return flowIDs;
   }
 
   /**

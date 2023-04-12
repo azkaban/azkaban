@@ -397,6 +397,44 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
+  public void testFetchUnfinishedFlow() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Pair<ExecutionReference, ExecutableFlow> unfinishedFlow =
+        this.fetchActiveFlowDao.fetchUnfinishedFlow(flows.get(0).getExecutionId());
+    assert(unfinishedFlow.getSecond().getExecutionId() == flows.get(0).getExecutionId());
+    assertTwoFlowSame(unfinishedFlow.getSecond(), flows.get(0));
+
+    final Pair<ExecutionReference, ExecutableFlow> finishedFlow =
+        this.fetchActiveFlowDao.fetchUnfinishedFlow(flows.get(3).getExecutionId());
+    assert(finishedFlow == null);
+  }
+
+  @Test
+  public void testSelectUnfinishedFlows() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Set<Integer> unfinishedFlows =
+        new HashSet(this.executionFlowDao.selectUnfinishedFlows());
+
+    assert(unfinishedFlows.contains(flows.get(0).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(1).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(2).getExecutionId()));
+    assert(!unfinishedFlows.contains(flows.get(3).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(4).getExecutionId()));
+  }
+
+  @Test
+  public void testSelectUnfinishedFlowsWithProjectIdAndFlowId() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final List<Integer> unfinishedFlows = this.executionFlowDao.selectUnfinishedFlows(flows.get(0).getProjectId(), flows.get(0).getFlowId());
+
+    assert(unfinishedFlows.contains(flows.get(0).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(1).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(2).getExecutionId()));
+    assert(!unfinishedFlows.contains(flows.get(3).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(4).getExecutionId()));
+  }
+
+  @Test
   public void testFetchUnfinishedFlowsMetadata() throws Exception {
     final List<ExecutableFlow> flows = createExecutions();
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows =

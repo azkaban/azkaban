@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.Status.TERMINATING_STATUSES;
+
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
@@ -30,8 +32,10 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -124,6 +128,20 @@ public class FetchActiveFlowDao {
     }
   }
 
+  Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    try {
+      Iterator<Pair<ExecutionReference, ExecutableFlow>> iterator = this.dbOperator.query(FetchActiveExecutableFlows.FETCH_UNFINISHED_EXECUTABLE_FLOW_BY_EXECID,
+          new FetchActiveExecutableFlows(), executionId).values().iterator();
+      if (iterator.hasNext()) {
+        return iterator.next();
+      }
+      return null;
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching unfinished flows", e);
+    }
+  }
+
   /**
    * Fetch unfinished flows similar to {@link #fetchUnfinishedFlows}, excluding flow data.
    *
@@ -178,8 +196,7 @@ public class FetchActiveFlowDao {
    * @return
    */
   static String getTerminatingStatusesString () {
-    final List<Integer> list = Arrays.asList(Status.SUCCEEDED.getNumVal(),
-        Status.KILLED.getNumVal(), Status.EXECUTION_STOPPED.getNumVal(), Status.FAILED.getNumVal());
+    final List<Integer> list = TERMINATING_STATUSES.stream().map(Status::getNumVal).collect(Collectors.toList());
     return StringUtils.join(list, ", ");
   }
 
@@ -196,6 +213,9 @@ public class FetchActiveFlowDao {
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
             + FetchActiveFlowDao.getTerminatingStatusesString() + ")";
+
+    private static final String FETCH_UNFINISHED_EXECUTABLE_FLOW_BY_EXECID =
+        FETCH_UNFINISHED_EXECUTABLE_FLOWS + " AND ex.exec_id = ?";
 
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =

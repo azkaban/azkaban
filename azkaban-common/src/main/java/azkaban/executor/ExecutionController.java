@@ -150,19 +150,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   }
 
   /**
-   * Get execution ids of all running (unfinished) flows from database.
-   */
-  public List<Integer> getRunningFlowIds() {
-    final List<Integer> allIds = new ArrayList<>();
-    try {
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
-    } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flow ids.", e);
-    }
-    return allIds;
-  }
-
-  /**
    * Get execution ids of all non-dispatched flows from database.
    */
   public List<Integer> getQueuedFlowIds() {
