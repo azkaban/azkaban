@@ -339,29 +339,41 @@ public class ExecutionControllerUtilsTest {
 
   @Test
   public void testGetFlowToRestartSuccess_EXECUTION_STOPPED() {
-    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
-    ExecutableFlow testFlow = createSingleNodeFlow(node);
-
+    ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
         FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "2"
     ));
-    when(testFlow.getExecutionOptions()).thenReturn(options);
+    testFlow.setExecutionOptions(options);
 
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.EXECUTION_STOPPED);
     assertNotNull(flowToRestart);
-    assertEquals(1, flowToRestart.getSystemDefinedRetryCount());
+    assertEquals(0, flowToRestart.getSystemDefinedRetryCount());
+    assertEquals(1, flowToRestart.getUserDefinedRetryCount());
   }
 
+  @Test
+  public void testGetFlowToRestartSuccessWithoutMaxRetry_EXECUTION_STOPPED() {
+    ExecutableFlow testFlow = new ExecutableFlow();
+    ExecutionOptions options = new ExecutionOptions();
+    options.addAllFlowParameters(ImmutableMap.of(
+        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED"
+    ));
+    testFlow.setExecutionOptions(options);
+
+    ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
+        Status.EXECUTION_STOPPED);
+    assertNotNull(flowToRestart);
+    assertEquals(0, flowToRestart.getSystemDefinedRetryCount());
+    assertEquals(1, flowToRestart.getUserDefinedRetryCount());
+  }
 
   @Test
   public void testGetFlowToRestartNoExecutionOptions() {
-    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
-    ExecutableFlow testFlow = createSingleNodeFlow(node);
-    when(testFlow.getExecutionOptions()).thenReturn(null);
-
+    ExecutableFlow testFlow = new ExecutableFlow();
+    testFlow.setExecutionOptions(null);
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.PREPARING);
     assertNull(flowToRestart);
@@ -369,11 +381,9 @@ public class ExecutionControllerUtilsTest {
 
   @Test
   public void testGetFlowToRestartNoSystemRetriedExceed() {
-    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
-    ExecutableFlow testFlow = createSingleNodeFlow(node);
-    when(testFlow.getSystemDefinedRetryCount()).thenReturn(1);
-    ExecutionOptions options = new ExecutionOptions();
-    when(testFlow.getExecutionOptions()).thenReturn(options);
+    ExecutableFlow testFlow = new ExecutableFlow();
+    testFlow.setExecutionOptions(new ExecutionOptions());
+    testFlow.setSystemDefinedRetryCount(1);
 
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.PREPARING);
@@ -382,15 +392,13 @@ public class ExecutionControllerUtilsTest {
 
   @Test
   public void testGetFlowToRestart_NoOperation_NotIncludedStatus_KILLED() {
-    final ExecutableNode node = createExecutableNode("testJob", "spark", null);
-    ExecutableFlow testFlow = createSingleNodeFlow(node);
-
+    ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
         FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "2"
     ));
-    when(testFlow.getExecutionOptions()).thenReturn(options);
+    testFlow.setExecutionOptions(options);
 
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.KILLED);
@@ -400,19 +408,19 @@ public class ExecutionControllerUtilsTest {
   @Test
   public void testGetFlowToRestartSuccess_PREPARING() {
     final ExecutableNode node = createExecutableNode("testJob", "spark", null);
-    ExecutableFlow testFlow = createSingleNodeFlow(node);
-
+    ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
         FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "2"
     ));
-    when(testFlow.getExecutionOptions()).thenReturn(options);
+    testFlow.setExecutionOptions(options);
 
     ExecutableFlow flowToRestart = ExecutionControllerUtils.getFlowToRestart(testFlow,
         Status.PREPARING);
     assertNotNull(flowToRestart);
-    assertEquals(1, flowToRestart.getUserDefinedRetryCount());
+    assertEquals(1, flowToRestart.getSystemDefinedRetryCount());
+    assertEquals(0, flowToRestart.getUserDefinedRetryCount());
     assertEquals("2",
         flowToRestart
             .getExecutionOptions()

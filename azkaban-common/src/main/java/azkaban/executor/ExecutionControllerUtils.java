@@ -217,15 +217,6 @@ public class ExecutionControllerUtils {
       return null;
     }
 
-    // flow can only retry if custom-retry-times not reach the limit
-    final int flowMaxRetryLimit = Integer.parseInt(
-        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
-    if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {
-      logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit, "
-          + "retried=" + flow.getUserDefinedRetryCount() + ", limit= " + flowMaxRetryLimit);
-      return null;
-    }
-
     // user defined restart statuses list
     final Set<String> restartedStatuses = new HashSet<>(Arrays.asList(flowParams
         .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
@@ -238,9 +229,22 @@ public class ExecutionControllerUtils {
       restartedStatuses.add(Status.EXECUTION_STOPPED.name());
     }
 
+    // flow can only retry if custom-retry-times not reach the limit
+    // and for the case where the retry-times not defined, default to 1
+    int flowMaxRetryLimit = 1;
+    if (flowParams.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
+      flowMaxRetryLimit = Integer.parseInt(
+        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
+    }
+    if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {
+      logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit, "
+          + "retried=" + flow.getUserDefinedRetryCount() + ", limit= " + flowMaxRetryLimit);
+      return null;
+    }
+
     if (restartedStatuses.contains(originalStatus.name())) {
       logger.info("Submitting flow for restart: " + flow.getExecutionId()
-          + "from originalStatus: " + originalStatus);
+          + " from originalStatus: " + originalStatus);
       flow.setUserDefinedRetryCount(flow.getUserDefinedRetryCount() + 1);
       return flow;
     }
