@@ -55,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -218,9 +219,10 @@ public class ExecutionControllerUtils {
     }
 
     // user defined restart statuses list
-    final Set<String> restartedStatuses = new HashSet<>(Arrays.asList(flowParams
-        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
-        .split("\\s*,\\s*")));
+    final Set<String> restartedStatuses = Arrays.stream(
+        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+            .split("\\s*,\\s*")
+    ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
     // backwards compatible to flows that historically defined with
     // "allow.restart.on.execution.stopped"
@@ -238,9 +240,10 @@ public class ExecutionControllerUtils {
     else if (!restartedStatuses.isEmpty()){
       logger.info(String.format("ExecutableFlow: %s has `%s=%s but `%s` not set, "
               + "default to retry once",
+          flow.getExecutionId(),
           FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
           FlowParameters.FLOW_PARAM_MAX_RETRIES,
-          flow.getExecutionId(), restartedStatuses));
+          restartedStatuses));
       flowMaxRetryLimit = 1;
     }
     if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {

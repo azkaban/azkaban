@@ -67,8 +67,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
   private static final String PARAM_OVERRIDE = "param.override.";
   private static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
-  private static final String USER_DEFINED_RETRY_COUNT_PARAM = "userDefinedRetryCount";
-  private static final String SYSTEM_DEFINED_RETRY_COUNT_PARAM = "systemDefinedRetryCount";
+  private static final String USER_DEFINED_FLOW_RETRY_COUNT_PARAM = "userDefinedFlowRetryCount";
+  private static final String SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM = "systemDefinedFlowRetryCount";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -369,8 +369,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
-    flowObj.put(USER_DEFINED_RETRY_COUNT_PARAM, this.userDefinedRetryCount);
-    flowObj.put(SYSTEM_DEFINED_RETRY_COUNT_PARAM, this.systemDefinedRetryCount);
+    flowObj.put(USER_DEFINED_FLOW_RETRY_COUNT_PARAM, this.userDefinedRetryCount);
+    flowObj.put(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, this.systemDefinedRetryCount);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
@@ -435,8 +435,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       }
       this.slaOptionStr = slaBuilder.toString();
     }
-    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_RETRY_COUNT_PARAM, 0);
-    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_RETRY_COUNT_PARAM, 0);
+    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_FLOW_RETRY_COUNT_PARAM, 0);
+    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, 0);
 
     if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
       // Checks if flow contains version set information
