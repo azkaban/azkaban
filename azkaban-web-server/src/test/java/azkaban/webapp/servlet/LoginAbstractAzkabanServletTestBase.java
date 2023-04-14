@@ -15,8 +15,12 @@
  */
 package azkaban.webapp.servlet;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import azkaban.ServiceProvider;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
@@ -87,20 +91,20 @@ public abstract class LoginAbstractAzkabanServletTestBase {
 
     ServiceProvider.SERVICE_PROVIDER.unsetInjector();
     ServiceProvider.SERVICE_PROVIDER.setInjector(this.injector);
-    Mockito.when(this.injector.getInstance(AzkabanWebServer.class))
+    when(this.injector.getInstance(AzkabanWebServer.class))
         .thenReturn(this.azkabanWebServer);
-    Mockito.when(this.injector.getInstance(WebMetrics.class))
+    when(this.injector.getInstance(WebMetrics.class))
         .thenReturn(this.webMetrics);
 
     // This could possibly load
     // azkaban-public/azkaban-web-server/src/main/resources/conf/azkaban.properties
     // , but so far not needed
-    Mockito.when(this.azkabanWebServer.getServerProps()).thenReturn(Props.of());
-    Mockito.when(this.azkabanWebServer.getProjectManager()).thenReturn(this.projectManager);
-    Mockito.when(this.azkabanWebServer.getUserManager()).thenReturn(this.userManager);
-    Mockito.when(this.azkabanWebServer.getExecutorManager()).thenReturn(this.executorManager);
-    Mockito.when(this.azkabanWebServer.getScheduleManager()).thenReturn(this.scheduleManager);
-    Mockito.when(this.azkabanWebServer.getFlowTriggerService()).thenReturn(this.flowTriggerService);
+    when(this.azkabanWebServer.getServerProps()).thenReturn(Props.of());
+    when(this.azkabanWebServer.getProjectManager()).thenReturn(this.projectManager);
+    when(this.azkabanWebServer.getUserManager()).thenReturn(this.userManager);
+    when(this.azkabanWebServer.getExecutorManager()).thenReturn(this.executorManager);
+    when(this.azkabanWebServer.getScheduleManager()).thenReturn(this.scheduleManager);
+    when(this.azkabanWebServer.getFlowTriggerService()).thenReturn(this.flowTriggerService);
 
     mockTesUserWithAdminRole();
 
@@ -112,13 +116,13 @@ public abstract class LoginAbstractAzkabanServletTestBase {
     final User testAdminUser = new User("testAdminUser");
     testAdminUser.addRole("adminRole");
     final Role adminRole = new Role("adminRole", new Permission(Type.ADMIN));
-    Mockito.when(this.userManager.getRole("adminRole")).thenReturn(adminRole);
-    Mockito.when(this.session.getUser()).thenReturn(testAdminUser);
+    when(this.userManager.getRole("adminRole")).thenReturn(adminRole);
+    when(this.session.getUser()).thenReturn(testAdminUser);
   }
 
   protected void mockTestProjectAndFlow() {
     final Project project = new Project(11, "testProject");
-    Mockito.when(this.projectManager.getProject("testProject")).thenReturn(project);
+    when(this.projectManager.getProject("testProject")).thenReturn(project);
     final Flow flow = new Flow("testFlow");
     project.setFlows(ImmutableMap.of(flow.getId(), flow));
   }
@@ -130,6 +134,10 @@ public abstract class LoginAbstractAzkabanServletTestBase {
       exFlow.setExecutionId(99);
       return "Submitted (mocked)";
     }).when(this.executorManager).submitExecutableFlow(this.exFlow.capture(), Mockito.anyString());
+    final ExecutableFlow exFlow = new ExecutableFlow();
+    exFlow.setExecutionId(99);
+    exFlow.setExecutionOptions(new ExecutionOptions());
+    when(this.executorManager.createExecutableFlow(any(Project.class), any(Flow.class))).thenReturn(exFlow);
   }
 
   public static class AzkabanMockHttpServletRequest extends MockHttpServletRequest {

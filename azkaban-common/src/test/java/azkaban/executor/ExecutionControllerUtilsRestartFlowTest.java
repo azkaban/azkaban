@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet.P;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
@@ -73,12 +75,14 @@ public class ExecutionControllerUtilsRestartFlowTest {
     this.executorLoader.uploadExecutableFlow(this.flow1);
     this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
 
-    this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, null,
+    this.projectManager = mock(ProjectManager.class);
+    when(this.projectManager.getProject(projectId)).thenReturn(this.project);
+    when(this.projectManager.loadPropsForExecutableFlow(any())).thenReturn(new Props());
+
+    this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, this.projectManager,
         this.executorLoader, this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader,
         this.commonMetrics, mock(ExecutorApiGateway.class), mock(ContainerizedImpl.class),null,
         null, new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
-    this.projectManager = mock(ProjectManager.class);
-    when(this.projectManager.getProject(projectId)).thenReturn(this.project);
 
     this.listener = new OnContainerizedExecutionEventListener(this.executorLoader,
         this.containerizedDispatchManager, this.projectManager);
