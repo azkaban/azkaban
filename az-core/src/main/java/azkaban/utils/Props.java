@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 
 
@@ -481,17 +482,11 @@ public class Props {
    * Returns a list of strings with the sep as the separator of the value
    */
   public List<String> getStringList(final String key, final String sep) {
-    final String val = get(key);
-    if (val == null || val.trim().length() == 0) {
+    String val = get(key);
+    if (val == null || (val = val.trim()).length() == 0) {
       return Collections.emptyList();
     }
-
-    if (containsKey(key)) {
-      return Arrays.asList(val.split(sep));
-    } else {
-      throw new UndefinedPropertyException("Missing required property '" + key
-          + "'");
-    }
+    return Arrays.asList(val.split(sep));
   }
 
   /**

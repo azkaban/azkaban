@@ -105,5 +105,20 @@
           href="$!context/${jobViewerPlugin.pluginPath}?execid=${execid}&jobid=${jobid}">$jobViewerPlugin.pluginName</a>
       </li>
     #end
+    #foreach ($analyzer in $externalAnalyzers)
+      #if (!${analyzer.isLinkUrlValid()})
+        #set($title = "Execution is not analyzable in ${analyzer.getLabel()} at the moment.")
+        #set($isDisabled = "disabled")
+      #else
+        #set($title = "Analyze execution in ${analyzer.getLabel()}")
+        #set($isDisabled = "")
+      #end
+      #set($id = "ext-link-${analyzer.getTopic()}")
+      <li><a id="${id}" href="${analyzer.getLinkUrl()}"
+             class="btn btn-info btn-sm btn-external ${isDisabled}"
+             type="button" target="_blank"
+             title="${title}">${analyzer.getLabel()}</a>
+      </li>
+    #end
   </ul>
 </div>

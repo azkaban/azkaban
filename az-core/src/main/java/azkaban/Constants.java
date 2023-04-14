@@ -184,6 +184,7 @@ public class Constants {
   public static final String MISSED_SCHEDULE_THREAD_POOL_SIZE = "azkaban.missed.schedule.task.threads";
   public static final boolean DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE = false;
 
+  public static final int DEFAULT_AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = 1000;
 
   // Azkaban event reporter constants
   public static class EventReporterConstants {
@@ -264,35 +265,25 @@ public class Constants {
     // These properties are configurable through azkaban.properties
     public static final String AZKABAN_PID_FILENAME = "azkaban.pid.filename";
 
-    // External URL template of a given topic, specified in the list defined above
-    //Deprecated, it is replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL
-    public static final String AZKABAN_SERVER_EXTERNAL_TOPIC_URL = "azkaban.server.external.${topic}.url";
-
-    // Designates one of the external link topics to correspond to an execution analyzer
-    //Deprecated, replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC = "azkaban.server.external.analyzer.topic";
-    //Deprecated, it is replaced by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL = "azkaban.server.external.analyzer.label";
-
-    // Defines a list of external links, each referred to as a topic
-    // external links defined here will be translated into buttons and rendered in the Flow Execution page
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS = "azkaban.server.external.analyzer.topics";
+    // Defines a list of external links, each referred to as a topic.
+    // External links can be defined at flow (ie: 'azkaban.server.external.analyzer.topics') and/or
+    // job (ie: 'azkaban.server.job.external.analyzer.topics') level and will be rendered as
+    // buttons in the Flow/Job Execution pages.
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS =
+        "azkaban.server.${level}external.analyzer.topics";
 
     // Defines timeout in milliseconds for azkaban to validate external links
-    // If this config is missing, azkaban will use default 3000 milliseconds as timeout.
-    // If validation fails, buttons is disabled in Flow Execution page.
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = "azkaban.server.external.analyzer.timeout.ms";
+    // If this config is missing, azkaban will use default 1000 milliseconds as timeout.
+    // If validation fails, buttons are disabled in Flow/Job Execution page.
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS =
+        "azkaban.server.external.analyzer.timeout.ms";
 
-    // Designates one of the external link topics to correspond to an execution analyzer
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL = "azkaban.server"
-        + ".external.analyzer.${topic}.label";
-    // External URL template of a given topic, specified in the list defined above
-    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL = "azkaban.server"
-        + ".external.analyzer.${topic}.url";
-
-    // Designates one of the external link topics to correspond to a job log viewer
-    public static final String AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC = "azkaban.server.external.logviewer.topic";
-    public static final String AZKABAN_SERVER_EXTERNAL_LOGVIEWER_LABEL = "azkaban.server.external.logviewer.label";
+    // Label to use when rendering an external link in UI.
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL =
+        "azkaban.server.${level}external.analyzer.${topic}.label";
+    // URL template of an external link or topic.
+    public static final String AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL =
+        "azkaban.server.${level}external.analyzer.${topic}.url";
 
     /*
      * Hadoop/Spark user job link.
@@ -884,6 +875,7 @@ public class Constants {
 
     // Constant to define at most how many times can restart the flow
     public static final String FLOW_PARAM_MAX_RETRIES = "flow.max.retries";
+    public static final String FLOW_PARAM_RESTART_COUNT = "flow.max.retries";
 
     // Constant to define the strategy to restart the execution, default to "restart_from_root",
     public static final String FLOW_PARAM_RESTART_STRATEGY = "flow.retry.strategy";

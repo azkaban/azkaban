@@ -47,6 +47,7 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.ExternalLink;
 import azkaban.utils.ExternalLinkUtils;
+import azkaban.utils.ExternalLinkUtils.ExternalLinkScope;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -99,6 +100,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ScheduleManager scheduleManager;
   private UserManager userManager;
 
+  private List<ExternalLink> flowLevelExternalLinks;
+  private List<ExternalLink> jobLevelExternalLinks;
+  private int externalLinksTimeoutMs;
+
   public ExecutorServlet() {
     super(createAPIEndpoints());
   }
@@ -116,6 +121,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     this.scheduleManager = server.getScheduleManager();
     this.flowTriggerService = server.getFlowTriggerService();
+
+    final Props azkProps = server.getServerProps();
+    this.flowLevelExternalLinks = ExternalLinkUtils.parseExternalLinks(azkProps, ExternalLinkScope.FLOW);
+    this.jobLevelExternalLinks = ExternalLinkUtils.parseExternalLinks(azkProps, ExternalLinkScope.JOB);
+    this.externalLinksTimeoutMs =
+        azkProps.getInt(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS,
+            Constants.DEFAULT_AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS);
+
   }
 
   private static List<AzkabanAPI> createAPIEndpoints() {
@@ -384,6 +397,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         .getExternalJobLogUrls(flow, jobId, attempt);
     page.add("jobLogUrlsByAppId", jobLogUrlsByAppId);
 
+    addExternalLinks(this.jobLevelExternalLinks, page, req, execId, jobId);
+
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
     page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
@@ -449,7 +464,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    addExternalAnalyzers(req, page);
+    addExternalLinks(this.flowLevelExternalLinks, page, req, triggerInst.getFlowExecId(), null);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
@@ -458,13 +473,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("pathDelimiter", Constants.PATH_DELIMITER);
 
     page.render();
-  }
-
-  private void addExternalAnalyzers(final HttpServletRequest req, final Page page) {
-    final Props props = getApplication().getServerProps();
-    List<ExternalLink> externalLinks = ExternalLinkUtils.getExternalAnalyzers(props, req);
-    logger.debug("addExternalAnalyzers");
-    page.add("externalAnalyzers", externalLinks);
   }
 
   private void handleExecutionFlowPageByExecId(final HttpServletRequest req,
@@ -501,7 +509,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    addExternalAnalyzers(req, page);
+    addExternalLinks(this.flowLevelExternalLinks, page, req, execId, null);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
@@ -520,6 +528,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("isLocked", isCurrentFlowLocked);
 
     page.render();
+  }
+
+  private void addExternalLinks(final List<ExternalLink> extLinksTemplates, final Page page,
+      final HttpServletRequest req, final int executionId, final String jobId) {
+    List<ExternalLink> externalAnalyzers =
+        ExternalLinkUtils.buildExternalLinksForRequest(extLinksTemplates,
+            this.externalLinksTimeoutMs, req, executionId, jobId);
+    page.add("externalAnalyzers", externalAnalyzers);
   }
 
   protected Project getProjectPageByPermission(final Page page, final int projectId,

@@ -1,12 +1,12 @@
 package azkaban.utils;
 
+import azkaban.Constants;
+import java.util.Objects;
+
 /**
- * This is Object for external Link.
- * It stores information about external link, includes:
- * topic, label, linkUrl, isValid.
- * The object is used by web server to render external link.
- * It is used by AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS right now, and it can be reused
- * by AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC later.
+ * Represents an external link.
+ * Links are rendered as buttons in the Flow and/or Job execution pages. Its configuration is
+ * optional, is done in {@value Constants#AZKABAN_PROPERTIES_FILE}.
  */
 public class ExternalLink {
 
@@ -46,4 +46,23 @@ public class ExternalLink {
     return this.linkUrlValid;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ExternalLink link = (ExternalLink) o;
+    return Objects.equals(this.topic, link.topic) &&
+        Objects.equals(this.label, link.label) &&
+        Objects.equals(this.linkUrl, link.linkUrl) &&
+        this.linkUrlValid == link.linkUrlValid;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.topic, this.label, this.linkUrl, this.linkUrlValid);
+  }
 }

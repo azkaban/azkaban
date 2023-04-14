@@ -20,89 +20,20 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import azkaban.Constants;
-import java.util.Arrays;
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.utils.ExternalLinkUtils.ExternalLinkScope;
+import azkaban.utils.ExternalLinkUtils.ExternalLinkParams;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 public class ExternalLinkUtilsTest {
-
-  private static final String EXEC_URL = "http://localhost:8081/executor";
-  private static final String EXEC_QUERY_STRING = "execid=1";
-  private static final String EXTERNAL_ANALYZER_TOPIC = "elephant";
-  private static final String EXTERNAL_ANALYZER_TOPICS = "topic1,topic2";
-  private static final String EXTERNAL_ANALYZER_TOPIC1 = "topic1";
-  private static final String EXTERNAL_ANALYZER_TOPIC2 = "topic2";
-
-  private static final String EXTERNAL_ANALYZER_LABEL1 = "topic1";
-  private static final String EXTERNAL_ANALYZER_LABEL2 = "topic2";
-
-  private static final String EXTERNAL_ANALYZER_URL_VALID_FORMAT =
-      "http://elephant.linkedin.com/search?q=${url}";
-  private static final String EXTERNAL_ANALYZER_EXPECTED_URL =
-      "http://elephant.linkedin.com/search?q="
-          + "http%3A%2F%2Flocalhost%3A8081%2Fexecutor%3Fexecid%3D1";
-
-  private static final String EXTERNAL_ANALYZER_URL_VALID_FORMAT2 =
-      "http://elephant2.linkedin.com/search?q=${url}";
-  private static final String EXTERNAL_ANALYZER_EXPECTED_URL2 =
-      "http://elephant2.linkedin.com/search?q="
-          + "http%3A%2F%2Flocalhost%3A8081%2Fexecutor%3Fexecid%3D1";
-
-  private static final String EXTERNAL_LOGVIEWER_TOPIC = "kibana";
-  private static final String EXTERNAL_LOGVIEWER_URL_VALID_FORMAT =
-      "http://kibana.linkedin.com/search?jobid=${jobid}&&execid=${execid}";
-  private static final String EXTERNAL_LOGVIEWER_EXPECTED_URL =
-      "http://kibana.linkedin.com/search?jobid=Some%20%2B%20job&&execid=1";
-  private Props azkProps;
-  private Props jobProps;
-  private String jobId;
-  private HttpServletRequest mockRequest;
-
-  @Before
-  public void setUp() {
-    // Empty server configuration
-    this.azkProps = new Props();
-
-    // Job configuration consisting of only an exec id and job id
-    this.jobProps = new Props();
-    this.jobProps.put(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID, 1);
-    this.jobId = "Some + job";
-
-    this.mockRequest = mock(HttpServletRequest.class);
-  }
-
-  /**
-   * Test validates the happy path when an log viewer is configured with '${execid}'  and '${jobid}
-   * as the format in 'azkaban.properties'.
-   */
-  @Test
-  public void testGetExternalLogViewerValidFormat() {
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC,
-        EXTERNAL_LOGVIEWER_TOPIC);
-    this.azkProps.put(
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL
-            .replace("${topic}", EXTERNAL_LOGVIEWER_TOPIC),
-        EXTERNAL_LOGVIEWER_URL_VALID_FORMAT);
-
-    final String externalURL =
-        ExternalLinkUtils.getExternalLogViewer(this.azkProps, this.jobId, this.jobProps);
-    assertTrue(externalURL.equals(EXTERNAL_LOGVIEWER_EXPECTED_URL));
-  }
-
-  /**
-   * Test validates the condition when an external log viewer is not configured in
-   * 'azkaban.properties'.
-   */
-  @Test
-  public void testGetLogViewerNotConfigured() {
-    final String executionExternalLinkURL =
-        ExternalLinkUtils.getExternalLogViewer(this.azkProps, this.jobId, this.jobProps);
-    assertTrue(executionExternalLinkURL.equals(""));
-  }
 
   /**
    * Test validates that when we encode URLs to UTF-8, it does not give us incorrect encodings.
@@ -117,112 +48,100 @@ public class ExternalLinkUtilsTest {
     assertTrue(ExternalLinkUtils.encodeToUTF8("=").equals("%3D"));
   }
 
-  /**
-   * Make sure that URLs for analyzers and logviewers are fetched correctly by setting it manually
-   * and then fetching them
-   */
   @Test
-  public void testFetchURL() {
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL
-        .replace("${topic}", "someTopic"), "This is a link");
-    assertTrue(
-        ExternalLinkUtils.getURLForTopic("someTopic", this.azkProps).equals("This is a link"));
+  public void testParseExternalLinks() {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("level", ExternalLinkScope.FLOW.getName());
+    params.put("topic", "topic1");
+    final String flowLevelExternalLinkTopics =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS, params,
+            "${", "}");
+    final String flowLevelExternalLinkTopic1Url =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL, params,
+            "${", "}");
+    final String flowLevelExternalLinkTopic1Label =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL, params,
+            "${", "}");
+
+    params.put("level", ExternalLinkScope.JOB.getName());
+    params.put("topic", "jobTopic1");
+    final String jobLevelExternalLinkTopics =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS, params,
+            "${", "}");
+    final String jobLevelExternalLinkTopic1Url =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL, params,
+            "${", "}");
+    final String jobLevelExternalLinkTopic1Label =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL, params,
+            "${", "}");
+
+    params.put("topic", "jobMisconfiguredTopic");
+    final String jobLevelExternalLinkMisconfiguredTopicUrl =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL, params,
+            "${", "}");
+
+    final ImmutableMap<String,String> confs = ImmutableMap.<String, String>builder()
+        .put(flowLevelExternalLinkTopics, "topic1,notConfiguredTopic, topic1")
+        .put(flowLevelExternalLinkTopic1Url,
+            "http://url.com/${exec_id}/{$job_id}/${webserver_host}?url=${url}")
+        .put(flowLevelExternalLinkTopic1Label, "Topic1Label")
+        .put(jobLevelExternalLinkTopics, "jobTopic1, jobMisconfiguredTopic")
+        .put(jobLevelExternalLinkTopic1Url,
+            "http://joburl.com/${exec_id}/{$job_id}/${webserver_host}?url=${url}")
+        .put(jobLevelExternalLinkTopic1Label, "JobTopic1Label")
+        .put(jobLevelExternalLinkMisconfiguredTopicUrl, "http://joburl.com/u=${url}")
+        .build();
+    final Props azkabanProps = new Props(null, confs);
+
+    // parse flow level external link configs
+    final List<ExternalLink> expectedFlowLinks = ImmutableList.of(
+        new ExternalLink("topic1", "Topic1Label",
+            "http://url.com/${exec_id}/{$job_id}/${webserver_host}?url=${url}", true)
+    );
+    final List<ExternalLink> parsedLinks = ExternalLinkUtils.parseExternalLinks(azkabanProps, ExternalLinkScope.FLOW);
+
+    Assert.assertEquals(expectedFlowLinks.size(), 1);
+    Assert.assertEquals(expectedFlowLinks, parsedLinks);
+
+    // parse job level external link configs
+    final List<ExternalLink> expectedJobLinks = ImmutableList.of(
+        new ExternalLink("jobTopic1", "JobTopic1Label",
+            "http://joburl.com/${exec_id}/{$job_id}/${webserver_host}?url=${url}", true)
+    );
+    final List<ExternalLink> parsedJobLinks = ExternalLinkUtils.parseExternalLinks(azkabanProps,
+        ExternalLinkScope.JOB);
+
+    Assert.assertEquals(expectedJobLinks.size(), 1);
+    Assert.assertEquals(expectedJobLinks, parsedJobLinks);
   }
-  /**
-   * Test validates the GetExternalAnalyzerTopics
-   * format in 'azkaban.properties'. it should work with both
-   * azkaban.server.external.analyzer.topic and azkaban.server.external.analyzer.topics
-   */
+
   @Test
-  public void testGetExternalAnalyzerTopics() {
-    List<String> topicsExpected = Arrays.asList(EXTERNAL_ANALYZER_TOPIC1);
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC,
-        EXTERNAL_ANALYZER_TOPIC1);
+  public void testBuildExternalLinkUrl() {
+    final HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+    when(mockRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost:8081/executor"));
+    when(mockRequest.getQueryString()).thenReturn("execid=1");
+    when(mockRequest.getServerName()).thenReturn("localhost");
 
-    List<String> topicsReturned = ExternalLinkUtils.getExternalAnalyzerTopics(this.azkProps);
-    Assert.assertArrayEquals(topicsExpected.toArray(), topicsReturned.toArray());
+    String templateUrl1 = "http://url.com/params?p=";
+    for(ExternalLinkParams p : ExternalLinkParams.values()) { // Enum.values() follow declaration order
+      templateUrl1 += "|${" + p.getName() + "}";
+    }
+    final String expectedUrl1 = String.format("http://url.com/params?p=|12345|myJob|localhost|%s",
+        ExternalLinkUtils.encodeToUTF8("http://localhost:8081/executor?execid=1"));
+    String url = ExternalLinkUtils.buildExternalLinkUrl(templateUrl1, mockRequest, 12345,
+        "myJob");
+    Assert.assertEquals(expectedUrl1, url);
 
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS,
-        EXTERNAL_ANALYZER_TOPIC1);
-    topicsReturned = ExternalLinkUtils.getExternalAnalyzerTopics(this.azkProps);
-    Assert.assertArrayEquals(topicsExpected.toArray(), topicsReturned.toArray());
+    final String templateUrl2 = "http://url.com/params?e=${exec_id}&u=${url}";
+    final String expectedUrl2 = String.format("http://url.com/params?e=12345&u=%s",
+        ExternalLinkUtils.encodeToUTF8("http://localhost:8081/executor?execid=1"));
+    url = ExternalLinkUtils.buildExternalLinkUrl(templateUrl2, mockRequest, 12345,
+        "myJob");
+    Assert.assertEquals(expectedUrl2, url);
 
-
-    topicsExpected = Arrays.asList(EXTERNAL_ANALYZER_TOPIC1, EXTERNAL_ANALYZER_TOPIC2);
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS,
-        EXTERNAL_ANALYZER_TOPICS);
-    topicsReturned = ExternalLinkUtils.getExternalAnalyzerTopics(this.azkProps);
-    Assert.assertArrayEquals(topicsExpected.toArray(), topicsReturned.toArray());
-  }
-  /**
-   * Test validates the getExternalLabelForTopic
-   * format in 'azkaban.properties'. it should work with both
-   * azkaban.server.external.analyzer.topic and azkaban.server.external.analyzer.topics
-   */
-  @Test
-  public void testGetExternalLabelForTopic() {
-    String topicLabelExpected = EXTERNAL_ANALYZER_LABEL1;
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
-        EXTERNAL_ANALYZER_LABEL1);
-    String topicLabelReturned =
-        ExternalLinkUtils.getExternalLabelForTopic(EXTERNAL_ANALYZER_TOPIC, this.azkProps);
-    Assert.assertEquals(topicLabelExpected, topicLabelReturned);
-
-
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL
-        .replace("${topic}", EXTERNAL_ANALYZER_TOPIC1), EXTERNAL_ANALYZER_LABEL1);
-    topicLabelReturned =
-        ExternalLinkUtils.getExternalLabelForTopic(EXTERNAL_ANALYZER_TOPIC1, this.azkProps);
-    Assert.assertEquals(topicLabelExpected, topicLabelReturned);
-
-    topicLabelExpected = EXTERNAL_ANALYZER_LABEL2;
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL
-        .replace("${topic}", EXTERNAL_ANALYZER_TOPIC2), EXTERNAL_ANALYZER_LABEL2);
-    topicLabelReturned =
-        ExternalLinkUtils.getExternalLabelForTopic(EXTERNAL_ANALYZER_TOPIC2, this.azkProps);
-    Assert.assertEquals(topicLabelExpected, topicLabelReturned);
-  }
-
-  /**
-   * Test validates the happy path when an external analyzer is configured with '${url}' as the
-   * format in 'azkaban.properties'.
-   */
-  @Test
-  public void testGetExternalAnalyzerValidFormat() {
-    this.azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC,
-        EXTERNAL_ANALYZER_TOPIC);
-    this.azkProps.put(
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL
-            .replace("${topic}", EXTERNAL_ANALYZER_TOPIC1),
-        EXTERNAL_ANALYZER_URL_VALID_FORMAT);
-
-    when(this.mockRequest.getRequestURL()).thenReturn(new StringBuffer(EXEC_URL));
-    when(this.mockRequest.getQueryString()).thenReturn(EXEC_QUERY_STRING);
-
-    String externalURL =
-        ExternalLinkUtils.getExternalAnalyzerLinkOnReq(EXTERNAL_ANALYZER_TOPIC1, this.azkProps,
-            this.mockRequest);
-    assertTrue(externalURL.equals(EXTERNAL_ANALYZER_EXPECTED_URL));
-
-    this.azkProps.put(
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL
-            .replace("${topic}", EXTERNAL_ANALYZER_TOPIC1),
-        EXTERNAL_ANALYZER_URL_VALID_FORMAT2);
-
-    externalURL =
-        ExternalLinkUtils.getExternalAnalyzerLinkOnReq(EXTERNAL_ANALYZER_TOPIC1, this.azkProps,
-            this.mockRequest);
-    assertTrue(externalURL.equals(EXTERNAL_ANALYZER_EXPECTED_URL2));
-  }
-  /**
-   * Test validates the condition when an external analyzer is not configured in
-   * 'azkaban.properties'.
-   */
-  @Test
-  public void testGetExternalAnalyzerNotConfigured() {
-    final String executionExternalLinkURL =
-        ExternalLinkUtils.getExternalAnalyzerLinkOnReq(EXTERNAL_ANALYZER_TOPIC1, this.azkProps,
-            this.mockRequest);
-    assertTrue(executionExternalLinkURL.equals(""));
+    // empty template url
+    url = ExternalLinkUtils.buildExternalLinkUrl("", mockRequest, 12345,
+        "myJob");
+    Assert.assertEquals("", url);
   }
 }
