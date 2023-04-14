@@ -132,7 +132,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     try {
       exFlow.setFlowParamsFromProps(this.projectManager.loadPropsForExecutableFlow(exFlow));
     } catch (ProjectManagerException e) {
-      logger.info("failed to load and set the FlowParameters for ExecutableFlow", e);
       throw new ExecutorManagerException(e);
     }
   }

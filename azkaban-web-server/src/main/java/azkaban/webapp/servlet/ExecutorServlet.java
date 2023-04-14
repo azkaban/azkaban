@@ -771,7 +771,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     ret.put("nodeStatus", nodeStatus);
     ret.put("disabled", options.getDisabledJobs());
-    ret.put("ExecutionOptions", options);
   }
 
   /**
