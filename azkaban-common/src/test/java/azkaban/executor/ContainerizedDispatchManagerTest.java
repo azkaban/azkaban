@@ -293,7 +293,7 @@ public class ContainerizedDispatchManagerTest {
     initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();
     final List<Integer> executions = this.containerizedDispatchManager
-        .getRunningFlows(this.flow2.getProjectId(), this.flow2.getFlowId());
+        .getRunningFlowIds(this.flow2.getProjectId(), this.flow2.getFlowId());
     assertThat(executions.contains(this.flow2.getExecutionId())).isTrue();
     assertThat(executions.contains(this.flow3.getExecutionId())).isTrue();
   }

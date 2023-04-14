@@ -16,7 +16,7 @@
 
 package azkaban.executor;
 
-import static azkaban.executor.Status.TERMINATING_STATUSES;
+import static azkaban.executor.Status.TERMINAL_STATUSES;
 
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
@@ -119,7 +119,7 @@ public class ExecutionFlowDao {
     try {
       return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTION_BASE_QUERY
               + "WHERE status NOT IN ("
-              + getTerminatingStatusesString() + ")",
+              + getTerminalStatusesString() + ")",
           new SelectFromExecutionFlows());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching unfinished flows", e);
@@ -131,7 +131,7 @@ public class ExecutionFlowDao {
       return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTION_BASE_QUERY
               + "WHERE project_id=? AND flow_id=? AND "
               + "status NOT IN ("
-              + getTerminatingStatusesString() + ")",
+              + getTerminalStatusesString() + ")",
           new SelectFromExecutionFlows(), projectId, flowId);
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching unfinished flows", e);
@@ -831,8 +831,8 @@ public class ExecutionFlowDao {
    * Generates a string representing terminating flow status num values: "50, 60, 65, 70"
    * @return
    */
-  static String getTerminatingStatusesString() {
-    final List<Integer> list = TERMINATING_STATUSES.stream().map(Status::getNumVal).collect(
+  static String getTerminalStatusesString() {
+    final List<Integer> list = TERMINAL_STATUSES.stream().map(Status::getNumVal).collect(
         Collectors.toList());
     return StringUtils.join(list, ", ");
   }

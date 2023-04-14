@@ -141,9 +141,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     long startTime = System.currentTimeMillis();
-    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
-    // all we care about is the count. Write a new class that's more performant and can be used for
-    // metrics. this.executorLoader.selectAgedQueuedFlows internally calls SelectQueuedExecutableFlows.
     try {
       size = this.executorLoader.selectAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
           .size();
@@ -348,7 +345,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     exflow.setSubmitTime(System.currentTimeMillis());
 
     // Get collection of running flows given a project and a specific flow name
-    final List<Integer> running = getRunningFlows(projectId, flowId);
+    final List<Integer> running = getRunningFlowIds(projectId, flowId);
 
     ExecutionOptions options = exflow.getExecutionOptions();
     if (options == null) {
@@ -421,10 +418,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
    * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a given
    * project and flow {@inheritDoc}.
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlowIds(int, java.lang.String)
    */
   @Override
-  public List<Integer> getRunningFlows(final int projectId, final String flowId) {
+  public List<Integer> getRunningFlowIds(final int projectId, final String flowId) {
     try {
       return this.executorLoader.selectUnfinishedFlows(projectId, flowId);
     } catch (final ExecutorManagerException e) {

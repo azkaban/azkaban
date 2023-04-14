@@ -817,7 +817,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     final List<Integer> refs =
-        this.executorManagerAdapter.getRunningFlows(project.getId(), flowId);
+        this.executorManagerAdapter.getRunningFlowIds(project.getId(), flowId);
     if (!refs.isEmpty()) {
       ret.put("execIds", refs);
     }

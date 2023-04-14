@@ -1063,9 +1063,9 @@ public class ExecutionFlowDaoTest {
    * @throws Exception
    */
   @Test
-  public void testGetTerminatingStatusesString() throws Exception {
+  public void testGetTerminalStatusesString() throws Exception {
     final String target = "50, 60, 65, 70";
-    Assert.assertTrue(this.fetchActiveFlowDao.getTerminatingStatusesString().equals(target));
+    Assert.assertTrue(this.fetchActiveFlowDao.getTerminalStatusesString().equals(target));
   }
 
   /*

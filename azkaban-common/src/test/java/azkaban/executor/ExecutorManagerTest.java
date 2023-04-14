@@ -449,7 +449,7 @@ public class ExecutorManagerTest {
   @Test
   public void testFetchActiveFlowByProject() throws Exception {
     testSetUpForRunningFlows();
-    final List<Integer> executions = this.manager.getRunningFlows(this.flow1.getProjectId(),
+    final List<Integer> executions = this.manager.getRunningFlowIds(this.flow1.getProjectId(),
         this.flow1.getFlowId());
     Assert.assertTrue(executions.contains(this.flow1.getExecutionId()));
   }

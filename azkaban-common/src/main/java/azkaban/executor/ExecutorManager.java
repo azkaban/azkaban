@@ -394,10 +394,10 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
    * project and flow {@inheritDoc}. Results should be sorted as we assume this while setting up
    * pipelined execution Id.
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlowIds(int, java.lang.String)
    */
   @Override
-  public List<Integer> getRunningFlows(final int projectId, final String flowId) {
+  public List<Integer> getRunningFlowIds(final int projectId, final String flowId) {
     final List<Integer> executionIds = new ArrayList<>();
     executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
         this.queuedFlows.getAllEntries()));

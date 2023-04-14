@@ -16,7 +16,7 @@
 
 package azkaban.executor;
 
-import static azkaban.executor.Status.TERMINATING_STATUSES;
+import static azkaban.executor.Status.TERMINAL_STATUSES;
 
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
@@ -195,8 +195,8 @@ public class FetchActiveFlowDao {
    * Generates a string representing terminating flow status num values: "50, 60, 65, 70"
    * @return
    */
-  static String getTerminatingStatusesString () {
-    final List<Integer> list = TERMINATING_STATUSES.stream().map(Status::getNumVal).collect(Collectors.toList());
+  static String getTerminalStatusesString () {
+    final List<Integer> list = TERMINAL_STATUSES.stream().map(Status::getNumVal).collect(Collectors.toList());
     return StringUtils.join(list, ", ");
   }
 
@@ -212,7 +212,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + FetchActiveFlowDao.getTerminatingStatusesString() + ")";
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")";
 
     private static final String FETCH_UNFINISHED_EXECUTABLE_FLOW_BY_EXECID =
         FETCH_UNFINISHED_EXECUTABLE_FLOWS + " AND ex.exec_id = ?";
@@ -226,7 +226,7 @@ public class FetchActiveFlowDao {
             + " executors et ON ex.executor_id = et.id"
             + " WHERE dispatch_method = ? "
             + " AND ex.status NOT IN ("
-            + FetchActiveFlowDao.getTerminatingStatusesString() + ")"
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
@@ -269,7 +269,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
-            + FetchActiveFlowDao.getTerminatingStatusesString() + ")";
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -303,7 +303,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
-            + FetchActiveFlowDao.getTerminatingStatusesString() + ")"
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("

@@ -37,7 +37,7 @@ public interface ExecutorManagerAdapter {
   public ExecutableFlow getExecutableFlow(int execId)
       throws ExecutorManagerException;
 
-  public List<Integer> getRunningFlows(int projectId, String flowId);
+  public List<Integer> getRunningFlowIds(int projectId, String flowId);
 
   public List<Integer> getRunningFlowIds();
 

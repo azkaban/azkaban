@@ -153,7 +153,7 @@ public class ExecutionControllerTest {
   public void testFetchActiveFlowByProject() throws Exception {
     initializeUnfinishedFlows();
     final List<Integer> executions = this.controller
-        .getRunningFlows(this.flow2.getProjectId(), this.flow2.getFlowId());
+        .getRunningFlowIds(this.flow2.getProjectId(), this.flow2.getFlowId());
     assertThat(executions.contains(this.flow2.getExecutionId())).isTrue();
     assertThat(executions.contains(this.flow3.getExecutionId())).isTrue();
   }

@@ -58,7 +58,7 @@ public enum Status {
   public static final ImmutableSet<Status> RESTARTABLE_TERMINAL_STATUSES =
       ImmutableSet.of(Status.EXECUTION_STOPPED, Status.FAILED);
 
-  public static final ImmutableSet<Status> TERMINATING_STATUSES = ImmutableSet.of(Status.SUCCEEDED,
+  public static final ImmutableSet<Status> TERMINAL_STATUSES = ImmutableSet.of(Status.SUCCEEDED,
       Status.KILLED, Status.EXECUTION_STOPPED, Status.FAILED);
 
   private final int numVal;
