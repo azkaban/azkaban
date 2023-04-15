@@ -297,9 +297,9 @@ public class Constants {
     /*
      * Hadoop/Spark user job link.
      * Example:
-     * a) azkaban.server.external.resource_manager_job_url=http://***rm***:8088/cluster/app/application_${application.id}
-     * b) azkaban.server.external.history_server_job_url=http://***jh***:19888/jobhistory/job/job_${application.id}
-     * c) azkaban.server.external.spark_history_server_job_url=http://***sh***:18080/history/application_${application.id}/1/jobs
+     * a) azkaban.server.external.resource_manager_job_url=http://resource-manager-http-address:port/cluster/app/application_${application.id}
+     * b) azkaban.server.external.history_server_job_url=http://history-server-http-address:port/jobhistory/job/job_${application.id}
+     * c) azkaban.server.external.spark_history_server_job_url=http://spark-history-server-http-address:port/history/application_${application.id}/1/jobs
      * */
     public static final String HADOOP_CLUSTER_URL = "azkaban.server.external.hadoop_cluster_url";
     public static final String RESOURCE_MANAGER_JOB_URL = "azkaban.server.external.resource_manager_job_url";
