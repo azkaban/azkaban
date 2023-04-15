@@ -57,7 +57,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     this.project.setFlows(loader.getFlowMap());
     this.project.setVersion(1);
     this.flow = FlowUtils.getFlow(this.project, "jobe");
-    this.flow1 = FlowUtils.createExecutableFlow(this.project, this.flow, null, null);
+    this.flow1 = FlowUtils.createExecutableFlow(this.project, this.flow);
     final ExecutionOptions executionOptions = new ExecutionOptions();
     final Map<String, String> flowParam = new HashMap<>();
     flowParam.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED");

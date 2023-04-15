@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import azkaban.DispatchMethod;
+import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -41,8 +42,11 @@ public interface ExecutorManagerAdapter {
 
   /**
    * load and set the flow-parameters and other Props to the ExecutableFlow
+   * @param project
+   * @param flow
+   * @return
    */
-  void preloadExecutionOptions(ExecutableFlow exFlow) throws ExecutorManagerException;
+  ExecutableFlow createExecutableFlow(Project project, Flow flow);
 
   public List<Integer> getRunningFlows(int projectId, String flowId);
 

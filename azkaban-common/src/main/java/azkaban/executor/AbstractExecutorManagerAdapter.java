@@ -24,6 +24,7 @@ import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
+import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.jobcallback.JobCallbackManager;
 import azkaban.logs.ExecutionLogsLoader;
@@ -128,12 +129,17 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   @Override
-  public void preloadExecutionOptions(ExecutableFlow exFlow) throws ExecutorManagerException {
+  public ExecutableFlow createExecutableFlow(Project project, Flow flow) {
+    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+    exFlow.addAllProxyUsers(project.getProxyUsers());
     try {
       exFlow.setFlowParamsFromProps(this.projectManager.loadPropsForExecutableFlow(exFlow));
     } catch (ProjectManagerException e) {
-      throw new ExecutorManagerException(e);
+      logger.warn("Fail to preload ExecutableFlow, continue without loading ExecutionOptions", e);
+      exFlow = new ExecutableFlow(project, flow);
+      exFlow.addAllProxyUsers(project.getProxyUsers());
     }
+    return exFlow;
   }
 
   /**
