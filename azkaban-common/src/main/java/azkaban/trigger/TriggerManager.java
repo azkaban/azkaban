@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import azkaban.event.EventHandler;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.flow.NoSuchAzkabanResourceException;
 import azkaban.metrics.MetricsManager;
 import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.utils.Props;
@@ -339,6 +340,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         t.lock();
         try {
           TriggerManager.this.scannerStage = "Checking for trigger " + t.getTriggerId();
+          if (t.getStatus().equals(TriggerStatus.INVALID)) {
+            removeTrigger(t);
+          }
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
 
@@ -374,6 +378,10 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         try {
           TriggerManager.logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
           action.doAction();
+        } catch (NoSuchAzkabanResourceException e) {
+          TriggerManager.logger.info(
+              "Remove trigger " + t.getTriggerId() + "due to no such projects/flows associated with trigger");
+          removeTrigger(t);
         } catch (final ExecutorManagerException e) {
           if (e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
             TriggerManager.logger.info(
@@ -388,7 +396,13 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
-        t.sendTaskToMissedScheduleManager();
+        try {
+          t.sendTaskToMissedScheduleManager();
+        } catch (NoSuchAzkabanResourceException e) {
+          TriggerManager.logger.info(
+              "Remove trigger " + t.getTriggerId() + "due to No such projects/flows associated with trigger");
+          removeTrigger(t);
+        }
       } else {
         TriggerManager.logger.info(
             "NextCheckTime did not change. Setting status to expired for trigger" + t.getTriggerId());

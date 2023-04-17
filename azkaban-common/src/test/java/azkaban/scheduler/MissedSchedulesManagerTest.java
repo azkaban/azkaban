@@ -19,6 +19,7 @@ package azkaban.scheduler;
 import azkaban.Constants;
 import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -83,11 +84,10 @@ public class MissedSchedulesManagerTest {
     flowMap.put(flowName, flow);
     project.setFlows(flowMap);
     when(executeFlowAction.getFlowName()).thenReturn(flowName);
-    when(executeFlowAction.getProjectName()).thenReturn(projectName);
-    when(this.projectManager.getProject(projectName)).thenReturn(project);
+    when(executeFlowAction.getProjectId()).thenReturn(project.getId());
+    when(this.projectManager.getProject(project.getId())).thenReturn(project);
     when(executeFlowAction.getExecutionOptions()).thenReturn(new ExecutionOptions());
     // verify task is added into queue
     Assertions.assertThat(this._missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false)).isTrue();
-
   }
 }

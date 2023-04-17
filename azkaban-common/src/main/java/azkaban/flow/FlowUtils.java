@@ -88,7 +88,7 @@ public class FlowUtils {
   public static Project getProject(final ProjectManager projectManager, final int projectId) {
     final Project project = projectManager.getProject(projectId);
     if (project == null) {
-      throw new RuntimeException("Error finding the project to execute "
+      throw new NoSuchAzkabanResourceException("Error finding the project to execute "
           + projectId);
     }
     return project;
@@ -98,7 +98,7 @@ public class FlowUtils {
     final Project nonNullProj = requireNonNull(project);
     final Flow flow = nonNullProj.getFlow(flowName);
     if (flow == null) {
-      throw new RuntimeException("Error finding the flow to execute " + flowName);
+      throw new NoSuchAzkabanResourceException("Error finding the flow to execute " + flowName);
     }
     return flow;
   }
