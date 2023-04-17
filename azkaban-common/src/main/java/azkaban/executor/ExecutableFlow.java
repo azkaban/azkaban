@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 
+  public static final int DEFAULT_FLOW_RETRY_LIMIT = 2;
+  public static final int DEFAULT_SYSTEM_FLOW_RETRY_LIMIT = 1;
+
   public static final String EXECUTIONID_PARAM = "executionId";
   public static final String EXECUTIONPATH_PARAM = "executionPath";
   public static final String EXECUTIONOPTIONS_PARAM = "executionOptions";
@@ -61,6 +64,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
   private static final String PARAM_OVERRIDE = "param.override.";
   private static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
+  private static final String USER_DEFINED_FLOW_RETRY_COUNT_PARAM = "userDefinedFlowRetryCount";
+  private static final String SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM = "systemDefinedFlowRetryCount";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -86,6 +91,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String failedJobId = "unknown";
   private String modifiedBy = "unknown";
   private DispatchMethod dispatchMethod;
+  // how many times flow level retry happened over user defined final status
+  private int userDefinedRetryCount = 0;
+  // how many times flow level retry happened due to stuck in "Dispatch/Preparing/Ready" status
+  private int systemDefinedRetryCount = 0;
 
   // For slaOption information
   private String slaOptionStr = "null";
@@ -303,6 +312,22 @@ public class ExecutableFlow extends ExecutableFlowBase {
     return slaOptionStr;
   }
 
+  public int getUserDefinedRetryCount() {
+    return userDefinedRetryCount;
+  }
+
+  public void setUserDefinedRetryCount(int userDefinedRetryCount) {
+    this.userDefinedRetryCount = userDefinedRetryCount;
+  }
+
+  public int getSystemDefinedRetryCount() {
+    return systemDefinedRetryCount;
+  }
+
+  public void setSystemDefinedRetryCount(int systemDefinedRetryCount) {
+    this.systemDefinedRetryCount = systemDefinedRetryCount;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -341,6 +366,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
+    flowObj.put(USER_DEFINED_FLOW_RETRY_COUNT_PARAM, this.userDefinedRetryCount);
+    flowObj.put(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, this.systemDefinedRetryCount);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
@@ -405,6 +432,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       }
       this.slaOptionStr = slaBuilder.toString();
     }
+    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_FLOW_RETRY_COUNT_PARAM, 0);
+    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, 0);
 
     if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
       // Checks if flow contains version set information

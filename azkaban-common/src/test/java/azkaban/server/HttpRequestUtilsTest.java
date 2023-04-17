@@ -435,7 +435,6 @@ public final class HttpRequestUtilsTest {
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
     Map<String, String> result = options.getFlowParameters();
-    Assert.assertEquals("1", result.get(FLOW_PARAM_MAX_RETRIES));
+    Assert.assertNull(result.get(FLOW_PARAM_MAX_RETRIES));
   }
-
 }
