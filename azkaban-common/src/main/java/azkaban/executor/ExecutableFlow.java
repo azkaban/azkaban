@@ -15,13 +15,10 @@
  */
 package azkaban.executor;
 
-import azkaban.Constants;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
-import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
-import azkaban.project.ProjectLoader;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.TypedMapWrapper;
@@ -515,15 +512,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   }
 
   /**
-   * Getter of flattened flow properties and flow params. This API takes lazy
-   * loading approach. If the properties are not set, then they are first set.
-   * @return Returns the flattened flow props overridden by flow params.
+   * Extract the "param.override." properties from input Props and set to the
+   * flowParameters of executionOptions
    */
-  public void setFlowPropsAndParams(final ProjectLoader projectLoader) {
-    Props props = FlowLoaderUtils.isAzkabanFlowVersion20(this.azkabanFlowVersion) ?
-        FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, this, null) :
-        projectLoader.fetchProjectProperty(projectId, version, Constants.PARAM_OVERRIDE_FILE);
-
+  public void setFlowParamsFromProps(final Props props) {
     if (null == props) {
       return;
     }

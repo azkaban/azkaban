@@ -24,7 +24,7 @@ import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
-import azkaban.executor.container.ContainerizedImpl;
+import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.jobcallback.JobCallbackManager;
 import azkaban.logs.ExecutionLogsLoader;
@@ -32,6 +32,7 @@ import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.project.ProjectManagerException;
 import azkaban.project.ProjectWhitelist;
 import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
@@ -125,6 +126,20 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   public ExecutableFlow getExecutableFlow(final int execId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchExecutableFlow(execId);
+  }
+
+  @Override
+  public ExecutableFlow createExecutableFlow(Project project, Flow flow) {
+    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+    exFlow.addAllProxyUsers(project.getProxyUsers());
+    try {
+      exFlow.setFlowParamsFromProps(this.projectManager.loadPropsForExecutableFlow(exFlow));
+    } catch (ProjectManagerException e) {
+      logger.warn("Fail to preload ExecutableFlow, continue without loading ExecutionOptions", e);
+      exFlow = new ExecutableFlow(project, flow);
+      exFlow.addAllProxyUsers(project.getProxyUsers());
+    }
+    return exFlow;
   }
 
   /**

@@ -28,7 +28,6 @@ import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
 import com.google.gson.Gson;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.joda.time.DateTime;
 
