@@ -388,6 +388,17 @@ public class FlowLoaderUtils {
     return props;
   }
 
+  public static Props loadPropsForExecutableFlow(
+      ProjectLoader projectLoader, ExecutableFlow executableFlow)
+      throws ProjectManagerException {
+    return FlowLoaderUtils.isAzkabanFlowVersion20(executableFlow.getAzkabanFlowVersion()) ?
+        FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, executableFlow, null) :
+        projectLoader.fetchProjectProperty(
+            executableFlow.getProjectId(),
+            executableFlow.getVersion(),
+            Constants.PARAM_OVERRIDE_FILE);
+  }
+
   /**
    * This function fetches the flow file and puts it in tempDir
    * @param tempDir location where the flow file is put

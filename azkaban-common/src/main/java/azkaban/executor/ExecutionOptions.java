@@ -360,6 +360,16 @@ public class ExecutionOptions {
     );
   }
 
+  /**
+   * Merge "this" with the input {@link ExecutionOptions}, for every the fields being set in input;
+   * If conflicts, the values set in the input will get to overwrite the old values.
+   * @return
+   */
+  public ExecutionOptions merge(ExecutionOptions overwriteOptions) {
+    // TODO: implement it
+    return overwriteOptions;
+  }
+
   public enum FailureAction {
     FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE;
   }
