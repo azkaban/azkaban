@@ -88,6 +88,9 @@ public class ExecutionControllerUtilsRestartFlowTest {
   @Test
   public void testRestartOnExecutionStopped() throws Exception {
     this.flow1.setStatus(Status.EXECUTION_STOPPED);
+    // should inherent the retry counts
+    this.flow1.setUserDefinedRetryCount(2);
+    this.flow1.setSystemDefinedRetryCount(1);
 
     ExecutionControllerUtils.restartFlow(this.flow1);
 
@@ -96,10 +99,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     assertEquals(restartedExFlow.getProjectName(), this.project.getName());
     assertEquals(restartedExFlow.getSubmitUser(), this.flow1.getSubmitUser());
     assertEquals(restartedExFlow.getDispatchMethod(), DispatchMethod.CONTAINERIZED);
-    final ExecutionOptions options2 = restartedExFlow.getExecutionOptions();
-    assertTrue(options2.isExecutionRetried());
-
-    final ExecutionOptions options1 = this.flow1.getExecutionOptions();
-    assertTrue(options1.isExecutionRetried());
+    assertEquals(2, restartedExFlow.getUserDefinedRetryCount());
+    assertEquals(1, restartedExFlow.getSystemDefinedRetryCount());
   }
 }

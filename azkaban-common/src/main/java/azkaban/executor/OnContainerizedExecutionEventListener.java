@@ -68,7 +68,11 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     }
     options.setMailCreator(flow.getMailCreator());
     // Update the flow options so that the flow will be not retried again by Azkaban
-    options.setExecutionRetried(true);
+
+    // inherent the retry time counters
+    executableFlow.setUserDefinedRetryCount(exFlow.getUserDefinedRetryCount());
+    executableFlow.setSystemDefinedRetryCount(exFlow.getSystemDefinedRetryCount());
+
     // If a retried flow A gets retried again with a new execution id flow B, the original flow
     // execution id of flow B should be the same as flow A's original flow execution id.
     if (options.getOriginalFlowExecutionIdBeforeRetry() == null) {
