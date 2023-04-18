@@ -26,7 +26,6 @@ import static azkaban.executor.container.ContainerImplUtils.populateProxyUsersFo
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +73,7 @@ import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.FlowLoaderUtils;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
@@ -95,8 +95,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -774,7 +772,8 @@ public class KubernetesContainerizedImplTest {
     final Map<String, String> flowParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(0, flowParams.size());
     // Merge the flow props and flow params
-    flow.setFlowPropsAndParams(this.projectLoader);
+    flow.setFlowParamsFromProps(
+        FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow));
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
@@ -801,7 +800,8 @@ public class KubernetesContainerizedImplTest {
     // flow params take priority.
     flowParams.put("image.version", "2.3.4");
     // Merge the flow props and flow params
-    flow.setFlowPropsAndParams(this.projectLoader);
+    flow.setFlowParamsFromProps(
+        FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow));
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));
@@ -825,7 +825,8 @@ public class KubernetesContainerizedImplTest {
     // flow params take priority.
     flowParams.put("image.version", "2.3.4");
     // Merge the flow props and flow params
-    flow.setFlowPropsAndParams(this.projectLoader);
+    flow.setFlowParamsFromProps(
+        FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow));
     final Map<String, String> mergedFlowPropsAndParams = flow.getExecutionOptions().getFlowParameters();
     Assert.assertEquals(1, mergedFlowPropsAndParams.size());
     Assert.assertTrue(mergedFlowPropsAndParams.containsKey("image.version"));

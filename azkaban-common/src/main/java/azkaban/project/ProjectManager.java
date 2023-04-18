@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
@@ -584,6 +585,10 @@ public class ProjectManager {
     setProjectEventStatus(errorMessage, eventData);
     // Fire project schedule SLA event Listener
     project.fireEventListeners(ProjectEvent.create(project, type, eventData));  // todo: add IP?
+  }
+
+  public Props loadPropsForExecutableFlow(ExecutableFlow flow) throws ProjectManagerException {
+    return FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow);
   }
 
   private void addEventDataFromProject(final Project project, final Map<String, Object> eventData){

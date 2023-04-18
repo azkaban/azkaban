@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet.P;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
@@ -73,12 +75,14 @@ public class ExecutionControllerUtilsRestartFlowTest {
     this.executorLoader.uploadExecutableFlow(this.flow1);
     this.nearlineExecutionLogsLoader = new MockExecutionLogsLoader();
 
-    this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, null,
+    this.projectManager = mock(ProjectManager.class);
+    when(this.projectManager.getProject(projectId)).thenReturn(this.project);
+    when(this.projectManager.loadPropsForExecutableFlow(any())).thenReturn(new Props());
+
+    this.containerizedDispatchManager = new ContainerizedDispatchManager(this.props, this.projectManager,
         this.executorLoader, this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader,
         this.commonMetrics, mock(ExecutorApiGateway.class), mock(ContainerizedImpl.class),null,
         null, new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
-    this.projectManager = mock(ProjectManager.class);
-    when(this.projectManager.getProject(projectId)).thenReturn(this.project);
 
     this.listener = new OnContainerizedExecutionEventListener(this.executorLoader,
         this.containerizedDispatchManager, this.projectManager);
@@ -88,6 +92,9 @@ public class ExecutionControllerUtilsRestartFlowTest {
   @Test
   public void testRestartOnExecutionStopped() throws Exception {
     this.flow1.setStatus(Status.EXECUTION_STOPPED);
+    // should inherent the retry counts
+    this.flow1.setUserDefinedRetryCount(2);
+    this.flow1.setSystemDefinedRetryCount(1);
 
     ExecutionControllerUtils.restartFlow(this.flow1);
 
@@ -96,10 +103,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
     assertEquals(restartedExFlow.getProjectName(), this.project.getName());
     assertEquals(restartedExFlow.getSubmitUser(), this.flow1.getSubmitUser());
     assertEquals(restartedExFlow.getDispatchMethod(), DispatchMethod.CONTAINERIZED);
-    final ExecutionOptions options2 = restartedExFlow.getExecutionOptions();
-    assertTrue(options2.isExecutionRetried());
-
-    final ExecutionOptions options1 = this.flow1.getExecutionOptions();
-    assertTrue(options1.isExecutionRetried());
+    assertEquals(2, restartedExFlow.getUserDefinedRetryCount());
+    assertEquals(1, restartedExFlow.getSystemDefinedRetryCount());
   }
 }

@@ -16,7 +16,7 @@
 package azkaban.server;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
-import static azkaban.executor.ExecutionOptions.DEFAULT_FLOW_RESTART_LIMIT;
+import static azkaban.executor.ExecutableFlow.DEFAULT_FLOW_RETRY_LIMIT;
 import static azkaban.executor.ExecutionOptions.FAILURE_ACTION_OVERRIDE;
 import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 
@@ -220,7 +220,7 @@ public class HttpRequestUtils {
       try {
         validateIntegerParam(flowParameters, FlowParameters.FLOW_PARAM_MAX_RETRIES);
         final int flowRestartCountLimit = azProps.getInt(
-            AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RESTART_LIMIT);
+            AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RETRY_LIMIT);
         final int flowMaxRetryLimit = Integer.parseInt(
             flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
         if (flowMaxRetryLimit > flowRestartCountLimit || flowMaxRetryLimit < 0){
@@ -231,13 +231,6 @@ public class HttpRequestUtils {
       } catch (ExecutorManagerException e) {
         errMsg.add(e.getMessage());
       }
-    }
-    // doesn't contain FlowParameters.FLOW_PARAM_MAX_RETRIES
-    else if (!options.isExecutionRetried()
-        && flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
-      // if the MAX_RETRIES parameter is empty but set some retry_statuses, default to
-      // give 1 restart
-      flowParameters.put(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1");
     }
 
     // throw exception if there's any error message
