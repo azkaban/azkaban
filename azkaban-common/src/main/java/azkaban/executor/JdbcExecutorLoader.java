@@ -89,13 +89,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return fetchQueuedFlows(Status.PREPARING);
+    return this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
   }
 
   @Override
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  public List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchQueuedFlows(status);
+    return this.executionFlowDao.selectQueuedFlows(status);
   }
 
   @Override
@@ -113,9 +113,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
+    return this.executionFlowDao.selectAgedQueuedFlows(minAge);
   }
 
   /**
@@ -134,9 +134,25 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchUnfinishedFlow(executionId);
+  }
+
+  @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException {
     return this.fetchActiveFlowDao.fetchUnfinishedFlows();
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    return this.executionFlowDao.selectUnfinishedFlows(projectId, flowId);
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    return this.executionFlowDao.selectUnfinishedFlows();
   }
 
   @Override

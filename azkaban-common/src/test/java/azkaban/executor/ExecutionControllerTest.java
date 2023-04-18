@@ -18,6 +18,8 @@ package azkaban.executor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,9 +51,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class ExecutionControllerTest {
@@ -128,14 +132,6 @@ public class ExecutionControllerTest {
   }
 
   @Test
-  public void testFetchAllActiveFlows() throws Exception {
-    initializeUnfinishedFlows();
-    final List<ExecutableFlow> flows = this.controller.getRunningFlows();
-    this.unfinishedFlows.values()
-        .forEach(pair -> assertThat(flows.contains(pair.getSecond())).isTrue());
-  }
-
-  @Test
   public void testFetchAllActiveFlowIds() throws Exception {
     initializeUnfinishedFlows();
     assertThat(this.controller.getRunningFlowIds())
@@ -157,13 +153,9 @@ public class ExecutionControllerTest {
   public void testFetchActiveFlowByProject() throws Exception {
     initializeUnfinishedFlows();
     final List<Integer> executions = this.controller
-        .getRunningFlows(this.flow2.getProjectId(), this.flow2.getFlowId());
+        .getRunningFlowIds(this.flow2.getProjectId(), this.flow2.getFlowId());
     assertThat(executions.contains(this.flow2.getExecutionId())).isTrue();
     assertThat(executions.contains(this.flow3.getExecutionId())).isTrue();
-    assertThat(this.controller.isFlowRunning(this.flow2.getProjectId(), this.flow2.getFlowId()))
-        .isTrue();
-    assertThat(this.controller.isFlowRunning(this.flow3.getProjectId(), this.flow3.getFlowId()))
-        .isTrue();
   }
 
   @Test
@@ -327,10 +319,10 @@ public class ExecutionControllerTest {
 
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
       Exception {
-    when(this.executorLoader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
     when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     this.controller.submitExecutableFlow(flow, this.user.getUserId());
     this.unfinishedFlows.put(flow.getExecutionId(), new Pair<>(ref, flow));
+    initializeUnfinishedFlowMock();
   }
 
   private void initializeUnfinishedFlows() throws Exception {
@@ -338,6 +330,31 @@ public class ExecutionControllerTest {
         .of(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1),
             this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
+    initializeUnfinishedFlowMock();
+  }
+
+  private void initializeUnfinishedFlowMock() throws Exception {
     when(this.executorLoader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
+    when(this.executorLoader.fetchUnfinishedFlow(anyInt())).thenAnswer(
+        (Answer<Pair<ExecutionReference, ExecutableFlow>>) invocation -> {
+          Object[] arguments = invocation.getArguments();
+          int executionId = (Integer) arguments[0];
+          List<Pair<ExecutionReference, ExecutableFlow>> list = unfinishedFlows.values().stream()
+              .filter(entry -> entry.getSecond().getExecutionId() == executionId)
+              .collect(Collectors.toList());
+          return (list.isEmpty()) ? null : list.get(0);
+        });
+    when(this.executorLoader.selectUnfinishedFlows(anyInt(), anyString())).thenAnswer(
+        (Answer<List<Integer>>) invocation -> {
+          Object[] arguments = invocation.getArguments();
+          int projectId = (Integer) arguments[0];
+          String flowId = (String) arguments[1];
+          return unfinishedFlows.values().stream()
+              .filter(entry -> entry.getSecond().getProjectId() == projectId && entry.getSecond().getFlowId().equals(flowId))
+              .map(entry -> entry.getSecond().getExecutionId())
+              .collect(Collectors.toList());
+        });
+    when(this.executorLoader.selectUnfinishedFlows()).thenReturn(
+        new ArrayList<>(this.unfinishedFlows.keySet()));
   }
 }

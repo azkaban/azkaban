@@ -264,6 +264,20 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
+  public void testSelectQueuedFlows() throws Exception {
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", System.currentTimeMillis(),
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", System.currentTimeMillis(),
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
+
+    final List<Integer> selectedQueuedFlows =
+        this.executionFlowDao.selectQueuedFlows(Status.PREPARING);
+    assertThat(selectedQueuedFlows.size()).isEqualTo(2);
+    assert(selectedQueuedFlows.get(0) == flow1.getExecutionId());
+    assert(selectedQueuedFlows.get(1) == flow2.getExecutionId());
+  }
+
+  @Test
   public void testFetchStaleFlows() throws IOException, ExecutorManagerException {
     // Flow executions in PREPARING state
     final long lessThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5);
@@ -394,6 +408,44 @@ public class ExecutionFlowDaoTest {
     assertNotFound(unfinishedFlows, flows.get(3), "Returned an execution with a finished status");
     assertFound(unfinishedFlows, flows.get(4), false);
     assertTwoFlowSame(unfinishedFlows.get(flows.get(0).getExecutionId()).getSecond(), flows.get(0));
+  }
+
+  @Test
+  public void testFetchUnfinishedFlow() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Pair<ExecutionReference, ExecutableFlow> unfinishedFlow =
+        this.fetchActiveFlowDao.fetchUnfinishedFlow(flows.get(0).getExecutionId());
+    assert(unfinishedFlow.getSecond().getExecutionId() == flows.get(0).getExecutionId());
+    assertTwoFlowSame(unfinishedFlow.getSecond(), flows.get(0));
+
+    final Pair<ExecutionReference, ExecutableFlow> finishedFlow =
+        this.fetchActiveFlowDao.fetchUnfinishedFlow(flows.get(3).getExecutionId());
+    assert(finishedFlow == null);
+  }
+
+  @Test
+  public void testSelectUnfinishedFlows() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Set<Integer> unfinishedFlows =
+        new HashSet(this.executionFlowDao.selectUnfinishedFlows());
+
+    assert(unfinishedFlows.contains(flows.get(0).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(1).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(2).getExecutionId()));
+    assert(!unfinishedFlows.contains(flows.get(3).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(4).getExecutionId()));
+  }
+
+  @Test
+  public void testSelectUnfinishedFlowsWithProjectIdAndFlowId() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final List<Integer> unfinishedFlows = this.executionFlowDao.selectUnfinishedFlows(flows.get(0).getProjectId(), flows.get(0).getFlowId());
+
+    assert(unfinishedFlows.contains(flows.get(0).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(1).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(2).getExecutionId()));
+    assert(!unfinishedFlows.contains(flows.get(3).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(4).getExecutionId()));
   }
 
   @Test
@@ -1011,9 +1063,9 @@ public class ExecutionFlowDaoTest {
    * @throws Exception
    */
   @Test
-  public void testGetTerminatingStatusesString() throws Exception {
+  public void testGetTerminalStatusesString() throws Exception {
     final String target = "50, 60, 65, 70";
-    Assert.assertTrue(this.fetchActiveFlowDao.getTerminatingStatusesString().equals(target));
+    Assert.assertTrue(this.fetchActiveFlowDao.getTerminalStatusesString().equals(target));
   }
 
   /*

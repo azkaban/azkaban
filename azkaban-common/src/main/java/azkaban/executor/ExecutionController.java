@@ -150,19 +150,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   }
 
   /**
-   * Get execution ids of all running (unfinished) flows from database.
-   */
-  public List<Integer> getRunningFlowIds() {
-    final List<Integer> allIds = new ArrayList<>();
-    try {
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
-    } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flow ids.", e);
-    }
-    return allIds;
-  }
-
-  /**
    * Get execution ids of all non-dispatched flows from database.
    */
   public List<Integer> getQueuedFlowIds() {
@@ -181,9 +168,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   @Override
   public long getQueuedFlowSize() {
     long size = 0L;
-    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
-    // all we care about is the count. Write a new class that's more performant and can be used for
-    // metrics. this.executorLoader.fetchQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {

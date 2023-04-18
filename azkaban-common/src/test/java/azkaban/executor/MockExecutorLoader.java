@@ -90,6 +90,27 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    return this.activeFlows.get(executionId);
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .filter(entry -> entry.getValue().getSecond().getProjectId() == projectId && entry.getValue().getSecond().getFlowId().equals(flowId))
+        .map(entry -> entry.getValue().getSecond().getExecutionId())
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .map(entry -> entry.getValue().getSecond().getExecutionId())
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException {
     return this.activeFlows.entrySet().stream()
@@ -410,7 +431,6 @@ public class MockExecutorLoader implements ExecutorLoader {
     return fetchQueuedFlows(Status.PREPARING);
   }
 
-  @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
       throws ExecutorManagerException {
     final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
@@ -422,6 +442,13 @@ public class MockExecutorLoader implements ExecutorLoader {
       }
     }
     return queuedFlows;
+  }
+
+  @Override
+  public List<Integer> selectQueuedFlows(Status status)
+      throws ExecutorManagerException {
+    return this.fetchQueuedFlows(status).stream().map(f -> f.getSecond().getExecutionId()).collect(
+        Collectors.toList());
   }
 
   @Override
@@ -442,20 +469,20 @@ public class MockExecutorLoader implements ExecutorLoader {
   // TODO(anish-mal) To be used in a future unit test, once System calls to obtain
   // current time have been replaced by Clocks. Clocks are needed in order to write
   // unit tests for duration based features. Without it, the tests end up being flaky.
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
-    final List<ExecutableFlow> agedQueuedFlows = new ArrayList<>();
+    final List<Integer> agedQueuedFlowIds = new ArrayList<>();
 
     long timeThreshoold = System.currentTimeMillis() - minAge.toMillis();
     for (final int execId : this.refs.keySet()) {
       if (!this.executionExecutorMapping.containsKey(execId)) {
         ExecutableFlow agedFlow = this.flows.get(execId);
         if (agedFlow.getSubmitTime() < timeThreshoold) {
-          agedQueuedFlows.add(agedFlow);
+          agedQueuedFlowIds.add(execId);
         }
       }
     }
-    return agedQueuedFlows;
+    return agedQueuedFlowIds;
   }
 
   @Override

@@ -33,7 +33,7 @@ public class JmxExecutionController implements JmxExecutionControllerMBean {
 
   @Override
   public int getNumRunningFlows() {
-    return this.controller.getRunningFlows().size();
+    return this.controller.getRunningFlowIds().size();
   }
 
   @Override

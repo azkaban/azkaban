@@ -42,8 +42,12 @@ public interface ExecutorLoader {
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
+  Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException;
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException;
+  List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException;
+  List<Integer> selectUnfinishedFlows() throws ExecutorManagerException;
 
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException;
@@ -234,14 +238,14 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to get flows fetched in Queue. Flows can be in queue in ready, dispatching
+   * This method is used to get flow ids fetched in Queue. Flows can be in queue in ready, dispatching
    * or preparing state while in queue. That is why it is expecting status in parameter.
    *
    * @param status
    * @return
    * @throws ExecutorManagerException
    */
-  List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException;
 
   /**
@@ -264,7 +268,7 @@ public interface ExecutorLoader {
       final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException;
 
-  List<ExecutableFlow> fetchAgedQueuedFlows(
+  List<Integer> selectAgedQueuedFlows(
       final Duration minAge) throws ExecutorManagerException;
 
   boolean updateExecutableReference(int execId, long updateTime)
