@@ -35,8 +35,6 @@ public interface ExecutorManagerAdapter {
 
   public boolean isOfflineLogsLoaderEnabled();
 
-  public boolean isFlowRunning(int projectId, String flowId);
-
   public ExecutableFlow getExecutableFlow(int execId)
       throws ExecutorManagerException;
 
@@ -48,9 +46,9 @@ public interface ExecutorManagerAdapter {
    */
   ExecutableFlow createExecutableFlow(Project project, Flow flow);
 
-  public List<Integer> getRunningFlows(int projectId, String flowId);
+  public List<Integer> getRunningFlowIds(int projectId, String flowId);
 
-  public List<ExecutableFlow> getRunningFlows();
+  public List<Integer> getRunningFlowIds();
 
   public long getQueuedFlowSize();
 

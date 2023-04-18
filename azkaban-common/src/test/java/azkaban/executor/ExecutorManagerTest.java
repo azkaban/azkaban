@@ -262,8 +262,7 @@ public class ExecutorManagerTest {
 
     // Verify running flows using old definition of "running" flows i.e. a
     // non-dispatched flow is also considered running
-    final List<Integer> managerActiveFlows = manager.getRunningFlows()
-        .stream().map(ExecutableFlow::getExecutionId).collect(Collectors.toList());
+    final List<Integer> managerActiveFlows = manager.getRunningFlowIds();
     Assert.assertTrue(managerActiveFlows.containsAll(testFlows)
         && testFlows.containsAll(managerActiveFlows));
 
@@ -300,7 +299,7 @@ public class ExecutorManagerTest {
         this.executorLoader.fetchExecutableFlow(flow1.getExecutionId());
     Assert.assertEquals(fetchedFlow.getStatus(), Status.FAILED);
 
-    Assert.assertFalse(manager.getRunningFlows().contains(flow1));
+    Assert.assertFalse(manager.getRunningFlowIds().contains(flow1.getExecutionId()));
   }
 
   /* Flow has been running on an executor but is not any more (for example because of restart) */
@@ -448,23 +447,11 @@ public class ExecutorManagerTest {
 
   @Ignore
   @Test
-  public void testFetchAllActiveFlows() throws Exception {
-    testSetUpForRunningFlows();
-    final List<ExecutableFlow> flows = this.manager.getRunningFlows();
-    for (final Pair<ExecutionReference, ExecutableFlow> pair : this.activeFlows.values()) {
-      Assert.assertTrue(flows.contains(pair.getSecond()));
-    }
-  }
-
-  @Ignore
-  @Test
   public void testFetchActiveFlowByProject() throws Exception {
     testSetUpForRunningFlows();
-    final List<Integer> executions = this.manager.getRunningFlows(this.flow1.getProjectId(),
+    final List<Integer> executions = this.manager.getRunningFlowIds(this.flow1.getProjectId(),
         this.flow1.getFlowId());
     Assert.assertTrue(executions.contains(this.flow1.getExecutionId()));
-    Assert
-        .assertTrue(this.manager.isFlowRunning(this.flow1.getProjectId(), this.flow1.getFlowId()));
   }
 
   @Ignore

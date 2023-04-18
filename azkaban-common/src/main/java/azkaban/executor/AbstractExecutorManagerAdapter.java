@@ -39,12 +39,14 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.ServerUtils;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -154,11 +156,8 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     long startTime = System.currentTimeMillis();
-    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
-    // all we care about is the count. Write a new class that's more performant and can be used for
-    // metrics. this.executorLoader.fetchAgedQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
-      size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
+      size = this.executorLoader.selectAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
           .size();
       logger.info("Time taken to fetch size of queued flows is " + (System.currentTimeMillis() - startTime) / 1000);
     } catch (final ExecutorManagerException e) {
@@ -361,7 +360,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     exflow.setSubmitTime(System.currentTimeMillis());
 
     // Get collection of running flows given a project and a specific flow name
-    final List<Integer> running = getRunningFlows(projectId, flowId);
+    final List<Integer> running = getRunningFlowIds(projectId, flowId);
 
     ExecutionOptions options = exflow.getExecutionOptions();
     if (options == null) {
@@ -434,33 +433,30 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
    * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a given
    * project and flow {@inheritDoc}.
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlowIds(int, java.lang.String)
    */
   @Override
-  public List<Integer> getRunningFlows(final int projectId, final String flowId) {
-    final List<Integer> executionIds = new ArrayList<>();
+  public List<Integer> getRunningFlowIds(final int projectId, final String flowId) {
     try {
-      executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
-          this.executorLoader.fetchUnfinishedFlows().values()));
+      return this.executorLoader.selectUnfinishedFlows(projectId, flowId);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get running flows for project " + projectId + ", flow "
           + flowId, e);
     }
-    return executionIds;
+    return new ArrayList<>();
   }
 
   /**
-   * Get all running (unfinished) flows from database. {@inheritDoc}
+   * Get all running (unfinished) flow ids from database. {@inheritDoc}
    */
   @Override
-  public List<ExecutableFlow> getRunningFlows() {
-    final ArrayList<ExecutableFlow> flows = new ArrayList<>();
+  public List<Integer> getRunningFlowIds() {
     try {
-      getFlowsHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+      return this.executorLoader.selectUnfinishedFlows();
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flows.", e);
+      logger.error("Failed to get running flow ids.", e);
     }
-    return flows;
+    return new ArrayList<>();
   }
 
   protected LogData getFlowLogData(final ExecutableFlow exFlow, final int offset, final int length,
@@ -584,11 +580,9 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   public void cancelFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException {
     synchronized (exFlow) {
-      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
-          .fetchUnfinishedFlows();
-      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
-        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
-            .get(exFlow.getExecutionId());
+      final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+          .fetchUnfinishedFlow(exFlow.getExecutionId());
+      if (pair != null) {
         handleCancelFlow(pair.getFirst(), exFlow, userId);
       } else {
         final ExecutorManagerException eme = new ExecutorManagerException("Execution "
@@ -761,25 +755,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   /**
-   * Checks whether the given flow has an active (running, non-dispatched) execution from database.
-   * {@inheritDoc}
-   */
-  @Override
-  public boolean isFlowRunning(final int projectId, final String flowId) {
-    boolean isRunning = false;
-    try {
-      isRunning = isFlowRunningHelper(projectId, flowId,
-          this.executorLoader.fetchUnfinishedFlows().values());
-
-    } catch (final ExecutorManagerException e) {
-      logger.error(
-          "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
-          e);
-    }
-    return isRunning;
-  }
-
-  /**
    * Find all the Hadoop/Spark application ids present in the Azkaban job log. When iterating over
    * the set returned by this method the application ids are in the same order they appear in the
    * log.
@@ -827,26 +802,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
     collection.stream().forEach(ref -> allIds.add(ref.getSecond().getExecutionId()));
     Collections.sort(allIds);
-  }
-
-  /* Search a running flow in a collection */
-  protected boolean isFlowRunningHelper(final int projectId, final String flowId,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      if (ref.getSecond().getProjectId() == projectId
-          && ref.getSecond().getFlowId().equals(flowId)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Helper method to get all flows from collection.
-   */
-  protected void getFlowsHelper(final ArrayList<ExecutableFlow> flows,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    collection.stream().forEach(ref -> flows.add(ref.getSecond()));
   }
 
   /* Helper method for getActiveFlowsWithExecutor */

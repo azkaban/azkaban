@@ -29,7 +29,7 @@ public class JmxContainerizedDispatchManager implements JmxContainerizedDispatch
   }
   @Override
   public int getNumRunningFlows() {
-    return this.containerizedDispatchManager.getRunningFlows().size();
+    return this.containerizedDispatchManager.getRunningFlowIds().size();
   }
 
   @Override

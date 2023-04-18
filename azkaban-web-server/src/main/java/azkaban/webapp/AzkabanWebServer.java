@@ -631,7 +631,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
          * synchronized, such that we can not make a thread safe subtraction. We need to fix this
          *  in the future.
          */
-        return executorManagerAdapter.getRunningFlows().size();
+        return executorManagerAdapter.getRunningFlowIds().size();
       }
 
       @Override

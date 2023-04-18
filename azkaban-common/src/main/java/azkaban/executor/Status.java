@@ -19,6 +19,7 @@ package azkaban.executor;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -56,6 +57,9 @@ public enum Status {
 
   public static final ImmutableSet<Status> RESTARTABLE_TERMINAL_STATUSES =
       ImmutableSet.of(Status.EXECUTION_STOPPED, Status.FAILED);
+
+  public static final ImmutableSet<Status> TERMINAL_STATUSES = ImmutableSet.of(Status.SUCCEEDED,
+      Status.KILLED, Status.EXECUTION_STOPPED, Status.FAILED);
 
   private final int numVal;
 

@@ -139,19 +139,6 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   }
 
   /**
-   * Get execution ids of all running (unfinished) flows from database.
-   */
-  public List<Integer> getRunningFlowIds() {
-    final List<Integer> allIds = new ArrayList<>();
-    try {
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
-    } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flow ids.", e);
-    }
-    return allIds;
-  }
-
-  /**
    * Get queued flow ids from database. The status for queued flows is PREPARING or DISPATCHING for
    * containerization.
    *
@@ -160,8 +147,8 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   public List<Integer> getQueuedFlowIds() {
     final List<Integer> allIds = new ArrayList<>();
     try {
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.DISPATCHING));
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows(Status.PREPARING));
+      allIds.addAll(this.executorLoader.selectQueuedFlows(Status.DISPATCHING));
+      allIds.addAll(this.executorLoader.selectQueuedFlows(Status.PREPARING));
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get queued flow ids.", e);
     }
@@ -535,11 +522,10 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
   public void retryFailures(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
     synchronized (exFlow) {
       logger.info("Retrying failures for execId: {}", exFlow.getExecutionId());
-      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
-          .fetchUnfinishedFlows();
-      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
-        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
-            .get(exFlow.getExecutionId());
+
+      final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+          .fetchUnfinishedFlow(exFlow.getExecutionId());
+      if (pair != null) {
         // Note that ExecutionReference may have the 'executor' as null. ApiGateway call is expected
         // to handle this scenario.
         this.apiGateway.callWithReferenceByUser(pair.getFirst(),
