@@ -356,9 +356,48 @@ public class ExecutionOptions {
    * If conflicts, the values set in the input will get to overwrite the old values.
    * @return
    */
-  public ExecutionOptions merge(ExecutionOptions overwriteOptions) {
-    // TODO: implement it
-    return overwriteOptions;
+  public void merge(ExecutionOptions overwriteOptions) {
+    this.originalFlowExecutionIdBeforeRetry = overwriteOptions.originalFlowExecutionIdBeforeRetry;
+    this.notifyOnFirstFailure = overwriteOptions.notifyOnFirstFailure;
+    this.notifyOnLastFailure = overwriteOptions.notifyOnLastFailure;
+    this.successEmailsOverride = overwriteOptions.successEmailsOverride;
+    this.failureEmailsOverride = overwriteOptions.failureEmailsOverride;
+    this.failureActionOverride = overwriteOptions.failureActionOverride;
+    this.memoryCheck = overwriteOptions.memoryCheck;
+
+    this.successEmails.addAll(overwriteOptions.successEmails);
+    this.failureEmails.addAll(overwriteOptions.failureEmails);
+
+    if (overwriteOptions.pipelineLevel != null) {
+      this.pipelineLevel = overwriteOptions.pipelineLevel;
+    }
+    if (overwriteOptions.pipelineExecId != null) {
+      this.pipelineExecId = overwriteOptions.pipelineExecId;
+    }
+    if (overwriteOptions.queueLevel != null) {
+      this.queueLevel = overwriteOptions.queueLevel;
+    }
+    if (!overwriteOptions.concurrentOption.isEmpty()) {
+      this.concurrentOption = overwriteOptions.concurrentOption;
+    }
+    if (!overwriteOptions.mailCreator.trim().isEmpty()) {
+      this.mailCreator = overwriteOptions.mailCreator;
+    }
+    if (!overwriteOptions.flowParameters.isEmpty()) {
+      this.flowParameters.putAll(overwriteOptions.flowParameters);
+    }
+    if (!overwriteOptions.runtimeProperties.isEmpty()) {
+      this.runtimeProperties.putAll(overwriteOptions.runtimeProperties);
+    }
+    if (overwriteOptions.failureAction != null) {
+      this.failureAction = overwriteOptions.failureAction;
+    }
+    if (!overwriteOptions.initiallyDisabledJobs.isEmpty()) {
+      this.initiallyDisabledJobs = overwriteOptions.initiallyDisabledJobs;
+    }
+    if (!overwriteOptions.slaOptions.isEmpty()) {
+      this.slaOptions = overwriteOptions.slaOptions;
+    }
   }
 
   public enum FailureAction {
