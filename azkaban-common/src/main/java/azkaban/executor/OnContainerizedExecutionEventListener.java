@@ -54,7 +54,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
       return;
     }
     final ExecutableFlow executableFlow =
-        FlowUtils.createExecutableFlow(project, flow, this.executorManagerAdapter, logger);
+        this.executorManagerAdapter.createExecutableFlow(project, flow);
     executableFlow.setSubmitUser(exFlow.getSubmitUser());
     executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
     executableFlow.setUploadUser(project.getUploadUser());

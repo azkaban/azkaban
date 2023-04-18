@@ -83,16 +83,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
-    final ExecutableFlow flow = this.executionFlowDao.fetchExecutableFlow(id);
-    if (null != flow) {
-      try {
-        flow.setFlowParamsFromProps(
-            FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow));
-      } catch (ProjectManagerException e) {
-        throw new ExecutorManagerException(e);
-      }
-    }
-    return flow;
+    return this.executionFlowDao.fetchExecutableFlow(id);
   }
 
   @Override
