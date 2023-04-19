@@ -28,8 +28,12 @@ import org.slf4j.Logger;
  * proj3:flow1
  */
 public class VPAFlowCriteria {
-  // Flows are stored in a map where key is project name and value is set of flows.
-  private Map<String, Set<String>> flows = new HashMap<>(1);
+  // Projects are stored in a set: any flow under those projects will be
+  private Set<String> projects = new HashSet<>();
+  // Flows are stored in a set: will be filtered no matter which project it belongs to
+  private Set<String> flows = new HashSet<>();
+  // Flows are stored in a map where key is project name and value is set of flows: any (project, flow) pair will be filtered
+  private Map<String, Set<String>> projectFlows = new HashMap<>();
   private final String fileLocation;
   private final Logger logger;
 
@@ -42,7 +46,7 @@ public class VPAFlowCriteria {
     this.fileLocation = azkProps.getString(Constants.
         ContainerizedDispatchManagerProperties.KUBERNETES_VPA_FLOW_FILTER_FILE, null);
     this.logger = logger;
-    loadFlowFilter(new HashMap<>());
+    loadFlowFilter();
   }
 
   /**
@@ -50,17 +54,17 @@ public class VPAFlowCriteria {
    */
   public void reloadFlowFilter() {
     // Reset the filter map
-    loadFlowFilter(new HashMap<>());
+    loadFlowFilter();
   }
 
   @VisibleForTesting
   public void reloadFlowFilter(final String fileLocation) {
     // Reset the filter map
-    loadFlowFilter(new HashMap<>(), fileLocation);
+    loadFlowFilter(fileLocation);
   }
 
-  private void loadFlowFilter(final Map<String, Set<String>> flowMap) {
-    loadFlowFilter(flowMap, this.fileLocation);
+  private void loadFlowFilter() {
+    loadFlowFilter(this.fileLocation);
   }
 
   /**
@@ -68,7 +72,7 @@ public class VPAFlowCriteria {
    * on best effort basis. i.e, if a flow name is not correctly formatted, it
    * is ignored.
    */
-  private void loadFlowFilter(final Map<String, Set<String>> flowMap, final String fileLocation) {
+  synchronized private void loadFlowFilter(final String fileLocation) {
     // Basic checks
     if (fileLocation == null) {
       return;
@@ -79,19 +83,23 @@ public class VPAFlowCriteria {
       return;
     }
 
+    final Set<String> projectSet = new HashSet<>();
+    final Set<String> flowSet = new HashSet<>();
+    final Map<String, Set<String>> projectFlowMap = new HashMap<>();
     // Read the file line by line and populate the map
     try (BufferedReader reader = Files.newBufferedReader(filePath, Charset.defaultCharset())) {
       for (String line; (line = reader.readLine()) != null;) {
         line = line.trim();
         List<String> flowFQN = Arrays.asList(line.split(":"));
-        validateAndAdd(flowFQN, flowMap);
+        validateAndAdd(flowFQN, projectSet, flowSet, projectFlowMap);
       }
     } catch (final IOException e) {
       // Log and ignore
       logger.info("Caught exception while reading the file." + e);
     }
-    // Set the flow map
-    this.flows = flowMap;
+    this.projects = projectSet;
+    this.flows = flowSet;
+    this.projectFlows = projectFlowMap;
   }
 
   /** Validate flowFQN and add it to flows map.
@@ -99,25 +107,30 @@ public class VPAFlowCriteria {
    * <project name> when entire project needs to be in the filter and
    * <project name>:<flow name>.
    */
-  private void validateAndAdd(final List<String> flowFQN, final Map<String, Set<String>> flowMap) {
+  private void validateAndAdd(final List<String> flowFQN, final Set<String> projects, final Set<String> flows, final Map<String, Set<String>> projectFlowMap) {
     if (!(flowFQN.size() == 1 || flowFQN.size() == 2)) {
       return;
     }
 
     final String project = flowFQN.get(0);
     if (flowFQN.size() == 1) {
-      // Entire project is in the filter.
-      flowMap.put(project, null);
+      projects.add(project);
+      return;
+    }
+
+    final String flow = flowFQN.get(1);
+    if (project.isEmpty()) {
+      flows.add(flow);
       return;
     }
 
     // Handle the case when the FQN also contains flow name
-    if (!flowMap.containsKey(project)) {
+    if (!projectFlowMap.containsKey(project)) {
       // Make an entry for the project
-      flowMap.put(project, new HashSet<>(1));
+      projectFlowMap.put(project, new HashSet<>(1));
     }
 
-    flowMap.get(project).add(flowFQN.get(1));
+    projectFlowMap.get(project).add(flowFQN.get(1));
   }
 
   /**
@@ -132,10 +145,7 @@ public class VPAFlowCriteria {
 
   @VisibleForTesting
   public boolean flowExists(final String projectName, final String flowName) {
-    if (!this.flows.containsKey(projectName)) {
-      return false;
-    }
-    final Set<String> flowNames = this.flows.get(projectName);
-    return flowNames == null || flowNames.contains(flowName);
+    return this.projects.contains(projectName) || this.flows.contains(flowName)
+        || this.projectFlows.containsKey(projectName) && this.projectFlows.get(projectName).contains(flowName);
   }
 }
