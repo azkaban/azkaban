@@ -15,6 +15,12 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.EventReporterConstants.FLOW_RETRY_CHILD_EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.FLOW_RETRY_PARENT_EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.FLOW_RETRY_ROOT_EXECUTION_ID;
+import static azkaban.Constants.EventReporterConstants.SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM;
+import static azkaban.Constants.EventReporterConstants.USER_DEFINED_FLOW_RETRY_COUNT_PARAM;
+
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.imagemgmt.version.VersionSet;
@@ -62,15 +68,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
   public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
-  private static final String PARAM_OVERRIDE = "param.override.";
-  private static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
-  private static final String USER_DEFINED_FLOW_RETRY_COUNT_PARAM = "userDefinedFlowRetryCount";
-  private static final String SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM = "systemDefinedFlowRetryCount";
-
-  // Properties but non-define-able parameters
-  private static final String FLOW_RETRY_ROOT_EXECUTION_ID = "flowRetryRootExecutionID";
-  private static final String FLOW_RETRY_PARENT_EXECUTION_ID = "flowRetryParentExecutionID";
-  private static final String FLOW_RETRY_CHILD_EXECUTION_ID = "flowRetryChildExecutionID";
+  public static final String PARAM_OVERRIDE = "param.override.";
+  public static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;

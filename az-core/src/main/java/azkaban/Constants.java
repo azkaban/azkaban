@@ -231,6 +231,11 @@ public class Constants {
     public static final String CPU_UTILIZED = "cpuUtilized";
     public static final String MEMORY_UTILIZED_IN_BYTES = "memoryUtilizedInBytes";
     public static final String EXECUTION_SOURCE = "executionSource";
+    public static final String USER_DEFINED_FLOW_RETRY_COUNT_PARAM = "userDefinedFlowRetryCount";
+    public static final String SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM = "systemDefinedFlowRetryCount";
+    public static final String FLOW_RETRY_ROOT_EXECUTION_ID = "flowRetryRootExecutionID";
+    public static final String FLOW_RETRY_PARENT_EXECUTION_ID = "flowRetryParentExecutionID";
+    public static final String FLOW_RETRY_CHILD_EXECUTION_ID = "flowRetryChildExecutionID";
   }
 
   public static class ConfigurationKeys {
