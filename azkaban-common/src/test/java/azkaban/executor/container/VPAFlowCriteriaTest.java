@@ -45,6 +45,13 @@ public class VPAFlowCriteriaTest {
 
   @Test
   public void testFlowNameFilter() throws Exception {
+    Assert.assertTrue(this.vpaFlowCriteria.flowExists(null, "flow5"));
+    Assert.assertFalse(this.vpaFlowCriteria.flowExists(null, "flow4"));
+    Assert.assertFalse(this.vpaFlowCriteria.flowExists(null, "flow3"));
+  }
+
+  @Test
+  public void testProjectFlowNameFilter() throws Exception {
     Assert.assertTrue(this.vpaFlowCriteria.flowExists("proj1", "flow1"));
     Assert.assertTrue(this.vpaFlowCriteria.flowExists("proj2", "flow2"));
     Assert.assertTrue(this.vpaFlowCriteria.flowExists("proj1", "flow3"));
