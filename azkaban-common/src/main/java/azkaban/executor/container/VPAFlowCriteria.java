@@ -146,6 +146,6 @@ public class VPAFlowCriteria {
   @VisibleForTesting
   public boolean flowExists(final String projectName, final String flowName) {
     return this.projects.contains(projectName) || this.flows.contains(flowName)
-        || this.projectFlows.containsKey(projectName) && this.projectFlows.get(projectName).contains(flowName);
+        || (this.projectFlows.containsKey(projectName) && this.projectFlows.get(projectName).contains(flowName));
   }
 }
