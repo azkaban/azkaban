@@ -37,29 +37,29 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
 
   /**
    * A new execution will be dispatched based on the original ExecutableFLow
-   * @param exFlow original ExecutableFlow in EXECUTION_STOPPED state
+   * @param originalExFlow original ExecutableFlow in EXECUTION_STOPPED state
    */
-  private void restartExecutableFlow(final ExecutableFlow exFlow) {
+  void restartExecutableFlow(final ExecutableFlow originalExFlow) {
     // Enable restartability for containerized execution
-    if (exFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return;
+    if (originalExFlow.getDispatchMethod() != DispatchMethod.CONTAINERIZED) return;
 
     // Create a new ExecutableFlow based on existing flow in EXECUTION_STOPPED state
     final Project project;
     final Flow flow;
     try {
-      project = FlowUtils.getProject(this.projectManager, exFlow.getProjectId());
-      flow = FlowUtils.getFlow(project, exFlow.getFlowId());
+      project = FlowUtils.getProject(this.projectManager, originalExFlow.getProjectId());
+      flow = FlowUtils.getFlow(project, originalExFlow.getFlowId());
     } catch (final RuntimeException e) {
       logger.error(e.getMessage());
       return;
     }
-    final ExecutableFlow executableFlow =
+    final ExecutableFlow retryExFlow =
         this.executorManagerAdapter.createExecutableFlow(project, flow);
-    executableFlow.setSubmitUser(exFlow.getSubmitUser());
-    executableFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
-    executableFlow.setUploadUser(project.getUploadUser());
+    retryExFlow.setSubmitUser(originalExFlow.getSubmitUser());
+    retryExFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
+    retryExFlow.setUploadUser(project.getUploadUser());
     // Set up flow ExecutionOptions
-    final ExecutionOptions options = exFlow.getExecutionOptions();
+    final ExecutionOptions options = originalExFlow.getExecutionOptions();
     if(!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());
     }
@@ -70,22 +70,44 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     // Update the flow options so that the flow will be not retried again by Azkaban
 
     // inherent the retry time counters
-    executableFlow.setUserDefinedRetryCount(exFlow.getUserDefinedRetryCount());
-    executableFlow.setSystemDefinedRetryCount(exFlow.getSystemDefinedRetryCount());
+    retryExFlow.setUserDefinedRetryCount(originalExFlow.getUserDefinedRetryCount());
+    retryExFlow.setSystemDefinedRetryCount(originalExFlow.getSystemDefinedRetryCount());
+
+    if (originalExFlow.getFlowRetryRootExecutionID() > 0) {
+      retryExFlow.setFlowRetryRootExecutionID(originalExFlow.getFlowRetryRootExecutionID());
+    } else {
+      retryExFlow.setFlowRetryRootExecutionID(originalExFlow.getExecutionId());
+    }
+    retryExFlow.setFlowRetryParentExecutionID(originalExFlow.getExecutionId());
 
     // If a retried flow A gets retried again with a new execution id flow B, the original flow
     // execution id of flow B should be the same as flow A's original flow execution id.
     if (options.getOriginalFlowExecutionIdBeforeRetry() == null) {
-      options.setOriginalFlowExecutionIdBeforeRetry(exFlow.getExecutionId());
+      options.setOriginalFlowExecutionIdBeforeRetry(originalExFlow.getExecutionId());
     }
-    executableFlow.setExecutionOptions(options);
+    retryExFlow.setExecutionOptions(options);
     // Submit new flow for execution
     try {
-      logger.info("Restarting flow " + project.getName() + "." + executableFlow.getFlowName());
-      this.executorManagerAdapter.submitExecutableFlow(executableFlow,
-          executableFlow.getSubmitUser());
+      logger.info("Restarting flow " + project.getName() + "." + retryExFlow.getFlowName());
+      this.executorManagerAdapter.submitExecutableFlow(retryExFlow,
+          retryExFlow.getSubmitUser());
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to restart flow "+ executableFlow.getFlowId() + ". " + e.getMessage());
+      logger.error("Failed to restart flow "+ retryExFlow.getFlowId() + ". " + e.getMessage());
+      return;
     }
+
+    // update the original executable-flow with retry-count and child executionID
+    try {
+      originalExFlow.setFlowRetryChildExecutionID(retryExFlow.getExecutionId());
+      this.executorLoader.updateExecutableFlow(originalExFlow);
+    } catch (final ExecutorManagerException e) {
+      logger.error("Failed to update the original flow after restart"
+          + originalExFlow.getFlowId() + ". " + e.getMessage());
+    }
+    // TODO: consider send out email for this information
+    logger.info(String.format("Retry execution [%d] successfully, "
+            + "spawning child-execution [%d], and its root-execution was [%d]",
+        originalExFlow.getExecutionId(), retryExFlow.getExecutionId(),
+        retryExFlow.getFlowRetryRootExecutionID()));
   }
 }
