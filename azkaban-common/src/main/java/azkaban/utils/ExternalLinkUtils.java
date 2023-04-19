@@ -17,117 +17,62 @@
 package azkaban.utils;
 
 import azkaban.Constants;
-import java.io.IOException;
+import azkaban.Constants.ConfigurationKeys;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.log4j.Logger;
-import org.apache.http.HttpStatus;
 
 public class ExternalLinkUtils {
-  private static final int DEFAULT_AZKABAN_SERVER_EXTERNAL_TIMEOUT_MS = 3000; //3 seconds
 
   private static final Logger logger = Logger.getLogger(ExternalLinkUtils.class);
 
-  public static String getExternalAnalyzerLinkOnReq(final String topic, final Props azkProps,
-      final HttpServletRequest req) {
-    // If no topic was configured to be an external analyzer, return empty
-    return topic.isEmpty() ? "" : getLinkFromRequest(topic, azkProps, req);
-  }
+  public enum ExternalLinkScope {
+    FLOW(""), JOB("job.");
+    private final String name;
 
-  static List<String> getExternalAnalyzerTopics(final Props azkProps) {
-    if (azkProps.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS)) {
-      return azkProps.getStringList(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS);
+    ExternalLinkScope(final String name) {
+      this.name = name;
     }
-    // If no AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS defined, use legacy config
-    //AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC
-    return Arrays.asList(azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC, ""));
-  }
 
-  public static String getExternalLogViewer(final Props azkProps, final String jobId,
-      final Props jobProps) {
-    // If no topic was configured to be an external analyzer, return empty
-    if (!azkProps
-        .containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC)) {
-      return "";
+    public String getName() {
+      return this.name;
     }
-    // Find out which external link we should use to lead to our log viewer
-    final String topic = azkProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC);
-    return getLinkFromJobAndExecId(topic, azkProps, jobId, jobProps);
   }
 
-  private static String getLinkFromJobAndExecId(final String topic, final Props azkProps,
-      final String jobId,
-      final Props jobProps) {
-    String urlTemplate = getURLForTopic(topic, azkProps);
-    if (urlTemplate.isEmpty()) {
-      logger.error("No URL specified for topic " + topic);
-      return "";
+  public enum ExternalLinkParams {
+    EXEC_ID("exec_id"),
+    JOB_ID("job_id"),
+    WEBSERVER_HOST("webserver_host"),
+    URL("url");
+    private final String name;
+
+    ExternalLinkParams(final String name) {
+      this.name = name;
     }
-    final String job = encodeToUTF8(jobId);
-    final String execid = encodeToUTF8(
-        jobProps.getString(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID));
 
-    urlTemplate = urlTemplate.replace("${jobid}", job).replace("${execid}", execid);
-    logger.info("Creating link: " + urlTemplate);
-    return urlTemplate;
-  }
-
-  private static String getLinkFromRequest(final String topic, final Props azkProps,
-      final HttpServletRequest req) {
-    String urlTemplate = getURLForTopic(topic, azkProps);
-    if (urlTemplate.isEmpty()) {
-      logger.error("No URL specified for topic " + topic);
-      return "";
+    public String getName() {
+      return this.name;
     }
-    String flowExecutionURL = "";
-    flowExecutionURL += req.getRequestURL();
-    flowExecutionURL += "?";
-    flowExecutionURL += req.getQueryString();
-    flowExecutionURL = encodeToUTF8(flowExecutionURL);
-    urlTemplate = urlTemplate.replace("${url}", flowExecutionURL);
-    logger.info("Creating link: " + urlTemplate);
-    return urlTemplate;
-  }
-
-  static String getURLForTopic(final String topic, final Props azkProps) {
-    String externalUrlConfKeyToUse =
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL.replace("${topic"
-            + "}", topic);
-    // If no AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL defined, use legacy config
-    //AZKABAN_SERVER_EXTERNAL_TOPIC_URL
-    externalUrlConfKeyToUse = azkProps.containsKey(externalUrlConfKeyToUse) ?
-        externalUrlConfKeyToUse :
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("$"
-            + "{topic}", topic);
-    return azkProps.getString(externalUrlConfKeyToUse, "");
-  }
-
-  static String getExternalLabelForTopic(final String topic, final Props azkProps) {
-    String externalLabelConfKeyToUse =
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL.replace("${topic"
-            + "}", topic);
-    // If no AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL defined, use legacy config
-    //AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL
-    externalLabelConfKeyToUse = azkProps.containsKey(externalLabelConfKeyToUse) ?
-        externalLabelConfKeyToUse :
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL;
-    return azkProps.getString(externalLabelConfKeyToUse, "External Analyzer");
   }
 
   static String encodeToUTF8(final String url) {
     try {
-      return URLEncoder.encode(url, "UTF-8").replaceAll("\\+", "%20");
+      return URLEncoder.encode(url, StandardCharsets.UTF_8.toString()).replaceAll("\\+", "%20");
     } catch (final UnsupportedEncodingException e) {
       logger.error("Specified encoding is not supported", e);
     }
@@ -135,38 +80,10 @@ public class ExternalLinkUtils {
   }
 
   /**
-   * Return list of external analyzers based on configs and current web request to web server
-   * to render the execution page.
-   * @param azkProps azkaban configs
-   * @param req current web request
-   * @return list of external analyzers
-   */
-  public static List<ExternalLink> getExternalAnalyzers( final Props azkProps, final HttpServletRequest req) {
-    final List<String> externalTopics = getExternalAnalyzerTopics(azkProps);
-    return externalTopics.stream().map(topic -> {
-      String externalLinkUrl = getExternalAnalyzerLinkOnReq(topic, azkProps, req);
-      if (!externalLinkUrl.isEmpty()) {
-        logger.debug("Adding an External analyzer to the page");
-        final String execExternalLinkLabel = getExternalLabelForTopic(topic, azkProps);
-        logger.debug("External analyzer label set to : " + execExternalLinkLabel);
-        int timeout =
-            azkProps.getInt(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS,
-            DEFAULT_AZKABAN_SERVER_EXTERNAL_TIMEOUT_MS);
-        return new ExternalLink(topic, execExternalLinkLabel, externalLinkUrl,
-            validExternalLink(externalLinkUrl, timeout));
-      }
-      return null;
-    }).filter(Objects::nonNull).collect(Collectors.toList());
-  }
-
-  /**
-   * check if external link is reachable or not.
-   * It will send http request to target url, and check the status code from response,
-   * If the page returns 200x or 300x status, returns true, and external link is enabled,
-   * otherwise returns false, and external link is disabled.
-   * @param externalLinkUrl azkaban configs
-   * @param timeout timeout for httpClient in milliseconds
-   * @return true if target link is reachable, otherwise false.
+   * Check if the external link url is reachable by making a http request to it. If the
+   * response has 200x or 300x status code, returns true, and the external link is enabled or
+   * rendered clickable in the UI, otherwise returns false, and the external link is rendered
+   * disabled.
    */
   private static boolean validExternalLink(final String externalLinkUrl, final int timeout) {
     final RequestConfig config = RequestConfig.custom()
@@ -178,10 +95,11 @@ public class ExternalLinkUtils {
         .setSSLSocketFactory(null).disableRedirectHandling().build();
     try {
       try {
-        HttpResponse httpResponse = client.execute(new HttpGet(externalLinkUrl));
-        int responseCode = httpResponse.getStatusLine().getStatusCode();
+        final HttpResponse httpResponse = client.execute(new HttpGet(externalLinkUrl));
+        final int responseCode = httpResponse.getStatusLine().getStatusCode();
         if (responseCode >= HttpStatus.SC_BAD_REQUEST) {
-          logger.warn("validExternalLink url " + externalLinkUrl + " not reachable, response code " + responseCode);
+          logger.warn("validExternalLink url " + externalLinkUrl + " not reachable, response code "
+              + responseCode);
           return false;
         }
         logger.debug("validExternalLink url " + externalLinkUrl + " is reachable.");
@@ -193,5 +111,55 @@ public class ExternalLinkUtils {
       logger.error("validExternalLink url " + externalLinkUrl + " CONNECT ERROR " + e);
       return false;
     }
+  }
+
+  /**
+   * Parse all Flow or Job level external links that may have been configured in the
+   * {@value Constants#AZKABAN_PROPERTIES_FILE} file.
+   */
+  public static List<ExternalLink> parseExternalLinks(final Props azkProps, final ExternalLinkScope level) {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("level", level.getName());
+    final String extLinksProperty =
+        StrSubstitutor.replace(ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPICS, params, "${", "}");
+    final Set<String> topics = new HashSet<>(azkProps.getStringList(extLinksProperty));
+
+    final List<ExternalLink> externalLinks = new ArrayList<>();
+    for (final String topic : topics) {
+      params.put("topic", topic);
+      final String label = azkProps.getString(StrSubstitutor.replace(
+          ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_LABEL, params, "${", "}"), "");
+      final String url = azkProps.getString(StrSubstitutor.replace(
+          ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC_URL, params, "${", "}"), "");
+
+      if (url.isEmpty() || label.isEmpty()) {
+        continue;
+      }
+      externalLinks.add(new ExternalLink(topic, label, url, true));
+    }
+    return externalLinks;
+  }
+
+  static String buildExternalLinkUrl(final String urlTemplate,
+      final HttpServletRequest req, final int executionId, final String jobId) {
+    final Map<String, Object> params = new HashMap<>();
+    params.put(ExternalLinkParams.URL.getName(), encodeToUTF8(
+        String.join("?", req.getRequestURL(), req.getQueryString())));
+    params.put(ExternalLinkParams.EXEC_ID.getName(), executionId);
+    params.put(ExternalLinkParams.JOB_ID.getName(), jobId);
+    params.put(ExternalLinkParams.WEBSERVER_HOST.getName(), req.getServerName());
+    return StrSubstitutor.replace(urlTemplate, params, "${", "}");
+  }
+
+  public static List<ExternalLink> buildExternalLinksForRequest(
+      final List<ExternalLink> extLinksTemplates, final int extLinksTimeoutMs,
+      final HttpServletRequest req, final int executionId, final String jobId) {
+    final List<ExternalLink> extLinks = new ArrayList<>();
+    for(final ExternalLink link: extLinksTemplates) {
+      final String url = buildExternalLinkUrl(link.getLinkUrl(), req, executionId, jobId);
+      extLinks.add(new ExternalLink(link.getTopic(), link.getLabel(), url,
+          validExternalLink(url, extLinksTimeoutMs)));
+    }
+    return extLinks;
   }
 }
