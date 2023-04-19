@@ -15,11 +15,11 @@ import org.junit.Test;
 public class ExecutionFlowViewTest {
 
   private static final String EXTERNAL_ANALYZER_ELEMENT1 =
-      "<li><a id=\"analyzerButtontopic1\" href=\"http://topic1.linkedin.com/\" "
+      "<li><a id=\"ext-link-topic1\" href=\"http://topic1.linkedin.com/\" "
           + "class=\"btn btn-info btn-sm btn-external\" type=\"button\" target=\"_blank\" "
           + "title=\"Analyze execution in Label1\">Label1</a></li>";
   private static final String EXTERNAL_ANALYZER_ELEMENT2 =
-      "<li><a id=\"analyzerButtontopic2\" href=\"http://topic2.linkedin.com/\" "
+      "<li><a id=\"ext-link-topic2\" href=\"http://topic2.linkedin.com/\" "
           + "class=\"btn btn-info btn-sm btn-external disabled\" type=\"button\""
           + "target=\"_blank\" "
           + "title=\"Execution is not analyzable in Label2 at the moment.\">Label2</a></li>";
@@ -32,8 +32,7 @@ public class ExecutionFlowViewTest {
     public void testExternalAnalyzerButton() throws Exception {
       final VelocityContext context = VelocityContextTestUtil.getInstance();
 
-      ExternalLink externalLink1 = new ExternalLink( "topic1",
-          "Label1",
+      ExternalLink externalLink1 = new ExternalLink( "topic1", "Label1",
           "http://topic1.linkedin.com/", true);
 
       context.put("externalAnalyzers", Arrays.asList(externalLink1));
@@ -43,8 +42,7 @@ public class ExecutionFlowViewTest {
       assertTrue(VelocityTemplateTestUtil.
           ignoreCaseContains(result, EXTERNAL_ANALYZER_ELEMENT1));
 
-      ExternalLink externalLink2 = new ExternalLink( "topic2",
-          "Label2",
+      ExternalLink externalLink2 = new ExternalLink( "topic2", "Label2",
           "http://topic2.linkedin.com/", false);
 
       context.put("externalAnalyzers", Arrays.asList(externalLink1, externalLink2));

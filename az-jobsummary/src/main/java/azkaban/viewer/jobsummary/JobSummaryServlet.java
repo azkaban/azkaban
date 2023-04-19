@@ -24,6 +24,9 @@ import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.ExternalLink;
+import azkaban.utils.ExternalLinkUtils;
+import azkaban.utils.ExternalLinkUtils.ExternalLinkScope;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
@@ -54,6 +57,9 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManagerAdapter;
   private ProjectManager projectManager;
 
+  private List<ExternalLink> jobLevelExternalLinks;
+  private int externalLinksTimeoutMs;
+
   public JobSummaryServlet(final Props props) {
     super(new ArrayList<>());
     this.props = props;
@@ -73,6 +79,12 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
     final AzkabanWebServer server = getApplication();
     this.executorManagerAdapter = server.getExecutorManager();
     this.projectManager = server.getProjectManager();
+
+    final Props azkProps = server.getServerProps();
+    this.jobLevelExternalLinks = ExternalLinkUtils.parseExternalLinks(azkProps, ExternalLinkScope.JOB);
+    this.externalLinksTimeoutMs =
+        this.props.getInt(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS,
+            Constants.DEFAULT_AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS);
   }
 
   private void handleViewer(final HttpServletRequest req, final HttpServletResponse resp,
@@ -137,6 +149,11 @@ public class JobSummaryServlet extends LoginAbstractAzkabanServlet {
     page.add("jobname", node.getId());
     page.add("attemptStatus", attempt == node.getAttempt() ?
         node.getStatus() : node.getPastAttemptList().get(attempt).getStatus());
+
+    final List<ExternalLink> externalAnalyzers =
+        ExternalLinkUtils.buildExternalLinksForRequest(this.jobLevelExternalLinks,
+            this.externalLinksTimeoutMs, req, execId, jobId);
+    page.add("externalAnalyzers", externalAnalyzers);
 
     page.render();
   }
