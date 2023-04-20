@@ -16,7 +16,6 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.EventReporterConstants.EXECUTION_RETRIED_BY_AZKABAN;
 import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
 
 import azkaban.executor.mail.DefaultMailCreator;
