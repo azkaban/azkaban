@@ -16,14 +16,17 @@
 package azkaban.project;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutableFlow;
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Flow;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.MemConfValue;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import com.google.common.collect.ImmutableList;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
@@ -212,6 +215,14 @@ public class FlowLoaderUtils {
       failureEmail.add(email.toLowerCase());
     }
 
+    final List<String> overrideEmailList =
+        prop.getStringList(CommonJobProperties.OVERRIDE_EMAILS,
+            Collections.EMPTY_LIST);
+    final Set<String> overrideEmail = new HashSet<>();
+    for (final String email : overrideEmailList) {
+      overrideEmail.add(email.toLowerCase());
+    }
+
     final List<String> notifyEmailList =
         prop.getStringList(CommonJobProperties.NOTIFY_EMAILS,
             Collections.EMPTY_LIST);
@@ -223,6 +234,7 @@ public class FlowLoaderUtils {
 
     flow.addFailureEmails(failureEmail);
     flow.addSuccessEmails(successEmail);
+    flow.addOverrideEmails(overrideEmail);
   }
 
   /**
@@ -339,5 +351,75 @@ public class FlowLoaderUtils {
     public boolean accept(final File pathname) {
       return pathname.isDirectory();
     }
+  }
+
+  /**
+   * Loads flow/job properties from the flow's YAML file. If path is null
+   * then it loads the flow's properties, otherwise it loads the property
+   * of the job at the path. The caller is responsible for providing the
+   * correct path
+   * @param projectLoader Used to fetch file from DB.
+   * @param executableFlow The executable flow of which properties are
+   *                       being loaded.
+   * @param path Path to job file. NULL for flow properties.
+   * @return return Props object with flow/job properties.
+   */
+  public static Props loadPropsFromYamlFile(final ProjectLoader projectLoader,
+      final ExecutableFlow executableFlow, final String path) {
+    File tempDir = null;
+    Props props = null;
+    try {
+      tempDir = com.google.common.io.Files.createTempDir();
+      props = FlowLoaderUtils.getPropsFromYamlFile(
+          path == null ? executableFlow.getId() : path,
+          getFlowFile(tempDir, projectLoader, executableFlow));
+    } catch (final Exception e) {
+      logger.error("Failed to get props from flow file. " + e);
+    } finally {
+      if (tempDir != null && tempDir.exists()) {
+        try {
+          FileUtils.deleteDirectory(tempDir);
+        } catch (final IOException e) {
+          logger.error("Failed to delete temp directory." + e);
+          tempDir.deleteOnExit();
+        }
+      }
+    }
+    return props;
+  }
+
+  public static Props loadPropsForExecutableFlow(
+      ProjectLoader projectLoader, ExecutableFlow executableFlow)
+      throws ProjectManagerException {
+    return FlowLoaderUtils.isAzkabanFlowVersion20(executableFlow.getAzkabanFlowVersion()) ?
+        FlowLoaderUtils.loadPropsFromYamlFile(projectLoader, executableFlow, null) :
+        projectLoader.fetchProjectProperty(
+            executableFlow.getProjectId(),
+            executableFlow.getVersion(),
+            Constants.PARAM_OVERRIDE_FILE);
+  }
+
+  /**
+   * This function fetches the flow file and puts it in tempDir
+   * @param tempDir location where the flow file is put
+   * @param projectLoader Used to fetch from DB
+   * @param flow the executable flow
+   * @return returns the flow file from db.
+   * @throws Exception
+   */
+  private static File getFlowFile(final File tempDir, final ProjectLoader projectLoader,
+      final ExecutableFlow flow) throws Exception {
+    final List<ImmutableFlowProps> immutableFlowPropsList = ImmutableList.copyOf(flow.getFlowProps());
+    // There should be exact one source (file name) for each flow file.
+    if (immutableFlowPropsList.isEmpty() || immutableFlowPropsList.get(0) == null) {
+      throw new ProjectManagerException(
+          "Failed to get flow file source. Flow props is empty for " + flow.getId());
+    }
+    final String source = immutableFlowPropsList.get(0).getSource();
+    final int flowVersion = projectLoader
+        .getLatestFlowVersion(flow.getProjectId(), flow.getVersion(), source);
+    return projectLoader
+        .getUploadedFlowFile(flow.getProjectId(), flow.getVersion(), source,
+            flowVersion, tempDir);
   }
 }

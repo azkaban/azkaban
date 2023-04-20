@@ -16,11 +16,16 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
+import static azkaban.utils.ExecuteAsUserUtils.addGroupAndUserForEffectiveUser;
+
 import azkaban.Constants;
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
-import azkaban.event.EventHandler;
+import azkaban.execapp.FlowRunner.FlowRunnerProxy;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ClusterInfo;
@@ -28,6 +33,7 @@ import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.JobRunnerBase;
 import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
@@ -35,12 +41,13 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.spi.EventType;
-import azkaban.utils.ExternalLinkUtils;
-import azkaban.utils.PatternLayoutEscaped;
+import azkaban.utils.ExecuteAsUser;
+import azkaban.utils.KafkaLog4jUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
-import azkaban.utils.UndefinedPropertyException;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -60,11 +67,9 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
 
-public class JobRunner extends EventHandler implements Runnable {
-
-  public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
-
+public class JobRunner extends JobRunnerBase implements Runnable {
   private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
+
   private static final Object logCreatorLock = new Object();
 
   private static final String DEFAULT_LAYOUT =
@@ -72,18 +77,18 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private final Object syncObject = new Object();
   private final JobTypeManager jobtypeManager;
-  private final ExecutorLoader loader;
-  private final Props props;
+  private final ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final Props azkabanProps;
   private final ExecutableNode node;
   private final File workingDir;
   private final Layout loggerLayout;
   private final String jobId;
   private final Set<String> pipelineJobs = new HashSet<>();
-  private Logger logger = null;
+  private final FlowRunnerProxy flowRunnerProxy;
   private Logger flowLogger = null;
   private Appender jobAppender = null;
-  private Optional<Appender> kafkaAppender = Optional.empty();
+  private KafkaLog4jAppender kafkaLog4jAppender;
   private File logFile;
   private String attachmentFileName;
   private Job job;
@@ -92,6 +97,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private Integer pipelineLevel = null;
   private FlowWatcher watcher = null;
   private Set<String> proxyUsers = null;
+  private String effectiveUser = null;
 
   private String jobLogChunkSize;
   private int jobLogBackupIndex;
@@ -107,16 +113,20 @@ public class JobRunner extends EventHandler implements Runnable {
   private volatile long queueDuration = 0;
   private volatile long killDuration = 0;
 
-  public JobRunner(final ExecutableNode node, final File workingDir, final ExecutorLoader loader,
-      final JobTypeManager jobtypeManager, final Props azkabanProps) {
-    this.props = node.getInputProps();
+  public JobRunner(final ExecutableNode node, final File workingDir,
+      final ExecutorLoader executorLoader, final ExecutionLogsLoader executionLogsLoader,
+      final JobTypeManager jobtypeManager, final Props azkabanProps, final FlowRunnerProxy flowRunnerProxy) {
+    super(node.getInputProps());
     this.node = node;
     this.workingDir = workingDir;
 
     this.executionId = node.getParentFlow().getExecutionId();
     this.jobId = node.getId();
 
-    this.loader = loader;
+    this.flowRunnerProxy = flowRunnerProxy;
+
+    this.executorLoader = executorLoader;
+    this.executionLogsLoader = executionLogsLoader;
     this.jobtypeManager = jobtypeManager;
     this.azkabanProps = azkabanProps;
     final String jobLogLayout = this.props.getString(
@@ -124,6 +134,11 @@ public class JobRunner extends EventHandler implements Runnable {
 
     this.loggerLayout = new EnhancedPatternLayout(jobLogLayout);
     this.threadClassLoader = Thread.currentThread().getContextClassLoader();
+  }
+
+  @VisibleForTesting
+  FlowRunnerProxy getFlowRunnerProxy() {
+    return this.flowRunnerProxy;
   }
 
   public static String createLogFileName(final ExecutableNode node, final int attempt) {
@@ -185,13 +200,50 @@ public class JobRunner extends EventHandler implements Runnable {
     this.jobLogBackupIndex = numLogBackup;
   }
 
-  public Props getProps() {
-    return this.props;
+  public String getEffectiveUser() {
+    return this.effectiveUser;
   }
 
-  public String getEffectiveUser() {
-    return this.props.getString(JobProperties.USER_TO_PROXY,
-        this.getNode().getExecutableFlow().getSubmitUser());
+  /**
+   * Determine the effective user for the job.
+   * <p>
+   * If the jobType for this job has a defaultProxyUser then return that. If the user.to.proxy is
+   * not specified in the job props, then return submit user. If the user.to.proxy is specified in
+   * the Job, and - It is also part of list of proxy users in the project permissions, then return
+   * the same. - Otherwise return Optional.empty()
+   *
+   * @return {@link Optional} effective user for the Job
+   */
+  public Optional<String> determineEffectiveUser(Optional<String> jobType) {
+    if (jobType.isPresent()) {
+      // JobTypePluginSet is never NULL
+      Optional<String> defaultProxyUser = this.jobtypeManager.getJobTypePluginSet()
+          .getDefaultProxyUser(jobType.get());
+      if (defaultProxyUser.isPresent()) {
+        this.logger.info(String.format("Found default proxy user %s for the job type %s",
+            defaultProxyUser.get(), jobType.get()));
+        return defaultProxyUser;
+      }
+    }
+
+    if (this.props.containsKey(JobProperties.USER_TO_PROXY)) {
+      final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
+      if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
+        final String permissionsPageURL = getProjectPermissionsURL();
+        this.logger.error("User " + jobProxyUser
+            + " has no permission to execute this job " + this.jobId + "!"
+            + " If you want to execute this flow as " + jobProxyUser
+            + ", please add it to Proxy Users under project permissions page: " +
+            permissionsPageURL);
+        return Optional.empty();
+      }
+      return Optional.of(jobProxyUser);
+    } else {
+      final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
+      this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
+          submitUser);
+      return Optional.ofNullable(submitUser);
+    }
   }
 
   public void setPipeline(final FlowWatcher watcher, final int pipelineLevel) {
@@ -316,32 +368,19 @@ public class JobRunner extends EventHandler implements Runnable {
             + " for job " + this.jobId, e);
       }
 
-      if (this.props.getBoolean(Constants.JobProperties.AZKABAN_JOB_LOGGING_KAFKA_ENABLE, false)) {
-        // Only attempt appender construction if required properties are present
-        if (this.azkabanProps
-            .containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST)
-            && this.azkabanProps
-            .containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC)) {
-          try {
-            attachKafkaAppender(createKafkaAppender());
-          } catch (final Exception e) {
-            removeAppender(this.kafkaAppender);
-            this.flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
-          }
-        } else {
-          this.flowLogger.info(
-              "Kafka appender not created as brokerlist or topic not provided by executor server");
+      if (this.azkabanProps.getBoolean(Constants.ConfigurationKeys.AZKABAN_LOGGING_KAFKA_ENABLED, false)) {
+        // Keep the names consistent as what we did in uploadLogFile()
+        this.kafkaLog4jAppender =
+            KafkaLog4jUtils.getAzkabanJobKafkaLog4jAppender(this.azkabanProps, this.loggerLayout,
+                String.valueOf(this.executionId), this.node.getNestedId(),
+                String.valueOf(this.node.getAttempt()));
+
+        if (this.kafkaLog4jAppender != null) {
+          this.logger.addAppender(this.kafkaLog4jAppender);
+          this.logger.setAdditivity(false);
+          this.flowLogger.info("Attached new Kafka appender for job " + this.jobId);
         }
       }
-    }
-
-    final String externalViewer = ExternalLinkUtils
-        .getExternalLogViewer(this.azkabanProps, this.jobId,
-            this.props);
-    if (!externalViewer.isEmpty()) {
-      this.logger.info("If you want to leverage AZ ELK logging support, you need to follow the "
-          + "instructions: http://azkaban.github.io/azkaban/docs/latest/#how-to");
-      this.logger.info("If you did the above step, see logs at: " + externalViewer);
     }
   }
 
@@ -378,60 +417,26 @@ public class JobRunner extends EventHandler implements Runnable {
     this.attachmentFileName = file.getAbsolutePath();
   }
 
-  private void attachKafkaAppender(final KafkaLog4jAppender appender) {
-    // This should only be called once
-    assert (!this.kafkaAppender.isPresent());
-
-    this.kafkaAppender = Optional.of(appender);
-    this.logger.addAppender(this.kafkaAppender.get());
-    this.logger.setAdditivity(false);
-    this.flowLogger.info("Attached new Kafka appender for job " + this.jobId);
-  }
-
-  private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
-    final KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
-    kafkaProducer.setSyncSend(false);
-    kafkaProducer.setBrokerList(this.azkabanProps
-        .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
-    kafkaProducer.setTopic(
-        this.azkabanProps
-            .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
-
-    final String layoutString = LogUtil.createLogPatternLayoutJsonString(this.props, this.jobId);
-
-    kafkaProducer.setLayout(new PatternLayoutEscaped(layoutString));
-    kafkaProducer.activateOptions();
-
-    this.flowLogger.info("Created kafka appender for " + this.jobId);
-    return kafkaProducer;
-  }
-
-  private void removeAppender(final Optional<Appender> appender) {
-    if (appender.isPresent()) {
-      removeAppender(appender.get());
-    }
-  }
-
   private void removeAppender(final Appender appender) {
     if (appender != null) {
-      this.logger.removeAppender(appender);
-      appender.close();
+      try {
+        this.logger.removeAppender(appender);
+        appender.close();
+      } catch (Exception e) {
+        logger.error("Failed to remove appender " + appender.getName(), e);
+      }
     }
   }
 
   private void closeLogger() {
-    if (this.jobAppender != null) {
-      removeAppender(this.jobAppender);
-    }
-    if (this.kafkaAppender.isPresent()) {
-      removeAppender(this.kafkaAppender);
-    }
+    removeAppender(this.jobAppender);
+    removeAppender(this.kafkaLog4jAppender);
   }
 
   private void writeStatus() {
     try {
       this.node.setUpdateTime(System.currentTimeMillis());
-      this.loader.updateExecutableNode(this.node);
+      this.executorLoader.updateExecutableNode(this.node);
     } catch (final ExecutorManagerException e) {
       this.flowLogger.error("Could not update job properties in db for "
           + this.jobId, e);
@@ -451,23 +456,18 @@ public class JobRunner extends EventHandler implements Runnable {
       if (Status.isStatusFinished(nodeStatus)) {
         quickFinish = true;
       } else if (nodeStatus == Status.DISABLED) {
-        nodeStatus = changeStatus(Status.SKIPPED, time);
+        changeStatus(Status.SKIPPED, time);
         quickFinish = true;
       } else if (this.isKilled()) {
-        nodeStatus = changeStatus(Status.KILLED, time);
+        changeStatus(Status.KILLED, time);
         quickFinish = true;
       }
 
       if (quickFinish) {
         this.node.setStartTime(time);
-        fireEvent(
-            Event.create(this, EventType.JOB_STARTED,
-                new EventData(nodeStatus, this.node.getNestedId())));
+        fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(node)));
         this.node.setEndTime(time);
-        fireEvent(
-            Event
-                .create(this, EventType.JOB_FINISHED,
-                    new EventData(nodeStatus, this.node.getNestedId())));
+        fireEvent(Event.create(this, EventType.JOB_FINISHED, new EventData(node)));
         return true;
       }
 
@@ -550,6 +550,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private void finalizeLogFile(final int attemptNo) {
     closeLogger();
+    this.flowLogger.debug("Logger has been closed");
     if (this.logFile == null) {
       this.flowLogger.info("Log file for job " + this.jobId + " is null");
       return;
@@ -564,7 +565,7 @@ public class JobRunner extends EventHandler implements Runnable {
       });
       Arrays.sort(files, Collections.reverseOrder());
 
-      this.loader.uploadLogFile(this.executionId, this.node.getNestedId(), attemptNo,
+      this.executionLogsLoader.uploadLogFile(this.executionId, this.node.getNestedId(), attemptNo,
           files);
     } catch (final ExecutorManagerException e) {
       this.flowLogger.error(
@@ -585,7 +586,7 @@ public class JobRunner extends EventHandler implements Runnable {
             + " written.");
         return;
       }
-      this.loader.uploadAttachmentFile(this.node, file);
+      this.executorLoader.uploadAttachmentFile(this.node, file);
     } catch (final ExecutorManagerException e) {
       this.flowLogger.error(
           "Error writing out attachment for job " + this.node.getNestedId(), e);
@@ -604,6 +605,7 @@ public class JobRunner extends EventHandler implements Runnable {
       throw e;
     } finally {
       Thread.currentThread().setContextClassLoader(this.threadClassLoader);
+      this.flowLogger.debug("Main run thread for job " + this.jobId + " is terminated");
     }
   }
 
@@ -628,7 +630,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
     // Start the node.
     this.node.setStartTime(System.currentTimeMillis());
-    Status finalStatus = this.node.getStatus();
     uploadExecutableNode();
     if (!errorFound && !isKilled()) {
       // End of job in queue and start of execution
@@ -637,15 +638,19 @@ public class JobRunner extends EventHandler implements Runnable {
       }
       fireEvent(Event.create(this, EventType.JOB_STARTED, new EventData(this.node)));
 
-      final Status prepareStatus = prepareJob();
-      if (prepareStatus != null) {
+      if (prepareJob()) {
         // Writes status to the db
         writeStatus();
-        fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED,
-            new EventData(prepareStatus, this.node.getNestedId())));
-        finalStatus = runJob();
+        fireEvent(Event.create(this, EventType.JOB_STATUS_CHANGED, new EventData(node)));
+        try {
+          addGroupAndUser(this.jobtypeManager.getCommonPluginLoadProps());
+        } catch (Exception e) {
+          changeStatus(Status.FAILED);
+          logError("Job run failed while adding group and user.");
+        }
+        runJob();
       } else {
-        finalStatus = changeStatus(Status.FAILED);
+        changeStatus(Status.FAILED);
         logError("Job run failed preparing the job.");
       }
     }
@@ -657,62 +662,64 @@ public class JobRunner extends EventHandler implements Runnable {
       // So we set it to KILLED to make sure we know that we forced kill it
       // rather than
       // it being a legitimate failure.
-      finalStatus = changeStatus(Status.KILLED);
+      changeStatus(Status.KILLED);
       if (this.getJobKillTime() != -1 && this.getKillDuration() == 0) {
         this.setKillDuration(System.currentTimeMillis() - this.getJobKillTime());
       }
     }
 
-    logInfo(
-        "Finishing job " + this.jobId + getNodeRetryLog() + " at " + this.node.getEndTime()
-            + " with status " + this.node.getStatus());
+    logInfo(String.format(
+        "Wrapping up %s%s job %s, finished at %d with status %s.", getNodeRetryLog(),
+        this.props.getString("type", "--"), this.jobId, this.node.getEndTime(),
+        this.node.getStatus()));
 
     try {
+      this.flowLogger.debug("Finalizing log file for job " + this.jobId);
       finalizeLogFile(this.node.getAttempt());
+      this.flowLogger.debug("Finalizing attachment file for job " + this.jobId);
       finalizeAttachmentFile();
+      this.flowLogger.debug("Writing node status to DB for job " + this.jobId);
       writeStatus();
     } finally {
+      this.flowLogger.debug("Firing JOB_FINISHED events for job " + this.jobId);
       try {
         // note that FlowRunner thread does node.attempt++ when it receives the JOB_FINISHED event
-        fireEvent(Event.create(this, EventType.JOB_FINISHED,
-            new EventData(finalStatus, this.node.getNestedId())), false);
+        fireEvent(Event.create(this, EventType.JOB_FINISHED, new EventData(node)), false);
       } catch (final RuntimeException e) {
-        serverLogger.warn("Error in fireEvent for JOB_FINISHED for execId:" + this.executionId
-            + " jobId: " + this.jobId);
-        serverLogger.warn(e.getMessage(), e);
+        serverLogger.warn(String.format("Encountered error while firing the JOB_FINISHED event "
+            + "for job %s in execution %d.", this.jobId, this.executionId), e);
       }
     }
   }
 
   private String getNodeRetryLog() {
-    return this.node.getAttempt() > 0 ? (" retry: " + this.node.getAttempt()) : "";
+    return this.node.getAttempt() > 0 ? String.format("retry %d of ", this.node.getAttempt()) : "";
   }
 
   private void uploadExecutableNode() {
     try {
-      this.loader.uploadExecutableNode(this.node, this.props);
+      this.executorLoader.uploadExecutableNode(this.node, this.props);
     } catch (final ExecutorManagerException e) {
       this.logger.error("Error writing initial node properties", e);
     }
   }
 
-  private Status prepareJob() throws RuntimeException {
+  private boolean prepareJob() throws RuntimeException {
     // Check pre conditions
     if (this.props == null || this.isKilled()) {
       logError("Failing job. The job properties don't exist");
-      return null;
+      return false;
     }
 
-    final Status finalStatus;
     synchronized (this.syncObject) {
       if (this.node.getStatus() == Status.FAILED || this.isKilled()) {
-        return null;
+        return false;
       }
 
-      logInfo("Starting job " + this.jobId + getNodeRetryLog() + " at " + this.node.getStartTime());
+      logInfo(String.format("Starting %s%s job %s at %d.", getNodeRetryLog(),
+          this.props.getString("type", "--"), this.jobId, this.node.getStartTime()));
 
-      // If it's an embedded flow, we'll add the nested flow info to the job
-      // conf
+      // If it's an embedded flow, we'll add the nested flow info to the job conf
       if (this.node.getExecutableFlow() != this.node.getParentFlow()) {
         final String subFlow = this.node.getPrintableId(":");
         this.props.put(CommonJobProperties.NESTED_FLOW_PATH, subFlow);
@@ -727,7 +734,7 @@ public class JobRunner extends EventHandler implements Runnable {
           createMetaDataFileName(this.node));
       this.props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, this.attachmentFileName);
       this.props.put(CommonJobProperties.JOB_LOG_FILE, this.logFile.getAbsolutePath());
-      finalStatus = changeStatus(Status.RUNNING);
+      changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
       if (this.props.containsKey(AbstractProcessJob.WORKING_DIR)) {
@@ -735,28 +742,21 @@ public class JobRunner extends EventHandler implements Runnable {
           logError("Specified " + AbstractProcessJob.WORKING_DIR + " is not valid: " +
               this.props.get(AbstractProcessJob.WORKING_DIR) + ". Must be a subdirectory of " +
               this.workingDir.getAbsolutePath());
-          return null;
+          return false;
         }
       } else {
         this.props.put(AbstractProcessJob.WORKING_DIR, this.workingDir.getAbsolutePath());
       }
-
-      if (this.props.containsKey(JobProperties.USER_TO_PROXY)) {
-        final String jobProxyUser = this.props.getString(JobProperties.USER_TO_PROXY);
-        if (this.proxyUsers != null && !this.proxyUsers.contains(jobProxyUser)) {
-          final String permissionsPageURL = getProjectPermissionsURL();
-          this.logger.error("User " + jobProxyUser
-              + " has no permission to execute this job " + this.jobId + "!"
-              + " If you want to execute this flow as " + jobProxyUser
-              + ", please add it to Proxy Users under project permissions page: " +
-              permissionsPageURL);
-          return null;
-        }
-      } else {
-        final String submitUser = this.getNode().getExecutableFlow().getSubmitUser();
-        this.props.put(JobProperties.USER_TO_PROXY, submitUser);
-        this.logger.info("user.to.proxy property was not set, defaulting to submit user " +
-            submitUser);
+      Optional<String> jobType = JobTypeManager.getJobType(this.props);
+      Optional<String> effectiveUserOptional = determineEffectiveUser(jobType);
+      // Fail if the effective user is not present
+      if (!effectiveUserOptional.isPresent()) {
+        return false;
+      }
+      this.effectiveUser = effectiveUserOptional.get();
+      this.props.put(JobProperties.USER_TO_PROXY, this.effectiveUser);
+      if (null != this.flowRunnerProxy) {
+        this.flowRunnerProxy.setEffectiveUser(this.jobId, this.effectiveUser, jobType);
       }
 
       final Props props = this.node.getRampProps();
@@ -766,7 +766,7 @@ public class JobRunner extends EventHandler implements Runnable {
                 props.toString()));
         this.props.putAll(props);
       }
-
+      logInfo("all props for the job: " + this.props);
       try {
         long jobCreationStartMillis = System.currentTimeMillis();
         final JobTypeManager.JobParams jobParams = this.jobtypeManager
@@ -795,11 +795,26 @@ public class JobRunner extends EventHandler implements Runnable {
 
       } catch (final JobTypeManagerException e) {
         this.logger.error("Failed to build job type", e);
-        return null;
+        return false;
       }
     }
 
-    return finalStatus;
+    return true;
+  }
+
+  // If linux group and user needs to be added for effectiveUser before job process starts
+  // then set it up before effective user is used to set permission for any file.
+  private void addGroupAndUser(final Props pluginPrivateProps) throws Exception {
+    if (pluginPrivateProps != null) {
+      final boolean addGroupAndUserForEffectiveUser =
+          pluginPrivateProps.getBoolean(AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER, false);
+      if (addGroupAndUserForEffectiveUser) {
+        logger.info("Adding group and user for effective user: " + this.effectiveUser);
+        final ExecuteAsUser executeAsUser = new ExecuteAsUser(
+            pluginPrivateProps.getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER));
+        addGroupAndUserForEffectiveUser(executeAsUser, this.effectiveUser);
+      }
+    }
   }
 
   /**
@@ -833,6 +848,7 @@ public class JobRunner extends EventHandler implements Runnable {
     return projectPermissionsURL;
   }
 
+
   /**
    * Add useful JVM arguments so it is easier to map a running Java process to a flow, execution id
    * and job
@@ -849,9 +865,26 @@ public class JobRunner extends EventHandler implements Runnable {
     final String previousJVMArgs = this.props.get(JavaProcessJob.JVM_PARAMS);
     jobJVMArgs += (previousJVMArgs == null) ? "" : " " + previousJVMArgs;
 
+    // Add useful Java options for java jobs which are provided through properties
+    final String javaOpts = insertJavaOptions();
+    jobJVMArgs += (javaOpts == null) ? "" : " " + javaOpts;
     this.logger.info("job JVM args: " + jobJVMArgs);
     this.props.put(JavaProcessJob.JVM_PARAMS, jobJVMArgs);
   }
+
+  /**
+   * Add useful Java options for java jobs provided through properties.
+   */
+  private String insertJavaOptions() {
+    if (this.jobtypeManager.getCommonPluginLoadProps() == null) {
+      return null;
+    }
+    final String appendJavaOpts = this.jobtypeManager.getCommonPluginLoadProps().getString(
+        Constants.AZ_JOBS_JAVA_OPTS, null);
+    logger.info("JAVA OPTS appended to each command : " + appendJavaOpts);
+    return appendJavaOpts;
+  }
+
 
   /**
    * Add relevant links to the job properties so that downstream consumers may know what executions
@@ -907,18 +940,20 @@ public class JobRunner extends EventHandler implements Runnable {
       synchronized (this.syncObject) {
         if (this.props.getBoolean("job.succeed.on.failure", false)) {
           finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
-          logError("Job run failed, but will treat it like success.");
-          logError(e.getMessage() + " cause: " + e.getCause(), e);
+          logInfo(
+              "The job execution failed, but will be handled as a success based on user configs.");
         } else {
           if (isKilled() || this.node.getStatus() == Status.KILLED) {
             finalStatus = Status.KILLED;
-            logError("Job run killed!", e);
           } else {
             finalStatus = changeStatus(Status.FAILED);
-            logError("Job run failed!", e);
           }
-          logError(e.getMessage() + " cause: " + e.getCause());
         }
+        logInfo("Azkaban job executor finished with: " + e.getCause());
+        serverLogger.info(String.format(
+            "Execution of job with id %s and type %s in execution %d failed with status %s.",
+            this.jobId, this.props.getString("type", "--"), this.executionId,
+            finalStatus), e);
         this.getNode().setFailureMessage(e.toString());
       }
     }
@@ -1030,10 +1065,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public File getLogFile() {
     return this.logFile;
-  }
-
-  public Logger getLogger() {
-    return this.logger;
   }
 
   public long getTimeInQueue() { return this.timeInQueue; }

@@ -43,6 +43,7 @@ public class SlaOptionDeprecated {
   public static final String INFO_FLOW_NAME = "FlowName";
   public static final String INFO_JOB_NAME = "JobName";
   public static final String INFO_EMAIL_LIST = "EmailList";
+  public static final String INFO_ALERTERS_CONFIGS = "alertersConfigs";
 
   // always alert
   public static final String ALERT_TYPE = "SlaAlertType";
@@ -63,7 +64,6 @@ public class SlaOptionDeprecated {
   }
 
   public static SlaOptionDeprecated fromObject(final Object object) {
-
     final HashMap<String, Object> slaObj = (HashMap<String, Object>) object;
 
     final String type = (String) slaObj.get("type");
@@ -100,7 +100,6 @@ public class SlaOptionDeprecated {
 
   public Map<String, Object> toObject() {
     final HashMap<String, Object> slaObj = new HashMap<>();
-
     slaObj.put("type", this.type);
     slaObj.put("info", this.info);
     slaObj.put("actions", this.actions);

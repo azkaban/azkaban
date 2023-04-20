@@ -15,6 +15,7 @@
  */
 package azkaban.execapp;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -34,9 +35,11 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.IFlowRunnerManager;
 import azkaban.executor.Status;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metric.MetricReportManager;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLoader;
@@ -84,6 +87,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -108,7 +112,7 @@ import org.slf4j.LoggerFactory;
  * execution is completed.
  */
 @Singleton
-public class FlowRunnerManager implements EventListener<Event>,
+public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Event>,
     ThreadPoolExecutingListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowRunnerManager.class);
@@ -135,6 +139,7 @@ public class FlowRunnerManager implements EventListener<Event>,
   private final TrackingThreadPool executorService;
   private final CleanerThread cleanerThread;
   private final ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
@@ -171,6 +176,7 @@ public class FlowRunnerManager implements EventListener<Event>,
   @Inject
   public FlowRunnerManager(final Props props,
       final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader executionLogsLoader,
       final ProjectLoader projectLoader,
       final ProjectStorageManager projectStorageManager,
       final TriggerManager triggerManager,
@@ -202,16 +208,18 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.executorService = createExecutorService(this.numThreads);
 
     this.executorLoader = executorLoader;
+    this.executionLogsLoader = executionLogsLoader;
     this.projectLoader = projectLoader;
-    this.triggerManager = triggerManager;
     this.alerterHolder = alerterHolder;
     this.commonMetrics = commonMetrics;
     this.execMetrics = execMetrics;
     this.dependencyTransferManager = dependencyTransferManager;
     this.storage = storage;
     this.clusterRouter = clusterRouter;
-
     this.flowRampManager = flowRampManager;
+
+    this.triggerManager = triggerManager;
+    this.triggerManager.setFlowRunnerManager(this);
 
     this.jobLogChunkSize = this.azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = this.azkabanProps.getInt("job.log.backup.index", 4);
@@ -229,7 +237,8 @@ public class FlowRunnerManager implements EventListener<Event>,
     this.jobtypeManager =
         new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             Constants.PluginManager.JOBTYPE_DEFAULTDIR), this.globalProps,
-            getClass().getClassLoader(), this.clusterRouter);
+            getClass().getClassLoader(), this.clusterRouter,
+            props.getString(Constants.AZ_PLUGIN_LOAD_OVERRIDE_PROPS, null));
 
     ProjectCacheCleaner cleaner = null;
     this.LOGGER.info("Configuring Project Cache");
@@ -280,9 +289,6 @@ public class FlowRunnerManager implements EventListener<Event>,
       this.pollingService = new PollingService(pollingIntervalMillis,
           new PollingCriteria(this.azkabanProps));
       this.pollingService.start();
-      this.triggerManager.setDispatchMethod(DispatchMethod.POLL);
-    } else {
-      this.triggerManager.setDispatchMethod(DispatchMethod.PUSH);
     }
   }
 
@@ -425,9 +431,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     if (isAlreadyRunning(execId)) {
       return;
     }
-    final long tsBeforeFlowRunnerCreation = System.currentTimeMillis();
     final FlowRunner runner = createFlowRunner(execId);
-    runner.setFlowCreateTime(System.currentTimeMillis() - tsBeforeFlowRunnerCreation);
     // Check again.
     if (isAlreadyRunning(execId)) {
       return;
@@ -504,9 +508,13 @@ public class FlowRunnerManager implements EventListener<Event>,
     int numJobThreads = this.numJobThreadPerFlow;
     if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
       try {
+        if (!ProjectWhitelist.isXmlFileLoaded()) {
+          ProjectWhitelist.load(azkabanProps);
+        }
         final int numJobs =
             Integer.valueOf(options.getFlowParameters().get(
                 FLOW_NUM_JOB_THREADS));
+        LOGGER.info("Num of job threads read from flow parameter is " + numJobs);
         if (numJobs > 0 && (numJobs <= numJobThreads || ProjectWhitelist
             .isProjectWhitelisted(flow.getProjectId(),
                 WhitelistType.NumJobPerFlow))) {
@@ -525,9 +533,9 @@ public class FlowRunnerManager implements EventListener<Event>,
         .configure(flow, FileIOUtils.getDirectory(this.projectDirectory, flow.getDirectory()));
 
     final FlowRunner runner =
-        new FlowRunner(flow, this.executorLoader, this.projectLoader, this.jobtypeManager,
-            this.azkabanProps, this.azkabanEventReporter, this.alerterHolder, this.commonMetrics,
-            this.execMetrics);
+        new FlowRunner(flow, this.executorLoader, this.executionLogsLoader, this.projectLoader,
+            this.jobtypeManager, this.azkabanProps, this.azkabanEventReporter, this.alerterHolder,
+            this.commonMetrics, this.execMetrics);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
@@ -576,6 +584,7 @@ public class FlowRunnerManager implements EventListener<Event>,
 
   }
 
+  @Override
   public void cancelJobBySLA(final int execId, final String jobId)
       throws ExecutorManagerException {
     final FlowRunner flowRunner = this.runningFlows.get(execId);
@@ -596,6 +605,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     }
   }
 
+  @Override
   public void cancelFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner flowRunner = this.runningFlows.get(execId);
@@ -614,6 +624,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     flowRunner.kill(user);
   }
 
+  @Override
   public void pauseFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner runner = this.runningFlows.get(execId);
@@ -630,6 +641,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     }
   }
 
+  @Override
   public void resumeFlow(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner runner = this.runningFlows.get(execId);
@@ -642,6 +654,7 @@ public class FlowRunnerManager implements EventListener<Event>,
     runner.resume(user);
   }
 
+  @Override
   public void retryFailures(final int execId, final String user)
       throws ExecutorManagerException {
     final FlowRunner flowRunner = this.runningFlows.get(execId);
@@ -681,6 +694,9 @@ public class FlowRunnerManager implements EventListener<Event>,
 
   @Override
   public void handleEvent(final Event event) {
+    if (!(event.getData().isRootFlowEvent())) {
+      return;
+    }
     if (event.getType() == EventType.FLOW_FINISHED || event.getType() == EventType.FLOW_STARTED) {
       final FlowRunner flowRunner = (FlowRunner) event.getRunner();
       final ExecutableFlow flow = flowRunner.getExecutableFlow();
@@ -981,8 +997,10 @@ public class FlowRunnerManager implements EventListener<Event>,
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
     // Every 5 mins kill flows running longer than allowed max running time
     private static final long LONG_RUNNING_FLOW_KILLING_INTERVAL_MS = 5 * 60 * 1000;
+    // Kill flows running time longer than 10 days by default
+    private static final int DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS = 10 * 24 * 60;
     private final long flowMaxRunningTimeInMins = FlowRunnerManager.this.azkabanProps.getInt(
-        Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, -1);
+        Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, DEFAULT_AZKABAN_MAX_FLOW_RUNNING_MINS);
     private boolean shutdown = false;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;

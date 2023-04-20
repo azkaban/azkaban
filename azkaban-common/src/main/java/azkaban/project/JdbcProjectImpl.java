@@ -30,7 +30,9 @@ import azkaban.db.DatabaseTransOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.project.JdbcProjectHandlerSet.FlowFileResultHandler;
+import azkaban.project.JdbcProjectHandlerSet.ProjectFlowResourceRecommendationsResultHandler;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -76,10 +78,13 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   private static final int CHUCK_SIZE = 1024 * 1024 * 10;
   // Flow yaml files are usually small, set size limitation to 10 MB should be sufficient for now.
-  private static final int MAX_FLOW_FILE_SIZE_IN_BYTES = 1024 * 1024 * 10;
+  private static final int MAX_FLOW_FILE_SIZE_IN_MB_DEFAULT = 10;
+
+  public static final String MAX_FLOW_FILE_SIZE_KEY = "max.flow.file.size.mb";
   private final DatabaseOperator dbOperator;
   private final File tempDir;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
+  private final int maxFlowFileSizeInBytes;
 
   @Inject
   public JdbcProjectImpl(final Props props, final DatabaseOperator databaseOperator) {
@@ -93,6 +98,9 @@ public class JdbcProjectImpl implements ProjectLoader {
         logger.info("project temporary folder already existed.");
       }
     }
+    int maxFlowFileSizeInMB = props.getInt(MAX_FLOW_FILE_SIZE_KEY, MAX_FLOW_FILE_SIZE_IN_MB_DEFAULT);
+    maxFlowFileSizeInBytes = maxFlowFileSizeInMB * 1024 * 1024;
+    logger.info("Maximum size of the flow file in bytes is " + maxFlowFileSizeInBytes);
   }
 
   @Override
@@ -156,20 +164,6 @@ public class JdbcProjectImpl implements ProjectLoader {
   public synchronized Project createNewProject(final String name, final String description,
       final User creator)
       throws ProjectManagerException {
-    final ProjectResultHandler handler = new ProjectResultHandler();
-
-    // Check if the same project name exists.
-    try {
-      final List<Project> projects = this.dbOperator
-          .query(ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
-      if (!projects.isEmpty()) {
-        throw new ProjectManagerException(
-            "Active project with name " + name + " already exists in db.");
-      }
-    } catch (final SQLException ex) {
-      logger.error(ex);
-      throw new ProjectManagerException("Checking for existing project failed. " + name, ex);
-    }
 
     final String INSERT_PROJECT =
         "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob) values (?,?,?,?,?,?,?,?,?)";
@@ -520,7 +514,6 @@ public class JdbcProjectImpl implements ProjectLoader {
           "UPDATE projects SET version=?,modified_time=?,last_modified_by=? WHERE id=?";
 
       this.dbOperator.update(UPDATE_PROJECT_VERSION, version, timestamp, user, project.getId());
-      project.setVersion(version);
       project.setLastModifiedTimestamp(timestamp);
       project.setLastModifiedUser(user);
     } catch (final SQLException e) {
@@ -805,14 +798,94 @@ public class JdbcProjectImpl implements ProjectLoader {
   }
 
   @Override
-  public void uploadProjectProperties(final Project project, final List<Props> properties)
+  public void uploadProjectProperties(final Project project,
+      final int projectVersionOverride, final List<Props> properties)
       throws ProjectManagerException {
     for (final Props props : properties) {
       try {
-        uploadProjectProperty(project, props.getSource(), props);
+        uploadProjectProperty(project, projectVersionOverride, props.getSource(), props);
       } catch (final IOException e) {
         throw new ProjectManagerException("Error uploading project property file", e);
       }
+    }
+  }
+
+  @Override
+  public synchronized FlowResourceRecommendation createFlowResourceRecommendation(final int projectId, final String flowId)
+      throws ProjectManagerException {
+    logger.info("Creating flow resource recommendation. ProjectId: " + projectId + ", FlowId: " + flowId);
+    final String INSERT_FLOW_RESOURCE_RECOMMENDATION =
+        "INSERT INTO project_flow_resource_recommendations (project_id, flow_id, modified_time) values (?,?,?)";
+
+    final SQLTransaction<Integer> insertFlowResourceRecommendation = transOperator ->
+        transOperator.update(INSERT_FLOW_RESOURCE_RECOMMENDATION, projectId, flowId, System.currentTimeMillis());;
+
+    // Insert flow resource recommendation
+    try {
+      final int numRowsInserted = this.dbOperator.transaction(insertFlowResourceRecommendation);
+      if (numRowsInserted == 0) {
+        throw new ProjectManagerException("No flow resource recommendations have been inserted.");
+      }
+    } catch (final SQLException ex) {
+      // Possibly failed due to duplicate key. If not, fetchFlowResourceRecommendation will
+      // return another exception back.
+      logger.warn("Insert flow resource recommendation projectId: " + projectId + ", flowId: " + flowId
+          + " for existing project failed.", ex);
+    }
+    return fetchFlowResourceRecommendation(projectId, flowId);
+  }
+
+  @Override
+  public void updateFlowResourceRecommendation(final FlowResourceRecommendation flowResourceRecommendation)
+      throws ProjectManagerException {
+    logger.info("Updating flow resource recommendation " + flowResourceRecommendation.getId());
+    final String UPDATE_FLOW =
+        "UPDATE project_flow_resource_recommendations SET cpu_recommendation=?,memory_recommendation=?,"
+            + "disk_recommendation=?,modified_time=? WHERE id=?";
+    try {
+      this.dbOperator
+          .update(UPDATE_FLOW, flowResourceRecommendation.getCpuRecommendation(),
+              flowResourceRecommendation.getMemoryRecommendation(),
+              flowResourceRecommendation.getDiskRecommendation(), System.currentTimeMillis(),
+              flowResourceRecommendation.getId());
+    } catch (final SQLException e) {
+      logger.error("Error updating flow resource recommendation", e);
+      throw new ProjectManagerException("Error updating flow resource recommendation " + flowResourceRecommendation.getId(), e);
+    }
+  }
+
+  @Override
+  public FlowResourceRecommendation fetchFlowResourceRecommendation(final int projectId, final String flowId)
+      throws ProjectManagerException {
+    logger.info("Fetching flow resource recommendation. ProjectId: " + projectId + ", FlowId: " + flowId);
+    try {
+      return this.dbOperator
+          .query(ProjectFlowResourceRecommendationsResultHandler.SELECT_PROJECT_FLOW_RESOURCE_RECOMMENDATION,
+              new ProjectFlowResourceRecommendationsResultHandler(), projectId, flowId).get(0);
+    } catch (final SQLException | IndexOutOfBoundsException e) {
+      logger.error("Error fetching flow resource recommendation", e);
+      throw new ProjectManagerException("Error fetching flow resource recommendation. ProjectId: " + projectId + ", FlowId: " + flowId, e);
+    }
+  }
+
+  @Override
+  public Map<Project, List<FlowResourceRecommendation>> fetchAllFlowResourceRecommendationsForProjects(final List<Project> projects)
+      throws ProjectManagerException {
+    final SQLTransaction<Map<Project, List<FlowResourceRecommendation>>> transaction = transOperator -> {
+      final Map<Project, List<FlowResourceRecommendation>> projectToFlows = new HashMap();
+      for (final Project p : projects) {
+        projectToFlows.put(p, transOperator
+            .query(ProjectFlowResourceRecommendationsResultHandler.SELECT_ALL_PROJECT_FLOW_RESOURCE_RECOMMENDATIONS,
+                new ProjectFlowResourceRecommendationsResultHandler(), p.getId()));
+      }
+      return projectToFlows;
+    };
+
+    try {
+      return this.dbOperator.transaction(transaction);
+    } catch (final SQLException e) {
+      throw new ProjectManagerException(
+          "Error fetching flow resource recommendations for " + projects.size() + " project(s).", e);
     }
   }
 
@@ -853,12 +926,18 @@ public class JdbcProjectImpl implements ProjectLoader {
 
   private void uploadProjectProperty(final Project project, final String name, final Props props)
       throws ProjectManagerException, IOException {
+    uploadProjectProperty(project, project.getVersion(), name, props);
+  }
+
+  private void uploadProjectProperty(final Project project, final int projectVersionOverride,
+      final String name, final Props props)
+      throws ProjectManagerException, IOException {
     final String INSERT_PROPERTIES =
         "INSERT INTO project_properties (project_id, version, name, modified_time, encoding_type, property) values (?,?,?,?,?,?)";
 
     final byte[] propsData = getBytes(props);
     try {
-      this.dbOperator.update(INSERT_PROPERTIES, project.getId(), project.getVersion(), name,
+      this.dbOperator.update(INSERT_PROPERTIES, project.getId(), projectVersionOverride, name,
           System.currentTimeMillis(),
           this.defaultEncodingType.getNumVal(), propsData);
     } catch (final SQLException e) {
@@ -976,11 +1055,12 @@ public class JdbcProjectImpl implements ProjectLoader {
             "Uploading flow file %s, version %d for project %d, version %d, file length is [%d bytes]",
             flowFile.getName(), flowVersion, projectId, projectVersion, flowFile.length()));
 
-    if (flowFile.length() > MAX_FLOW_FILE_SIZE_IN_BYTES) {
-      throw new ProjectManagerException("Flow file length exceeds 10 MB limit.");
+    if (flowFile.length() > maxFlowFileSizeInBytes) {
+      int maxFlowFileSizeInMB = maxFlowFileSizeInBytes / (1024 * 1024);
+      throw new ProjectManagerException("Flow file length exceeds " + maxFlowFileSizeInMB + " MB limit.");
     }
 
-    final byte[] buffer = new byte[MAX_FLOW_FILE_SIZE_IN_BYTES];
+    final byte[] buffer = new byte[maxFlowFileSizeInBytes];
     final String INSERT_FLOW_FILES =
         "INSERT INTO project_flow_files (project_id, project_version, flow_name, flow_version, "
             + "modified_time, "
@@ -1078,6 +1158,24 @@ public class JdbcProjectImpl implements ProjectLoader {
     return !data.isEmpty();
   }
 
+  @Override
+  public boolean isFlowInProject(String projectName, String flowId) {
+    Project project = fetchProjectByName(projectName);
+    if (project == null) {
+      logger.info("Can not find active project " + projectName);
+      return false;
+    }
+    try {
+      List<Flow> flow = dbOperator.query(ProjectFlowsResultHandler.SELECT_PROJECT_FLOW,
+          new ProjectFlowsResultHandler(), project.getId(),
+          project.getVersion(), flowId);
+      return flow != null && !flow.isEmpty();
+    } catch (SQLException e) {
+      logger.error(e);
+      throw new ProjectManagerException("Failing to get flow " + flowId + " in project: " + projectName, e);
+    }
+  }
+
   /**
    * Returns list of Projects with ids that match with any id specified in the list of ids passed as
    * a parameter.
@@ -1095,8 +1193,9 @@ public class JdbcProjectImpl implements ProjectLoader {
     final String name = StringUtils.join(ids, ',').toString();
     final String SELECT_PROJECT_BY_IDS = "SELECT "
         + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
-        + "prm.name, prm.permissions, prm.isGroup "
+        + "prm.name, prm.permissions, prm.isGroup, prjver.uploader "
         + "FROM projects prj "
+        + "LEFT JOIN project_versions prjver ON prj.id = prjver.project_id "
         + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id in (" + name
         + ")";
     try {

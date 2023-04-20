@@ -15,6 +15,8 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_OFFLINE_LOGS_LOADER_ENABLED;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
@@ -22,29 +24,38 @@ import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
+import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.jobcallback.JobCallbackManager;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.Project;
+import azkaban.project.ProjectManager;
+import azkaban.project.ProjectManagerException;
 import azkaban.project.ProjectWhitelist;
 import azkaban.spi.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.ServerUtils;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 /**
  * This class is used as an abstract implementation for ExecutorManagerAdapter. It has common code
@@ -53,32 +64,59 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractExecutorManagerAdapter extends EventHandler implements
     ExecutorManagerAdapter {
 
-  private static final Logger logger =
-      LoggerFactory.getLogger(AbstractExecutorManagerAdapter.class);
+  private static final Logger logger = Logger.getLogger(AbstractExecutorManagerAdapter.class);
   protected final Props azkProps;
+  protected boolean offlineLogsLoaderEnabled;
+  protected final ProjectManager projectManager;
   protected final ExecutorLoader executorLoader;
+  protected final ExecutionLogsLoader nearlineExecutionLogsLoader;
+  protected final Optional<ExecutionLogsLoader> offlineExecutionLogsLoader;
   protected final CommonMetrics commonMetrics;
   protected final ExecutorApiGateway apiGateway;
-  private final AlerterHolder alerterHolder;
+  protected final AlerterHolder alerterHolder;
   private final int maxConcurrentRunsOneFlow;
   private final Map<Pair<String, String>, Integer> maxConcurrentRunsPerFlowMap;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
   protected final EventListener eventListener;
+  protected final ContainerizationMetrics containerizationMetrics;
 
   protected AbstractExecutorManagerAdapter(final Props azkProps,
+      final ProjectManager projectManager,
       final ExecutorLoader executorLoader,
+      final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
-      final AlerterHolder alerterHolder, final EventListener eventListener) {
+      final AlerterHolder alerterHolder,
+      final EventListener eventListener,
+      final ContainerizationMetrics containerizationMetrics) {
     this.azkProps = azkProps;
+    this.offlineLogsLoaderEnabled = this.azkProps.getBoolean(AZKABAN_OFFLINE_LOGS_LOADER_ENABLED,
+        false);
+    this.projectManager = projectManager;
     this.executorLoader = executorLoader;
+    this.nearlineExecutionLogsLoader = nearlineExecutionLogsLoader;
+    this.offlineExecutionLogsLoader = Optional.ofNullable(offlineExecutionLogsLoader);
     this.commonMetrics = commonMetrics;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
     this.maxConcurrentRunsOneFlow = ExecutorUtils.getMaxConcurrentRunsOneFlow(azkProps);
     this.maxConcurrentRunsPerFlowMap = ExecutorUtils.getMaxConcurentRunsPerFlowMap(azkProps);
     this.eventListener = eventListener;
+    this.containerizationMetrics = containerizationMetrics;
     this.addListener(eventListener);
+    ServerUtils.configureJobCallback(logger, azkProps);
+    this.addListener(JobCallbackManager.getInstance());
+  }
+
+  @Override
+  public void enableOfflineLogsLoader(boolean enabled) {
+    this.offlineLogsLoaderEnabled = enabled;
+  }
+
+  @Override
+  public boolean isOfflineLogsLoaderEnabled() {
+    return this.offlineLogsLoaderEnabled;
   }
 
   /**
@@ -90,6 +128,20 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   public ExecutableFlow getExecutableFlow(final int execId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchExecutableFlow(execId);
+  }
+
+  @Override
+  public ExecutableFlow createExecutableFlow(Project project, Flow flow) {
+    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+    exFlow.addAllProxyUsers(project.getProxyUsers());
+    try {
+      exFlow.setFlowParamsFromProps(this.projectManager.loadPropsForExecutableFlow(exFlow));
+    } catch (ProjectManagerException e) {
+      logger.warn("Fail to preload ExecutableFlow, continue without loading ExecutionOptions", e);
+      exFlow = new ExecutableFlow(project, flow);
+      exFlow.addAllProxyUsers(project.getProxyUsers());
+    }
+    return exFlow;
   }
 
   /**
@@ -104,14 +156,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         ConfigurationKeys.MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES,
         Constants.DEFAULT_MIN_AGE_FOR_CLASSIFYING_A_FLOW_AGED_MINUTES);
     long startTime = System.currentTimeMillis();
-    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
-    // all we care about is the count. Write a new class that's more performant and can be used for
-    // metrics. this.executorLoader.fetchAgedQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
-      size = this.executorLoader.fetchAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
+      size = this.executorLoader.selectAgedQueuedFlows(Duration.ofMinutes(minimumAgeInMinutes))
           .size();
-      logger.info("Time taken to fetch size of queued flows is {}",
-          (System.currentTimeMillis() - startTime) / 1000);
+      logger.info("Time taken to fetch size of queued flows is " + (System.currentTimeMillis() - startTime) / 1000);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get flows queued for a long time.", e);
     }
@@ -204,7 +252,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
     final String[] hostPortSplit = hostPort.split(":");
     return this.apiGateway.callForJsonObjectMap(hostPortSplit[0],
-        Integer.valueOf(hostPortSplit[1]), "/jmx", null, paramList);
+        Integer.valueOf(hostPortSplit[1]), "/jmx", null, Optional.empty(), paramList);
   }
 
   /**
@@ -230,7 +278,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         .add(new Pair<>(ConnectorParams.ACTION_PARAM, action));
 
     return this.apiGateway.callForJsonObjectMap(executor.getHost(), executor.getPort(),
-        "/stats", null, paramList);
+        "/stats", null, Optional.empty(), paramList);
   }
 
   @Override
@@ -282,10 +330,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
 
       String message = uploadExecutableFlow(exflow, userId, flowId, "");
 
-      // Emit ready flow event
+      // Emit ready/preparing flow event
       this.fireEventListeners(Event.create(exflow,
           EventType.FLOW_STATUS_CHANGED, new EventData(exflow)));
 
+      if (exflow.getDispatchMethod()==DispatchMethod.CONTAINERIZED) {
+        this.containerizationMetrics.markFlowSubmitToContainer();
+      } else {
+        this.containerizationMetrics.markFlowSubmitToExecutor();
+      }
       this.commonMetrics.markSubmitFlowSuccess();
       message += "Execution queued successfully with exec id " + exflow.getExecutionId();
       return message;
@@ -307,7 +360,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     exflow.setSubmitTime(System.currentTimeMillis());
 
     // Get collection of running flows given a project and a specific flow name
-    final List<Integer> running = getRunningFlows(projectId, flowId);
+    final List<Integer> running = getRunningFlowIds(projectId, flowId);
 
     ExecutionOptions options = exflow.getExecutionOptions();
     if (options == null) {
@@ -380,33 +433,30 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
    * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a given
    * project and flow {@inheritDoc}.
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlowIds(int, java.lang.String)
    */
   @Override
-  public List<Integer> getRunningFlows(final int projectId, final String flowId) {
-    final List<Integer> executionIds = new ArrayList<>();
+  public List<Integer> getRunningFlowIds(final int projectId, final String flowId) {
     try {
-      executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
-          this.executorLoader.fetchUnfinishedFlows().values()));
+      return this.executorLoader.selectUnfinishedFlows(projectId, flowId);
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get running flows for project " + projectId + ", flow "
           + flowId, e);
     }
-    return executionIds;
+    return new ArrayList<>();
   }
 
   /**
-   * Get all running (unfinished) flows from database. {@inheritDoc}
+   * Get all running (unfinished) flow ids from database. {@inheritDoc}
    */
   @Override
-  public List<ExecutableFlow> getRunningFlows() {
-    final ArrayList<ExecutableFlow> flows = new ArrayList<>();
+  public List<Integer> getRunningFlowIds() {
     try {
-      getFlowsHelper(flows, this.executorLoader.fetchUnfinishedFlows().values());
+      return this.executorLoader.selectUnfinishedFlows();
     } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flows.", e);
+      logger.error("Failed to get running flow ids.", e);
     }
-    return flows;
+    return new ArrayList<>();
   }
 
   protected LogData getFlowLogData(final ExecutableFlow exFlow, final int offset, final int length,
@@ -423,14 +473,20 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, offsetParam, lengthParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      return this.executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset,
-          length);
+      LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), "", 0,
+          offset, length, exFlow.getSubmitTime(), exFlow.getEndTime());
+      // Return offline logs if nearline logs are empty
+      if (offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() && logData == null) {
+        return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), "", 0,
+            offset, length, exFlow.getSubmitTime(), exFlow.getEndTime());
+      }
+      return logData;
     }
   }
 
   protected LogData getJobLogData(final ExecutableFlow exFlow, final String jobId, final int offset,
-      final int length,
-      final int attempt, final Pair<ExecutionReference, ExecutableFlow> pair)
+      final int length, final int attempt, final Pair<ExecutionReference, ExecutableFlow> pair,
+      final boolean nearlineOnly)
       throws ExecutorManagerException {
     if (pair != null) {
       final Pair<String, String> typeParam = new Pair<>("type", "job");
@@ -448,8 +504,14 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
               typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
       return LogData.createLogDataFromObject(result);
     } else {
-      return this.executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt,
-          offset, length);
+      LogData logData = this.nearlineExecutionLogsLoader.fetchLogs(exFlow.getExecutionId(), jobId,
+          attempt, offset, length, exFlow.getSubmitTime(), exFlow.getEndTime());
+      // Return offline logs if nearline logs are empty
+      if (!nearlineOnly && offlineLogsLoaderEnabled && offlineExecutionLogsLoader.isPresent() && logData == null) {
+        return this.offlineExecutionLogsLoader.get().fetchLogs(exFlow.getExecutionId(), jobId,
+            attempt, offset, length, exFlow.getSubmitTime(), exFlow.getEndTime());
+      }
+      return logData;
     }
   }
 
@@ -488,7 +550,15 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
         .fetchActiveFlowByExecId(exFlow.getExecutionId());
-    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, false);
+  }
+
+  @Override
+  public LogData getExecutionJobLogNearlineOnly(final ExecutableFlow exFlow, final String jobId,
+      final int offset, final int length, final int attempt) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+        .fetchActiveFlowByExecId(exFlow.getExecutionId());
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, true);
   }
 
   @Override
@@ -500,32 +570,110 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   /**
-   * If a flow is already dispatched to an executor, cancel by calling Executor. Else if it's still
-   * queued in DB, remove it from DB queue and finalize. {@inheritDoc}
+   * Cancel or kill or finalize the flow if it is not finished, and update the status in the DB.
+   *
+   * @param exFlow
+   * @param userId
+   * @throws ExecutorManagerException
    */
   @Override
-  public void cancelFlow(final ExecutableFlow exFlow, final String userId)
+  public void cancelFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException {
     synchronized (exFlow) {
-      final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = this.executorLoader
-          .fetchUnfinishedFlows();
-      if (unfinishedFlows.containsKey(exFlow.getExecutionId())) {
-        final Pair<ExecutionReference, ExecutableFlow> pair = unfinishedFlows
-            .get(exFlow.getExecutionId());
-        if (pair.getFirst().getExecutor().isPresent()) {
-          // Flow is already dispatched to an executor, so call that executor to cancel the flow.
-          this.apiGateway
-              .callWithReferenceByUser(pair.getFirst(), ConnectorParams.CANCEL_ACTION, userId);
-        } else {
-          // Flow is still queued, need to finalize it and update the status in DB.
-          ExecutionControllerUtils.finalizeFlow(this.executorLoader, this.alerterHolder, exFlow,
-              "Cancelled before dispatching to executor", null);
-        }
+      final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
+          .fetchUnfinishedFlow(exFlow.getExecutionId());
+      if (pair != null) {
+        handleCancelFlow(pair.getFirst(), exFlow, userId);
       } else {
-        throw new ExecutorManagerException("Execution "
-            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
-            + " isn't running.");
+        final ExecutorManagerException eme = new ExecutorManagerException("Execution "
+            + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
+        logger.error("Exception while cancelling flow. ", eme);
+        throw eme;
       }
+    }
+  }
+
+  /**
+   * Handles the cancelling of the flow.
+   * If the flow is unreachable, then try to finalize the flow.
+   * If the flow is reachable, but cancel is not successful, then try to finalize the flow.
+   * If the flow is reachable and cancel is successful, then return.
+   *
+   * @param executionReference
+   * @param executableFlow
+   * @param userId
+   */
+  protected void handleCancelFlow(ExecutionReference executionReference,
+      ExecutableFlow executableFlow,
+      String userId) throws ExecutorManagerException {
+    final Status finalizingStatus =
+        executionReference.getDispatchMethod() == DispatchMethod.CONTAINERIZED ? Status.KILLED :
+            Status.FAILED;
+    if (!isExecutionReachable(executionReference, userId)) {
+      final String finalizingReason = "Cancel action has been called but the flow is unreachable.";
+      logger.info("Finalizing executable flow as execution is unreachable: " + executionReference
+          .getExecId());
+      handleCancelFlowManually(executionReference, executableFlow, finalizingReason, null,
+          finalizingStatus);
+    }
+
+    try {
+      this.apiGateway.callWithReferenceByUser(executionReference, ConnectorParams.CANCEL_ACTION,
+          userId);
+    } catch (Exception e) {
+      final String finalizingReason = "Unable to gracefully kill the flow execution or flow is "
+          + "unreachable.";
+      logger
+          .error("Exception occurred while cancelling flow: " + executionReference.getExecId(), e);
+      handleCancelFlowManually(executionReference, executableFlow, finalizingReason, e,
+          finalizingStatus);
+    }
+  }
+
+  /**
+   * If executor is unreachable, web server has to kill the flow manually: finalize DB status in
+   * DB, report FLOW_FINISHED events and rethrow the exception back to user.
+   */
+  private void handleCancelFlowManually(ExecutionReference executionReference,
+      ExecutableFlow executableFlow, String reason, Throwable originalError,
+      Status finalizingStatus) throws ExecutorManagerException {
+    logger.info("Finalizing executable flow: " + executionReference.getExecId());
+    finalizeFlow(executableFlow, reason, originalError, finalizingStatus);
+    // Killed flow events can only be sent out if callWithReferenceByUser completed successfully
+    // so we need to manually send one here.
+    this.fireEventListeners(Event.create(executableFlow,
+        EventType.FLOW_FINISHED, new EventData(executableFlow)));
+    // Throwing exception to make the reason appear on the UI.
+    throw new ExecutorManagerException(reason + " Finalizing the flow.");
+  }
+
+  /**
+   * Finalize the flow status in DB.
+   */
+  protected void finalizeFlow(final ExecutableFlow flow, final String reason,
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
+    ExecutionControllerUtils.finalizeFlow(this, this.projectManager, this.executorLoader,
+        this.alerterHolder, flow, reason, originalError, finalFlowStatus);
+  }
+
+  /**
+   * @param executionReference
+   * @param userId
+   * @return True if the flow execution is reachable, i.e., ping is successful, otherwise, return
+   * False. Any exception caught will be logged and False is returned.
+   */
+  protected boolean isExecutionReachable(ExecutionReference executionReference, String userId) {
+    if (executionReference.getDispatchMethod() == DispatchMethod.POLL && !executionReference
+        .getExecutor().isPresent()) {
+      return false;
+    }
+    try {
+      this.apiGateway.callWithReferenceByUser(executionReference, ConnectorParams.PING_ACTION,
+          userId);
+      return true;
+    } catch (Exception e) {
+      logger.warn("ExecutableFlow is unreachable: " + executionReference.getExecId(), e);
+      return false;
     }
   }
 
@@ -607,25 +755,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
   }
 
   /**
-   * Checks whether the given flow has an active (running, non-dispatched) execution from database.
-   * {@inheritDoc}
-   */
-  @Override
-  public boolean isFlowRunning(final int projectId, final String flowId) {
-    boolean isRunning = false;
-    try {
-      isRunning = isFlowRunningHelper(projectId, flowId,
-          this.executorLoader.fetchUnfinishedFlows().values());
-
-    } catch (final ExecutorManagerException e) {
-      logger.error(
-          "Failed to check if the flow is running for project " + projectId + ", flow " + flowId,
-          e);
-    }
-    return isRunning;
-  }
-
-  /**
    * Find all the Hadoop/Spark application ids present in the Azkaban job log. When iterating over
    * the set returned by this method the application ids are in the same order they appear in the
    * log.
@@ -640,7 +769,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
     final Set<String> applicationIds = new LinkedHashSet<>();
     int offset = 0;
     try {
-      LogData data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+      // Loading all offline logs batch by batch is time-consuming.
+      // Instead, we are targeting on improving getApplicationIds mechanism this year so it will
+      // not rely on full job logs to resolve the application ids.
+      LogData data = getExecutionJobLogNearlineOnly(exFlow, jobId, offset, 50000, attempt);
       while (data != null && data.getLength() > 0) {
         logger.info("Get application ID for execution " + exFlow.getExecutionId() + ", job"
             + " " + jobId + ", attempt " + attempt + ", data offset " + offset);
@@ -656,7 +788,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         }
         applicationIds.addAll(ExecutionControllerUtils.findApplicationIdsFromLog(logData));
         offset = data.getOffset() + logData.length();
-        data = getExecutionJobLog(exFlow, jobId, offset, 50000, attempt);
+        data = getExecutionJobLogNearlineOnly(exFlow, jobId, offset, 50000, attempt);
       }
     } catch (final ExecutorManagerException e) {
       logger.error("Failed to get application ID for execution " + exFlow.getExecutionId() +
@@ -670,26 +802,6 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
     collection.stream().forEach(ref -> allIds.add(ref.getSecond().getExecutionId()));
     Collections.sort(allIds);
-  }
-
-  /* Search a running flow in a collection */
-  protected boolean isFlowRunningHelper(final int projectId, final String flowId,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      if (ref.getSecond().getProjectId() == projectId
-          && ref.getSecond().getFlowId().equals(flowId)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Helper method to get all flows from collection.
-   */
-  protected void getFlowsHelper(final ArrayList<ExecutableFlow> flows,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    collection.stream().forEach(ref -> flows.add(ref.getSecond()));
   }
 
   /* Helper method for getActiveFlowsWithExecutor */

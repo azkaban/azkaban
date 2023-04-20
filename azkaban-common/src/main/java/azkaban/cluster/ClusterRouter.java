@@ -1,6 +1,7 @@
 package azkaban.cluster;
 
 import azkaban.utils.Props;
+import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.Collection;
@@ -20,4 +21,8 @@ public abstract class ClusterRouter {
   public abstract Cluster getCluster(final String jobId, final Props jobProps,
       final Logger jobLogger,
       final Collection<String> componentDependency);
+
+  public Map<String, Cluster> getAllClusters() {
+    return this.clusterRegistry.clusterInfoMap;
+  }
 }

@@ -17,6 +17,7 @@ package azkaban.server;
 
 import static azkaban.Constants.AZKABAN_PRIVATE_PROPERTIES_FILE;
 import static azkaban.Constants.AZKABAN_PROPERTIES_FILE;
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
 import static azkaban.Constants.ConfigurationKeys.JETTY_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_SSL_PORT;
 import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
@@ -24,6 +25,7 @@ import static azkaban.Constants.DEFAULT_CONF_PATH;
 import static azkaban.Constants.DEFAULT_PORT_NUMBER;
 import static azkaban.Constants.DEFAULT_SSL_PORT_NUMBER;
 
+import azkaban.Constants;
 import azkaban.server.session.SessionCache;
 import azkaban.user.UserManager;
 import azkaban.utils.Props;
@@ -31,11 +33,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.TimeZone;
+import javax.annotation.Nonnull;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
+import org.joda.time.DateTimeZone;
 
 
 public abstract class AzkabanServer {
@@ -93,7 +98,7 @@ public abstract class AzkabanServer {
         : azkabanSettings.getInt(JETTY_PORT, DEFAULT_PORT_NUMBER);
 
     // setting stats configuration for connectors
-    final String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
+    final String hostname = azkabanSettings.getString(JETTY_HOSTNAME, "localhost");
     azkabanSettings.put("server.hostname", hostname);
     azkabanSettings.put("server.port", port);
     azkabanSettings.put("server.useSSL", String.valueOf(isSslEnabled));
@@ -156,4 +161,16 @@ public abstract class AzkabanServer {
   public abstract VelocityEngine getVelocityEngine();
 
   public abstract UserManager getUserManager();
+
+  public static void setupTimeZone(final Props azkabanSettings, @Nonnull final Logger logger) {
+    if (azkabanSettings.containsKey(Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID)) {
+      final String timezoneId = azkabanSettings.getString(Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID);
+      System.setProperty("user.timezone", timezoneId);
+      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
+      TimeZone.setDefault(timeZone);
+      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
+      logger.info("Setting timezone to " + timezoneId);
+    }
+  }
+
 }

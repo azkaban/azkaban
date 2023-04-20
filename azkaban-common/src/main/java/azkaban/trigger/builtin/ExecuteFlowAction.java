@@ -192,7 +192,7 @@ public class ExecuteFlowAction implements TriggerAction {
     final Project project = FlowUtils.getProject(projectManager, this.projectId);
     final Flow flow = FlowUtils.getFlow(project, this.flowName);
 
-    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+    final ExecutableFlow exflow = executorManagerAdapter.createExecutableFlow(project, flow);
 
     exflow.setSubmitUser(this.submitUser);
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_SCHEDULED);
@@ -208,7 +208,7 @@ public class ExecuteFlowAction implements TriggerAction {
     }
 
     exflow.setExecutionOptions(this.executionOptions);
-
+    exflow.setUploadUser(project.getUploadUser());
     logger.info("Invoking flow " + project.getName() + "." + this.flowName);
     executorManagerAdapter.submitExecutableFlow(exflow, this.submitUser);
     logger.info("Invoked flow " + project.getName() + "." + this.flowName);

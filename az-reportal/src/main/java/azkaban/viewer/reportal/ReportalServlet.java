@@ -53,8 +53,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -398,14 +396,14 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
         }
         // View single log
         if (hasParam(req, "log")) {
-          page.add("view-log", true);
+          page.add("viewLog", true);
           final String jobId = getParam(req, "log");
           page.add("execid", execId);
           page.add("jobId", jobId);
         }
         // List files
         else {
-          page.add("view-logs", true);
+          page.add("viewLogs", true);
           final List<ExecutableNode> jobLogs = ReportalUtil.sortExecutableNodes(exec);
 
           final boolean showDataCollector = hasParam(req, "debug");
@@ -457,7 +455,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
           }
           // Show file previews
           else {
-            page.add("view-preview", true);
+            page.add("viewPreview", true);
 
             try {
               String[] fileList = streamProvider.getFileList(locationFull);
@@ -485,7 +483,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     }
     // List executions and their data
     else {
-      page.add("view-executions", true);
+      page.add("viewExecutions", true);
       final ArrayList<ExecutableFlow> exFlows = new ArrayList<>();
 
       int pageNumber = 0;
@@ -1178,6 +1176,7 @@ public class ReportalServlet extends LoginAbstractAzkabanServlet {
     final ExecutableFlow exflow = new ExecutableFlow(project, flow);
     exflow.setSubmitUser(user.getUserId());
     exflow.addAllProxyUsers(project.getProxyUsers());
+    exflow.setUploadUser(project.getUploadUser());
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options = exflow.getExecutionOptions();

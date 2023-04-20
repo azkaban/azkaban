@@ -66,6 +66,22 @@ public class PropsUtilsTest {
   }
 
   @Test
+  public void testResolveProps() throws IOException {
+    final Props props = new Props();
+
+    props.put("spark.version.sparky", "2.3.0");
+    props.put("spark.version", "${spark.version.${spark.branch}}");
+    props.put("spark.branch", "${test}");
+    props.put("test", "sparky");
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    final Props resolved = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals("${A}",resolved.get("B"));
+    Assert.assertEquals("${A}", resolved.get("C"));
+    Assert.assertEquals("2.3.0",resolved.get("spark.version"));
+  }
+
+  @Test
   public void testInvalidSyntax() throws Exception {
     final Props propsGrandParent = new Props();
     final Props propsParent = new Props(propsGrandParent);
@@ -270,5 +286,67 @@ public class PropsUtilsTest {
     Mockito.when(file.exists()).thenReturn(false);
     Props props = PropsUtils.newProps(null, file);
     Assert.assertNull(props);
+  }
+
+
+  @Test
+  public void testPropsWithAllPropertiesDefined() {
+    Props props = new Props();
+    String valA = "a";
+    props.put("A", valA);
+    props.put("B", "${A}");
+    props.put("C", "c");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals(valA, resolvedProps.get("B"));
+    Assert.assertEquals(valA, resolvedProps.get("A"));
+    Assert.assertEquals("c", resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithMultipleReferencesToDefinedProps() {
+    Props props = new Props();
+    String valA = "a";
+    props.put("A", valA);
+    String valB = "B";
+    props.put("B", valB);
+    props.put("C", "${A}${B}");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals(valA, resolvedProps.get("A"));
+    Assert.assertEquals(valB, resolvedProps.get("B"));
+    Assert.assertEquals(valA + valB, resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithNestedDefinedProperties() {
+    Props props = new Props();
+    String valA = "a";
+    props.put("A", valA);
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals(valA, resolvedProps.get("B"));
+    Assert.assertEquals(valA, resolvedProps.get("A"));
+    Assert.assertEquals(valA, resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithPropertiesUndefined() {
+    Props props = new Props();
+    props.put("B", "${A}");
+    props.put("C", "c");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertNull(resolvedProps.get("A"));
+    Assert.assertEquals("${A}", resolvedProps.get("B"));
+    Assert.assertEquals("c", resolvedProps.get("C"));
+  }
+
+  @Test
+  public void testPropsWithNestedPropertiesUndefined() {
+    Props props = new Props();
+    props.put("B", "${A}");
+    props.put("C", "${B}");
+    Props resolvedProps = PropsUtils.resolveProps(props, true);
+    Assert.assertEquals("${A}",resolvedProps.get("B"));
+    Assert.assertEquals("${A}", resolvedProps.get("C"));
   }
 }

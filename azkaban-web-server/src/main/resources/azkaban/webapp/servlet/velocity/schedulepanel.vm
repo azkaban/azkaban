@@ -124,7 +124,8 @@
                   </tbody>
                 </table>
                 <p><u><span style="color:Indigo"><a
-                    href="http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html#examples" target="_blank">Detailed instructions</a></span>.</u>
+                    href="http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html#examples"
+                    target="_blank">Detailed instructions</a></span>.</u>
                 </p>
               </div>
             </div>
@@ -138,7 +139,17 @@
             </div>
             <button type="button" class="col-sm-offset-1 btn btn-warning" id="clearCron">Reset
             </button>
-            <div class="col-xs-12" style="height:20px;"></div>
+
+            <div class="col-sm-offset-1">
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" id="back-execute-on-missed-schedule">
+                  Back Execute Once When missed Schedule Detects.
+                </label>
+              </div>
+            </div>
+
+            <div class="col-xs-12" style="height:25px;"></div>
 
             <div class="col-sm-12" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
               <h4 id="nextRecurLabel">

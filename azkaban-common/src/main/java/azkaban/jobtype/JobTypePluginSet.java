@@ -19,7 +19,12 @@ import azkaban.utils.Props;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Container for job type plugins
@@ -37,7 +42,14 @@ public class JobTypePluginSet {
   private final Map<String, Props> pluginPrivatePropsMap;
   private final Map<String, JobPropsProcessor> pluginJobPropsProcessor;
   private final Map<String, String> jobToClassName;
+  // Mapping for jobType to defaultProxyUser
+  private final Map<String, String> jobToDefaultProxyUser;
   private final Map<String, URL[]> jobToClassLoaderURLs;
+
+  // List of jobType classes which are allowed for the defaultProxyUsers feature
+  private final Set<String> defaultProxyUsersJobTypeClasses;
+  // List of users which are not allowed as defaultProxyUsers
+  private final Set<String> defaultProxyUsersFilter;
 
   private Props commonJobProps;
   private Props commonLoadProps;
@@ -52,6 +64,9 @@ public class JobTypePluginSet {
     this.pluginJobPropsProcessor = new HashMap<>();
     this.jobToClassName = new HashMap<>();
     this.jobToClassLoaderURLs = new HashMap<>();
+    this.jobToDefaultProxyUser = new HashMap<>();
+    this.defaultProxyUsersJobTypeClasses = new HashSet<>();
+    this.defaultProxyUsersFilter = new HashSet<>();
   }
 
   /**
@@ -66,6 +81,9 @@ public class JobTypePluginSet {
     this.pluginJobPropsProcessor = clone.pluginJobPropsProcessor;
     this.jobToClassName = clone.jobToClassName;
     this.jobToClassLoaderURLs = clone.jobToClassLoaderURLs;
+    this.jobToDefaultProxyUser = clone.jobToDefaultProxyUser;
+    this.defaultProxyUsersJobTypeClasses = clone.defaultProxyUsersJobTypeClasses;
+    this.defaultProxyUsersFilter = clone.defaultProxyUsersFilter;
   }
 
   /**
@@ -170,5 +188,89 @@ public class JobTypePluginSet {
   public void addPluginJobPropsProcessor(final String jobTypeName,
       JobPropsProcessor jobPropsProcessor) {
     this.pluginJobPropsProcessor.put(jobTypeName, jobPropsProcessor);
+  }
+
+  /**
+   * @return The Set of users which are not allowed as defaultProxyUsers.
+   */
+  public Set<String> getDefaultProxyUsersFilter() {
+    return this.defaultProxyUsersFilter;
+  }
+
+  /**
+   * @param user to be added to the list of users which are not allowed as defaultProxyUsers.
+   */
+  public void addDefaultProxyUsersFilter(String user) {
+    this.defaultProxyUsersFilter.add(user);
+  }
+
+  /**
+   * @param users to be added to the list of users which are not allowed as defaultProxyUsers.
+   */
+  public void addDefaultProxyUsersFilter(List<String> users) {
+    this.defaultProxyUsersFilter.addAll(users);
+  }
+
+  /**
+   * @param jobTypeClass The jobTypeClass to be added to the list of allowed jobType * classes for
+   *                     the defaultProxyUsers feature.
+   */
+  public void addDefaultProxyUsersJobTypeClasses(String jobTypeClass) {
+    this.defaultProxyUsersJobTypeClasses.add(jobTypeClass);
+  }
+
+  /**
+   * @param jobTypeClasses The list of jobTypeClasses to be added to the list of allowed jobType
+   *                       classes for the defaultProxyUsers feature.
+   */
+  public void addDefaultProxyUsersJobTypeClasses(List<String> jobTypeClasses) {
+    this.defaultProxyUsersJobTypeClasses.addAll(jobTypeClasses);
+  }
+
+  /**
+   * @return The list of allowed jobType classes for the defaultProxyUsers feature.
+   */
+  public Set<String> getDefaultProxyUsersJobTypeClasses() {
+    return this.defaultProxyUsersJobTypeClasses;
+  }
+
+  /**
+   * If the default proxy user is configured for the jobType and the jobType class associated is
+   * part of allowed jobType classes for the defaultProxyUser feature, then return Optional
+   * defaultProxyUser. Otherwise return Optional.empty().
+   *
+   * @param jobType The type of the job like hadoopJava, hadoopShell, hive, java, etc.
+   * @return {@link Optional} defaultProxyUser corresponding to the jobType.
+   */
+  public Optional<String> getDefaultProxyUser(String jobType) {
+    String defaultProxyUser = this.jobToDefaultProxyUser.get(jobType);
+
+    if (StringUtils.isBlank(defaultProxyUser)) {
+      return Optional.empty();
+    }
+
+    if (this.defaultProxyUsersFilter.contains(defaultProxyUser)) {
+      return Optional.empty();
+    }
+
+    if (!this.jobToClassName.containsKey(jobType)) {
+      return Optional.empty();
+    }
+
+    String jobTypeClassName = this.jobToClassName.get(jobType);
+    if (!this.defaultProxyUsersJobTypeClasses.contains(jobTypeClassName)) {
+      return Optional.empty();
+    }
+    return Optional.of(defaultProxyUser);
+  }
+
+  /**
+   * Adds the defaultProxyUser for the jobType to the jobToDefaultProxyUser Map.
+   *
+   * @param jobType          The type of the job like hadoopJava, hadoopShell, hive, java, etc.
+   * @param defaultProxyUser defaultProxyUser corresponding to the jobType.
+   */
+  public void addDefaultProxyUser(String jobType, String defaultProxyUser) {
+    this.jobToDefaultProxyUser.put(jobType, defaultProxyUser);
   }
 }

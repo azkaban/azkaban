@@ -17,10 +17,12 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +65,35 @@ public abstract class AbstractProjectCache implements ProjectCache {
     } catch (final ProjectManagerException e) {
       logger.error("Could not load projects flows from store.", e);
       throw new RuntimeException("Could not load projects flows from store.", e);
+    }
+  }
+
+  /**
+   * loadAllFlowResourceRecommendationsForAllProjects  : To load all flow resource recommendations corresponding to
+   * projects from the database
+   *
+   * @param projects list of Projects to fetch flow resource recommendations for.
+   */
+  protected void loadAllFlowResourceRecommendations(final List<Project> projects) {
+    try {
+      final Map<Project, List<FlowResourceRecommendation>> projectToFlowResourceRecommendations = this.projectLoader
+          .fetchAllFlowResourceRecommendationsForProjects(projects);
+
+      // Load the flows into the project objects
+      for (final Map.Entry<Project, List<FlowResourceRecommendation>> entry : projectToFlowResourceRecommendations.entrySet()) {
+        final Project project = entry.getKey();
+        final List<FlowResourceRecommendation> flowResourceRecommendations = entry.getValue();
+
+        final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+            project.getFlowResourceRecommendationMap();
+        for (final FlowResourceRecommendation flowResourceRecommendation : flowResourceRecommendations) {
+          flowResourceRecommendationMap.put(flowResourceRecommendation.getFlowId(),
+              flowResourceRecommendation);
+        }
+      }
+    } catch (final ProjectManagerException e) {
+      logger.error("Could not load projects flow resource recommendations from store.", e);
+      throw new RuntimeException("Could not load projects flow resource recommendations from store.", e);
     }
   }
 

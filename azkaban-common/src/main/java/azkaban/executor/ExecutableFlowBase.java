@@ -17,7 +17,7 @@ package azkaban.executor;
 
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.project.Project;
@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 
   private final HashMap<String, ExecutableNode> executableNodes =
       new HashMap<>();
-  private final HashMap<String, FlowProps> flowProps =
+  private final HashMap<String, ImmutableFlowProps> flowProps =
       new HashMap<>();
   private ArrayList<String> startNodes;
   private ArrayList<String> endNodes;
@@ -114,7 +115,7 @@ public class ExecutableFlowBase extends ExecutableNode {
     return -1;
   }
 
-  public Collection<FlowProps> getFlowProps() {
+  public Collection<ImmutableFlowProps> getFlowProps() {
     return this.flowProps.values();
   }
 
@@ -245,7 +246,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 
     // Flow properties
     final ArrayList<Object> props = new ArrayList<>();
-    for (final FlowProps fprop : this.flowProps.values()) {
+    for (final ImmutableFlowProps fprop : this.flowProps.values()) {
       final HashMap<String, Object> propObj = new HashMap<>();
       final String source = fprop.getSource();
       final String inheritedSource = fprop.getInheritedSource();
@@ -296,8 +297,9 @@ public class ExecutableFlowBase extends ExecutableNode {
       final String source = (String) fprop.get("source");
       final String inheritedSource = (String) fprop.get("inherited");
 
-      final FlowProps flowProps = new FlowProps(inheritedSource, source);
-      this.flowProps.put(source, flowProps);
+      final ImmutableFlowProps immutableFlowProps = ImmutableFlowProps
+          .createFlowProps(inheritedSource, source);
+      this.flowProps.put(source, immutableFlowProps);
     }
   }
 
@@ -391,5 +393,9 @@ public class ExecutableFlowBase extends ExecutableNode {
     } else {
       return this.getId() + ":" + this.getFlowId();
     }
+  }
+
+  public Set<String> getExecutableNodeIds() {
+    return executableNodes.keySet();
   }
 }

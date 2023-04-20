@@ -15,9 +15,15 @@
  */
 package azkaban.executor;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
+
 import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.project.ProjectManager;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import java.lang.Thread.State;
@@ -28,7 +34,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +54,17 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
 
 
   @Inject
-  public ExecutionController(final Props azkProps, final ExecutorLoader executorLoader,
+  public ExecutionController(final Props azkProps,
+      final ProjectManager projectManager, final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      @Named(OFFLINE_LOGS) @Nullable final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway, final AlerterHolder alerterHolder, final
-  ExecutorHealthChecker executorHealthChecker, EventListener eventListener) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, alerterHolder, eventListener);
+  ExecutorHealthChecker executorHealthChecker, final EventListener eventListener,
+      final ContainerizationMetrics containerizationMetrics) {
+    super(azkProps, projectManager, executorLoader, nearlineExecutionLogsLoader,
+        offlineExecutionLogsLoader,  commonMetrics, apiGateway,
+        alerterHolder, eventListener, containerizationMetrics);
     this.executorHealthChecker = executorHealthChecker;
   }
 
@@ -122,7 +136,7 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
     // include executor which were initially active and still has flows running
     try {
       for (final Pair<ExecutionReference, ExecutableFlow> running : this.executorLoader
-          .fetchActiveFlows().values()) {
+          .fetchActiveFlows(DispatchMethod.POLL).values()) {
         final ExecutionReference ref = running.getFirst();
         if (ref.getExecutor().isPresent()) {
           final Executor executor = ref.getExecutor().get();
@@ -133,19 +147,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
       logger.error("Failed to get all active executor server hosts.", e);
     }
     return ports;
-  }
-
-  /**
-   * Get execution ids of all running (unfinished) flows from database.
-   */
-  public List<Integer> getRunningFlowIds() {
-    final List<Integer> allIds = new ArrayList<>();
-    try {
-      getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
-    } catch (final ExecutorManagerException e) {
-      logger.error("Failed to get running flow ids.", e);
-    }
-    return allIds;
   }
 
   /**
@@ -167,9 +168,6 @@ public class ExecutionController extends AbstractExecutorManagerAdapter {
   @Override
   public long getQueuedFlowSize() {
     long size = 0L;
-    // TODO(anish-mal) FetchQueuedExecutableFlows does a lot of processing that is redundant, since
-    // all we care about is the count. Write a new class that's more performant and can be used for
-    // metrics. this.executorLoader.fetchQueuedFlows internally calls FetchQueuedExecutableFlows.
     try {
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {

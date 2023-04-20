@@ -73,6 +73,7 @@ public class FlowRunnerConditionalJobsTest extends FlowRunnerTestBase {
     final Props generatedProperties = new Props();
     generatedProperties.put("key1", "value1");
     generatedProperties.put("key2", "value2");
+    generatedProperties.put("key3", "value4");
     InteractiveTestJob.getTestJob((CONDITIONAL_FLOW_2 + ":") + "jobA").succeedJob(generatedProperties);
     assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobB", Status.SUCCEEDED);
@@ -140,11 +141,26 @@ public class FlowRunnerConditionalJobsTest extends FlowRunnerTestBase {
     assertFlowStatus(flow, Status.SUCCEEDED);
   }
 
+  @Test
+  public void runFlowOnMissingJobOutputProp() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_7, flowProps, "jobD");
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    // Don't put any output prop here to simulate missing job output prop scenario
+    final Props generatedProperties = new Props();
+    InteractiveTestJob.getTestJob((CONDITIONAL_FLOW_7 + ":") + "jobA").succeedJob(generatedProperties);
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
+    assertStatus(flow, "jobB", Status.CANCELLED);
+    assertStatus(flow, "jobC", Status.CANCELLED);
+    assertStatus(flow, "jobD", Status.SUCCEEDED);
+    assertFlowStatus(flow, Status.SUCCEEDED);
+  }
+
   /**
    * JobB has defined "condition: var fImport = new JavaImporter(java.io.File); with(fImport) { var
    * f = new File('new'); f.createNewFile(); }"
    * Null ProtectionDomain will restrict this arbitrary code from creating a new file.
-   * However it will not kick in when the change for condition whitelisting is implemented.
+   * However it will not kick in when the change for condition allow-listing is implemented.
    * As a result, this test case will be ignored.
    *
    * @throws Exception the exception

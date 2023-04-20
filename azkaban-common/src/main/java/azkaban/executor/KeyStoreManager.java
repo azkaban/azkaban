@@ -17,6 +17,8 @@
 package azkaban.executor;
 
 
+import java.util.Map;
+import javax.validation.constraints.NotEmpty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +34,7 @@ public class KeyStoreManager {
   private static final Logger logger = LoggerFactory.getLogger(KeyStoreManager.class);
 
   private KeyStore keyStore;
-
+  private Map<String, KeyStore> keyStoreMap;
   public static KeyStoreManager getInstance() {
     if (ksmInstance == null) {
       synchronized (KeyStoreManager.class) {
@@ -62,5 +64,21 @@ public class KeyStoreManager {
    */
   public void setKeyStore(final @Nonnull KeyStore keyStore) {
     this.keyStore = keyStore;
+  }
+
+  /**
+   * Gets the cached KeyStoreMap object
+   * @return Cached KeyStoreMap object.
+   */
+  public Map<String, KeyStore> getKeyStoreMap() {
+    return this.keyStoreMap;
+  }
+
+  /**
+   *
+   * @param keyStoreMap Must be non-null.
+   */
+  public void setKeyStoreMap(final @NotEmpty Map<String, KeyStore> keyStoreMap) {
+    this.keyStoreMap = keyStoreMap;
   }
 }

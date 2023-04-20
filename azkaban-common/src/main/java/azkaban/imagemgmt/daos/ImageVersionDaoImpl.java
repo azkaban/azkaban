@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -354,8 +355,34 @@ public class ImageVersionDaoImpl implements ImageVersionDao {
       queryBuilder.append(" where iv.id = ? and iv.type_id = it.id and it.name = ?");
       params.add(imageVersionRequest.getId());
       params.add(imageVersionRequest.getName());
-      final int updateCount = this.databaseOperator.update(queryBuilder.toString(),
-          Iterables.toArray(params, Object.class));
+      int updateCount = 0;
+      if (imageVersionRequest.getState() != State.ACTIVE) {
+        updateCount = this.databaseOperator.update(queryBuilder.toString(),
+            Iterables.toArray(params, Object.class));
+      } else {
+        // If the state is being set to ACTIVE then only the current image version can be set
+        // to ACTIVE and the rest of the image versions with ACTIVE state must be set to STABLE.
+        final SQLTransaction<Integer> setCurrentVersionActive = transOperator -> {
+          // Set all the current active versions to STABLE
+          final String setStable = "update image_versions iv, image_types it "
+              + "set iv.state = ?, iv.modified_on = ? "
+              + "where iv.type_id = it.id and it.name = ? and iv.state = ?";
+          final List<Object> setStableParams = new ArrayList<>();
+          setStableParams.add(State.STABLE.getStateValue());
+          setStableParams.add(Timestamp.valueOf(LocalDateTime.now()));
+          setStableParams.add(imageVersionRequest.getName());
+          setStableParams.add(State.ACTIVE.getStateValue());
+          transOperator.update(setStable, Iterables.toArray(setStableParams,
+              Object.class));
+
+          // Now set the current version to ACTIVE
+          final int count = transOperator.update(queryBuilder.toString(),
+              Iterables.toArray(params, Object.class));
+          transOperator.getConnection().commit();
+          return count;
+        };
+        updateCount = this.databaseOperator.transaction(setCurrentVersionActive);
+      }
       if (updateCount < 1) {
         log.error(String.format("Exception while updating image version due to invalid input, "
             + "updateCount: %d.", updateCount));

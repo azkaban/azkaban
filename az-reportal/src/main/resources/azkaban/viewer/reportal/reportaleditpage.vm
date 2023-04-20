@@ -41,7 +41,7 @@
     var startQueries = [
       #if($queries)
         #foreach($query in $queries)
-          #set($num = $velocityCount - 1)
+          #set($num = $foreach.count - 1)
 
         ## Escape the query title and script strings as JavaScript strings before loading them.
           #set($queryTitle = $esc.javascript(${query.title}))
@@ -57,7 +57,7 @@
     var startVariables = [
       #if($variables)
         #foreach($variable in $variables)
-          #set($num = $velocityCount - 1)
+          #set($num = $foreach.count - 1)
           {
             "num": "${num}",
             "title": "${variable.title}",
@@ -93,7 +93,7 @@
     #if($errorMsgs)
       <div class="box-error-message">
         #foreach($errorMsg in $errorMsgs)
-          #set($num = $velocityCount - 1)
+          #set($num = $foreach.count - 1)
 
           #if($num > 0)
             <br/>

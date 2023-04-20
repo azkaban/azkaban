@@ -30,7 +30,7 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 
   @Override
   public int getNumRunningFlows() {
-    return this.manager.getRunningFlows().size();
+    return this.manager.getRunningFlowIds().size();
   }
 
   @Override
@@ -60,7 +60,7 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 
   @Override
   public String getRunningFlows() {
-    return this.manager.getRunningFlowIds();
+    return this.manager.getRunningFlowIds().toString();
   }
 
   @Override

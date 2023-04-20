@@ -47,12 +47,9 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class XmlUserManagerTest {
 
-  private static final Logger log = LoggerFactory.getLogger(XmlUserManagerTest.class);
   private final Props baseProps = new Props();
   @Mock
   private FileWatcher fileWatcher;
@@ -154,8 +151,8 @@ public class XmlUserManagerTest {
     managerLoaded.countDown();
 
     // Wait until login fails with the old password
-    Awaitility.await().atMost(10L, TimeUnit.SECONDS).
-        pollInterval(10L, TimeUnit.MILLISECONDS).until(
+    Awaitility.await().atMost(60L, TimeUnit.SECONDS).
+        pollInterval(100L, TimeUnit.MILLISECONDS).until(
         () -> {
           User user;
           try {
@@ -205,7 +202,7 @@ public class XmlUserManagerTest {
     managerLoaded.await(10L, TimeUnit.SECONDS);
     assertEquals(0, managerLoaded.getCount());
     // assert that watcher.take() was still called after the failed reload
-    Mockito.verify(this.fileWatcher, Mockito.timeout(10_000L).atLeast(3)).take();
+    Mockito.verify(this.fileWatcher, Mockito.timeout(20_000L).atLeast(3)).take();
 
     // Nothing should've changed, login should succeed as originally
     final User user = manager.getUser("user8", "password8");

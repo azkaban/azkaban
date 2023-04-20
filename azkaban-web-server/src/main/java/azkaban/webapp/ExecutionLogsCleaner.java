@@ -1,13 +1,16 @@
 package azkaban.webapp;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.executor.ExecutorLoader;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.utils.Props;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -19,12 +22,11 @@ public class ExecutionLogsCleaner {
 
    private static final Logger logger = LoggerFactory.getLogger(ExecutionLogsCleaner.class);
    private final ScheduledExecutorService scheduler;
-   private final ExecutorLoader executorLoader;
+   private final ExecutionLogsLoader executionLogsLoader;
    private final Props azkProps;
    private long executionLogsRetentionMs;
-   // 12 weeks
-   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
-       * 24 * 60 * 60 * 1000L;
+   // 30 days
+   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 30 * 24 * 60 * 60 * 1000L;
 
    // 1 hour
    private static final long DEFAULT_LOG_CLEANUP_INTERVAL_SECONDS = 60 * 60;
@@ -33,10 +35,13 @@ public class ExecutionLogsCleaner {
    private static final int DEFAULT_LOG_CLEANUP_RECORD_LIMIT = 1000;
    private int executionLogCleanupRecordLimit;
 
+   // Only applicable to nearline/jdbc logs.
+   // We expect offline logs to be managed by another platform where retention is handled well.
    @Inject
-   public ExecutionLogsCleaner(final Props azkProps, final ExecutorLoader executorLoader) {
+   public ExecutionLogsCleaner(final Props azkProps,
+       final @Named(NEARLINE_LOGS) ExecutionLogsLoader executionLogsLoader) {
       this.azkProps = azkProps;
-      this.executorLoader = executorLoader;
+      this.executionLogsLoader = executionLogsLoader;
       this.scheduler =
           Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat(
               "azk-execlog-cleaner").build());
@@ -69,7 +74,8 @@ public class ExecutionLogsCleaner {
    private void cleanOldExecutionLogs(final long millis) {
       final long beforeDeleteLogsTimestamp = System.currentTimeMillis();
       try {
-         final int count = this.executorLoader.removeExecutionLogsByTime(millis, this.executionLogCleanupRecordLimit);
+         final int count = this.executionLogsLoader.removeExecutionLogsByTime(millis,
+             this.executionLogCleanupRecordLimit);
          logger.info("Cleaned up " + count + " log entries.");
       } catch (final Exception e) {
          logger.error("log clean up failed. ", e);

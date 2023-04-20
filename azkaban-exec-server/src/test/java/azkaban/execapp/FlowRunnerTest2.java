@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
 import static org.junit.Assert.assertEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +32,7 @@ import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -103,7 +105,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     options.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
 
     Props props = new Props();
-    props.put(JobRunner.AZKABAN_WEBSERVER_URL, "http://localhost:8443");
+    props.put(AZKABAN_WEBSERVER_URL, "http://localhost:8443");
 
     this.runner = this.testUtil.createFromFlowMap("jobf", options, flowParams, props);
 
@@ -264,6 +266,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     InteractiveTestJob.getTestJob("jobf").succeedJob();
     assertStatus("jobf", Status.SUCCEEDED);
     waitForAndAssertFlowStatus(Status.SUCCEEDED);
+    assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -319,6 +323,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.SUCCEEDED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -357,6 +362,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.CANCELLED);
     waitForAndAssertFlowStatus(Status.FAILED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -407,6 +413,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.CANCELLED);
     waitForAndAssertFlowStatus(Status.FAILED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   @Test
@@ -458,6 +465,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.CANCELLED);
     waitForAndAssertFlowStatus(Status.FAILED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -517,6 +525,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.CANCELLED);
     waitForAndAssertFlowStatus(Status.FAILED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -565,8 +574,9 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobe", Status.CANCELLED);
     assertStatus("jobf", Status.CANCELLED);
 
-    assertThreadShutDown();
     waitForAndAssertFlowStatus(Status.KILLED);
+    assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -653,6 +663,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.SUCCEEDED);
     waitForAndAssertFlowStatus(Status.SUCCEEDED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -702,6 +713,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -754,6 +766,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -836,6 +849,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("jobf", Status.SUCCEEDED);
     waitForAndAssertFlowStatus(Status.SUCCEEDED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -884,6 +898,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -944,6 +959,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.FAILED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -1001,6 +1017,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.FAILED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -1024,6 +1041,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -1068,6 +1086,7 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     waitForAndAssertFlowStatus(Status.KILLED);
     assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   /**
@@ -1097,7 +1116,8 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
     assertStatus("joba", Status.READY);
     assertStatus("joba1", Status.READY);
     waitForAndAssertFlowStatus(Status.KILLED);
-    this.runner = null;
+    assertThreadShutDown();
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
 }

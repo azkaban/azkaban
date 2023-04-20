@@ -17,9 +17,12 @@ package azkaban.executor;
 
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
-import azkaban.utils.FileIOUtils.LogData;
+import azkaban.project.FlowLoaderUtils;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -34,35 +37,35 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;
   private final ExecutionJobDao executionJobDao;
-  private final ExecutionLogsDao executionLogsDao;
   private final ExecutorEventsDao executorEventsDao;
   private final ActiveExecutingFlowsDao activeExecutingFlowsDao;
   private final FetchActiveFlowDao fetchActiveFlowDao;
   private final AssignExecutorDao assignExecutorDao;
   private final NumExecutionsDao numExecutionsDao;
   private final ExecutionRampDao executionRampDao;
+  private final ProjectLoader projectLoader;
 
   @Inject
   public JdbcExecutorLoader(final ExecutionFlowDao executionFlowDao,
       final ExecutorDao executorDao,
       final ExecutionJobDao executionJobDao,
-      final ExecutionLogsDao executionLogsDao,
       final ExecutorEventsDao executorEventsDao,
       final ActiveExecutingFlowsDao activeExecutingFlowsDao,
       final FetchActiveFlowDao fetchActiveFlowDao,
       final AssignExecutorDao assignExecutorDao,
       final NumExecutionsDao numExecutionsDao,
-      final ExecutionRampDao executionRampDao) {
+      final ExecutionRampDao executionRampDao,
+      final ProjectLoader projectLoader) {
     this.executionFlowDao = executionFlowDao;
     this.executorDao = executorDao;
     this.executionJobDao = executionJobDao;
-    this.executionLogsDao = executionLogsDao;
     this.executorEventsDao = executorEventsDao;
     this.activeExecutingFlowsDao = activeExecutingFlowsDao;
     this.fetchActiveFlowDao = fetchActiveFlowDao;
     this.numExecutionsDao = numExecutionsDao;
     this.assignExecutorDao = assignExecutorDao;
     this.executionRampDao = executionRampDao;
+    this.projectLoader = projectLoader;
   }
 
   @Override
@@ -86,25 +89,33 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return fetchQueuedFlows(Status.PREPARING);
+    return this.executionFlowDao.fetchQueuedFlows(Status.PREPARING);
   }
 
   @Override
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  public List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchQueuedFlows(status);
+    return this.executionFlowDao.selectQueuedFlows(status);
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchStaleFlows(executionDuration);
+    return this.executionFlowDao.fetchStaleFlowsForStatus(status, validityMap);
   }
 
   @Override
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException{
+    return this.executionFlowDao.fetchFreshFlowsForStatus(status,validityMap);
+  }
+
+  @Override
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
+    return this.executionFlowDao.selectAgedQueuedFlows(minAge);
   }
 
   /**
@@ -117,15 +128,31 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
+    return this.fetchActiveFlowDao.fetchActiveFlows(dispatchMethod);
+  }
+
+  @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
       throws ExecutorManagerException {
-    return this.fetchActiveFlowDao.fetchActiveFlows();
+    return this.fetchActiveFlowDao.fetchUnfinishedFlow(executionId);
   }
 
   @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException {
     return this.fetchActiveFlowDao.fetchUnfinishedFlows();
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    return this.executionFlowDao.selectUnfinishedFlows(projectId, flowId);
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    return this.executionFlowDao.selectUnfinishedFlows();
   }
 
   @Override
@@ -268,25 +295,10 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte,
-      final int length) throws ExecutorManagerException {
-
-    return this.executionLogsDao.fetchLogs(execId, name, attempt, startByte, length);
-  }
-
-  @Override
   public List<Object> fetchAttachments(final int execId, final String jobId, final int attempt)
       throws ExecutorManagerException {
 
     return this.executionJobDao.fetchAttachments(execId, jobId, attempt);
-  }
-
-  @Override
-  public void uploadLogFile(final int execId, final String name, final int attempt,
-      final File... files)
-      throws ExecutorManagerException {
-    this.executionLogsDao.uploadLogFile(execId, name, attempt, files);
   }
 
   @Override
@@ -355,12 +367,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public Executor fetchExecutorByExecutionId(final int executionId)
       throws ExecutorManagerException {
     return this.executorDao.fetchExecutorByExecutionId(executionId);
-  }
-
-  @Override
-  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
-      throws ExecutorManagerException {
-    return this.executionLogsDao.removeExecutionLogsByTime(millis, recordCleanupLimit);
   }
 
   @Override

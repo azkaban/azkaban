@@ -17,6 +17,7 @@
 package azkaban.project;
 
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -162,6 +163,47 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
+   * If not exist, should create an empty flow resource recommendation with the given projectId and
+   * flowId and adds it to the data store. It will auto assign a unique id for this flow resource
+   * recommendation if successful.
+   * If exist, fetch the flow resource recommendation directly.
+   *
+   * @param projectId project ID
+   * @param flowId   flow id
+   * @return FlowResourceRecommendation flow resource recommendation
+   */
+  FlowResourceRecommendation createFlowResourceRecommendation(int projectId, String flowId)
+      throws ProjectManagerException;
+
+  /**
+   * Update one particular flow resource recommendation
+   *
+   * @param flowResourceRecommendation flow resource recommendation
+   */
+  void updateFlowResourceRecommendation(FlowResourceRecommendation flowResourceRecommendation)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches one particular flow resource recommendation.
+   *
+   * @param projectId project ID
+   * @param flowId   flow id
+   * @return FlowResourceRecommendation flow resource recommendation
+   */
+  FlowResourceRecommendation fetchFlowResourceRecommendation(int projectId, String flowId)
+      throws ProjectManagerException;
+
+  /**
+   * Fetches all flow resource recommendations for all projects.
+   *
+   * @param projects List of projects
+   * @return Map<Project, List<FlowResourceRecommendation>> a map of project to flow resource
+   * recommendations
+   */
+  Map<Project, List<FlowResourceRecommendation>> fetchAllFlowResourceRecommendationsForProjects(List<Project> projects)
+      throws ProjectManagerException;
+
+  /**
    * Gets the latest upload version.
    */
   int getLatestProjectVersion(Project project)
@@ -175,8 +217,10 @@ public interface ProjectLoader {
 
   /**
    * Upload Project properties. Map contains key value of path and properties
+   * projectVersionOverride is used to override default project.getVersion() to ensure correct
+   * ordering of project upload call.
    */
-  void uploadProjectProperties(Project project, List<Props> properties)
+  void uploadProjectProperties(Project project, int projectVersionOverride, List<Props> properties)
       throws ProjectManagerException;
 
   /**
@@ -230,6 +274,15 @@ public interface ProjectLoader {
    */
   boolean isFlowFileUploaded(int projectId, int projectVersion)
       throws ProjectManagerException;
+
+  /**
+   * Check if given flow is included in given project.
+   * The project must be active.
+   *
+   * @return true, if the flow exists in the project;
+   *         false, otherwise
+   * */
+  boolean isFlowInProject(String projectName, String flowId);
 
   /**
    * Retrieve projects corresponding to ids specified in a list.

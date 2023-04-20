@@ -108,11 +108,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
     }
   }
 
-  /**
-   * TODO: Don't understand why we need synchronized here.
-   */
   @Override
-  public synchronized void addTrigger(final Trigger t) throws TriggerLoaderException {
+  public void addTrigger(final Trigger t) throws TriggerLoaderException {
     logger.info("Inserting trigger " + t.toString() + " into db.");
 
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
@@ -135,8 +132,9 @@ public class JdbcTriggerImpl implements TriggerLoader {
 
   @Override
   public void updateTrigger(final Trigger t) throws TriggerLoaderException {
-    logger.info("Updating trigger " + t.getTriggerId() + " into db.");
     t.setLastModifyTime(System.currentTimeMillis());
+    logger.info("Updating trigger " + t.getTriggerId() + " into db"
+        + " with nextCheckTime " + t.getNextCheckTime() + "and lastModifiedTime " + t.getLastModifyTime());
     updateTrigger(t, this.defaultEncodingType);
   }
 
@@ -222,6 +220,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
         Trigger t = null;
         try {
           t = Trigger.fromJson(jsonObj);
+          // if detecting any miss schedules, send task to missScheduleManager
+          t.sendTaskToMissedScheduleManager();
           triggers.add(t);
         } catch (final Exception e) {
           logger.error("Failed to load trigger " + triggerId, e);

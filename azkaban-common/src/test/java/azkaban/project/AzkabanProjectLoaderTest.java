@@ -30,6 +30,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
@@ -52,6 +53,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,8 +107,18 @@ public class AzkabanProjectLoaderTest {
         this.archiveUnthinner, this.validatorUtils);
   }
 
+  @After
+  public void cleanUp() {
+    this.project.getFlowResourceRecommendationMap().clear();
+  }
+
   @Test
   public void uploadProjectFAT() throws ExecutorManagerException {
+    when(this.projectLoader.createFlowResourceRecommendation(anyInt(), anyString())).thenAnswer(i -> {
+      final int projectId = i.getArgument(0, Integer.class);
+      final String flowId = i.getArgument(1, String.class);
+      return new FlowResourceRecommendation(10, projectId, flowId);
+    });
     when(this.projectLoader.getLatestProjectVersion(this.project)).thenReturn(this.VERSION);
 
     final URL resource = requireNonNull(
@@ -124,15 +137,65 @@ public class AzkabanProjectLoaderTest {
         .uploadProject(this.project, projectZipFile, "zip", uploader, null,
             IPv4));
 
+    // Flow resource recommendations are newly created and inserted.
+    Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 1);
     // startupDependencies should be null - because it does not exist!
     verify(this.projectStorageManager)
         .uploadProject(this.project, this.VERSION + 1, projectZipFile,
             null, uploader, IPv4);
-    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
+    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 2,
         Arrays.asList(this.VERSION));
 
     // Verify that the archiveUnthinner was never called
     verify(this.archiveUnthinner, never()).validateThinProject(any(), any(), any(), any());
+    verify(this.projectLoader)
+        .createFlowResourceRecommendation(eq(this.project.getId()),
+            eq(this.project.getFlows().get(0).getId()));
+  }
+
+  @Test
+  public void flowResourceRecommendationUnchangedWhenUploadProjectFAT() throws ExecutorManagerException {
+    final URL resource = requireNonNull(
+        getClass().getClassLoader().getResource("sample_flow_01.zip"));
+    final File projectZipFile = new File(resource.getPath());
+    final User uploader = new User("test_user");
+
+    // same flow as the flow just uploaded
+    this.project.getFlowResourceRecommendationMap().put("shell_end", new FlowResourceRecommendation(1, 1
+      , "shell_end"));
+
+    this.project.setVersion(this.VERSION);
+    checkValidationReport(this.azkabanProjectLoader
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv4));
+
+    Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 1);
+  }
+
+  @Test
+  public void flowResourceRecommendationChangedWhenUploadProjectFAT() throws ExecutorManagerException {
+    when(this.projectLoader.createFlowResourceRecommendation(anyInt(), anyString())).thenAnswer(i -> {
+      final int projectId = i.getArgument(0, Integer.class);
+      final String flowId = i.getArgument(1, String.class);
+      return new FlowResourceRecommendation(10, projectId, flowId);
+    });
+    final URL resource = requireNonNull(
+        getClass().getClassLoader().getResource("sample_flow_01.zip"));
+    final File projectZipFile = new File(resource.getPath());
+    final User uploader = new User("test_user");
+
+    // different flow as the flow just uploaded
+    this.project.getFlowResourceRecommendationMap().put("a", new FlowResourceRecommendation(1, 1, "a"));
+
+    this.project.setVersion(this.VERSION);
+    checkValidationReport(this.azkabanProjectLoader
+        .uploadProject(this.project, projectZipFile, "zip", uploader, null,
+            IPv4));
+
+    Assert.assertEquals(this.project.getFlowResourceRecommendationMap().size(), 2);
+    verify(this.projectLoader)
+        .createFlowResourceRecommendation(eq(this.project.getId()),
+            eq(this.project.getFlows().get(0).getId()));
   }
 
   @Test
@@ -263,7 +326,7 @@ public class AzkabanProjectLoaderTest {
     verify(this.projectStorageManager)
         .uploadProject(eq(this.project), eq(this.VERSION + 1), eq(projectZipFile),
             any(File.class), eq(uploader), anyString());
-    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 3,
+    verify(this.projectLoader).cleanOlderProjectVersion(this.project.getId(), this.VERSION - 2,
         Arrays.asList(this.VERSION));
 
     // Verify that the archiveUnthinner was called
@@ -283,6 +346,12 @@ public class AzkabanProjectLoaderTest {
 
   @Test
   public void uploadProjectWithYamlFilesFAT() throws Exception {
+    when(this.projectLoader.createFlowResourceRecommendation(anyInt(), anyString())).thenAnswer(i -> {
+      final int projectId = i.getArgument(0, Integer.class);
+      final String flowId = i.getArgument(1, String.class);
+      return new FlowResourceRecommendation(10, projectId, flowId);
+    });
+
     final File projectZipFile = ExecutionsTestUtil.getFlowFile(BASIC_FLOW_YAML_DIR, PROJECT_ZIP);
     final int flowVersion = 0;
     final User uploader = new User("test_user");
@@ -300,7 +369,9 @@ public class AzkabanProjectLoaderTest {
             null, uploader, IPv6);
     verify(this.projectLoader)
         .uploadFlowFile(eq(this.ID), eq(this.VERSION + 1), any(File.class), eq(flowVersion + 1));
-
+    verify(this.projectLoader)
+        .createFlowResourceRecommendation(eq(this.project.getId()),
+            eq(this.project.getFlows().get(0).getId()));
   }
 
   private void checkValidationReport(final Map<String, ValidationReport> validationReportMap) {

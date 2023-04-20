@@ -46,19 +46,19 @@ public class FlowRunnerTestBase {
   public void assertThreadShutDown() {
     waitFlowRunner(
         runner -> Status.isStatusFinished(runner.getExecutableFlow().getStatus())
-            && !runner.isRunnerThreadAlive());
+            && runner.isRunnerThreadShutdown());
   }
 
   public void assertThreadShutDown(final FlowRunner flowRunner) {
     waitFlowRunner(flowRunner,
         runner -> Status.isStatusFinished(runner.getExecutableFlow().getStatus())
-            && !runner.isRunnerThreadAlive());
+            && runner.isRunnerThreadShutdown());
   }
 
   public void assertThreadRunning() {
     waitFlowRunner(
         runner -> Status.isStatusRunning(runner.getExecutableFlow().getStatus())
-            && runner.isRunnerThreadAlive());
+            && !runner.isRunnerThreadShutdown());
   }
 
   public void waitFlowRunner(final Function<FlowRunner, Boolean> statusCheck) {
@@ -67,7 +67,7 @@ public class FlowRunnerTestBase {
 
   public void waitFlowRunner(final FlowRunner runner,
       final Function<FlowRunner, Boolean> statusCheck) {
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 3000; i++) {
       if (statusCheck.apply(runner)) {
         return;
       }

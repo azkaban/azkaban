@@ -22,8 +22,12 @@ import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.scheduler.Schedule;
@@ -33,6 +37,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -58,18 +63,20 @@ public class ProjectManager {
   private final Props props;
   private final boolean creatorDefaultPermissions;
   private final ProjectCache cache;
+  private final AlerterHolder alerterHolder;
 
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
       final ProjectStorageManager projectStorageManager,
-      final Props props, final ProjectCache cache) {
+      final Props props, final ProjectCache cache, final AlerterHolder alerterHolder) {
     this.projectLoader = requireNonNull(loader);
     this.props = requireNonNull(props);
     this.azkabanProjectLoader = requireNonNull(azkabanProjectLoader);
     this.cache = requireNonNull(cache);
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
+    this.alerterHolder = alerterHolder;
     logger.info("Loading whitelisted projects.");
     loadProjectWhiteList();
     logger.info("ProjectManager instance created.");
@@ -306,7 +313,7 @@ public class ProjectManager {
       final String source) throws ProjectManagerException {
     if (FlowLoaderUtils.isAzkabanFlowVersion20(flow.getAzkabanFlowVersion())) {
       // Return the properties from the original uploaded flow file.
-      return getPropertiesFromFlowFile(flow, jobName, source, 1);
+        return getPropertiesFromFlowFile(flow, jobName, source, 1);
     } else {
       return this.projectLoader.fetchProjectProperty(project, source);
     }
@@ -371,9 +378,11 @@ public class ProjectManager {
     final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
     eventData.put("diffMessage", diffMessage);
     setProjectEventStatus(errorMessage, eventData);
+
+    // Send job property overridden alert
+    ExecutionControllerUtils.alertUserOnJobPropertyOverridden(project, flow, eventData, this.alerterHolder);
     // Fire project event listener
     project.fireEventListeners(ProjectEvent.create(project, azkaban.spi.EventType.JOB_PROPERTY_OVERRIDDEN, eventData));
-
     this.projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
         modifier.getUserId(), diffMessage);
     return;
@@ -426,6 +435,19 @@ public class ProjectManager {
       eventData.put("updatedUser", name);
       eventData.put("updatedGroup", "null");
     }
+
+    //Getting updated user and Group permissions as String
+    final Map<String, String> updatedUserPermissionMap = new HashMap<>(project.getUserPermissions().size());
+    final Map<String, String> updatedGroupPermissionMap = new HashMap<>(project.getGroupPermissions().size());
+
+    project.getUserPermissions().forEach(el -> updatedUserPermissionMap.put(el.getFirst(), el.getSecond().toString()));
+    project.getGroupPermissions().forEach(el -> updatedGroupPermissionMap.put(el.getFirst(), el.getSecond().toString()));
+
+    String userPermissionMapAsString = Joiner.on(":").withKeyValueSeparator("=").join(updatedUserPermissionMap);
+    String groupPermissionMapAsString = Joiner.on(":").withKeyValueSeparator("=").join(updatedGroupPermissionMap);
+
+    eventData.put("updatedUserPermissions", userPermissionMapAsString);
+    eventData.put("updatedGroupPermissions", groupPermissionMapAsString);
 
     String errorMessage = null;
     try {
@@ -516,6 +538,15 @@ public class ProjectManager {
     this.projectLoader.updateFlow(project, flow.getVersion(), flow);
   }
 
+  public FlowResourceRecommendation createFlowResourceRecommendation(final int projectId, final String flowId) throws ProjectManagerException {
+    return this.projectLoader
+        .createFlowResourceRecommendation(projectId, flowId);
+  }
+
+  public void updateFlowResourceRecommendation(final FlowResourceRecommendation flowResourceRecommendation)
+      throws ProjectManagerException {
+    this.projectLoader.updateFlowResourceRecommendation(flowResourceRecommendation);
+  }
 
   public void postProjectEvent(final Project project, final EventType type, final String user,
       final String message) {
@@ -554,6 +585,10 @@ public class ProjectManager {
     setProjectEventStatus(errorMessage, eventData);
     // Fire project schedule SLA event Listener
     project.fireEventListeners(ProjectEvent.create(project, type, eventData));  // todo: add IP?
+  }
+
+  public Props loadPropsForExecutableFlow(ExecutableFlow flow) throws ProjectManagerException {
+    return FlowLoaderUtils.loadPropsForExecutableFlow(this.projectLoader, flow);
   }
 
   private void addEventDataFromProject(final Project project, final Map<String, Object> eventData){

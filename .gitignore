@@ -41,6 +41,9 @@ currentpid
 # pytest
 .pytest_cache/
 
+# python venv
+venv/
+
 #python
 __pycache__/
 

@@ -17,6 +17,7 @@ package azkaban.project;
 
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.spi.Dependency;
 import azkaban.user.Permission;
 import azkaban.utils.GZIPUtils;
@@ -49,9 +50,10 @@ class JdbcProjectHandlerSet {
   public static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 
     private static final String BASE_QUERY = "SELECT "
-      + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
-      + "prm.name, prm.permissions, prm.isGroup "
-      + "FROM projects prj ";
+        + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj"
+        + ".last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+        + "prm.name, prm.permissions, prm.isGroup, prjver.uploader "
+        + "FROM projects prj LEFT JOIN project_versions prjver ON prj.id = prjver.project_id ";
 
     // Still return the project if it has no associated permissions
     public static final String SELECT_PROJECT_BY_ID = BASE_QUERY + "LEFT JOIN project_permissions prm ON prj.id = prm.project_id WHERE prj.id=?";
@@ -128,6 +130,11 @@ class JdbcProjectHandlerSet {
         final String username = rs.getString(11);
         final int permissionFlag = rs.getInt(12);
         final boolean isGroup = rs.getBoolean(13);
+        final String uploader = rs.getString(14);
+        // Setting upload user in project Object
+        if (uploader != null) {
+          projects.get(id).setUploadUser(uploader);
+        }
         // If username is not null, add the permission to the project
         // If username is null, we can assume that this row was returned without any associated permission
         // i.e. this project had no associated permissions.
@@ -192,6 +199,42 @@ class JdbcProjectHandlerSet {
       } while (rs.next());
 
       return flows;
+    }
+  }
+
+  public static class ProjectFlowResourceRecommendationsResultHandler implements ResultSetHandler<List<FlowResourceRecommendation>> {
+
+    public static String SELECT_PROJECT_FLOW_RESOURCE_RECOMMENDATION =
+        "SELECT id, project_id, flow_id, cpu_recommendation, memory_recommendation, "
+            + "disk_recommendation FROM project_flow_resource_recommendations WHERE project_id=? AND "
+            + "flow_id=?";
+
+    public static String SELECT_ALL_PROJECT_FLOW_RESOURCE_RECOMMENDATIONS =
+        "SELECT id, project_id, flow_id, cpu_recommendation, memory_recommendation, "
+            + "disk_recommendation FROM project_flow_resource_recommendations WHERE project_id=?";
+
+    @Override
+    public List<FlowResourceRecommendation> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      final ArrayList<FlowResourceRecommendation> flowResourceRecommendations = new ArrayList<>();
+      do {
+        final int id = rs.getInt(1);
+        final int projectId = rs.getInt(2);
+        final String flowId = rs.getString(3);
+        final String cpuRecommendation = rs.getString(4);
+        final String memoryRecommendation = rs.getString(5);
+        final String diskRecommendation = rs.getString(6);
+
+        final FlowResourceRecommendation flowResourceRecommendation =
+            new FlowResourceRecommendation(id, projectId, flowId, cpuRecommendation, memoryRecommendation,
+                diskRecommendation);
+        flowResourceRecommendations.add(flowResourceRecommendation);
+      } while (rs.next());
+
+      return flowResourceRecommendations;
     }
   }
 

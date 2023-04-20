@@ -23,6 +23,7 @@ import azkaban.db.SQLTransaction;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtDaoException;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.models.BaseModel;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
@@ -63,10 +64,27 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
   static String INSERT_IMAGE_OWNERSHIP =
       "insert into image_ownerships ( type_id, owner, role, created_by, created_on, modified_by, "
           + "modified_on ) values (?, ?, ?, ?, ?, ?, ?)";
+  static String DELETE_IMAGE_OWNERSHIP =
+      "delete from image_ownerships where type_id=? AND owner=?";
 
   @Inject
   public ImageTypeDaoImpl(final DatabaseOperator databaseOperator) {
     this.databaseOperator = databaseOperator;
+  }
+
+  public void handleSqlException(final SQLException e){
+    String errorMessage = "";
+    // TODO: Find a better way to get the error message. Currently apache common dbutils
+    // throws sql exception for all the below error scenarios and error message contains
+    // complete query as well, hence generic error message is thrown.
+    if (e.getErrorCode() == SQL_ERROR_CODE_DUPLICATE_ENTRY) {
+      errorMessage = "Reason: Duplicate key provided for one or more column(s).";
+    }
+    if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
+      errorMessage = "Reason: Data too long for one or more column(s).";
+    }
+    throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
+        + "image type metadata. " + errorMessage);
   }
 
   @Override
@@ -106,21 +124,110 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       log.info("Created image type id :" + imageTypeId);
     } catch (final SQLException e) {
       log.error("Unable to create the image type metadata", e);
-      String errorMessage = "";
-      // TODO: Find a better way to get the error message. Currently apache common dbutils
-      // throws sql exception for all the below error scenarios and error message contains
-      // complete query as well, hence generic error message is thrown.
-      if (e.getErrorCode() == SQL_ERROR_CODE_DUPLICATE_ENTRY) {
-        errorMessage = "Reason: Duplicate key provided for one or more column(s).";
-      }
-      if (e.getErrorCode() == SQL_ERROR_CODE_DATA_TOO_LONG) {
-        errorMessage = "Reason: Data too long for one or more column(s).";
-      }
-      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception occurred while creating "
-          + "image type metadata. " + errorMessage);
+      handleSqlException(e);
     }
     return imageTypeId;
   }
+
+  @Override
+  public int addImageTypeOwner(final ImageType imageType) {
+    final Set<ImageOwnership> currentOwners =
+        new HashSet<>(getImageTypeOwnership(imageType.getName()));
+    final Set<ImageOwnership> newOwners = new HashSet<>(imageType.getOwnerships());
+    newOwners.removeAll(currentOwners);
+    //Check if there are actually new owners added.
+    if (newOwners.isEmpty()) {
+      log.info("No new owners were added to image type " + imageType.getName());
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image, "
+          + "specified no new owners");
+    }
+    int imageTypeId =
+        getImageTypeByName(imageType.getName()).map(BaseModel::getId).orElse(0);
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while updating image type due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while updating image ");
+    }
+    final SQLTransaction<Integer> update = transOperator -> {
+      final Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+      for (final ImageOwnership imageOwnership : newOwners) {
+        transOperator.update(INSERT_IMAGE_OWNERSHIP, imageTypeId, imageOwnership.getOwner(),
+            imageOwnership.getRole().name(), imageType.getCreatedBy(), currentTimestamp,
+            imageType.getModifiedBy(), currentTimestamp);
+      }
+      transOperator.getConnection().commit();
+      return 1;
+    };
+    try {
+      this.databaseOperator.transaction(update);
+      log.info("Successfully Updated image ownerships for :" + imageType.getName());
+    } catch (final SQLException e) {
+      log.error("Unable to update the image type metadata", e);
+      handleSqlException(e);
+    }
+    return imageTypeId;
+  }
+
+  @Override
+  public int removeImageTypeOwner(ImageType imageType) throws ImageMgmtException {
+    final Set<ImageOwnership> currentOwners =
+        new HashSet<>(getImageTypeOwnership(imageType.getName()));
+    final Set<ImageOwnership> ownersToRemove = new HashSet<>(imageType.getOwnerships());
+    ownersToRemove.retainAll(currentOwners);
+    currentOwners.removeAll(ownersToRemove);
+      //Check if it's removing all owners
+    if (!(currentOwners.size() > 1)){
+        throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while deleting "
+            + " image owners, need greater than two owners to be present");
+      }
+      int imageTypeId =
+          getImageTypeByName(imageType.getName()).map(BaseModel::getId).orElse(0);
+
+    if (imageTypeId < 1) {
+      log.error(String.format("Exception while removing owner due to invalid "
+          + "imageTypeId: %d.", imageTypeId));
+      throw new ImageMgmtDaoException(ErrorCode.BAD_REQUEST, "Exception while removing "
+          + "image owners. Invalid imageTypeId");
+    }
+
+    try {
+      for (final ImageOwnership imageOwnership : ownersToRemove) {
+        this.databaseOperator.update(DELETE_IMAGE_OWNERSHIP, imageTypeId,
+            imageOwnership.getOwner());
+      }
+      log.info("Successfully removed owner(s) image type id :" + imageTypeId);
+    } catch (final SQLException e) {
+        log.error("Unable to update the image type metadata", e);
+        handleSqlException(e);
+      }
+      return imageTypeId;
+  }
+
+  @Override
+  public ImageType getImageTypeWithOwnershipsById(final String id) {
+    final FetchImageTypeHandler fetchImageTypeHandler = new FetchImageTypeHandler();
+    List<ImageType> imageTypes = new ArrayList<>();
+    try {
+      imageTypes = this.databaseOperator.query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID,
+          fetchImageTypeHandler, id);
+      if (imageTypes == null || imageTypes.isEmpty()) {
+        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+            "Failed to find image type for " + id);
+      }
+      if (imageTypes.size() > 1) {
+        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "The request for image "
+            + "type with id " + id + " unexpectedly returned more than one result!");
+      }
+    } catch (final SQLException ex) {
+      log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_ID + " failed.", ex);
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
+          "Unable to get image type for : " + id);
+    }
+    ImageType imageType = imageTypes.get(0);
+    imageType.setOwnerships(getImageTypeOwnership(imageType.getName()));
+    return imageType;
+  }
+
 
   @Override
   public Optional<ImageType> getImageTypeByName(final String name) {
@@ -131,14 +238,15 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
           .query(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME, fetchImageTypeHandler,
               name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
-      if (imageTypes != null && imageTypes.size() > 1) {
-        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type by "
-            + "name. Can't have more that one image type record for a given type with name : "
-            + name);
+      if (imageTypes.size() > 1) {
+        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY,
+            "Failed to get image type by "
+                + "name. Can't have more that one image type record for a given type with name : "
+                + name);
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to get image type metadata for image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
@@ -155,7 +263,11 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
               name.toLowerCase());
       // Check if there are more then one image types for a given name. If so throw exception
       if (imageTypes != null && imageTypes.size() > 1) {
-        throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, "Failed to get image type with "
+        log.error(
+            "Failed to get image type with ownerships by name. Can't have more that one image type"
+                + " record for a given type with name : " + name);
+        throw new ImageMgmtDaoException(ErrorCode.UNPROCESSABLE_ENTITY, "Failed to get image type"
+            + " with "
             + "ownerships by name. Can't have more that one image type record for a given type "
             + "with name : " + name);
       }
@@ -165,8 +277,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_IMAGE_TYPE_BY_NAME + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
-          "Unable to fetch image type metadata from image type : " + name);
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
+          "Unable to fetch image type metadata for image type : " + name);
     }
     return imageTypes.isEmpty() ? Optional.empty() : Optional.of(imageTypes.get(0));
   }
@@ -219,7 +331,7 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
       }
     } catch (final SQLException ex) {
       log.error(FetchImageTypeHandler.FETCH_ALL_IMAGE_TYPES + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to fetch all image type metadata ");
     }
     return imageTypes;
@@ -231,7 +343,8 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
    * @param imageTypeName
    * @return List<ImageOwnership>
    */
-  private List<ImageOwnership> getImageTypeOwnership(final String imageTypeName) {
+  @Override
+  public List<ImageOwnership> getImageTypeOwnership(final String imageTypeName) {
     final FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
     try {
       return this.databaseOperator
@@ -240,33 +353,9 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     } catch (final SQLException ex) {
       log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME + " failed.",
           ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND,
+      throw new ImageMgmtDaoException(ErrorCode.INTERNAL_SERVER_ERROR,
           "Unable to fetch ownership for image type : " + imageTypeName);
     }
-  }
-
-  /**
-   * Gets ownership metadata based on image type name and user id.
-   *
-   * @param imageTypeName
-   * @return Optional<ImageOwnership>
-   */
-  @Override
-  public Optional<ImageOwnership> getImageTypeOwnership(final String imageTypeName,
-      final String userId) {
-    final FetchImageOwnershipHandler fetchImageOwnershipHandler = new FetchImageOwnershipHandler();
-    List<ImageOwnership> imageOwnerships = new ArrayList<>();
-    try {
-      imageOwnerships = this.databaseOperator
-          .query(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID,
-              fetchImageOwnershipHandler, imageTypeName.toLowerCase(), userId);
-    } catch (final SQLException ex) {
-      log.error(FetchImageOwnershipHandler.FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID
-          + " failed.", ex);
-      throw new ImageMgmtDaoException(ErrorCode.NOT_FOUND, String.format(
-          "Unable to fetch ownership for image type: %s, user id: %s. ", imageTypeName, userId));
-    }
-    return imageOwnerships.isEmpty() ? Optional.empty() : Optional.of(imageOwnerships.get(0));
   }
 
   /**
@@ -280,6 +369,10 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
     private static final String FETCH_ALL_IMAGE_TYPES =
         "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
             + "modified_by FROM image_types where active = ?";
+
+    private static final String FETCH_IMAGE_TYPE_BY_ID =
+        "SELECT id, name, description, active, deployable, created_on, created_by, modified_on, "
+            + "modified_by FROM image_types WHERE id = ?";
 
     @Override
     public List<ImageType> handle(final ResultSet rs) throws SQLException {
@@ -319,11 +412,6 @@ public class ImageTypeDaoImpl implements ImageTypeDao {
         "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
             + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
             + "and lower(it.name) = ?";
-
-    private static final String FETCH_IMAGE_OWNERSHIP_BY_IMAGE_TYPE_NAME_AND_USER_ID =
-        "SELECT it.name, io.id, io.owner, io.role, io.created_by, io.created_on, io.modified_by, "
-            + "io.modified_on FROM image_types it, image_ownerships io  WHERE it.id = io.type_id "
-            + "and lower(it.name) = ? and io.owner = ?";
 
     @Override
     public List<ImageOwnership> handle(final ResultSet rs) throws SQLException {

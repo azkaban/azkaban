@@ -50,10 +50,6 @@ public class HadoopShell extends ProcessJob implements IHadoopJob {
 
     try {
       super.run();
-    } catch (Throwable e) {
-      e.printStackTrace();
-      getLog().error("caught error running the job");
-      throw e;
     } finally {
       hadoopProxy.cancelHadoopTokens(getLog());
     }

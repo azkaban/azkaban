@@ -28,6 +28,7 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.executor.container.ContainerizedImpl;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
 import azkaban.flowtrigger.FlowTriggerService;
@@ -46,6 +47,7 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.ExternalLink;
 import azkaban.utils.ExternalLinkUtils;
+import azkaban.utils.ExternalLinkUtils.ExternalLinkScope;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -57,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -93,8 +96,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private FlowTriggerService flowTriggerService;
   private ExecutorManagerAdapter executorManagerAdapter;
+  private ContainerizedImpl containerizedImpl;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+
+  private List<ExternalLink> flowLevelExternalLinks;
+  private List<ExternalLink> jobLevelExternalLinks;
+  private int externalLinksTimeoutMs;
 
   public ExecutorServlet() {
     super(createAPIEndpoints());
@@ -107,8 +115,20 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.executorManagerAdapter = server.getExecutorManager();
+    if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+      this.containerizedImpl =
+          ((ContainerizedDispatchManager) this.executorManagerAdapter).getContainerizedImpl();
+    }
     this.scheduleManager = server.getScheduleManager();
     this.flowTriggerService = server.getFlowTriggerService();
+
+    final Props azkProps = server.getServerProps();
+    this.flowLevelExternalLinks = ExternalLinkUtils.parseExternalLinks(azkProps, ExternalLinkScope.FLOW);
+    this.jobLevelExternalLinks = ExternalLinkUtils.parseExternalLinks(azkProps, ExternalLinkScope.JOB);
+    this.externalLinksTimeoutMs =
+        azkProps.getInt(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS,
+            Constants.DEFAULT_AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS);
+
   }
 
   private static List<AzkabanAPI> createAPIEndpoints() {
@@ -377,6 +397,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         .getExternalJobLogUrls(flow, jobId, attempt);
     page.add("jobLogUrlsByAppId", jobLogUrlsByAppId);
 
+    addExternalLinks(this.jobLevelExternalLinks, page, req, execId, jobId);
+
     page.add("projectName", project.getName());
     page.add("flowid", flow.getId());
     page.add("flowlist", flow.getId().split(Constants.PATH_DELIMITER, 0));
@@ -442,7 +464,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    addExternalAnalyzers(req, page);
+    addExternalLinks(this.flowLevelExternalLinks, page, req, triggerInst.getFlowExecId(), null);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
@@ -451,13 +473,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("pathDelimiter", Constants.PATH_DELIMITER);
 
     page.render();
-  }
-
-  private void addExternalAnalyzers(final HttpServletRequest req, final Page page) {
-    final Props props = getApplication().getServerProps();
-    List<ExternalLink> externalLinks = ExternalLinkUtils.getExternalAnalyzers(props, req);
-    logger.debug("addExternalAnalyzers");
-    page.add("externalAnalyzers", externalLinks);
   }
 
   private void handleExecutionFlowPageByExecId(final HttpServletRequest req,
@@ -494,7 +509,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    addExternalAnalyzers(req, page);
+    addExternalLinks(this.flowLevelExternalLinks, page, req, execId, null);
 
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
@@ -513,6 +528,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("isLocked", isCurrentFlowLocked);
 
     page.render();
+  }
+
+  private void addExternalLinks(final List<ExternalLink> extLinksTemplates, final Page page,
+      final HttpServletRequest req, final int executionId, final String jobId) {
+    List<ExternalLink> externalAnalyzers =
+        ExternalLinkUtils.buildExternalLinksForRequest(extLinksTemplates,
+            this.externalLinksTimeoutMs, req, executionId, jobId);
+    page.add("externalAnalyzers", externalAnalyzers);
   }
 
   protected Project getProjectPageByPermission(final Page page, final int projectId,
@@ -728,6 +751,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", options.getSuccessEmails());
     ret.put("failureEmails", options.getFailureEmails());
+    ret.put("runtimeProperties", mergeRuntimeProperties(options));
+    // For legacy support. This is not used by the Azkaban UI any more.
     ret.put("flowParam", options.getFlowParameters());
 
     final FailureAction action = options.getFailureAction();
@@ -764,6 +789,23 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("disabled", options.getDisabledJobs());
   }
 
+  /**
+   * Copies flowOverrides under the key "ROOT".
+   */
+  private static Map<String, Map<String, String>> mergeRuntimeProperties(
+      final ExecutionOptions options) {
+    final Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
+    if (!options.getFlowParameters().isEmpty()) {
+      runtimeProperties
+          .put(Constants.ROOT_NODE_IDENTIFIER, new HashMap<>(options.getFlowParameters()));
+    }
+    for (final Entry<String, Map<String, String>> runtimeProp :
+        options.getRuntimeProperties().entrySet()) {
+      runtimeProperties.put(runtimeProp.getKey(), new HashMap<>(runtimeProp.getValue()));
+    }
+    return runtimeProperties;
+  }
+
   private void ajaxCancelFlow(final HttpServletRequest req, final HttpServletResponse resp,
       final HashMap<String, Object> ret, final User user, final ExecutableFlow exFlow)
       throws ServletException {
@@ -791,7 +833,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     final List<Integer> refs =
-        this.executorManagerAdapter.getRunningFlows(project.getId(), flowId);
+        this.executorManagerAdapter.getRunningFlowIds(project.getId(), flowId);
     if (!refs.isEmpty()) {
       ret.put("execIds", refs);
     }
@@ -907,7 +949,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       nodeObj.put("nodes", nodeList);
       nodeObj.put("flowId", base.getFlowId());
     } else {
-      ClusterInfo cluster = node.getClusterInfo();
+      final ClusterInfo cluster = node.getClusterInfo();
       if (cluster != null && cluster.hadoopClusterURL != null) {
         nodeObj.put("cluster", cluster.hadoopClusterURL);
       }
@@ -978,19 +1020,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final ExecutableFlow exflow = FlowUtils.createExecutableFlow(project, flow);
+    ExecutableFlow exflow = executorManagerAdapter.createExecutableFlow(project, flow);
+    exflow.setUploadUser(project.getUploadUser());
     exflow.setSubmitUser(user.getUserId());
     exflow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
 
     final ExecutionOptions options;
+    final Props azProps = getApplication().getServerProps();
     try {
       options = HttpRequestUtils.parseFlowOptions(req, flowId);
+      HttpRequestUtils.validatePreprocessFlowParameters(options, azProps);
     } catch (final ServletException e) {
       logger.info("parseFlowOptions failed", e);
       ret.put("error", "Error parsing flow options: " + e.getMessage());
       return;
     }
-    exflow.setExecutionOptions(options);
     if (!options.isFailureEmailsOverridden()) {
       options.setFailureEmails(flow.getFailureEmails());
     }
@@ -998,6 +1042,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       options.setSuccessEmails(flow.getSuccessEmails());
     }
     options.setMailCreator(flow.getMailCreator());
+
+    exflow.getExecutionOptions().merge(options);
 
     /**
      * If the user has not explicitly overridden the failure action from the UI or
@@ -1038,6 +1084,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       if (!HttpRequestUtils.hasPermission(this.userManager, user, Type.ADMIN)) {
         ret.put("error", String.format("User %s doesn't have ADMIN permission for updating "
             + "property", user));
+        return;
       }
       String propType = getParam(req, "propType");
       if (propType.equals("containerDispatch")) {
@@ -1048,6 +1095,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
               "ExecutorManagerAdapter is not of type: " + ContainerizedDispatchManager.class
                   .getName());
         }
+      } else if (propType.equals("containerizedImpl")) {
+        if (this.containerizedImpl != null) {
+          updateContainerizedImplProps(req, ret);
+        } else {
+          ret.put("error", "ContainerizedImpl is null");
+        }
+      } else if (propType.equals("general")) {
+        updateGeneralProps(req, ret);
       } else {
         ret.put("error", "Unsupported propType: " + propType);
       }
@@ -1062,7 +1117,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       throws ServletException {
     ContainerizedDispatchManager containerizedDispatchManager = (ContainerizedDispatchManager) this.executorManagerAdapter;
     String subType = getParam(req, "subType");
-    ContainerPropUpdate containerPropUpdate = ContainerPropUpdate.fromParam(subType);
+    PropUpdate containerPropUpdate = PropUpdate.fromParam(subType);
     String val = getParam(req, "val");
     switch (containerPropUpdate) {
       case UPDATE_ALLOW_LIST:
@@ -1087,6 +1142,46 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       case REMOVE_FROM_DENY_LIST:
         containerizedDispatchManager.getContainerProxyUserCriteria()
             .removeFromDenyList(ServletUtils.getSetFromString(val));
+        break;
+      case RELOAD_FLOW_FILTER:
+        containerizedDispatchManager.getContainerFlowCriteria()
+            .reloadFlowFilter();
+        break;
+      default:
+        break;
+    }
+  }
+
+  private void updateContainerizedImplProps(final HttpServletRequest req,
+      final HashMap<String, Object> ret)
+      throws ServletException {
+    String subType = getParam(req, "subType");
+    PropUpdate propUpdate = PropUpdate.fromParam(subType);
+    String val = getParam(req, "val");
+    switch (propUpdate) {
+      case UPDATE_VPA_RAMP_UP:
+        this.containerizedImpl.setVPARampUp(Integer.parseInt(val));
+        break;
+      case UPDATE_VPA_ENABLED:
+        this.containerizedImpl.setVPAEnabled(Boolean.parseBoolean(val));
+        break;
+      case RELOAD_VPA_FLOW_FILTER:
+        this.containerizedImpl.getVPAFlowCriteria().reloadFlowFilter();
+        break;
+      default:
+        break;
+    }
+  }
+
+  private void updateGeneralProps(final HttpServletRequest req,
+      final HashMap<String, Object> ret)
+      throws ServletException {
+    String subType = getParam(req, "subType");
+    PropUpdate propUpdate = PropUpdate.fromParam(subType);
+    String val = getParam(req, "val");
+    switch (propUpdate) {
+      case ENABLE_OFFLINE_LOGS_LOADER:
+        this.executorManagerAdapter.enableOfflineLogsLoader(Boolean.parseBoolean(val));
         break;
       default:
         break;
@@ -1120,17 +1215,22 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   }
 }
 
-enum ContainerPropUpdate {
+enum PropUpdate {
   UPDATE_ALLOW_LIST("updateAllowList"),
   APPEND_ALLOW_LIST("appendAllowList"),
   REMOVE_FROM_ALLOW_LIST("removeFromAllowList"),
   UPDATE_RAMP_UP("updateRampUp"),
   APPEND_DENY_LIST("appendDenyList"),
-  REMOVE_FROM_DENY_LIST("removeFromDenyList");
+  REMOVE_FROM_DENY_LIST("removeFromDenyList"),
+  RELOAD_FLOW_FILTER("reloadFlowFilter"),
+  UPDATE_VPA_RAMP_UP("updateVPARampUp"),
+  UPDATE_VPA_ENABLED("updateVPAEnabled"),
+  RELOAD_VPA_FLOW_FILTER("reloadVPAFlowFilter"),
+  ENABLE_OFFLINE_LOGS_LOADER("enableOfflineLogsLoader");
 
   private final String param;
 
-  ContainerPropUpdate(String param) {
+  PropUpdate(String param) {
     this.param = param;
   }
 
@@ -1138,13 +1238,13 @@ enum ContainerPropUpdate {
     return param;
   }
 
-  public static ContainerPropUpdate fromParam(String param) {
-    for (ContainerPropUpdate value : ContainerPropUpdate.values()) {
+  public static PropUpdate fromParam(String param) {
+    for (PropUpdate value : PropUpdate.values()) {
       if (value.getParam().equals(param)) {
         return value;
       }
     }
     throw new IllegalArgumentException(
-        "No ContainerPropUpdates corresponding to param value " + param);
+        "No PropUpdate corresponding to param value " + param);
   }
 }

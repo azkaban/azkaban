@@ -20,6 +20,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.TimeUtils;
 import azkaban.utils.Utils;
 import java.util.Date;
+import java.util.concurrent.locks.ReentrantLock;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
@@ -41,9 +42,12 @@ public class Schedule {
   private final long submitTime;
   private final String cronExpression;
   private final boolean skipPastOccurrences = true;
+  private final boolean backExecuteOnceOnMiss;
   private int scheduleId;
   private long nextExecTime;
   private ExecutionOptions executionOptions;
+
+  private ReentrantLock lock = new ReentrantLock();
 
   public Schedule(final int scheduleId,
       final int projectId,
@@ -59,7 +63,8 @@ public class Schedule {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions executionOptions,
-      final String cronExpression) {
+      final String cronExpression,
+      final boolean backExecuteOnceOnMiss) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
@@ -75,6 +80,7 @@ public class Schedule {
     this.submitTime = submitTime;
     this.executionOptions = executionOptions;
     this.cronExpression = cronExpression;
+    this.backExecuteOnceOnMiss = backExecuteOnceOnMiss;
   }
 
   public ExecutionOptions getExecutionOptions() {
@@ -89,6 +95,9 @@ public class Schedule {
     return this.projectName + "." + this.flowName + " (" + this.projectId + ")";
   }
 
+  public boolean isBackExecuteOnceOnMiss() {
+    return backExecuteOnceOnMiss;
+  }
   @Override
   public String toString() {
 
@@ -242,5 +251,13 @@ public class Schedule {
 
   public long getEndSchedTime() {
     return this.endSchedTime;
+  }
+
+  public void lock() {
+    this.lock.lock();
+  }
+
+  public void unlock() {
+    this.lock.unlock();
   }
 }

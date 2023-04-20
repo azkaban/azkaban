@@ -27,15 +27,18 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '1.9'
+  id 'com.gradle.build-scan' version '3.2'
   id 'com.github.kt3k.coveralls' version '2.6.3'
   id 'jacoco'
   id 'idea'
 }
 
-buildScan {
-  licenseAgreementUrl = 'https://gradle.com/terms-of-service'
-  licenseAgree = 'yes'
+// https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
+gradleEnterprise {
+  buildScan {
+    termsOfServiceUrl = "https://gradle.com/terms-of-service"
+    termsOfServiceAgree = "yes"
+  }
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
@@ -106,12 +109,13 @@ ext.deps = [
     jsr305               : 'com.google.code.findbugs:jsr305:3.0.2',
     junit                : 'junit:junit:4.12',
     kafkaLog4jAppender   : 'org.apache.kafka:kafka-log4j-appender:0.10.0.0',
-    k8sClient            : 'io.kubernetes:client-java:10.0.0',
+    k8sClient            : 'io.kubernetes:client-java:15.0.1',
+    k8sClientFluent      : 'io.kubernetes:client-java-api-fluent:15.0.1',
     log4j                : 'log4j:log4j:1.2.16',
-    mail                 : 'javax.mail:mail:1.4.5',
+    mail                 : 'com.sun.mail:javax.mail:1.6.2',
     math3                : 'org.apache.commons:commons-math3:3.0',
-    metricsCore          : 'io.dropwizard.metrics:metrics-core:3.1.0',
-    metricsJvm           : 'io.dropwizard.metrics:metrics-jvm:3.1.0',
+    metricsCore          : 'io.dropwizard.metrics:metrics-core:3.2.6',
+    metricsJvm           : 'io.dropwizard.metrics:metrics-jvm:3.2.6',
     mockito              : 'org.mockito:mockito-core:2.28.2',
     mongoDriver          : 'org.mongodb:mongo-java-driver:2.14.0',
     mysqlConnector       : 'mysql:mysql-connector-java:8.0.20',
@@ -126,19 +130,21 @@ ext.deps = [
     restliTools          : 'com.linkedin.pegasus:restli-tools:' + versions.restli,
     slf4j                : 'org.slf4j:slf4j-api:' + versions.slf4j,
     slf4jLog4j           : 'org.slf4j:slf4j-log4j12:' + versions.slf4j,
-    sparkCore            : 'org.apache.spark:spark-core_2.10:1.4.0',
+    sparkCore            : 'org.apache.spark:spark-core_2.12:3.3.0',
     springTest           : 'org.springframework:spring-test:3.2.18.RELEASE',
     snakeyaml            : 'org.yaml:snakeyaml:1.18',
-    velocity             : 'org.apache.velocity:velocity:1.7',
-    velocityTools        : 'org.apache.velocity:velocity-tools:2.0',
+    velocity             : 'org.apache.velocity:velocity-engine-core:2.3',
+    velocityTools        : 'org.apache.velocity.tools:velocity-tools-generic:3.1',
     bcprov               : 'org.bouncycastle:bcprov-jdk15on:1.54',
     jacksonAnnotation    : 'com.fasterxml.jackson.core:jackson-annotations:2.7.4',
     jacksonDatabind      : 'com.fasterxml.jackson.core:jackson-databind:2.7.4',
     jasypt               : 'org.jasypt:jasypt:1.9.2',
     jacksonCore          : 'com.fasterxml.jackson.core:jackson-core:2.9.2',
     jsonassert           : 'org.skyscreamer:jsonassert:1.5.0',
+    systemRules          : 'com.github.stefanbirkner:system-rules:1.19.0',
     javaxValidation      : 'javax.validation:validation-api:2.0.1.Final',
-    hibernateValidator   : 'org.hibernate:hibernate-validator:6.1.5.Final']
+    hibernateValidator   : 'org.hibernate:hibernate-validator:6.1.5.Final',
+    failsafe             : 'dev.failsafe:failsafe:3.2.4']
 
 subprojects {
   apply plugin: 'java'
@@ -215,7 +221,6 @@ subprojects {
     options.compilerArgs += ["-Werror"]
   }
 
-
   /**
    * Print test execution summary when informational logging is enabled.*/
   test {
@@ -236,8 +241,11 @@ subprojects {
 }
 
 /**
- * Gradle wrapper task.*/
-task wrapper(type: Wrapper) {
+ * Gradle wrapper task.
+ * https://docs.gradle.org/5.2.1/userguide/gradle_wrapper.html#customizing_wrapper
+ * https://stackoverflow.com/questions/53709282/cannot-add-task-wrapper-as-a-task-with-that-name-already-exists
+ **/
+wrapper {
   distributionType('ALL')
 }
 
@@ -246,7 +254,9 @@ if (System.env.TRAVIS == 'true') {
     tasks.withType(Test) {
       // Reduce the memory pressure on the Travis CI to reduce build failures.
       maxParallelForks = 2
-      minHeapSize = '128m'
+      minHeapSize = '512m'
+      maxHeapSize = '4g'
+      outputs.upToDateWhen { false }
     }
   }
 }

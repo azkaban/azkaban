@@ -87,6 +87,7 @@ public class DependencyTransferManager {
       // Nothing for us to do!
       return;
     }
+    long startTime = System.currentTimeMillis();
 
     ensureIsEnabled();
 
@@ -97,6 +98,7 @@ public class DependencyTransferManager {
 
     try {
       waitForAllToSucceedOrOneToFail(taskFutures);
+      logger.info("Time taken to download all thin archive dependencies in seconds: " + (System.currentTimeMillis() - startTime) / 1000);
     } catch (InterruptedException e) {
       // No point in continuing, let's stop any future downloads and try to interrupt currently running ones.
       cancelPendingTasks(taskFutures);

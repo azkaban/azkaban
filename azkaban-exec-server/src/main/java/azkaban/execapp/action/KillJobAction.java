@@ -16,10 +16,8 @@
 
 package azkaban.execapp.action;
 
-import azkaban.ServiceProvider;
-import azkaban.execapp.FlowRunnerManager;
+import azkaban.executor.IFlowRunnerManager;
 import azkaban.trigger.TriggerAction;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
@@ -28,30 +26,19 @@ public class KillJobAction implements TriggerAction {
 
   public static final String type = "KillJobAction";
 
-  private static final Logger logger = Logger
-      .getLogger(KillJobAction.class);
+  private static final Logger logger = Logger.getLogger(KillJobAction.class);
 
   private final String actionId;
   private final int execId;
   private final String jobId;
+  private final IFlowRunnerManager flowRunnerManager;
 
-  public KillJobAction(final String actionId, final int execId, final String jobId) {
+  public KillJobAction(final String actionId, final int execId, final String jobId,
+      final IFlowRunnerManager flowRunnerManager) {
     this.execId = execId;
     this.actionId = actionId;
     this.jobId = jobId;
-  }
-
-  public static KillJobAction createFromJson(final HashMap<String, Object> obj) {
-    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    final String objType = (String) jsonObj.get("type");
-    if (!objType.equals(type)) {
-      throw new RuntimeException("Cannot create action of " + type + " from "
-          + objType);
-    }
-    final String actionId = (String) jsonObj.get("actionId");
-    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    final String jobId = (String) jsonObj.get("jobId");
-    return new KillJobAction(actionId, execId, jobId);
+    this.flowRunnerManager = flowRunnerManager;
   }
 
   @Override
@@ -67,25 +54,18 @@ public class KillJobAction implements TriggerAction {
   @SuppressWarnings("unchecked")
   @Override
   public KillJobAction fromJson(final Object obj) throws Exception {
-    return createFromJson((HashMap<String, Object>) obj);
+    throw new UnsupportedOperationException("Operation not supported for this trigger action.");
   }
 
   @Override
   public Object toJson() {
-    final Map<String, Object> jsonObj = new HashMap<>();
-    jsonObj.put("actionId", this.actionId);
-    jsonObj.put("type", type);
-    jsonObj.put("execId", String.valueOf(this.execId));
-    jsonObj.put("jobId", String.valueOf(this.jobId));
-    return jsonObj;
+    throw new UnsupportedOperationException("Operation not supported for this trigger action.");
   }
 
   @Override
   public void doAction() throws Exception {
     logger.info("ready to do action " + getDescription());
-    final FlowRunnerManager flowRunnerManager = ServiceProvider.SERVICE_PROVIDER
-        .getInstance(FlowRunnerManager.class);
-    flowRunnerManager.cancelJobBySLA(this.execId, this.jobId);
+    this.flowRunnerManager.cancelJobBySLA(this.execId, this.jobId);
   }
 
   @Override

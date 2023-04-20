@@ -20,6 +20,7 @@ import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -38,11 +39,15 @@ public interface ExecutorLoader {
   List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
       throws ExecutorManagerException;
 
-  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
+  Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException;
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException;
+  List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException;
+  List<Integer> selectUnfinishedFlows() throws ExecutorManagerException;
 
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlowsMetadata()
       throws ExecutorManagerException;
@@ -160,6 +165,7 @@ public interface ExecutorLoader {
    *
    * @return isSuccess
    */
+  @Deprecated
   void postExecutorEvent(Executor executor, EventType type, String user,
       String message) throws ExecutorManagerException;
 
@@ -174,6 +180,7 @@ public interface ExecutorLoader {
    *
    * @return List<ExecutorLogEvent>
    */
+  @Deprecated
   List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
       int offset) throws ExecutorManagerException;
 
@@ -231,40 +238,43 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * This method is used to get flows fetched in Queue. Flows can be in queue in ready, dispatching
+   * This method is used to get flow ids fetched in Queue. Flows can be in queue in ready, dispatching
    * or preparing state while in queue. That is why it is expecting status in parameter.
    *
    * @param status
    * @return
    * @throws ExecutorManagerException
    */
-  List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+  List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException;
 
   /**
-   * Fetch stale flows. A flow is considered stale if it was started more than {@code
-   * executionDuration} ago and is not yet in a final state.
-   *
-   * @param executionDuration
+   * This method is used to get those flows which are stale. Staleness is determined based on the
+   * validity of the status.
+   * @param status
    * @return
    * @throws ExecutorManagerException
    */
-  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+  List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status, final ImmutableMap<Status, Pair<Duration,
+      String>> validityMap)
       throws ExecutorManagerException;
 
-  List<ExecutableFlow> fetchAgedQueuedFlows(
+  /**
+   * This method is used to get those flows which are fresh. Freshness is determined based on the
+   * validity of the status.
+   * @param status
+   */
+  List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException;
+
+  List<Integer> selectAgedQueuedFlows(
       final Duration minAge) throws ExecutorManagerException;
 
   boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 
-  LogData fetchLogs(int execId, String name, int attempt, int startByte,
-      int endByte) throws ExecutorManagerException;
-
   List<Object> fetchAttachments(int execId, String name, int attempt)
-      throws ExecutorManagerException;
-
-  void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException;
 
   void uploadAttachmentFile(ExecutableNode node, File file)
@@ -303,9 +313,6 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
-      throws ExecutorManagerException;
-
-  int removeExecutionLogsByTime(long millis, int recordCleanupLimit)
       throws ExecutorManagerException;
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;

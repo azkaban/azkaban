@@ -17,7 +17,9 @@
 package azkaban.executor;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -30,6 +32,8 @@ public enum Status {
   SUCCEEDED(50),
   KILLING(55),
   KILLED(60),
+  // EXECUTION_STOPPED refers to a terminal flow status due to crashed executor/container
+  EXECUTION_STOPPED(65),
   FAILED(70),
   FAILED_FINISHING(80),
   SKIPPED(90),
@@ -42,8 +46,20 @@ public enum Status {
   private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
       .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
 
+  public static final Set<Status> StatusBeforeRunningSet = new TreeSet<>(
+      Arrays.asList(Status.READY, Status.DISPATCHING, Status.PREPARING, Status.QUEUED));
+
   public static final Set<Status> nonFinishingStatusAfterFlowStartsSet = new TreeSet<>(
       Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
+
+  public static final ImmutableSet<Status> RESTARTABLE_NON_TERMINAL_STATUSES =
+      ImmutableSet.of(Status.READY, Status.DISPATCHING, Status.PREPARING);
+
+  public static final ImmutableSet<Status> RESTARTABLE_TERMINAL_STATUSES =
+      ImmutableSet.of(Status.EXECUTION_STOPPED, Status.FAILED);
+
+  public static final ImmutableSet<Status> TERMINAL_STATUSES = ImmutableSet.of(Status.SUCCEEDED,
+      Status.KILLED, Status.EXECUTION_STOPPED, Status.FAILED);
 
   private final int numVal;
 
@@ -57,6 +73,7 @@ public enum Status {
 
   public static boolean isStatusFinished(final Status status) {
     switch (status) {
+      case EXECUTION_STOPPED:
       case FAILED:
       case KILLED:
       case SUCCEEDED:

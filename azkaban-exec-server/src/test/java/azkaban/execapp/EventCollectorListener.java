@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.springframework.util.Assert;
 
 public class EventCollectorListener implements EventListener<Event> {
 
@@ -68,5 +69,9 @@ public class EventCollectorListener implements EventListener<Event> {
         .map(event -> event.getType())
         .toArray();
     assertThat(captured).isEqualTo(expected);
+  }
+
+  public void assertNoEvents() {
+    Assert.isTrue(eventList.isEmpty());
   }
 }

@@ -18,9 +18,13 @@ package azkaban;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_CLASS_PARAM;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EVENT_REPORTING_ENABLED;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_OFFLINE_LOGS_LOADER_CLASS_PARAM;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_OFFLINE_LOGS_LOADER_ENABLED;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_RAMPUP_PLAN;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_VERSION;
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.db.AzkabanDataSource;
@@ -40,14 +44,17 @@ import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.daos.ImageTypeDaoImpl;
 import azkaban.imagemgmt.daos.ImageVersionDao;
 import azkaban.imagemgmt.daos.ImageVersionDaoImpl;
-import azkaban.imagemgmt.permission.PermissionManager;
-import azkaban.imagemgmt.permission.PermissionManagerImpl;
+import azkaban.imagemgmt.daos.RampRuleDao;
+import azkaban.imagemgmt.daos.RampRuleDaoImpl;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.rampup.ImageRampupManagerImpl;
+import azkaban.logs.JdbcExecutionLogsLoader;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.project.InMemoryProjectCache;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectCache;
 import azkaban.project.ProjectLoader;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
@@ -60,6 +67,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.google.inject.util.Providers;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import javax.inject.Inject;
@@ -94,6 +102,9 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class);
     bind(ProjectLoader.class).to(JdbcProjectImpl.class);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class);
+    bind(ExecutionLogsLoader.class).annotatedWith(Names.named(NEARLINE_LOGS)).to(
+        JdbcExecutionLogsLoader.class);
+    bindOfflineLogsLoader();
     bind(ProjectCache.class).to(InMemoryProjectCache.class);
     bind(OsCpuUtil.class).toProvider(() -> {
       final int cpuLoadPeriodSec = this.props
@@ -105,6 +116,7 @@ public class AzkabanCommonModule extends AbstractModule {
       return new OsCpuUtil(Math.max(1, (cpuLoadPeriodSec * 1000) / pollingIntervalMs));
     });
     bindImageManagementDependencies();
+    bind(MissedSchedulesManager.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -178,14 +190,44 @@ public class AzkabanCommonModule extends AbstractModule {
     return null;
   }
 
+  private void bindOfflineLogsLoader() {
+    final boolean eventReporterEnabled =
+        this.props.getBoolean(AZKABAN_OFFLINE_LOGS_LOADER_ENABLED, false);
+    ExecutionLogsLoader executionLogsLoader = null;
+
+    if (!eventReporterEnabled) {
+      logger.info("Offline logs loader is not enabled");
+    } else {
+      final Class<?> offlineLogsLoader =
+          this.props.getClass(AZKABAN_OFFLINE_LOGS_LOADER_CLASS_PARAM, null);
+      if (offlineLogsLoader != null && offlineLogsLoader.getConstructors().length > 0) {
+        this.logger.info("Loading offline logs loader class " + offlineLogsLoader.getName());
+        try {
+          final Constructor<?> offlineLogsLoaderConstructor =
+              offlineLogsLoader.getConstructor(Props.class);
+          executionLogsLoader =
+              (ExecutionLogsLoader) offlineLogsLoaderConstructor.newInstance(this.props);
+        } catch (final Exception e) {
+          this.logger.error("Could not instantiate OfflineLogsLoader " + offlineLogsLoader.getName(), e);
+        }
+      }
+    }
+
+    if (executionLogsLoader == null) {
+      bind(ExecutionLogsLoader.class).annotatedWith(Names.named(OFFLINE_LOGS)).toProvider(Providers.of(null));
+    } else {
+      bind(ExecutionLogsLoader.class).annotatedWith(Names.named(OFFLINE_LOGS)).toInstance(executionLogsLoader);
+    }
+  }
+
   private void bindImageManagementDependencies() {
     if (isContainerizedDispatchMethodEnabled()) {
       bind(ImageTypeDao.class).to(ImageTypeDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageVersionDao.class).to(ImageVersionDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupDao.class).to(ImageRampupDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageRampupManager.class).to(ImageRampupManagerImpl.class).in(Scopes.SINGLETON);
+      bind(RampRuleDao.class).to(RampRuleDaoImpl.class).in(Scopes.SINGLETON);
       bind(ImageMgmtCommonDao.class).to(ImageMgmtCommonDaoImpl.class).in(Scopes.SINGLETON);
-      bind(PermissionManager.class).to(PermissionManagerImpl.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_TYPE))
           .to(ImageTypeConverter.class).in(Scopes.SINGLETON);
       bind(Converter.class).annotatedWith(Names.named(IMAGE_VERSION))

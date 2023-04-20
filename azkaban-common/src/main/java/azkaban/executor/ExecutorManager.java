@@ -16,13 +16,19 @@
 
 package azkaban.executor;
 
+import static azkaban.Constants.LogConstants.NEARLINE_LOGS;
+import static azkaban.Constants.LogConstants.OFFLINE_LOGS;
+
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.ProjectManager;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -47,7 +53,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -81,7 +90,10 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   private boolean initialized = false;
 
   @Inject
-  public ExecutorManager(final Props azkProps, final ExecutorLoader executorLoader,
+  public ExecutorManager(final Props azkProps,
+      final ProjectManager projectManager, final ExecutorLoader executorLoader,
+      @Named(NEARLINE_LOGS) final ExecutionLogsLoader nearlineExecutionLogsLoader,
+      @Named(OFFLINE_LOGS) @Nullable final ExecutionLogsLoader offlineExecutionLogsLoader,
       final CommonMetrics commonMetrics,
       final ExecutorApiGateway apiGateway,
       final RunningExecutions runningExecutions,
@@ -89,7 +101,9 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread) {
-    super(azkProps, executorLoader, commonMetrics, apiGateway, null, new DummyEventListener());
+    super(azkProps, projectManager, executorLoader, nearlineExecutionLogsLoader,
+        offlineExecutionLogsLoader, commonMetrics, apiGateway, null, new DummyEventListener(),
+        new DummyContainerizationMetricsImpl());
     this.runningExecutions = runningExecutions;
     this.activeExecutors = activeExecutors;
     this.updaterStage = updaterStage;
@@ -199,7 +213,9 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final Future<ExecutorInfo> fetchExecutionInfo =
           this.executorInfoRefresherService.submit(
               () -> this.apiGateway.callForJsonType(executor.getHost(),
-                  executor.getPort(), "/serverStatistics", DispatchMethod.PUSH, null, ExecutorInfo.class));
+                  executor.getPort(), "/serverStatistics", DispatchMethod.PUSH, Optional.empty(),
+                  null,
+                  ExecutorInfo.class));
       futures.add(new Pair<>(executor,
           fetchExecutionInfo));
     }
@@ -354,7 +370,7 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
   private void loadRunningExecutions() throws ExecutorManagerException {
     logger.info("Loading running flows from database..");
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = this.executorLoader
-        .fetchActiveFlows();
+        .fetchActiveFlows(DispatchMethod.PUSH);
     logger.info("Loaded " + activeFlows.size() + " running flows");
     this.runningExecutions.get().putAll(activeFlows);
   }
@@ -378,10 +394,10 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
    * project and flow {@inheritDoc}. Results should be sorted as we assume this while setting up
    * pipelined execution Id.
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlowIds(int, java.lang.String)
    */
   @Override
-  public List<Integer> getRunningFlows(final int projectId, final String flowId) {
+  public List<Integer> getRunningFlowIds(final int projectId, final String flowId) {
     final List<Integer> executionIds = new ArrayList<>();
     executionIds.addAll(ExecutorUtils.getRunningFlowsHelper(projectId, flowId,
         this.queuedFlows.getAllEntries()));
@@ -413,58 +429,14 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
     return flows;
   }
 
-  /**
-   * Checks whether the given flow has an active (running, non-dispatched) executions {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#isFlowRunning(int, java.lang.String)
-   */
   @Override
-  public boolean isFlowRunning(final int projectId, final String flowId) {
-    boolean isRunning = false;
-    isRunning =
-        isRunning
-            || isFlowRunningHelper(projectId, flowId, this.queuedFlows.getAllEntries());
-    isRunning =
-        isRunning
-            || isFlowRunningHelper(projectId, flowId, this.runningExecutions.get().values());
-    return isRunning;
-  }
-
-  /**
-   * Get all active (running, non-dispatched) flows
-   * <p>
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows()
-   */
-  @Override
-  public List<ExecutableFlow> getRunningFlows() {
-    final ArrayList<ExecutableFlow> flows = new ArrayList<>();
-    getActiveFlowHelper(flows, this.queuedFlows.getAllEntries());
-    getActiveFlowHelper(flows, this.runningExecutions.get().values());
-    return flows;
-  }
-
-  /*
-   * Helper method to get all running flows from a Pair<ExecutionReference,
-   * ExecutableFlow collection
-   */
-  private void getActiveFlowHelper(final ArrayList<ExecutableFlow> flows,
-      final Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
-    for (final Pair<ExecutionReference, ExecutableFlow> ref : collection) {
-      flows.add(ref.getSecond());
-    }
-  }
-
-  /**
-   * Get execution Ids of all running (unfinished) flows
-   */
-  public String getRunningFlowIds() {
-    final List<Integer> allIds = new ArrayList<>();
-    getRunningFlowsIdsHelper(allIds, this.queuedFlows.getAllEntries());
-    getRunningFlowsIdsHelper(allIds, this.runningExecutions.get().values());
-    Collections.sort(allIds);
-    return allIds.toString();
+  public List<Integer> getRunningFlowIds() {
+    final ArrayList<Integer> flowIDs = new ArrayList<>();
+    flowIDs.addAll(this.queuedFlows.getAllEntries().stream().map(entry -> entry.getSecond().getExecutionId()).collect(
+        Collectors.toList()));
+    flowIDs.addAll(this.runningExecutions.get().values().stream().map(entry -> entry.getSecond().getExecutionId()).collect(
+        Collectors.toList()));
+    return flowIDs;
   }
 
   /**
@@ -517,7 +489,15 @@ public class ExecutorManager extends AbstractExecutorManagerAdapter {
       final int offset, final int length, final int attempt) throws ExecutorManagerException {
     final Pair<ExecutionReference, ExecutableFlow> pair =
         this.runningExecutions.get().get(exFlow.getExecutionId());
-    return getJobLogData(exFlow, jobId, offset, length, attempt, pair);
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, false);
+  }
+
+  @Override
+  public LogData getExecutionJobLogNearlineOnly(final ExecutableFlow exFlow, final String jobId,
+      final int offset, final int length, final int attempt) throws ExecutorManagerException {
+    final Pair<ExecutionReference, ExecutableFlow> pair =
+        this.runningExecutions.get().get(exFlow.getExecutionId());
+    return getJobLogData(exFlow, jobId, offset, length, attempt, pair, true);
   }
 
   @Override

@@ -16,6 +16,9 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.Status.TERMINAL_STATUSES;
+
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.flow.Flow;
@@ -26,12 +29,17 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 @Singleton
@@ -78,8 +86,7 @@ public class FetchActiveFlowDao {
     final int port = rs.getInt("port");
     final Executor executor;
     if (host == null) {
-      logger.warn("Executor id " + executorId + " (on execution " +
-          exFlow.getExecutionId() + ") wasn't found");
+      logger.debug("Executor id " + executorId + " (on execution " + exFlow.getExecutionId() + ") wasn't found");
       executor = null;
     } else {
       final boolean executorStatus = rs.getBoolean("executorStatus");
@@ -121,6 +128,20 @@ public class FetchActiveFlowDao {
     }
   }
 
+  Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    try {
+      Iterator<Pair<ExecutionReference, ExecutableFlow>> iterator = this.dbOperator.query(FetchActiveExecutableFlows.FETCH_UNFINISHED_EXECUTABLE_FLOW_BY_EXECID,
+          new FetchActiveExecutableFlows(), executionId).values().iterator();
+      if (iterator.hasNext()) {
+        return iterator.next();
+      }
+      return null;
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching unfinished flows", e);
+    }
+  }
+
   /**
    * Fetch unfinished flows similar to {@link #fetchUnfinishedFlows}, excluding flow data.
    *
@@ -143,11 +164,11 @@ public class FetchActiveFlowDao {
    * @return active flows map
    * @throws ExecutorManagerException the executor manager exception
    */
-  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
-      throws ExecutorManagerException {
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchActiveExecutableFlows.FETCH_ACTIVE_EXECUTABLE_FLOWS,
-          new FetchActiveExecutableFlows());
+          new FetchActiveExecutableFlows(), dispatchMethod.getNumVal());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
     }
@@ -170,6 +191,15 @@ public class FetchActiveFlowDao {
     }
   }
 
+  /**
+   * Generates a string representing terminating flow status num values: "50, 60, 65, 70"
+   * @return
+   */
+  static String getTerminalStatusesString () {
+    final List<Integer> list = TERMINAL_STATUSES.stream().map(Status::getNumVal).collect(Collectors.toList());
+    return StringUtils.join(list, ", ");
+  }
+
   @VisibleForTesting
   static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
@@ -182,9 +212,10 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")";
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")";
+
+    private static final String FETCH_UNFINISHED_EXECUTABLE_FLOW_BY_EXECID =
+        FETCH_UNFINISHED_EXECUTABLE_FLOWS + " AND ex.exec_id = ?";
 
     // Select flows that are dispatched and not in finished status
     private static final String FETCH_ACTIVE_EXECUTABLE_FLOWS =
@@ -193,10 +224,9 @@ public class FetchActiveFlowDao {
             + " FROM execution_flows ex"
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
-            + " WHERE ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")"
+            + " WHERE dispatch_method = ? "
+            + " AND ex.status NOT IN ("
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
@@ -239,9 +269,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " Where ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")";
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -275,9 +303,7 @@ public class FetchActiveFlowDao {
             + " LEFT JOIN "
             + " executors et ON ex.executor_id = et.id"
             + " WHERE ex.exec_id = ? AND ex.status NOT IN ("
-            + Status.SUCCEEDED.getNumVal() + ", "
-            + Status.KILLED.getNumVal() + ", "
-            + Status.FAILED.getNumVal() + ")"
+            + FetchActiveFlowDao.getTerminalStatusesString() + ")"
             // exclude queued flows that haven't been assigned yet -- this is the opposite of
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("

@@ -1,18 +1,18 @@
 /*
-* Copyright 2017 LinkedIn Corp.
-*
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
-* use this file except in compliance with the License. You may obtain a copy of
-* the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/
+ * Copyright 2017 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 
 package azkaban.project;
 
@@ -22,7 +22,7 @@ import azkaban.Constants;
 import azkaban.flow.ConditionOnJobStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.flow.Node;
 import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
@@ -105,7 +105,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
   /**
    * Loads all project flows from the directory.
    *
-   * @param project The project.
+   * @param project    The project.
    * @param projectDir The directory to load flows from.
    * @return the validation report.
    */
@@ -125,7 +125,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
         final NodeBean nodeBean = loader.load(file);
         if (!loader.validate(nodeBean)) {
           this.errors.add("Failed to validate nodeBean for " + file.getName()
-              + ". Duplicate nodes found or dependency undefined.");
+              + ". Duplicate nodes found or dependency undefined or ROOT used as a name.");
         } else {
           final AzkabanFlow azkabanFlow = (AzkabanFlow) loader.toAzkabanNode(nodeBean);
           if (this.flowMap.containsKey(azkabanFlow.getName())) {
@@ -158,7 +158,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
     }
     props.setSource(flowFile.getName());
 
-    flow.addAllFlowProperties(ImmutableList.of(new FlowProps(props)));
+    flow.addAllFlowProperties(ImmutableList.of(ImmutableFlowProps.createFlowProps(props)));
 
     // Convert azkabanNodes to nodes inside the flow.
     azkabanFlow.getNodes().values().stream()

@@ -24,11 +24,17 @@ import azkaban.DispatchMethod;
 import azkaban.event.EventListener;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutorHealthChecker;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.OnContainerizedExecutionEventListener;
+import azkaban.executor.OnExecutionEventListener;
+import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedWatch;
 import azkaban.executor.FlowStatusChangeEventListener;
+import azkaban.executor.container.KubernetesVPARecommender;
+import azkaban.executor.container.VPARecommender;
 import azkaban.executor.container.watch.AzPodStatusDrivingListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
@@ -44,8 +50,12 @@ import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
+import azkaban.imagemgmt.permission.PermissionManager;
+import azkaban.imagemgmt.permission.PermissionManagerImpl;
 import azkaban.imagemgmt.services.ImageMgmtCommonService;
 import azkaban.imagemgmt.services.ImageMgmtCommonServiceImpl;
+import azkaban.imagemgmt.services.ImageRampRuleService;
+import azkaban.imagemgmt.services.ImageRampRuleServiceImpl;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageRampupServiceImpl;
 import azkaban.imagemgmt.services.ImageTypeService;
@@ -59,6 +69,8 @@ import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.metrics.ContainerizationMetricsImpl;
 import azkaban.metrics.DummyContainerizationMetricsImpl;
+import azkaban.project.ProjectManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
@@ -78,7 +90,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.mortbay.jetty.Server;
@@ -130,6 +141,12 @@ public class AzkabanWebServerModule extends AbstractModule {
     // Following bindings will be present if and only if containerized dispatch is enabled.
     bindImageManagementDependencies();
     bindContainerWatchDependencies();
+    bindContainerCleanupManager();
+    bindOnExecutionEventListener();
+    // Workaround to support the transition from bare metal executions using the POLL dispatch
+    // model to containerized executions. In that mixed environment cleanup logics to handle stuck
+    // executions for both CONTAINERIZED and POLL dispatch models are needed.
+    bindExecutorHealthCheckerForContainerization();
   }
 
   private Class<? extends ContainerizationMetrics> resolveContainerMetricsClass() {
@@ -156,6 +173,7 @@ public class AzkabanWebServerModule extends AbstractModule {
       case POLL:
         return ExecutionController.class;
       case CONTAINERIZED:
+        bind(VPARecommender.class).to(KubernetesVPARecommender.class);
         bind(ContainerizedImpl.class).to(resolveContainerizedImpl());
         bind(ContainerizedWatch.class).to(KubernetesWatch.class);
         return ContainerizedDispatchManager.class;
@@ -178,6 +196,8 @@ public class AzkabanWebServerModule extends AbstractModule {
       bind(VersionSetLoader.class).to(JdbcVersionSetLoader.class).in(Scopes.SINGLETON);
       bind(ImageVersionMetadataService.class).to(ImageVersionMetadataServiceImpl.class).in(Scopes.SINGLETON);
       bind(ImageMgmtCommonService.class).to(ImageMgmtCommonServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageRampRuleService.class).to(ImageRampRuleServiceImpl.class).in(Scopes.SINGLETON);
+      bind(PermissionManager.class).to(PermissionManagerImpl.class).in(Scopes.SINGLETON);
     }
   }
 
@@ -210,6 +230,40 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(KubernetesWatch.class).in(Scopes.SINGLETON);
   }
 
+  private void bindContainerCleanupManager() {
+    if(!isContainerizedDispatchMethodEnabled()) {
+      bind(ContainerCleanupManager.class).toProvider(Providers.of(null));
+      return;
+    }
+    log.info("Binding ContainerCleanupManager");
+    bind(ContainerCleanupManager.class).in(Scopes.SINGLETON);
+  }
+
+  private void bindExecutorHealthCheckerForContainerization() {
+    // {@link azkaban.executor.ExecutorHealthChecker} binding should only happen if
+    // {@link azkaban.DispatchMethod.CONTAINERIZED} dispatch model is enabled and below properties are defined.
+    if(isContainerizedDispatchMethodEnabled()) {
+      if(!this.props.getString(
+          ConfigurationKeys.AZKABAN_EXECUTOR_HEALTHCHECK_INTERVAL_MIN, "").isEmpty() &&
+          !this.props.getString(
+              ConfigurationKeys.AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, "").isEmpty()) {
+        log.info("Binding ExecutorHealthChecker");
+        bind(ExecutorHealthChecker.class).in(Scopes.SINGLETON);
+      } else {
+        bind(ExecutorHealthChecker.class).toProvider(Providers.of(null));
+      }
+    }
+  }
+
+  private void bindOnExecutionEventListener() {
+    if(!isContainerizedDispatchMethodEnabled()) {
+      bind(OnExecutionEventListener.class).toProvider(Providers.of(null));
+      return;
+    }
+    log.info("Binding OnExecutionEventListener");
+    bind(OnExecutionEventListener.class).to(OnContainerizedExecutionEventListener.class).in(Scopes.SINGLETON);
+  }
+
   @Inject
   @Singleton
   @Provides
@@ -228,10 +282,14 @@ public class AzkabanWebServerModule extends AbstractModule {
   @Provides
   private AzPodStatusListener createFlowPodMonitoringListener(
       final Props azkProps,
+      final ProjectManager projectManager,
       final ContainerizedImpl containerizedImpl,
       final ExecutorLoader executorLoader,
-      final AlerterHolder alerterHolder) {
-    return new FlowStatusManagerListener(azkProps, containerizedImpl, executorLoader, alerterHolder);
+      final AlerterHolder alerterHolder, final ContainerizationMetrics containerizationMetrics,
+      final EventListener eventListener) {
+    return new FlowStatusManagerListener(azkProps, projectManager, containerizedImpl,
+        executorLoader, alerterHolder,
+        containerizationMetrics, eventListener);
   }
 
   @Inject
@@ -307,10 +365,11 @@ public class AzkabanWebServerModule extends AbstractModule {
         "velocimacro.permissions.allow.inline.to.replace.global", true);
     engine.setProperty("velocimacro.arguments.strict", true);
     engine.setProperty("runtime.log.invalid.references", devMode);
-    engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
     engine.setProperty("runtime.log.logsystem.log4j.logger",
         Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
+    engine.setProperty("space.gobbling", "bc");
+    engine.setProperty("directive.if.emptycheck", false);
     return engine;
   }
 }

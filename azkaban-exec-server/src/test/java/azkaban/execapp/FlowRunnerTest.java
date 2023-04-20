@@ -20,17 +20,19 @@ import static azkaban.Constants.EventReporterConstants.AZ_HOST;
 import static azkaban.Constants.EventReporterConstants.AZ_WEBSERVER;
 import static azkaban.Constants.EventReporterConstants.EXECUTOR_TYPE;
 import static azkaban.Constants.EventReporterConstants.FLOW_NAME;
+import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
 import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_NAME;
 import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOADER_IP_ADDR;
 import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_TIME;
 import static azkaban.Constants.EventReporterConstants.PROJECT_FILE_UPLOAD_USER;
 import static azkaban.Constants.EventReporterConstants.PROJECT_NAME;
 import static azkaban.Constants.EventReporterConstants.SLA_OPTIONS;
-import static azkaban.Constants.EventReporterConstants.SUBMIT_USER;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import azkaban.Constants;
-import azkaban.common.ServerUtils;
+import azkaban.utils.ServerUtils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
@@ -41,7 +43,9 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.spi.EventType;
 import azkaban.utils.Props;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,6 +87,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SUCCEEDED);
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
   }
 
@@ -122,6 +127,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job8", Status.SUCCEEDED);
     assertStatus("job10", Status.SKIPPED);
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_FINISHED);
   }
 
@@ -153,6 +159,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,  EventType.FLOW_FINISHED);
   }
 
@@ -187,6 +194,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job9", Status.CANCELLED);
     assertStatus("job10", Status.CANCELLED);
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     // Two FLOW_STATUS_CHANGED events fired, one for FAILED and one for KILLED
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED,
         EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
@@ -218,6 +226,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job10", Status.CANCELLED);
     assertThreadShutDown();
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
   }
 
@@ -257,7 +266,25 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertFalse(this.runner.getFlowKillTime() == -1);
     Assert.assertEquals("me", this.runner.getExecutableFlow().getModifiedBy());
 
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
     eventCollector.assertEvents(EventType.FLOW_STARTED, EventType.FLOW_STATUS_CHANGED, EventType.FLOW_FINISHED);
+  }
+
+  @Test
+  public void exec1FlowKilledInitially() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+    this.runner.getExecutableFlow().setStatus(Status.KILLED);
+
+    FlowRunnerTestUtil.startThread(this.runner);
+    assertThreadShutDown();
+    assertFlowStatus(this.runner.getExecutableFlow(), Status.KILLED);
+    compareFinishedRuntime(this.runner);
+
+    // Check flowVersion
+    assertFlowVersion(this.runner.getExecutableFlow(), 1.0);
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
+    eventCollector.assertNoEvents();
   }
 
   @Test(expected = IllegalStateException.class)
@@ -281,7 +308,6 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     // Cannot pause a flow that is being killed or that has already been killed. This should throw
     // IllegalStateException.
     this.runner.pause("me");
-
   }
 
   @Test
@@ -302,6 +328,7 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertAttempts("job-retry-fail", 2);
 
     waitForAndAssertFlowStatus(Status.FAILED);
+    Assert.assertFalse(this.runner.getLogger().getAllAppenders().hasMoreElements());
   }
 
   @Test
@@ -346,13 +373,13 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     final VersionSet versionSet = this.runner.getExecutableFlow().getVersionSet();
 
     FlowRunner.FlowRunnerEventListener flowRunnerEventListener = this.runner.getFlowRunnerEventListener();
-    Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner);
+    Map<String, String> flowMetadata = flowRunnerEventListener.getFlowMetadata(this.runner,
+        this.runner.getExecutableFlow());
 
     Assert.assertEquals("Event metadata not created as expected.", "localhost",
             flowMetadata.get(AZ_WEBSERVER));
     Assert.assertEquals("Event metadata not created as expected.", "unknown",
             flowMetadata.get(AZ_HOST));
-    Assert.assertNull("Event metadata not created as expected.", flowMetadata.get(SUBMIT_USER));
     Assert.assertEquals("Event metadata not created as expected.", "test",
             flowMetadata.get(PROJECT_NAME));
     Assert.assertEquals("Event metadata not created as expected.", "derived-member-data",
@@ -371,6 +398,8 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
         ServerUtils.getVersionSetJsonString(versionSet), flowMetadata.get(VERSION_SET)); // Checks version set
     Assert.assertEquals("Event metadata not created as expected", "BAREMETAL",
         flowMetadata.get(EXECUTOR_TYPE)); // Checks executor type
+    Assert.assertNull("Event metadata not created as expected.",
+        flowMetadata.get(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY));
   }
 
   @Test
@@ -389,6 +418,22 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     Assert.assertTrue(this.runner.getFlowPauseDuration() >= 0);
     Assert.assertTrue(this.runner.getFlowPauseTime() != -1);
     Assert.assertEquals("dementor", this.runner.getExecutableFlow().getModifiedBy());
+  }
+
+  @Test
+  public void testFlowRunnerProxy() throws Exception {
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    eventCollector.setEventFilterOut(EventType.JOB_FINISHED,
+        EventType.JOB_STARTED, EventType.JOB_STATUS_CHANGED);
+    this.runner = this.testUtil.createFromFlowFile(eventCollector, "exec1");
+    FlowRunnerTestUtil.startThread(this.runner);
+    assertThreadShutDown();
+    ConcurrentHashMap<String, String> jobEffectiveUsers = this.runner.getJobEffectiveUsers();
+    HashSet<String> effectiveUsers = new HashSet<>(jobEffectiveUsers.values());
+    // Total 9 jobs
+    Assert.assertEquals(9, jobEffectiveUsers.size());
+    Assert.assertEquals(1, effectiveUsers.size());
+    Assert.assertTrue(effectiveUsers.contains("submitUser"));
   }
 
   private void assertAttempts(final String name, final int attempt) {

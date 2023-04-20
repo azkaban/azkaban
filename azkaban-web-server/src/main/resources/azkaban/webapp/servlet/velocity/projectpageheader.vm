@@ -18,8 +18,8 @@
   <div class="container-full">
     <div class="row">
       <div class="header-title" id="project-page-header">
-        <h1><a href="${context}/manager?project=${project.name}">Project
-          <small>$project.name</small>
+        <h1><a href="${context}/manager?project=${projectName}">Project
+          <small>$projectName</small>
         </a></h1>
       </div>
       <div class="header-control">
@@ -33,7 +33,7 @@
             </button>
           #end
           <a class="btn btn-sm btn-info"
-             href="${context}/manager?project=${project.name}&download=true">
+             href="${context}/manager?project=${projectName}&download=true">
             <span class="glyphicon glyphicon-download"></span> Download
           </a>
         </div>

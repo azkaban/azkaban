@@ -20,6 +20,8 @@ import azkaban.user.Permission.Type;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import javax.validation.constraints.NotBlank;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
@@ -109,5 +111,29 @@ public class ImageOwnership extends BaseModel {
         ", modifiedBy='" + this.modifiedBy + '\'' +
         ", modifiedOn='" + this.modifiedOn + '\'' +
         '}';
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 31).
+        append(this.name).
+        append(this.owner).
+        append(this.role).
+        toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof ImageOwnership))
+      return false;
+    if (obj == this)
+      return true;
+
+    ImageOwnership imageOwner = (ImageOwnership) obj;
+    return new EqualsBuilder().
+            append(name, imageOwner.name).
+            append(owner, imageOwner.owner).
+            append(role, imageOwner.role).
+            isEquals();
   }
 }

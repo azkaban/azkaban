@@ -21,6 +21,7 @@
 <!-- Bootstrap core CSS -->
 <link href="${context}/css/bootstrap.css" rel="stylesheet">
 <link href="${context}/css/azkaban.css?v=1621010355" rel="stylesheet">
+
 <style type="text/css">
   .navbar-enviro .navbar-enviro-name {
     color: ${azkaban_color};

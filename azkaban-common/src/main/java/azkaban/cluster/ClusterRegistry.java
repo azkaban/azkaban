@@ -39,7 +39,7 @@ import javax.inject.Singleton;
 @Singleton
 public class ClusterRegistry {
 
-  private final Map<String, Cluster> clusterInfoMap;
+  protected final Map<String, Cluster> clusterInfoMap;
 
   @Inject
   public ClusterRegistry() {

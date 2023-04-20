@@ -15,6 +15,10 @@
  */
 package azkaban.webapp.servlet;
 
+import static azkaban.Constants.DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE;
+import static azkaban.server.SlaRequestUtils.PARAM_SLA_ALERTERS;
+import static azkaban.server.SlaRequestUtils.PARAM_SLA_EMAILS;
+
 import azkaban.Constants;
 import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
@@ -34,10 +38,14 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.utils.Emailer;
+import azkaban.utils.HTMLFormElement;
+import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
 import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,13 +53,13 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
@@ -64,7 +72,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final String API_SCHEDULE_CRON_FLOW = "scheduleCronFlow";
   private static final String API_REMOVE_SCHED = "removeSched";
 
-  public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SCHEDULE_ID = "scheduleId";
   public static final String PARAM_SETTINGS = "settings";
   public static final String PARAM_ERROR = "error";
@@ -76,10 +83,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   public static final String STATUS_ERROR = "error";
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+  private Map<String, List<HTMLFormElement>> alerterPlugins;
 
   public ScheduleServlet() {
     super(createAPIEndpoints());
@@ -92,6 +100,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.scheduleManager = server.getScheduleManager();
+    final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
+    server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
+        (alerter.getViewParameters() != null ? alerter.getViewParameters()
+            : Collections.emptyList())));
+    this.alerterPlugins = alerterPlugins;
   }
 
   private static List<AzkabanAPI> createAPIEndpoints() {
@@ -111,8 +124,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session) throws ServletException, IOException {
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+      throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
@@ -120,8 +133,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleAJAXAction(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
+  private void handleAJAXAction(final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+      throws ServletException, IOException {
     final HashMap<String, Object> ret = new HashMap<>();
     final String ajaxName = getParam(req, "ajax");
 
@@ -157,8 +170,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final List<HashMap<String, Object>> output =
-        new ArrayList<>();
+    final List<HashMap<String, Object>> output = new ArrayList<>();
     ret.put("items", output);
 
     for (final Schedule schedule : schedules) {
@@ -170,8 +182,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void writeScheduleData(final List<HashMap<String, Object>> output,
-      final Schedule schedule) throws ScheduleManagerException {
+  private void writeScheduleData(final List<HashMap<String, Object>> output, final Schedule schedule)
+      throws ScheduleManagerException {
 
     final HashMap<String, Object> data = new HashMap<>();
     data.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
@@ -190,29 +202,22 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     output.add(data);
   }
 
-  private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret,
-      final User user) {
+  private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret, final User user) {
     try {
       final int scheduleId = getIntParam(req, PARAM_SCHEDULE_ID);
       final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
-        ret.put(PARAM_ERROR,
-            "Error loading schedule. Schedule " + scheduleId
-                + " doesn't exist");
+        ret.put(PARAM_ERROR, "Error loading schedule. Schedule " + scheduleId + " doesn't exist");
         return;
       }
 
       final Project project = this.projectManager.getProject(sched.getProjectId());
       if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
-        ret.put(PARAM_ERROR, "User " + user
-            + " does not have permission to set SLA for this flow.");
+        ret.put(PARAM_ERROR, "User " + user + " does not have permission to set SLA for this flow.");
         return;
       }
 
-      final String emailStr = getParam(req, PARAM_SLA_EMAILS);
-      final Map<String, String> settings = getParamGroup(req, PARAM_SETTINGS);
-      final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(sched.getFlowName(),
-          emailStr, settings);
+      final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(req, sched.getFlowName(), PARAM_SETTINGS);
 
       if (slaOptions.isEmpty()) {
         throw new ScheduleManagerException(
@@ -221,21 +226,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
       sched.getExecutionOptions().setSlaOptions(slaOptions);
       this.scheduleManager.insertSchedule(sched);
-      this.projectManager.postProjectEvent(project, EventType.SLA,
-          user.getUserId(), "SLA for flow " + sched.getFlowName()
-              + " has been added/changed.");
-
+      this.projectManager.postProjectEvent(project, EventType.SLA, user.getUserId(),
+          "SLA for flow " + sched.getFlowName() + " has been added/changed.");
     } catch (final ServletException e) {
       ret.put(PARAM_ERROR, e.getMessage());
     } catch (final ScheduleManagerException e) {
       logger.error(e.getMessage(), e);
       ret.put(PARAM_ERROR, e.getMessage());
     }
-
   }
-  
-  private void ajaxFetchSchedule(final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws ServletException {
+
+  private void ajaxFetchSchedule(final HttpServletRequest req, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
 
     final int projectId = getIntParam(req, "projectId");
     final String flowId = getParam(req, "flowId");
@@ -246,10 +248,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         final Map<String, Object> jsonObj = new HashMap<>();
         jsonObj.put(PARAM_SCHEDULE_ID, Integer.toString(schedule.getScheduleId()));
         jsonObj.put("submitUser", schedule.getSubmitUser());
-        jsonObj.put("firstSchedTime",
-            TimeUtils.formatDateTime(schedule.getFirstSchedTime()));
-        jsonObj.put("nextExecTime",
-            TimeUtils.formatDateTime(schedule.getNextExecTime()));
+        jsonObj.put("firstSchedTime", TimeUtils.formatDateTime(schedule.getFirstSchedTime()));
+        jsonObj.put("nextExecTime", TimeUtils.formatDateTime(schedule.getNextExecTime()));
         jsonObj.put("period", TimeUtils.formatPeriod(schedule.getPeriod()));
         jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
@@ -261,59 +261,65 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxSlaInfo(final HttpServletRequest req, final HashMap<String, Object> ret,
-      final User user) {
+  private void ajaxSlaInfo(final HttpServletRequest req, final HashMap<String, Object> ret, final User user) {
     final int scheduleId;
     try {
       scheduleId = getIntParam(req, PARAM_SCHEDULE_ID);
       final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
-        ret.put(PARAM_ERROR,
-            "Error loading schedule. Schedule " + scheduleId
-                + " doesn't exist");
+        ret.put(PARAM_ERROR, "Error loading schedule. Schedule " + scheduleId + " doesn't exist");
         return;
       }
 
-      final Project project =
-          getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
+      final Project project = getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
       if (project == null) {
-        ret.put(PARAM_ERROR,
-            "Error loading project. Project " + sched.getProjectId()
-                + " doesn't exist");
+        ret.put(PARAM_ERROR, "Error loading project. Project " + sched.getProjectId() + " doesn't exist");
         return;
       }
 
       final Flow flow = project.getFlow(sched.getFlowName());
       if (flow == null) {
-        ret.put(PARAM_ERROR, "Error loading flow. Flow " + sched.getFlowName()
-            + " doesn't exist in " + sched.getProjectId());
+        ret.put(PARAM_ERROR,
+            "Error loading flow. Flow " + sched.getFlowName() + " doesn't exist in " + sched.getProjectId());
         return;
       }
 
       final List<SlaOption> slaOptions = sched.getExecutionOptions().getSlaOptions();
-      final ExecutionOptions flowOptions = sched.getExecutionOptions();
-
+      List<String> emailAlerterRecipients;
       if (slaOptions != null && slaOptions.size() > 0) {
-        ret.put(PARAM_SLA_EMAILS, slaOptions.get(0).getEmails());
+        // Alert settings are currently not per SLA rule but global, so using the configs of the
+        // first SLA rule is enough.
+        emailAlerterRecipients = slaOptions.get(0).getEmails();
+
+        final Map<String, Map<String, List<String>>> alertersConfigs = new HashMap<>();
+        alertersConfigs.putAll(slaOptions.get(0).getAlertersConfigs());
+        alertersConfigs.put(Emailer.ALERTER_NAME, Collections.singletonMap(
+            Emailer.RECIPIENTS_VIEW_PARAM, emailAlerterRecipients));
 
         final List<Object> setObj = new ArrayList<>();
         for (final SlaOption slaOption : slaOptions) {
           setObj.add(slaOption.toWebObject());
         }
         ret.put(PARAM_SETTINGS, setObj);
-      } else if (flowOptions != null) {
-        if (flowOptions.getFailureEmails() != null) {
-          final List<String> emails = flowOptions.getFailureEmails();
-          if (emails.size() > 0) {
-            ret.put(PARAM_SLA_EMAILS, emails);
-          }
-        }
+        ret.put(PARAM_SLA_EMAILS, emailAlerterRecipients);
+        ret.put(PARAM_SLA_ALERTERS, alertersConfigs);
       } else {
-        if (flow.getFailureEmails() != null) {
-          final List<String> emails = flow.getFailureEmails();
-          if (emails.size() > 0) {
-            ret.put(PARAM_SLA_EMAILS, emails);
-          }
+        // This API is currently used to retrieve details of existing SLAs as well as to
+        // render the form in the UI to define new SLAs. That's why PARAM_SLA_EMAILS and
+        // PARAM_ALL_JOB_NAMES are returned even if there is no SLA defined for the specified
+        // schedule.
+
+        // Suggest recipients for email alerts when defining new SLAs
+        emailAlerterRecipients = flow.getFailureEmails();
+        final ExecutionOptions flowOptions = sched.getExecutionOptions();
+        List<String> runtimeFailureEmails;
+        if (flowOptions != null && (runtimeFailureEmails = flowOptions.getFailureEmails()) != null
+            && !runtimeFailureEmails.isEmpty()) {
+          emailAlerterRecipients = runtimeFailureEmails;
+        }
+
+        if(!emailAlerterRecipients.isEmpty()) {
+          ret.put(PARAM_SLA_EMAILS, emailAlerterRecipients);
         }
       }
 
@@ -321,7 +327,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       for (final Node n : flow.getNodes()) {
         allJobs.add(n.getId());
       }
-
       ret.put(PARAM_ALL_JOB_NAMES, allJobs);
     } catch (final ServletException e) {
       ret.put(PARAM_ERROR, e);
@@ -331,17 +336,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
-      final int projectId, final User user, final Permission.Type type) {
+  protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final int projectId, final User user,
+      final Permission.Type type) {
     return filterProjectByPermission(this.projectManager.getProject(projectId), user, type, ret);
   }
 
-  private void handleGetAllSchedules(final HttpServletRequest req,
-      final HttpServletResponse resp, final Session session) throws ServletException, IOException {
-
-    final Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
+  private void handleGetAllSchedules(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
+    final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
 
     final List<Schedule> schedules;
     try {
@@ -350,12 +352,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       throw new ServletException(e);
     }
     page.add("schedules", schedules);
+    page.add("alerterPlugins", this.alerterPlugins);
     page.render();
   }
 
   @Override
-  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
-      final Session session) throws ServletException, IOException {
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+      throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
@@ -381,8 +384,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxRemoveSched(final HttpServletRequest req, final Map<String, Object> ret,
-      final User user) throws ServletException {
+  private void ajaxRemoveSched(final HttpServletRequest req, final Map<String, Object> ret, final User user)
+      throws ServletException {
     final int scheduleId = getIntParam(req, PARAM_SCHEDULE_ID);
     final Schedule sched;
     try {
@@ -406,27 +409,23 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     if (!hasPermission(project, user, Type.SCHEDULE)) {
       ret.put(PARAM_STATUS, STATUS_ERROR);
-      ret.put(PARAM_MESSAGE, "Permission denied. Cannot remove schedule with id "
-          + scheduleId);
+      ret.put(PARAM_MESSAGE, "Permission denied. Cannot remove schedule with id " + scheduleId);
       return;
     }
 
     this.scheduleManager.removeSchedule(sched);
-    logger.info("User '" + user.getUserId() + " has removed schedule "
-        + sched.getScheduleName());
-    this.projectManager
-        .postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
-            "Schedule " + sched.toString() + " has been removed.");
+    logger.info("User '" + user.getUserId() + " has removed schedule " + sched.getScheduleName());
+    this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
+        "Schedule " + sched.toString() + " has been removed.");
 
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
-    ret.put(PARAM_MESSAGE, "flow " + sched.getFlowName()
-        + " removed from Schedules.");
+    ret.put(PARAM_MESSAGE, "flow " + sched.getFlowName() + " removed from Schedules.");
     return;
   }
 
   @Deprecated
-  private void ajaxScheduleFlow(final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws ServletException {
+  private void ajaxScheduleFlow(final HttpServletRequest req, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
     final String projectName = getParam(req, "projectName");
     final String flowName = getParam(req, "flow");
     final int projectId = getIntParam(req, "projectId");
@@ -448,8 +447,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final Flow flow = project.getFlow(flowName);
     if (flow == null) {
       ret.put(PARAM_STATUS, STATUS_ERROR);
-      ret.put(PARAM_MESSAGE, "Flow " + flowName + " cannot be found in project "
-          + projectName);
+      ret.put(PARAM_MESSAGE, "Flow " + flowName + " cannot be found in project " + projectName);
       return;
     }
 
@@ -459,13 +457,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       firstSchedTime = parseDateTime(scheduleDate, scheduleTime);
     } catch (final Exception e) {
-      ret.put(PARAM_ERROR, "Invalid date and/or time '" + scheduleDate + " "
-          + scheduleTime);
+      ret.put(PARAM_ERROR, "Invalid date and/or time '" + scheduleDate + " " + scheduleTime);
       return;
     }
 
-    final long endSchedTime = getLongParam(req, "endSchedTime",
-        Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    final long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (final Exception e) {
@@ -475,8 +471,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     ReadablePeriod thePeriod = null;
     try {
-      if (hasParam(req, "is_recurring")
-          && getParam(req, "is_recurring").equals("on")) {
+      if (hasParam(req, "is_recurring") && getParam(req, "is_recurring").equals("on")) {
         thePeriod = TimeUtils.parsePeriodString(getParam(req, "period"));
       }
     } catch (final Exception e) {
@@ -484,23 +479,23 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     ExecutionOptions flowOptions = null;
+    final Props azProps = getApplication().getServerProps();
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req, flowName);
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+      HttpRequestUtils.validatePreprocessFlowParameters(flowOptions, azProps);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
     }
 
     final Schedule schedule =
-        this.scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
-            thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
+        this.scheduleManager.scheduleFlow(-1, projectId, projectName, flowName, "ready", firstSchedTime.getMillis(),
+            endSchedTime, firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions);
-    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
-        + projectName + flowName + " (" + projectId + ")" + "].");
-    this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
-        user.getUserId(), "Schedule " + schedule.toString()
-            + " has been added.");
+    logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName + " (" + projectId + ")"
+        + "].");
+    this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
+        "Schedule " + schedule.toString() + " has been added.");
 
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
     ret.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
@@ -510,8 +505,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   /**
    * This method is in charge of doing cron scheduling.
    */
-  private void ajaxScheduleCronFlow(final HttpServletRequest req,
-      final HashMap<String, Object> ret, final User user) throws ServletException {
+  private void ajaxScheduleCronFlow(final HttpServletRequest req, final HashMap<String, Object> ret, final User user)
+      throws ServletException {
     final String projectName = getParam(req, "projectName");
     final String flowName = getParam(req, "flow");
 
@@ -533,8 +528,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final Flow flow = project.getFlow(flowName);
     if (flow == null) {
       ret.put(PARAM_STATUS, STATUS_ERROR);
-      ret.put(PARAM_MESSAGE, "Flow " + flowName + " cannot be found in project "
-          + projectName);
+      ret.put(PARAM_MESSAGE, "Flow " + flowName + " cannot be found in project " + projectName);
       return;
     }
 
@@ -548,18 +542,17 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       hasFlowTrigger = this.projectManager.hasFlowTrigger(project, flow);
     } catch (final Exception ex) {
-      logger.error(ex);
+      logger.error("Error looking for flow trigger of flow {}.{}", projectName, flowName);
       ret.put(PARAM_STATUS, STATUS_ERROR);
-      ret.put(PARAM_MESSAGE, String.format("Error looking for flow trigger of flow: %s.%s ",
-          projectName, flowName));
+      ret.put(PARAM_MESSAGE, String.format("Error looking for flow trigger of flow: %s.%s ", projectName, flowName));
       return;
     }
 
     if (hasFlowTrigger) {
       ret.put(PARAM_STATUS, STATUS_ERROR);
       ret.put(PARAM_MESSAGE, String.format("<font color=\"red\"> Error: Flow %s.%s is already "
-              + "associated with flow trigger, so schedule has to be defined in flow trigger config </font>",
-          projectName, flowName));
+              + "associated with flow trigger, so schedule has to be defined in flow trigger config </font>", projectName,
+          flowName));
       return;
     }
 
@@ -573,8 +566,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         // to let the expression to be complete.
         cronExpression = getParam(req, "cronExpression");
         if (azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
-          ret.put(PARAM_ERROR,
-              "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
+          ret.put(PARAM_ERROR, "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
           return;
         }
       }
@@ -585,8 +577,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put(PARAM_ERROR, e.getMessage());
     }
 
-    final long endSchedTime = getLongParam(req, "endSchedTime",
-        Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    final long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (final Exception e) {
@@ -595,28 +586,30 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     ExecutionOptions flowOptions = null;
+    final Props azProps = getApplication().getServerProps();
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req, flowName);
       HttpRequestUtils.filterAdminOnlyFlowParams(this.userManager, flowOptions, user);
+      HttpRequestUtils.validatePreprocessFlowParameters(flowOptions, azProps);
     } catch (final Exception e) {
       ret.put(PARAM_ERROR, e.getMessage());
     }
 
-    // Because either cronExpression or recurrence exists, we build schedule in the below way.
-    final Schedule schedule = this.scheduleManager
-        .cronScheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
-            DateTime.now().getMillis(), firstSchedTime.getMillis(),
-            firstSchedTime.getMillis(), user.getUserId(), flowOptions,
-            cronExpression);
+    // TODO: backend backExecute will be in next PR
+    final boolean backExecutionOnceEnabled =
+        getBooleanParam(req, "backExecuteOnce", DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE);
 
-    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
-        + projectName + flowName + " (" + projectId + ")" + "].");
-    this.projectManager.postProjectEvent(project, EventType.SCHEDULE,
-        user.getUserId(), "Schedule " + schedule.toString()
-            + " has been added.");
-    this.projectManager.postScheduleEvent(project, azkaban.spi.EventType.SCHEDULE_CREATED, user,
-            schedule, null);
+    // Because either cronExpression or recurrence exists, we build schedule in the below way.
+    final Schedule schedule =
+        this.scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName, "ready", firstSchedTime.getMillis(),
+            endSchedTime, firstSchedTime.getZone(), DateTime.now().getMillis(), firstSchedTime.getMillis(),
+            firstSchedTime.getMillis(), user.getUserId(), flowOptions, cronExpression, backExecutionOnceEnabled);
+
+    logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName + " (" + projectId + ")"
+        + "] with backExecuteOnceOnMiss " + (backExecutionOnceEnabled ? "enabled" : "disabled"));
+    this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
+        "Schedule " + schedule.toString() + " has been added.");
+    this.projectManager.postScheduleEvent(project, azkaban.spi.EventType.SCHEDULE_CREATED, user, schedule, null);
 
     ret.put(PARAM_STATUS, STATUS_SUCCESS);
     ret.put(PARAM_SCHEDULE_ID, schedule.getScheduleId());
@@ -630,16 +623,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final int minutes = Integer.parseInt(parts[1]);
     final boolean isPm = parts[2].equalsIgnoreCase("pm");
 
-    final DateTimeZone timezone =
-        parts[3].equals("UTC") ? DateTimeZone.UTC : DateTimeZone.getDefault();
+    final DateTimeZone timezone = parts[3].equals("UTC") ? DateTimeZone.UTC : DateTimeZone.getDefault();
 
     // scheduleDate: 02/10/2013
     DateTime day = null;
     if (scheduleDate == null || scheduleDate.trim().length() == 0) {
       day = new LocalDateTime().toDateTime();
     } else {
-      day = DateTimeFormat.forPattern("MM/dd/yyyy")
-          .withZone(timezone).parseDateTime(scheduleDate);
+      day = DateTimeFormat.forPattern("MM/dd/yyyy").withZone(timezone).parseDateTime(scheduleDate);
     }
 
     hour %= 12;
@@ -648,8 +639,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       hour += 12;
     }
 
-    final DateTime firstSchedTime =
-        day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
+    final DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 
     return firstSchedTime;
   }

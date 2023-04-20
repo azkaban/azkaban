@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import azkaban.DispatchMethod;
+import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -30,14 +31,24 @@ import java.util.Set;
 
 public interface ExecutorManagerAdapter {
 
-  public boolean isFlowRunning(int projectId, String flowId);
+  public void enableOfflineLogsLoader(boolean enabled);
+
+  public boolean isOfflineLogsLoaderEnabled();
 
   public ExecutableFlow getExecutableFlow(int execId)
       throws ExecutorManagerException;
 
-  public List<Integer> getRunningFlows(int projectId, String flowId);
+  /**
+   * load and set the flow-parameters and other Props to the ExecutableFlow
+   * @param project
+   * @param flow
+   * @return
+   */
+  ExecutableFlow createExecutableFlow(Project project, Flow flow);
 
-  public List<ExecutableFlow> getRunningFlows();
+  public List<Integer> getRunningFlowIds(int projectId, String flowId);
+
+  public List<Integer> getRunningFlowIds();
 
   public long getQueuedFlowSize();
 
@@ -88,6 +99,10 @@ public interface ExecutorManagerAdapter {
       int length) throws ExecutorManagerException;
 
   public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId,
+      int offset, int length, int attempt) throws ExecutorManagerException;
+
+  @Deprecated
+  public LogData getExecutionJobLogNearlineOnly(ExecutableFlow exFlow, String jobId,
       int offset, int length, int attempt) throws ExecutorManagerException;
 
   public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId,

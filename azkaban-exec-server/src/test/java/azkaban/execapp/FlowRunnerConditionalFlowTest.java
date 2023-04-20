@@ -38,6 +38,7 @@ import org.junit.Test;
 
 public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
 
+  //Please create new flow file for new testings
   private static final String FLOW_YAML_DIR = "conditionalflowyamltest";
   private static final String CONDITIONAL_FLOW_1 = "conditional_flow1";
   private static final String CONDITIONAL_FLOW_2 = "conditional_flow2";
@@ -46,6 +47,7 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
   private static final String CONDITIONAL_FLOW_5 = "conditional_flow5";
   private static final String CONDITIONAL_FLOW_6 = "conditional_flow6";
   private static final String CONDITIONAL_FLOW_7 = "conditional_flow7";
+  private static final String CONDITIONAL_FLOW_8 = "conditional_flow8";
   private FlowRunnerTestUtil testUtil;
   private Project project;
 
@@ -88,9 +90,26 @@ public class FlowRunnerConditionalFlowTest extends FlowRunnerTestBase {
     final Props generatedProperties = new Props();
     generatedProperties.put("key1", "value1");
     generatedProperties.put("key2", "value2");
+    generatedProperties.put("key3", "value4");
     InteractiveTestJob.getTestJob("jobA").succeedJob(generatedProperties);
     assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobB", Status.SUCCEEDED);
+    assertStatus(flow, "jobC", Status.CANCELLED);
+    assertStatus(flow, "jobD", Status.CANCELLED);
+    assertFlowStatus(flow, Status.KILLED);
+  }
+
+  @Test
+  public void flowShouldBeKilledWhenConditionalParameterDoesntExist() throws Exception {
+    final HashMap<String, String> flowProps = new HashMap<>();
+    setUp(CONDITIONAL_FLOW_8, flowProps);
+    final ExecutableFlow flow = this.runner.getExecutableFlow();
+    assertStatus(flow, "jobA", Status.RUNNING);
+    final Props generatedProperties = new Props();
+    generatedProperties.put("key1", "value1");
+    generatedProperties.put("key2", "value2");
+    InteractiveTestJob.getTestJob("jobA").succeedJob(generatedProperties);
+    assertStatus(flow, "jobA", Status.SUCCEEDED);
     assertStatus(flow, "jobC", Status.CANCELLED);
     assertStatus(flow, "jobD", Status.CANCELLED);
     assertFlowStatus(flow, Status.KILLED);

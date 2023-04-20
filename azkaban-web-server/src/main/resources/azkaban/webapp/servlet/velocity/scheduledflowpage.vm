@@ -26,7 +26,7 @@
   <script type="text/javascript" src="${context}/js/moment.min.js"></script>
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js?v=1588045179"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js?v=1677633459"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/scheduled.js"></script>
   <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
   <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
@@ -93,7 +93,7 @@
               #foreach($sched in $schedules)
               <tr>
                 <td class="tb-name">
-                  $velocityCount
+                  $foreach.count
                 </td>
                 <td>${sched.scheduleId}</td>
                 <td class="tb-name">
@@ -118,13 +118,13 @@
                 <td>
                 ## Changed the style of "Show" button to be consistent with other buttons.
                   <button type="button" class="btn btn-sm btn-info" data-toggle="modal"
-                          data-target="#executionOptions-${velocityCount}">Show
+                          data-target="#executionOptions-${foreach.count}">Show
                   </button>
                 </td>
 
               ## Distinguished executionOptions of each schedule with unique count number to fix
               ## the issue of same display for all schedules
-                <div class="modal fade" id="executionOptions-${velocityCount}" tabindex="-1"
+                <div class="modal fade" id="executionOptions-${foreach.count}" tabindex="-1"
                      role="dialog"
                      aria-labelledby="executionOptionsLabel">
                   <div class="modal-dialog" role="document">
@@ -152,7 +152,7 @@
                   </button>
                 </td>
                 <td>
-                  <button type="button" id="addSlaBtn" class="btn btn-sm btn-primary"
+                  <button type="button" class="btn btn-sm btn-primary addSlaBtn"
                           onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')">
                     Set SLA
                   </button>

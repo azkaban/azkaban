@@ -70,13 +70,35 @@ public interface ImageTypeDao {
   public List<ImageType> getAllImageTypesWithOwnerships() throws ImageMgmtException;
 
   /**
-   * Gets ownership metadata based on image type name and user id.
+   * Gets ownership metadata based on image type name.
    *
    * @param imageTypeName
-   * @return Optional<ImageOwnership>
-   * @throws ImageMgmtException
+   * @return List<ImageOwnership>
    */
-  public Optional<ImageOwnership> getImageTypeOwnership(final String imageTypeName,
-      final String userId) throws ImageMgmtException;
+  public List<ImageOwnership> getImageTypeOwnership(final String imageTypeName) throws ImageMgmtException;
+
+  /**
+   * Gets Image Type metadata with Ownerships based on String Image Type id.
+   *
+   * @param id
+   * @return ImageType
+   */
+  public ImageType getImageTypeWithOwnershipsById(String id);
+
+  /**
+   * Add an owner for a given image type.
+   *
+   * @param imageType - ImageType to be updated
+   * @return int - Id representing image type metadata
+   */
+  public int addImageTypeOwner(ImageType imageType) throws ImageMgmtException;
+
+  /**
+   * Remove an owner for a given image type.
+   *
+   * @param imageType - ImageType to be updated
+   * @return int - Id representing image type metadata
+   */
+  public int removeImageTypeOwner(ImageType imageType) throws ImageMgmtException;
 
 }

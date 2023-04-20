@@ -1,0 +1,68 @@
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    akey1: template-aval1
+    akey2: aval2
+    akey3: template-aval3
+  labels:
+    lkey1: template-lvalue1
+    lkey2: lvalue2
+    lkey3: template-lvalue3
+  name: "template-az-example"
+  namespace: "template-az-team"
+spec:
+  initContainers:
+    - env:
+        - name: CUSTOM_ENV
+          value: customVal
+      image: path/spark-jobtype:0.0.4
+      imagePullPolicy: IfNotPresent
+      name: jobtype-init-spark
+      volumeMounts:
+        - mountPath: /data/jobtypes/spark2
+          name: jobtype-volume-spark
+        - mountPath: /data/jobtypes/custom-spark
+          name: jobtype-volume-custom-spark
+    - name: chown-kubelet
+      image: path/my-image:0.0.5
+      command:
+        - chown
+        - "-R"
+        - '1000'
+        - "/var/run/kubelet/"
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - name: kubelet
+          mountPath: "/var/run/kubelet"
+  containers:
+    - image: "path/azkaban-base-image:0.0.5"
+      imagePullPolicy: "IfNotPresent"
+      name: "az-platform-image"
+      livenessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/liveProbe
+        initialDelaySeconds: 5
+        periodSeconds: 5
+      readinessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/readyProbe
+        initialDelaySeconds: 5
+        periodSeconds: 5
+      volumeMounts:
+        - mountPath: /export/some/path
+          name: jobtype-volume-spark
+        - name: kubelet
+          mountPath: "/var/run/kubelet"
+  volumes:
+    - emptyDir: {}
+      name: jobtype-volume-spark
+    - name: kubelet
+      hostPath:
+        path: /export/content/lid/apps/kubelet/i002/var
+        type: Directory

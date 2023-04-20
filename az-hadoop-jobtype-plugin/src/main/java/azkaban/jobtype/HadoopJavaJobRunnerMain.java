@@ -94,11 +94,7 @@ public class HadoopJavaJobRunnerMain {
     // Separate try catch for logger
     try {
       _logger = Logger.getRootLogger();
-      _logger.removeAllAppenders();
-      ConsoleAppender appender = new ConsoleAppender(DEFAULT_LAYOUT);
-      appender.activateOptions();
-      _logger.addAppender(appender);
-      _logger.setLevel(Level.INFO); //Explicitly setting level to INFO
+      _logger.setLevel(Level.INFO);
     } catch (Exception e) {
       throw e;
     }

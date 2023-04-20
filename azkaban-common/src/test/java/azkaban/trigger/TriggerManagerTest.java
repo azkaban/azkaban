@@ -25,8 +25,10 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
@@ -52,12 +54,14 @@ public class TriggerManagerTest {
   private static ExecutorManagerAdapter executorManagerAdapter;
   private static ProjectManager projectManager;
   private TriggerManager triggerManager;
+  private static MetricsManager metricsManager;
 
   @BeforeClass
   public static void prepare() {
     triggerLoader = new MockTriggerLoader();
     executorManagerAdapter = mock(ExecutorManagerAdapter.class);
     projectManager = mock(ProjectManager.class);
+    metricsManager = mock(MetricsManager.class);
   }
 
   @Before
@@ -73,7 +77,9 @@ public class TriggerManagerTest {
     ExecuteFlowAction.setTriggerManager(this.triggerManager);
     final Props props = new Props();
     props.put("trigger.scan.interval", 300);
-    this.triggerManager = new TriggerManager(props, triggerLoader, executorManagerAdapter);
+    MissedSchedulesManager missedScheduleManager = mock(MissedSchedulesManager.class);
+    this.triggerManager = new TriggerManager(props, triggerLoader, executorManagerAdapter, metricsManager,
+        missedScheduleManager);
     this.triggerManager.registerCheckerType(ThresholdChecker.type,
         ThresholdChecker.class);
     this.triggerManager.registerActionType(DummyTriggerAction.type,

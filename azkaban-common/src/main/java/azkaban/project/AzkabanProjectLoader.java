@@ -28,6 +28,7 @@ import azkaban.executor.ExecutionReference;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
@@ -48,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
@@ -168,6 +170,11 @@ class AzkabanProjectLoader {
       persistProject(project, loader, archive, folder, startupDependenciesOrNull, uploader,
           uploaderIPAddr);
 
+      // Run additional validators if required.
+      if (this.props.containsKey(Constants.ADDITIONAL_PROJECT_VALIDATOR)) {
+        this.validatorUtils.validateProject(project, folder, additionalProps,
+            this.props.getString(Constants.ADDITIONAL_PROJECT_VALIDATOR));
+      }
       if (isThinProject) {
         // Mark that we uploaded a thin zip in the metrics.
         commonMetrics.markUploadThinProject();
@@ -270,18 +277,34 @@ class AzkabanProjectLoader {
 
       log.info("Uploading flow to db for project " + archive.getName());
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
-      log.info("Changing project versions for project " + archive.getName());
-      this.projectLoader.changeProjectVersion(project, newProjectVersion,
-          uploader.getUserId());
       project.setFlows(flows);
+
+      final ConcurrentHashMap<String, FlowResourceRecommendation> flowResourceRecommendationMap =
+          project.getFlowResourceRecommendationMap();
+
+      final List<String> flowResourceRecommendationsToCreate = flows
+          .keySet()
+          .stream()
+          .filter(flowId -> !flowResourceRecommendationMap.containsKey(flowId))
+          .collect(Collectors.toList());
+
+      if (!flowResourceRecommendationsToCreate.isEmpty()) {
+        flowResourceRecommendationsToCreate.forEach(flowId -> {
+              final FlowResourceRecommendation flowResourceRecommendation =
+                  flowResourceRecommendationMap.computeIfAbsent(flowId, fid ->
+                      this.projectLoader.createFlowResourceRecommendation(project.getId(), fid));
+              flowResourceRecommendationMap.putIfAbsent(flowId, flowResourceRecommendation);
+        });
+      }
 
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
-        log.info("Uploading Job properties");
-        this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
+        log.info("Uploading Job properties for project " + archive.getName());
+        this.projectLoader.uploadProjectProperties(project, newProjectVersion, new ArrayList<>(
             directoryFlowLoader.getJobPropsMap().values()));
-        log.info("Uploading Props properties");
-        this.projectLoader.uploadProjectProperties(project, directoryFlowLoader.getPropsList());
+        log.info("Uploading Props properties for project " + archive.getName());
+        this.projectLoader.uploadProjectProperties(project, newProjectVersion,
+            directoryFlowLoader.getPropsList());
 
       } else if (loader instanceof DirectoryYamlFlowLoader) {
         uploadFlowFilesRecursively(projectDir, project, newProjectVersion);
@@ -289,6 +312,15 @@ class AzkabanProjectLoader {
         throw new ProjectManagerException("Invalid type of flow loader.");
       }
 
+      // Set the project version after upload of project files happens to ensure newer version
+      // project properties file exist before project version is incremented.
+      project.setVersion(newProjectVersion);
+
+      // CAUTION : Always change the project version as the last item to make
+      // sure all the project related files are uploaded.
+      log.info("Changing project versions for project " + archive.getName());
+      this.projectLoader.changeProjectVersion(project, newProjectVersion,
+          uploader.getUserId());
       this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
           "Uploaded project files zip " + archive.getName());
     }

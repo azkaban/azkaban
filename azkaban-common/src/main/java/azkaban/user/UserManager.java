@@ -16,6 +16,8 @@
 
 package azkaban.user;
 
+import java.util.Set;
+
 /**
  * Interface for the UserManager. Implementors will have to handle the retrieval of the User object
  * given the username and password.
@@ -42,6 +44,14 @@ public interface UserManager {
    * Returns true if the group is valid. This is used when adding permissions for groups.
    */
   public boolean validateGroup(String group);
+  /**
+   * Check whether a given group is a valid ldap group account.
+   *
+   * @param group Ldap group account name
+   * @return True, if given group is a valid ldap group.
+   *         False, otherwise
+   * */
+  public boolean validateLdapGroup(String group);
 
   /**
    * Returns the user role. This may return null.
@@ -49,4 +59,12 @@ public interface UserManager {
   public Role getRole(String roleName);
 
   public boolean validateProxyUser(String proxyUser, User realUser);
+
+  /**
+   * @param username e.g. user alias
+   * @param groupSet e.g. a set of hadoop headless group / LDAP group names
+   * @return Returns true if the user belongs to a group. This is used when verifying user
+   * permission by checking its group membership
+   */
+  public boolean validateUserGroupMembership(String username, Set<String> groupSet);
 }

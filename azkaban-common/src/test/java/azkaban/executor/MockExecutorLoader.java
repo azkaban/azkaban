@@ -22,6 +22,7 @@ import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -77,8 +78,8 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
-      throws ExecutorManagerException {
+  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows(
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
     return this.activeFlows;
   }
 
@@ -86,6 +87,27 @@ public class MockExecutorLoader implements ExecutorLoader {
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchUnfinishedFlows()
       throws ExecutorManagerException {
     return this.activeFlows;
+  }
+
+  @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchUnfinishedFlow(final int executionId)
+      throws ExecutorManagerException {
+    return this.activeFlows.get(executionId);
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .filter(entry -> entry.getValue().getSecond().getProjectId() == projectId && entry.getValue().getSecond().getFlowId().equals(flowId))
+        .map(entry -> entry.getValue().getSecond().getExecutionId())
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    return this.activeFlows.entrySet().stream()
+        .map(entry -> entry.getValue().getSecond().getExecutionId())
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -138,20 +160,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public void uploadLogFile(final int execId, final String name, final int attempt,
-      final File... files)
-      throws ExecutorManagerException {
-    for (final File file : files) {
-      try {
-        final String logs = FileUtils.readFileToString(file, "UTF-8");
-        LOGGER.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  @Override
   public void updateExecutableFlow(final ExecutableFlow flow)
       throws ExecutorManagerException {
     final ExecutableFlow toUpdate = this.flows.get(flow.getExecutionId());
@@ -178,6 +186,9 @@ public class MockExecutorLoader implements ExecutorLoader {
   public void updateExecutableNode(final ExecutableNode node)
       throws ExecutorManagerException {
     final ExecutableNode foundNode = this.nodes.get(node.getId());
+    if (foundNode == null) {
+      return;
+    }
     foundNode.setEndTime(node.getEndTime());
     foundNode.setStartTime(node.getStartTime());
     foundNode.setStatus(node.getStatus());
@@ -221,14 +232,6 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return true;
-  }
-
-  @Override
-  public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte,
-      final int endByte) throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   @Override
@@ -293,13 +296,6 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  @Override
-  public int removeExecutionLogsByTime(final long millis, final int recordCleanupLimit)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return 0;
   }
 
   @Override
@@ -435,7 +431,6 @@ public class MockExecutorLoader implements ExecutorLoader {
     return fetchQueuedFlows(Status.PREPARING);
   }
 
-  @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
       throws ExecutorManagerException {
     final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
@@ -450,8 +445,23 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+  public List<Integer> selectQueuedFlows(Status status)
       throws ExecutorManagerException {
+    return this.fetchQueuedFlows(status).stream().map(f -> f.getSecond().getExecutionId()).collect(
+        Collectors.toList());
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException {
+    throw new ExecutorManagerException("Method Not Implemented!");
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException{
     throw new ExecutorManagerException("Method Not Implemented!");
   }
 
@@ -459,20 +469,20 @@ public class MockExecutorLoader implements ExecutorLoader {
   // TODO(anish-mal) To be used in a future unit test, once System calls to obtain
   // current time have been replaced by Clocks. Clocks are needed in order to write
   // unit tests for duration based features. Without it, the tests end up being flaky.
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
-    final List<ExecutableFlow> agedQueuedFlows = new ArrayList<>();
+    final List<Integer> agedQueuedFlowIds = new ArrayList<>();
 
     long timeThreshoold = System.currentTimeMillis() - minAge.toMillis();
     for (final int execId : this.refs.keySet()) {
       if (!this.executionExecutorMapping.containsKey(execId)) {
         ExecutableFlow agedFlow = this.flows.get(execId);
         if (agedFlow.getSubmitTime() < timeThreshoold) {
-          agedQueuedFlows.add(agedFlow);
+          agedQueuedFlowIds.add(execId);
         }
       }
     }
-    return agedQueuedFlows;
+    return agedQueuedFlowIds;
   }
 
   @Override

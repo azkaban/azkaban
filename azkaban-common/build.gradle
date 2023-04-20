@@ -29,11 +29,14 @@ dependencies {
     compileOnly deps.hadoopAuth
     compileOnly deps.hadoopCommon
     compileOnly deps.hadoopHdfs
+    compile deps.hadoopMRClientCommon
+    compile deps.hadoopMRClientCore
     compile deps.httpclient
     compile deps.jetty
     compile deps.jettyUtil
     compile deps.jopt
-    compile (deps.k8sClient) {
+    compile deps.k8sClient
+    compile (deps.k8sClientFluent) {
         exclude module: 'builder-annotations'
     }
     compile deps.mail
@@ -43,6 +46,7 @@ dependencies {
     compile deps.mysqlConnector
     compile deps.snakeyaml
     compile deps.velocity
+    compile deps.kafkaLog4jAppender
 
     testRuntime deps.h2
 
@@ -53,6 +57,11 @@ dependencies {
     testCompile project(':test')
     testCompile project(path: ':azkaban-db', configuration: 'testOutput')
     testCompile deps.commonsCompress
+}
+
+test {
+    minHeapSize = "256m" // initial heap size
+    maxHeapSize = "1024m" // maximum heap size
 }
 
 tasks.withType(JavaCompile) {

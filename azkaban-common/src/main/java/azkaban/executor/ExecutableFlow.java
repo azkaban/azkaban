@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 
+  public static final int DEFAULT_FLOW_RETRY_LIMIT = 2;
+  public static final int DEFAULT_SYSTEM_FLOW_RETRY_LIMIT = 1;
+
   public static final String EXECUTIONID_PARAM = "executionId";
   public static final String EXECUTIONPATH_PARAM = "executionPath";
   public static final String EXECUTIONOPTIONS_PARAM = "executionOptions";
@@ -51,12 +54,18 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
+  public static final String IS_OOM_Killed_PARAM = "isOOMKilled";
+  public static final String IS_VPA_Enabled_PARAM = "isVPAEnabled";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String EXECUTION_SOURCE = "executionSource";
   public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
   public static final String VERSIONSET_JSON_PARAM = "versionSetJson";
   public static final String VERSIONSET_MD5HEX_PARAM = "versionSetMd5Hex";
   public static final String VERSIONSET_ID_PARAM = "versionSetId";
+  private static final String PARAM_OVERRIDE = "param.override.";
+  private static final String PROJECT_FILE_UPLOAD_USER = "uploadUser";
+  private static final String USER_DEFINED_FLOW_RETRY_COUNT_PARAM = "userDefinedFlowRetryCount";
+  private static final String SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM = "systemDefinedFlowRetryCount";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -69,22 +78,30 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private long submitTime = -1;
   private long lastModifiedTimestamp;
   private String submitUser;
+  private String uploadUser;
   private String executionPath;
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
   private boolean isLocked;
+  private boolean isOOMKilled = false;
+  private boolean isVPAEnabled = false;
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
   private String flowLockErrorMessage;
   // For Flow_Status_Changed event
   private String failedJobId = "unknown";
   private String modifiedBy = "unknown";
   private DispatchMethod dispatchMethod;
+  // how many times flow level retry happened over user defined final status
+  private int userDefinedRetryCount = 0;
+  // how many times flow level retry happened due to stuck in "Dispatch/Preparing/Ready" status
+  private int systemDefinedRetryCount = 0;
 
   // For slaOption information
   private String slaOptionStr = "null";
 
   // For Flows dispatched from a k8s pod
   private VersionSet versionSet;
+  private Set<String> proxyUsersFromFlowObj;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -93,6 +110,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.scheduleId = -1;
     this.lastModifiedTimestamp = project.getLastModifiedTimestamp();
     this.lastModifiedUser = project.getLastModifiedUser();
+    this.uploadUser = project.getUploadUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
     setLocked(flow.isLocked());
     setFlowLockErrorMessage(flow.getFlowLockErrorMessage());
@@ -135,6 +153,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public Set<String> getProxyUsers() {
     return new HashSet<>(this.proxyUsers);
+  }
+  public Set<String> getProxyUsersFromFlowObj(){
+    return this.proxyUsersFromFlowObj;
+  }
+  public void setProxyUsersFromFlowObj(Set<String> proxyUsersMap){
+    this.proxyUsersFromFlowObj = proxyUsersMap;
   }
 
   public ExecutionOptions getExecutionOptions() {
@@ -262,6 +286,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setLocked(boolean locked) { this.isLocked = locked; }
 
+  public boolean isOOMKilled() { return this.isOOMKilled; }
+
+  public void setOOMKilled(boolean oomKilled) { this.isOOMKilled = oomKilled; }
+
+  public boolean isVPAEnabled() { return this.isVPAEnabled; }
+
+  public void setVPAEnabled(boolean vpaEnabled) { this.isVPAEnabled = vpaEnabled; }
+
   public String getFlowLockErrorMessage() {
     return this.flowLockErrorMessage;
   }
@@ -269,9 +301,31 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
     this.flowLockErrorMessage = flowLockErrorMessage;
   }
+  public String getUploadUser() {
+    return this.uploadUser;
+  }
+  public void setUploadUser(final String uploadUser) {
+    this.uploadUser = uploadUser;
+  }
 
   public String getSlaOptionStr() {
     return slaOptionStr;
+  }
+
+  public int getUserDefinedRetryCount() {
+    return userDefinedRetryCount;
+  }
+
+  public void setUserDefinedRetryCount(int userDefinedRetryCount) {
+    this.userDefinedRetryCount = userDefinedRetryCount;
+  }
+
+  public int getSystemDefinedRetryCount() {
+    return systemDefinedRetryCount;
+  }
+
+  public void setSystemDefinedRetryCount(int systemDefinedRetryCount) {
+    this.systemDefinedRetryCount = systemDefinedRetryCount;
   }
 
   @Override
@@ -301,6 +355,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(PROXYUSERS_PARAM, proxyUserList);
 
     flowObj.put(SUBMITTIME_PARAM, this.submitTime);
+    flowObj.put(PROJECT_FILE_UPLOAD_USER, this.uploadUser);
 
     final List<Map<String, Object>> slaOptions = new ArrayList<>();
     List<SlaOption> slaOptionList = this.executionOptions.getSlaOptions();
@@ -311,8 +366,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
+    flowObj.put(USER_DEFINED_FLOW_RETRY_COUNT_PARAM, this.userDefinedRetryCount);
+    flowObj.put(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, this.systemDefinedRetryCount);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+    flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
+    flowObj.put(IS_VPA_Enabled_PARAM, this.isVPAEnabled);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
     flowObj.put(FLOW_DISPATCH_METHOD, getDispatchMethod().getNumVal());
 
@@ -342,6 +401,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.version = flowObj.getInt(VERSION_PARAM);
     this.lastModifiedTimestamp = flowObj.getLong(LASTMODIFIEDTIME_PARAM);
     this.lastModifiedUser = flowObj.getString(LASTMODIFIEDUSER_PARAM);
+    this.uploadUser = flowObj.getString(PROJECT_FILE_UPLOAD_USER);
     this.submitTime = flowObj.getLong(SUBMITTIME_PARAM);
     this.azkabanFlowVersion = flowObj.getDouble(AZKABANFLOWVERSION_PARAM);
 
@@ -372,6 +432,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
       }
       this.slaOptionStr = slaBuilder.toString();
     }
+    this.userDefinedRetryCount = flowObj.getInt(USER_DEFINED_FLOW_RETRY_COUNT_PARAM, 0);
+    this.systemDefinedRetryCount = flowObj.getInt(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, 0);
 
     if (flowObj.containsKey(VERSIONSET_JSON_PARAM) && flowObj.containsKey(VERSIONSET_MD5HEX_PARAM) && flowObj.containsKey(VERSIONSET_ID_PARAM)) {
       // Checks if flow contains version set information
@@ -384,6 +446,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
+    this.setOOMKilled(flowObj.getBool(IS_OOM_Killed_PARAM, false));
+    this.setVPAEnabled(flowObj.getBool(IS_VPA_Enabled_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
     // Dispatch Method default is POLL
     this.setDispatchMethod(DispatchMethod.fromNumVal(flowObj.getInt(FLOW_DISPATCH_METHOD,
@@ -474,5 +538,22 @@ public class ExecutableFlow extends ExecutableFlowBase {
    */
   public void setVersionSet(final VersionSet versionSet) {
     this.versionSet = versionSet;
+  }
+
+  /**
+   * Extract the "param.override." properties from input Props and set to the
+   * flowParameters of executionOptions
+   */
+  public void setFlowParamsFromProps(final Props props) {
+    if (null == props) {
+      return;
+    }
+    // Clone the props object and filter out the properties to keep only the override ones.
+    Map<String, String> flowOverridePropsMap = Props.clone(props).getMapByPrefix(PARAM_OVERRIDE);
+
+    // Update the flow params with override props
+    if (this.executionOptions != null) {
+      this.executionOptions.addAllFlowParameters(flowOverridePropsMap);
+    }
   }
 }

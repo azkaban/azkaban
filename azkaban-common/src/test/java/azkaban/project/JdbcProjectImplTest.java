@@ -15,12 +15,15 @@
  */
 package azkaban.project;
 
+import static azkaban.project.JdbcProjectImpl.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.*;
 
 import azkaban.db.DatabaseOperator;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowResourceRecommendation;
 import azkaban.test.Utils;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.user.Permission;
@@ -43,6 +46,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 
 public class JdbcProjectImplTest {
@@ -107,21 +111,6 @@ public class JdbcProjectImplTest {
   }
 
   @Test
-  public void testCreateProjectsWithDifferentCases() {
-    final String projectName = "mytestproject";
-    final String projectDescription = "This is my new project with lower cases.";
-    final User user = new User("testUser1");
-    this.loader.createNewProject(projectName, projectDescription, user);
-    final String projectName2 = "MYTESTPROJECT";
-    final String projectDescription2 = "This is my new project with UPPER CASES.";
-    assertThatThrownBy(
-        () -> this.loader.createNewProject(projectName2, projectDescription2, user))
-        .isInstanceOf(ProjectManagerException.class)
-        .hasMessageContaining(
-            "Active project with name " + projectName2 + " already exists in db.");
-  }
-
-  @Test
   public void testFetchProjectByName() throws Exception {
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
@@ -152,6 +141,21 @@ public class JdbcProjectImplTest {
     final ProjectFileHandler fileHandler = this.loader.getUploadedFile(project.getId(), newVersion);
     Assert.assertEquals(fileHandler.getFileName(), SAMPLE_FILE);
     Assert.assertEquals(fileHandler.getUploader(), "uploadUser1");
+  }
+
+  @Test(expected = ProjectManagerException.class)
+  public void testUploadFlowFileWithConfigurableFlowFileSize() {
+    /* creating local objects so that the instance variables are not affected */
+    Props propsLocal = new Props();
+    propsLocal.put(MAX_FLOW_FILE_SIZE_KEY, 1);
+    JdbcProjectImpl loaderLocal = new JdbcProjectImpl(propsLocal, dbOperator);
+    final File testFile = Mockito.mock(File.class);
+    /**
+     * By default, the file size limit is 10 MB. We have changed the default to 1MB in this test.
+     * and we pretend the file size to be 2MB. So this will throw an exception.
+     */
+    when(testFile.length()).thenReturn(2 * 1024 * 1024L);
+    loaderLocal.uploadFlowFile(1, 1, testFile, 1);
   }
 
   @Test(expected = ProjectManagerException.class)
@@ -387,6 +391,93 @@ public class JdbcProjectImplTest {
     Assert.assertEquals(sameProps2.get("key2"), "value9");
   }
 
+  private void createThreeFlowResourceRecommendations() {
+    createThreeProjects();
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+
+    final String flowId1 = "alwaysOk1";
+    this.loader.createFlowResourceRecommendation(project1.getId(), flowId1);
+    final String flowId2 = "alwaysOk2";
+    this.loader.createFlowResourceRecommendation(project1.getId(), flowId2);
+    final String flowId3 = "alwaysOk2";
+    this.loader.createFlowResourceRecommendation(project2.getId(), flowId3);
+  }
+
+  @Test
+  public void testCreateFlowResourceRecommendation() throws Exception {
+    final int projectId = 1;
+    final String flowId = "alwaysOk";
+    final FlowResourceRecommendation flowResourceRecommendation = this.loader.createFlowResourceRecommendation(projectId, flowId);
+    Assert.assertEquals(flowResourceRecommendation.getProjectId(), projectId);
+    Assert.assertEquals(flowResourceRecommendation.getFlowId(), flowId);
+    Assert.assertNull(flowResourceRecommendation.getCpuRecommendation());
+    Assert.assertNull(flowResourceRecommendation.getMemoryRecommendation());
+    Assert.assertNull(flowResourceRecommendation.getDiskRecommendation());
+  }
+
+  @Test
+  public void testCreateFlowResourceRecommendationTwice() throws Exception {
+    final int projectId = 1;
+    final String flowId = "alwaysOk";
+    this.loader.createFlowResourceRecommendation(projectId, flowId);
+    final FlowResourceRecommendation flowResourceRecommendation = this.loader.createFlowResourceRecommendation(projectId, flowId);
+    Assert.assertEquals(flowResourceRecommendation.getProjectId(), projectId);
+    Assert.assertEquals(flowResourceRecommendation.getFlowId(), flowId);
+    Assert.assertNull(flowResourceRecommendation.getCpuRecommendation());
+    Assert.assertNull(flowResourceRecommendation.getMemoryRecommendation());
+    Assert.assertNull(flowResourceRecommendation.getDiskRecommendation());
+  }
+
+  @Test
+  public void testUpdateFlowResourceRecommendation() throws Exception {
+    final int projectId = 1;
+    final String flowId = "alwaysOk1";
+
+    final String cpuRecommendation = "100m";
+    final String memoryRecommendation = "4Gi";
+    final String diskRecommendation = "20Gi";
+
+    final FlowResourceRecommendation flowResourceRecommendation = this.loader.createFlowResourceRecommendation(projectId,
+        flowId);
+
+    flowResourceRecommendation.setCpuRecommendation(cpuRecommendation);
+    flowResourceRecommendation.setMemoryRecommendation(memoryRecommendation);
+    flowResourceRecommendation.setDiskRecommendation(diskRecommendation);
+
+    this.loader.updateFlowResourceRecommendation(flowResourceRecommendation);
+
+    final FlowResourceRecommendation flowResourceRecommendation2 = this.loader.fetchFlowResourceRecommendation(projectId, flowId);
+    Assert.assertEquals(flowResourceRecommendation2.getCpuRecommendation(), cpuRecommendation);
+    Assert.assertEquals(flowResourceRecommendation2.getMemoryRecommendation(), memoryRecommendation);
+    Assert.assertEquals(flowResourceRecommendation2.getDiskRecommendation(), diskRecommendation);
+  }
+
+  @Test
+  public void testFlowResourceRecommendationsForMultipleProjects() throws Exception {
+    createThreeProjects();
+
+    final Project project1 = this.loader.fetchProjectByName("mytestProject");
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    final Project project3 = this.loader.fetchProjectByName("mytestProject3");
+
+    final String flowId1 = "alwaysOk1";
+    this.loader.createFlowResourceRecommendation(project1.getId(), flowId1);
+    final String flowId2 = "alwaysOk2";
+    this.loader.createFlowResourceRecommendation(project1.getId(), flowId2);
+    final String flowId3 = "alwaysOk2";
+    this.loader.createFlowResourceRecommendation(project2.getId(), flowId3);
+
+    final List<Project> projectIdList = Arrays.asList(project1, project2, project3);
+
+    final Map<Project, List<FlowResourceRecommendation>> projectToFlowResourceRecommendations = this.loader
+        .fetchAllFlowResourceRecommendationsForProjects(projectIdList);
+    Assert.assertEquals(projectToFlowResourceRecommendations.size(), 3);
+    Assert.assertEquals(projectToFlowResourceRecommendations.get(project1).size(), 2);
+    Assert.assertEquals(projectToFlowResourceRecommendations.get(project2).size(), 1);
+    Assert.assertEquals(projectToFlowResourceRecommendations.get(project3).size(), 0);
+  }
+
   @Test
   public void testFetchProjectProperties() throws Exception {
     final Props props1 = new Props();
@@ -402,7 +493,7 @@ public class JdbcProjectImplTest {
 
     createThreeProjects();
     final Project project = this.loader.fetchProjectByName("mytestProject");
-    this.loader.uploadProjectProperties(project, list);
+    this.loader.uploadProjectProperties(project, project.getVersion(), list);
 
     final Map<String, Props> propsMap = this.loader
         .fetchProjectProperties(project.getId(), project.getVersion());

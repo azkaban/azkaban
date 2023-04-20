@@ -36,6 +36,7 @@ import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
 import azkaban.utils.TimeUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -171,13 +173,17 @@ public class ExecutionFlowDaoTest {
   @Test
   public void fetchFlowHistoryWithStartTime() throws Exception {
     final ExecutableFlow flow1 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), DispatchMethod.POLL,
+        Status.PREPARING);
     final ExecutableFlow flow2 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), DispatchMethod.POLL,
+        Status.PREPARING);
     final ExecutableFlow flow3 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), DispatchMethod.POLL,
+        Status.PREPARING);
     final ExecutableFlow flow4 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"), Status.PREPARING);
+        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"), DispatchMethod.POLL,
+        Status.PREPARING);
 
     final List<ExecutableFlow> expectedFlows = new ArrayList<>();
     expectedFlows.add(flow1);
@@ -210,7 +216,8 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFetchRecentlyFinishedFlows() throws Exception {
-    final ExecutableFlow flow1 = createExecution(System.currentTimeMillis(), Status.SUCCEEDED);
+    final ExecutableFlow flow1 =
+        createExecution(System.currentTimeMillis(), DispatchMethod.POLL, Status.SUCCEEDED);
     flow1.setEndTime(System.currentTimeMillis());
     this.executionFlowDao.updateExecutableFlow(flow1);
 
@@ -229,7 +236,7 @@ public class ExecutionFlowDaoTest {
     final long endTime = currentTime - FLOW_FINISHED_TIME.toMillis();
     final long startTime = currentTime - FLOW_FINISHED_TIME.toMillis() - 10;
 
-    final ExecutableFlow flow1 = createExecution(startTime, Status.SUCCEEDED);
+    final ExecutableFlow flow1 = createExecution(startTime, DispatchMethod.POLL, Status.SUCCEEDED);
     flow1.setEndTime(endTime);
     this.executionFlowDao.updateExecutableFlow(flow1);
 
@@ -257,27 +264,77 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
-  public void testFetchStaleFlows() throws Exception {
-    long preThresholdTimeMs = System.currentTimeMillis();
-    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", preThresholdTimeMs,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(preThresholdTimeMs), DispatchMethod.CONTAINERIZED);
-    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", preThresholdTimeMs,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.SUCCEEDED, Optional.of(preThresholdTimeMs)
-        , DispatchMethod.CONTAINERIZED);
+  public void testSelectQueuedFlows() throws Exception {
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", System.currentTimeMillis(),
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec2", System.currentTimeMillis(),
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, DispatchMethod.POLL);
 
-    long thresholdTimeMs = preThresholdTimeMs + 1000L;
-    long postThresholdTimeMs = thresholdTimeMs + 1000L;
-    final ExecutableFlow flow3 = submitNewFlow("exectest1", "exec3", preThresholdTimeMs,
-        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(postThresholdTimeMs),
+    final List<Integer> selectedQueuedFlows =
+        this.executionFlowDao.selectQueuedFlows(Status.PREPARING);
+    assertThat(selectedQueuedFlows.size()).isEqualTo(2);
+    assert(selectedQueuedFlows.get(0) == flow1.getExecutionId());
+    assert(selectedQueuedFlows.get(1) == flow2.getExecutionId());
+  }
+
+  @Test
+  public void testFetchStaleFlows() throws IOException, ExecutorManagerException {
+    // Flow executions in PREPARING state
+    final long lessThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5);
+    final ExecutableFlow flow1 = submitNewFlow("exectest1", "exec1", lessThan15Minutes,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(),
         DispatchMethod.CONTAINERIZED);
 
-    // Only the first flow in the RUNNING state started before thresholdTime should be returned.
-    final List<ExecutableFlow> fetchedStaleFlows =
-        this.executionFlowDao.fetchStaleFlows(thresholdTimeMs);
-    assertThat(fetchedStaleFlows.size()).isEqualTo(1);
+    final long olderThan15Minutes = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(20);
+    final ExecutableFlow flow2 = submitNewFlow("exectest1", "exec1", olderThan15Minutes,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(), DispatchMethod.POLL);
 
-    final ExecutableFlow fetchedFlow1 = fetchedStaleFlows.get(0);
-    assertTwoFlowSame(flow1, fetchedFlow1);
+    final ExecutableFlow flow3 = submitNewFlow("exectest1", "exec2", olderThan15Minutes,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.PREPARING, Optional.empty(),
+        DispatchMethod.CONTAINERIZED);
+
+    // Flow executions in RUNNING state
+    final long olderThan10Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10);
+    final ExecutableFlow flow4 = submitNewFlow("exectest1", "exec3", olderThan10Days,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan10Days),
+        DispatchMethod.CONTAINERIZED);
+
+    final long olderThan5Days = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5);
+    final ExecutableFlow flow5 = submitNewFlow("exectest1", "exec1", olderThan5Days,
+        ExecutionOptions.DEFAULT_FLOW_PRIORITY, Status.RUNNING, Optional.of(olderThan5Days),
+        DispatchMethod.CONTAINERIZED);
+
+    ImmutableMap<Status, Pair<Duration, String>> validityMap = ImmutableMap.of(
+        Status.PREPARING, new Pair<>(Duration.ofMinutes(15), "submit_time"),
+        Status.RUNNING, new Pair<>(Duration.ofDays(10), "start_time"));
+
+    // Test staleness in PREPARING state
+    final List<ExecutableFlow> staleFlowsInPreparing =
+        this.executionFlowDao.fetchStaleFlowsForStatus(Status.PREPARING, validityMap);
+    // Only containerized executions submitted ** MORE than ** 15 mins ago should be returned
+    assertThat(staleFlowsInPreparing.size()).isEqualTo(1);
+    assertTwoFlowSame(flow3, staleFlowsInPreparing.get(0));
+
+    // Test staleness in RUNNING state
+    final List<ExecutableFlow> staleFlowsInRunning =
+        this.executionFlowDao.fetchStaleFlowsForStatus(Status.RUNNING, validityMap);
+    // Only the first flow in the RUNNING state should be returned.
+    assertThat(staleFlowsInRunning.size()).isEqualTo(1);
+    assertTwoFlowSame(flow4, staleFlowsInRunning.get(0));
+
+    // Test freshness in PREPARING state
+    final List<ExecutableFlow> freshFlowsInPreparing =
+        this.executionFlowDao.fetchFreshFlowsForStatus(Status.PREPARING, validityMap);
+    // Only containerized executions submitted ** LESS-EQUAL than ** 15 mins ago should be returned
+    assertThat(staleFlowsInPreparing.size()).isEqualTo(1);
+    assertTwoFlowSame(flow1, freshFlowsInPreparing.get(0));
+
+    // Test freshness in RUNNING state
+    final List<ExecutableFlow> freshFlowsInRunning =
+        this.executionFlowDao.fetchFreshFlowsForStatus(Status.RUNNING, validityMap);
+    // Only the second flow in the RUNNING state should be returned.
+    assertThat(staleFlowsInRunning.size()).isEqualTo(1);
+    assertTwoFlowSame(flow5, freshFlowsInRunning.get(0));
   }
 
   @Test
@@ -325,15 +382,18 @@ public class ExecutionFlowDaoTest {
   }
 
   @Test
-  public void testFetchActiveFlowsExecutorAssigned() throws Exception {
+  public void testFetchActiveFlowsExecutorAssigned() throws ExecutorManagerException, IOException {
     final List<ExecutableFlow> flows = createExecutions();
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
-        this.fetchActiveFlowDao.fetchActiveFlows();
+        this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
+    assertThat(activeFlows).hasSize(3);
     assertFound(activeFlows, flows.get(0), true);
     assertNotFound(activeFlows, flows.get(1), "Returned a queued execution");
     assertFound(activeFlows, flows.get(2), true);
     assertNotFound(activeFlows, flows.get(3), "Returned an execution with a finished status");
     assertFound(activeFlows, flows.get(4), false);
+    assertNotFound(activeFlows, flows.get(5),
+        "Returned an execution with different dispatch method");
     assertTwoFlowSame(activeFlows.get(flows.get(0).getExecutionId()).getSecond(), flows.get(0));
   }
 
@@ -348,6 +408,44 @@ public class ExecutionFlowDaoTest {
     assertNotFound(unfinishedFlows, flows.get(3), "Returned an execution with a finished status");
     assertFound(unfinishedFlows, flows.get(4), false);
     assertTwoFlowSame(unfinishedFlows.get(flows.get(0).getExecutionId()).getSecond(), flows.get(0));
+  }
+
+  @Test
+  public void testFetchUnfinishedFlow() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Pair<ExecutionReference, ExecutableFlow> unfinishedFlow =
+        this.fetchActiveFlowDao.fetchUnfinishedFlow(flows.get(0).getExecutionId());
+    assert(unfinishedFlow.getSecond().getExecutionId() == flows.get(0).getExecutionId());
+    assertTwoFlowSame(unfinishedFlow.getSecond(), flows.get(0));
+
+    final Pair<ExecutionReference, ExecutableFlow> finishedFlow =
+        this.fetchActiveFlowDao.fetchUnfinishedFlow(flows.get(3).getExecutionId());
+    assert(finishedFlow == null);
+  }
+
+  @Test
+  public void testSelectUnfinishedFlows() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final Set<Integer> unfinishedFlows =
+        new HashSet(this.executionFlowDao.selectUnfinishedFlows());
+
+    assert(unfinishedFlows.contains(flows.get(0).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(1).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(2).getExecutionId()));
+    assert(!unfinishedFlows.contains(flows.get(3).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(4).getExecutionId()));
+  }
+
+  @Test
+  public void testSelectUnfinishedFlowsWithProjectIdAndFlowId() throws Exception {
+    final List<ExecutableFlow> flows = createExecutions();
+    final List<Integer> unfinishedFlows = this.executionFlowDao.selectUnfinishedFlows(flows.get(0).getProjectId(), flows.get(0).getFlowId());
+
+    assert(unfinishedFlows.contains(flows.get(0).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(1).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(2).getExecutionId()));
+    assert(!unfinishedFlows.contains(flows.get(3).getExecutionId()));
+    assert(unfinishedFlows.contains(flows.get(4).getExecutionId()));
   }
 
   @Test
@@ -384,34 +482,48 @@ public class ExecutionFlowDaoTest {
     assertTwoFlowSame(
         this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(4).getExecutionId()).getSecond(),
         flows.get(4));
+    assertTwoFlowSame(
+        this.fetchActiveFlowDao.fetchActiveFlowByExecId(flows.get(5).getExecutionId()).getSecond(),
+        flows.get(5));
   }
 
-  private List<ExecutableFlow> createExecutions() throws Exception {
+  private List<ExecutableFlow> createExecutions() throws ExecutorManagerException, IOException {
     final Executor executor = this.executorDao.addExecutor("test", 1);
     final long currentTime = System.currentTimeMillis();
 
-    final ExecutableFlow flow1 = createExecutionAndAssign(Status.PREPARING, executor);
+    final ExecutableFlow flow1 =
+        createExecutionAndAssign(Status.PREPARING, DispatchMethod.POLL, executor);
 
     // flow2 is not assigned
-    final ExecutableFlow flow2 = createExecution(currentTime, Status.PREPARING);
+    final ExecutableFlow flow2 =
+        createExecution(currentTime, DispatchMethod.POLL, Status.PREPARING);
 
-    final ExecutableFlow flow3 = createExecutionAndAssign(Status.RUNNING, executor);
+    final ExecutableFlow flow3 =
+        createExecutionAndAssign(Status.RUNNING, DispatchMethod.POLL, executor);
     flow3.setStartTime(currentTime + 1);
     this.executionFlowDao.updateExecutableFlow(flow3);
 
-    final ExecutableFlow flow4 = createExecutionAndAssign(Status.SUCCEEDED, executor);
+    final ExecutableFlow flow4 =
+        createExecutionAndAssign(Status.SUCCEEDED, DispatchMethod.POLL, executor);
     flow4.setStartTime(currentTime + 2);
     flow4.setEndTime(currentTime + 4);
     this.executionFlowDao.updateExecutableFlow(flow4);
 
     final Executor executor2 = this.executorDao.addExecutor("test2", 2);
     // flow5 is assigned to an executor that is then removed
-    final ExecutableFlow flow5 = createExecutionAndAssign(Status.RUNNING, executor2);
+    final ExecutableFlow flow5 =
+        createExecutionAndAssign(Status.RUNNING, DispatchMethod.POLL, executor2);
     flow5.setStartTime(currentTime + 6);
     this.executionFlowDao.updateExecutableFlow(flow5);
-
     this.executorDao.removeExecutor(executor2.getHost(), executor2.getPort());
-    return ImmutableList.of(flow1, flow2, flow3, flow4, flow5);
+
+    // flow6 uses a different dispatch model
+    final ExecutableFlow flow6 =
+        createExecutionAndAssign(Status.RUNNING, DispatchMethod.PUSH, executor);
+    flow6.setStartTime(currentTime + 8);
+    this.executionFlowDao.updateExecutableFlow(flow6);
+
+    return ImmutableList.of(flow1, flow2, flow3, flow4, flow5, flow6);
   }
 
   private void assertNotFound(
@@ -428,18 +540,20 @@ public class ExecutionFlowDaoTest {
         .isEqualTo(executorPresent);
   }
 
-  private ExecutableFlow createExecutionAndAssign(final Status status, final Executor executor)
-      throws Exception {
-    final ExecutableFlow flow = createExecution(System.currentTimeMillis(), status);
+  private ExecutableFlow createExecutionAndAssign(final Status status,
+      final DispatchMethod dispatchMethod, final Executor executor)
+      throws ExecutorManagerException, IOException {
+    final ExecutableFlow flow = createExecution(System.currentTimeMillis(), dispatchMethod, status);
     this.assignExecutor.assignExecutor(executor.getId(), flow.getExecutionId());
     return flow;
   }
 
-  private ExecutableFlow createExecution(final long startTime, final Status status)
-      throws IOException, ExecutorManagerException {
+  private ExecutableFlow createExecution(final long startTime, final DispatchMethod dispatchMethod,
+      final Status status) throws ExecutorManagerException, IOException {
     final ExecutableFlow flow = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
     flow.setSubmitUser("testUser");
     flow.setSubmitTime(startTime - 1);
+    flow.setDispatchMethod(dispatchMethod);
     flow.setStartTime(startTime);
     flow.setStatus(Status.PREPARING);
     this.executionFlowDao.uploadExecutableFlow(flow);
@@ -456,24 +570,24 @@ public class ExecutionFlowDaoTest {
     this.assignExecutor.assignExecutor(executor.getId(), flow1.getExecutionId());
 
     Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
-        this.fetchActiveFlowDao.fetchActiveFlows();
+        this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
 
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isTrue();
 
     // When flow status becomes SUCCEEDED/KILLED/FAILED, it should not be in active state
     flow1.setStatus(Status.SUCCEEDED);
     this.executionFlowDao.updateExecutableFlow(flow1);
-    activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows();
+    activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isFalse();
 
     flow1.setStatus(Status.KILLED);
     this.executionFlowDao.updateExecutableFlow(flow1);
-    activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows();
+    activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isFalse();
 
     flow1.setStatus(Status.FAILED);
     this.executionFlowDao.updateExecutableFlow(flow1);
-    activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows();
+    activeFlows1 = this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isFalse();
   }
 
@@ -773,14 +887,18 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void fetchFlowStatusWithFlowHistoryByStartTime() throws Exception {
-    final ExecutableFlow flow1 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"), Status.PREPARING);
-    final ExecutableFlow flow2 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
-    final ExecutableFlow flow3 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"), Status.PREPARING);
-    final ExecutableFlow flow4 = createExecution(
-        TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"), Status.QUEUED);
+    final ExecutableFlow flow1 =
+        createExecution(TimeUtils.convertDateTimeToUTCMillis("2018-09-01 10:00:00"),
+            DispatchMethod.POLL, Status.PREPARING);
+    final ExecutableFlow flow2 =
+        createExecution(TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"),
+            DispatchMethod.POLL, Status.PREPARING);
+    final ExecutableFlow flow3 =
+        createExecution(TimeUtils.convertDateTimeToUTCMillis("2018-09-01 09:00:00"),
+            DispatchMethod.POLL, Status.PREPARING);
+    final ExecutableFlow flow4 =
+        createExecution(TimeUtils.convertDateTimeToUTCMillis("2018-09-01 08:00:00"),
+            DispatchMethod.POLL, Status.QUEUED);
 
     makeFlowStatusInconsistent(flow1.getExecutionId(), Status.FAILED_FINISHING);
 
@@ -797,7 +915,7 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFlowStatusWithFetchUnfinishedFlows() throws Exception {
-    final ExecutableFlow flow1 = createExecutionAndAssign(Status.QUEUED,
+    final ExecutableFlow flow1 = createExecutionAndAssign(Status.QUEUED, DispatchMethod.POLL,
         this.executorDao.addExecutor("test", 1));
 
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows1 =
@@ -817,11 +935,11 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFlowStatusWithFetchActiveFlows() throws Exception {
-    final ExecutableFlow flow1 = createExecutionAndAssign(Status.RUNNING,
+    final ExecutableFlow flow1 = createExecutionAndAssign(Status.RUNNING, DispatchMethod.POLL,
         this.executorDao.addExecutor("test", 1));
 
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
-        this.fetchActiveFlowDao.fetchActiveFlows();
+        this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
     assertThat(activeFlows1.containsKey(flow1.getExecutionId())).isTrue();
     assertThat(activeFlows1.get(flow1.getExecutionId()).getSecond().getStatus())
         .isEqualTo(Status.RUNNING);
@@ -829,7 +947,7 @@ public class ExecutionFlowDaoTest {
     makeFlowStatusInconsistent(flow1.getExecutionId(), Status.KILLING);
 
     final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows2 =
-        this.fetchActiveFlowDao.fetchActiveFlows();
+        this.fetchActiveFlowDao.fetchActiveFlows(DispatchMethod.POLL);
     assertThat(activeFlows2.containsKey(flow1.getExecutionId())).isTrue();
     assertThat(activeFlows2.get(flow1.getExecutionId()).getSecond().getStatus())
         .isEqualTo(Status.KILLING);
@@ -837,7 +955,7 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFlowStatusWithFetchActiveFlowByExecId() throws Exception {
-    final ExecutableFlow flow1 = createExecutionAndAssign(Status.RUNNING,
+    final ExecutableFlow flow1 = createExecutionAndAssign(Status.RUNNING, DispatchMethod.POLL,
         this.executorDao.addExecutor("test", 1));
     Pair<ExecutionReference, ExecutableFlow> activeFlow1 =
         this.fetchActiveFlowDao.fetchActiveFlowByExecId(flow1.getExecutionId());
@@ -873,7 +991,8 @@ public class ExecutionFlowDaoTest {
 
   @Test
   public void testFlowStatusWithFetchRecentlyFinishedFlows() throws Exception {
-    final ExecutableFlow flow1 = createExecution(System.currentTimeMillis(), Status.SUCCEEDED);
+    final ExecutableFlow flow1 =
+        createExecution(System.currentTimeMillis(), DispatchMethod.POLL, Status.SUCCEEDED);
     flow1.setEndTime(System.currentTimeMillis());
     this.executionFlowDao.updateExecutableFlow(flow1);
 
@@ -937,6 +1056,16 @@ public class ExecutionFlowDaoTest {
 
     Assert.assertTrue(fetchFlow.getVersionSet() != null);
     assertThat(flow.getVersionSet().getImageToVersionMap()).isEqualTo(fetchFlow.getVersionSet().getImageToVersionMap());
+  }
+
+  /**
+   * Test generating a string representing terminating flow statuses
+   * @throws Exception
+   */
+  @Test
+  public void testGetTerminalStatusesString() throws Exception {
+    final String target = "50, 60, 65, 70";
+    Assert.assertTrue(this.fetchActiveFlowDao.getTerminalStatusesString().equals(target));
   }
 
   /*

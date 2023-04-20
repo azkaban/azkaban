@@ -16,7 +16,6 @@
 package azkaban.webapp;
 
 import static azkaban.Constants.AZKABAN_SERVLET_CONTEXT_KEY;
-import static azkaban.Constants.ConfigurationKeys.DEFAULT_TIMEZONE_ID;
 import static azkaban.Constants.ConfigurationKeys.ENABLE_QUARTZ;
 import static azkaban.Constants.MAX_FORM_CONTENT_SIZE;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
@@ -26,18 +25,25 @@ import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
+import azkaban.cluster.ClusterModule;
 import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.OnExecutionEventListener;
+import azkaban.executor.container.ContainerCleanupManager;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.imagemgmt.services.ImageMgmtCommonService;
+import azkaban.imagemgmt.services.ImageRampRuleService;
 import azkaban.imagemgmt.services.ImageRampupService;
 import azkaban.imagemgmt.services.ImageTypeService;
 import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.servlets.ImageRampRuleServlet;
 import azkaban.imagemgmt.servlets.ImageRampupServlet;
 import azkaban.imagemgmt.servlets.ImageTypeServlet;
 import azkaban.imagemgmt.servlets.ImageVersionServlet;
@@ -50,6 +56,7 @@ import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.AzkabanServer;
@@ -107,7 +114,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TimeZone;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.management.ObjectName;
@@ -116,7 +124,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -162,50 +169,64 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final ExecutorManagerAdapter executorManagerAdapter;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
+  private final MissedSchedulesManager missedSchedulesManager;
   private final WebMetrics webMetrics;
   private final Props props;
   private final SessionCache sessionCache;
   private final FlowTriggerScheduler flowTriggerScheduler;
   private final FlowTriggerService flowTriggerService;
   private Map<String, TriggerPlugin> triggerPlugins;
+  private final AlerterHolder alerterPlugins;
   private final ExecutionLogsCleaner executionLogsCleaner;
   private final ObjectMapper objectMapper;
   private final ContainerizationMetrics containerizationMetrics;
+  private final Optional<ContainerCleanupManager> containerCleanupManager;
 
   @Inject
   public AzkabanWebServer(final Props props,
       final Server server,
       final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
+      final ScheduleManager scheduleManager,
       final TriggerManager triggerManager,
+      final MissedSchedulesManager missedSchedulesManager,
       final WebMetrics webMetrics,
       final SessionCache sessionCache,
       final UserManager userManager,
-      final ScheduleManager scheduleManager,
       final VelocityEngine velocityEngine,
+      final AlerterHolder alerterPlugins,
       final FlowTriggerScheduler flowTriggerScheduler,
       final FlowTriggerService flowTriggerService,
       final StatusService statusService,
       final ExecutionLogsCleaner executionLogsCleaner,
       final ObjectMapper objectMapper,
-      final ContainerizationMetrics containerizationMetrics) {
+      final ContainerizationMetrics containerizationMetrics,
+      @Nullable final ContainerCleanupManager containerCleanupManager,
+      @Nullable final OnExecutionEventListener onExecutionEventListener) {
     this.props = requireNonNull(props, "props is null.");
     this.server = requireNonNull(server, "server is null.");
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,
         "executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
+    this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
+    this.missedSchedulesManager = requireNonNull(missedSchedulesManager, "missScheduleManager is null");
     this.webMetrics = requireNonNull(webMetrics, "webMetrics is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
-    this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.velocityEngine = requireNonNull(velocityEngine, "velocityEngine is null.");
+    this.alerterPlugins = alerterPlugins;
     this.statusService = statusService;
     this.flowTriggerScheduler = requireNonNull(flowTriggerScheduler, "scheduler is null.");
     this.flowTriggerService = requireNonNull(flowTriggerService, "flow trigger service is null");
     this.executionLogsCleaner = requireNonNull(executionLogsCleaner, "executionlogcleaner is null");
     this.objectMapper = objectMapper;
     this.containerizationMetrics = containerizationMetrics;
+    this.containerCleanupManager = Optional.ofNullable(containerCleanupManager);
+    if (null != onExecutionEventListener) {
+      logger.info("Initialized onExecutionEventListener");
+      ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+    }
 
     loadBuiltinCheckersAndActions();
 
@@ -217,14 +238,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     new PluginCheckerAndActionsLoader().load(triggerPluginDir);
 
     // Setup time zone
-    if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
-      final String timezoneId = props.getString(DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezoneId);
-      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
-      TimeZone.setDefault(timeZone);
-      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
-      logger.info("Setting timezone to " + timezoneId);
-    }
+    AzkabanServer.setupTimeZone(props, logger);
 
     configureMBeanServer();
   }
@@ -248,7 +262,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     /* Initialize Guice Injector */
     final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
-        new AzkabanWebServerModule(props)
+        new AzkabanWebServerModule(props),
+        new ClusterModule()
     );
     SERVICE_PROVIDER.setInjector(injector);
     launch(injector.getInstance(AzkabanWebServer.class));
@@ -467,6 +482,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     // always have basic time trigger
     // TODO: find something else to do the job
     getTriggerManager().start();
+    getScheduleManager().start();
 
     // Set up api endpoint metrics
     // At the moment login action doesn't have a dedicated route, any route can be used to
@@ -522,6 +538,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       routesMap.put("/imageTypes/*", new ImageTypeServlet());
       routesMap.put("/imageVersions/*", new ImageVersionServlet());
       routesMap.put("/imageRampup/*", new ImageRampupServlet());
+      routesMap.put("/imageRampRule/*", new ImageRampRuleServlet());
     }
     return routesMap;
   }
@@ -538,11 +555,12 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private void prepareAndStartServer() throws Exception {
     this.executorManagerAdapter.start();
     this.executionLogsCleaner.start();
+    this.missedSchedulesManager.start();
 
     configureRoutes();
     startWebMetrics();
     startContainerMetrics();
-
+    this.containerCleanupManager.ifPresent(ContainerCleanupManager::start);
 
     if (this.props.getBoolean(ENABLE_QUARTZ, false)) {
       // flowTriggerService needs to be started first before scheduler starts to schedule
@@ -613,7 +631,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
          * synchronized, such that we can not make a thread safe subtraction. We need to fix this
          *  in the future.
          */
-        return executorManagerAdapter.getRunningFlows().size();
+        return executorManagerAdapter.getRunningFlowIds().size();
       }
 
       @Override
@@ -715,6 +733,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.triggerPlugins = triggerPlugins;
   }
 
+  public AlerterHolder getAlerterPlugins() {
+    return this.alerterPlugins;
+  }
+
   @Override
   public MBeanRegistrationManager getMBeanRegistrationManager() {
     return this.mbeanRegistrationManager;
@@ -761,8 +783,11 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   public void close() {
     this.mbeanRegistrationManager.closeMBeans();
     this.scheduleManager.shutdown();
+    this.triggerManager.shutdown();
     this.executorManagerAdapter.shutdown();
+    this.containerCleanupManager.ifPresent(ContainerCleanupManager::shutdown);
     try {
+      this.missedSchedulesManager.stop();
       this.server.stop();
     } catch (final Exception e) {
       // Catch all while closing server
@@ -785,6 +810,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
 
   public ImageRampupService getImageRampupService() {
     return SERVICE_PROVIDER.getInstance(ImageRampupService.class);
+  }
+
+  public ImageRampRuleService getImageRampRuleService() {
+    return SERVICE_PROVIDER.getInstance(ImageRampRuleService.class);
   }
 
   public PermissionManager getPermissionManager() {

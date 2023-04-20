@@ -1,0 +1,13 @@
+{
+  "ruleName": "daliSparkExclude",
+  "flowIds": [
+    {
+      "projectName": "testProject1",
+      "flowName": "testFlow1"
+    },
+    {
+      "projectName": "testProject2",
+      "flowName": "testFlow2"
+    }
+  ]
+}

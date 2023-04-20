@@ -18,10 +18,16 @@ package azkaban.imagemgmt.permission;
 import azkaban.imagemgmt.daos.ImageTypeDao;
 import azkaban.imagemgmt.exception.ErrorCode;
 import azkaban.imagemgmt.exception.ImageMgmtException;
+import azkaban.imagemgmt.exception.ImageMgmtValidationException;
 import azkaban.imagemgmt.models.ImageOwnership;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
-import java.util.Optional;
+import azkaban.user.User;
+import azkaban.user.UserManager;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -38,14 +44,16 @@ public class PermissionManagerImpl implements PermissionManager {
   private static final Logger log = LoggerFactory.getLogger(PermissionManagerImpl.class);
 
   private final ImageTypeDao imageTypeDao;
+  private final UserManager userManager;
 
   @Inject
-  public PermissionManagerImpl(final ImageTypeDao imageTypeDao) {
+  public PermissionManagerImpl(final ImageTypeDao imageTypeDao, final UserManager userManager) {
     this.imageTypeDao = imageTypeDao;
+    this.userManager = userManager;
   }
 
   /**
-   * Checks the permission based on image type name, user id and Permission type.
+   * Checks the permission based on user manager, image type name, user id and Permission type.
    *
    * @param imageTypeName
    * @param userId
@@ -53,27 +61,85 @@ public class PermissionManagerImpl implements PermissionManager {
    * @return boolean
    */
   @Override
-  public boolean hasPermission(final String imageTypeName, final String userId, final Type type) {
+  public boolean hasPermissionForImageType(final String imageTypeName, final String userId, final Type type) {
     // Gets the image type metadata including ownerships.
-    final Optional<ImageOwnership> optionalImageOwnership =
-        this.imageTypeDao.getImageTypeOwnership(imageTypeName, userId);
-    boolean hasPermission = false;
+    final List<ImageOwnership> imageOwnerships =
+        this.imageTypeDao.getImageTypeOwnership(imageTypeName);
+    // The owner set contains both users and groups.
+    final Set<String> ownerSet = new HashSet<>();
     // Check if ownership is present. If so check the permission of the user role.
-    if (optionalImageOwnership.isPresent()) {
+    for (final ImageOwnership imageOwnership: imageOwnerships) {
       // Gets the permission of the user based on image type ownership metadata.
-      final Permission permission = optionalImageOwnership.get().getRole().getPermission();
+      final Permission permission = imageOwnership.getRole().getPermission();
       // Check if the given Permission.Type contains in the permission of the user.
       if (permission.isPermissionSet(type)) {
-        hasPermission = true;
+        ownerSet.add(imageOwnership.getOwner());
       }
-    } else {
-      log.error(String.format("API access permission check failed. There is no ownership record "
-          + "for image type: %s, user id: %s.", imageTypeName, userId));
-      throw new ImageMgmtException(ErrorCode.FORBIDDEN, String.format("API access permission "
-              + "check failed. There is no ownership record for image type: %s, user id: %s.",
-          imageTypeName, userId));
     }
+    return ownerSet.contains(userId) || userManager.validateUserGroupMembership(userId, ownerSet);
+  }
 
-    return hasPermission;
+  /**
+   * Checks the user permission based on image type name, user id and Permission type;
+   * Azkaban admin would have permission and other user validates through image_ownership table,
+   *
+   *
+   * @param imageTypeName
+   * @param user
+   * @return boolean
+   */
+  @Override
+  public Set<String> validatePermissionAndGetOwnerships(final String imageTypeName, final User user)
+      throws ImageMgmtException {
+    String userId = user.getUserId();
+    // fetch owners from image_ownerships with matching permission set (e.g. ADMIN)
+    Set<String> imageOwnerships = imageTypeDao.getImageTypeOwnership(imageTypeName).stream()
+        .map(ImageOwnership::getOwner)
+        .collect(Collectors.toSet());
+    // not authorized if not azkaban admin nor validate through image_ownership
+    if (!hasPermission(user, imageOwnerships)) {
+      String errorMsg = String.format("unauthorized user %s does not has permission to operate", userId);
+      log.error(errorMsg);
+      throw new ImageMgmtValidationException(ErrorCode.UNAUTHORIZED, errorMsg);
+    }
+    return imageOwnerships;
+  }
+
+  /**
+   * Method to check if user is Azkaban Admin.
+   *
+   * @param user
+   * @return true, if azkaban dev
+   *         false otherwise
+   */
+  @Override
+  public boolean isAzkabanAdmin(final User user) {
+    return user.getRoles().stream()
+        .anyMatch(role -> userManager.getRole(role).getPermission().isPermissionSet(Type.ADMIN));
+  }
+
+  /**
+   * Validate each userId's identity using userManager. userId can be group or individual user account.
+   *
+   * @param ids
+   * @throws ImageMgmtValidationException
+   */
+  @Override
+  public void validateIdentity(List<String> ids) {
+    Set<String> invalids = ids.stream()
+        .filter(id -> !userManager.validateLdapGroup(id) && !userManager.validateUser(id))
+        .collect(Collectors.toSet());
+    if (!invalids.isEmpty()) {
+      log.error("Invalid identity: " + invalids);
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST,
+          "fail to validate identity: " + String.join(",", invalids));
+    }
+  }
+
+  @Override
+  public boolean hasPermission(User user, Set<String> currentOwners) {
+    String userId = user.getUserId();
+    return isAzkabanAdmin(user) || currentOwners.contains(userId)
+        || userManager.validateUserGroupMembership(userId, currentOwners);
   }
 }

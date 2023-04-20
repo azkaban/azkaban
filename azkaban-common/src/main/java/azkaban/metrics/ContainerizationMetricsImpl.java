@@ -19,15 +19,15 @@ package azkaban.metrics;
 import azkaban.utils.Props;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Class implements ContainerMetrics and emit metrics for containerized executions
  */
-//Todo haqin: setup timeToDispatch, flowSubmitToExecutor, flowSubmitToContainer, implement
-//corresponding methods
 public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
   private static final Logger logger = LoggerFactory.getLogger(ContainerizationMetricsImpl.class);
@@ -35,7 +35,12 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Meter podCompleted, podRequested, podScheduled, initContainerRunning,
       appContainerStarting, podReady, podInitFailure, podAppFailure;
   private Meter flowSubmitToExecutor, flowSubmitToContainer;
+  private Meter executionStopped, oomKilled, containerDispatchFail, vpaRecommenderFail,
+      yarnGetApplicationsFail, yarnApplicationKillFail;
+  private Meter cleanupStaleFlowHeartBeat, cleanupContainerHeartBeat, cleanupYarnAppHeartBeat;
+  private Timer cleanupStaleFlowTimer, cleanupContainerTimer, cleanupYarnAppTimer;
   private Histogram timeToDispatch;
+  private volatile boolean isInitialized = false;
 
   @Inject
   public ContainerizationMetricsImpl(MetricsManager metricsManager) {
@@ -53,12 +58,36 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.podReady = this.metricsManager.addMeter("Pod-Ready-Meter");
     this.podInitFailure = this.metricsManager.addMeter("Pod-Init-Failure-Meter");
     this.podAppFailure = this.metricsManager.addMeter("Pod-App-Failure-Meter");
+    this.flowSubmitToExecutor = this.metricsManager.addMeter("Flow-Submit-To-Executor-Meter");
+    this.flowSubmitToContainer = this.metricsManager.addMeter("Flow-Submit-To-Container-Meter");
+    this.timeToDispatch = this.metricsManager.addHistogram("Time-To-Dispatch-Pod-Histogram");
+    this.executionStopped = this.metricsManager.addMeter("Execution-Stopped-Meter");
+    this.oomKilled = this.metricsManager.addMeter("OOM-Killed-Meter");
+    this.containerDispatchFail = this.metricsManager.addMeter("Container-Dispatch-Fail-Meter");
+    this.vpaRecommenderFail = this.metricsManager.addMeter("VPA-Recommender-Fail-Meter");
+    this.yarnGetApplicationsFail = this.metricsManager.addMeter("Yarn-Get-Applications-Fail-Meter");
+    this.yarnApplicationKillFail = this.metricsManager.addMeter("Yarn-Application-Kill-Fail-Meter");
+    this.cleanupStaleFlowHeartBeat = this.metricsManager.addMeter("Cleanup-Stale-Flow-Heartbeat"
+        + "-Meter");
+    this.cleanupContainerHeartBeat = this.metricsManager.addMeter("Cleanup-Container-Heartbeat"
+        + "-Meter");
+    this.cleanupYarnAppHeartBeat = this.metricsManager.addMeter("Cleanup-Yarn-Application-Heartbeat"
+        + "-Meter");
+    this.cleanupStaleFlowTimer = this.metricsManager.addTimer("Cleanup-Stale-Flow-Timer");
+    this.cleanupContainerTimer = this.metricsManager.addTimer("Cleanup-Container-Timer");
+    this.cleanupYarnAppTimer = this.metricsManager.addTimer("Cleanup-Yarn-Application-Timer");
   }
 
   @Override
-  public void startReporting(Props props) {
+  public synchronized void startReporting(Props props) {
     logger.info(String.format("Start reporting container metrics"));
-    this.metricsManager.startReporting("AZ-WEB", props);
+    this.metricsManager.startReporting(props);
+    this.isInitialized = true;
+  }
+
+  @Override
+  public boolean isInitialized() {
+    return isInitialized;
   }
 
   /**
@@ -91,7 +120,9 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   }
 
   @Override
-  public void markPodReady() { this.podReady.mark(); }
+  public void markPodReady() {
+    this.podReady.mark();
+  }
 
   @Override
   public void markPodInitFailure() {
@@ -106,16 +137,76 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
 
   @Override
   public void addTimeToDispatch(final long time) {
-    //TODO haqin: implement metric that records time taken to dispatch flow to a container
+    timeToDispatch.update(time);
   }
 
   @Override
   public void markFlowSubmitToExecutor() {
-    //TODO haqin: implement metric that records number of flows dispatched to bare metal executor
+    flowSubmitToExecutor.mark();
   }
 
   @Override
   public void markFlowSubmitToContainer() {
-    //TODO haqin: implement metric that records number of flows dispatched to a container
+    flowSubmitToContainer.mark();
+  }
+
+  @Override
+  public void markExecutionStopped() {
+    executionStopped.mark();
+  }
+
+  @Override
+  public void markOOMKilled() {
+    oomKilled.mark();
+  }
+
+  @Override
+  public void markContainerDispatchFail() {
+    containerDispatchFail.mark();
+  }
+
+  @Override
+  public void markVPARecommenderFail() {
+    vpaRecommenderFail.mark();
+  }
+
+  @Override
+  public void markYarnGetApplicationsFail() {
+    yarnGetApplicationsFail.mark();
+  }
+
+  @Override
+  public void markYarnApplicationKillFail(long n) {
+    yarnApplicationKillFail.mark(n);
+  }
+
+  @Override
+  public void sendCleanupStaleFlowHeartBeat() {
+    cleanupStaleFlowHeartBeat.mark();
+  }
+
+  @Override
+  public void sendCleanupContainerHeartBeat() {
+    cleanupContainerHeartBeat.mark();
+  }
+
+  @Override
+  public void sendCleanupYarnApplicationHeartBeat() {
+    cleanupYarnAppHeartBeat.mark();
+  }
+
+  @Override
+  public void recordCleanupStaleFlowTimer(long duration, TimeUnit unit){
+    cleanupStaleFlowTimer.update(duration, unit);
+  }
+
+  @Override
+  public void recordCleanupContainerTimer(long duration, TimeUnit unit){
+    cleanupContainerTimer.update(duration, unit);
+  }
+
+  @Override
+  public void recordCleanupYarnApplicationTimer(long duration, TimeUnit unit){
+    cleanupYarnAppTimer.update(duration, unit);
   }
 }

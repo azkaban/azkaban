@@ -28,6 +28,12 @@ public interface ValidatorManager {
   Map<String, ValidationReport> validate(Project project, File projectDir, Props props);
 
   /**
+   * Validate the project using one of the specific validator.
+   */
+  Map<String, ValidationReport> validate(Project project, File projectDir, Props props, String validatorName);
+
+
+  /**
    * Returns a list of String containing the name of each registered validators.
    */
   List<String> getValidatorsInfo();

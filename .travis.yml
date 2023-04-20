@@ -1,4 +1,4 @@
-languages: java
+language: java
 jdk:
   - openjdk8
 os: linux
@@ -28,9 +28,9 @@ notifications:
 
 env:
   global:
-    # Reduce the memory pressure on Travis CI to reduce build failures.
-    - GRADLE_OPTS="-Xms128m"
+    - GRADLE_OPTS="-Xms512m -Xmx4096m"
 
 after_success:
-  - ./gradlew coveralls --no-daemon
+  # avoid to double trigger test and increase build time
+  - travis_wait 30 ./gradlew coveralls -x test --no-daemon
   - bash <(curl -s https://codecov.io/bash)

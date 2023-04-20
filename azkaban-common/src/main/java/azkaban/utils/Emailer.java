@@ -16,6 +16,8 @@
 
 package azkaban.utils;
 
+import static azkaban.Constants.ConfigurationKeys.JETTY_HOSTNAME;
+import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -27,25 +29,39 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
+import azkaban.flow.Flow;
 import azkaban.metrics.CommonMetrics;
+import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.sla.SlaType;
+import azkaban.utils.HTMLFormElement.HTMLFormElementBuilder;
+import azkaban.utils.HTMLFormElement.HTMLFormElementType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.mail.internet.AddressException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 @Singleton
 public class Emailer extends AbstractMailer implements Alerter {
 
+  public static final String ALERTER_NAME = "email";
+  public static final String RECIPIENTS_VIEW_PARAM = "recipients";
+
+  private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("MM/dd, YYYY HH:mm");
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
   private static final Logger logger = Logger.getLogger(Emailer.class);
@@ -55,6 +71,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private final String clientPortNumber;
   private final String azkabanName;
   private final ExecutorLoader executorLoader;
+  private final List<HTMLFormElement> htmlParameters;
 
   @Inject
   public Emailer(final Props props, final CommonMetrics commonMetrics,
@@ -72,7 +89,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
     this.clientHostname = props.getString(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME,
-        props.getString("jetty.hostname", "localhost"));
+        props.getString(JETTY_HOSTNAME, "localhost"));
 
     if (props.getBoolean(ConfigurationKeys.JETTY_USE_SSL, true)) {
       this.scheme = HTTPS;
@@ -86,10 +103,19 @@ public class Emailer extends AbstractMailer implements Alerter {
           props.getInt(ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_PORT,
               props.getInt(ConfigurationKeys.JETTY_PORT, Constants.DEFAULT_PORT_NUMBER)));
     }
+
+    this.htmlParameters = Arrays.asList(new HTMLFormElementBuilder("Recipients",
+        RECIPIENTS_VIEW_PARAM, HTMLFormElementType.TEXTAREA).createHTMLFormElement());
   }
 
+  @Override
   public String getAzkabanURL() {
     return this.scheme + "://" + this.clientHostname + ":" + this.clientPortNumber;
+  }
+
+  @Override
+  public List<HTMLFormElement> getViewParameters() {
+    return this.htmlParameters;
   }
 
   /**
@@ -104,11 +130,11 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   @Override
-  public void alertOnSla(final SlaOption slaOption, final String slaMessage) {
+  public void alertOnSla(final ExecutableFlow flow, final SlaOption slaOption) {
     final String subject =
         "SLA violation for " + getJobOrFlowName(slaOption) + " on " + getAzkabanName();
-    final List<String> emailList =
-        (List<String>) slaOption.getEmails();
+    final String slaMessage = createSlaMessage(flow, slaOption, getAzkabanURL());
+    final List<String> emailList = slaOption.getEmails();
     logger.info("Sending SLA email " + slaMessage);
     sendEmail(emailList, subject, slaMessage);
   }
@@ -125,6 +151,11 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnError(final ExecutableFlow flow, final String... extraReasons) {
+    final List<String> emailRecipients = flow.getExecutionOptions().getFailureEmails();
+    if (emailRecipients == null || emailRecipients.isEmpty()) {
+      return;
+    }
+
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     List<ExecutableFlow> last72hoursExecutions = new ArrayList<>();
@@ -146,6 +177,11 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnSuccess(final ExecutableFlow flow) {
+    final List<String> emailRecipients = flow.getExecutionOptions().getSuccessEmails();
+    if (emailRecipients == null || emailRecipients.isEmpty()) {
+      return;
+    }
+
     final EmailMessage message = this.messageCreator.createMessage();
     final MailCreator mailCreator = getMailCreator(flow);
     final boolean mailCreated = mailCreator.createSuccessEmail(flow, message, this.azkabanName,
@@ -213,6 +249,27 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   /**
+   * Alert user when a job property is overridden in a project
+   *
+   * @param project
+   * @param flow
+   * @param eventData
+   */
+  @Override
+  public void alertOnJobPropertyOverridden(final Project project, final Flow flow,
+      final Map<String, Object> eventData) {
+    final List<String> emailList = flow.getOverrideEmails();
+    final String emailSubject = "[Project Property Overridden Alert]";
+    final String modifier = String.valueOf(eventData.get(MODIFIED_BY));
+    final String jobName = String.valueOf(eventData.get("jobOverridden"));
+    final String diffMessage = String.valueOf(eventData.get("diffMessage"));
+    final String emailBody =
+        "User " + modifier + " has overridden following job properties in project " + project.getName()
+            + " flow " + flow.getId() + " job " + jobName + ": " + "\n" + diffMessage;
+    sendEmail(emailList, emailSubject, emailBody);
+  }
+
+  /**
    * Sends a single email about failed updates.
    */
   private void sendFailedUpdateEmail(final Executor executor,
@@ -250,6 +307,40 @@ public class Emailer extends AbstractMailer implements Alerter {
           this.commonMetrics.markSendEmailFail();
         }
       }
+    }
+  }
+
+  /**
+   * Construct the message for the SLA.
+   *
+   * @param execFlow the executable flow.
+   * @return the SLA message.
+   */
+  public static String createSlaMessage(final ExecutableFlow execFlow, final SlaOption slaOption,
+      final String azkabanUrl) {
+    final int execId = execFlow.getExecutionId();
+    final String durationStr = slaOption.durationToString(slaOption.getDuration());
+    final String executionUrl = String.format("%s/executor?execid=%d", azkabanUrl, execId);
+    final String executionLink = String.format("<a href=\"%s\">%s Execution Link</a>",
+        executionUrl, execFlow.getFlowId());
+
+    final SlaType slaType = slaOption.getType();
+    switch (slaType.getComponent()) {
+      case FLOW:
+        final String basicinfo =
+            String.format("SLA Alert: Your flow %s failed to %s within %s<br/>%s<br/>",
+                slaOption.getFlowName(), slaType.getStatus(), durationStr, executionLink);
+        final String expected = String.format(
+            "Here are details : <br/>Flow %s in execution %d is expected to FINISH within %s from %s<br/>",
+            slaOption.getFlowName(), execId, durationStr,
+            fmt.print(new DateTime(execFlow.getStartTime())));
+        final String actual = String.format("Actual flow status is %s", execFlow.getStatus());
+        return basicinfo + expected + actual;
+      case JOB:
+        return String.format("SLA Alert: Your job %s failed to %s within %s in execution %d</br>%s",
+            slaOption.getJobName(), slaType.getStatus(), durationStr, execId, executionLink);
+      default:
+        return String.format("Unrecognized SLA component type %s", slaType.getComponent());
     }
   }
 

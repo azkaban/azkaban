@@ -16,9 +16,9 @@
 
 package azkaban.execapp;
 
-import azkaban.DispatchMethod;
 import azkaban.execapp.action.KillExecutionAction;
 import azkaban.execapp.action.KillJobAction;
+import azkaban.executor.IFlowRunnerManager;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
@@ -45,7 +45,7 @@ public class TriggerManager {
   private static final int SCHEDULED_THREAD_POOL_SIZE = 4;
   private static final Logger logger = Logger.getLogger(TriggerManager.class);
   private final ScheduledExecutorService scheduledService;
-  private DispatchMethod dispatchMethod;
+  private IFlowRunnerManager flowRunnerManager;
 
   @Inject
   public TriggerManager() {
@@ -64,19 +64,17 @@ public class TriggerManager {
   private List<TriggerAction> createActions(final SlaOption sla, final int execId) {
     final List<TriggerAction> actions = new ArrayList<>();
     if (sla.hasAlert()) {
-      TriggerAction action = new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId);
-    }
-
-    if (sla.hasAlert()) {
       actions.add(new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId));
     }
     if(sla.hasKill()) {
       switch(sla.getType().getComponent()) {
         case FLOW:
-         actions.add(new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId, dispatchMethod));
-         break;
+          actions.add(new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId,
+              this.flowRunnerManager));
+          break;
         case JOB:
-        actions.add(new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, sla.getJobName()));
+          actions.add(new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, sla.getJobName(),
+              this.flowRunnerManager));
           break;
         default:
           logger.info("Unknown action type " + sla.getType().getComponent());
@@ -107,8 +105,8 @@ public class TriggerManager {
     }
   }
 
-  public void setDispatchMethod(final DispatchMethod dispatchMethod) {
-    this.dispatchMethod = dispatchMethod;
+  public void setFlowRunnerManager(final IFlowRunnerManager flowRunnerManager) {
+    this.flowRunnerManager = flowRunnerManager;
   }
 
   public void shutdown() {

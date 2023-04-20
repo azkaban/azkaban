@@ -15,8 +15,8 @@
  */
 package azkaban.security;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE;
 
 import azkaban.Constants;
@@ -38,6 +38,7 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -359,6 +360,17 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     KeyStoreManager.getInstance().setKeyStore(keyStore);
     return keyStore;
   }
+  @Override
+  public Map<String,KeyStore> getKeyStoreMap(final Props props) {
+    logger.info("Prefetching KeyStore for the flow");
+    final Credentials cred = new Credentials();
+    final CredentialProviderWithKeyStoreMap customCredential = (CredentialProviderWithKeyStoreMap)
+        getCustomCredentialProvider(props, cred, logger,
+            Constants.ConfigurationKeys.CUSTOM_CREDENTIAL_NAME);
+    final Map<String,KeyStore> keyStoreMap = customCredential.getKeyStoreMap();
+    KeyStoreManager.getInstance().setKeyStoreMap(keyStoreMap);
+    return keyStoreMap;
+  }
 
   /**
    * This method is used to verify whether Hadoop security is enabled or not.
@@ -394,19 +406,29 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
       final String userToProxy) throws HadoopSecurityManagerException {
     // Create suffix to be added to kerberos principal
     final String suffix = getFQNSuffix(props);
-
     final String userToProxyFQN = userToProxy + suffix;
+    logger.info(tokenFile.toString() + props.toAllProperties().toString());
     logger.info("Getting hadoop tokens based on props for " + userToProxyFQN);
 
     final Credentials cred = new Credentials();
 
     try {
+      // cred is being populated
       fetchAllHadoopTokens(userToProxyFQN, userToProxy, props, logger, cred);
       getProxiedUser(userToProxyFQN).doAs((PrivilegedExceptionAction<Void>) () -> {
         registerAllCustomCredentials(userToProxy, props, cred, logger);
         return null;
       });
+
+      logger.info("fetched cred = " + cred);
+      cred.getAllTokens().forEach(t -> {
+        logger.info(String.format("Token = %s, %s, %s ", t.getKind(), t.getService(),
+            Arrays.toString(t.getIdentifier())));
+      });
+      logger.info("cred end");
+
       logger.info("Preparing token file " + tokenFile.getAbsolutePath());
+      // assign userToProxy to the owner of the token file, not the FQN user
       prepareTokenFile(userToProxy, cred, tokenFile, logger,
           props.getString(Constants.ConfigurationKeys.SECURITY_USER_GROUP, "azkaban"));
       // stash them to cancel after use.
@@ -523,12 +545,16 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
 
   /*
    * Create a suffix for Kerberos principal, the format is,
-   * az_<host name>_<execution id><DOMAIN_NAME>
+   * az_<webserver_host name>_<execution id><DOMAIN_NAME>
+   * The UGI with executor host name is less useful in containerized world
+   * where each flow runs in its own container with unique host name.
+   * For meaningful analytics using the UGI data, it is better to use webserver
+   * hostname.
    */
   protected String kerberosSuffix(final Props props) {
     // AZKABAN_SERVER_HOST_NAME is not set in Props here, get it from another instance of Props.
     final String host = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class)
-        .getString(AZKABAN_SERVER_HOST_NAME, "unknown");
+        .getString(AZKABAN_WEBSERVER_EXTERNAL_HOSTNAME, "unknown");
     final StringBuilder builder = new StringBuilder("az_");
     builder.append(host);
     builder.append("_");
@@ -614,6 +640,16 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
     }
   }
 
+  @Override
+  public Credentials getTokens(File tokenFile, Logger logger)
+      throws HadoopSecurityManagerException {
+    try {
+      return Credentials.readTokenStorageFile(new Path(tokenFile.toURI()), this.conf);
+    } catch (final Exception e) {
+      throw new HadoopSecurityManagerException("Failed to get tokens from file", e);
+    }
+  }
+
   /**
    * Method to create a metastore client that retries on failures
    */
@@ -637,7 +673,7 @@ public abstract class AbstractHadoopSecurityManager extends HadoopSecurityManage
         }
       }
     };
-
+    logger.info(hiveConf.getAllProperties() + hookLoader.toString() + HiveMetaStoreClient.class.getName());
     return RetryingMetaStoreClient
         .getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());
   }

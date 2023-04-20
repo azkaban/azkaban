@@ -117,13 +117,16 @@ public class ImageVersion extends BaseModel {
    * table. DEPRECATED - An image type version which is no longer in use is marked as DEPRECATED
    * TEST - This is to represent a TEST version of the image and once the version is tested it can
    * be marked as NEW.
+   * STABLE - When an image version is marked as ACTIVE, the other ACTIVE version(s) are marked as
+   * STABLE as there can be only 1 ACTIVE version at a time.
    */
   public enum State {
     NEW("new"),
     ACTIVE("active"),
     UNSTABLE("unstable"),
     DEPRECATED("deprecated"),
-    TEST("test");
+    TEST("test"),
+    STABLE("stable");
     private final String stateValue;
 
     private State(final String stateValue) {
@@ -163,36 +166,46 @@ public class ImageVersion extends BaseModel {
     /**
      * Create set of new and active state
      */
-    private static final Set<State> newAndActiveState =
+    private static final Set<State> newActiveAndStableState =
         Arrays.stream(State.values())
-            .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)))
+            .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE) || state.equals(State.STABLE)))
             .collect(Collectors.toSet());
 
     /**
      * Create set of new, active and test state
      */
-    private static final Set<State> newActiveAndTestState =
+    private static final Set<State> newActiveTestAndStableState =
         Arrays.stream(State.values())
             .filter(state -> (state.equals(State.NEW) || state.equals(State.ACTIVE)
-                || state.equals(State.TEST)))
+                || state.equals(State.TEST) || state.equals(State.STABLE)))
             .collect(Collectors.toSet());
 
     /**
-     * Gets a set with NEW and ACTIVE state
+     * Gets a set with NEW, ACTIVE, or STABLE state
      *
      * @return Set<State>
      */
-    public static Set<State> getNewAndActiveStateFilter() {
-      return newAndActiveState;
+    public static Set<State> getNewActiveAndStableStateFilter() {
+      return newActiveAndStableState;
     }
 
     /**
-     * Gets a set with NEW, ACTIVE and TEST state
+     * Gets a set with NEW, ACTIVE, STABLE and TEST state
      *
      * @return Set<State>
      */
-    public static Set<State> getNewActiveAndTestStateFilter() {
-      return newActiveAndTestState;
+    public static Set<State> getNewActiveTestAndStableStateFilter() {
+      return newActiveTestAndStableState;
+    }
+
+    /**
+     * A Set of All States
+     *
+     * @return Set<State>
+     */
+    public static Set<State> getAllStates() {
+      return Arrays.stream(State.values()).collect(Collectors.toSet());
     }
   }
+
 }

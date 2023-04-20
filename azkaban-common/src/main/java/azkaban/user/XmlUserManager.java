@@ -354,6 +354,11 @@ public class XmlUserManager implements UserManager {
   }
 
   @Override
+  public boolean validateLdapGroup(String group) {
+    return false;
+  }
+
+  @Override
   public boolean validateProxyUser(final String proxyUser, final User realUser) {
     if (this.proxyUserMap.containsKey(realUser.getUserId())
         && this.proxyUserMap.get(realUser.getUserId()).contains(proxyUser)) {
@@ -361,5 +366,10 @@ public class XmlUserManager implements UserManager {
     } else {
       return false;
     }
+  }
+
+  @Override
+  public boolean validateUserGroupMembership(String username, Set<String> groupSet) {
+    return false;
   }
 }

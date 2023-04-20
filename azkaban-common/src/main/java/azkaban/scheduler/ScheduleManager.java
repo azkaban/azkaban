@@ -21,11 +21,13 @@ import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.validation.constraints.NotNull;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
@@ -48,9 +50,9 @@ public class ScheduleManager implements TriggerAgent {
   private final ScheduleLoader loader;
 
   private final Map<Integer, Schedule> scheduleIDMap =
-      new LinkedHashMap<>();
+      new ConcurrentHashMap<>();
   private final Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap =
-      new LinkedHashMap<>();
+      new ConcurrentHashMap<>();
 
   /**
    * Give the schedule manager a loader class that will properly load the schedule.
@@ -60,22 +62,31 @@ public class ScheduleManager implements TriggerAgent {
     this.loader = loader;
   }
 
-  // Since ScheduleManager was already replaced by TriggerManager, many methods like start are
-  // never used.
-  @Deprecated
+  /**
+   * For historical reasons that migrate schedule to trigger paused in the middle,
+   * we remained with schedules and triggers while they are the same definition but in two different Class.
+   * start() of ScheduleManager handles the local refreshes to fetch triggers to be schedule,
+   * so scheduleManager can respond to ScheduleServlet{@link ScheduleServlet} with response properly.
+   * */
   @Override
-  public void start() throws ScheduleManagerException {
+  public void start() {
+    try {
+      List<Schedule> schedules = this.loader.loadAllSchedules();
+      refreshLocal(schedules);
+    } catch (ScheduleManagerException e) {
+      logger.warn("failed to init ScheduleManager, it might result in schedule not loaded into memory.");
+    }
   }
 
-  // only do this when using external runner
-  private synchronized void updateLocal() throws ScheduleManagerException {
-    final List<Schedule> updates = this.loader.loadUpdatedSchedules();
-    for (final Schedule s : updates) {
+  private void refreshLocal(List<Schedule> schedules) {
+    for (final Schedule s : schedules) {
+      s.lock();
       if (s.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
         onScheduleExpire(s);
       } else {
         internalSchedule(s);
       }
+      s.unlock();
     }
   }
 
@@ -94,10 +105,10 @@ public class ScheduleManager implements TriggerAgent {
   /**
    * Retrieves a copy of the list of schedules.
    */
-  public synchronized List<Schedule> getSchedules()
+  public List<Schedule> getSchedules()
       throws ScheduleManagerException {
-
-    updateLocal();
+    final List<Schedule> updates = this.loader.loadUpdatedSchedules();
+    refreshLocal(updates);
     return new ArrayList<>(this.scheduleIDMap.values());
   }
 
@@ -106,9 +117,10 @@ public class ScheduleManager implements TriggerAgent {
    */
   public Schedule getSchedule(final int projectId, final String flowId)
       throws ScheduleManagerException {
-    updateLocal();
-    return this.scheduleIdentityPairMap.get(new Pair<>(projectId,
+    // for one specific schedule refresh, we only need to update that schedule
+    Schedule s = this.scheduleIdentityPairMap.get(new Pair<>(projectId,
         flowId));
+    return s == null ? null : updateSingleSchedule(s);
   }
 
   /**
@@ -117,15 +129,16 @@ public class ScheduleManager implements TriggerAgent {
    * @param scheduleId Schedule ID
    */
   public Schedule getSchedule(final int scheduleId) throws ScheduleManagerException {
-    updateLocal();
-    return this.scheduleIDMap.get(scheduleId);
+    Schedule s = this.scheduleIDMap.get(scheduleId);
+    return s == null ? null : updateSingleSchedule(s);
   }
 
 
   /**
    * Removes the flow from the schedule if it exists.
    */
-  public synchronized void removeSchedule(final Schedule sched) {
+  public void removeSchedule(final Schedule sched) {
+    sched.lock();
     final Pair<Integer, String> identityPairMap = sched.getScheduleIdentityPair();
 
     final Schedule schedule = this.scheduleIdentityPairMap.get(identityPairMap);
@@ -139,6 +152,8 @@ public class ScheduleManager implements TriggerAgent {
       this.loader.removeSchedule(sched);
     } catch (final ScheduleManagerException e) {
       logger.error(e);
+    } finally {
+      sched.unlock();
     }
   }
 
@@ -158,7 +173,7 @@ public class ScheduleManager implements TriggerAgent {
       final ExecutionOptions execOptions) {
     final Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
         firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
-        submitTime, submitUser, execOptions, null);
+        submitTime, submitUser, execOptions, null, false);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null
@@ -182,14 +197,16 @@ public class ScheduleManager implements TriggerAgent {
       final long submitTime,
       final String submitUser,
       final ExecutionOptions execOptions,
-      final String cronExpression) {
+      final String cronExpression,
+      final boolean backExecuteOnceOnMiss) {
     final Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
             firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
-            submitTime, submitUser, execOptions, cronExpression);
+            submitTime, submitUser, execOptions, cronExpression, backExecuteOnceOnMiss);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
-            + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);
+            + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression
+            + " with back execute " + (backExecuteOnceOnMiss ? "enabled" : "disabled"));
 
     insertSchedule(sched);
     return sched;
@@ -198,7 +215,7 @@ public class ScheduleManager implements TriggerAgent {
   /**
    * Schedules the flow, but doesn't save the schedule afterwards.
    */
-  private synchronized void internalSchedule(final Schedule s) {
+  private void internalSchedule(@NotNull final Schedule s) {
     this.scheduleIDMap.put(s.getScheduleId(), s);
     this.scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), s);
   }
@@ -206,10 +223,11 @@ public class ScheduleManager implements TriggerAgent {
   /**
    * Adds a flow to the schedule.
    */
-  public synchronized void insertSchedule(final Schedule s) {
-    final Schedule exist = this.scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
-    if (s.updateTime()) {
-      try {
+  public void insertSchedule(final Schedule s) {
+    s.lock();
+    try {
+      final Schedule exist = this.scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
+      if (s.updateTime()) {
         if (exist == null) {
           this.loader.insertSchedule(s);
           internalSchedule(s);
@@ -218,13 +236,13 @@ public class ScheduleManager implements TriggerAgent {
           this.loader.updateSchedule(s);
           internalSchedule(s);
         }
-      } catch (final ScheduleManagerException e) {
-        logger.error(e);
+      } else {
+        logger.error("The provided schedule is non-recurring and the scheduled time already passed. " + s.getScheduleName());
       }
-    } else {
-      logger
-          .error("The provided schedule is non-recurring and the scheduled time already passed. "
-              + s.getScheduleName());
+    } catch (final ScheduleManagerException e) {
+      logger.error(e);
+    } finally {
+      s.unlock();
     }
   }
 
@@ -237,5 +255,32 @@ public class ScheduleManager implements TriggerAgent {
   @Override
   public String getTriggerSource() {
     return SIMPLE_TIME_TRIGGER;
+  }
+
+  /**
+   * fetch from TriggerManager to see if the desired trigger is being updated or not.
+   * if updated, update schedule metadata;
+   * if not being updated, return the original schedule.
+   *
+   * @param s, original schedule
+   * @return latest schedule metadata
+   * */
+  private Schedule updateSingleSchedule(@NotNull Schedule s) throws ScheduleManagerException {
+    s.lock();
+    try {
+      Optional<Schedule> updatedSchedule = loader.loadUpdateSchedule(s);
+      if (updatedSchedule.isPresent()) {
+        Schedule schedule = updatedSchedule.get();
+        if (schedule.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
+          onScheduleExpire(schedule);
+        } else {
+          internalSchedule(schedule);
+        }
+        return schedule;
+      }
+      return s;
+    } finally {
+      s.unlock();
+    }
   }
 }

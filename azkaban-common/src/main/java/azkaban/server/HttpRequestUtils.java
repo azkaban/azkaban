@@ -15,13 +15,18 @@
  */
 package azkaban.server;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
+import static azkaban.executor.ExecutableFlow.DEFAULT_FLOW_RETRY_LIMIT;
 import static azkaban.executor.ExecutionOptions.FAILURE_ACTION_OVERRIDE;
+import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 
+import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -29,25 +34,28 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import joptsimple.internal.Strings;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 
 public class HttpRequestUtils {
 
-  public static final String PARAM_SLA_EMAILS = "slaEmails";
   public static final String PARAM_SLA_SETTINGS = "slaSettings";
 
-  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req,
-      final String flowName)
+  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req, final String flowName)
       throws ServletException {
     final ExecutionOptions execOptions = new ExecutionOptions();
 
@@ -115,17 +123,37 @@ public class HttpRequestUtils {
       execOptions.setMailCreator(mailCreator);
     }
 
-    final Map<String, String> slaSettings = getParamGroup(req, PARAM_SLA_SETTINGS);
-    // emails param is optional
-    final String emailStr = getParam(req, PARAM_SLA_EMAILS, null);
-    final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(flowName, emailStr,
-        slaSettings);
+    final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(req, flowName, PARAM_SLA_SETTINGS);
     if (!slaOptions.isEmpty()) {
       execOptions.setSlaOptions(slaOptions);
     }
 
+    final Map<String, Map<String, String>> runtimePropertiesGroup = getMapParamGroup(req,
+        "runtimeProperty");
+
+    // legacy support
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
+
+    // Don't allow combining old & new in the same request:
+    // This ensures that there's no need to handle possible conflicts between flowOverride &
+    // runtimeProperty[ROOT]
+    if (!flowParamGroup.isEmpty() && !runtimePropertiesGroup.isEmpty()) {
+      throw new ServletException("The legacy param group flowOverride is not allowed in "
+          + "combination with the runtimeProperty param group. "
+          + "Migrate flowOverride to runtimeProperty[ROOT].");
+    }
+
+    // Add all flow-level props – they are accessed via ExecutionOptions#getFlowParameters.
+    final Map<String, String> rootProps = runtimePropertiesGroup
+        .remove(Constants.ROOT_NODE_IDENTIFIER);
+    if (rootProps != null) {
+      flowParamGroup.putAll(rootProps);
+    }
+
+    // The ROOT runtime properties
     execOptions.addAllFlowParameters(flowParamGroup);
+    // Any other runtime properties
+    execOptions.addAllRuntimeProperties(runtimePropertiesGroup);
 
     if (hasParam(req, "disabled")) {
       final String disabled = getParam(req, "disabled");
@@ -138,6 +166,78 @@ public class HttpRequestUtils {
       }
     }
     return execOptions;
+  }
+
+  /**
+   * Validate the ExecutionOption's Flow-Parameters against the application level Properties
+   * @throws ServletException if any of the parameter is invalid
+   */
+  public static void validatePreprocessFlowParameters(ExecutionOptions options, Props azProps)
+      throws ServletException {
+    List<String> errMsg = new ArrayList<>();
+
+    Map<String, String> flowParameters = options.getFlowParameters();
+    if (flowParameters == null || flowParameters.isEmpty()) {
+      return;
+    }
+    // if ALLOW_RESTART_ON_EXECUTION_STOPPED then ALLOW_RESTART_ON_STATUS += "EXECUTION_STOPPED,"
+    if (Boolean.parseBoolean(
+        flowParameters.getOrDefault(
+            FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))
+    ){
+      flowParameters.put(
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          Status.EXECUTION_STOPPED.name() + "," +
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+      );
+      flowParameters.remove(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED);
+    }
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
+      // user defined restart-statuses; remove the empty spaces
+      final Set<String> statuses = Arrays.stream(
+          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+              .split("\\s*,\\s*")
+      ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+
+      for (String str : statuses) {
+        try{
+          Status status =  Status.valueOf(str);
+          if (!RESTARTABLE_TERMINAL_STATUSES.contains(status)) {
+            errMsg.add(String.format("`%s` is not a valid restartable status, "
+                + "permitted status are %s\n", str, RESTARTABLE_TERMINAL_STATUSES));
+          }
+        } catch (Exception e) {
+          errMsg.add(String.format("`%s` is not a valid Status defined in Azkaban, please "
+                  + "correct\n", str));
+        }
+      }
+      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          Strings.join(statuses, ","));
+    }
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
+
+      // check restart count limit
+      try {
+        validateIntegerParam(flowParameters, FlowParameters.FLOW_PARAM_MAX_RETRIES);
+        final int flowRestartCountLimit = azProps.getInt(
+            AZKABAN_EXECUTION_RESTART_LIMIT, DEFAULT_FLOW_RETRY_LIMIT);
+        final int flowMaxRetryLimit = Integer.parseInt(
+            flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"));
+        if (flowMaxRetryLimit > flowRestartCountLimit || flowMaxRetryLimit < 0){
+          errMsg.add(String.format(
+              "Invalid `" + FlowParameters.FLOW_PARAM_MAX_RETRIES + " = %d`, value should be "
+                  + "within [0, %d]\n", flowMaxRetryLimit, flowRestartCountLimit));
+        }
+      } catch (ExecutorManagerException e) {
+        errMsg.add(e.getMessage());
+      }
+    }
+
+    // throw exception if there's any error message
+    if (!errMsg.isEmpty()) {
+      throw new ServletException(String.format("ExecutionOptions is invalid, error reasons: %s",
+          errMsg));
+    }
   }
 
   /**
@@ -163,6 +263,7 @@ public class HttpRequestUtils {
       params.remove(ExecutionOptions.USE_EXECUTOR);
       params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
       params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
+      params.remove(FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP);
       // Passing test version will be allowed for Azkaban ADMIN role only
       params.remove(FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
     } else {
@@ -170,6 +271,7 @@ public class HttpRequestUtils {
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
+      validateBooleanParam(params, FlowParameters.FLOW_PARAM_DISABLE_POD_CLEANUP);
       // Passing of test version is allowed for azkaban admin only. Validate
       // if it is boolean param
       validateBooleanParam(params, FlowParameters.FLOW_PARAM_ALLOW_IMAGE_TEST_VERSION);
@@ -315,6 +417,9 @@ public class HttpRequestUtils {
     return defaultVal;
   }
 
+  /**
+   * Read params like groupName[key]: value
+   */
   public static Map<String, String> getParamGroup(final HttpServletRequest request,
       final String groupName) throws ServletException {
     final Enumeration<String> enumerate = request.getParameterNames();
@@ -322,10 +427,43 @@ public class HttpRequestUtils {
 
     final HashMap<String, String> groupParam = new HashMap<>();
     while (enumerate.hasMoreElements()) {
-      final String str = (String) enumerate.nextElement();
+      final String str = enumerate.nextElement();
       if (str.startsWith(matchString)) {
-        groupParam.put(str.substring(matchString.length(), str.length() - 1),
-            request.getParameter(str));
+        try {
+          groupParam.put(str.substring(matchString.length(), str.length() - 1),
+              request.getParameter(str));
+        } catch (IndexOutOfBoundsException e) {
+          throw new ServletException(String.format("Param group %s is invalid.", groupName), e);
+        }
+      }
+
+    }
+    return groupParam;
+  }
+
+  /**
+   * Read params like groupName[level1Key][level2Key]: value
+   */
+  public static Map<String, Map<String, String>> getMapParamGroup(final HttpServletRequest request,
+      final String groupName) throws ServletException {
+    final Enumeration<String> enumerate = request.getParameterNames();
+    final String matchString = groupName + "[";
+
+    final Map<String, Map<String, String>> groupParam = new HashMap<>();
+    while (enumerate.hasMoreElements()) {
+      final String str = enumerate.nextElement();
+      if (str.startsWith(matchString)) {
+        try {
+          final int level1KeyEnd = str.indexOf("]");
+
+          final String level1Key = str.substring(matchString.length(), level1KeyEnd);
+          groupParam.putIfAbsent(level1Key, new HashMap<>());
+
+          final String level2Key = str.substring(level1KeyEnd + 2, str.length() - 1);
+          groupParam.get(level1Key).put(level2Key, request.getParameter(str));
+        } catch (IndexOutOfBoundsException e) {
+          throw new ServletException(String.format("Param group %s is invalid.", groupName), e);
+        }
       }
 
     }

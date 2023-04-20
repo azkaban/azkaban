@@ -16,23 +16,46 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.ExecutableFlow.DEFAULT_SYSTEM_FLOW_RETRY_LIMIT;
+import static azkaban.executor.Status.RESTARTABLE_NON_TERMINAL_STATUSES;
+import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
+import static azkaban.executor.Status.StatusBeforeRunningSet;
 import static java.util.Objects.requireNonNull;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.FlowParameters;
 import azkaban.alert.Alerter;
+import azkaban.event.Event;
+import azkaban.event.EventData;
+import azkaban.event.EventHandler;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
+import azkaban.spi.EventType;
 import azkaban.utils.AuthenticationUtils;
 import azkaban.utils.Props;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -58,19 +81,49 @@ public class ExecutionControllerUtils {
   private static final Pattern INVALID_APPLICATION_ID_PATTERN = Pattern
       .compile("Invalid Application ID");
 
+  public static OnExecutionEventListener onExecutionEventListener;
+  public static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(
+      new ThreadFactoryBuilder().setNameFormat("azk-restart-flow").build());
+
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
    * as failed in the DB.
    *
-   * @param executorLoader the executor loader
-   * @param alerterHolder the alerter holder
-   * @param flow the execution
-   * @param reason reason for finalizing the execution
-   * @param originalError the cause, if execution is being finalized because of an error
+   * @param executorLoader  the executor loader
+   * @param alerterHolder   the alerter holder
+   * @param flow            the execution
+   * @param reason          reason for finalizing the execution
+   * @param originalError   the cause, if execution is being finalized because of an error
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void finalizeFlow(final ExecutorLoader executorLoader, final AlerterHolder
-      alerterHolder, final ExecutableFlow flow, final String reason,
-      @Nullable final Throwable originalError) {
+  @Deprecated
+  public static void finalizeFlow(final ExecutorLoader executorLoader,
+      @Nullable final AlerterHolder
+          alerterHolder, final ExecutableFlow flow, final String reason,
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
+    finalizeFlow(null, null, executorLoader, alerterHolder, flow, reason, originalError,
+        finalFlowStatus);
+  }
+
+  /**
+   * If the current status of the execution is not one of the finished statuses, mark the execution
+   * as failed in the DB.
+   *
+   * @param eventHandler    the event handler to fire job events
+   * @param projectManager  the project manager to load job props from DB
+   * @param executorLoader  the executor loader
+   * @param alerterHolder   the alerter holder
+   * @param flow            the execution
+   * @param reason          reason for finalizing the execution
+   * @param originalError   the cause, if execution is being finalized because of an error
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
+   */
+  public static void finalizeFlow(final EventHandler eventHandler,
+      final ProjectManager projectManager,
+      final ExecutorLoader executorLoader,
+      @Nullable final AlerterHolder
+          alerterHolder, final ExecutableFlow flow, final String reason,
+      @Nullable final Throwable originalError, final Status finalFlowStatus) {
     boolean alertUser = true;
 
     // First check if the execution in the datastore is finished.
@@ -84,9 +137,21 @@ public class ExecutionControllerUtils {
         // If it's marked finished, we're good. If not, we fail everything and then mark it
         // finished.
         if (!isFinished(dsFlow)) {
-          failEverything(dsFlow);
+          failEverything(eventHandler, projectManager, dsFlow, finalFlowStatus, executorLoader);
           executorLoader.updateExecutableFlow(dsFlow);
         }
+        // flow will be used for event reporter afterwards, thus the final status needs to be set
+        flow.setStatus(finalFlowStatus);
+      }
+
+      if (flow.getUpdateTime() == -1) {
+        flow.setUpdateTime(System.currentTimeMillis());
+        executorLoader.updateExecutableFlow(dsFlow);
+      }
+
+      if (flow.getStartTime() == -1) {
+        flow.setStartTime(System.currentTimeMillis());
+        executorLoader.updateExecutableFlow(dsFlow);
       }
 
       if (flow.getEndTime() == -1) {
@@ -99,73 +164,155 @@ public class ExecutionControllerUtils {
       logger.error("Failed to finalize flow " + flow.getExecutionId() + ", do not alert user.", e);
     }
 
-    if (alertUser) {
+    if (null != alerterHolder && alertUser) {
       alertUserOnFlowFinished(flow, alerterHolder, getFinalizeFlowReasons(reason, originalError));
     }
   }
 
   /**
+   * This method tries to determine whether the flow should be restarted for certain statuses
+   * otherwise simply return.
+   * There are 4 scenarios that this method is called:
+   * 1. a flow is cleaned up by ContainerCleanupManager;
+   * 2. a flow has dispatch failure;
+   * 3. a flow encounters pod failure;
+   * 4. a flow finalized normally.
+   * If the original status is EXECUTION_STOPPED or FAILED, then it will be retried only if
+   * "flow.retry.statuses" is defined with the status.
+   *
+   * @param flow
+   * @param originalStatus
+   */
+  static ExecutableFlow getFlowToRestart(final ExecutableFlow flow,
+      final Status originalStatus){
+    final ExecutionOptions options = flow.getExecutionOptions();
+    if (options == null) {
+      logger.debug("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
+      return null;
+    }
+    // If the original execution status is restartable non-terminal status, it can be retried
+    // if the system-retry-times hasn't reached limit
+    if (RESTARTABLE_NON_TERMINAL_STATUSES.contains(originalStatus)) {
+      if (flow.getSystemDefinedRetryCount() >= DEFAULT_SYSTEM_FLOW_RETRY_LIMIT){
+        logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit "
+            + "for non-terminal status, ");
+        return null;
+      }
+      logger.info("Submitting flow for restart: " + flow.getExecutionId());
+      flow.setSystemDefinedRetryCount(flow.getSystemDefinedRetryCount() + 1);
+      return flow;
+    }
+
+    if (!RESTARTABLE_TERMINAL_STATUSES.contains(originalStatus)) {
+      return null;
+    }
+
+    // if the original execution status is restartable but is terminal status, we will need to
+    // check the runtime properties (flow parameters):
+    // - If the original execution status is EXECUTION_STOPPED (which indicates the program
+    // detects there's an invalid pod state transition and flow is terminated before final states)
+    // - Or some other status defined in flow parameters can also be restarted
+    final Map<String, String> flowParams = options.getFlowParameters();
+    if (flowParams == null || flowParams.isEmpty()) {
+      logger.debug("ExecutableFlow: " + flow.getExecutionId() + " has ExecutionOptions == null");
+      return null;
+    }
+
+    // user defined restart statuses list
+    final Set<String> restartedStatuses = Arrays.stream(
+        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+            .split("\\s*,\\s*")
+    ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+
+    // backwards compatible to flows that historically defined with
+    // "allow.restart.on.execution.stopped"
+    if (Boolean.parseBoolean(flowParams.getOrDefault(
+        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))){
+      restartedStatuses.add(Status.EXECUTION_STOPPED.name());
+    }
+
+    // flow can only retry if custom-retry-times not reach the limit
+    // and for the case where the retry-times not defined, default to 1
+    int flowMaxRetryLimit = 0;
+    if (flowParams.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
+      flowMaxRetryLimit = Integer.parseInt(flowParams.get(FlowParameters.FLOW_PARAM_MAX_RETRIES));
+    }
+    else if (!restartedStatuses.isEmpty()){
+      logger.info(String.format("ExecutableFlow: %s has `%s=%s but `%s` not set, "
+              + "default to retry once",
+          flow.getExecutionId(),
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          FlowParameters.FLOW_PARAM_MAX_RETRIES,
+          restartedStatuses));
+      flowMaxRetryLimit = 1;
+    }
+    if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {
+      logger.info("ExecutableFlow: " + flow.getExecutionId() + " has reached max retry limit, "
+          + "retried=" + flow.getUserDefinedRetryCount() + ", limit= " + flowMaxRetryLimit);
+      return null;
+    }
+
+    if (restartedStatuses.contains(originalStatus.name())) {
+      logger.info("Submitting flow for restart: " + flow.getExecutionId()
+          + " from originalStatus: " + originalStatus);
+      flow.setUserDefinedRetryCount(flow.getUserDefinedRetryCount() + 1);
+      return flow;
+    }
+    return null;
+  }
+
+  public static void restartFlow(final ExecutableFlow flow, final Status originalStatus) {
+    ExecutableFlow flowToRestart = getFlowToRestart(flow, originalStatus);
+    if (flowToRestart != null){
+      ExecutionControllerUtils.submitRestartFlow(flowToRestart);
+    }
+  }
+
+  private static void submitRestartFlow(final ExecutableFlow flow) {
+    EXECUTOR_SERVICE.execute(() -> restartFlow(flow));
+  }
+
+  /**
+   * This method invokes a callback to submit the flow with a new execution id
+   *
+   * @param flow
+   */
+  protected static void restartFlow(final ExecutableFlow flow) {
+    onExecutionEventListener.onExecutionEvent(flow, Constants.RESTART_FLOW);
+  }
+
+  /**
    * When a flow is finished, alert the user as is configured in the execution options.
    *
-   * @param flow the execution
+   * @param flow          the execution
    * @param alerterHolder the alerter holder
-   * @param extraReasons the extra reasons for alerting
+   * @param extraReasons  the extra reasons for alerting
    */
-  public static void alertUserOnFlowFinished(final ExecutableFlow flow, final AlerterHolder
-      alerterHolder, final String[] extraReasons) {
-    final ExecutionOptions options = flow.getExecutionOptions();
-    final Alerter mailAlerter = alerterHolder.get("email");
+  public static void alertUserOnFlowFinished(final ExecutableFlow flow,
+      final AlerterHolder alerterHolder, final String[] extraReasons) {
     if (flow.getStatus() != Status.SUCCEEDED) {
-      if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
+      alerterHolder.forEach((String alerterName, Alerter alerter) -> {
         try {
-          mailAlerter.alertOnError(flow, extraReasons);
+          alerter.alertOnError(flow, extraReasons);
         } catch (final Exception e) {
           logger.error("Failed to alert on error for execution " + flow.getExecutionId(), e);
         }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnError(flow, extraReasons);
-          } catch (final Exception e) {
-            logger.error("Failed to alert on error by " + alertType + " for execution " + flow
-                .getExecutionId(), e);
-          }
-        } else {
-          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-        }
-      }
+      });
     } else {
-      if (options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty()) {
+      alerterHolder.forEach((String alerterName, Alerter alerter) -> {
         try {
-          mailAlerter.alertOnSuccess(flow);
+          alerter.alertOnSuccess(flow);
         } catch (final Exception e) {
           logger.error("Failed to alert on success for execution " + flow.getExecutionId(), e);
         }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnSuccess(flow);
-          } catch (final Exception e) {
-            logger.error("Failed to alert on success by " + alertType + " for execution " + flow
-                .getExecutionId(), e);
-          }
-        } else {
-          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-        }
-      }
+      });
     }
   }
 
   /**
    * Alert the user when the flow has encountered the first error.
    *
-   * @param flow the execution
+   * @param flow          the execution
    * @param alerterHolder the alerter holder
    */
   public static void alertUserOnFirstError(final ExecutableFlow flow,
@@ -173,25 +320,32 @@ public class ExecutionControllerUtils {
     final ExecutionOptions options = flow.getExecutionOptions();
     if (options.getNotifyOnFirstFailure()) {
       logger.info("Alert on first error of execution " + flow.getExecutionId());
+      alerterHolder.forEach((String alerterName, Alerter alerter) -> {
+        try {
+          alerter.alertOnFirstError(flow);
+        } catch (final Exception e) {
+          logger.error("Failed to send first error email." + e.getMessage(), e);
+        }
+      });
+    }
+  }
+
+  /**
+   * Alert the user when job property is overridden in a project
+   *
+   * @param project
+   * @param flow
+   * @param eventData
+   */
+  public static void alertUserOnJobPropertyOverridden(final Project project, final Flow flow,
+      final Map<String, Object> eventData, final AlerterHolder alerterHolder) {
+    if (!flow.getOverrideEmails().isEmpty()) {
+      logger.info("Alert on job property overridden event in project: " + project.getName());
       final Alerter mailAlerter = alerterHolder.get("email");
       try {
-        mailAlerter.alertOnFirstError(flow);
+        mailAlerter.alertOnJobPropertyOverridden(project, flow, eventData);
       } catch (final Exception e) {
-        logger.error("Failed to send first error email." + e.getMessage(), e);
-      }
-
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnFirstError(flow);
-          } catch (final Exception e) {
-            logger.error("Failed to alert by " + alertType, e);
-          }
-        } else {
-          logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
-        }
+        logger.error("Failed to send email alert." + e.getMessage(), e);
       }
     }
   }
@@ -199,7 +353,7 @@ public class ExecutionControllerUtils {
   /**
    * Get the reasons to finalize the flow.
    *
-   * @param reason the reason
+   * @param reason        the reason
    * @param originalError the original error
    * @return the reasons to finalize the flow
    */
@@ -216,40 +370,132 @@ public class ExecutionControllerUtils {
   /**
    * Set the flow status to failed and fail every node inside the flow.
    *
-   * @param exFlow the executable flow
+   * @param exFlow          the executable flow
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
    */
-  public static void failEverything(final ExecutableFlow exFlow) {
-    final long time = System.currentTimeMillis();
-    for (final ExecutableNode node : exFlow.getExecutableNodes()) {
-      switch (node.getStatus()) {
-        case SUCCEEDED:
-        case FAILED:
-        case KILLED:
-        case SKIPPED:
-        case DISABLED:
-          continue;
-          // case UNKNOWN:
-        case READY:
-          node.setStatus(Status.KILLING);
-          break;
-        default:
-          node.setStatus(Status.FAILED);
-          break;
-      }
+  @Deprecated
+  public static void failEverything(final ExecutableFlow exFlow,
+      final Status finalFlowStatus, final ExecutorLoader executorLoader) {
+    failEverything(null, null, exFlow, finalFlowStatus, executorLoader);
+  }
 
-      if (node.getStartTime() == -1) {
-        node.setStartTime(time);
+  /**
+   * Set the flow status to failed and fail every node inside the flow.
+   *
+   * @param eventHandler    the event handler to fire job events
+   * @param projectManager  the project manager to load job props from DB
+   * @param exFlow          the executable flow
+   * @param finalFlowStatus Status to be set if the flow is not in one of the "finished" statues.
+   */
+  public static void failEverything(final EventHandler eventHandler,
+      final ProjectManager projectManager, final ExecutableFlow exFlow,
+      final Status finalFlowStatus, final ExecutorLoader executorLoader) {
+    final long time = System.currentTimeMillis();
+    final Map<ExecutableNode, Status> nodeToOrigStatus = new HashMap<>();
+    final Queue<ExecutableNode> queue = new LinkedList<>();
+    queue.add(exFlow);
+    // Traverse the DAG and fail every node that's not in a terminal state
+    while (!queue.isEmpty()) {
+      final ExecutableNode node = queue.poll();
+      if (node instanceof ExecutableFlowBase) {
+        final ExecutableFlowBase base = (ExecutableFlowBase) node;
+        for (final ExecutableNode subNode : base.getExecutableNodes()) {
+          queue.add(subNode);
+        }
       }
-      if (node.getEndTime() == -1) {
-        node.setEndTime(time);
+      if (node != exFlow) {
+        switch (node.getStatus()) {
+          case SUCCEEDED:
+          case FAILED:
+          case KILLED:
+          case SKIPPED:
+          case DISABLED:
+            continue;
+            // case UNKNOWN:
+          case READY:
+            nodeToOrigStatus.put(node, node.getStatus());
+            if (finalFlowStatus == Status.KILLED) {
+              // if the finalFlowStatus is KILLED, then set the sub node status to KILLED.
+              node.setStatus(Status.KILLED);
+            } else if (finalFlowStatus == Status.EXECUTION_STOPPED) {
+              // if flow status is EXECUTION_STOPPED due to e.g. pod failure, set sub node to
+              // KILLED.
+              node.setStatus(Status.KILLED);
+            } else {
+              node.setStatus(Status.KILLING);
+            }
+            break;
+          default:
+            nodeToOrigStatus.put(node, node.getStatus());
+            // Set the default job/node status as the finalFlowStatus
+            node.setStatus(finalFlowStatus);
+            break;
+        }
+
+        if (node.getStartTime() == -1) {
+          node.setStartTime(time);
+        }
+        if (node.getEndTime() == -1) {
+          node.setEndTime(time);
+        }
+        try {
+          executorLoader.updateExecutableNode(node);
+        } catch (ExecutorManagerException e) {
+          logger.error("fail to update job status in DB, ", e);
+        }
       }
+    }
+
+    // Fire correct JOB_STARTED and JOB_FINISHED events.
+    if (eventHandler != null && projectManager != null) {
+      final Project project = projectManager.getProject(exFlow.getProjectId());
+      for (final Entry<ExecutableNode, Status> entry : nodeToOrigStatus.entrySet()) {
+        final ExecutableNode node = entry.getKey();
+        final Status origStatus = entry.getValue();
+        // We shouldn't use project.getFlow(exFlow.getFlowId()) b/c the node might be in embedded
+        // flows and exFlow might be the ancestor flow but not node's direct parent flow.
+        final Flow flow = project.getFlow(node.getParentFlow().getFlowId());
+
+        // Fill in job props by following the logic in ProjectManagerServlet.
+        if (node.getInputProps() == null) {
+          node.setInputProps(projectManager.getJobOverrideProperty(project, flow, node.getId(),
+              node.getJobSource()));
+        }
+        if (node.getInputProps() == null) {
+          node.setInputProps(projectManager.getProperties(project, flow, node.getId(),
+              node.getJobSource()));
+        }
+
+        if (StatusBeforeRunningSet.contains(origStatus)) {
+          final Status finalStatus = node.getStatus();
+          node.setStatus(origStatus);
+          eventHandler.fireEventListeners(Event.create(new JobRunnerBase(node.getInputProps()),
+              EventType.JOB_STARTED, new EventData(node)));
+          node.setStatus(finalStatus);
+        }
+
+        if (Status.isStatusFinished(node.getStatus())) {
+          eventHandler.fireEventListeners(Event.create(new JobRunnerBase(node.getInputProps()),
+              EventType.JOB_FINISHED, new EventData(node)));
+        }
+      }
+    }
+
+    if (exFlow.getUpdateTime() == -1) {
+      exFlow.setUpdateTime(time);
+    }
+
+    if (exFlow.getStartTime() == -1) {
+      exFlow.setStartTime(time);
     }
 
     if (exFlow.getEndTime() == -1) {
       exFlow.setEndTime(time);
     }
 
-    exFlow.setStatus(Status.FAILED);
+    if (!Status.isStatusFinished(exFlow.getStatus())) {
+      exFlow.setStatus(finalFlowStatus);
+    }
   }
 
   /**
@@ -260,6 +506,7 @@ public class ExecutionControllerUtils {
    */
   public static boolean isFinished(final ExecutableFlow flow) {
     switch (flow.getStatus()) {
+      case EXECUTION_STOPPED:
       case SUCCEEDED:
       case FAILED:
       case KILLED:
@@ -270,14 +517,14 @@ public class ExecutionControllerUtils {
   }
 
   /**
-   * Dynamically create the job link url. Construct the job link url from resource manager url.
-   * If it's valid, just return the job link url. Otherwise, construct the job link url from
+   * Dynamically create the job link url. Construct the job link url from resource manager url. If
+   * it's valid, just return the job link url. Otherwise, construct the job link url from
    * Hadoop/Spark job history server.
    *
-   * @param exFlow The executable flow.
-   * @param jobId The job id.
+   * @param exFlow        The executable flow.
+   * @param jobId         The job id.
    * @param applicationId The application id.
-   * @param azkProps The azkaban props.
+   * @param azkProps      The azkaban props.
    * @return the job link url.
    */
   public static String createJobLinkUrl(final ExecutableFlow exFlow, final String jobId,
@@ -315,7 +562,8 @@ public class ExecutionControllerUtils {
       }
     }
 
-    if (resourceManagerJobUrl == null || sparkHistoryServerUrl == null || jobHistoryServerUrl == null) {
+    if (resourceManagerJobUrl == null || sparkHistoryServerUrl == null
+        || jobHistoryServerUrl == null) {
       logger.info("Missing Resource Manager, Spark History Server or History Server URL");
       return null;
     }

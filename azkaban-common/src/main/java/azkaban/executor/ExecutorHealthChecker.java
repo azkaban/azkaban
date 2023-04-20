@@ -16,6 +16,7 @@
 package azkaban.executor;
 
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
@@ -46,6 +47,8 @@ public class ExecutorHealthChecker {
   private static final int DEFAULT_EXECUTOR_MAX_FAILURE_COUNT = 6;
   // Web server checks executor health every 5 min by default.
   private static final Duration DEFAULT_EXECUTOR_HEALTHCHECK_INTERVAL = Duration.ofMinutes(5);
+  // Default PING timeout is set 5 seconds/ 5000 ms by default.
+  private static final int DEFAULT_EXECUTOR_HEALTHCHECK_TIMEOUT = 5000;
   private final long healthCheckIntervalMin;
   private final int executorMaxFailureCount;
   private final List<String> alertEmails;
@@ -54,6 +57,7 @@ public class ExecutorHealthChecker {
   private final ExecutorApiGateway apiGateway;
   private final AlerterHolder alerterHolder;
   private final Map<Integer, Integer> executorFailureCount = new HashMap<>();
+  private final int executorPingTimeout;
 
   @Inject
   public ExecutorHealthChecker(final Props azkProps, final ExecutorLoader executorLoader,
@@ -69,6 +73,10 @@ public class ExecutorHealthChecker {
     this.executorLoader = executorLoader;
     this.apiGateway = apiGateway;
     this.alerterHolder = alerterHolder;
+    // Defining a http timout in milliseconds for PING based health check
+    this.executorPingTimeout =
+        azkProps.getInt(ConfigurationKeys.AZKABAN_EXECUTOR_PING_TIMEOUT,
+            DEFAULT_EXECUTOR_HEALTHCHECK_TIMEOUT);
   }
 
   public void start() {
@@ -135,14 +143,18 @@ public class ExecutorHealthChecker {
       Optional<ExecutorManagerException> healthcheckException = Optional.empty();
       Map<String, Object> results = null;
       try {
-        // Todo jamiesjc: add metrics to monitor the http call return time
+        long pingTime = System.currentTimeMillis();
         results = this.apiGateway
             .callWithExecutionId(executor.getHost(), executor.getPort(),
-                ConnectorParams.PING_ACTION, null, null, null);
+                ConnectorParams.PING_ACTION, null, null, null,
+                Optional.of(executorPingTimeout));
+        pingTime = System.currentTimeMillis() - pingTime;
+        logger.info("Got ping response from " + executorDetailString(executor)
+            + " in " + pingTime + "ms");
       } catch (final ExecutorManagerException e) {
         healthcheckException = Optional.of(e);
       } catch (final RuntimeException re) {
-        logger.error("Unexepected exception while reaching executor - "
+        logger.error("Unexpected exception while reaching executor - "
             + executorDetailString(executor), re);
       }
       if (!healthcheckException.isPresent()) {
@@ -184,7 +196,8 @@ public class ExecutorHealthChecker {
           String.format("Finalizing execution %s, %s", flow.getExecutionId(), finalizeReason));
       try {
         ExecutionControllerUtils
-            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null);
+            .finalizeFlow(this.executorLoader, this.alerterHolder, flow, finalizeReason, null,
+                Status.FAILED);
       } catch (RuntimeException e) {
         logger.error("Unchecked exception while finalizing execution: " + flow.getExecutionId(), e);
       }
@@ -200,7 +213,7 @@ public class ExecutorHealthChecker {
     final HashMap<Optional<Executor>, List<ExecutableFlow>> exFlowMap = new HashMap<>();
     try {
       for (final Pair<ExecutionReference, ExecutableFlow> runningFlow : this
-          .executorLoader.fetchActiveFlows().values()) {
+          .executorLoader.fetchActiveFlows(DispatchMethod.POLL).values()) {
         final Optional<Executor> executor = runningFlow.getFirst().getExecutor();
         List<ExecutableFlow> flows = exFlowMap.get(executor);
         if (flows == null) {

@@ -16,6 +16,7 @@
 package azkaban.metrics;
 
 import azkaban.utils.Props;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
@@ -32,6 +33,11 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
 
   @Override
   public void startReporting(Props props) {
+  }
+
+  @Override
+  public boolean isInitialized() {
+    return false;
   }
 
   @Override
@@ -72,11 +78,64 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
 
   @Override
   public void markFlowSubmitToExecutor() {
-
   }
 
   @Override
   public void markFlowSubmitToContainer() {
+  }
+
+  @Override
+  public void markExecutionStopped() {
+  }
+
+  @Override
+  public void markOOMKilled() {
+  }
+
+  @Override
+  public void markContainerDispatchFail() {
+  }
+
+  @Override
+  public void markVPARecommenderFail() {
+  }
+
+  @Override
+  public void markYarnGetApplicationsFail() {
+
+  }
+
+  @Override
+  public void markYarnApplicationKillFail(long n) {
+  }
+
+  @Override
+  public void sendCleanupContainerHeartBeat() {
+    
+  }
+
+  @Override
+  public void sendCleanupStaleFlowHeartBeat() {
+
+  }
+
+  @Override
+  public void sendCleanupYarnApplicationHeartBeat() {
+
+  }
+
+  @Override
+  public void recordCleanupStaleFlowTimer(long duration, TimeUnit unit) {
+
+  }
+
+  @Override
+  public void recordCleanupContainerTimer(long duration, TimeUnit unit) {
+
+  }
+
+  @Override
+  public void recordCleanupYarnApplicationTimer(long duration, TimeUnit unit) {
 
   }
 }

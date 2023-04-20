@@ -18,8 +18,10 @@
 package azkaban.container;
 
 import azkaban.executor.ConnectorParams;
+import azkaban.executor.ExecutorManagerException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +35,7 @@ public class ContainerServletTest {
   private final HttpServletResponse mockHttpServletResponse =
       Mockito.mock(HttpServletResponse.class);
   private final ContainerServlet mockContainerServlet = Mockito.mock(ContainerServlet.class);
+  private final FlowContainer flowContainer = Mockito.mock(FlowContainer.class);
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
   private void init() throws IOException {
@@ -59,6 +62,32 @@ public class ContainerServletTest {
     Mockito.verify(this.mockContainerServlet, Mockito.times(1)).handlePing(Mockito.any());
     Assert.assertEquals(baos.toString(), "{\"status\":\"alive\"}");
     this.baos.reset();
+  }
+
+  /**
+   * Verify that the method handleModifyExecutionRequest indeed is getting called.
+   * Verify that the method retryFailures for FlowContainer indeed is getting called.
+   */
+  @Test
+  public void testRetryFailures() throws IOException, ServletException, ExecutorManagerException {
+    init();
+    Mockito.when(this.mockHttpServletRequest.getParameter(ConnectorParams.ACTION_PARAM))
+        .thenReturn(ConnectorParams.MODIFY_EXECUTION_ACTION);
+    Mockito.when(
+        this.mockHttpServletRequest.getParameter(ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE))
+        .thenReturn(ConnectorParams.MODIFY_RETRY_FAILURES);
+    Mockito.doCallRealMethod().when(this.mockContainerServlet)
+        .handleModifyExecutionRequest(Mockito.any(), Mockito.anyInt(), Mockito.anyString(),
+            Mockito.any());
+    Mockito.doCallRealMethod().when(this.mockContainerServlet).setFlowContainer(Mockito.any());
+    this.mockContainerServlet.setFlowContainer(this.flowContainer);
+    this.mockContainerServlet.handleRequest(this.mockHttpServletRequest,
+        this.mockHttpServletResponse);
+    Mockito.verify(this.mockContainerServlet, Mockito.times(1))
+        .handleModifyExecutionRequest(Mockito.any(), Mockito.anyInt(), Mockito.anyString(),
+            Mockito.any());
+    Mockito.verify(this.flowContainer, Mockito.times(1))
+        .retryFailures(Mockito.anyInt(), Mockito.anyString());
   }
 
   @Test

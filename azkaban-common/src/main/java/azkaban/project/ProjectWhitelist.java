@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -37,11 +38,16 @@ public class ProjectWhitelist {
   private static final String PROJECT_TAG = "project";
   private static final String PROJECTID_ATTR = "projectid";
 
+  private static AtomicBoolean xmlFileLoaded = new AtomicBoolean(false);
+  public static boolean isXmlFileLoaded() {
+    return xmlFileLoaded.get();
+  }
   private static final AtomicReference<Map<WhitelistType, Set<Integer>>> projectsWhitelisted =
       new AtomicReference<>();
 
-  static void load(final Props props) {
+  public static void load(final Props props) {
     final String xmlFile = props.getString(XML_FILE_PARAM);
+    xmlFileLoaded.set(true);
     parseXMLFile(xmlFile);
   }
 

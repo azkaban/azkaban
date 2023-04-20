@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
-import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.jmx.JmxJobMBeanManager;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
@@ -38,6 +38,8 @@ import azkaban.flow.FlowUtils;
 import azkaban.imagemgmt.version.VersionSet;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
+import azkaban.logs.ExecutionLogsLoader;
+import azkaban.logs.MockExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.FlowLoader;
@@ -57,8 +59,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowRunnerTestUtil {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FlowRunnerTestUtil.class);
 
   private static int id = 101;
   private final Map<String, Flow> flowMap;
@@ -68,6 +74,7 @@ public class FlowRunnerTestUtil {
   private final File projectDir;
   private final ProjectLoader projectLoader;
   private ExecutorLoader executorLoader;
+  private final ExecutionLogsLoader executionLogsLoader;
   private final ProjectFileHandler handler;
 
   public FlowRunnerTestUtil(final String flowName, final TemporaryFolder temporaryFolder)
@@ -82,11 +89,12 @@ public class FlowRunnerTestUtil {
 
     this.executorLoader = mock(ExecutorLoader.class);
     when(this.executorLoader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
+    this.executionLogsLoader = mock(ExecutionLogsLoader.class);
 
     this.projectLoader = mock(ProjectLoader.class);
-    handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
-            1, null, null, null, "111.111.111.111");
-    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(handler);
+    this.handler = new ProjectFileHandler(1, 1, 1, "testUser", "zip", "test.zip",
+        1, null, null, null, "111.111.111.111");
+    when(this.projectLoader.fetchProjectMetaData(anyInt(), anyInt())).thenReturn(this.handler);
 
     Utils.initServiceProvider();
     JmxJobMBeanManager.getInstance().initialize(new Props());
@@ -115,6 +123,7 @@ public class FlowRunnerTestUtil {
     final FlowLoaderFactory loaderFactory = new FlowLoaderFactory(new Props(null));
     final FlowLoader loader = loaderFactory.createFlowLoader(sourceDir);
 
+    LOG.info("Loading project flows from " + sourceDir);
     loader.loadProjectFlow(project, sourceDir);
     if (!loader.getErrors().isEmpty()) {
       for (final String error : loader.getErrors()) {
@@ -126,6 +135,7 @@ public class FlowRunnerTestUtil {
     }
 
     final Map<String, Flow> flowMap = loader.getFlowMap();
+    LOG.info("Loaded flows: " + flowMap.keySet());
     project.setFlows(flowMap);
     FileUtils.copyDirectory(sourceDir, workingDir);
     return flowMap;
@@ -194,6 +204,7 @@ public class FlowRunnerTestUtil {
       throws Exception {
     final ExecutableFlow exFlow = FlowRunnerTestUtil
         .prepareExecDir(this.workingDir, this.projectDir, flowName, 1);
+    exFlow.setSubmitUser("submitUser");
     exFlow.setDispatchMethod(DispatchMethod.POLL);
     if (watcher != null) {
       options.setPipelineLevel(pipeline);
@@ -202,8 +213,7 @@ public class FlowRunnerTestUtil {
     // Add version set to executable flow
     exFlow.setVersionSet(createVersionSet());
     final FlowRunner runner = createFromExecutableFlow(eventCollector, exFlow, options,
-        new HashMap<>(),
-        new Props());
+        new HashMap<>(), new Props(), mock(AlerterHolder.class));
     runner.setFlowWatcher(watcher);
     return runner;
   }
@@ -221,23 +231,25 @@ public class FlowRunnerTestUtil {
 
   public FlowRunner createFromFlowMap(final String flowName,
       final HashMap<String, String> flowParams) throws Exception {
-    return createFromFlowMap(null, flowName, null, flowParams, new Props());
+    return createFromFlowMap(null, flowName, null, flowParams, new Props(),
+        mock(AlerterHolder.class));
   }
 
   public FlowRunner createFromFlowMap(final String flowName, final ExecutionOptions options,
       final Map<String, String> flowParams, final Props azkabanProps) throws Exception {
     return createFromFlowMap(null, flowName, options, flowParams,
-        azkabanProps);
+        azkabanProps, mock(AlerterHolder.class));
   }
 
   public FlowRunner createFromFlowMap(final EventCollectorListener eventCollector,
-      final String flowName, final ExecutionOptions options,
-      final Map<String, String> flowParams, final Props azkabanProps)
-      throws Exception {
+      final String flowName, final ExecutionOptions options, final Map<String, String> flowParams,
+      final Props azkabanProps, final AlerterHolder alerterHolder) throws Exception {
+    LOG.info("Creating a FlowRunner for flow '" + flowName + "'");
     final Flow flow = this.flowMap.get(flowName);
     final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    exFlow.setSubmitUser("submitUser");
     return createFromExecutableFlow(eventCollector, exFlow, options, flowParams,
-        azkabanProps);
+        azkabanProps, alerterHolder);
   }
 
   public FlowRunner createFromFlowMap(final String flowName, final FailureAction action)
@@ -252,13 +264,13 @@ public class FlowRunnerTestUtil {
     final Map<String, String> flowParams = new HashMap<>();
     flowParams.put(InteractiveTestJob.JOB_ID_PREFIX, jobIdPrefix);
     return createFromFlowMap(new EventCollectorListener(), flowName, options, flowParams,
-        azkabanProps);
+        azkabanProps, mock(AlerterHolder.class));
   }
 
   private FlowRunner createFromExecutableFlow(final EventCollectorListener eventCollector,
       final ExecutableFlow exFlow, final ExecutionOptions options,
-      final Map<String, String> flowParams, final Props azkabanProps)
-      throws Exception {
+      final Map<String, String> flowParams, final Props azkabanProps,
+      final AlerterHolder alerterHolder) throws Exception {
     final int exId = id++;
     exFlow.setExecutionPath(this.workingDir.getPath());
     exFlow.setExecutionId(exId);
@@ -272,9 +284,8 @@ public class FlowRunnerTestUtil {
     final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
     final ExecMetrics execMetrics = new ExecMetrics(metricsManager);
     final FlowRunner runner =
-        new FlowRunner(exFlow, this.executorLoader, this.projectLoader,
-            this.jobtypeManager, azkabanProps, null, mock(AlerterHolder.class), commonMetrics,
-            execMetrics);
+        new FlowRunner(exFlow, this.executorLoader, this.executionLogsLoader, this.projectLoader,
+            this.jobtypeManager, azkabanProps, null, alerterHolder, commonMetrics, execMetrics);
     if (eventCollector != null) {
       runner.addListener(eventCollector);
     }
@@ -297,7 +308,7 @@ public class FlowRunnerTestUtil {
     return this.project;
   }
 
-  public VersionSet createVersionSet(){
+  public VersionSet createVersionSet() {
     final String testJsonString1 = "{\"azkaban-base\":{\"version\":\"7.0.4\",\"path\":\"path1\","
         + "\"state\":\"ACTIVE\"},\"azkaban-config\":{\"version\":\"9.1.1\",\"path\":\"path2\","
         + "\"state\":\"ACTIVE\"},\"spark\":{\"version\":\"8.0\",\"path\":\"path3\","

@@ -379,6 +379,256 @@ Similarly, if ``forceActivatePlan`` is set to false, the plan will be deactivate
                     {"imageVersion": "3.1.1", "rampupPercentage": "10", "stabilityTag": "STABLE"}]
   }
 
+/imageRampRule
+************
+Image ramp rule is an addon feature to Ramp-up Plan to control and protect certain flows from test/unstable image version.
+All the following APIs would have case sensitive parameter.
+
+.. _create-ramp-rule:
+
+Create a new normal Ramp Rule
+^^^^^^^^^^^^^^^^^^^^^^^
+- **Method:** POST
+- **Request URL:** /imageRampRule/createRule
+- **Request Body:**
+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``ruleName``         | ``String``  | User provided name                                      |
++----------------------+-------------+---------------------------------------------------------+
+| ``imageName``        | ``String``  | Image type name                                         |
++----------------------+-------------+---------------------------------------------------------+
+| ``imageVersion``     | ``String``  | Image type Version.                                     |
+|                      |             | Registered and valid version. (New or Active)           |
++----------------------+-------------+---------------------------------------------------------+
+| ``ownerships``       |  ``String`` | (Optional) List of ldaps, separated by comma;           |
+|                      |             | While not present, use imageType owners as default      |
++----------------------+-------------+---------------------------------------------------------+
+
+**Example:**
+
+.. code-block:: json
+
+  {
+    "ruleName": "platformImageRule",
+    "imageType": "az-platform-image",
+    "imageVersion": "0.0.1"
+  }
+
+**Response:**
+
+.. code-block:: guess
+
+    Status: 201 Created
+
+.. _create-hp-flow-ramp-rule:
+
+Create an HP flow Ramp Rule
+^^^^^^^^^^^^^^^^^^^^^^^
+- **Method:** POST
+- **Request URL:** /imageRampRule/createHPFlowRule
+- **Request Body:**
+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``ruleName``         | ``String``  | User provided name                                      |
++----------------------+-------------+---------------------------------------------------------+
+| ``ownerships``       | ``String``  | List of ldaps, separated by comma;                      |
++----------------------+-------------+---------------------------------------------------------+
+
+Note: ownerships parameter is a required param for HP Flow Rule.
+
+**Example:**
+
+.. code-block:: json
+
+  {
+    "ruleName": "azHPFlowRule",
+    "ownerships": "userA, userB"
+  }
+
+**Response:**
+
+.. code-block:: guess
+
+     Status: 201 Created
+
+.. _add-flows-to-ramp-rule:
+
+Add flows into an existing ramp rule
+^^^^^^^^^^^^^^^^^^^^^^^
+- **Method:** POST
+- **Request URL:** /imageRampRule/addFlowsToRule
+- **Request Body:**
+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``ruleName``         | ``String``  | User provided name                                      |
++----------------------+-------------+---------------------------------------------------------+
+| ``flowIds``          |  ``List``   | List of `flowid definitions <#flowid-definition>`_      |
++----------------------+-------------+---------------------------------------------------------+
+
+**Flow-id Definition json block:**
+
+.. _flowid-definition:
+
+.. code-block:: guess
+
+   {
+      "projectName": "myAzProject",
+      "flowName": "alwaysOk"
+   }
+
+**Example:**
+
+.. code-block:: json
+
+   {
+      "ruleName":"azHPFlowRule",
+      "flowIds":[
+         {
+            "projectName":"myAzProject",
+            "flowName":"alwaysOk"
+         },
+         {
+            "projectName":"myAnotherProject",
+            "flowName":"basicFlows"
+         }
+      ]
+   }
+
+**Response:**
+
+.. code-block:: guess
+
+     Status: 200 OK
+
+.. _update-version-on-ramp-rule:
+
+Update version on an existing Ramp Rule
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+update an existing normal ramp rule's version.
+Exception will be thrown if there is no existing ramp rule or that's an HP flow rule.
+
+- **Method:** POST
+- **Request URL:** /imageRampRule/updateVersion
+- **Request Parameters:**
+
++-----------------+-------------+---------------------------------------------------------+
+|   Field Name    |     Type    |            Description                                  |
++=================+=============+=========================================================+
+| ``ruleName``    | ``String``  | Image type name                                         |
++-----------------+-------------+---------------------------------------------------------+
+| ``version``     | ``String``  | Image version on existing ramp rule                     |
++-----------------+-------------+---------------------------------------------------------+
+
+**Example:**
+
+.. code-block:: guess
+
+     POST /imageRampRule/updateVersion?ruleName={ruleName}&version={imageVersion}
+
+**Response:**
+
+.. code-block:: guess
+
+     Status: 200 OK
+
+.. _delete-ramp-rule:
+
+Delete an existing Ramp Rule
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Method:** POST
+- **Request URL:** /imageRampRule/deleteRule
+- **Request Parameters:**
+
++-----------------+-------------+---------------------------------------------------------+
+|   Field Name    |     Type    |            Description                                  |
++=================+=============+=========================================================+
+| ``ruleName``    | ``String``  | Image type name                                         |
++-----------------+-------------+---------------------------------------------------------+
+
+**Example:**
+
+.. code-block:: guess
+
+     POST /imageRampRule/deleteRule?ruleName={ruleName}
+
+**Response:**
+
+.. code-block:: guess
+
+     Status: 200 OK
+
+Ramp Rule ownership management
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Currently, we only support individual user Ldap as owner, this will be deprecated when group Ldap as owner is supported.
+Owners of ramp rule would have permission to operate above APIs, only existing owners would have permission to add/remove owners.
+
+Add owners to rule ownership
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Method:** POST
+- **Request URL:** /imageRampRule/addOwners
+- **Request Parameters:**
+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``ruleName``         | ``String``  | User provided name                                      |
++----------------------+-------------+---------------------------------------------------------+
+| ``ownerships``       | ``String``  | List of ldaps, separated by comma;                      |
++----------------------+-------------+---------------------------------------------------------+
+
+**Example:**
+
+.. code-block:: json
+
+  {
+    "ruleName": "azHPFlowRule",
+    "ownerships": "userC, userD"
+  }
+
+**Response:**
+
+.. code-block:: guess
+
+     Status: 200 OK
+
+Remove owners from rule ownership
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Method:** POST
+- **Request URL:** /imageRampRule/removeOwners
+- **Request Parameters:**
+
++----------------------+-------------+---------------------------------------------------------+
+|   Field Name         |     Type    |            Description                                  |
++======================+=============+=========================================================+
+| ``ruleName``         | ``String``  | User provided name                                      |
++----------------------+-------------+---------------------------------------------------------+
+| ``ownerships``       | ``String``  | List of ldaps, separated by comma;                      |
++----------------------+-------------+---------------------------------------------------------+
+
+**Example:**
+
+.. code-block:: json
+
+  {
+    "ruleName": "azHPFlowRule",
+    "ownerships": "userC"
+  }
+
+**Response:**
+
+.. code-block:: guess
+
+     Status: 200 OK
+
 Use-Cases and Workflows
 -----------------------
 

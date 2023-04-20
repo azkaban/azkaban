@@ -21,6 +21,11 @@ import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,7 +41,10 @@ import azkaban.event.EventListener;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.container.ContainerizedImpl;
 import azkaban.executor.container.ContainerizedImplType;
+import azkaban.logs.ExecutionLogsLoader;
 import azkaban.metrics.CommonMetrics;
+import azkaban.metrics.ContainerizationMetrics;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.metrics.MetricsManager;
 import azkaban.spi.EventType;
 import azkaban.user.User;
@@ -54,22 +62,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet.P;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 public class ContainerizedDispatchManagerTest {
 
   private final CommonMetrics commonMetrics = new CommonMetrics(
       new MetricsManager(new MetricRegistry()));
   private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
-  private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new
-      HashMap<>();
-  private List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows = new
-      ArrayList<>();
-  private ExecutorLoader loader;
+  private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> unfinishedFlows = new HashMap<>();
+  private List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows = new ArrayList<>();
+  private ExecutorLoader executorLoader;
+  private ExecutionLogsLoader nearlineExecutionLogsLoader;
+  private ExecutionLogsLoader offlineExecutionLogsLoader;
   private ExecutorApiGateway apiGateway;
   private ContainerizedImpl containerizedImpl;
   private ContainerizedDispatchManager containerizedDispatchManager;
@@ -86,18 +100,24 @@ public class ContainerizedDispatchManagerTest {
   private ExecutionReference ref1;
   private ExecutionReference ref2;
   private ExecutionReference ref3;
-  private EventListener eventListener = new DummyEventListener();
+  private EventListener eventListener;
+  private ContainerizationMetrics containerizationMetrics;
 
   @Before
   public void setup() throws Exception {
     this.props = new Props();
     this.user = TestUtils.getTestUser();
-    this.loader = mock(ExecutorLoader.class);
+    this.executorLoader = mock(ExecutorLoader.class);
+    this.nearlineExecutionLogsLoader = mock(ExecutionLogsLoader.class);
+    this.offlineExecutionLogsLoader = mock(ExecutionLogsLoader.class);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.containerizedImpl = mock(ContainerizedImpl.class);
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
         ContainerizedImplType.KUBERNETES.name());
+    props.put(Constants.
+            ContainerizedDispatchManagerProperties.CONTAINERIZED_FLOW_FILTER_FILE,
+        "src/test/resources/flow_filter.txt");
     this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.CONTAINERIZED);
     this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
     this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.CONTAINERIZED);
@@ -135,18 +155,19 @@ public class ContainerizedDispatchManagerTest {
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
-    when(this.loader.fetchActiveFlowByExecId(flow1.getExecutionId())).thenReturn(
+    when(this.executorLoader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
+    when(this.executorLoader.fetchActiveFlowByExecId(flow1.getExecutionId())).thenReturn(
         new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), DispatchMethod.CONTAINERIZED), flow1));
     this.queuedFlows = ImmutableList.of(new Pair<>(this.ref1, this.flow1));
-    when(this.loader.fetchQueuedFlows(Status.READY)).thenReturn(this.queuedFlows);
+    when(this.executorLoader.selectQueuedFlows(Status.PREPARING)).thenReturn(this.queuedFlows.stream().map(f -> f.getSecond().getExecutionId()).collect(
+        Collectors.toList()));
 
     Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
         new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(
             flow1.getExecutionId(), new Executor(1, "host", 2021, true), DispatchMethod.CONTAINERIZED),
             flow1);
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
-        executionReferencePair));
+    this.eventListener = new DummyEventListener();
+    this.containerizationMetrics = new DummyContainerizationMetricsImpl();
   }
 
   @Test
@@ -246,15 +267,6 @@ public class ContainerizedDispatchManagerTest {
   }
 
   @Test
-  public void testFetchAllActiveFlows() throws Exception {
-    initializeContainerizedDispatchImpl();
-    initializeUnfinishedFlows();
-    final List<ExecutableFlow> flows = this.containerizedDispatchManager.getRunningFlows();
-    this.unfinishedFlows.values()
-        .forEach(pair -> assertThat(flows.contains(pair.getSecond())).isTrue());
-  }
-
-  @Test
   public void testFetchAllActiveFlowIds() throws Exception {
     initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();
@@ -281,15 +293,9 @@ public class ContainerizedDispatchManagerTest {
     initializeContainerizedDispatchImpl();
     initializeUnfinishedFlows();
     final List<Integer> executions = this.containerizedDispatchManager
-        .getRunningFlows(this.flow2.getProjectId(), this.flow2.getFlowId());
+        .getRunningFlowIds(this.flow2.getProjectId(), this.flow2.getFlowId());
     assertThat(executions.contains(this.flow2.getExecutionId())).isTrue();
     assertThat(executions.contains(this.flow3.getExecutionId())).isTrue();
-    assertThat(this.containerizedDispatchManager
-        .isFlowRunning(this.flow2.getProjectId(), this.flow2.getFlowId()))
-        .isTrue();
-    assertThat(this.containerizedDispatchManager
-        .isFlowRunning(this.flow3.getProjectId(), this.flow3.getFlowId()))
-        .isTrue();
   }
 
   @Test
@@ -300,13 +306,12 @@ public class ContainerizedDispatchManagerTest {
     this.containerizedDispatchManager.fireEventListeners(Event.create(flow1,
         EventType.FLOW_STATUS_CHANGED,
         new EventData(this.flow1)));
-    verify(this.loader).uploadExecutableFlow(this.flow1);
+    verify(this.executorLoader).uploadExecutableFlow(this.flow1);
   }
 
   @Test
   public void testSubmitFlowsExceedingMaxConcurrentRuns() throws Exception {
     initializeContainerizedDispatchImpl();
-    this.containerizedDispatchManager.disableQueueProcessorThread();
     this.props.put(ConfigurationKeys.CONCURRENT_RUNS_ONEFLOW_WHITELIST, "exectest1,"
         + "exec2,3");
     submitFlow(this.flow2, this.ref2);
@@ -320,7 +325,6 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testSubmitFlowsConcurrentWhitelist() throws Exception {
     initializeContainerizedDispatchImpl();
-    this.containerizedDispatchManager.disableQueueProcessorThread();
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     submitFlow(this.flow2, this.ref2);
     submitFlow(this.flow3, this.ref3);
@@ -356,13 +360,14 @@ public class ContainerizedDispatchManagerTest {
     // should succeed after unlocking the flow
     this.flow1.setLocked(false);
     this.containerizedDispatchManager.submitExecutableFlow(this.flow1, this.user.getUserId());
-    verify(this.loader).uploadExecutableFlow(this.flow1);
+    verify(this.executorLoader).uploadExecutableFlow(this.flow1);
   }
 
   /* Test disabling queue process thread to pause dispatching */
   @Test
   public void testDisablingQueueProcessThread() throws Exception {
     initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.start();
     Assert.assertEquals(this.containerizedDispatchManager.isQueueProcessorThreadActive(), true);
     this.containerizedDispatchManager.disableQueueProcessorThread();
     Assert.assertEquals(this.containerizedDispatchManager.isQueueProcessorThreadActive(), false);
@@ -373,6 +378,7 @@ public class ContainerizedDispatchManagerTest {
   @Test
   public void testEnablingQueueProcessThread() throws Exception {
     initializeContainerizedDispatchImpl();
+    this.containerizedDispatchManager.start();
     this.containerizedDispatchManager.disableQueueProcessorThread();
     Assert.assertEquals(this.containerizedDispatchManager.isQueueProcessorThreadActive(), false);
     this.containerizedDispatchManager.enableQueueProcessorThread();
@@ -381,10 +387,10 @@ public class ContainerizedDispatchManagerTest {
 
   private void submitFlow(final ExecutableFlow flow, final ExecutionReference ref) throws
       Exception {
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
-    when(this.loader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
+    when(this.executorLoader.fetchExecutableFlow(flow.getExecutionId())).thenReturn(flow);
     this.containerizedDispatchManager.submitExecutableFlow(flow, this.user.getUserId());
     this.unfinishedFlows.put(flow.getExecutionId(), new Pair<>(ref, flow));
+    initializeUnfinishedFlowMock();
   }
 
   private void initializeUnfinishedFlows() throws Exception {
@@ -392,15 +398,40 @@ public class ContainerizedDispatchManagerTest {
         .of(this.flow1.getExecutionId(), new Pair<>(this.ref1, this.flow1),
             this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
             this.flow3.getExecutionId(), new Pair<>(this.ref3, this.flow3));
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
+    initializeUnfinishedFlowMock();
+  }
+
+  private void initializeUnfinishedFlowMock() throws Exception {
+    when(this.executorLoader.fetchUnfinishedFlows()).thenReturn(this.unfinishedFlows);
+    when(this.executorLoader.fetchUnfinishedFlow(anyInt())).thenAnswer(
+        (Answer<Pair<ExecutionReference, ExecutableFlow>>) invocation -> {
+          Object[] arguments = invocation.getArguments();
+          int executionId = (Integer) arguments[0];
+          List<Pair<ExecutionReference, ExecutableFlow>> list = unfinishedFlows.values().stream()
+              .filter(entry -> entry.getSecond().getExecutionId() == executionId)
+              .collect(Collectors.toList());
+          return (list.isEmpty()) ? null : list.get(0);
+        });
+    when(this.executorLoader.selectUnfinishedFlows(anyInt(), anyString())).thenAnswer(
+        (Answer<List<Integer>>) invocation -> {
+          Object[] arguments = invocation.getArguments();
+          int projectId = (Integer) arguments[0];
+          String flowId = (String) arguments[1];
+          return unfinishedFlows.values().stream()
+              .filter(entry -> entry.getSecond().getProjectId() == projectId && entry.getSecond().getFlowId().equals(flowId))
+              .map(entry -> entry.getSecond().getExecutionId())
+              .collect(Collectors.toList());
+        });
+    when(this.executorLoader.selectUnfinishedFlows()).thenReturn(
+        new ArrayList<>(this.unfinishedFlows.keySet()));
   }
 
   private void initializeContainerizedDispatchImpl() throws Exception{
     this.containerizedDispatchManager =
-        new ContainerizedDispatchManager(this.props, this.loader,
-        this.commonMetrics,
-        this.apiGateway, this.containerizedImpl, null, null, this.eventListener);
-    this.containerizedDispatchManager.start();
+        new ContainerizedDispatchManager(this.props, null, this.executorLoader,
+            this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader, this.commonMetrics,
+            this.apiGateway, this.containerizedImpl, null, null, this.eventListener,
+            this.containerizationMetrics, null);
   }
 
   @Test
@@ -428,7 +459,69 @@ public class ContainerizedDispatchManagerTest {
   }
 
   @Test
+  public void testCancelPreparingFlow() throws Exception {
+    initializeContainerizedDispatchImpl();
+    testCancelUnreachableFlowHelper(Status.PREPARING);
+  }
+
+  @Test
+  public void testCancelDispatchingFlow() throws Exception {
+    initializeContainerizedDispatchImpl();
+    testCancelUnreachableFlowHelper(Status.DISPATCHING);
+  }
+
+  @Test
+  public void testCancelRunningFlow() throws Exception {
+    initializeContainerizedDispatchImpl();
+    testCancelUnreachableFlowHelper(Status.RUNNING);
+  }
+
+  private void testCancelUnreachableFlowHelper(Status initialStatus) throws Exception {
+    submitFlow(this.flow1, this.ref1);
+    this.flow1.setStatus(initialStatus);
+    try {
+      WrappedExecutorApiClient apiClient =
+          new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
+      ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
+      apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_ERROR_JSON);
+      dispatchManager.cancelFlow(this.flow1, this.user.getUserId());
+    } catch (ExecutorManagerException e) {
+      // Ignore if there is an exception.
+    }
+    // Verify that the status of flow1 is finalized.
+    assertThat(this.flow1.getStatus()).isEqualTo(Status.KILLED);
+    Mockito.verify(this.containerizedImpl, Mockito.times(1)).deleteContainer(flow1.getExecutionId());
+    this.flow1.getExecutableNodes().forEach(node -> {
+      assertThat(node.getStatus()).isEqualTo(Status.KILLED);
+    });
+  }
+
+  @Test
   public void testCancelFlow() throws Exception {
+    initializeUnfinishedFlows();
+    WrappedExecutorApiClient apiClient =
+        new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
+    ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
+    apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_SUCCESS_JSON);
+    // Verify FLOW_FINISHED event is emitted
+    dispatchManager.addListener((event) -> {
+      Event flowEvent = (Event) event;
+      Assert.assertEquals(EventType.FLOW_FINISHED, flowEvent.getType());
+      try {
+        Mockito.verify(this.containerizedImpl, Mockito.times(1)).deleteContainer(flow1.getExecutionId());
+      } catch (ExecutorManagerException ignored) {}
+    });
+    dispatchManager.cancelFlow(flow1, this.user.getUserId());
+    Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
+        apiClient.getLastBuildExecutorUriRespone());
+    //Verify that httpPost was requested with the 'cancel' param.
+    Pair cancelAction = new Pair<String, String> ("action", "cancel");
+    Assert.assertTrue(apiClient.getLastHttpPostParams().stream().anyMatch(pair -> cancelAction.equals(pair)));
+  }
+
+  @Test
+  public void testCancelFlowWithMissingExecutor() throws Exception {
+    initializeUnfinishedFlows();
     WrappedExecutorApiClient apiClient =
         new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
     ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
@@ -442,23 +535,21 @@ public class ContainerizedDispatchManagerTest {
   }
 
   @Test
-  public void testCancelFlowWithMissingExecutor() throws Exception {
-    // Return a null executor for the unfinished execution
-    Pair<ExecutionReference, ExecutableFlow> executionReferencePair =
-        new Pair<ExecutionReference, ExecutableFlow>(new ExecutionReference(flow1.getExecutionId(), DispatchMethod.CONTAINERIZED), flow1);
-    when(this.loader.fetchUnfinishedFlows()).thenReturn(ImmutableMap.of(flow1.getExecutionId(),
-        executionReferencePair));
+  public void testFlowFilter() throws Exception {
+    initializeContainerizedDispatchImpl();
+    // Flow names contained in flow_filter.txt must be loaded.
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow1"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow2"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow3"));
+    assertFalse(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow4"));
 
-    WrappedExecutorApiClient apiClient =
-        new WrappedExecutorApiClient(createContainerDispatchEnabledProps(this.props));
-    ContainerizedDispatchManager dispatchManager = createDefaultDispatchWithGateway(apiClient);
-    apiClient.setNextHttpPostResponse(WrappedExecutorApiClient.STATUS_SUCCESS_JSON);
-    dispatchManager.cancelFlow(flow1, this.user.getUserId());
-    Assert.assertEquals(apiClient.getExpectedReverseProxyContainerizedURI(),
-        apiClient.getLastBuildExecutorUriRespone());
-    //Verify that httpPost was requested with the 'cancel' param.
-    Pair cancelAction = new Pair<String, String> ("action", "cancel");
-    Assert.assertTrue(apiClient.getLastHttpPostParams().stream().anyMatch(pair -> cancelAction.equals(pair)));
+    // Reload the flow list from another file, it must contain proj2 and flow4
+    containerizedDispatchManager.getContainerFlowCriteria().reloadFlowFilter("src/test/resources/flow_filter2.txt");
+    // Flow names contained in flow_filter2.txt must be loaded.
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow1"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow2"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj1", "flow3"));
+    assertTrue(containerizedDispatchManager.getContainerFlowCriteria().flowExists("proj2", "flow4"));
   }
 
   private Props createContainerDispatchEnabledProps(Props parentProps) {
@@ -480,10 +571,37 @@ public class ContainerizedDispatchManagerTest {
   private ContainerizedDispatchManager createDispatchWithGateway(ExecutorApiGateway apiGateway,
       Props containerEnabledProps) throws Exception {
     ContainerizedDispatchManager dispatchManager =
-        new ContainerizedDispatchManager(containerEnabledProps, this.loader,
-            this.commonMetrics, apiGateway, this.containerizedImpl,null, null, new DummyEventListener());
+        new ContainerizedDispatchManager(containerEnabledProps, null, this.executorLoader,
+            this.nearlineExecutionLogsLoader, this.offlineExecutionLogsLoader, this.commonMetrics,
+            apiGateway, this.containerizedImpl, null, null, this.eventListener,
+            this.containerizationMetrics, null);
     dispatchManager.start();
     return dispatchManager;
+  }
+
+  /**
+   * This test tries to verify the the flow is finalized and restarted if the dispatch fails.
+   * @throws Exception
+   */
+  @Ignore
+  @Test
+  public void testRestartFlow() throws Exception {
+    initializeContainerizedDispatchImpl();
+    doAnswer(e -> {
+      throw new ExecutorManagerException("Unable to create container");
+    }).when(this.containerizedImpl).createContainer(this.flow1.getExecutionId());
+    when(this.executorLoader.fetchExecutableFlow(this.flow1.getExecutionId())).thenReturn(this.flow1);
+    OnContainerizedExecutionEventListener onExecutionEventListener = mock(
+        OnContainerizedExecutionEventListener.class);
+    ExecutionControllerUtils.onExecutionEventListener = onExecutionEventListener;
+    Thread thread = new Thread(
+        this.containerizedDispatchManager.getExecutionDispatcher(this.flow1.getExecutionId()));
+    thread.start();
+    synchronized (thread) {
+      thread.join();
+    }
+    assertThat(flow1.getStatus()).isEqualTo(Status.FAILED);
+    verify(onExecutionEventListener).onExecutionEvent(this.flow1, Constants.RESTART_FLOW);
   }
 
   @NotThreadSafe
@@ -494,6 +612,7 @@ public class ContainerizedDispatchManagerTest {
             DEFAULT_LOG_TEXT.length(),
             DEFAULT_LOG_TEXT);
     private static String STATUS_SUCCESS_JSON = "{\"status\":\"success\"}";
+    private static String STATUS_ERROR_JSON = "{\"error\":\"Unreachable\"}";
     private URI lastBuildExecutorUriRespone = null;
     private URI lastHttpPostUri = null;
     private List<Pair<String, String>> lastHttpPostParams = null;
@@ -515,7 +634,8 @@ public class ContainerizedDispatchManagerTest {
     }
 
     @Override
-    public String httpPost(URI uri, List<Pair<String, String>> params)
+    public String httpPost(URI uri, Optional<Integer> httpTimeout,
+        List<Pair<String, String>> params)
         throws IOException {
       this.lastHttpPostUri = uri;
       this.lastHttpPostParams = params;

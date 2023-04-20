@@ -16,6 +16,8 @@
 package azkaban.imagemgmt.services;
 
 import static azkaban.Constants.ImageMgmtConstants.IMAGE_TYPE;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_UPDATE_ADD_USER;
+import static azkaban.Constants.ImageMgmtConstants.IMAGE_UPDATE_REMOVE_USER;
 
 import azkaban.imagemgmt.converters.Converter;
 import azkaban.imagemgmt.daos.ImageTypeDao;
@@ -28,9 +30,11 @@ import azkaban.imagemgmt.models.ImageOwnership.Role;
 import azkaban.imagemgmt.models.ImageType;
 import azkaban.imagemgmt.models.ImageType.Deployable;
 import azkaban.imagemgmt.utils.ValidatorUtils;
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -61,6 +65,35 @@ public class ImageTypeServiceImpl implements ImageTypeService {
   }
 
   @Override
+  public List<ImageTypeDTO> getAllImageTypesWithOwnerships() {
+    List<ImageType> imageTypes = this.imageTypeDao.getAllImageTypesWithOwnerships();
+    List<ImageTypeDTO> imageTypeDTOs =
+        imageTypes.stream().map(i -> this.converter.convertToApiResponseDTO(i))
+            .collect(Collectors.toList());
+    return imageTypeDTOs;
+  }
+
+  @Override
+  public ImageTypeDTO findImageTypeWithOwnershipsById(String id) {
+    ImageType imageType = this.imageTypeDao.getImageTypeWithOwnershipsById(id);
+    return this.converter.convertToApiResponseDTO(imageType);
+  }
+
+  @Override
+  public ImageTypeDTO findImageTypeWithOwnershipsByName(String imageTypeName)
+      throws ImageMgmtException {
+    Optional<ImageType> imageType =
+        this.imageTypeDao.getImageTypeWithOwnershipsByName(imageTypeName);
+    if (imageType.isPresent()) {
+      return this.converter.convertToApiResponseDTO(imageType.get());
+    } else {
+      log.info("No Image Type Exists for ImageType name " + imageTypeName);
+      throw new ImageMgmtException(ErrorCode.NOT_FOUND, "No Image Type Exists for ImageType name "
+          + imageTypeName);
+    }
+  }
+
+  @Override
   public int createImageType(final ImageTypeDTO imageType) throws ImageMgmtException {
     // By default always image.
     if (imageType.getDeployable() == null) {
@@ -76,6 +109,22 @@ public class ImageTypeServiceImpl implements ImageTypeService {
     // Validate ownership metadata
     validateOwnership(imageType);
     return this.imageTypeDao.createImageType(this.converter.convertToDataModel(imageType));
+  }
+
+  @Override
+  public int updateImageType(final ImageTypeDTO imageType,
+                             final String updateOp) throws ImageMgmtException {
+    // Check if update operation is valid
+    if (updateOp.equals(IMAGE_UPDATE_ADD_USER)) {
+      return this.imageTypeDao.addImageTypeOwner(this.converter.convertToDataModel(imageType));
+    }
+    if (updateOp.equals(IMAGE_UPDATE_REMOVE_USER)) {
+      return this.imageTypeDao.removeImageTypeOwner(this.converter.convertToDataModel(imageType));
+    }
+    else{
+      throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, String.format("Provide valid "
+          + "input for image update operation"));
+    }
   }
 
   /**

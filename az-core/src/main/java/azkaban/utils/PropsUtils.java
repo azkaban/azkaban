@@ -208,12 +208,22 @@ public class PropsUtils {
   }
 
   /**
+   * Resolve Props, disallowing undefined properties to be referenced.
+   */
+  public static Props resolveProps(final Props props) {
+    return resolveProps(props, false);
+  }
+
+  /**
    * Resolve Props
    *
    * @param props props
+   * @param allowUndefined whether undefined properties are allowed to be referenced.
    * @return resolved props
+   * @throws UndefinedPropertyException if allowUndefined is set to false and
+   *         there is a reference to an undefined property.
    */
-  public static Props resolveProps(final Props props) {
+  public static Props resolveProps(final Props props, final boolean allowUndefined) {
     if (props == null) {
       return null;
     }
@@ -230,11 +240,24 @@ public class PropsUtils {
 
       visitedVariables.add(key);
       final String replacedValue =
-          resolveVariableReplacement(value, props, visitedVariables);
+          resolveVariableReplacement(value, props, visitedVariables, allowUndefined);
       visitedVariables.clear();
 
       resolvedProps.put(key, replacedValue);
     }
+    for(final String key: resolvedProps.getKeySet()) {
+      final String value = resolvedProps.get(key);
+      if(value.contains("${")) {
+        Matcher m = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
+        if(m.find(0) && resolvedProps.containsKey(m.group(1))) {
+          final String replacement = resolveVariableReplacement(value, resolvedProps,
+              visitedVariables,
+              allowUndefined);
+          resolvedProps.put(key, replacement);
+        }
+      }
+    }
+
 
     for (final String key : resolvedProps.getKeySet()) {
       final String value = resolvedProps.get(key);
@@ -278,7 +301,7 @@ public class PropsUtils {
   }
 
   private static String resolveVariableReplacement(final String value, final Props props,
-      final LinkedHashSet<String> visitedVariables) {
+      final LinkedHashSet<String> visitedVariables, final boolean allowUndefined) {
     final StringBuffer buffer = new StringBuffer();
     int startIndex = 0;
 
@@ -301,13 +324,17 @@ public class PropsUtils {
         visitedVariables.add(subVariable);
 
         if (replacement == null) {
-          throw new UndefinedPropertyException(String.format(
-              "Could not find variable substitution for variable(s) [%s]",
-              StringUtils.join(visitedVariables, "->")));
+          if (allowUndefined) {
+            buffer.append("${" + subVariable + "}");
+          } else {
+            throw new UndefinedPropertyException(String.format(
+                "Could not find variable substitution for variable(s) [%s]",
+                StringUtils.join(visitedVariables, "->")));
+          }
+        } else {
+          buffer.append(resolveVariableReplacement(replacement, props,
+              visitedVariables, allowUndefined));
         }
-
-        buffer.append(resolveVariableReplacement(replacement, props,
-            visitedVariables));
         visitedVariables.remove(subVariable);
       }
 

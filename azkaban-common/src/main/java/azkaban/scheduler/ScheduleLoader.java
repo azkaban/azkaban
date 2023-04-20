@@ -17,6 +17,7 @@
 package azkaban.scheduler;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ScheduleLoader {
 
@@ -29,4 +30,6 @@ public interface ScheduleLoader {
   public void updateNextExecTime(Schedule s) throws ScheduleManagerException;
 
   public List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException;
+  public Optional<Schedule> loadUpdateSchedule(Schedule s) throws ScheduleManagerException;
+  public List<Schedule> loadAllSchedules() throws ScheduleManagerException;
 }

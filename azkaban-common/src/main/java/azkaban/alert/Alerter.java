@@ -19,8 +19,14 @@ package azkaban.alert;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.flow.Flow;
+import azkaban.project.Project;
 import azkaban.sla.SlaOption;
+import azkaban.utils.Emailer;
+import azkaban.utils.HTMLFormElement;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public interface Alerter {
 
@@ -30,7 +36,13 @@ public interface Alerter {
 
   void alertOnFirstError(ExecutableFlow exflow) throws Exception;
 
-  void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
+  @Deprecated
+  default void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception { }
+
+  default void alertOnSla(ExecutableFlow exflow, SlaOption slaOption) throws Exception {
+    final String slaMessage = Emailer.createSlaMessage(exflow, slaOption, getAzkabanURL());
+    alertOnSla(slaOption, slaMessage);
+  }
 
   void alertOnFailedUpdate(Executor executor, List<ExecutableFlow> executions,
       ExecutorManagerException e);
@@ -38,4 +50,19 @@ public interface Alerter {
   void alertOnFailedExecutorHealthCheck(Executor executor,
       List<ExecutableFlow> executions,
       ExecutorManagerException e, List<String> alertEmails);
+
+  void alertOnJobPropertyOverridden(Project project, Flow flow, Map<String, Object> metaData);
+
+  @Deprecated
+  default String getAzkabanURL() {
+    return "";
+  }
+
+  /**
+   * Parameters users should set to enable alerts on SLA misses via Web UI. Currently used to
+   * render the SLA definition page.
+   */
+  default List<HTMLFormElement> getViewParameters() {
+    return Collections.emptyList();
+  }
 }

@@ -16,13 +16,17 @@
 
 package azkaban.executor;
 
+import static azkaban.executor.Status.TERMINAL_STATUSES;
+
 import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
+import azkaban.executor.FetchActiveFlowDao.FetchActiveExecutableFlows;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -103,6 +108,36 @@ public class ExecutionFlowDao {
     }
   }
 
+  /**
+   * Select flows that are not in finished status, including both dispatched and non-dispatched
+   * flows.
+   *
+   * @return unfinished flow exec_ids
+   * @throws ExecutorManagerException the executor manager exception
+   */
+  List<Integer> selectUnfinishedFlows() throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTION_BASE_QUERY
+              + "WHERE status NOT IN ("
+              + getTerminalStatusesString() + ")",
+          new SelectFromExecutionFlows());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching unfinished flows", e);
+    }
+  }
+
+  List<Integer> selectUnfinishedFlows(final int projectId, final String flowId) throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTION_BASE_QUERY
+              + "WHERE project_id=? AND flow_id=? AND "
+              + "status NOT IN ("
+              + getTerminalStatusesString() + ")",
+          new SelectFromExecutionFlows(), projectId, flowId);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching unfinished flows", e);
+    }
+  }
+
   List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
       throws ExecutorManagerException {
     try {
@@ -124,13 +159,13 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+  public List<Integer> selectAgedQueuedFlows(final Duration minAge)
       throws ExecutorManagerException {
     try {
-      return this.dbOperator.query(FetchExecutableFlows.FETCH_FLOWS_QUEUED_FOR_LONG_TIME,
-          new FetchExecutableFlows(), System.currentTimeMillis() - minAge.toMillis());
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_EXECUTIONS_QUEUED_FOR_LONG_TIME,
+          new SelectFromExecutionFlows(), System.currentTimeMillis() - minAge.toMillis());
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching aged queued flows", e);
+      throw new ExecutorManagerException("Error selecting aged queued flows", e);
     }
   }
 
@@ -144,29 +179,68 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMillis)
+  public List<Integer> selectQueuedFlows(final Status status)
       throws ExecutorManagerException {
-    // Sample query created by the string builder:
-    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE
-    //   start_time < ? AND status IN (30, 40, 80, 110)
-    final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
-    query.append(" AND status IN (");
-    query.append(
-        Status.nonFinishingStatusAfterFlowStartsSet.stream()
-            .map(s -> String.valueOf(s.getNumVal()))
-            .collect(Collectors.joining(", ")));
-    query.append(")");
-
     try {
-      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMillis);
+      return this.dbOperator.query(SelectFromExecutionFlows.SELECT_QUEUED_EXECUTABLE_FLOW,
+          new SelectFromExecutionFlows(), status.getNumVal());
     } catch (final SQLException e) {
-      throw new ExecutorManagerException("Error fetching stale flows", e);
+      throw new ExecutorManagerException("Error fetching active flows", e);
     }
   }
 
-  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+  public List<ExecutableFlow> fetchStaleFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
       throws ExecutorManagerException {
-    return fetchStaleFlows(System.currentTimeMillis() - executionDuration.toMillis());
+    return fetchFlowsForStatusWithTimeValidity(status, validityMap, true);
+  }
+
+
+  public List<ExecutableFlow> fetchFreshFlowsForStatus(final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap)
+      throws ExecutorManagerException {
+    return fetchFlowsForStatusWithTimeValidity(status, validityMap, false);
+  }
+
+  /**
+   *
+   * @param status the status of flows you want
+   * @param validityMap contains the status as key, the value is a pair, defining timestamp by
+   *                    subtracting a duration from now, and what event time (submit/start/update)
+   *                    this timestamp is comparing with
+   * @param looksForStale if true return flows is stale comparing to this timestamp, else find
+   *                      flows fresher than this timestamp
+   */
+  List<ExecutableFlow> fetchFlowsForStatusWithTimeValidity(
+      final Status status,
+      final ImmutableMap<Status, Pair<Duration, String>> validityMap,
+      boolean looksForStale)
+      throws ExecutorManagerException {
+    if (!validityMap.containsKey(status)) {
+      throw new ExecutorManagerException(
+          "Validity duration is not defined for status: " + status.name());
+    }
+    final Pair<Duration, String> validity = validityMap.get(status);
+    final Duration validityDuration = validity.getFirst();
+    final String validityFrom = validity.getSecond();
+    final long beforeInMillis = System.currentTimeMillis() - validityDuration.toMillis();
+
+    // For status PREPARING (20), to find stale flows, validityDuration is 15 Mins and validityFrom
+    // is "submit_time", and they query will be:
+    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef
+    // WHERE status=20 AND submit_time>0 AND submit_time<beforeInMillis
+    final StringBuilder query = new StringBuilder()
+        .append(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BASE_QUERY)
+        .append(" WHERE status=? ")
+        .append(" AND dispatch_method=?")
+        .append(" AND " + validityFrom + ">0")
+        .append(" AND " + validityFrom + (looksForStale ? "<" : ">=") + "?");
+    try {
+      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(),
+          status.getNumVal(), DispatchMethod.CONTAINERIZED.getNumVal(), beforeInMillis);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching stale flows", e);
+    }
   }
 
   /**
@@ -202,7 +276,7 @@ public class ExecutionFlowDao {
       return this.dbOperator.query(FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_FLOW,
           new FetchRecentlyFinishedFlows(), System.currentTimeMillis() - maxAge.toMillis(),
           Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
-          Status.FAILED.getNumVal());
+          Status.FAILED.getNumVal(), Status.EXECUTION_STOPPED.getNumVal());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching recently finished flows", e);
     }
@@ -212,7 +286,7 @@ public class ExecutionFlowDao {
       final String flowNameContains, final String userNameContains, final int status,
       final long startTime, final long endTime, final int skip, final int num)
       throws ExecutorManagerException {
-    String query = FetchExecutableFlows.FETCH_BASE_EXECUTABLE_FLOW_QUERY;
+    String query = FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BASE_QUERY;
     final List<Object> params = new ArrayList<>();
 
     boolean first = true;
@@ -490,7 +564,8 @@ public class ExecutionFlowDao {
           } else {
             execIds = transOperator.query(
                 String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
-                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal());
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(),
+                dispatchMethod.getNumVal());
           }
           if (CollectionUtils.isNotEmpty(execIds)) {
             executions.addAll(execIds);
@@ -528,6 +603,7 @@ public class ExecutionFlowDao {
 
   /**
    * Updates version set id for the given executionId
+   *
    * @param executionId
    * @param versionSetId
    * @return int
@@ -549,26 +625,25 @@ public class ExecutionFlowDao {
   public static class SelectFromExecutionFlows implements
       ResultSetHandler<List<Integer>> {
 
+    private static final String SELECT_EXECUTION_BASE_QUERY = "SELECT exec_id from execution_flows ";
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
-        "SELECT exec_id from execution_flows WHERE exec_id = (SELECT exec_id from execution_flows"
-            + " WHERE status = ? and dispatch_method = ?"
-            + " and executor_id is NULL and flow_data is NOT NULL %s"
-            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and "
-            + "executor_id is NULL FOR UPDATE";
+        SELECT_EXECUTION_BASE_QUERY + FOR_UPDATE_FORMAT;
 
     private static final String SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT =
-        "SELECT exec_id from execution_flows WHERE exec_id in (SELECT exec_id from execution_flows"
-            + " WHERE status = ? and dispatch_method = ?"
-            + " and executor_id is NULL and flow_data is NOT NULL %s ) "
-            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC "
-            + " LIMIT ? FOR UPDATE";
+        SELECT_EXECUTION_BASE_QUERY + IN_BATCH_FOR_UPDATE_FORMAT;
 
-    public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
-            "and (use_executor is NULL or use_executor = ?)");
+    private static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
+        SELECT_EXECUTION_BASE_QUERY + FOR_UPDATE_ACTIVE;
 
-    public static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "and use_executor = ?");
+    private static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
+        SELECT_EXECUTION_BASE_QUERY + FOR_UPDATE_INACTIVE;
+
+    private static final String SELECT_QUEUED_EXECUTABLE_FLOW =
+        SELECT_EXECUTION_BASE_QUERY + FOR_QUEUED_EXECUTABLE_FLOW;
+
+    // Select flows that are in preparing state for more than a certain duration.
+    private static final String SELECT_EXECUTIONS_QUEUED_FOR_LONG_TIME =
+        SELECT_EXECUTION_BASE_QUERY + QUEUED_FOR_LONG_TIME;
 
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {
@@ -588,32 +663,19 @@ public class ExecutionFlowDao {
   public static class FetchExecutableFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
 
-    static String FETCH_EXECUTABLE_FLOW_BY_START_TIME =
-        "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE "
-            + "project_id=? AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
-    static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef";
-    private static final String FETCH_FLOWS_STARTED_BEFORE = FETCH_BASE_EXECUTABLE_FLOW_QUERY +
-        " WHERE start_time < ?";
-    static String FETCH_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "WHERE exec_id=?";
-    static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    static String FETCH_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? AND status=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    // Fetch flows that are in preparing state for more than a certain duration.
-    private static final String FETCH_FLOWS_QUEUED_FOR_LONG_TIME =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
-            + " WHERE submit_time < ? AND status = "
-            + Status.PREPARING.getNumVal();
+    private static String FETCH_EXECUTABLE_FLOW_BASE_QUERY =
+        "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef ";
+
+    private static String FETCH_EXECUTABLE_FLOW_BY_START_TIME =
+        FETCH_EXECUTABLE_FLOW_BASE_QUERY + BY_PROJECTID_FLOWID_STARTTIME;
+    private static String FETCH_EXECUTABLE_FLOW =
+        FETCH_EXECUTABLE_FLOW_BASE_QUERY + BY_EXECID;
+    private static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
+        FETCH_EXECUTABLE_FLOW_BASE_QUERY + FOR_HISTORY;
+    private static String FETCH_EXECUTABLE_FLOW_HISTORY =
+        FETCH_EXECUTABLE_FLOW_BASE_QUERY + FOR_HISTORY_BY_PROJECTID_FLOWID;
+    private static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
+        FETCH_EXECUTABLE_FLOW_BASE_QUERY + FOR_HISTORY_BY_PROJECTID_FLOWID_STATUS;
 
     @Override
     public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {
@@ -652,9 +714,8 @@ public class ExecutionFlowDao {
       ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
 
     // Select queued unassigned flows
-    private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
-        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
-            + " WHERE executor_id is NULL AND status = ?";
+    private static final String FETCH_QUEUED_EXECUTABLE_FLOW_BASE_QUERY = FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BASE_QUERY;
+    private static final String FETCH_QUEUED_EXECUTABLE_FLOW = FETCH_QUEUED_EXECUTABLE_FLOW_BASE_QUERY + FOR_QUEUED_EXECUTABLE_FLOW;
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(final ResultSet rs)
@@ -697,7 +758,7 @@ public class ExecutionFlowDao {
     // Execution_flows table is already indexed by end_time
     private static final String FETCH_RECENTLY_FINISHED_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
-            + "WHERE end_time > ? AND status IN (?, ?, ?)";
+            + "WHERE end_time > ? AND status IN (?, ?, ?, ?)";
 
     @Override
     public List<ExecutableFlow> handle(
@@ -727,5 +788,52 @@ public class ExecutionFlowDao {
       } while (rs.next());
       return execFlows;
     }
+  }
+
+  private static final String FOR_UPDATE_FORMAT =
+      "WHERE exec_id = (SELECT exec_id from execution_flows"
+          + " WHERE status = ? and dispatch_method = ?"
+          + " and executor_id is NULL and flow_data is NOT NULL %s"
+          + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and "
+          + "executor_id is NULL FOR UPDATE";
+
+  private static final String IN_BATCH_FOR_UPDATE_FORMAT =
+      "WHERE exec_id in (SELECT exec_id from execution_flows"
+          + " WHERE status = ? and dispatch_method = ?"
+          + " and executor_id is NULL and flow_data is NOT NULL %s ) "
+          + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC "
+          + " LIMIT ? FOR UPDATE";
+
+  private static final String FOR_UPDATE_ACTIVE =
+      String.format(FOR_UPDATE_FORMAT,
+          "and (use_executor is NULL or use_executor = ?)");
+
+  private static final String FOR_UPDATE_INACTIVE =
+      String.format(FOR_UPDATE_FORMAT, "and use_executor = ?");
+
+  private static final String BY_PROJECTID_FLOWID_STARTTIME =
+      "WHERE project_id=? AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
+  private static final String BY_EXECID =
+      "WHERE exec_id=?";
+  private static final String FOR_HISTORY =
+      "ORDER BY exec_id DESC LIMIT ?, ?";
+  private static final String FOR_HISTORY_BY_PROJECTID_FLOWID =
+      "WHERE project_id=? AND flow_id=? " + FOR_HISTORY;
+  private static final String FOR_HISTORY_BY_PROJECTID_FLOWID_STATUS =
+       "WHERE project_id=? AND flow_id=? AND status=? " + FOR_HISTORY;
+  // Fetch flows that are in preparing state for more than a certain duration.
+  private static final String QUEUED_FOR_LONG_TIME =
+      "WHERE submit_time < ? AND status = " + Status.PREPARING.getNumVal();
+  private static final String FOR_QUEUED_EXECUTABLE_FLOW =
+      "WHERE executor_id is NULL AND status = ?";
+
+  /**
+   * Generates a string representing terminating flow status num values: "50, 60, 65, 70"
+   * @return
+   */
+  static String getTerminalStatusesString() {
+    final List<Integer> list = TERMINAL_STATUSES.stream().map(Status::getNumVal).collect(
+        Collectors.toList());
+    return StringUtils.join(list, ", ");
   }
 }

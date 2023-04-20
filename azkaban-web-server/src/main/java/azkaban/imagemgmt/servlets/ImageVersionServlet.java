@@ -171,6 +171,13 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
         throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "Required field imageType is"
             + " null. Must provide valid imageType to create image version.");
       }
+      if(imageType.equals("az-platform-image")){
+        final String imagePath = imageVersion.getPath().toLowerCase();
+        if(!imagePath.contains(imageType)) {
+          throw new ImageMgmtValidationException(ErrorCode.BAD_REQUEST, "The image type name must"
+              + " be included in the path");
+        }
+      }
       if (!hasImageManagementPermission(imageType, session.getUser(), Type.CREATE)) {
         log.debug(String.format("Invalid permission to create image version "
             + "for user: %s, image type: %s.", session.getUser().getUserId(), imageType));
@@ -199,8 +206,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
 
   private void handleUpdateImageVersion(final HttpServletRequest req,
       final HttpServletResponse resp, final Session session,
-      final Map<String, String> templateVariableToValue) throws ServletException,
-      IOException {
+      final Map<String, String> templateVariableToValue) throws IOException {
     try {
       final String idString = templateVariableToValue.get(IMAGE_VERSION_ID_KEY);
       final Integer id = Ints.tryParse(idString);

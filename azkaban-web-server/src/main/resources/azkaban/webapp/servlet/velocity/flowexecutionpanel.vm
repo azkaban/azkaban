@@ -46,9 +46,11 @@
               </div>
             </li>
             <li viewpanel="flow-parameters-panel">
-              <a href="#">Flow Parameters</a>
-              <div class="menu-caption">Add temporary flow parameters that are used to override
-                global settings for each job.
+              <a href="#">Runtime Properties</a>
+              <div class="menu-caption">Add temporary properties.
+                <p><small>Rows with "ROOT" Node apply to all jobs. Properties can be scoped per
+                  sub-flow as well as individual jobs. Most specific node path takes precedence.
+                </small></p>
               </div>
             </li>
           </ul>
@@ -175,22 +177,24 @@
               </div>
             </div>
 
-              ## Flow parameters panel
+              ## Runtime properties panel
 
             <div id="flow-parameters-panel" class="side-panel">
-              <h4>Flow Property Override</h4>
+              <h4>Runtime Properties</h4>
               <hr>
               <div id="editTable">
                 <table class="table table-striped">
                   <thead>
                   <tr>
+                    <th>Node</th>
                     <th class="property-key">Name</th>
                     <th>Value</th>
+                    <th></th>
                   </tr>
                   </thead>
                   <tbody>
                   <tr id="addRow" class="addRow">
-                    <td id="addRow-col" colspan="2">
+                    <td id="addRow-col" colspan="4">
                       <button type="button" class="btn btn-success btn-xs" id="add-btn">Add Row
                       </button>
                     </td>
@@ -211,13 +215,6 @@
             </div>
           #end
 
-          #*
-          #if ($triggerPlugins.size() > 0)
-            #foreach ($triggerPlugin in $triggerPlugins)
-                        <button type="button" class="btn btn-default" id=set-$triggerPlugin.pluginName>$triggerPlugin.pluginName</button>
-            #end
-          #end
-          *#
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" id="execute-btn">Execute</button>
       </div><!-- /modal-footer -->
@@ -228,15 +225,5 @@
 #if (!$show_schedule || $show_schedule == 'true')
     #parse ("azkaban/webapp/servlet/velocity/schedulepanel.vm")
 #end
-
-#*
-#if ($triggerPlugins.size() > 0)
-  #foreach ($triggerPlugin in $triggerPlugins)
-    #set ($prefix = $triggerPlugin.pluginName)
-    #set ($webpath = $triggerPlugin.pluginPath)
-    #parse ($triggerPlugin.inputPanelVM)
-  #end
-#end
-*#
 
 <div id="contextMenu"></div>

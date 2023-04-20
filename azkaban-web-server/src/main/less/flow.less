@@ -78,6 +78,10 @@
     background-color: @flow-succeeded-color;
   }
 
+  &.EXECUTION_STOPPED {
+    background-color: @flow-failed-color;
+  }
+
   &.FAILED {
     background-color: @flow-failed-color;
   }
@@ -142,6 +146,10 @@ td {
 
     &.SUCCEEDED {
       background-color: @flow-succeeded-color;
+    }
+
+    &.EXECUTION_STOPPED {
+      background-color: @flow-failed-color;
     }
 
     &.FAILED {
@@ -209,6 +217,10 @@ td {
 
   &.PAUSED {
     color: @flow-paused-color;
+  }
+
+  &.EXECUTION_STOPPED {
+    color: @flow-failed-color;
   }
 
   &.FAILED {
@@ -364,6 +376,10 @@ li.tree-list-item {
       background-position: 48px 0px;
     }
 
+    &.EXECUTION_STOPPED .icon {
+      background-position: 0px 0px;
+    }
+
     &.FAILED .icon {
       background-position: 0px 0px;
     }
@@ -429,4 +445,20 @@ li.tree-list-item {
 .expandallarrow .glyphicon-chevron-down:first-child {
   position: absolute;
   top: -3px;
+}
+
+.sla-alerters {
+  border-top: 1px solid #ece9e9;
+  border-image: linear-gradient(to right, #ece9e9 10%, transparent 30%) 100% 1;
+  padding: 0 0.8em 0.8em 0.8em;
+  margin: 0 0 1.5em 0;
+
+  legend {
+    text-align: left;
+    width: auto;
+    padding: 0 10px;
+    border: none;
+    font-size: 8pt;
+    margin-bottom: 10px;
+  }
 }

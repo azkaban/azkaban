@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
+
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
@@ -42,6 +44,7 @@ public class ExecutionOptions {
   public static final int DEFAULT_FLOW_PRIORITY = 5;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
+  private static final String RUNTIME_PROPERTIES = "runtimeProperties";
   private static final String NOTIFY_ON_FIRST_FAILURE = "notifyOnFirstFailure";
   private static final String NOTIFY_ON_LAST_FAILURE = "notifyOnLastFailure";
   private static final String SUCCESS_EMAILS = "successEmails";
@@ -62,6 +65,7 @@ public class ExecutionOptions {
   public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
+  private Integer originalFlowExecutionIdBeforeRetry = null;
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -78,6 +82,7 @@ public class ExecutionOptions {
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<>();
+  private Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
   private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
   private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
   private List<SlaOption> slaOptions = new ArrayList<>();
@@ -102,6 +107,10 @@ public class ExecutionOptions {
       options.flowParameters = new HashMap<>();
       options.flowParameters.putAll(wrapper
           .<String, String>getMap(FLOW_PARAMETERS));
+    }
+    if (optionsMap.containsKey(RUNTIME_PROPERTIES)) {
+      options.runtimeProperties = new HashMap<>();
+      options.runtimeProperties.putAll(wrapper.getMap(RUNTIME_PROPERTIES));
     }
     // Failure notification
     options.notifyOnFirstFailure =
@@ -148,15 +157,27 @@ public class ExecutionOptions {
     // separately for the original JSON format. New formats should include slaOptions as
     // part of execution options.
 
+    options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
+        options.originalFlowExecutionIdBeforeRetry));
+
     return options;
   }
+
 
   public void addAllFlowParameters(final Map<String, String> flowParam) {
     this.flowParameters.putAll(flowParam);
   }
 
+  public void addAllRuntimeProperties(final Map<String, Map<String, String>> runtimeProperties) {
+    this.runtimeProperties.putAll(runtimeProperties);
+  }
+
   public Map<String, String> getFlowParameters() {
     return this.flowParameters;
+  }
+
+  public Map<String, Map<String, String>> getRuntimeProperties() {
+    return this.runtimeProperties;
   }
 
   public boolean isFailureEmailsOverridden() {
@@ -284,10 +305,16 @@ public class ExecutionOptions {
     this.slaOptions = slaOptions;
   }
 
+  public Integer getOriginalFlowExecutionIdBeforeRetry() { return originalFlowExecutionIdBeforeRetry; }
+
+  public void setOriginalFlowExecutionIdBeforeRetry(Integer originalFlowExecutionIdBeforeRetry) { this.originalFlowExecutionIdBeforeRetry =
+      originalFlowExecutionIdBeforeRetry; }
+
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
     flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
+    flowOptionObj.put(RUNTIME_PROPERTIES, this.runtimeProperties);
     flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
     flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
     flowOptionObj.put(SUCCESS_EMAILS, this.successEmails);
@@ -303,6 +330,7 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
+    flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }
 
@@ -320,6 +348,55 @@ public class ExecutionOptions {
     return FAILURE_OPTION_TO_FAILURE_ACTION_MAP.getOrDefault(
         failureAction, FailureAction.FINISH_CURRENTLY_RUNNING
     );
+  }
+
+  /**
+   * Merge "this" with the input {@link ExecutionOptions}, for every the fields being set in input;
+   * If conflicts, the values set in the input will get to overwrite the old values.
+   * @return
+   */
+  public void merge(ExecutionOptions overwriteOptions) {
+    this.originalFlowExecutionIdBeforeRetry = overwriteOptions.originalFlowExecutionIdBeforeRetry;
+    this.notifyOnFirstFailure = overwriteOptions.notifyOnFirstFailure;
+    this.notifyOnLastFailure = overwriteOptions.notifyOnLastFailure;
+    this.successEmailsOverride = overwriteOptions.successEmailsOverride;
+    this.failureEmailsOverride = overwriteOptions.failureEmailsOverride;
+    this.failureActionOverride = overwriteOptions.failureActionOverride;
+    this.memoryCheck = overwriteOptions.memoryCheck;
+
+    this.successEmails.addAll(overwriteOptions.successEmails);
+    this.failureEmails.addAll(overwriteOptions.failureEmails);
+
+    if (overwriteOptions.pipelineLevel != null) {
+      this.pipelineLevel = overwriteOptions.pipelineLevel;
+    }
+    if (overwriteOptions.pipelineExecId != null) {
+      this.pipelineExecId = overwriteOptions.pipelineExecId;
+    }
+    if (overwriteOptions.queueLevel != null) {
+      this.queueLevel = overwriteOptions.queueLevel;
+    }
+    if (!overwriteOptions.concurrentOption.isEmpty()) {
+      this.concurrentOption = overwriteOptions.concurrentOption;
+    }
+    if (!overwriteOptions.mailCreator.trim().isEmpty()) {
+      this.mailCreator = overwriteOptions.mailCreator;
+    }
+    if (!overwriteOptions.flowParameters.isEmpty()) {
+      this.flowParameters.putAll(overwriteOptions.flowParameters);
+    }
+    if (!overwriteOptions.runtimeProperties.isEmpty()) {
+      this.runtimeProperties.putAll(overwriteOptions.runtimeProperties);
+    }
+    if (overwriteOptions.failureAction != null) {
+      this.failureAction = overwriteOptions.failureAction;
+    }
+    if (!overwriteOptions.initiallyDisabledJobs.isEmpty()) {
+      this.initiallyDisabledJobs = overwriteOptions.initiallyDisabledJobs;
+    }
+    if (!overwriteOptions.slaOptions.isEmpty()) {
+      this.slaOptions = overwriteOptions.slaOptions;
+    }
   }
 
   public enum FailureAction {

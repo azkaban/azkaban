@@ -23,7 +23,7 @@
   #parse ("azkaban/webapp/servlet/velocity/svgflowincludes.vm")
   <script type="text/javascript" src="${context}/js/moment.min.js"></script>
   <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1620232349"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js?v=1624913123"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project.js?v=1556216524794"></script>
   <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
   <script type="text/javascript">
@@ -33,9 +33,9 @@
     var errorMessage = null;
     var successMessage = null;
 
-    var projectId = ${project.id};
+    var projectId = ${projectId};
     var execAccess = ${exec};
-    var projectName = "$project.name";
+    var projectName = "$projectName";
     var graphDepth = "${azkaban_depth}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
@@ -69,7 +69,7 @@
         <div id="flow-tabs">
           #if ($flows)
             #foreach ($flow in $flows)
-              <div class="panel panel-default" flow="${flow.id}" project="${project.name}">
+              <div class="panel panel-default" flow="${flow.id}" project="${projectName}">
                 <div class="panel-heading flow-expander" id="${flow.id}">
                   #if (${exec})
                     <div class="pull-right">
@@ -79,14 +79,14 @@
                               class="btn btn-xs btn-success execute-flow ${isDisabled}"
                               flowId="${flow.id}">Execute Flow
                       </button>
-                      <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions"
+                      <a href="${context}/manager?project=${projectName}&flow=${flow.id}#executions"
                          class="btn btn-info btn-xs">Executions</a>
-                      <a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary"
+                      <a href="${context}/manager?project=${projectName}&flow=${flow.id}#summary"
                          class="btn btn-info btn-xs">Summary</a>
                     </div>
                   #end
                   <span class="glyphicon glyphicon-chevron-down flow-expander-icon"></span>
-                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${flow.id}">${flow.id}</a>
                 </div>
                 <div id="${flow.id}-child" class="panel-collapse panel-list collapse">
                   <ul class="list-group list-group-collapse expanded-flow-job-list"

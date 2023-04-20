@@ -62,10 +62,6 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
   public void run() throws Exception {
     try {
       super.run();
-    } catch (Throwable t) {
-      t.printStackTrace();
-      getLog().error("caught error running the job", t);
-      throw t;
     } finally {
       hadoopProxy.cancelHadoopTokens(getLog());
     }
@@ -79,10 +75,12 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
         CommonJobProperties.PROJECT_NAME,
         CommonJobProperties.AZKABAN_WEBSERVERHOST,
         CommonJobProperties.JOB_ID,
-        CommonJobProperties.JOB_ATTEMPT
+        CommonJobProperties.JOB_ATTEMPT,
+        CommonJobProperties.NESTED_FLOW_PATH
     };
     Props jobProps = getJobProps();
     String tagList = HadoopJobUtils.constructHadoopTags(jobProps, tagKeys);
+    tagList = Joiner.on(',').skipNulls().join(tagList, HadoopJobUtils.constructSubflowTags(jobProps));
     if (jobProps.containsKey(CommonJobProperties.PROJECT_NAME)
         && jobProps.containsKey(CommonJobProperties.FLOW_ID)) {
       String workflowTag = "workflowid:"
@@ -93,6 +91,7 @@ public abstract class AbstractHadoopJavaProcessJob extends JavaProcessJob implem
           Math.min(workflowTag.length(), HadoopJobUtils.APPLICATION_TAG_MAX_LENGTH));
       tagList = Joiner.on(',').skipNulls().join(tagList, workflowTag);
     }
+    getLog().info("[HadoopTag] generated job tags: " + tagList);
     getJobProps().put(
         HadoopConfigurationInjector.INJECT_PREFIX + HadoopJobUtils.MAPREDUCE_JOB_TAGS,
         tagList

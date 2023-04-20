@@ -23,9 +23,10 @@ import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
+import azkaban.flow.ImmutableFlowProps;
 import azkaban.flow.Node;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.project.Project;
@@ -48,6 +49,7 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserUtils;
+import azkaban.utils.HTMLFormElement;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -146,6 +148,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
+  private Map<String, List<HTMLFormElement>> alerterPlugins;
 
   public ProjectManagerServlet() {
     super(createAPIEndpoints());
@@ -182,6 +185,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES, 8192);
     logger.info("downloadBufferSize: " + this.downloadBufferSize);
+
+    final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
+    server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
+        (alerter.getViewParameters() != null ? alerter.getViewParameters()
+            : Collections.emptyList())));
+    this.alerterPlugins = alerterPlugins;
   }
 
   private static List<AzkabanAPI> createAPIEndpoints() {
@@ -1315,7 +1324,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("project", project);
+        page.add("projectName", project.getName());
+        page.add("projectId", project.getId());
+        //params for projectsidebar
+        page.add("description",project.getDescription());
+        page.add("createTimestamp",project.getCreateTimestamp());
+        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+        page.add("lastModifiedUser",project.getLastModifiedUser());
+
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
@@ -1434,7 +1450,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("project", project);
+        page.add("projectName", project.getName());
+        //params for projectsidebar
+        page.add("description",project.getDescription());
+        page.add("createTimestamp",project.getCreateTimestamp());
+        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+        page.add("lastModifiedUser",project.getLastModifiedUser());
+
         page.add("username", user.getUserId());
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
@@ -1493,7 +1515,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project " + projectName + ".");
       }
-      page.add("project", project);
+      page.add("projectName", project.getName());
 
       final Flow flow = project.getFlow(flowNodePath);
       if (flow == null) {
@@ -1560,7 +1582,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               .add(Triple.of(p.getFirst(), p.getSecond(), nodePropsSource)));
         } else {
           inheritedProperties.add(Triple.of(nodePropsSource, flowId, nodePropsSource));
-          FlowProps parent = flow.getFlowProps(nodePropsSource);
+          ImmutableFlowProps parent = flow.getFlowProps(nodePropsSource);
           while (parent.getInheritedSource() != null) {
             final String inheritedSource = parent.getInheritedSource();
             inheritedProperties.add(Triple.of(inheritedSource, flowId, inheritedSource));
@@ -1606,7 +1628,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project " + projectName + ".");
       }
-      page.add("project", project);
+      page.add("projectName", project.getName());
 
       final Flow flow = project.getFlow(flowNodePath);
       if (flow == null) {
@@ -1667,7 +1689,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       // Resolve property dependencies
       final List<String> inheritProps = new ArrayList<>();
-      FlowProps parent = flow.getFlowProps(propsSource);
+      ImmutableFlowProps parent = flow.getFlowProps(propsSource);
       while (parent.getInheritedSource() != null) {
         inheritProps.add(parent.getInheritedSource());
         parent = flow.getFlowProps(parent.getInheritedSource());
@@ -1675,7 +1697,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       page.add("inheritedproperties", inheritProps);
 
       final List<String> dependingProps = new ArrayList<>();
-      FlowProps child = flow.getFlowProps(flow.getNode(jobName).getPropsSource());
+      ImmutableFlowProps child = flow.getFlowProps(flow.getNode(jobName).getPropsSource());
       while (!child.getSource().equals(propsSource)) {
         dependingProps.add(child.getSource());
         child = flow.getFlowProps(child.getInheritedSource());
@@ -1696,8 +1718,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final String flowName = getParam(req, "flow");
 
     final User user = session.getUser();
-    Project project = null;
-    Flow flow = null;
+    Project project;
+    Flow flow;
     try {
       project = this.projectManager.getProject(projectName);
 
@@ -1712,7 +1734,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             + ".");
       }
 
-      page.add("project", project);
+      page.add("projectName", project.getName());
+      page.add("projectId", project.getId());
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
@@ -1729,6 +1752,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                   Constants.DEFAULT_LOCKED_FLOW_ERROR_MESSAGE), flow.getId(), projectName);
           page.add("error_message", lockedFlowMsg);
         }
+        page.add("alerterPlugins", this.alerterPlugins);
       }
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());
@@ -1758,7 +1782,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               + projectName + ".");
         }
 
-        page.add("project", project);
+        page.add("projectName", project.getName());
+        page.add("projectId", project.getId());
+        //params for projectsidebar
+        page.add("description",project.getDescription());
+        page.add("createTimestamp",project.getCreateTimestamp());
+        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
+        page.add("lastModifiedUser",project.getLastModifiedUser());
+
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
@@ -1933,6 +1964,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       });
 
       registerErrorsAndWarningsFromValidationReport(resp, ret, reports);
+      // Reload the flow_filter to ensure if this project is added to the file, then the filter is current.
+      if (this.executorManagerAdapter instanceof ContainerizedDispatchManager) {
+        ContainerizedDispatchManager containerizedDispatchManager = (ContainerizedDispatchManager) this.executorManagerAdapter;
+        containerizedDispatchManager.getContainerFlowCriteria().reloadFlowFilter();
+      }
     } catch (final Exception e) {
       logger.info("Installation Failed.", e);
       String error = e.getMessage();

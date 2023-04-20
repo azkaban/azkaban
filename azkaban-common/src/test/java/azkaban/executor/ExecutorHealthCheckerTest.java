@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -27,6 +29,7 @@ import static org.mockito.Mockito.when;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.alert.Alerter;
+import azkaban.utils.Emailer;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
@@ -35,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,8 +69,8 @@ public class ExecutorHealthCheckerTest {
     this.props.put(ConfigurationKeys.AZKABAN_EXECUTOR_MAX_FAILURE_COUNT, 2);
     this.props.put(ConfigurationKeys.AZKABAN_ADMIN_ALERT_EMAIL, AZ_ADMIN_ALERT_EMAIL);
     this.loader = mock(ExecutorLoader.class);
-    this.mailAlerter = mock(Alerter.class);
-    this.alerterHolder = mock(AlerterHolder.class);
+    this.mailAlerter = mock(Emailer.class);
+    this.alerterHolder = new AlerterHolder(this.props, (Emailer) this.mailAlerter);
     this.apiGateway = mock(ExecutorApiGateway.class);
     this.executorHealthChecker = new ExecutorHealthChecker(this.props, this.loader, this
         .apiGateway, this.alerterHolder);
@@ -80,8 +84,7 @@ public class ExecutorHealthCheckerTest {
 
     this.executor1 = new Executor(1, "localhost", 12345, true);
     this.executor2 = new Executor(2, "localhost", 5678, true);
-    when(this.loader.fetchActiveFlows()).thenReturn(this.activeFlows);
-    when(this.alerterHolder.get("email")).thenReturn(this.mailAlerter);
+    when(this.loader.fetchActiveFlows(any())).thenReturn(this.activeFlows);
   }
 
   /**
@@ -92,11 +95,11 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
     assertThat(this.flow1.getStatus()).isEqualTo(Status.RUNNING);
-    verifyZeroInteractions(this.alerterHolder);
+    verifyZeroInteractions(this.mailAlerter);
   }
 
   /**
@@ -125,36 +128,35 @@ public class ExecutorHealthCheckerTest {
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     this.executorHealthChecker.checkExecutorHealth();
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null);
-    verifyZeroInteractions(this.alerterHolder);
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000));
+    verifyZeroInteractions(this.mailAlerter);
 
     // Pinged executor successfully. Failure count (=0) < MAX_FAILURE_COUNT (=2). Do not alert.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenReturn(ImmutableMap.of(ConnectorParams
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenReturn(ImmutableMap.of(ConnectorParams
         .STATUS_PARAM, ConnectorParams.RESPONSE_ALIVE));
     this.executorHealthChecker.checkExecutorHealth();
-    verifyZeroInteractions(this.alerterHolder);
+    verifyZeroInteractions(this.mailAlerter);
 
     // Failed to ping executor. Failure count (=1) < MAX_FAILURE_COUNT (=2). Do not alert.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenReturn(null);
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenReturn(null);
     this.executorHealthChecker.checkExecutorHealth();
-    verifyZeroInteractions(this.alerterHolder);
+    verifyZeroInteractions(this.mailAlerter);
 
     // Failed to ping executor again. Failure count (=2) = MAX_FAILURE_COUNT (=2). Alert AZ admin.
     when(this.loader.fetchExecutableFlow(flow1.getExecutionId())).thenReturn(flow1);
     this.executorHealthChecker.checkExecutorHealth();
-    verify((this.alerterHolder).get("email"))
-        .alertOnFailedExecutorHealthCheck(eq(this.executor1), eq(Arrays.asList(this.flow1)),
-            any(ExecutorManagerException.class),
-            eq(Arrays.asList(AZ_ADMIN_ALERT_EMAIL.split(","))));
+    verify(this.mailAlerter, times(1)).alertOnFailedExecutorHealthCheck(eq(this.executor1),
+        eq(Arrays.asList(this.flow1)), any(ExecutorManagerException.class),
+        eq(Arrays.asList(AZ_ADMIN_ALERT_EMAIL.split(","))));
 
     // Verify remediation tasks are performed for unreachable executors.
     // Flow should be finalized with alerts sent over email.
     assertThat(this.flow1.getStatus()).isEqualTo(Status.FAILED);
     String expectedReason = "Executor was unreachable, executor-id: 1, executor-host: localhost, "
         + "executor-port: 12345";
-    verify((this.alerterHolder).get("email")).alertOnError(eq(flow1), eq(expectedReason));
+    verify(this.mailAlerter, times(1)).alertOnError(eq(flow1), eq(expectedReason));
   }
 
   /**
@@ -165,11 +167,12 @@ public class ExecutorHealthCheckerTest {
     this.activeFlows.put(EXECUTION_ID_11, new Pair<>(
         new ExecutionReference(EXECUTION_ID_11, this.executor1, DispatchMethod.POLL), this.flow1));
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenThrow(new RuntimeException("test exception"));
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenThrow(new RuntimeException("test "
+        + "exception"));
 
     // this will throw, causing the test to fail in case the error is not caught correctly
     this.executorHealthChecker.checkExecutorHealthQuietly();
-    verifyZeroInteractions(this.alerterHolder);
+    verifyZeroInteractions(this.mailAlerter);
   }
 
   /**
@@ -185,18 +188,20 @@ public class ExecutorHealthCheckerTest {
 
     // Throw a runtime exception for both executors.
     when(this.apiGateway.callWithExecutionId(this.executor1.getHost(), this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenThrow(new RuntimeException("test exception"));
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenThrow(new RuntimeException("test "
+        + "exception"));
     when(this.apiGateway.callWithExecutionId(this.executor2.getHost(), this.executor2.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null)).thenThrow(new RuntimeException("test exception"));
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000))).thenThrow(new RuntimeException("test "
+        + "exception"));
     this.executorHealthChecker.checkExecutorHealth();
 
     // Verify ping API is called for both executors. Implying that runtime exception for one of the
     // executors did not prevent the check on other executor.
     verify(this.apiGateway).callWithExecutionId(this.executor1.getHost(),
-        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null, null);
+        this.executor1.getPort(), ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000));
     verify(this.apiGateway).callWithExecutionId(this.executor2.getHost(),
-        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null, null);
-    verifyZeroInteractions(this.alerterHolder);
+        this.executor2.getPort(), ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000));
+    verifyZeroInteractions(this.mailAlerter);
   }
 
   /**
@@ -214,7 +219,7 @@ public class ExecutorHealthCheckerTest {
     when(this.apiGateway.callWithExecutionId(
         this.executor1.getHost(),
         this.executor1.getPort(),
-        ConnectorParams.PING_ACTION, null, null, null))
+        ConnectorParams.PING_ACTION, null, null, null, Optional.of(5000)))
         .thenThrow(healthcheckException);
 
     // Force an unchecked exception when sending alert emails for the healthcheck failure

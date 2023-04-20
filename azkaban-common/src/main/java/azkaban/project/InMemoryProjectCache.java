@@ -68,9 +68,9 @@ public class InMemoryProjectCache extends AbstractProjectCache implements Projec
     for (final Project proj : projects) {
       putProject(proj);
     }
-    logger.info("Loading flows from active projects.");
+    logger.info("Loading flows and flow resource recommendations from active projects.");
     loadAllFlows(projects);
-
+    loadAllFlowResourceRecommendations(projects);
   }
 
   /**
@@ -115,7 +115,7 @@ public class InMemoryProjectCache extends AbstractProjectCache implements Projec
   public Optional<Project> getProjectById(final Integer key) throws ProjectManagerException {
     Project project = this.projectsById.get(key);
     if (project == null) {
-      logger.error("Project not found in cache, fetching from DB");
+      logger.info("Project with ID " + key + " not found in cache, fetching from DB");
       project = fetchProjectById(key);
     }
     return Optional.ofNullable(project);

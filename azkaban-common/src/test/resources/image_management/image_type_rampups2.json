@@ -1,0 +1,15 @@
+{
+  "az-platform-image": [
+    {
+      "imageVersion": "0.1.200",
+      "rampupPercentage": "100"
+    }
+  ],
+  "azkaban_core": [
+    {
+      "imageVersion": "3.6.2",
+      "rampupPercentage": "100"
+    }
+  ]
+}
+

@@ -25,11 +25,11 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
-import azkaban.common.ServerUtils;
-import azkaban.execapp.event.JobCallbackManager;
+import azkaban.utils.ServerUtils;
+import azkaban.jobcallback.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRampManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
-import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.jmx.JmxJobMBeanManager;
 import azkaban.execapp.metric.NumFailedFlowMetric;
 import azkaban.execapp.metric.NumFailedJobMetric;
 import azkaban.execapp.metric.NumQueuedFlowMetric;
@@ -61,17 +61,18 @@ import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.security.CodeSource;
 import java.security.Permission;
+import java.security.PermissionCollection;
+import java.security.Permissions;
 import java.security.Policy;
 import java.security.ProtectionDomain;
 import java.time.Duration;
-import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -82,9 +83,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String RAMPPOLICY_PLUGIN_DIR = "azkaban.ramppolicy.plugin.dir";
-  public static final String CLUSTER_CONFIG_DIR = "azkaban.cluster.dir";
-  public static final String CLUSTER_ROUTER_CLASS = "azkaban.cluster.router";
-  public static final String CLUSTER_ROUTER_CONF = "azkaban.cluster.router.conf";
 
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
@@ -135,15 +133,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
     logger.info("Starting Jetty Azkaban Executor...");
 
-    if (System.getSecurityManager() == null) {
-      Policy.setPolicy(new Policy() {
-        @Override
-        public boolean implies(final ProtectionDomain domain, final Permission permission) {
-          return true; // allow all
-        }
-      });
-      System.setSecurityManager(new SecurityManager());
-    }
+    setSecurityPolicy();
 
     final Props props = AzkabanServer.loadProps(args);
 
@@ -163,9 +153,34 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     launch(injector.getInstance(AzkabanExecutorServer.class));
   }
 
+  public static void setSecurityPolicy() {
+    if (System.getSecurityManager() == null) {
+      Policy.setPolicy(new Policy() {
+        @Override
+        public boolean implies(final ProtectionDomain domain, final Permission permission) {
+          return true; // allow all
+        }
+        // This is to fix JMX connection error.
+        // See https://github.com/elastic/elasticsearch/pull/14274
+        // and https://bugs.openjdk.java.net/browse/JDK-8014008
+        @Override
+        public PermissionCollection getPermissions(CodeSource codesource) {
+          for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+            if ("sun.rmi.server.LoaderHandler".equals(element.getClassName()) &&
+                "loadClass".equals(element.getMethodName())) {
+              return new Permissions();
+            }
+          }
+          return super.getPermissions(codesource);
+        }
+      });
+      System.setSecurityManager(new SecurityManager());
+    }
+  }
+
   public static void launch(final AzkabanExecutorServer azkabanExecutorServer) throws Exception {
     azkabanExecutorServer.start();
-    setupTimeZone(azkabanExecutorServer.getAzkabanProps());
+    AzkabanServer.setupTimeZone(azkabanExecutorServer.getAzkabanProps(), logger);
     app = azkabanExecutorServer;
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -223,17 +238,6 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
     });
   }
 
-  private static void setupTimeZone(final Props azkabanSettings) {
-    if (azkabanSettings.containsKey(ConfigurationKeys.DEFAULT_TIMEZONE_ID)) {
-      final String timezoneId = azkabanSettings.getString(ConfigurationKeys.DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezoneId);
-      final TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
-      TimeZone.setDefault(timeZone);
-      DateTimeZone.setDefault(DateTimeZone.forTimeZone(timeZone));
-      logger.info("Setting timezone to " + timezoneId);
-    }
-  }
-
   private void start() throws Exception {
     this.root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
 
@@ -269,7 +273,7 @@ public class AzkabanExecutorServer implements IMBeanRegistrable {
 
   private void startReportingExecMetrics() {
     logger.info("starting reporting Executor Metrics");
-    this.metricsManager.startReporting("AZ-EXEC", this.props);
+    this.metricsManager.startReporting(this.props);
   }
 
   private void initActive() throws ExecutorManagerException {

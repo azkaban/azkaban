@@ -16,25 +16,39 @@
 package azkaban.webapp.servlet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
+import azkaban.executor.AbstractExecutorManagerAdapter;
 import azkaban.executor.container.ContainerizedDispatchManager;
 import azkaban.executor.DummyEventListener;
+import azkaban.executor.container.ContainerizedImpl;
+import azkaban.metrics.DummyContainerizationMetricsImpl;
 import azkaban.sla.SlaAction;
 import azkaban.sla.SlaOption;
 import azkaban.sla.SlaType;
 import azkaban.utils.Props;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
@@ -75,7 +89,7 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     final List<SlaOption> slaOptions = this.exFlow.getValue().getExecutionOptions().getSlaOptions();
     final List<SlaOption> expected = Arrays.asList(new SlaOption(SlaType.FLOW_FINISH, "testFlow",
         "", Duration.ofMinutes(150), ImmutableSet.of(SlaAction.ALERT),
-        ImmutableList.of("sla1@example.com", "sla2@example.com")));
+        ImmutableList.of("sla1@example.com", "sla2@example.com"), ImmutableMap.of()));
     Assert.assertEquals(expected, slaOptions);
   }
 
@@ -128,9 +142,11 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
   }
 
   @Test
-  public void testPostAjaxUpdateProperty() throws Exception {
+  public void testPostAjaxUpdateContainerProperty() throws Exception {
     ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
-        new Props(), null, null, null, null, null, null, new DummyEventListener());
+        new Props(), null, null, null, null, null,
+        null, null, null, null, new DummyEventListener(),
+        new DummyContainerizationMetricsImpl(), null);
     Mockito.when(this.azkabanWebServer.getExecutorManager())
         .thenReturn(containerizedDispatchManager);
     this.executorServlet.init(this.servletConfig);
@@ -183,5 +199,83 @@ public class ExecutorServletTest extends LoginAbstractAzkabanServletTestBase {
     this.executorServlet.handlePost(this.req, this.res, this.session);
     output = containerizedDispatchManager.getContainerProxyUserCriteria().getDenyList();
     assertEquals(ImmutableSet.of("azdev"), output);
+  }
+
+  @Test
+  public void testPostAjaxUpdateGeneralProperty() throws Exception {
+    AbstractExecutorManagerAdapter abstractExecutorManagerAdapter =
+        mock(AbstractExecutorManagerAdapter.class);
+    Mockito.doCallRealMethod().when(abstractExecutorManagerAdapter).enableOfflineLogsLoader(anyBoolean());
+    Mockito.doCallRealMethod().when(abstractExecutorManagerAdapter).isOfflineLogsLoaderEnabled();
+    Mockito.when(this.azkabanWebServer.getExecutorManager())
+        .thenReturn(abstractExecutorManagerAdapter);
+    this.executorServlet.init(this.servletConfig);
+
+    this.req.addParameter("ajax", "updateProp");
+    this.req.addParameter("propType", "general");
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "enableOfflineLogsLoader");
+    this.req.addParameter("val","true");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertTrue(abstractExecutorManagerAdapter.isOfflineLogsLoaderEnabled());
+
+    this.req.removeParameter("subType");
+    this.req.removeParameter("val");
+    this.req.addParameter("subType", "enableOfflineLogsLoader");
+    this.req.addParameter("val","false");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertFalse(abstractExecutorManagerAdapter.isOfflineLogsLoaderEnabled());
+  }
+
+  @Test
+  public void testPostAjaxUpdateContainerizedImplProperty() throws Exception {
+    AtomicInteger vpaRampup = new AtomicInteger(0);
+    AtomicBoolean vpaEnabled = new AtomicBoolean(true);
+    ContainerizedImpl containerizedImpl = mock(ContainerizedImpl.class);
+    Mockito.when(containerizedImpl.getVPARampUp()).thenReturn(vpaRampup.get());
+    Mockito.when(containerizedImpl.getVPAEnabled()).thenReturn(vpaEnabled.get());
+
+    doAnswer(invocation -> {
+      vpaRampup.set(invocation.getArgument(0));
+      return null;
+    }).when(containerizedImpl).setVPARampUp(anyInt());
+
+    doAnswer(invocation -> {
+      vpaEnabled.set(invocation.getArgument(0));
+      return null;
+    }).when(containerizedImpl).setVPAEnabled(anyBoolean());
+
+    ContainerizedDispatchManager containerizedDispatchManager = new ContainerizedDispatchManager(
+        new Props(), null, null, null, null, null,
+        null, containerizedImpl, null, null, new DummyEventListener(),
+        new DummyContainerizationMetricsImpl(), null);
+    Mockito.when(this.azkabanWebServer.getExecutorManager())
+        .thenReturn(containerizedDispatchManager);
+    this.executorServlet.init(this.servletConfig);
+
+    this.req.addParameter("ajax", "updateProp");
+    this.req.addParameter("propType", "containerizedImpl");
+    this.req.addParameter("subType", "updateVPARampUp");
+    this.req.addParameter("val", "100");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertEquals(vpaRampup.get(), 100);
+
+    this.req.removeParameter("val");
+    this.req.addParameter("val", "0");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertEquals(vpaRampup.get(), 0);
+
+    this.req.removeParameter("subType");
+    this.req.addParameter("subType", "updateVPAEnabled");
+    this.req.addParameter("val", "false");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertFalse(vpaEnabled.get());
+
+    this.req.removeParameter("val");
+    this.req.addParameter("val", "true");
+    this.executorServlet.handlePost(this.req, this.res, this.session);
+    assertTrue(vpaEnabled.get());
   }
 }

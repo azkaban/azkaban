@@ -26,23 +26,28 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import java.util.Date;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
-  private static final Logger logger = Logger
-      .getLogger(TriggerBasedScheduleLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(TriggerBasedScheduleLoader.class);
 
   private final TriggerManagerAdapter triggerManager;
 
   private final String triggerSource;
 
-  private long lastUpdateTime = -1;
+
+  private Map<Integer, Long> scheduleIdToLastCheckTime = new ConcurrentHashMap<>();
 
   @Inject
   public TriggerBasedScheduleLoader(final TriggerManager triggerManager) {
@@ -70,6 +75,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     } else {
       t.setResetOnTrigger(false);
     }
+    t.setBackExecuteOnceOnMiss(s.isBackExecuteOnceOnMiss());
     return t;
   }
 
@@ -158,7 +164,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           t.getSubmitTime(),
           t.getSubmitUser(),
           act.getExecutionOptions(),
-          triggerTimeChecker.getCronExpression());
+          triggerTimeChecker.getCronExpression(),
+          t.isBackExecuteOnceOnMiss());
     } else {
       logger.error("Failed to parse schedule from trigger!");
       throw new ScheduleManagerException(
@@ -200,25 +207,56 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   }
 
   @Override
-  public synchronized List<Schedule> loadUpdatedSchedules()
+  public List<Schedule> loadUpdatedSchedules()
       throws ScheduleManagerException {
     final List<Trigger> triggers;
     try {
       triggers =
-          this.triggerManager.getTriggerUpdates(this.triggerSource, this.lastUpdateTime);
+          this.triggerManager.getTriggerUpdates(this.triggerSource, scheduleIdToLastCheckTime);
     } catch (final TriggerManagerException e) {
       e.printStackTrace();
       throw new ScheduleManagerException(e);
     }
     final List<Schedule> schedules = new ArrayList<>();
     for (final Trigger t : triggers) {
-      this.lastUpdateTime = Math.max(this.lastUpdateTime, t.getLastModifyTime());
+      scheduleIdToLastCheckTime.put(t.getTriggerId(),
+          Math.max(scheduleIdToLastCheckTime.getOrDefault(t.getTriggerId(), -1l), t.getLastModifyTime()));
       final Schedule s = triggerToSchedule(t);
       schedules.add(s);
-      logger.info("loaded schedule for "
-          + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");
+      logger.debug("loaded schedule for {} (project_id: {}, flow_id: {})",
+          s.getScheduleId(), s.getProjectId(), s.getFlowName());
     }
     return schedules;
   }
+  @Override
+  public Optional<Schedule> loadUpdateSchedule(Schedule s) throws ScheduleManagerException {
+    long lastCheckTime = scheduleIdToLastCheckTime.getOrDefault(s.getScheduleId(), -1l);
+    Optional<Trigger> trigger = this.triggerManager.getUpdatedTriggerById(s.getScheduleId(), lastCheckTime);
+    logger.debug("fetch trigger " + s.getScheduleId() + "with map's lastCheckTime" + new Date(lastCheckTime));
+    if (trigger.isPresent()) {
+      Trigger triggerIst = trigger.get();
+      logger.debug("fetched updated trigger " + triggerIst.getTriggerId() +
+          "with lastModify in trigger: " + new Date(triggerIst.getLastModifyTime()) +
+          "and trigger's nextExecuteTime: " + new Date(triggerIst.getNextCheckTime()));
+      scheduleIdToLastCheckTime.put(s.getScheduleId(), trigger.get().getLastModifyTime());
+      return Optional.of(triggerToSchedule(trigger.get()));
+    }
+    return Optional.empty();
+  }
 
+  /**
+   * Loading all triggers from triggerManager and converted into Schedule.
+   * */
+  @Override
+  public List<Schedule> loadAllSchedules() throws ScheduleManagerException {
+    final List<Trigger> triggers = this.triggerManager.getTriggers();
+    final List<Schedule> schedules = new ArrayList<>();
+    for (final Trigger t : triggers) {
+      final Schedule s = triggerToSchedule(t);
+      schedules.add(s);
+      logger.debug("loaded schedule for {} (project_id: {}, flow_id: {})",
+          s.getScheduleId(), s.getProjectId(), s.getFlowName());
+    }
+    return schedules;
+  }
 }

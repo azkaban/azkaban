@@ -15,10 +15,10 @@
  */
 package azkaban.sla;
 
-import azkaban.executor.ExecutableFlow;
 import azkaban.sla.SlaType.ComponentType;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.GsonBuilder;
 import java.time.Duration;
@@ -30,9 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * SLA option, which can be associated with a flow or job.
@@ -54,29 +52,27 @@ public class SlaOption {
   private static final char MINUTE_DURATION_UNIT = 'm';
   private static final char INVALID_DURATION_UNIT = 'n';
 
-  private static final DateTimeFormatter fmt = DateTimeFormat
-      .forPattern("MM/dd, YYYY HH:mm");
-
   final private SlaType type;
   final private String flowName;
   final private String jobName;
   final private Duration duration;
   final private Set<SlaAction> actions;
   final private ImmutableList<String> emails;
+  final private ImmutableMap<String, Map<String, List<String>>> alertersConfigs;
 
   /**
    * Constructor.
    *
-   * @param type the SLA type.
+   * @param type     the SLA type.
    * @param flowName The name of the flow.
-   * @param jobName The name of the job, if the SLA is for a job.
+   * @param jobName  The name of the job, if the SLA is for a job.
    * @param duration The duration (time to wait before the SLA would take effect).
-   * @param actions actions to take for the SLA.
-   * @param emails list of emails to send an alert to, for the SLA.
+   * @param actions  actions to take for the SLA.
+   * @param emails   list of emails to send an alert to, for the SLA.
    */
   public SlaOption(final SlaType type,
       String flowName, String jobName, Duration duration, Set<SlaAction> actions,
-      List<String> emails) {
+      List<String> emails, Map<String, Map<String, List<String>>> alertersConfigs) {
     Preconditions.checkNotNull(type, "type is null");
     Preconditions.checkNotNull(actions, "actions is null");
     Preconditions.checkState(actions.size() > 0, "An action must be specified for the SLA");
@@ -89,6 +85,12 @@ public class SlaOption {
       this.emails = ImmutableList.of();
     } else {
       this.emails = ImmutableList.copyOf(emails);
+    }
+
+    if (alertersConfigs == null) {
+      this.alertersConfigs = ImmutableMap.of();
+    } else {
+      this.alertersConfigs = ImmutableMap.copyOf(alertersConfigs);
     }
   }
 
@@ -134,15 +136,21 @@ public class SlaOption {
     this.actions = ImmutableSet.copyOf(actions);
 
     this.emails = ImmutableList.copyOf(
-        (List<String>) slaOption.getInfo().get(SlaOptionDeprecated.INFO_EMAIL_LIST)
-    );
+        (List<String>) slaOption.getInfo().get(SlaOptionDeprecated.INFO_EMAIL_LIST));
+
+    Map<String, Map<String, List<String>>> alertersConfs =
+        (Map<String, Map<String, List<String>>>) slaOption.getInfo()
+            .getOrDefault(SlaOptionDeprecated.INFO_ALERTERS_CONFIGS, ImmutableMap.of());
+    this.alertersConfigs = ImmutableMap.copyOf(alertersConfs);
   }
 
   public static List<Object> convertToObjects(List<SlaOption> slaOptions) {
     if (slaOptions != null) {
       final List<Object> slaOptionsObject = new ArrayList<>();
       for (final SlaOption sla : slaOptions) {
-        if (sla == null) continue;
+        if (sla == null) {
+          continue;
+        }
         slaOptionsObject.add(sla.toObject());
       }
       return slaOptionsObject;
@@ -165,7 +173,7 @@ public class SlaOption {
     return Duration.ofMinutes(durationInt);
   }
 
-  private String durationToString(Duration duration) {
+  public String durationToString(Duration duration) {
     return Long.toString(duration.toMinutes()) + MINUTE_DURATION_UNIT;
   }
 
@@ -197,13 +205,17 @@ public class SlaOption {
     return emails;
   }
 
+  public Map<String, Map<String, List<String>>> getAlertersConfigs() {
+    return this.alertersConfigs;
+  }
+
   /**
    * Check the SlaType's ComponentType of this SlaOption's
    *
    * @param componentType component Type
    * @return true/false
    */
-  public boolean isComponentType (SlaType.ComponentType componentType) {
+  public boolean isComponentType(final SlaType.ComponentType componentType) {
     return this.type.getComponent() == componentType;
   }
 
@@ -251,7 +263,8 @@ public class SlaOption {
     }
 
     slaInfo.put(SlaOptionDeprecated.INFO_DURATION, durationToString(this.duration));
-    slaInfo.put(SlaOptionDeprecated.INFO_EMAIL_LIST, emails);
+    slaInfo.put(SlaOptionDeprecated.INFO_EMAIL_LIST, this.emails);
+    slaInfo.put(SlaOptionDeprecated.INFO_ALERTERS_CONFIGS, this.alertersConfigs);
 
     SlaOptionDeprecated slaOption = new SlaOptionDeprecated(slaType, slaActions, slaInfo);
     return slaOption.toObject();
@@ -299,65 +312,39 @@ public class SlaOption {
   }
 
   /**
-   * Construct the message for the SLA.
-   *
-   * @param flow the executable flow.
-   * @return the SLA message.
-   */
-  public String createSlaMessage(final ExecutableFlow flow) {
-    final int execId = flow.getExecutionId();
-    final String durationStr = durationToString(this.duration);
-    switch (this.type.getComponent()) {
-      case FLOW:
-        final String basicinfo =
-            "SLA Alert: Your flow " + this.flowName + " failed to " + this.type.getStatus()
-                + " within " + durationStr + "<br/>";
-        final String expected =
-            "Here are details : <br/>" + "Flow " + this.flowName + " in execution "
-                + execId + " is expected to FINISH within " + durationStr + " from "
-                + fmt.print(new DateTime(flow.getStartTime())) + "<br/>";
-        final String actual = "Actual flow status is " + flow.getStatus();
-        return basicinfo + expected + actual;
-      case JOB:
-        return "SLA Alert: Your job " + this.jobName + " failed to " + this.type.getStatus()
-            + " within " + durationStr + " in execution " + execId;
-      default:
-        return "Unrecognized SLA component type " + this.type.getComponent();
-    }
-  }
-
-  /**
    * @param options a list of SLA options.
    * @return the job level SLA options.
    */
-  public static List<SlaOption> getJobLevelSLAOptions(List<SlaOption> options) {
-    return filterSLAOptionsByComponentType(options, ComponentType.JOB);
+  public static List<SlaOption> getJobLevelSLAOptions(final List<SlaOption> options,
+      final String jobId) {
+    return filterSLAOptions(options, ComponentType.JOB, jobId);
   }
 
   /**
    * @param options a list of SLA options.
    * @return the flow level SLA options.
    */
-  public static List<SlaOption> getFlowLevelSLAOptions(List<SlaOption> options) {
-    return filterSLAOptionsByComponentType(options, ComponentType.FLOW);
+  public static List<SlaOption> getFlowLevelSLAOptions(final List<SlaOption> options) {
+    return filterSLAOptions(options, ComponentType.FLOW, null);
   }
 
-  private static List<SlaOption> filterSLAOptionsByComponentType(
-      List<SlaOption> options, ComponentType componentType) {
-    return options.stream()
-        .filter(option -> option.isComponentType(componentType))
-        .collect(Collectors.toList());
+  private static List<SlaOption> filterSLAOptions(final List<SlaOption> options,
+      final ComponentType componentType, final String jobId) {
+    return options.stream().filter(
+        option -> option.isComponentType(componentType) && StringUtils.equals(option.getJobName(),
+            jobId)).collect(Collectors.toList());
   }
 
   @Override
   public String toString() {
     return "SlaOption{" +
-        "type=" + type +
-        ", flowName='" + flowName + '\'' +
-        ", jobName='" + jobName + '\'' +
-        ", duration=" + duration +
-        ", actions=" + actions +
-        ", emails=" + emails +
+        "type=" + this.type +
+        ", flowName='" + this.flowName + '\'' +
+        ", jobName='" + this.jobName + '\'' +
+        ", duration=" + this.duration +
+        ", actions=" + this.actions +
+        ", emails=" + this.emails +
+        ", alertersConfigs=" + this.alertersConfigs +
         '}';
   }
 
@@ -375,12 +362,13 @@ public class SlaOption {
         Objects.equals(jobName, slaOption.jobName) &&
         Objects.equals(duration, slaOption.duration) &&
         Objects.equals(actions, slaOption.actions) &&
-        Objects.equals(emails, slaOption.emails);
+        Objects.equals(emails, slaOption.emails) &&
+        Objects.equals(alertersConfigs, slaOption.alertersConfigs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, flowName, jobName, duration, actions, emails);
+    return Objects.hash(type, flowName, jobName, duration, actions, emails, alertersConfigs);
   }
 
   /**
@@ -392,8 +380,9 @@ public class SlaOption {
     final private String flowName;
     private String jobName = null;
     final private Duration duration;
-    private Set<SlaAction> actions;
-    private ImmutableList<String> emails = null;
+    private final Set<SlaAction> actions;
+    private List<String> emails = null;
+    private Map<String, Map<String, List<String>>> alertersConfigs = null;
 
     public SlaOptionBuilder(SlaType type, String flowName, Duration duration) {
       this.type = type;
@@ -423,12 +412,17 @@ public class SlaOption {
     }
 
     public SlaOptionBuilder setEmails(List<String> emails) {
-      this.emails = ImmutableList.copyOf(emails);
+      this.emails = emails;
+      return this;
+    }
+
+    public SlaOptionBuilder setAlertersConfigs(Map<String, Map<String, List<String>>> alertersConfigs) {
+      this.alertersConfigs = alertersConfigs;
       return this;
     }
 
     public SlaOption createSlaOption() {
-      return new SlaOption(type, flowName, jobName, duration, actions, emails);
+      return new SlaOption(type, flowName, jobName, duration, actions, emails, alertersConfigs);
     }
   }
 }
