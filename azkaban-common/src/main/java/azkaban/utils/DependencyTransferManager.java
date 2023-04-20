@@ -19,6 +19,7 @@ package azkaban.utils;
 import azkaban.Constants;
 import azkaban.spi.DependencyFile;
 import azkaban.spi.Storage;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,6 +48,7 @@ import static azkaban.utils.ThinArchiveUtils.*;
 @Singleton
 public class DependencyTransferManager {
   private static final int DEFAULT_NUM_THREADS = 32;
+  private static final int DEFAULT_TIMEOUT_SECONDS =300;
 
   public final int dependencyMaxDownloadTries;
 
@@ -66,7 +68,7 @@ public class DependencyTransferManager {
         new ThreadFactoryBuilder().setNameFormat("azk-dependency-pool-%d").build());
     this.dependencyMaxDownloadTries =
         props.getInt(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, 2);
-    this.dependencyDownloadMaxTimeout = props.getInt(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, 300);
+    this.dependencyDownloadMaxTimeout = props.getInt(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, DEFAULT_TIMEOUT_SECONDS);
   }
 
   /**
@@ -204,7 +206,8 @@ public class DependencyTransferManager {
    * Add timeout to the download process.
    * @throws TimeoutException, if the download process takes longer than the timeout.
    * */
-  private void waitForAllToSucceedOrOneToFail(final CompletableFuture<?>[] futures)
+  @VisibleForTesting
+  void waitForAllToSucceedOrOneToFail(final CompletableFuture<?>[] futures)
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletableFuture<?> failure = new CompletableFuture();
     for (CompletableFuture<?> f : futures) {

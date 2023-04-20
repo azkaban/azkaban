@@ -1971,13 +1971,21 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         containerizedDispatchManager.getContainerFlowCriteria().reloadFlowFilter();
       }
     } catch (final Exception e) {
-      logger.info("Installation Failed for project {}", projectName, e);
+      logger.error("Installation failed for project {}", projectName, e);
       String error = e.getMessage();
       if (error.length() > 512) {
         error = error.substring(0, 512) + "<br>Too many errors to display.<br>";
       }
       registerError(ret, "Installation Failed.<br>" + error, resp,
           HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    } catch (final Throwable e) {
+      logger.error("Severe Error: unable to upload for project {}", projectName, e);
+      registerError(ret, "Server Encounter an unknown Error. <br>", resp,
+          HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      // rethrow the error as for now we don't know how to recover from it
+      // usually nonExceptionError is severe one.
+      // TODO: if it is outofmemory error, we should restart the server directly.
+      throw e;
     } finally {
       if (out != null) {
         out.close();

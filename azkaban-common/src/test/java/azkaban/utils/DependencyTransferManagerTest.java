@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
@@ -33,7 +35,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.stubbing.Answer;
 
+import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.test.executions.ThinArchiveTestUtils.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -74,6 +78,7 @@ public class DependencyTransferManagerTest {
 
     Props sampleProps = new Props();
     sampleProps.put(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, DEPENDENCY_DOWNLOAD_MAX_TRIES);
+    sampleProps.put(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, 10);
     dependencyTransferManager = new DependencyTransferManager(sampleProps, this.storage);
   }
 
@@ -131,5 +136,21 @@ public class DependencyTransferManagerTest {
     }).when(this.storage).getDependency(any());
 
     this.dependencyTransferManager.downloadAllDependencies(depSetAB, null);
+  }
+
+  @Test
+  public void testDownloadDependencyTimeoutException() {
+    // test waitForAllToSucceedOrOneToFail method with one completableFuture task timeout
+    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+      try {
+        Thread.sleep(60000);
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+    });
+    CompletableFuture<Void>[] futures = new CompletableFuture[]{future};
+
+    assertThat(catchThrowable(() -> this.dependencyTransferManager.waitForAllToSucceedOrOneToFail(futures)))
+        .isInstanceOf(TimeoutException.class);
   }
 }
