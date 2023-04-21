@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.io.FileUtils;
@@ -78,7 +79,7 @@ public class DependencyTransferManagerTest {
 
     Props sampleProps = new Props();
     sampleProps.put(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, DEPENDENCY_DOWNLOAD_MAX_TRIES);
-    sampleProps.put(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, 10);
+    sampleProps.put(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, 3);
     dependencyTransferManager = new DependencyTransferManager(sampleProps, this.storage);
   }
 
@@ -152,5 +153,25 @@ public class DependencyTransferManagerTest {
 
     assertThat(catchThrowable(() -> this.dependencyTransferManager.waitForAllToSucceedOrOneToFail(futures)))
         .isInstanceOf(TimeoutException.class);
+  }
+
+  // test cancel operation itself won't throw CancellationException to break the whole loop.
+  @Test
+  public void testCancelCompletableFuture() {
+    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+      try {
+        Thread.sleep(600000);
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+    });
+    CompletableFuture<Void>[] futures = new CompletableFuture[]{future};
+    try {
+      dependencyTransferManager.cancelPendingTasks(futures, "projectName");
+      // verify if the future is cancelled before completed
+      assertThat(future.isCancelled()).isTrue();
+    } catch (CancellationException e) {
+      fail("Should not throw CancellationException", e);
+    }
   }
 }

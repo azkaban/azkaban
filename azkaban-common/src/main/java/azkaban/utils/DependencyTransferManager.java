@@ -142,14 +142,19 @@ public class DependencyTransferManager {
     }
   }
 
-  /* Cancel all the not-started tasks which are possibly waiting in the queue */
-  private static void cancelPendingTasks(CompletableFuture[] taskFutures, String projectName) {
-    logger.info("cancelling the pending tasks for project {} because one of the downloads failed.", projectName);
-    boolean cancelled = true;
+  /* Cancel all the not-started tasks which are possibly waiting in the queue,
+  * Cancel() itself will not throw any Exception to cause a break of the loop, but only completes those futures with
+  * CancellationException. If we want to query the status of the future, we need to use isCancelled() method.
+  * If we want to get the result of the future, we need to use get() method, which will throw CancellationException.
+  * Note that future completed/failed/cancelled will return false for cancel() method, as well as fail to cancel the task.
+  * It makes the returning value invaluable for us since it's possible that some tasks is already completed/failed.
+  *  */
+  @VisibleForTesting
+  void cancelPendingTasks(CompletableFuture[] taskFutures, String projectName) {
     for (CompletableFuture future : taskFutures) {
-      cancelled &= future.cancel(false);
+      future.cancel(false);
     }
-    logger.info("{} cancel the pending tasks for project {}.", cancelled ? "Successfully" : "Failed to", projectName);
+    logger.info("Cancelled the pending tasks for project {} because one of the downloads failed.", projectName);
   }
 
   private void downloadDependency(final DependencyFile f, final int retries, String projectName)
