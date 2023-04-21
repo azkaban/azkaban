@@ -25,6 +25,9 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
@@ -33,7 +36,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.stubbing.Answer;
 
+import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.test.executions.ThinArchiveTestUtils.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -74,6 +79,7 @@ public class DependencyTransferManagerTest {
 
     Props sampleProps = new Props();
     sampleProps.put(Constants.ConfigurationKeys.AZKABAN_DEPENDENCY_MAX_DOWNLOAD_TRIES, DEPENDENCY_DOWNLOAD_MAX_TRIES);
+    sampleProps.put(AZKABAN_DEPENDENCY_DOWNLOAD_TIMEOUT_SECONDS, 3);
     dependencyTransferManager = new DependencyTransferManager(sampleProps, this.storage);
   }
 
@@ -86,7 +92,7 @@ public class DependencyTransferManagerTest {
   @Test
   public void testDownloadEmptySet() throws Exception {
     // Make sure there are no failures when we download with an empty set (it should do nothing)
-    this.dependencyTransferManager.downloadAllDependencies(Collections.emptySet());
+    this.dependencyTransferManager.downloadAllDependencies(Collections.emptySet(), null);
   }
 
   @Test
@@ -99,7 +105,7 @@ public class DependencyTransferManagerTest {
     }).when(this.storage).getDependency(any());
 
     // Download depA and depB
-    this.dependencyTransferManager.downloadAllDependencies(depSetAB);
+    this.dependencyTransferManager.downloadAllDependencies(depSetAB, null);
 
     // Assert that the content was written to the files
     assertEquals(ThinArchiveTestUtils.getDepAContent(), FileUtils.readFileToString(depA.getFile()));
@@ -115,7 +121,7 @@ public class DependencyTransferManagerTest {
       .doReturn(IOUtils.toInputStream(ThinArchiveTestUtils.getDepAContent())).when(this.storage).getDependency(any());
 
     // Download ONLY depA
-    this.dependencyTransferManager.downloadAllDependencies(depSetA);
+    this.dependencyTransferManager.downloadAllDependencies(depSetA, null);
 
     verify(this.storage, times(2)).getDependency(depEq(depA));
   }
@@ -130,6 +136,42 @@ public class DependencyTransferManagerTest {
       return IOUtils.toInputStream(content);
     }).when(this.storage).getDependency(any());
 
-    this.dependencyTransferManager.downloadAllDependencies(depSetAB);
+    this.dependencyTransferManager.downloadAllDependencies(depSetAB, null);
+  }
+
+  @Test
+  public void testDownloadDependencyTimeoutException() {
+    // test waitForAllToSucceedOrOneToFail method with one completableFuture task timeout
+    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+      try {
+        Thread.sleep(60000);
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+    });
+    CompletableFuture<Void>[] futures = new CompletableFuture[]{future};
+
+    assertThat(catchThrowable(() -> this.dependencyTransferManager.waitForAllToSucceedOrOneToFail(futures)))
+        .isInstanceOf(TimeoutException.class);
+  }
+
+  // test cancel operation itself won't throw CancellationException to break the whole loop.
+  @Test
+  public void testCancelCompletableFuture() {
+    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+      try {
+        Thread.sleep(600000);
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+    });
+    CompletableFuture<Void>[] futures = new CompletableFuture[]{future};
+    try {
+      dependencyTransferManager.cancelPendingTasks(futures, "projectName");
+      // verify if the future is cancelled before completed
+      assertThat(future.isCancelled()).isTrue();
+    } catch (CancellationException e) {
+      fail("Should not throw CancellationException", e);
+    }
   }
 }

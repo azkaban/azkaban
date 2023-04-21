@@ -81,7 +81,8 @@ public class FlowPreparer extends AbstractFlowPreparer {
     try {
       final ProjectDirectoryMetadata project = new ProjectDirectoryMetadata(
           flow.getProjectId(),
-          flow.getVersion());
+          flow.getVersion(),
+          flow.getProjectName());
 
       final long flowPrepStartTime = System.currentTimeMillis();
 
