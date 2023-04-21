@@ -56,7 +56,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     final ExecutableFlow retryExFlow =
         this.executorManagerAdapter.createExecutableFlow(project, flow);
     retryExFlow.setSubmitUser(originalExFlow.getSubmitUser());
-    retryExFlow.setExecutionSource(Constants.EXECUTION_SOURCE_ADHOC);
+    retryExFlow.setExecutionSource(Constants.EXECUTION_SOURCE_RETRY);
     retryExFlow.setUploadUser(project.getUploadUser());
     // Set up flow ExecutionOptions
     final ExecutionOptions options = originalExFlow.getExecutionOptions();
@@ -80,11 +80,6 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     }
     retryExFlow.setFlowRetryParentExecutionID(originalExFlow.getExecutionId());
 
-    // If a retried flow A gets retried again with a new execution id flow B, the original flow
-    // execution id of flow B should be the same as flow A's original flow execution id.
-    if (options.getOriginalFlowExecutionIdBeforeRetry() == null) {
-      options.setOriginalFlowExecutionIdBeforeRetry(originalExFlow.getExecutionId());
-    }
     retryExFlow.setExecutionOptions(options);
     // Submit new flow for execution
     try {

@@ -90,11 +90,6 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
     metaData.put(EventReporterConstants.START_TIME, String.valueOf(flow.getStartTime()));
     metaData.put(EventReporterConstants.END_TIME, String.valueOf(flow.getEndTime()));
 
-    if (flow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry() != null) {
-      // original flow execution id is set when there is one
-      metaData.put(EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
-          String.valueOf(flow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry()));
-    }
     if (flow.getVersionSet() != null) { // Save version set information
       metaData.put(EventReporterConstants.VERSION_SET,
           getVersionSetJsonString(flow.getVersionSet()));
