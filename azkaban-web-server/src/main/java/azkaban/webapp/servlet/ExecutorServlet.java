@@ -17,6 +17,7 @@ package azkaban.webapp.servlet;
 
 import azkaban.Constants;
 import azkaban.Constants.EventReporterConstants;
+import azkaban.Constants.FlowParameters;
 import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -996,16 +997,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("execid", exFlow.getExecutionId());
     ret.put("projectId", exFlow.getProjectId());
     ret.put("project", project.getName());
-    ret.put(EventReporterConstants.SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM,
-        exFlow.getSystemDefinedRetryCount());
-    ret.put(EventReporterConstants.USER_DEFINED_FLOW_RETRY_COUNT_PARAM,
-        exFlow.getUserDefinedRetryCount());
-    ret.put(EventReporterConstants.FLOW_RETRY_ROOT_EXECUTION_ID,
-        exFlow.getFlowRetryRootExecutionID());
-    ret.put(EventReporterConstants.FLOW_RETRY_PARENT_EXECUTION_ID,
-        exFlow.getFlowRetryParentExecutionID());
-    ret.put(EventReporterConstants.FLOW_RETRY_CHILD_EXECUTION_ID,
-        exFlow.getFlowRetryChildExecutionID());
+    
+    String autoRetryStatuses = exFlow.getExecutionOptions().getFlowParameters()
+        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "");
+    if (!autoRetryStatuses.isEmpty()){
+      ret.put(EventReporterConstants.SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM,
+          exFlow.getSystemDefinedRetryCount());
+      ret.put(EventReporterConstants.USER_DEFINED_FLOW_RETRY_COUNT_PARAM,
+          exFlow.getUserDefinedRetryCount());
+      ret.put(EventReporterConstants.FLOW_RETRY_ROOT_EXECUTION_ID,
+          exFlow.getFlowRetryRootExecutionID());
+      ret.put(EventReporterConstants.FLOW_RETRY_PARENT_EXECUTION_ID,
+          exFlow.getFlowRetryParentExecutionID());
+      ret.put(EventReporterConstants.FLOW_RETRY_CHILD_EXECUTION_ID,
+          exFlow.getFlowRetryChildExecutionID());
+    }
 
     final Map<String, Object> flowObj = getExecutableNodeInfo(exFlow);
     ret.putAll(flowObj);
