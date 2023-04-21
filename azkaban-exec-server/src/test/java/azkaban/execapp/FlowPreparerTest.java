@@ -37,9 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import static azkaban.test.executions.ThinArchiveTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -171,7 +169,7 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
     this.instance.downloadProjectIfNotExists(proj, 124);
 
     // This is a fat zip, so we should not attempt to download anything! (we try to download an empty set of dependencies)
-    verify(this.dependencyTransferManager).downloadAllDependencies(eq(Collections.emptySet()));
+    verify(this.dependencyTransferManager).downloadAllDependencies(eq(Collections.emptySet()), anyString());
   }
 
   @Test
@@ -182,6 +180,6 @@ public class FlowPreparerTest extends FlowPreparerTestBase {
 
     // This is a thin zip, we expect both dependencies to be downloaded
     Set<Dependency> expectedDownloadedDeps = ThinArchiveTestUtils.getDepSetAB();
-    verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps));
+    verify(this.dependencyTransferManager).downloadAllDependencies(depSetEq(expectedDownloadedDeps), anyString());
   }
 }

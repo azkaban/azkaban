@@ -150,6 +150,7 @@ class AzkabanProjectLoader {
           ? this.archiveUnthinner.validateThinProject(project, folder,
             startupDependencies, additionalProps)
           : this.validatorUtils.validateProject(project, folder, additionalProps);
+      log.info("Successfully validated {} zip for project {}", isThinProject? "thin" : "fat", project.getName());
 
       // If any files in the project folder have been modified or removed, update the project zip
       if (reports.values().stream().anyMatch(r -> !r.getModifiedFiles().isEmpty() || !r.getRemovedFiles().isEmpty())) {
@@ -184,6 +185,11 @@ class AzkabanProjectLoader {
 
     } catch (Exception e){
       errorMessage = e.toString();
+      log.error("Error when uploading project {}", project.getName(), e);
+      throw e;
+    } catch (Throwable e) {
+      errorMessage = e.toString();
+      log.error("Encounter throwable error when uploading project {}", project.getName(), e);
       throw e;
     } finally {
       // Compute upload time
@@ -275,7 +281,7 @@ class AzkabanProjectLoader {
       this.projectStorageManager.uploadProject(project, newProjectVersion, archive,
           startupDependencies, uploader, uploaderIPAddr);
 
-      log.info("Uploading flow to db for project " + archive.getName());
+      log.info("Uploading flow to db for project {} with zip {}", project.getName(), archive.getName());
       this.projectLoader.uploadFlows(project, newProjectVersion, flows.values());
       project.setFlows(flows);
 
@@ -299,10 +305,10 @@ class AzkabanProjectLoader {
 
       if (loader instanceof DirectoryFlowLoader) {
         final DirectoryFlowLoader directoryFlowLoader = (DirectoryFlowLoader) loader;
-        log.info("Uploading Job properties for project " + archive.getName());
+        log.info("Uploading Job properties for project {} with zip {}", project.getName(), archive.getName());
         this.projectLoader.uploadProjectProperties(project, newProjectVersion, new ArrayList<>(
             directoryFlowLoader.getJobPropsMap().values()));
-        log.info("Uploading Props properties for project " + archive.getName());
+        log.info("Uploading Props properties for project {} with zip {}", project.getName(), archive.getName());
         this.projectLoader.uploadProjectProperties(project, newProjectVersion,
             directoryFlowLoader.getPropsList());
 
@@ -318,7 +324,7 @@ class AzkabanProjectLoader {
 
       // CAUTION : Always change the project version as the last item to make
       // sure all the project related files are uploaded.
-      log.info("Changing project versions for project " + archive.getName());
+      log.info("Changing project versions for project {} with zip {}", project.getName(), archive.getName());
       this.projectLoader.changeProjectVersion(project, newProjectVersion,
           uploader.getUserId());
       this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),

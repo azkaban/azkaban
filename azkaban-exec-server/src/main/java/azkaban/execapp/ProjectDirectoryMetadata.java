@@ -25,20 +25,28 @@ import java.nio.file.attribute.FileTime;
 public class ProjectDirectoryMetadata {
   private final int projectId;
   private final int version;
+  private final String projectName;
   private File installedDir;
   private Long dirSizeInByte;
   private FileTime lastAccessTime;
 
-  public ProjectDirectoryMetadata(final int projectId, final int version) {
+  /**
+   * Used in flow preparation
+   * */
+  public ProjectDirectoryMetadata(final int projectId, final int version, final String projectName) {
     checkArgument(projectId > 0);
     checkArgument(version > 0);
 
     this.projectId = projectId;
     this.version = version;
+    this.projectName = projectName;
   }
 
+  /**
+   * Used in project cache clean-up
+   * */
   ProjectDirectoryMetadata(final int projectId, final int version, final File installedDir) {
-    this(projectId, version);
+    this(projectId, version, Integer.toString(projectId));
     this.installedDir = installedDir;
   }
 
@@ -56,6 +64,10 @@ public class ProjectDirectoryMetadata {
 
   int getVersion() {
     return this.version;
+  }
+
+  String getProjectName() {
+    return this.projectName;
   }
 
   File getInstalledDir() {
