@@ -101,8 +101,10 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     }
     // TODO: consider send out email for this information
     logger.info(String.format("Retry execution [%d] successfully, "
-            + "spawning child-execution [%d], and its root-execution was [%d]",
+            + "spawning child-execution [%d], and its root-execution was [%d];"
+            + "system-defined retry count=%d, user-defined retry-count=%d.",
         originalExFlow.getExecutionId(), retryExFlow.getExecutionId(),
-        retryExFlow.getFlowRetryRootExecutionID()));
+        retryExFlow.getFlowRetryRootExecutionID(),
+        retryExFlow.getSystemDefinedRetryCount(), retryExFlow.getUserDefinedRetryCount()));
   }
 }
