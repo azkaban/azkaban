@@ -135,6 +135,7 @@ public class Constants {
 
   // Specifies the source(adhoc, scheduled, event) from where flow execution is triggered
   public static final String EXECUTION_SOURCE_ADHOC = "adhoc";
+  public static final String EXECUTION_SOURCE_RETRY = "retry";
   public static final String EXECUTION_SOURCE_SCHEDULED = "schedule";
   public static final String EXECUTION_SOURCE_EVENT = "event";
 
@@ -209,8 +210,6 @@ public class Constants {
     public static final String FLOW_PREPARATION_DURATION = "flowPreparationDuration";
     public static final String IS_OOM_KILLED = "isOOMKilled";
     public static final String IS_POD_SIZE_AUTOSCALING_ENABLED = "isPodSizeAutoscaled";
-    public static final String ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY =
-        "originalFlowExecutionIdBeforeRetry";
     public static final String SLA_OPTIONS = "slaOptions";
     public static final String VERSION_SET = "versionSet";
     public static final String EXECUTOR_TYPE = "executorType";
@@ -231,6 +230,11 @@ public class Constants {
     public static final String CPU_UTILIZED = "cpuUtilized";
     public static final String MEMORY_UTILIZED_IN_BYTES = "memoryUtilizedInBytes";
     public static final String EXECUTION_SOURCE = "executionSource";
+    public static final String USER_DEFINED_FLOW_RETRY_COUNT_PARAM = "userDefinedFlowRetryCount";
+    public static final String SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM = "systemDefinedFlowRetryCount";
+    public static final String FLOW_RETRY_ROOT_EXECUTION_ID = "flowRetryRootExecutionID";
+    public static final String FLOW_RETRY_PARENT_EXECUTION_ID = "flowRetryParentExecutionID";
+    public static final String FLOW_RETRY_CHILD_EXECUTION_ID = "flowRetryChildExecutionID";
   }
 
   public static class ConfigurationKeys {

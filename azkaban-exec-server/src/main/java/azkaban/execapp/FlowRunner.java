@@ -1726,6 +1726,18 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
         metaData.put(EventReporterConstants.IS_ROOT_FLOW, "false");
       } else {
         metaData.put(EventReporterConstants.IS_ROOT_FLOW, "true");
+        ExecutableFlow executableFlow = (ExecutableFlow) flow;
+        metaData.put(EventReporterConstants.SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM,
+            String.valueOf(executableFlow.getSystemDefinedRetryCount()));
+        metaData.put(EventReporterConstants.USER_DEFINED_FLOW_RETRY_COUNT_PARAM,
+            String.valueOf(executableFlow.getUserDefinedRetryCount()));
+        metaData.put(EventReporterConstants.FLOW_RETRY_ROOT_EXECUTION_ID,
+            String.valueOf(executableFlow.getFlowRetryRootExecutionID()));
+        metaData.put(EventReporterConstants.FLOW_RETRY_PARENT_EXECUTION_ID,
+            String.valueOf(executableFlow.getFlowRetryParentExecutionID()));
+        metaData.put(EventReporterConstants.FLOW_RETRY_CHILD_EXECUTION_ID,
+            String.valueOf(executableFlow.getFlowRetryChildExecutionID()));
+
       }
       // Azkaban executor hostname
       metaData.put(EventReporterConstants.AZ_HOST, props.getString(AZKABAN_SERVER_HOST_NAME,
@@ -1740,11 +1752,6 @@ public class FlowRunner extends EventHandler<Event> implements Runnable {
       metaData.put(EventReporterConstants.EXECUTION_ID, String.valueOf(rootFlow.getExecutionId()));
       metaData.put(EventReporterConstants.START_TIME, String.valueOf(flow.getStartTime()));
       metaData.put(EventReporterConstants.SUBMIT_TIME, String.valueOf(rootFlow.getSubmitTime()));
-      if (rootFlow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry() != null) {
-        // original flow execution id is set when there is one
-        metaData.put(EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
-            String.valueOf(rootFlow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry()));
-      }
       // Flow_Status_Changed event attributes: flowVersion, failedJobId, modifiedBy
       metaData.put(EventReporterConstants.FLOW_VERSION,
           String.valueOf(rootFlow.getAzkabanFlowVersion()));

@@ -16,6 +16,7 @@
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowParameters;
 import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -66,6 +67,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -995,6 +997,25 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("execid", exFlow.getExecutionId());
     ret.put("projectId", exFlow.getProjectId());
     ret.put("project", project.getName());
+
+    String autoRetryStatuses = exFlow.getExecutionOptions().getFlowParameters()
+        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "");
+    if (!autoRetryStatuses.isEmpty()){
+      Integer userDefinedMaxRetry = Integer.valueOf(exFlow.getExecutionOptions().getFlowParameters()
+          .getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1"));
+
+      Map<String, Object> retriesInfo = new HashMap<>();
+      retriesInfo.put("allowedStatuses", autoRetryStatuses);
+      retriesInfo.put("userDefinedMax", userDefinedMaxRetry);
+      retriesInfo.put("userDefinedCount", exFlow.getUserDefinedRetryCount());
+      retriesInfo.put("systemDefinedMax", ExecutableFlow.DEFAULT_SYSTEM_FLOW_RETRY_LIMIT);
+      retriesInfo.put("systemDefinedCount", exFlow.getSystemDefinedRetryCount());
+      retriesInfo.put("rootExecutionID", exFlow.getFlowRetryRootExecutionID());
+      retriesInfo.put("parentExecutionID", exFlow.getFlowRetryParentExecutionID());
+      retriesInfo.put("childExecutionID", exFlow.getFlowRetryChildExecutionID());
+
+      ret.put("retries", retriesInfo);
+    }
 
     final Map<String, Object> flowObj = getExecutableNodeInfo(exFlow);
     ret.putAll(flowObj);

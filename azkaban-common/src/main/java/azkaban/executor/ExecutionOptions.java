@@ -16,8 +16,6 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY;
-
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.sla.SlaOption;
 import azkaban.utils.TypedMapWrapper;
@@ -65,7 +63,6 @@ public class ExecutionOptions {
   public static final String FAILURE_ACTION_OVERRIDE = "failureActionOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
-  private Integer originalFlowExecutionIdBeforeRetry = null;
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -152,13 +149,6 @@ public class ExecutionOptions {
     options.setFailureActionOverride(wrapper.getBool(FAILURE_ACTION_OVERRIDE,
         false));
     options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
-
-    // Note: slaOptions was originally outside of execution options, so it parsed and set
-    // separately for the original JSON format. New formats should include slaOptions as
-    // part of execution options.
-
-    options.setOriginalFlowExecutionIdBeforeRetry(wrapper.getInt(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
-        options.originalFlowExecutionIdBeforeRetry));
 
     return options;
   }
@@ -305,11 +295,6 @@ public class ExecutionOptions {
     this.slaOptions = slaOptions;
   }
 
-  public Integer getOriginalFlowExecutionIdBeforeRetry() { return originalFlowExecutionIdBeforeRetry; }
-
-  public void setOriginalFlowExecutionIdBeforeRetry(Integer originalFlowExecutionIdBeforeRetry) { this.originalFlowExecutionIdBeforeRetry =
-      originalFlowExecutionIdBeforeRetry; }
-
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowOptionObj = new HashMap<>();
 
@@ -330,7 +315,6 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_ACTION_OVERRIDE, this.failureActionOverride);
     flowOptionObj.put(MAIL_CREATOR, this.mailCreator);
     flowOptionObj.put(MEMORY_CHECK, this.memoryCheck);
-    flowOptionObj.put(ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY, this.originalFlowExecutionIdBeforeRetry);
     return flowOptionObj;
   }
 
@@ -356,7 +340,6 @@ public class ExecutionOptions {
    * @return
    */
   public void merge(ExecutionOptions overwriteOptions) {
-    this.originalFlowExecutionIdBeforeRetry = overwriteOptions.originalFlowExecutionIdBeforeRetry;
     this.notifyOnFirstFailure = overwriteOptions.notifyOnFirstFailure;
     this.notifyOnLastFailure = overwriteOptions.notifyOnLastFailure;
     this.successEmailsOverride = overwriteOptions.successEmailsOverride;
