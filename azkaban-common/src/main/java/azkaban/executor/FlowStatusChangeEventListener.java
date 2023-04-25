@@ -90,11 +90,6 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
     metaData.put(EventReporterConstants.START_TIME, String.valueOf(flow.getStartTime()));
     metaData.put(EventReporterConstants.END_TIME, String.valueOf(flow.getEndTime()));
 
-    if (flow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry() != null) {
-      // original flow execution id is set when there is one
-      metaData.put(EventReporterConstants.ORIGINAL_FLOW_EXECUTION_ID_BEFORE_RETRY,
-          String.valueOf(flow.getExecutionOptions().getOriginalFlowExecutionIdBeforeRetry()));
-    }
     if (flow.getVersionSet() != null) { // Save version set information
       metaData.put(EventReporterConstants.VERSION_SET,
           getVersionSetJsonString(flow.getVersionSet()));
@@ -104,6 +99,17 @@ public class FlowStatusChangeEventListener implements EventListener<Event> {
     } else {
       metaData.put(EventReporterConstants.EXECUTOR_TYPE, String.valueOf(ExecutorType.BAREMETAL));
     }
+
+    metaData.put(EventReporterConstants.SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM,
+        String.valueOf(flow.getSystemDefinedRetryCount()));
+    metaData.put(EventReporterConstants.USER_DEFINED_FLOW_RETRY_COUNT_PARAM,
+        String.valueOf(flow.getUserDefinedRetryCount()));
+    metaData.put(EventReporterConstants.FLOW_RETRY_ROOT_EXECUTION_ID,
+        String.valueOf(flow.getFlowRetryRootExecutionID()));
+    metaData.put(EventReporterConstants.FLOW_RETRY_PARENT_EXECUTION_ID,
+        String.valueOf(flow.getFlowRetryParentExecutionID()));
+    metaData.put(EventReporterConstants.FLOW_RETRY_CHILD_EXECUTION_ID,
+        String.valueOf(flow.getFlowRetryChildExecutionID()));
 
     return metaData;
   }
