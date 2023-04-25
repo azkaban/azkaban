@@ -16,7 +16,6 @@
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
-import azkaban.Constants.EventReporterConstants;
 import azkaban.Constants.FlowParameters;
 import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
@@ -56,11 +55,9 @@ import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1004,19 +1001,20 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     String autoRetryStatuses = exFlow.getExecutionOptions().getFlowParameters()
         .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "");
     if (!autoRetryStatuses.isEmpty()){
-      Integer maxRetry = Integer.valueOf(exFlow.getExecutionOptions().getFlowParameters()
+      Integer userDefinedMaxRetry = Integer.valueOf(exFlow.getExecutionOptions().getFlowParameters()
           .getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1"));
 
       Map<String, Object> retriesInfo = new HashMap<>();
       retriesInfo.put("allowedStatuses", autoRetryStatuses);
-      retriesInfo.put("userDefinedMax", maxRetry);
+      retriesInfo.put("userDefinedMax", userDefinedMaxRetry);
       retriesInfo.put("userDefinedCount", exFlow.getUserDefinedRetryCount());
+      retriesInfo.put("systemDefinedMax", ExecutableFlow.DEFAULT_SYSTEM_FLOW_RETRY_LIMIT);
       retriesInfo.put("systemDefinedCount", exFlow.getSystemDefinedRetryCount());
       retriesInfo.put("rootExecutionID", exFlow.getFlowRetryRootExecutionID());
       retriesInfo.put("parentExecutionID", exFlow.getFlowRetryParentExecutionID());
       retriesInfo.put("childExecutionID", exFlow.getFlowRetryChildExecutionID());
 
-      ret.put("retries", (new JSONObject(retriesInfo)).toString());
+      ret.put("retries", retriesInfo);
     }
 
     final Map<String, Object> flowObj = getExecutableNodeInfo(exFlow);

@@ -100,9 +100,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
   // how many times flow level retry happened due to stuck in "Dispatch/Preparing/Ready" status
   private int systemDefinedRetryCount = 0;
   // The IDs of the original ancestor root exec / the direct parent exec / the retried child exec
-  private int flowRetryRootExecutionID = 0;
-  private int flowRetryParentExecutionID = 0;
-  private int flowRetryChildExecutionID = 0;
+  private int flowRetryRootExecutionID = -1;
+  private int flowRetryParentExecutionID = -1;
+  private int flowRetryChildExecutionID = -1;
 
   // For slaOption information
   private String slaOptionStr = "null";
