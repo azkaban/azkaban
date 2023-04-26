@@ -68,9 +68,11 @@ public class InMemoryProjectCache extends AbstractProjectCache implements Projec
     for (final Project proj : projects) {
       putProject(proj);
     }
-    logger.info("Loading flows and flow resource recommendations from active projects.");
+    logger.info("Loading flows from active projects.");
     loadAllFlows(projects);
+    logger.info("Loading flow resource recommendations from active projects.");
     loadAllFlowResourceRecommendations(projects);
+    logger.info("Active projects has been initialized.");
   }
 
   /**
