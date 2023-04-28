@@ -83,6 +83,16 @@
             </div>
           </td>
         </tr>
+        <tr>
+          <td class="property-key">Back Execution Option</td>
+          <td class="property-value-half">
+            {?schedule.backExecuteOnce}
+              true
+            {:else}
+              false
+            {/schedule.backExecuteOnce}
+          </td>
+        </tr>
         </tbody>
       </table>
     {:else}
