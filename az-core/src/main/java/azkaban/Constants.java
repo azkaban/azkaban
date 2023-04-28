@@ -883,11 +883,13 @@ public class Constants {
 
     // Constant to define the strategy to restart the execution, default to "restart_from_root",
     public static final String FLOW_PARAM_RESTART_STRATEGY = "flow.retry.strategy";
+  }
+
+  public enum FlowRetryStrategy {
 
     // default restart strategy, restart the execution in a whole, fresh new
-    public static final String FLOW_RESTART_STRATEGY_DEFAULT = "default";
-
-    public static final String FLOW_RESTART_STRATEGY_DISABLE_SUCCEEDED_NODES =
-        "disable_succeeded_nodes";
+    DEFAULT,
+    // restart the execution but disabling the corresponding succeeded nodes in previous execution
+    DISABLE_SUCCEEDED_NODES;
   }
 }

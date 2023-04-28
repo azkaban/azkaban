@@ -1,10 +1,9 @@
 package azkaban.executor;
 
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_RESTART_STRATEGY;
-import static azkaban.Constants.FlowParameters.FLOW_RESTART_STRATEGY_DEFAULT;
-import static azkaban.Constants.FlowParameters.FLOW_RESTART_STRATEGY_DISABLE_SUCCEEDED_NODES;
 
 import azkaban.Constants;
+import azkaban.Constants.FlowRetryStrategy;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
@@ -62,16 +61,18 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
 
     final ExecutionOptions options = originalExFlow.getExecutionOptions();
 
-    final String restartStrategy =
-        options.getFlowParameters().getOrDefault(FLOW_PARAM_RESTART_STRATEGY, "").trim();
+    final String restartStrategy = options.getFlowParameters().
+        getOrDefault(FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DEFAULT.name()).trim();
+    logger.info(String.format("Retry execution of exec Id %d is set to use %s strategy.",
+        originalExFlow.getExecutionId(), restartStrategy));
 
     // default strategy - not applying anything on the new one, so as like a new execution
-    if (restartStrategy.isEmpty() || restartStrategy.equals(FLOW_RESTART_STRATEGY_DEFAULT)) {
+    if (restartStrategy.isEmpty() || restartStrategy.equals(FlowRetryStrategy.DEFAULT.name())) {
       logger.info(String.format("Use default strategy when restarting the execution %s",
           originalExFlow.getExecutionId()));
     } else {
       // non-default strategies
-      if (restartStrategy.equals(FLOW_RESTART_STRATEGY_DISABLE_SUCCEEDED_NODES)){
+      if (restartStrategy.equals(FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name())){
         try {
           disableSucceededSkippedJobsInRetryFlow(originalExFlow, retryExFlow);
         } catch (ExecutorManagerException e){
@@ -79,7 +80,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
           retryExFlow = this.executorManagerAdapter.createExecutableFlow(project, flow);
           logger.warn(String.format(
               "fail to apply %s restart-strategy for the execution %s, fallback to default method",
-                  FLOW_RESTART_STRATEGY_DISABLE_SUCCEEDED_NODES,
+                  FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name(),
                   originalExFlow.getExecutionId()),
               e);
         }
