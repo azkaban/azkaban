@@ -259,4 +259,9 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     }
     return schedules;
   }
+
+  @Override
+  public List<Integer> loadRemovedTriggers() {
+    return this.triggerManager.getRemovedTriggerIds();
+  }
 }

@@ -51,6 +51,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
   private static final Logger logger = Logger.getLogger(TriggerManager.class);
   private static final Map<Integer, Trigger> triggerIdMap = new ConcurrentHashMap<>();
+  private static final Set<Integer> removedTriggerIds = new HashSet<>();
   private final TriggerScannerThread runnerThread;
   private final MetricsManager metricsManager;
   private final Meter heartbeatMeter;
@@ -162,6 +163,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
     this.runnerThread.deleteTrigger(t);
     triggerIdMap.remove(t.getTriggerId());
+    removedTriggerIds.add(t.getTriggerId());
     try {
       t.stopCheckers();
       this.triggerLoader.removeTrigger(t);
@@ -175,6 +177,14 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   @Override
   public List<Trigger> getTriggers() {
     return new ArrayList<>(triggerIdMap.values());
+  }
+
+  // get a list of removed triggers and clear the list
+  @Override
+  public List<Integer> getRemovedTriggerIds() {
+    List<Integer> removedTriggerIdsCopy = new ArrayList<>(removedTriggerIds);
+    removedTriggerIds.clear();
+    return removedTriggerIdsCopy;
   }
 
   public Map<String, Class<? extends ConditionChecker>> getSupportedCheckers() {
@@ -342,6 +352,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
           TriggerManager.this.scannerStage = "Checking for trigger " + t.getTriggerId();
           if (t.getStatus().equals(TriggerStatus.INVALID)) {
             removeTrigger(t);
+            continue;
           }
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
@@ -358,7 +369,8 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
               onTriggerTrigger(t);
             }
           }
-          if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+          if ((t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban"))
+              || t.getStatus().equals(TriggerStatus.INVALID)) {
             removeTrigger(t);
           } else {
             t.updateNextCheckTime();
@@ -379,9 +391,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
           TriggerManager.logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
           action.doAction();
         } catch (NoSuchAzkabanResourceException e) {
-          TriggerManager.logger.info(
-              "Remove trigger " + t.getTriggerId() + "due to no such projects/flows associated with trigger");
-          removeTrigger(t);
+          logger.warn("find no matching projects/flows for the trigger " + t.getTriggerId() + ", mark trigger invalid");
+          t.setStatus(TriggerStatus.INVALID);
+          return;
         } catch (final ExecutorManagerException e) {
           if (e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
             TriggerManager.logger.info(
@@ -399,9 +411,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         try {
           t.sendTaskToMissedScheduleManager();
         } catch (NoSuchAzkabanResourceException e) {
-          TriggerManager.logger.info(
-              "Remove trigger " + t.getTriggerId() + "due to No such projects/flows associated with trigger");
-          removeTrigger(t);
+          logger.warn("find no matching projects/flows for the trigger " + t.getTriggerId() + ", mark trigger invalid");
+          t.setStatus(TriggerStatus.INVALID);
+          return;
         }
       } else {
         TriggerManager.logger.info(
