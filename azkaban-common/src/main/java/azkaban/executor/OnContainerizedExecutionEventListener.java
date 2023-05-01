@@ -63,19 +63,21 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
 
     final String restartStrategy = options.getFlowParameters().
         getOrDefault(FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DEFAULT.name()).trim();
-    logger.info(String.format("Retry execution of exec Id %d is set to use %s strategy.",
+    logger.info(String.format("Retry execution of exec Id %d is set to use strategy [%s].",
         originalExFlow.getExecutionId(), restartStrategy));
+    FlowRetryStrategy strategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
 
     // default strategy - not applying anything on the new one, so as like a new execution
-    if (restartStrategy.isEmpty() || restartStrategy.equals(FlowRetryStrategy.DEFAULT.name())) {
+    if (restartStrategy.isEmpty() || strategyEnum.equals(FlowRetryStrategy.DEFAULT)) {
       logger.info(String.format("Use default strategy when restarting the execution %s",
           originalExFlow.getExecutionId()));
     } else {
       // non-default strategies
-      if (restartStrategy.equals(FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name())){
+      if (strategyEnum.equals(FlowRetryStrategy.DISABLE_SUCCEEDED_NODES)){
         try {
           disableSucceededSkippedJobsInRetryFlow(originalExFlow, retryExFlow);
         } catch (ExecutorManagerException e){
+          // TODO: consider notify user via email too
           logger.error(String.format(
               "Fail to restart execution %s due to error applying %s restart-strategy",
                   originalExFlow.getExecutionId(),
