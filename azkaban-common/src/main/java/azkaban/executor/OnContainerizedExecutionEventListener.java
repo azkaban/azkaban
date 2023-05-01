@@ -76,12 +76,10 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
         try {
           disableSucceededSkippedJobsInRetryFlow(originalExFlow, retryExFlow);
         } catch (ExecutorManagerException e){
-          // rebuild the execution in case data-structure already messed-up
-          retryExFlow = this.executorManagerAdapter.createExecutableFlow(project, flow);
-          logger.warn(String.format(
-              "fail to apply %s restart-strategy for the execution %s, fallback to default method",
-                  FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name(),
-                  originalExFlow.getExecutionId()),
+          logger.error(String.format(
+              "Fail to restart execution %s due to error applying %s restart-strategy",
+                  originalExFlow.getExecutionId(), 
+                  FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name()),
               e);
         }
       }
