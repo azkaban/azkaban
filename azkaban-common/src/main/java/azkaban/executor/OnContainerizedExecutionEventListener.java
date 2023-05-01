@@ -78,7 +78,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
         } catch (ExecutorManagerException e){
           logger.error(String.format(
               "Fail to restart execution %s due to error applying %s restart-strategy",
-                  originalExFlow.getExecutionId(), 
+                  originalExFlow.getExecutionId(),
                   FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name()),
               e);
         }

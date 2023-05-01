@@ -22,6 +22,7 @@ import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
+import azkaban.Constants.FlowRetryStrategy;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -232,7 +233,16 @@ public class HttpRequestUtils {
         errMsg.add(e.getMessage());
       }
     }
-
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_STRATEGY)){
+      String restartStrategy = flowParameters.get(FlowParameters.FLOW_PARAM_RESTART_STRATEGY);
+      try {
+        FlowRetryStrategy restartStrategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
+      } catch (IllegalArgumentException e){
+        errMsg.add(String.format(
+            "Invalid " + FlowParameters.FLOW_PARAM_RESTART_STRATEGY + " = %s, cannot convert to "
+                + "strategy enum type", restartStrategy));
+      }
+    }
     // throw exception if there's any error message
     if (!errMsg.isEmpty()) {
       throw new ServletException(String.format("ExecutionOptions is invalid, error reasons: %s",
