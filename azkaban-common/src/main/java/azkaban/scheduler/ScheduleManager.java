@@ -103,13 +103,22 @@ public class ScheduleManager implements TriggerAgent {
   }
 
   /**
-   * Retrieves a copy of the list of schedules.
+   * Retrieves a copy of the list of updated schedules.
    */
   public List<Schedule> getSchedules()
       throws ScheduleManagerException {
     final List<Schedule> updates = this.loader.loadUpdatedSchedules();
     refreshLocal(updates);
     return new ArrayList<>(this.scheduleIDMap.values());
+  }
+
+  public List<Schedule> getALlSchedules() {
+    try {
+      return this.loader.loadAllSchedules();
+    } catch (ScheduleManagerException e) {
+      logger.error("Failed to load all schedules", e);
+      return new ArrayList<>();
+    }
   }
 
   /**
