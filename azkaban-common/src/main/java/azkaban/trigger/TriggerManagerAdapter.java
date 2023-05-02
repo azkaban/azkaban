@@ -34,6 +34,8 @@ public interface TriggerManagerAdapter {
   public List<Trigger> getTriggerUpdates(String triggerSource,
       Map<Integer, Long> triggerToLastCheckTime) throws TriggerManagerException;
 
+  public List<Integer> getRemovedTriggerIds();
+
   public Optional<Trigger> getUpdatedTriggerById(final int triggerId, final long lastUpdateTime);
 
   public List<Trigger> getTriggers(String trigegerSource);

@@ -28,7 +28,6 @@ import azkaban.utils.Props;
 import com.codahale.metrics.Counter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,11 +82,10 @@ public class MissedSchedulesManagerTest {
     flowMap.put(flowName, flow);
     project.setFlows(flowMap);
     when(executeFlowAction.getFlowName()).thenReturn(flowName);
-    when(executeFlowAction.getProjectName()).thenReturn(projectName);
-    when(this.projectManager.getProject(projectName)).thenReturn(project);
+    when(executeFlowAction.getProjectId()).thenReturn(project.getId());
+    when(this.projectManager.getProject(project.getId())).thenReturn(project);
     when(executeFlowAction.getExecutionOptions()).thenReturn(new ExecutionOptions());
     // verify task is added into queue
     Assertions.assertThat(this._missedSchedulesManager.addMissedSchedule(timestamps, executeFlowAction, false)).isTrue();
-
   }
 }
