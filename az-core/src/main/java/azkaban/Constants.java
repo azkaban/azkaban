@@ -17,6 +17,9 @@
 package azkaban;
 
 import java.time.Duration;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Constants used in configuration files or shared among classes.
@@ -886,10 +889,32 @@ public class Constants {
   }
 
   public enum FlowRetryStrategy {
-
     // default restart strategy, restart the execution in a whole, fresh new
-    DEFAULT,
+    DEFAULT("retryAsNew"),
     // restart the execution but disabling the corresponding succeeded nodes in previous execution
-    DISABLE_SUCCEEDED_NODES;
+    DISABLE_SUCCEEDED_NODES("disableSucceededNodes");
+
+    private final String name;
+    private FlowRetryStrategy(String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return this.name;
+    }
+
+    public static FlowRetryStrategy valueFromName(String name) {
+      for(FlowRetryStrategy s: FlowRetryStrategy.values()) {
+        if(s.name.equals(name)) {
+          return s;
+        }
+      }
+      throw new IllegalArgumentException("No FlowRetryStrategy for name " + name);
+    }
+
+    public static List<String> getNames() {
+      return EnumSet.allOf(FlowRetryStrategy.class).stream()
+          .map(FlowRetryStrategy::getName).collect(Collectors.toList());
+    }
   }
 }

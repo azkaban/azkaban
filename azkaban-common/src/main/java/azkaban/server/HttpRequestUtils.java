@@ -238,9 +238,9 @@ public class HttpRequestUtils {
       try {
         FlowRetryStrategy restartStrategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
       } catch (IllegalArgumentException e){
-        errMsg.add(String.format(
-            "Invalid " + FlowParameters.FLOW_PARAM_RESTART_STRATEGY + " = %s, cannot convert to "
-                + "strategy enum type", restartStrategy));
+        errMsg.add(String.format("Invalid %s = %s. Valid values are: %s",
+            FlowParameters.FLOW_PARAM_RESTART_STRATEGY, restartStrategy,
+            FlowRetryStrategy.getNames()));
       }
     }
     // throw exception if there's any error message

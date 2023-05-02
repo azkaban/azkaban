@@ -61,30 +61,30 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
 
     final ExecutionOptions options = originalExFlow.getExecutionOptions();
 
-    final String restartStrategy = options.getFlowParameters().
-        getOrDefault(FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DEFAULT.name()).trim();
-    logger.info(String.format("Retry execution of exec Id %d is set to use strategy [%s].",
-        originalExFlow.getExecutionId(), restartStrategy));
-    FlowRetryStrategy strategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
+    final String retryStrategyStr = options.getFlowParameters()
+        .getOrDefault(FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DEFAULT.getName());
 
-    // default strategy - not applying anything on the new one, so as like a new execution
-    if (restartStrategy.isEmpty() || strategyEnum.equals(FlowRetryStrategy.DEFAULT)) {
-      logger.info(String.format("Use default strategy when restarting the execution %s",
-          originalExFlow.getExecutionId()));
-    } else {
-      // non-default strategies
-      if (strategyEnum.equals(FlowRetryStrategy.DISABLE_SUCCEEDED_NODES)){
+    // shouldn't throw an exception since the string value was validated on execution submission
+    FlowRetryStrategy retryStrategy = FlowRetryStrategy.valueOf(retryStrategyStr);
+    logger.info(String.format("Retry execution of exec Id %d should use %s strategy.",
+        originalExFlow.getExecutionId(), retryStrategy));
+
+    switch (retryStrategy) {
+      case DISABLE_SUCCEEDED_NODES:
         try {
           disableSucceededSkippedJobsInRetryFlow(originalExFlow, retryExFlow);
         } catch (ExecutorManagerException e){
           // TODO: consider notify user via email too
           logger.error(String.format(
-              "Fail to restart execution %s due to error applying %s restart-strategy",
+                  "Fail to restart execution %s due to error applying %s restart-strategy",
                   originalExFlow.getExecutionId(),
-                  FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name()),
+                  FlowRetryStrategy.DISABLE_SUCCEEDED_NODES),
               e);
         }
-      }
+        break;
+      default:
+        logger.info(String.format("Use default strategy when restarting the execution %s",
+          originalExFlow.getExecutionId()));
     }
 
     retryExFlow.setSubmitUser(originalExFlow.getSubmitUser());
