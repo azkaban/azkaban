@@ -88,6 +88,17 @@ public class ScheduleManager implements TriggerAgent {
       }
       s.unlock();
     }
+    // remove any schedules that are marked "removed" in triggerManager
+    for (int id : this.loader.loadRemovedTriggers()) {
+      Schedule s = this.scheduleIDMap.get(id);
+      if (s != null) {
+        final Pair<Integer, String> identityPairMap = s.getScheduleIdentityPair();
+        if (identityPairMap != null) {
+          this.scheduleIdentityPairMap.remove(identityPairMap);
+        }
+      }
+      this.scheduleIDMap.remove(id);
+    }
   }
 
   private void onScheduleExpire(final Schedule s) {
