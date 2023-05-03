@@ -112,7 +112,10 @@ public class ScheduleManager implements TriggerAgent {
     return new ArrayList<>(this.scheduleIDMap.values());
   }
 
-  public List<Schedule> getALlSchedules() {
+  /**
+   * Retrieves a copy of the list of all schedules regardless the status, active or inactive ones.
+   */
+  public List<Schedule> getAllSchedules() {
     try {
       return this.loader.loadAllSchedules();
     } catch (ScheduleManagerException e) {

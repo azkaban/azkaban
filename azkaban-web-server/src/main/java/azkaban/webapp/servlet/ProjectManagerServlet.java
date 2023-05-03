@@ -2051,7 +2051,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Set<String> flowNameList = project.getFlows().stream().map(f -> f.getId()).collect(
         Collectors.toSet());
 
-    for (final Schedule schedule : scheduleManager.getALlSchedules()) {
+    for (final Schedule schedule : scheduleManager.getAllSchedules()) {
       if (schedule.getProjectId() == project.getId() &&
           !flowNameList.contains(schedule.getFlowName())) {
         scheduleManager.removeSchedule(schedule);
