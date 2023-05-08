@@ -285,6 +285,12 @@ public class ProjectManager {
         modifier.getUserId(), "Description changed to " + description);
   }
 
+  public void updateProjectFeatureFlag(final Project project, final User modifier) throws ProjectManagerException {
+    updateProjectSetting(project);
+    this.projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
+        modifier.getUserId(), "Update project feature flag to " + project.getFeatureFlags());
+  }
+
   public List<ProjectLogEvent> getProjectEventLogs(final Project project,
       final int results, final int skip) throws ProjectManagerException {
     return this.projectLoader.getProjectEvents(project, results, skip);

@@ -590,6 +590,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return false;
   }
 
+  protected boolean hasAzkabanAdminPermission(final User user) {
+    final UserManager userManager = getApplication().getUserManager();
+    return user.getRoles().stream()
+        .anyMatch(role -> userManager.getRole(role).getPermission().isPermissionSet(Permission.Type.ADMIN));
+  }
+
   /**
    * Filter Project based on user authorization
    *

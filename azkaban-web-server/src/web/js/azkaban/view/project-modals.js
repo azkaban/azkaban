@@ -81,7 +81,9 @@ var projectDescription;
 azkaban.ProjectDescriptionView = Backbone.View.extend({
   events: {
     "click #project-description": "handleDescriptionEdit",
-    "click #project-description-btn": "handleDescriptionSave"
+    "click #project-description-btn": "handleDescriptionSave",
+    "click #adhoc-upload": "handleUploadSettingEdit",
+    "click #adhoc-upload-btn": "handleUploadSettingSave",
   },
 
   initialize: function (settings) {
@@ -129,6 +131,51 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
         $('#project-description').addClass('editable-placeholder');
       }
       $('#project-description').show();
+    };
+    $.get(requestURL, requestData, successHandler, "json");
+  },
+
+  handleUploadSettingEdit: function (evt) {
+    console.log("Edit Upload Setting");
+    var value = null;
+    if ($('#adhoc-upload').hasClass('editable-placeholder')) {
+      value = '';
+      $('#adhoc-upload').removeClass('editable-placeholder');
+    }
+    else {
+      value = $('#adhoc-upload').text();
+    }
+    $('#adhoc-upload-edit').attr("value", value);
+    $('#adhoc-upload').hide();
+    $('#adhoc-upload-form').show();
+  },
+
+  handleUploadSettingSave: function (evt) {
+    var newText = $('#adhoc-upload-edit').val();
+    if ($('#adhoc-upload-edit').hasClass('has-error')) {
+      $('#adhoc-upload-edit').removeClass('has-error');
+    }
+    var requestURL = contextURL + "/manager";
+    var requestData = {
+      "project": projectName,
+      "ajax": "changeUploadSetting",
+      "adhocUpload": newText
+    };
+    var successHandler = function (data) {
+      if (data.error) {
+        $('#adhoc-upload-edit').addClass('has-error');
+        alert(data.error);
+        return;
+      }
+      $('#adhoc-upload-form').hide();
+      if (newText !== '') {
+        $('#adhoc-upload').text(newText);
+      }
+      else {
+        $('#adhoc-upload').text('true or false');
+        $('#adhoc-upload').addClass('editable-placeholder');
+      }
+      $('#adhoc-upload').show();
     };
     $.get(requestURL, requestData, successHandler, "json");
   },

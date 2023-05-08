@@ -42,6 +42,7 @@ import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.AzkabanAPI;
+import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -93,6 +94,10 @@ import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static azkaban.Constants.*;
+import static azkaban.project.FeatureFlag.*;
+
+
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private static final String API_GET_PROJECT_ID = "getProjectId";
@@ -107,6 +112,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String API_GET_GROUP_PERMISSIONS = "getGroupPermissions";
   private static final String API_GET_PROXY_USERS = "getProxyUsers";
   private static final String API_CHANGE_PERMISSION = "changePermission";
+  private static final String API_CHANGE_UPLOAD_SETTING = "changeUploadSetting";
+  private static final String API_FETCH_UPLOAD_SETTING = "getUploadSetting";
   private static final String API_ADD_PERMISSION = "addPermission";
   private static final String API_ADD_PROXY_USER = "addProxyUser";
   private static final String API_REMOVE_PROXY_USER = "removeProxyUser";
@@ -123,6 +130,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   static final String FLOW_IS_LOCKED_PARAM = "isLocked";
   static final String FLOW_NAME_PARAM = "flowName";
   static final String FLOW_ID_PARAM = "flowId";
+  public static final String ADHOC_UPLOAD = "adhocUpload";
   static final String ERROR_PARAM = "error";
   static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
 
@@ -148,6 +156,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
+  private String uploadPrivilegeUser;
   private Map<String, List<HTMLFormElement>> alerterPlugins;
 
   public ProjectManagerServlet() {
@@ -186,6 +195,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES, 8192);
     logger.info("downloadBufferSize: " + this.downloadBufferSize);
 
+    // get upload privilege user, if not configured, treated upload as adhoc, no upload lock enabled
+    this.uploadPrivilegeUser = server.getServerProps().get(AZKABAN_UPLOAD_PRIVILEGE_USER);
+
     final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
     server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
         (alerter.getViewParameters() != null ? alerter.getViewParameters()
@@ -207,6 +219,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     apiEndpoints.add(new AzkabanAPI("ajax", API_GET_GROUP_PERMISSIONS));
     apiEndpoints.add(new AzkabanAPI("ajax", API_GET_PROXY_USERS));
     apiEndpoints.add(new AzkabanAPI("ajax", API_CHANGE_PERMISSION));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_CHANGE_UPLOAD_SETTING));
+    apiEndpoints.add(new AzkabanAPI("ajax", API_FETCH_UPLOAD_SETTING));
     apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_PERMISSION));
     apiEndpoints.add(new AzkabanAPI("ajax", API_ADD_PROXY_USER));
     apiEndpoints.add(new AzkabanAPI("ajax", API_REMOVE_PROXY_USER));
@@ -377,6 +391,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
         if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
           ajaxAddPermission(project, ret, req, user);
+        }
+      } else if (API_CHANGE_UPLOAD_SETTING.equals(ajaxName)) {
+        if (hasAzkabanAdminPermission(user)) {
+          ajaxChangeUploadSetting(project, ret, req, user);
+        } else {
+          ret.put(ERROR_PARAM, "User " + user.getUserId() + " doesn't have permission to change "
+              + "upload lock settings.");
+        }
+      } else if (API_FETCH_UPLOAD_SETTING.equals(ajaxName)) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxGetUploadSettings(project, ret);
         }
       } else if (API_ADD_PROXY_USER.equals(ajaxName)) {
         if (session != null && !validateCSRFToken(req)) {
@@ -790,6 +815,37 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } catch (final ProjectManagerException e) {
       ret.put(ERROR_PARAM, e.getMessage());
     }
+  }
+
+  private void ajaxChangeUploadSetting(final Project project,
+      final HashMap<String, Object> ret, final HttpServletRequest req, final User user) {
+    if (req.getParameter(ADHOC_UPLOAD) == null) {
+      ret.put(ERROR_PARAM, "adhocUpload parameter is not set");
+      return;
+    }
+    try {
+      final boolean enableAdhocProject = HttpRequestUtils.getBooleanParam(req, ADHOC_UPLOAD);
+      if (enableAdhocProject) {
+        project.addFeatureFlags(ENABLE_PROJECT_ADHOC_UPLOAD, true);
+        project.setUploadLock(false);
+      } else {
+        project.addFeatureFlags(ENABLE_PROJECT_ADHOC_UPLOAD, false);
+        if (project.getLastModifiedUser().equals(uploadPrivilegeUser)) {
+          project.setUploadLock(true);
+        }
+      }
+      project.setLastModifiedUser(user.getUserId());
+      project.setLastModifiedTimestamp(System.currentTimeMillis());
+
+      this.projectManager.updateProjectFeatureFlag(project, user);
+    } catch (ServletException | ProjectManagerException e) {
+      ret.put(ERROR_PARAM, e.getMessage());
+    }
+  }
+
+  private void ajaxGetUploadSettings(final Project project, final HashMap<String, Object> ret) {
+      ret.put("isUploadLocked", project.isUploadLocked());
+      ret.put("adhocUpload", project.isAdhocUploadEnabled());
   }
 
   private void ajaxFetchJobInfo(final Project project, final HashMap<String, Object> ret,
@@ -1332,6 +1388,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("createTimestamp",project.getCreateTimestamp());
         page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
         page.add("lastModifiedUser",project.getLastModifiedUser());
+        page.add("projectUploadLock", project.isUploadLocked());
+        page.add("adhocUpload", project.isAdhocUploadEnabled());
+        page.add("showUploadLockPanel", uploadPrivilegeUser != null);
 
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
@@ -1457,6 +1516,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("createTimestamp",project.getCreateTimestamp());
         page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
         page.add("lastModifiedUser",project.getLastModifiedUser());
+        page.add("projectUploadLock", project.isUploadLocked());
+        page.add("adhocUpload", project.isAdhocUploadEnabled());
+        page.add("showUploadLockPanel", uploadPrivilegeUser != null);
 
         page.add("username", user.getUserId());
         page.add("admins", Utils.flattenToString(
@@ -1790,6 +1852,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("createTimestamp",project.getCreateTimestamp());
         page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
         page.add("lastModifiedUser",project.getLastModifiedUser());
+        page.add("projectUploadLock", project.isUploadLocked());
+        page.add("adhocUpload", project.isAdhocUploadEnabled());
+        page.add("showUploadLockPanel", uploadPrivilegeUser != null);
 
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
@@ -1900,6 +1965,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (project == null) {
       return;
     }
+    // fail the upload if the project is UPLOAD locked and the user is not the upload privilege user
+    if (project.isUploadLocked() && !user.getUserId().equals(uploadPrivilegeUser)) {
+      registerError(ret, "Installation Failed. Project '" + projectName + " has UPLOAD LOCK on. \n"
+          + "Create a new project to use adhoc upload feature, as crt deployed project would be automatically locked.\n"
+          + "If you really need enable adhoc upload on the current project, please contact oncall to remove this lock.",
+          resp, HttpServletResponse.SC_FORBIDDEN);
+      return;
+    }
     final FileItem item = (FileItem) multipart.get("file");
     final String name = item.getName();
     final String lowercaseExtension = FilenameUtils.getExtension(name).toLowerCase();
@@ -1963,6 +2036,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
                 "Schedule " + schedule.toString() + " has been removed.");
       });
+
+      // uploader is upload privilege user and the project is not protected by feature flag enable.project.adhoc.upload
+      // mark the project with UPLOAD LOCK if it is not already, and persist in DB
+      if (!project.isAdhocUploadEnabled() && user.getUserId().equals(uploadPrivilegeUser) && !project.isUploadLocked()) {
+          project.setUploadLock(true);
+          this.projectManager.updateProjectSetting(project);
+          logger.info("Project {} is Upload Locked", project.getName());
+      }
 
       registerErrorsAndWarningsFromValidationReport(resp, ret, reports);
       // Reload the flow_filter to ensure if this project is added to the file, then the filter is current.
