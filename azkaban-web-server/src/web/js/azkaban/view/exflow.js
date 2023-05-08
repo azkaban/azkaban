@@ -88,6 +88,7 @@ azkaban.FlowTabView = Backbone.View.extend({
     "click #flowTriggerlistViewLink": "handleFlowTriggerLinkClick",
     "click #jobslistViewLink": "handleJobslistLinkClick",
     "click #flowLogViewLink": "handleLogLinkClick",
+    "click #retriesViewLink": "handleRetriesLinkClick",
     "click #statsViewLink": "handleStatsLinkClick",
     "click #cancelbtn": "handleCancelClick",
     "click #executebtn": "handleRestartClick",
@@ -123,12 +124,14 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#graphViewLink").addClass("active");
     $("#flowLogViewLink").removeClass("active");
     $("#flowTriggerlistViewLink").removeClass("active");
+    $("#retriesViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#jobListView").hide();
     $("#flowTriggerListView").hide();
     $("#graphView").show();
     $("#flowLogView").hide();
+    $("#retriesView").hide();
     $("#statsView").hide();
   },
 
@@ -137,12 +140,14 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#graphViewLink").removeClass("active");
     $("#flowLogViewLink").removeClass("active");
     $("#flowTriggerlistViewLink").addClass("active");
+    $("#retriesViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#jobListView").hide();
     $("#flowTriggerListView").show();
     $("#graphView").hide();
     $("#flowLogView").hide();
+    $("#retriesView").hide();
     $("#statsView").hide();
   },
 
@@ -151,12 +156,14 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#jobslistViewLink").addClass("active");
     $("#flowLogViewLink").removeClass("active");
     $("#flowTriggerlistViewLink").removeClass("active");
+    $("#retriesViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#graphView").hide();
     $("#flowTriggerListView").hide();
     $("#jobListView").show();
     $("#flowLogView").hide();
+    $("#retriesView").hide();
     $("#statsView").hide();
   },
 
@@ -165,12 +172,14 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowTriggerlistViewLink").removeClass("active");
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").addClass("active");
+    $("#retriesViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
 
     $("#graphView").hide();
     $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").show();
+    $("#retriesView").hide();
     $("#statsView").hide();
   },
 
@@ -179,14 +188,32 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowTriggerlistViewLink").removeClass("active");
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").removeClass("active");
+    $("#retriesViewLink").removeClass("active");
     $("#statsViewLink").addClass("active");
 
     $("#graphView").hide();
     $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").hide();
+    $("#retriesView").hide();
     statsView.show();
     $("#statsView").show();
+  },
+
+  handleRetriesLinkClick: function () {
+    $("#graphViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
+    $("#jobslistViewLink").removeClass("active");
+    $("#flowLogViewLink").removeClass("active");
+    $("#retriesViewLink").addClass("active");
+    $("#statsViewLink").removeClass("active");
+
+    $("#graphView").hide();
+    $("#flowTriggerListView").hide();
+    $("#jobListView").hide();
+    $("#flowLogView").hide();
+    $("#retriesView").show();
+    $("#statsView").hide();
   },
 
   handleFlowStatusChange: function () {

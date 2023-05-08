@@ -17,6 +17,7 @@ package azkaban.webapp.servlet;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
+import azkaban.Constants.FlowRetryStrategy;
 import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -518,6 +519,28 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("flowid", flow.getFlowId());
     page.add("flowlist", flow.getFlowId().split(Constants.PATH_DELIMITER, 0));
     page.add("pathDelimiter", Constants.PATH_DELIMITER);
+
+    page.add("parentExecutionID", 123);
+    page.add("childExecutionID", 456);
+
+    String autoRetryStatuses = flow.getExecutionOptions().getFlowParameters()
+        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "");
+    if (!autoRetryStatuses.isEmpty()){
+      Map<String, Object> retriesInfo = new HashMap<>();
+      retriesInfo.put("allowedStatuses", autoRetryStatuses);
+      retriesInfo.put("strategy", flow.getExecutionOptions().getFlowParameters()
+          .getOrDefault(FlowParameters.FLOW_PARAM_RESTART_STRATEGY,
+              FlowRetryStrategy.DEFAULT.getName()));
+      retriesInfo.put("userDefinedMax", Integer.valueOf(flow.getExecutionOptions().getFlowParameters()
+          .getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1")));
+      retriesInfo.put("userDefinedCount", flow.getUserDefinedRetryCount());
+      retriesInfo.put("systemDefinedMax", ExecutableFlow.DEFAULT_SYSTEM_FLOW_RETRY_LIMIT);
+      retriesInfo.put("systemDefinedCount", flow.getSystemDefinedRetryCount());
+      retriesInfo.put("rootExecutionID", flow.getFlowRetryRootExecutionID());
+      retriesInfo.put("parentExecutionID", flow.getFlowRetryParentExecutionID());
+      retriesInfo.put("childExecutionID", flow.getFlowRetryChildExecutionID());
+      page.add("retries", retriesInfo);
+    }
 
     // check the current flow definition to see if the flow is locked.
     final Flow currentFlow = project.getFlow(flow.getFlowId());
