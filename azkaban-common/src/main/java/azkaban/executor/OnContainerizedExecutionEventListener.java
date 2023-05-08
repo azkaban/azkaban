@@ -65,7 +65,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
         .getOrDefault(FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DEFAULT.getName());
 
     // shouldn't throw an exception since the string value was validated on execution submission
-    FlowRetryStrategy retryStrategy = FlowRetryStrategy.valueOf(retryStrategyStr);
+    FlowRetryStrategy retryStrategy = FlowRetryStrategy.valueFromName(retryStrategyStr);
     logger.info(String.format("Retry execution of exec Id %d should use %s strategy.",
         originalExFlow.getExecutionId(), retryStrategy));
 

@@ -133,6 +133,7 @@
       <li id="flowTriggerlistViewLink"><a href="#triggerslist">Flow Trigger List</a></li>
       <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
       <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
+      <li id="retriesViewLink"><a href="#retries">Retries</a></li>
       <li id="statsViewLink"><a href="#stats">Stats</a></li>
       #foreach ($analyzer in $externalAnalyzers)
         #if (!${analyzer.isLinkUrlValid()})
@@ -290,6 +291,65 @@
         </div>
       </div>
     </div><!-- /.row -->
+  </div><!-- /.container-fill -->
+
+  <div class="container-full" id="retriesView">
+    <div id="flow-stats-container">
+      #if (${retries})
+        <table class="table table-bordered table-condensed">
+          <tbody>
+          <tr>
+            <td class="property-key">Retry on Statuses</td>
+            <td>$retries.allowedStatuses</td>
+          </tr>
+          <tr>
+            <td class="property-key">Retry Strategy</td>
+            <td>$retries.strategy</td>
+          </tr>
+          <tr>
+            <td class="property-key">Root Execution</td>
+            #if (${retries.rootExecutionID} != -1)
+              <td><a href="${context}/executor?execid=${retries.rootExecutionID}">
+                $retries.rootExecutionID</a></td>
+            #else
+              <td>N/A</td>
+            #end
+          </tr>
+          <tr>
+            <td class="property-key">Parent Execution</td>
+            #if (${retries.parentExecutionID} != -1)
+              <td><a href="${context}/executor?execid=${retries.parentExecutionID}">
+                $retries.parentExecutionID</a></td>
+            #else
+              <td>N/A</td>
+            #end
+          </tr>
+          <tr>
+            <td class="property-key">Child Execution</td>
+            #if (${retries.childExecutionID} != -1)
+              <td><a href="${context}/executor?execid=${retries.childExecutionID}">
+                $retries.childExecutionID</a></td>
+            #else
+              <td>N/A</td>
+            #end
+          </tr>
+          <tr>
+            <td class="property-key">System Defined Retries / Max</td>
+            <td>$retries.systemDefinedCount / $retries.systemDefinedMax</td>
+          </tr>
+          <tr>
+            <td class="property-key">User Defined Retries / Max</td>
+            <td>$retries.userDefinedCount / $retries.userDefinedMax</td>
+          </tr>
+          </tbody>
+        </table>
+      #else
+        <div class="callout callout-default">
+          <h4>Flow Retry is not set</h4>
+        </div>
+      #end
+
+    </div>
   </div><!-- /.container-fill -->
 
   ## Error message message dialog.
