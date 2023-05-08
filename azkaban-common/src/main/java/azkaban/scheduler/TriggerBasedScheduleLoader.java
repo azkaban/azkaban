@@ -167,7 +167,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           triggerTimeChecker.getCronExpression(),
           t.isBackExecuteOnceOnMiss());
     } else {
-      logger.error("Failed to parse schedule from trigger!");
+      logger.error("Failed to parse schedule from trigger {}!", t.getTriggerId());
       throw new ScheduleManagerException(
           "Failed to parse schedule from trigger!");
     }
