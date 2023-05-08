@@ -1938,18 +1938,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       out = new BufferedOutputStream(new FileOutputStream(archiveFile));
       IOUtils.copy(item.getInputStream(), out);
       out.close();
-      if (this.enableQuartz) {
-        //todo chengren311: should maintain atomicity,
-        // e.g, if uploadProject fails, associated schedule shouldn't be added.
-        this.scheduler.unschedule(project);
-      }
 
       // get the locked flows for the project, so that they can be locked again after upload
       final List<Pair<String, String>> lockedFlows = getLockedFlows(project);
+      // record the existing project flows before upload
+      final List<Flow> existingFlows = project.getFlows();
 
+      // validate project zip's dependencies and persist the new project metadata into DB
       final Map<String, ValidationReport> reports = this.projectManager
           .uploadProject(project, archiveFile, lowercaseExtension, user, props, uploaderIPAddr);
+
+      // Post-processing after upload
+      // reschedule data triggers if quartz is enabled
       if (this.enableQuartz) {
+        this.scheduler.unschedule(existingFlows, projectName);
         this.scheduler.schedule(project, user.getUserId());
       }
 
@@ -2045,12 +2047,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * @param onDeletedSchedule a callback function to execute with every deleted schedule
    */
   static void removeScheduleOfDeletedFlows(final Project project,
-      final ScheduleManager scheduleManager, final Consumer<Schedule> onDeletedSchedule)
-      throws ScheduleManagerException {
+      final ScheduleManager scheduleManager, final Consumer<Schedule> onDeletedSchedule) {
     final Set<String> flowNameList = project.getFlows().stream().map(f -> f.getId()).collect(
         Collectors.toSet());
 
-    for (final Schedule schedule : scheduleManager.getSchedules()) {
+    for (final Schedule schedule : scheduleManager.getAllSchedules()) {
       if (schedule.getProjectId() == project.getId() &&
           !flowNameList.contains(schedule.getFlowName())) {
         scheduleManager.removeSchedule(schedule);

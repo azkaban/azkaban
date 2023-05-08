@@ -179,23 +179,30 @@ public class FlowTriggerScheduler {
   }
 
   /**
-   * Unschedule all possible flows in a project
-   */
-  public void unschedule(final Project project) throws SchedulerException {
-    for (final Flow flow : project.getFlows()) {
+   * Unschedule all possible flows
+   * */
+  public void unschedule(final List<Flow> flows, String projectName) throws SchedulerException {
+    for (final Flow flow : flows) {
       if (!flow.isEmbeddedFlow()) {
         try {
           if (this.scheduler
               .unscheduleJob(FlowTriggerQuartzJob.JOB_NAME, generateGroupName(flow))) {
-            logger.info("Flow {}.{} unregistered from scheduler", project.getName(), flow.getId());
+            logger.info("Flow {}.{} unregistered from scheduler", projectName, flow.getId());
           }
         } catch (final SchedulerException e) {
-          logger.error("Fail to unregister flow from scheduler {}.{}", project.getName(),
+          logger.error("Fail to unregister flow from scheduler {}.{}", projectName,
               flow.getId(), e);
           throw e;
         }
       }
     }
+  }
+
+  /**
+   * Unschedule all possible flows in a project
+   */
+  public void unschedule(final Project project) throws SchedulerException {
+    unschedule(project.getFlows(), project.getName());
   }
 
   private String generateGroupName(final Flow flow) {
