@@ -523,12 +523,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("childExecutionID", 456);
 
     String autoRetryStatuses = flow.getExecutionOptions().getFlowParameters()
-        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "");
+        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "");
     if (!autoRetryStatuses.isEmpty()){
       Map<String, Object> retriesInfo = new HashMap<>();
       retriesInfo.put("allowedStatuses", autoRetryStatuses);
       retriesInfo.put("strategy", flow.getExecutionOptions().getFlowParameters()
-          .getOrDefault(FlowParameters.FLOW_PARAM_RESTART_STRATEGY,
+          .getOrDefault(FlowParameters.FLOW_PARAM_RETRY_STRATEGY,
               FlowRetryStrategy.DEFAULT.getName()));
       retriesInfo.put("userDefinedMax", Integer.valueOf(flow.getExecutionOptions().getFlowParameters()
           .getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1")));
@@ -1021,7 +1021,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("project", project.getName());
 
     String autoRetryStatuses = exFlow.getExecutionOptions().getFlowParameters()
-        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "");
+        .getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "");
     if (!autoRetryStatuses.isEmpty()){
       Integer userDefinedMaxRetry = Integer.valueOf(exFlow.getExecutionOptions().getFlowParameters()
           .getOrDefault(FlowParameters.FLOW_PARAM_MAX_RETRIES, "1"));
@@ -1029,6 +1029,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       Map<String, Object> retriesInfo = new HashMap<>();
       retriesInfo.put("allowedStatuses", autoRetryStatuses);
       retriesInfo.put("userDefinedMax", userDefinedMaxRetry);
+      retriesInfo.put("strategy", exFlow.getExecutionOptions().getFlowParameters()
+          .getOrDefault(FlowParameters.FLOW_PARAM_RETRY_STRATEGY,
+              FlowRetryStrategy.DEFAULT.getName()));
       retriesInfo.put("userDefinedCount", exFlow.getUserDefinedRetryCount());
       retriesInfo.put("systemDefinedMax", ExecutableFlow.DEFAULT_SYSTEM_FLOW_RETRY_LIMIT);
       retriesInfo.put("systemDefinedCount", exFlow.getSystemDefinedRetryCount());
