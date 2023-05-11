@@ -1,6 +1,6 @@
 package azkaban.executor;
 
-import static azkaban.Constants.FlowParameters.FLOW_PARAM_RESTART_STRATEGY;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_RETRY_STRATEGY;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowRetryStrategy;
@@ -62,7 +62,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     final ExecutionOptions options = originalExFlow.getExecutionOptions();
 
     final String retryStrategyStr = options.getFlowParameters()
-        .getOrDefault(FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DEFAULT.getName());
+        .getOrDefault(FLOW_PARAM_RETRY_STRATEGY, FlowRetryStrategy.DEFAULT.getName());
 
     // shouldn't throw an exception since the string value was validated on execution submission
     FlowRetryStrategy retryStrategy = FlowRetryStrategy.valueFromName(retryStrategyStr);

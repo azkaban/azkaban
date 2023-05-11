@@ -187,16 +187,16 @@ public class HttpRequestUtils {
             FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))
     ){
       flowParameters.put(
-          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS,
           Status.EXECUTION_STOPPED.name() + "," +
-              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "")
       );
       flowParameters.remove(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED);
     }
-    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS)) {
       // user defined restart-statuses; remove the empty spaces
       final Set<String> statuses = Arrays.stream(
-          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
+          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "")
               .split("\\s*,\\s*")
       ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
@@ -212,7 +212,7 @@ public class HttpRequestUtils {
                   + "correct\n", str));
         }
       }
-      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS,
           Strings.join(statuses, ","));
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
@@ -233,13 +233,13 @@ public class HttpRequestUtils {
         errMsg.add(e.getMessage());
       }
     }
-    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RESTART_STRATEGY)){
-      String restartStrategy = flowParameters.get(FlowParameters.FLOW_PARAM_RESTART_STRATEGY);
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RETRY_STRATEGY)){
+      String restartStrategy = flowParameters.get(FlowParameters.FLOW_PARAM_RETRY_STRATEGY);
       try {
         FlowRetryStrategy restartStrategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
       } catch (IllegalArgumentException e){
         errMsg.add(String.format("Invalid %s = %s. Valid values are: %s",
-            FlowParameters.FLOW_PARAM_RESTART_STRATEGY, restartStrategy,
+            FlowParameters.FLOW_PARAM_RETRY_STRATEGY, restartStrategy,
             FlowRetryStrategy.getNames()));
       }
     }

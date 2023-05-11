@@ -334,18 +334,18 @@
             #end
           </tr>
           <tr>
-            <td class="property-key">System Defined Retries / Max</td>
+            <td class="property-key">System Defined Retries / Max Limit</td>
             <td>$retries.systemDefinedCount / $retries.systemDefinedMax</td>
           </tr>
           <tr>
-            <td class="property-key">User Defined Retries / Max</td>
+            <td class="property-key">User Defined Retries / Max Limit</td>
             <td>$retries.userDefinedCount / $retries.userDefinedMax</td>
           </tr>
           </tbody>
         </table>
       #else
         <div class="callout callout-default">
-          <h4>Flow Retry is not set</h4>
+          <h4>Flow retry not set</h4>
         </div>
       #end
 

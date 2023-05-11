@@ -342,7 +342,7 @@ public class ExecutionControllerUtilsTest {
     ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
+        FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "2"
     ));
     testFlow.setExecutionOptions(options);
@@ -359,7 +359,7 @@ public class ExecutionControllerUtilsTest {
     ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED"
+        FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED,FAILED"
     ));
     testFlow.setExecutionOptions(options);
 
@@ -395,7 +395,7 @@ public class ExecutionControllerUtilsTest {
     ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
+        FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "2"
     ));
     testFlow.setExecutionOptions(options);
@@ -411,7 +411,7 @@ public class ExecutionControllerUtilsTest {
     ExecutableFlow testFlow = new ExecutableFlow();
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
+        FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "2"
     ));
     testFlow.setExecutionOptions(options);
@@ -435,7 +435,7 @@ public class ExecutionControllerUtilsTest {
 
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED,FAILED",
+        FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED,FAILED",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "0"
     ));
     when(testFlow.getExecutionOptions()).thenReturn(options);

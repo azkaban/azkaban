@@ -16,7 +16,7 @@ public class ExecutionOptionsTest {
     ExecutionOptions options1 = new ExecutionOptions();
     options1.addAllFlowParameters(
         ImmutableMap.of(
-            FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
+            FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "FAILED",
             FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true",
             FlowParameters.FLOW_PARAM_ENABLE_DEV_POD, "true")
     );
@@ -26,7 +26,7 @@ public class ExecutionOptionsTest {
     ExecutionOptions overwrite = new ExecutionOptions();
     overwrite.addAllFlowParameters(
         ImmutableMap.of(
-            FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED",
+            FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED",
             FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false",
             FlowParameters.FLOW_PARAM_MAX_RETRIES, "1")
     );
@@ -43,7 +43,7 @@ public class ExecutionOptionsTest {
 
     // check
     Map<String, String> expectFlowParams = ImmutableMap.of(
-        FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED",
+        FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED",
         FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false",
         FlowParameters.FLOW_PARAM_MAX_RETRIES, "1",
         FlowParameters.FLOW_PARAM_ENABLE_DEV_POD, "true");
