@@ -17,9 +17,9 @@ package azkaban.server;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTION_RESTART_LIMIT;
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED;
-import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS;
 import static azkaban.Constants.FlowParameters.FLOW_PARAM_MAX_RETRIES;
-import static azkaban.Constants.FlowParameters.FLOW_PARAM_RESTART_STRATEGY;
+import static azkaban.Constants.FlowParameters.FLOW_PARAM_RETRY_STRATEGY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import azkaban.Constants.FlowRetryStrategy;
@@ -297,7 +297,7 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED"
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -308,7 +308,7 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED"
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED"
     ));
 
     // if not defined, has default value to [EXECUTION_STOPPED, FAILED]
@@ -321,7 +321,7 @@ public final class HttpRequestUtilsTest {
     ExecutionOptions options = new ExecutionOptions();
     // KILLED is not defined
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "super-bad-status, not-an-azkaban-status"
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "super-bad-status, not-an-azkaban-status"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -334,7 +334,7 @@ public final class HttpRequestUtilsTest {
     ExecutionOptions options = new ExecutionOptions();
     // KILLED is not defined
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "KILLED, EXECUTION_STOPPED"
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "KILLED, EXECUTION_STOPPED"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -346,12 +346,12 @@ public final class HttpRequestUtilsTest {
     ExecutionOptions options = new ExecutionOptions();
     // KILLED is not defined
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, ", EXECUTION_STOPPED,, ,    "
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, ", EXECUTION_STOPPED,, ,    "
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
     Assert.assertEquals(
-        options.getFlowParameters().get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS),
+        options.getFlowParameters().get(FLOW_PARAM_ALLOWED_RETRY_STATUS),
         "EXECUTION_STOPPED");
   }
 
@@ -389,7 +389,7 @@ public final class HttpRequestUtilsTest {
   public void testValidatePreprocessFlowParamWithAllValidSettings() throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED",
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED",
         FLOW_PARAM_MAX_RETRIES, "2"
     ));
 
@@ -402,14 +402,14 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "FAILED",
         FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "true"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
     Map<String, String> result = options.getFlowParameters();
     Assert.assertTrue(
-        result.get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS).contains("EXECUTION_STOPPED"));
+        result.get(FLOW_PARAM_ALLOWED_RETRY_STATUS).contains("EXECUTION_STOPPED"));
   }
 
   @Test
@@ -417,14 +417,14 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "FAILED",
         FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
     Map<String, String> result = options.getFlowParameters();
     Assert.assertFalse(
-        result.get(FLOW_PARAM_ALLOW_RESTART_ON_STATUS).contains("EXECUTION_STOPPED"));
+        result.get(FLOW_PARAM_ALLOWED_RETRY_STATUS).contains("EXECUTION_STOPPED"));
   }
 
   @Test
@@ -432,7 +432,7 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED"
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "FAILED"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -445,8 +445,8 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
-        FLOW_PARAM_RESTART_STRATEGY, FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name()
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "FAILED",
+        FLOW_PARAM_RETRY_STRATEGY, FlowRetryStrategy.DISABLE_SUCCEEDED_NODES.name()
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
@@ -457,8 +457,8 @@ public final class HttpRequestUtilsTest {
       throws ServletException {
     ExecutionOptions options = new ExecutionOptions();
     options.addAllFlowParameters(ImmutableMap.of(
-        FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "FAILED",
-        FLOW_PARAM_RESTART_STRATEGY, "some bad wrong text"
+        FLOW_PARAM_ALLOWED_RETRY_STATUS, "FAILED",
+        FLOW_PARAM_RETRY_STRATEGY, "some bad wrong text"
     ));
 
     HttpRequestUtils.validatePreprocessFlowParameters(options, testAzProps);
