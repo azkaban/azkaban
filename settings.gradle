@@ -14,6 +14,24 @@
  * the License.
  */
 
+plugins {
+  id "com.gradle.enterprise" version "3.13.2"
+}
+
+// https://docs.gradle.com/enterprise/gradle-plugin/#connecting_to_scans_gradle_com
+gradleEnterprise {
+  buildScan {
+    termsOfServiceUrl = "https://gradle.com/terms-of-service"
+    termsOfServiceAgree = "yes"
+    if (System.getenv("CI")) {
+        publishAlways()
+        tag "CI"
+    } else {
+        publishOnFailure()
+    }
+  }
+}
+
 rootProject.name = 'azkaban'
 
 include 'az-core'
@@ -36,4 +54,3 @@ include 'az-flow-trigger-dependency-type:kafka-event-trigger'
 include 'tools'
 include 'az-crypto'
 include 'cached-http-filesystem'
-
