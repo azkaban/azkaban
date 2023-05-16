@@ -1388,7 +1388,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("createTimestamp",project.getCreateTimestamp());
         page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
         page.add("lastModifiedUser",project.getLastModifiedUser());
-        page.add("projectUploadLock", project.isUploadLocked());
+        page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
         page.add("adhocUpload", project.isAdhocUploadEnabled());
         page.add("showUploadLockPanel", uploadPrivilegeUser != null);
 
@@ -1516,7 +1516,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("createTimestamp",project.getCreateTimestamp());
         page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
         page.add("lastModifiedUser",project.getLastModifiedUser());
-        page.add("projectUploadLock", project.isUploadLocked());
+        page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
         page.add("adhocUpload", project.isAdhocUploadEnabled());
         page.add("showUploadLockPanel", uploadPrivilegeUser != null);
 
@@ -1852,7 +1852,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("createTimestamp",project.getCreateTimestamp());
         page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
         page.add("lastModifiedUser",project.getLastModifiedUser());
-        page.add("projectUploadLock", project.isUploadLocked());
+        page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
         page.add("adhocUpload", project.isAdhocUploadEnabled());
         page.add("showUploadLockPanel", uploadPrivilegeUser != null);
 
@@ -1966,7 +1966,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
     // fail the upload if the project is UPLOAD locked and the user is not the upload privilege user
-    if (project.isUploadLocked() && !user.getUserId().equals(uploadPrivilegeUser)) {
+    if (uploadPrivilegeUser != null && project.isUploadLocked() && !user.getUserId().equals(uploadPrivilegeUser)) {
       registerError(ret, "Installation Failed. Project '" + projectName + " has UPLOAD LOCK on. \n"
           + "Create a new project to use adhoc upload feature, as crt deployed project would be automatically locked.\n"
           + "If you really need enable adhoc upload on the current project, please contact oncall to remove this lock.",

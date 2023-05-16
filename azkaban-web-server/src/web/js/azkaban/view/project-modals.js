@@ -177,7 +177,7 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
       }
       $('#adhoc-upload').show();
     };
-    $.get(requestURL, requestData, successHandler, "json");
+    $.post(requestURL, requestData, successHandler, "json");
   },
 
   render: function () {
