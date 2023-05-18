@@ -34,6 +34,21 @@
   <p><strong>Modified by</strong> $lastModifiedUser</p>
 
   <hr>
+  #if ($showUploadLockPanel)
+    <p><strong>Upload Lock On:</strong> $projectUploadLock</p>
+    <p><strong>Ad hoc Upload Enabled:</strong> <span class="editable" id="adhoc-upload">$adhocUpload</span></p>
+    <div id="adhoc-upload-form" class="editable-form">
+      <div class="input-group">
+        <input type="text" class="form-control input-sm" id="adhoc-upload-edit"
+               placeholder="true/false">
+        <span class="input-group-btn">
+                  <button class="btn btn-primary btn-sm" type="button" id="adhoc-upload-btn">Save</button>
+                </span>
+      </div>
+    </div>
+  #end
+
+  <hr>
 
   <p><strong>Project admins:</strong> $admins</p>
   <p><strong>Your Permissions:</strong> $userpermission.toString()</p>

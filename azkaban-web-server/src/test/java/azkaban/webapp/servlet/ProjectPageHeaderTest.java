@@ -19,7 +19,7 @@ public class ProjectPageHeaderTest {
   @Test
   public void testUploadButtonIsPresent() {
     final VelocityContext context = VelocityContextTestUtil.getInstance();
-    context.put("hideUploadProject", false);
+    context.put("projectUploadLock", false);
 
     final String result =
         VelocityTemplateTestUtil.renderTemplate("projectpageheader", context);
@@ -29,7 +29,7 @@ public class ProjectPageHeaderTest {
   @Test
   public void testUploadButtonIsNotPresent() {
     final VelocityContext context = VelocityContextTestUtil.getInstance();
-    context.put("hideUploadProject", true);
+    context.put("projectUploadLock", true);
 
     final String result =
         VelocityTemplateTestUtil.renderTemplate("projectpageheader", context);

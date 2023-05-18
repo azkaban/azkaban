@@ -27,7 +27,6 @@ import azkaban.user.User;
 import azkaban.utils.Pair;
 import com.google.common.collect.ImmutableMap;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +49,9 @@ public class Project extends EventHandler {
       new LinkedHashMap<>();
   private final HashSet<String> proxyUsers = new HashSet<>();
   private boolean active = true;
+  private boolean isUploadLocked = false;
+
+  private Map<FeatureFlag, Object> featureFlags = new HashMap<>();
   private String description;
   private int version = -1;
   private long createTimestamp;
@@ -97,7 +99,8 @@ public class Project extends EventHandler {
     final int version = (Integer) projectObject.get("version");
     final Map<String, Object> metadata =
         (Map<String, Object>) projectObject.get("metadata");
-
+    final Map<String, Object> featureFlagsMap = (Map<String, Object>) projectObject.get("featureFlags");
+    final Boolean isUploadLocked = (Boolean) projectObject.get("isUploadLocked");
     final Project project = new Project(id, name);
     project.setVersion(version);
     project.setDescription(description);
@@ -106,6 +109,20 @@ public class Project extends EventHandler {
     project.setLastModifiedUser(lastModifiedUser);
     project.setActive(active);
     project.setUploadUser(uploadUser);
+    if (isUploadLocked != null) {
+      project.setUploadLock(isUploadLocked);
+    }
+
+    if (featureFlagsMap != null) {
+        featureFlagsMap.forEach((key, value) -> {
+          try {
+            project.addFeatureFlags(FeatureFlag.fromString(key), value);
+            logger.debug("load Feature flags key {} value {} for project {}", key, value, name);
+          } catch (final IllegalArgumentException e) {
+            logger.error("Error while parsing feature flags key {}/value {} for project {}", key, value, name, e);
+          }
+        });
+    }
 
     if (source != null) {
       project.setSource(source);
@@ -359,6 +376,9 @@ public class Project extends EventHandler {
     final ArrayList<String> proxyUserList = new ArrayList<>(this.proxyUsers);
     projectObject.put("proxyUsers", proxyUserList);
 
+    projectObject.put("featureFlags", this.featureFlags);
+    projectObject.put("isUploadLocked", this.isUploadLocked);
+
     return projectObject;
   }
 
@@ -494,6 +514,30 @@ public class Project extends EventHandler {
 
   public void setVersion(final int version) {
     this.version = version;
+  }
+
+  public void setUploadLock(boolean flag) {
+    this.isUploadLocked = flag;
+  }
+
+  public boolean isUploadLocked() {
+    return this.isUploadLocked;
+  }
+
+  public Map<FeatureFlag, Object> getFeatureFlags() {
+    return this.featureFlags;
+  }
+
+  public boolean isAdhocUploadEnabled() {
+    if(this.featureFlags.containsKey(FeatureFlag.ENABLE_PROJECT_ADHOC_UPLOAD)) {
+      return (boolean) this.featureFlags.get(FeatureFlag.ENABLE_PROJECT_ADHOC_UPLOAD);
+    } else {
+      return false;
+    }
+  }
+
+  public void addFeatureFlags(FeatureFlag featureFlag, Object value) {
+    this.featureFlags.put(featureFlag, value);
   }
 
   public AzkabanEventReporter getAzkabanEventReporter(){

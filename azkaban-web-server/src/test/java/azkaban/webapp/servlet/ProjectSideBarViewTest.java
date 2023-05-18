@@ -36,6 +36,9 @@ public class ProjectSideBarViewTest {
     context.put("createTimestamp",project.getCreateTimestamp());
     context.put("lastModifiedTimestamp",project.getLastModifiedTimestamp());
     context.put("lastModifiedUser",project.getLastModifiedUser());
+    context.put("projectUploadLock", project.isUploadLocked());
+    context.put("adhocUpload", project.isAdhocUploadEnabled());
+    context.put("showUploadLockPanel", true);
 
     context.put("admins", "admin_name");
     context.put("userpermission", "admin_permission");

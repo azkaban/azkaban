@@ -1,5 +1,6 @@
 package azkaban.fixture;
 
+import azkaban.project.FeatureFlag;
 import azkaban.project.Project;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -21,6 +22,8 @@ public class MockProject {
     final Project project = new Project(1, "test_project");
     project.setDescription("My project description");
     project.setLastModifiedUser("last_modified_user_name");
+    project.setUploadLock(true);
+    project.addFeatureFlags(FeatureFlag.ENABLE_PROJECT_ADHOC_UPLOAD, false);
 
     final DateFormat dateFormat = new SimpleDateFormat("yyyy:MM:dd:HH:mm:ss");
     try {

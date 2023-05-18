@@ -189,6 +189,7 @@ public class Constants {
   public static final boolean DEFAULT_BACK_EXECUTE_ONCE_ON_MISSED_SCHEDULE = false;
 
   public static final int DEFAULT_AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = 1000;
+  public static final String AZKABAN_UPLOAD_PRIVILEGE_USER = "azkaban.upload.privilege.user";
 
   // Azkaban event reporter constants
   public static class EventReporterConstants {
