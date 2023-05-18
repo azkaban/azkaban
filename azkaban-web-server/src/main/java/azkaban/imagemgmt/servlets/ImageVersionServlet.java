@@ -194,6 +194,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       resp.setHeader("Location",
           SINGLE_IMAGE_VERSION_URI_TEMPLATE.createURI(imageVersionId.toString()));
       sendResponse(resp, HttpServletResponse.SC_CREATED, new HashMap<>());
+      log.info("ImageType {} with imageVersionId {} is created successfully: payload {}", imageType, imageVersionId, imageVersion);
     } catch (final ImageMgmtException e) {
       log.error("Exception while creating image version metadata.", e);
       sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
@@ -239,6 +240,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       // Create image version metadata and image version id
       this.imageVersionService.updateImageVersion(imageVersion);
       sendResponse(resp, HttpServletResponse.SC_OK, new HashMap<>());
+      log.info("ImageType {} with imageVersionId {} is updated successfully: payload {}", imageType, idString, imageVersion);
     } catch (final ImageMgmtException e) {
       log.error("Exception while updating image version metadata", e);
       sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
@@ -289,6 +291,7 @@ public class ImageVersionServlet extends LoginAbstractAzkabanServlet {
       } else {
         sendResponse(resp, HttpServletResponse.SC_OK, deleteResponse.getMessage());
       }
+      log.info("ImageType {} with imageVersionId {} is deleted successfully", imageType, idString);
     } catch (final ImageMgmtException e) {
       log.error("Exception while deleting image version metadata", e);
       sendErrorResponse(resp, e.getErrorCode().getCode(), e.getMessage());
