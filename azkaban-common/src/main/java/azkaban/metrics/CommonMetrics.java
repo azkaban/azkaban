@@ -39,6 +39,11 @@ public class CommonMetrics {
   public static final String OOM_WAITING_JOB_COUNT_NAME = "OOM-waiting-job-count";
   public static final String UPLOAD_FAT_PROJECT_METER_NAME = "upload-fat-project-meter";
   public static final String UPLOAD_THIN_PROJECT_METER_NAME = "upload-thin-project-meter";
+  public static final String CANCEL_FLOW_METER_NAME = "cancel-flow-meter";
+  public static final String CANCEL_FLOW_UNREACHABLE_METER_NAME = "cancel-flow-unreachable-meter";
+  public static final String CANCEL_FLOW_UNGRACEFULLY_KILL_METER_NAME =
+      "cancel-flow-ungraceful-kill-meter";
+  public static final String CANCEL_FLOW_FAILED_METER_NAME = "cancel-flow-failed-meter";
 
   private Counter OOMWaitingJobCount;
   private final MetricsManager metricsManager;
@@ -52,6 +57,10 @@ public class CommonMetrics {
   private Meter submitFlowSkipMeter;
   private Meter uploadFatProjectMeter;
   private Meter uploadThinProjectMeter;
+  private Meter cancelFlowMeter;
+  private Meter cancelFlowUnreachableMeter;
+  private Meter cancelFlowUngracefulKillMeter;
+  private Meter cancelFlowFailedMeter;
 
   @Inject
   public CommonMetrics(final MetricsManager metricsManager) {
@@ -71,6 +80,12 @@ public class CommonMetrics {
     this.OOMWaitingJobCount = this.metricsManager.addCounter(OOM_WAITING_JOB_COUNT_NAME);
     this.uploadFatProjectMeter = this.metricsManager.addMeter(UPLOAD_FAT_PROJECT_METER_NAME);
     this.uploadThinProjectMeter = this.metricsManager.addMeter(UPLOAD_THIN_PROJECT_METER_NAME);
+    this.cancelFlowMeter = this.metricsManager.addMeter(CANCEL_FLOW_METER_NAME);
+    this.cancelFlowUnreachableMeter =
+        this.metricsManager.addMeter(CANCEL_FLOW_UNREACHABLE_METER_NAME);
+    this.cancelFlowUngracefulKillMeter =
+        this.metricsManager.addMeter(CANCEL_FLOW_UNGRACEFULLY_KILL_METER_NAME);
+    this.cancelFlowFailedMeter = this.metricsManager.addMeter(CANCEL_FLOW_FAILED_METER_NAME);
   }
 
   /**
@@ -153,4 +168,26 @@ public class CommonMetrics {
   public void decrementOOMJobWaitCount() {
     this.OOMWaitingJobCount.dec();
   }
+
+  /**
+   * Mark cancelFlowUnreachableMeter when web server perform a "cancel flow" action.
+   */
+  public void markCancelFlow() { this.cancelFlowMeter.mark(); }
+
+  /**
+   * Mark cancelFlowUnreachableMeter when web server cannot reach the to-be-canceled execution
+   * and have to force kill the pod.
+   */
+  public void markCancelFlowUnreachable() { this.cancelFlowUnreachableMeter.mark(); }
+
+  /**
+   * Mark cancelFlowUngracefulKillMeter when web server cannot kill the execution by calling
+   * cancel endpoint and have to force kill the pod.
+   */
+  public void markCancelFlowUngracefulKill() { this.cancelFlowUngracefulKillMeter.mark(); }
+
+  /**
+   * Mark cancelFlowFailedMeter when web server completely failed to cancel an execution.
+   */
+  public void markCancelFlowFailed() { this.cancelFlowFailedMeter.mark(); }
 }
