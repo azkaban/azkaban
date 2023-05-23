@@ -46,17 +46,14 @@ public class WordCount extends AbstractHadoopJob {
 
   private final String inputPath;
   private final String outputPath;
-  private final boolean forceOutputOverwrite;
-  private final boolean outputDelete;
+  private boolean forceOutputOverrite;
 
   public WordCount(String name, Props props) {
     super(name, props);
     this.inputPath = props.getString("input.path");
     this.outputPath = props.getString("output.path");
-    this.forceOutputOverwrite =
+    this.forceOutputOverrite =
         props.getBoolean("force.output.overwrite", false);
-    this.outputDelete =
-        props.getBoolean("output.delete", false);
   }
 
   public static class Map extends MapReduceBase implements
@@ -124,19 +121,13 @@ public class WordCount extends AbstractHadoopJob {
     FileInputFormat.addInputPath(jobconf, new Path(inputPath));
     FileOutputFormat.setOutputPath(jobconf, new Path(outputPath));
 
-    if (forceOutputOverwrite) {
+    if (forceOutputOverrite) {
       FileSystem fs =
           FileOutputFormat.getOutputPath(jobconf).getFileSystem(jobconf);
       fs.delete(FileOutputFormat.getOutputPath(jobconf), true);
     }
 
     super.run();
-
-    if (outputDelete) {
-      FileSystem fs =
-          FileOutputFormat.getOutputPath(jobconf).getFileSystem(jobconf);
-      fs.delete(FileOutputFormat.getOutputPath(jobconf), true);
-    }
   }
 
 }

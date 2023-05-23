@@ -19,8 +19,6 @@ package azkaban.utils;
 import azkaban.DispatchMethod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowUtils;
-import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
@@ -96,25 +94,6 @@ public class TestUtils {
     try (final InputStream is = parent.getClass().getResourceAsStream(name)) {
       return IOUtils.toString(is, Charsets.UTF_8).trim();
     }
-  }
-
-
-  public static Project getEmbeddedTestProject(){
-    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
-
-    final Project project = new Project(11, "myTestProject");
-    loader.loadProjectFlow(project, ExecutionsTestUtil.getFlowDir("embedded"));
-    assert loader.getErrors().size() == 0;
-
-    project.setFlows(loader.getFlowMap());
-    project.setVersion(123);
-    return project;
-  }
-
-  public static ExecutableFlow getEmbeddedTestExecutionFlow(){
-    Project project = getEmbeddedTestProject();
-    Flow flow = FlowUtils.getFlow(project, "jobe");
-    return new ExecutableFlow(project, flow);
   }
 
 }

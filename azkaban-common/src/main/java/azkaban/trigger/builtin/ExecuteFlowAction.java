@@ -207,7 +207,9 @@ public class ExecuteFlowAction implements TriggerAction {
       this.executionOptions.setSuccessEmails(flow.getSuccessEmails());
     }
 
-    exflow.setExecutionOptions(this.executionOptions);
+    // this.executionOptions comes from the input parsed from webUI, need to merge it together with
+    // the project-defined flow-params
+    exflow.getExecutionOptions().merge(this.executionOptions);
     exflow.setUploadUser(project.getUploadUser());
     logger.info("Invoking flow " + project.getName() + "." + this.flowName);
     executorManagerAdapter.submitExecutableFlow(exflow, this.submitUser);

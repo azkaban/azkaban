@@ -32,6 +32,4 @@ public interface ScheduleLoader {
   public List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException;
   public Optional<Schedule> loadUpdateSchedule(Schedule s) throws ScheduleManagerException;
   public List<Schedule> loadAllSchedules() throws ScheduleManagerException;
-
-  public List<Integer> loadRemovedTriggers();
 }

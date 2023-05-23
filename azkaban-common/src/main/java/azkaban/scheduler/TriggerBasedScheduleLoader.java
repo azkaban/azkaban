@@ -167,7 +167,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           triggerTimeChecker.getCronExpression(),
           t.isBackExecuteOnceOnMiss());
     } else {
-      logger.error("Failed to parse schedule from trigger {}!", t.getTriggerId());
+      logger.error("Failed to parse schedule from trigger!");
       throw new ScheduleManagerException(
           "Failed to parse schedule from trigger!");
     }
@@ -258,10 +258,5 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           s.getScheduleId(), s.getProjectId(), s.getFlowName());
     }
     return schedules;
-  }
-
-  @Override
-  public List<Integer> loadRemovedTriggers() {
-    return this.triggerManager.getRemovedTriggerIds();
   }
 }

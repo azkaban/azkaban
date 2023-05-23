@@ -49,18 +49,19 @@ import org.slf4j.LoggerFactory;
 public class AzKubernetesV1SpecBuilder {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(AzKubernetesV1SpecBuilder.class);
-    protected static final String AZ_CLUSTER_KEY = "AZ_CLUSTER";
-    protected static final String AZ_CONF_VERSION_KEY = "AZ_CONF_VERSION";
-    protected static final String DEFAULT_RESTART_POLICY = "Never";
-    protected static final int SECRET_VOLUME_DEFAULT_MODE = 0400; // file read permitted only for the user
-    protected final V1ContainerBuilder flowContainerBuilder = new V1ContainerBuilder();
+    private static final String AZ_CLUSTER_KEY = "AZ_CLUSTER";
+    private static final String AZ_CONF_VERSION_KEY = "AZ_CONF_VERSION";
+    private static final String DEFAULT_RESTART_POLICY = "Never";
+    private static final int SECRET_VOLUME_DEFAULT_MODE = 0400; // file read permitted only for the user
 
-    protected final List<V1VolumeMount> appVolumeMounts = new ArrayList<>();
-    protected final List<V1Volume> appVolumes = new ArrayList<>();
-    protected final List<V1Container> initContainers = new ArrayList<>();
+    private final V1ContainerBuilder flowContainerBuilder = new V1ContainerBuilder();
 
-    protected final V1EnvVar azClusterName;
-    protected final String restartPolicy;
+    private final List<V1VolumeMount> appVolumeMounts = new ArrayList<>();
+    private final List<V1Volume> appVolumes = new ArrayList<>();
+    private final List<V1Container> initContainers = new ArrayList<>();
+
+    private final V1EnvVar azClusterName;
+    private final String restartPolicy;
 
     /**
      * @param azClusterName Name to uniquely represent Azkaban instance requesting creation of Pod

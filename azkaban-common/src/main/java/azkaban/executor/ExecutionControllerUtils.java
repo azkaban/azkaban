@@ -43,6 +43,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -219,7 +220,7 @@ public class ExecutionControllerUtils {
 
     // user defined restart statuses list
     final Set<String> restartedStatuses = Arrays.stream(
-        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "")
+        flowParams.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
             .split("\\s*,\\s*")
     ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
@@ -240,10 +241,9 @@ public class ExecutionControllerUtils {
       logger.info(String.format("ExecutableFlow: %s has `%s=%s but `%s` not set, "
               + "default to retry once",
           flow.getExecutionId(),
-          FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS,
-          restartedStatuses,
-          FlowParameters.FLOW_PARAM_MAX_RETRIES
-          ));
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
+          FlowParameters.FLOW_PARAM_MAX_RETRIES,
+          restartedStatuses));
       flowMaxRetryLimit = 1;
     }
     if (flow.getUserDefinedRetryCount() >= flowMaxRetryLimit) {

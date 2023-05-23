@@ -17,9 +17,6 @@
 package azkaban.scheduler;
 
 import azkaban.Constants;
-import azkaban.flow.Flow;
-import azkaban.flow.FlowUtils;
-import azkaban.flow.NoSuchAzkabanResourceException;
 import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -97,17 +94,19 @@ public class MissedSchedulesManager {
    * */
   public boolean addMissedSchedule(final List<Long> missedScheduleTimesInMs,
       @NotNull final ExecuteFlowAction action,
-      final boolean backExecutionEnabled) throws NoSuchAzkabanResourceException {
+      final boolean backExecutionEnabled) {
     if (!this.missedSchedulesManagerEnabled) {
       LOG.warn("missed Schedule manager is not enabled, can not add tasks.");
       return false;
     }
-    final int projectId = action.getProjectId();
+    final String projectId = action.getProjectName();
     final String flowName = action.getFlowName();
-    final Project project = FlowUtils.getProject(projectManager, projectId);
-    final Flow flow = FlowUtils.getFlow(project, flowName);
+    final Project project = this.projectManager.getProject(projectId);
+    if (project == null) {
+      return false;
+    }
     LOG.info("received a missed schedule on times {} by action {}", missedScheduleTimesInMs, action.toJson());
-    List<String> emailRecipients = flow.getFailureEmails();
+    List<String> emailRecipients = project.getFlow(flowName).getFailureEmails();
     if (action.getExecutionOptions().isFailureEmailsOverridden()) {
       emailRecipients = action.getExecutionOptions().getFailureEmails();
     }

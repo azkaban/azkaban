@@ -79,7 +79,7 @@ public class ProjectManagerServletTest {
         now + 30, now + 30, null, null, now + 30, now + 30, now + 30, "testUser3", null, null, false);
     schedules.add(sched3);
 
-    when(this.scheduleManager.getAllSchedules()).thenReturn(new ArrayList<>(schedules));
+    when(this.scheduleManager.getSchedules()).thenReturn(new ArrayList<>(schedules));
     doAnswer(invocation -> schedules.remove(invocation.getArguments()[0]))
         .when(this.scheduleManager).removeSchedule(any(Schedule.class));
     this.projectManagerServlet

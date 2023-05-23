@@ -19,7 +19,6 @@ package azkaban.trigger;
 import azkaban.db.EncodingType;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
-import azkaban.flow.NoSuchAzkabanResourceException;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import javax.inject.Inject;
@@ -106,19 +105,6 @@ public class JdbcTriggerImpl implements TriggerLoader {
     } catch (final SQLException ex) {
       throw new TriggerLoaderException("Remove trigger " + t.getTriggerId() + " from db failed. ",
           ex);
-    }
-  }
-
-  public void removeTrigger(final int triggerId) throws TriggerLoaderException {
-    logger.info("Removing trigger " + triggerId + " from db.");
-
-    try {
-      final int removes = dbOperator.update(REMOVE_TRIGGER, triggerId);
-      if (removes == 0) {
-        throw new TriggerLoaderException("No trigger has been removed.");
-      }
-    } catch (final SQLException ex) {
-      throw new TriggerLoaderException("Remove trigger " + triggerId + " from db failed. ", ex);
     }
   }
 
@@ -235,12 +221,7 @@ public class JdbcTriggerImpl implements TriggerLoader {
         try {
           t = Trigger.fromJson(jsonObj);
           // if detecting any miss schedules, send task to missScheduleManager
-          try {
-            t.sendTaskToMissedScheduleManager();
-          } catch (NoSuchAzkabanResourceException e) {
-            logger.warn("find no matching projects/flows for the trigger " + t.getTriggerId() + ", mark trigger invalid");
-            t.setStatus(TriggerStatus.INVALID);
-          }
+          t.sendTaskToMissedScheduleManager();
           triggers.add(t);
         } catch (final Exception e) {
           logger.error("Failed to load trigger " + triggerId, e);

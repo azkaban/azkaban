@@ -22,7 +22,6 @@ import static azkaban.executor.Status.RESTARTABLE_TERMINAL_STATUSES;
 
 import azkaban.Constants;
 import azkaban.Constants.FlowParameters;
-import azkaban.Constants.FlowRetryStrategy;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -187,16 +186,16 @@ public class HttpRequestUtils {
             FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false"))
     ){
       flowParameters.put(
-          FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS,
+          FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
           Status.EXECUTION_STOPPED.name() + "," +
-              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "")
+              flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
       );
       flowParameters.remove(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED);
     }
-    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS)) {
+    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS)) {
       // user defined restart-statuses; remove the empty spaces
       final Set<String> statuses = Arrays.stream(
-          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "")
+          flowParameters.getOrDefault(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "")
               .split("\\s*,\\s*")
       ).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
@@ -212,7 +211,7 @@ public class HttpRequestUtils {
                   + "correct\n", str));
         }
       }
-      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS,
+      flowParameters.put(FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS,
           Strings.join(statuses, ","));
     }
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_MAX_RETRIES)){
@@ -233,16 +232,7 @@ public class HttpRequestUtils {
         errMsg.add(e.getMessage());
       }
     }
-    if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RETRY_STRATEGY)){
-      String restartStrategy = flowParameters.get(FlowParameters.FLOW_PARAM_RETRY_STRATEGY);
-      try {
-        FlowRetryStrategy restartStrategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
-      } catch (IllegalArgumentException e){
-        errMsg.add(String.format("Invalid %s = %s. Valid values are: %s",
-            FlowParameters.FLOW_PARAM_RETRY_STRATEGY, restartStrategy,
-            FlowRetryStrategy.getNames()));
-      }
-    }
+
     // throw exception if there's any error message
     if (!errMsg.isEmpty()) {
       throw new ServletException(String.format("ExecutionOptions is invalid, error reasons: %s",

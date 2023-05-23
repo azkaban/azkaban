@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,6 +68,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +144,7 @@ public class KubernetesWatchTest {
   private Project project = mock(Project.class);
   private ProjectManager projectManager = mock(ProjectManager.class);
   private Map<String, String> flowParam = ImmutableMap.of(
-      FlowParameters.FLOW_PARAM_ALLOWED_RETRY_STATUS, "EXECUTION_STOPPED");
+      FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_STATUS, "EXECUTION_STOPPED");
   private EventListener eventListener = new DummyEventListener();
 
   @Before

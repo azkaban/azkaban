@@ -15,28 +15,36 @@
  */
 package azkaban.flow;
 
-import azkaban.executor.ExecutableFlow;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.Props;
-import azkaban.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
 
 public class FlowTest {
 
+  private Project getEmbeddedTestProject() throws Exception {
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props());
+
+    final Project project = new Project(11, "myTestProject");
+    loader.loadProjectFlow(project, ExecutionsTestUtil.getFlowDir("embedded"));
+    assert loader.getErrors().size() == 0;
+
+    project.setFlows(loader.getFlowMap());
+    project.setVersion(123);
+    return project;
+  }
 
   @Test
   public void testNodeLevelComputation() throws Exception {
-    final Flow flow = FlowUtils.getFlow(TestUtils.getEmbeddedTestProject(), "jobe");
+    final Flow flow = FlowUtils.getFlow(this.getEmbeddedTestProject(), "jobe");
     Assert.assertEquals(0, flow.getNode("joba").getLevel());
     Assert.assertEquals(1, flow.getNode("jobb").getLevel());
     Assert.assertEquals(1, flow.getNode("jobc").getLevel());
     Assert.assertEquals(1, flow.getNode("jobd").getLevel());
     Assert.assertEquals(2, flow.getNode("jobe").getLevel());
-
   }
 
 }

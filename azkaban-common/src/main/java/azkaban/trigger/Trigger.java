@@ -18,7 +18,6 @@ package azkaban.trigger;
 
 import static java.util.Objects.requireNonNull;
 
-import azkaban.flow.NoSuchAzkabanResourceException;
 import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.JSONUtils;
@@ -311,7 +310,7 @@ public class Trigger {
     updateNextCheckTime();
   }
 
-  public void sendTaskToMissedScheduleManager() throws NoSuchAzkabanResourceException {
+  public void sendTaskToMissedScheduleManager() {
     if (this.triggerCondition.getMissedCheckTimes().isEmpty()) {
       return;
     }

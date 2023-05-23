@@ -17,9 +17,6 @@
 package azkaban;
 
 import java.time.Duration;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Constants used in configuration files or shared among classes.
@@ -877,44 +874,14 @@ public class Constants {
         "allow.restart.on.execution.stopped";
     public static final String PROXY_USER_PREFETCH_ALL = "proxy.user.prefetch.all";
 
-    // Constant to define allow retry on a set of terminated status, extends to more statuses
+    // Constant to define allow restart on a set of terminated status, extends to more statuses
     // e.g. "flow.retry.statuses=EXECUTION_STOPPED,FAILED"
-    public static final String FLOW_PARAM_ALLOWED_RETRY_STATUS = "flow.retry.statuses";
+    public static final String FLOW_PARAM_ALLOW_RESTART_ON_STATUS = "flow.retry.statuses";
 
-    // Constant to define at most how many times can retry the flow
+    // Constant to define at most how many times can restart the flow
     public static final String FLOW_PARAM_MAX_RETRIES = "flow.max.retries";
 
-    // Constant to define the strategy to retry the execution, default to "retryAsNew",
-    public static final String FLOW_PARAM_RETRY_STRATEGY = "flow.retry.strategy";
-  }
-
-  public enum FlowRetryStrategy {
-    // default retry strategy, restart the execution in a whole, fresh new
-    DEFAULT("retryAsNew"),
-    // retry the execution but disabling the corresponding succeeded nodes in previous execution
-    DISABLE_SUCCEEDED_NODES("disableSucceededNodes");
-
-    private final String name;
-    private FlowRetryStrategy(String name) {
-      this.name = name;
-    }
-
-    public String getName() {
-      return this.name;
-    }
-
-    public static FlowRetryStrategy valueFromName(String name) {
-      for(FlowRetryStrategy s: FlowRetryStrategy.values()) {
-        if(s.name.equals(name)) {
-          return s;
-        }
-      }
-      throw new IllegalArgumentException("No FlowRetryStrategy for name " + name);
-    }
-
-    public static List<String> getNames() {
-      return EnumSet.allOf(FlowRetryStrategy.class).stream()
-          .map(FlowRetryStrategy::getName).collect(Collectors.toList());
-    }
+    // Constant to define the strategy to restart the execution, default to "restart_from_root",
+    public static final String FLOW_PARAM_RESTART_STRATEGY = "flow.retry.strategy";
   }
 }
