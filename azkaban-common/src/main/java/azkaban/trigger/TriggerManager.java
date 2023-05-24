@@ -52,6 +52,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   private static final Logger logger = Logger.getLogger(TriggerManager.class);
   private static final Map<Integer, Trigger> triggerIdMap = new ConcurrentHashMap<>();
   private static final Set<Integer> removedTriggerIds = new HashSet<>();
+  private static final Set<Integer> backExecuteEnabledTriggerIds = new HashSet<>();
   private final TriggerScannerThread runnerThread;
   private final MetricsManager metricsManager;
   private final Meter heartbeatMeter;
@@ -81,7 +82,8 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     this.metricsManager = metricsManager;
     this.heartbeatMeter = this.metricsManager.addMeter("cron-scheduler-heartbeat");
     this.scannerThreadLatencyMetrics = this.metricsManager.addTimer("cron-scheduler-thread-latency");
-    this.metricsManager.addGauge("cron-schedules-count-gauge", this.runnerThread.triggerSize());
+    this.metricsManager.addGauge("cron-scheduler-trigger-count-gauge", this.runnerThread.triggerSize());
+    this.metricsManager.addGauge("cron-scheduler-back-exec-enabled-count-gauge", backExecuteEnabledTriggerIds::size);
 
     try {
       this.checkerTypeLoader.init(props);
@@ -106,6 +108,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       for (final Trigger t : triggers) {
         this.runnerThread.addTrigger(t);
         triggerIdMap.put(t.getTriggerId(), t);
+        if (t.isBackExecuteOnceOnMiss()) {
+          backExecuteEnabledTriggerIds.add(t.getTriggerId());
+        }
       }
     } catch (final Exception e) {
       logger.error(e);
@@ -129,6 +134,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       this.triggerLoader.addTrigger(t);
       this.runnerThread.addTrigger(t);
       triggerIdMap.put(t.getTriggerId(), t);
+      if (t.isBackExecuteOnceOnMiss()) {
+        backExecuteEnabledTriggerIds.add(t.getTriggerId());
+      }
     } catch (final TriggerLoaderException e) {
       throw new TriggerManagerException(e);
     } finally {
@@ -148,6 +156,11 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
     this.runnerThread.addTrigger(t);
     triggerIdMap.put(t.getTriggerId(), t);
+    if (t.isBackExecuteOnceOnMiss()) {
+      backExecuteEnabledTriggerIds.add(t.getTriggerId());
+    } else {
+      backExecuteEnabledTriggerIds.remove(t.getTriggerId());
+    }
     try {
       this.triggerLoader.updateTrigger(t);
     } catch (final TriggerLoaderException e) {
@@ -164,6 +177,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     this.runnerThread.deleteTrigger(t);
     triggerIdMap.remove(t.getTriggerId());
     removedTriggerIds.add(t.getTriggerId());
+    backExecuteEnabledTriggerIds.remove(t.getTriggerId());
     try {
       t.stopCheckers();
       this.triggerLoader.removeTrigger(t);
