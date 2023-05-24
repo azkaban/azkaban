@@ -583,8 +583,10 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       final Pair<ExecutionReference, ExecutableFlow> pair = this.executorLoader
           .fetchUnfinishedFlow(exFlow.getExecutionId());
       if (pair != null) {
+        this.commonMetrics.markCancelFlow();
         handleCancelFlow(pair.getFirst(), exFlow, userId);
       } else {
+        this.commonMetrics.markCancelFlowFailed();
         final ExecutorManagerException eme = new ExecutorManagerException("Execution "
             + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
         logger.error("Exception while cancelling flow. ", eme);
@@ -610,6 +612,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
         executionReference.getDispatchMethod() == DispatchMethod.CONTAINERIZED ? Status.KILLED :
             Status.FAILED;
     if (!isExecutionReachable(executionReference, userId)) {
+      this.commonMetrics.markCancelFlowUnreachable();
       final String finalizingReason = "Cancel action has been called but the flow is unreachable.";
       logger.info("Finalizing executable flow as execution is unreachable: " + executionReference
           .getExecId());
@@ -621,6 +624,7 @@ public abstract class AbstractExecutorManagerAdapter extends EventHandler implem
       this.apiGateway.callWithReferenceByUser(executionReference, ConnectorParams.CANCEL_ACTION,
           userId);
     } catch (Exception e) {
+      this.commonMetrics.markCancelFlowUngracefulKill();
       final String finalizingReason = "Unable to gracefully kill the flow execution or flow is "
           + "unreachable.";
       logger
