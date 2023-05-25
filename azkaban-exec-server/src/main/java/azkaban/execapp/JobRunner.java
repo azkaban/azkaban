@@ -16,9 +16,11 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.*;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_ADD_GROUP_AND_USER_FOR_EFFECTIVE_USER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_WEBSERVER_URL;
+import static azkaban.Constants.FlowProperties.*;
 import static azkaban.utils.ExecuteAsUserUtils.addGroupAndUserForEffectiveUser;
 
 import azkaban.Constants;
@@ -765,6 +767,10 @@ public class JobRunner extends JobRunnerBase implements Runnable {
             .format("RAMP_JOB_ATTACH_PROPS : (id = %s, props = %s)", this.node.getId(),
                 props.toString()));
         this.props.putAll(props);
+      }
+      if (this.azkabanProps.get(AZKABAN_UPLOAD_PRIVILEGE_USER) != null) {
+        this.props.put(AZKABAN_FLOW_PRODUCTION_MARKER,
+            Boolean.toString(getNode().getExecutableFlow().getProductionFlowMarker()));
       }
       logInfo("all props for the job: " + this.props);
       try {

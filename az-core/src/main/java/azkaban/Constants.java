@@ -572,6 +572,13 @@ public class Constants {
     public static final String AZKABAN_FLOW_SUBMIT_USER = "azkaban.flow.submituser";
     public static final String AZKABAN_FLOW_EXEC_ID = "azkaban.flow.execid";
     public static final String AZKABAN_FLOW_PROJECT_VERSION = "azkaban.flow.projectversion";
+    /*
+    * The Production Flow Concept is a properties to pass and leverage inside each job, it is optional for each job to
+    * realize the job should have production access or not.
+    * In the current version of Azkaban, we treat a flow as a production flow only when the project of the flow
+    * is uploaded by "upload.privilege.user".
+    * */
+    public static final String AZKABAN_FLOW_PRODUCTION_MARKER = "azkaban.flow.production.marker";
   }
 
   public static class JobProperties {
