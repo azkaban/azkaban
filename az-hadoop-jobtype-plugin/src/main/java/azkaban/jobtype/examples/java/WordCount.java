@@ -52,7 +52,7 @@ public class WordCount extends AbstractHadoopJob {
   public WordCount(String name, Props props) {
     super(name, props);
     this.inputPath = props.getString("input.path");
-    this.outputPath = props.getString("output.path");
+    this.outputPath = props.getString("output.path", "/tmp/wordcount_" + System.nanoTime());
     this.forceOutputOverwrite =
         props.getBoolean("force.output.overwrite", false);
     this.outputDelete =
