@@ -86,7 +86,11 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
+  // flow lock, once locked, the flow won't be able to execute/be modified/be scheduled...
   private boolean isLocked;
+  // If the flow is a part of production project, i.e. the project is enabled with UploadLock,
+  // then the generated executable flow will mark as production flow.
+  private boolean isProductionFlow;
   private boolean isOOMKilled = false;
   private boolean isVPAEnabled = false;
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
@@ -121,6 +125,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.uploadUser = project.getUploadUser();
     setAzkabanFlowVersion(flow.getAzkabanFlowVersion());
     setLocked(flow.isLocked());
+    setProductionFlowMarker(project.isUploadLocked());
     setFlowLockErrorMessage(flow.getFlowLockErrorMessage());
     this.setFlow(project, flow);
   }
@@ -293,6 +298,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public boolean isLocked() { return this.isLocked; }
 
   public void setLocked(boolean locked) { this.isLocked = locked; }
+
+  public void setProductionFlowMarker(boolean isUploadLockEnabled) {
+    this.isProductionFlow = isUploadLockEnabled;
+  }
+  public boolean getProductionFlowMarker() {
+    return this.isProductionFlow;
+  }
 
   public boolean isOOMKilled() { return this.isOOMKilled; }
 

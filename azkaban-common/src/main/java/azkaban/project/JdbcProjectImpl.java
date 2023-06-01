@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import static azkaban.Constants.*;
 import static azkaban.project.JdbcProjectHandlerSet.IntHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFileChunkResultHandler;
 import static azkaban.project.JdbcProjectHandlerSet.ProjectFlowsResultHandler;
@@ -81,10 +82,12 @@ public class JdbcProjectImpl implements ProjectLoader {
   private static final int MAX_FLOW_FILE_SIZE_IN_MB_DEFAULT = 10;
 
   public static final String MAX_FLOW_FILE_SIZE_KEY = "max.flow.file.size.mb";
+
   private final DatabaseOperator dbOperator;
   private final File tempDir;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
   private final int maxFlowFileSizeInBytes;
+  private static boolean uploadProjectLockFeatureEnabled = false;
 
   @Inject
   public JdbcProjectImpl(final Props props, final DatabaseOperator databaseOperator) {
@@ -100,6 +103,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
     int maxFlowFileSizeInMB = props.getInt(MAX_FLOW_FILE_SIZE_KEY, MAX_FLOW_FILE_SIZE_IN_MB_DEFAULT);
     maxFlowFileSizeInBytes = maxFlowFileSizeInMB * 1024 * 1024;
+    uploadProjectLockFeatureEnabled = props.get(AZKABAN_UPLOAD_PRIVILEGE_USER) != null;
     logger.info("Maximum size of the flow file in bytes is " + maxFlowFileSizeInBytes);
   }
 
@@ -111,6 +115,10 @@ public class JdbcProjectImpl implements ProjectLoader {
 
     try {
       projects = this.dbOperator.query(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS, handler);
+      // if Upload Lock feature is turned off, reset project upload lock to false.
+      if (!uploadProjectLockFeatureEnabled) {
+        projects.forEach(project -> project.setUploadLock(false));
+      }
     } catch (final SQLException ex) {
       logger.error(ProjectResultHandler.SELECT_ALL_ACTIVE_PROJECTS + " failed.", ex);
       throw new ProjectManagerException("Error retrieving all active projects", ex);
