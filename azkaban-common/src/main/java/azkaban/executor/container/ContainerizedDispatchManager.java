@@ -480,11 +480,11 @@ public class ContainerizedDispatchManager extends AbstractExecutorManagerAdapter
           ExecutableFlow execFlow =
               ContainerizedDispatchManager.this.executorLoader.fetchExecutableFlow(executionId);
           Status originalStatus = execFlow.getStatus();
-          finalizeFlow(execFlow, "Failed to dispatch", e, Status.FAILED);
+          finalizeFlow(execFlow, "Failed to dispatch", e, Status.EXECUTION_STOPPED);
           logger.info("Finalizing the flow execution ", executionId);
           ExecutionControllerUtils.restartFlow(execFlow, originalStatus);
         } catch (ExecutorManagerException executorManagerException) {
-          logger.error("Unable to update execution status to FAILED for : {}", executionId);
+          logger.error("Unable to update execution status to EXECUTION_STOPPED for : {}", executionId);
         } catch (RuntimeException re) {
           logger.error("Unexpected RuntimeException in ExecutionDispatcher", re);
         }
