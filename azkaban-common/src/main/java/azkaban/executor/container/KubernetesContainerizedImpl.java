@@ -42,6 +42,7 @@ import azkaban.executor.container.watch.KubernetesWatch;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowResourceRecommendation;
 import azkaban.flow.ImmutableFlowProps;
+import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
 import azkaban.imagemgmt.version.VersionInfo;
@@ -698,7 +699,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
         versionSetBuilder.addElements(versionMap);
         versionSet = versionSetBuilder.addElements(overlayMap).build();
       }
-    } catch (final IOException e) {
+    } catch (NumberFormatException | IOException | ImageMgmtException e) {
       logger.error("ExecId: {}, Exception in fetching the VersionSet. Error msg: {}",
           executionId, e.getMessage());
       throw new ExecutorManagerException(e);
