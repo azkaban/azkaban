@@ -190,6 +190,7 @@ public class Constants {
 
   public static final int DEFAULT_AZKABAN_SERVER_EXTERNAL_ANALYZER_TIMEOUT_MS = 1000;
   public static final String AZKABAN_UPLOAD_PRIVILEGE_USER = "azkaban.upload.privilege.user";
+  public static final String AZKABAN_DISABLE_ADHOC_UPLOAD = "azkaban.disable.adhoc.upload";
 
   // Azkaban event reporter constants
   public static class EventReporterConstants {
