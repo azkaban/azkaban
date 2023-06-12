@@ -156,6 +156,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
+  private boolean disableAdhocUploadWhenProjectUploadLocked = false;
   private String uploadPrivilegeUser;
   private Map<String, List<HTMLFormElement>> alerterPlugins;
 
@@ -197,6 +198,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     // get upload privilege user, if not configured, treated upload as adhoc, no upload lock enabled
     this.uploadPrivilegeUser = server.getServerProps().get(AZKABAN_UPLOAD_PRIVILEGE_USER);
+    this.disableAdhocUploadWhenProjectUploadLocked =
+        server.getServerProps().getBoolean(AZKABAN_DISABLE_ADHOC_UPLOAD_ON_LOCKED, false);
 
     final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
     server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
@@ -1965,8 +1968,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (project == null) {
       return;
     }
+
     // fail the upload if the project is UPLOAD locked and the user is not the upload privilege user
-    if (uploadPrivilegeUser != null && project.isUploadLocked() && !user.getUserId().equals(uploadPrivilegeUser)) {
+    // and the cluster-wide disableAdhocUpload flag is set
+    if (uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked
+        && project.isUploadLocked() && !user.getUserId().equals(uploadPrivilegeUser)) {
       registerError(ret, "Installation Failed. Project '" + projectName + " has UPLOAD LOCK on. \n"
           + "Create a new project to use adhoc upload feature, as crt deployed project would be automatically locked.\n"
           + "If you really need enable adhoc upload on the current project, please contact oncall to remove this lock.",
