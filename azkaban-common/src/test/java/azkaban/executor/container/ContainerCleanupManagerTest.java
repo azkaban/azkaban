@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -220,7 +221,7 @@ public class ContainerCleanupManagerTest {
 
     final ExecutableFlow flow2 = new ExecutableFlow();
     flow2.setExecutionId(2000);
-    flow2.setStatus(Status.FAILED);
+    flow2.setStatus(Status.KILLED);
     flow2.setSubmitUser("dummy-user");
     flow2.setExecutionOptions(new ExecutionOptions());
     final ArrayList<ExecutableFlow> failedFlows = new ArrayList<>();
@@ -230,13 +231,20 @@ public class ContainerCleanupManagerTest {
         .fetchFreshFlowsForStatus(eq(Status.EXECUTION_STOPPED), any(ImmutableMap.class)))
         .thenReturn(execStoppedFlows);
     when(this.executorLoader
-        .fetchFreshFlowsForStatus(eq(Status.FAILED), any(ImmutableMap.class)))
+        .fetchFreshFlowsForStatus(eq(Status.KILLED), any(ImmutableMap.class)))
         .thenReturn(failedFlows);
 
     Set<Integer> recentTerminationFlows = this.cleaner.getRecentlyTerminatedFlows();
     Assert.assertTrue(recentTerminationFlows.contains(1000));
     Assert.assertTrue(recentTerminationFlows.contains(2000));
     Assert.assertEquals(2, recentTerminationFlows.size());
+
+    verify(this.executorLoader, never()).fetchFreshFlowsForStatus(eq(Status.FAILED),
+        any(ImmutableMap.class));
+    verify(this.executorLoader, never()).fetchFreshFlowsForStatus(eq(Status.FAILED_FINISHING),
+        any(ImmutableMap.class));
+    verify(this.executorLoader, never()).fetchFreshFlowsForStatus(eq(Status.FAILED_SUCCEEDED),
+        any(ImmutableMap.class));
   }
 
   @Test
