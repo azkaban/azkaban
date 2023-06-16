@@ -58,6 +58,8 @@ import azkaban.scheduler.MissedSchedulesManager;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
+import azkaban.storage.DefaultProjectStorageManager;
+import azkaban.storage.ProjectStorageManager;
 import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
@@ -117,6 +119,7 @@ public class AzkabanCommonModule extends AbstractModule {
     });
     bindImageManagementDependencies();
     bind(MissedSchedulesManager.class).in(Scopes.SINGLETON);
+    bind(ProjectStorageManager.class).to(DefaultProjectStorageManager.class);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
