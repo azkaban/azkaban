@@ -118,6 +118,12 @@ Simply add a ``config`` section at the beginning of the ``basic.flow`` file. For
 
 When you execute the flow, the ``user.to.proxy`` and ``failure.emails`` flow parameters will apply to all jobs inside the flow.
 
+Flow Level Retry
+########
+
+:ref:`flow-level-retry`
+
+
 *****
 Embedded Flows
 *****
@@ -129,7 +135,7 @@ Flows can have subflows inside the flow just like job nodes. To create embedded 
       config:
         prop: value
       nodes:
-        - name: jobB 
+        - name: jobB
           type: noop
           dependsOn:
             - jobA
