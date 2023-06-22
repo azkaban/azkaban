@@ -1172,17 +1172,22 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             Boolean.parseBoolean(flowParam.get(FlowParameters.PROXY_USER_PREFETCH_ALL));
     /*
      As an optimization for not walking through the DAG and making DB queries for large DAGs we
-     try to check if the proxy users list from the project page is less then a certain threshold.
+     try to check if the proxy users list from the project page is less than a certain threshold.
      If it is less than this threshold, we simply add all of them. This configuration will be
      custom to a given environment. An option to fetch all of them via the project page is
      also provided with a flow parameter.
      */
 
-    if (prefetchAllProxyUserCredentials || flow.getProxyUsers().size() <= this.proxyUserPrefetchThreshold ) {
+    if (prefetchAllProxyUserCredentials || flow.getProxyUsers().size() <= this.proxyUserPrefetchThreshold) {
       logger.info("Fetched proxy users from permissions page");
       proxyUsersMap.addAll(flow.getProxyUsers());
       } else{
       Instant proxyUserFetchStartTime = Instant.now();
+      // First add the proxy user from the top level flow parameter. Adding this here as individual job
+      // may override this for any given reason.
+      if (flowParam != null && flowParam.containsKey(USER_TO_PROXY)) {
+        proxyUsersMap.add(flowParam.get(USER_TO_PROXY));
+      }
       proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
       logger.info("Fetching proxy users from DAG and took: {} seconds",
           Duration.between(proxyUserFetchStartTime, Instant.now()).getSeconds());
