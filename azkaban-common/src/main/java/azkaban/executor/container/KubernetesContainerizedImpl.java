@@ -15,6 +15,7 @@
  */
 package azkaban.executor.container;
 
+import static azkaban.Constants.JobProperties.*;
 import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
 import static java.util.Objects.requireNonNull;
 

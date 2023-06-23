@@ -131,6 +131,8 @@ public class ContainerImplUtils {
     // DFS Walk of the Graph to find all the Proxy Users.
     populateProxyUsersForFlow(flow, flowObj, project, projectManager, proxyUsers);
     proxyUsers.removeAll(Collections.singleton(""));
+    // Removing instances of variables as USER_TO_PROXY
+    proxyUsers.removeIf(user -> user.contains("$"));
     return proxyUsers;
   }
 
