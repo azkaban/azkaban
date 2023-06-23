@@ -21,8 +21,7 @@ import static azkaban.Constants.EventReporterConstants.EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.FLOW_STATUS;
 import static azkaban.Constants.EventReporterConstants.VERSION_SET;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static azkaban.executor.container.ContainerImplUtils.getJobTypeUsersForFlow;
-import static azkaban.executor.container.ContainerImplUtils.populateProxyUsersForFlow;
+import static azkaban.executor.container.ContainerImplUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -630,6 +629,34 @@ public class KubernetesContainerizedImplTest {
     Assert.assertEquals("6.4", versionSet.getVersion("dependency1").get().getVersion());
   }
 
+  @Test
+  public void testPopulatingProxyUsersFromFlowParamOnly() throws Exception {
+    final ExecutableFlow flow = createTestFlow();
+    flow.setProjectId(1);
+    ProjectManager projectManager = mock(ProjectManager.class);
+    Project project = mock(Project.class);
+    Flow flowObj = mock(Flow.class);
+    when(flowObj.toString()).thenReturn(flow.getFlowName());
+
+    ExecutableNode node1 = new ExecutableNode();
+    node1.setId("node1");
+    node1.setJobSource("job1");
+    node1.setStatus(Status.PREPARING);
+    Props currentNodeProps1 = new Props();
+    Props currentNodeJobProps1 = new Props();
+
+    when(projectManager.getProject(flow.getProjectId())).thenReturn(project);
+    when(project.getFlow(flow.getFlowId())).thenReturn(flowObj);
+    when(projectManager.getProperties(project, flowObj, node1.getId(), node1.getJobSource()))
+        .thenReturn(currentNodeProps1);
+    when(projectManager.getJobOverrideProperty(project, flowObj, node1.getId(),
+        node1.getJobSource()))
+        .thenReturn(currentNodeJobProps1);
+    Map<String, String> flowParams = new HashMap<>();
+    flowParams.put("user.to.proxy", "testuser1");
+    Set<String> proxyUsers = new HashSet<>(getProxyUsersForFlow(projectManager, flow, flowParams));
+    Assert.assertTrue(proxyUsers.contains("testuser1"));
+  }
   @Test
   public void testPopulatingProxyUsersFromProject() throws Exception {
     final ExecutableFlow flow = createTestFlow();

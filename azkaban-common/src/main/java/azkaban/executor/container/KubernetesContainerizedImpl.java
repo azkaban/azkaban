@@ -1184,12 +1184,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       proxyUsersMap.addAll(flow.getProxyUsers());
       } else{
       Instant proxyUserFetchStartTime = Instant.now();
-      // First add the proxy user from the top level flow parameter. Adding this here as individual job
-      // may override this for any given reason.
-      if (flowParam != null && flowParam.containsKey(USER_TO_PROXY)) {
-        proxyUsersMap.add(flowParam.get(USER_TO_PROXY));
-      }
-      proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow));
+      proxyUsersMap.addAll(ContainerImplUtils.getProxyUsersForFlow(this.projectManager, flow, flowParam));
       logger.info("Fetching proxy users from DAG and took: {} seconds",
           Duration.between(proxyUserFetchStartTime, Instant.now()).getSeconds());
       }
