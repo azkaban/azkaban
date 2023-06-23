@@ -87,12 +87,18 @@ Besides the type and the dependencies parameters, there are several parameters t
 | Parameter      | Description                                                                                                                      |
 +================+==================================================================================================================================+
 | retries        | The number of retries that will be automatically attempted for failed jobs                                                       |
++----------------+----------------------------------------------------------------------------------------------------------------------------------+
 | retry.backoff  | The millisec time between each retry attempt                                                                                     |
-| working.dir    | Override the working directory for the execution. This is by default the directory that contains the job file that is being run. |
++----------------+----------------------------------------------------------------------------------------------------------------------------------+
+| working.dir    | Override the working directory for the execution. This is by default the directory that contains the job file that is being run  |
++----------------+----------------------------------------------------------------------------------------------------------------------------------+
 | env.property   | Set the environment variable with named property                                                                                 |
-| failure.emails | Comma delimited list of emails to notify during a failure. *                                                                     |
-| success.emails | Comma delimited list of emails to notify during a success. *                                                                     |
-| notify.emails  | Comma delimited list of emails to notify during either a success or failure. *                                                   |
++----------------+----------------------------------------------------------------------------------------------------------------------------------+
+| failure.emails | Comma delimited list of emails to notify during a failure *                                                                      |
++----------------+----------------------------------------------------------------------------------------------------------------------------------+
+| success.emails | Comma delimited list of emails to notify during a success *                                                                      |
++----------------+----------------------------------------------------------------------------------------------------------------------------------+
+| notify.emails  | Comma delimited list of emails to notify during either a success or failure *                                                    |
 +----------------+----------------------------------------------------------------------------------------------------------------------------------+
 
 Email properties
