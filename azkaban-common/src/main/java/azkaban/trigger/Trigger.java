@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 
 public class Trigger {
@@ -190,8 +191,17 @@ public class Trigger {
   }
 
   public void updateNextCheckTime() {
+    // expireCondition's nextCheckTime is the pre-set value, for most cases it's DEFAULT_SCHEDULE_END_EPOCH_TIME,
+    // It is not truly reflecting the real expiration time, so we need to update trigger manually.
     this.nextCheckTime = Math.min(this.triggerCondition.getNextCheckTime(),
         this.expireCondition.getNextCheckTime());
+    // manually update trigger's expiration status based on whether the nextCheckTime is before now.
+    // As nextCheckTime is supposed to get the next valid time, so if it's before now, it means the trigger is expired.
+    final DateTimeZone timezone = DateTimeZone.getDefault();
+    final DateTime date = new DateTime(this.nextCheckTime).withZone(timezone);
+    if (date.isBeforeNow()) {
+      this.status = TriggerStatus.EXPIRED;
+    }
   }
 
   public long getNextCheckTime() {
