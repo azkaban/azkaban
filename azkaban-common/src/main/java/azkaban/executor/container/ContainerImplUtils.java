@@ -98,8 +98,13 @@ public class ContainerImplUtils {
   }
 
   public static Set<String> getProxyUsersForFlow(final ProjectManager projectManager,
-      final ExecutableFlow flow) {
+      final ExecutableFlow flow, final  Map<String, String> flowParam) {
     final Set<String> proxyUsers = new HashSet<>();
+    // First add the proxy user from the top level flow parameter. Adding this here as individual job
+    // may or may not override this.
+    if (flowParam != null && flowParam.containsKey(USER_TO_PROXY)) {
+      proxyUsers.add(flowParam.get(USER_TO_PROXY));
+    }
     // Get the project and flow Object that needs to be used repeatedly in the DAG.
     Project project = projectManager.getProject(flow.getProjectId());
     Flow flowObj = project.getFlow(flow.getFlowId());
@@ -131,6 +136,8 @@ public class ContainerImplUtils {
     // DFS Walk of the Graph to find all the Proxy Users.
     populateProxyUsersForFlow(flow, flowObj, project, projectManager, proxyUsers);
     proxyUsers.removeAll(Collections.singleton(""));
+    // Removing instances of variables as USER_TO_PROXY
+    proxyUsers.removeIf(user -> user.contains("$"));
     return proxyUsers;
   }
 
