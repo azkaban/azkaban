@@ -112,10 +112,6 @@ CREATE UNIQUE INDEX version_set_md5
  ON version_set (md5);
 
 -- TODO: Add the alter table script in the specific release
--- Adding version_set_id column in execution_flows
--- alter table execution_flows add column version_set_id INT default null;
-
--- TODO: Add the alter table script in the specific release
 -- Adding dispatch_method column in execution_flows
 -- alter table execution_flows add column dispatch_method TINYINT default 1;
 -- CREATE INDEX ex_flows_dispatch_method ON execution_flows (dispatch_method);
