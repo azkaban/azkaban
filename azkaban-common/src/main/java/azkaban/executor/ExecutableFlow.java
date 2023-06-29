@@ -60,6 +60,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SLAOPTIONS_PARAM = "slaOptions";
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
+  public static final String IS_PRODUCTION_FLOW_PARAM = "isProductionFlow";
   public static final String IS_OOM_Killed_PARAM = "isOOMKilled";
   public static final String IS_VPA_Enabled_PARAM = "isVPAEnabled";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
@@ -415,6 +416,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM, this.systemDefinedRetryCount);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
+    flowObj.put(IS_PRODUCTION_FLOW_PARAM, this.isProductionFlow);
     flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
     flowObj.put(IS_VPA_Enabled_PARAM, this.isVPAEnabled);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
@@ -495,6 +497,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
+    this.setProductionFlowMarker(flowObj.getBool(IS_PRODUCTION_FLOW_PARAM, false));
     this.setOOMKilled(flowObj.getBool(IS_OOM_Killed_PARAM, false));
     this.setVPAEnabled(flowObj.getBool(IS_VPA_Enabled_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
