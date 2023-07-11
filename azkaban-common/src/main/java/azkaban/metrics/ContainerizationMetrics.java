@@ -123,6 +123,8 @@ public interface ContainerizationMetrics {
 
   void sendCleanupStaleFlowHeartBeat();
 
+  void markCleanupStaleStatusFlowNumber(String status, long n);
+
   void sendCleanupYarnApplicationHeartBeat();
 
   void recordCleanupStaleFlowTimer(long duration, TimeUnit unit);
