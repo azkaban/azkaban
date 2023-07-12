@@ -27,8 +27,7 @@
           <button id="project-delete-btn" class="btn btn-sm btn-danger">
             <span class="glyphicon glyphicon-trash"></span> Delete Project
           </button>
-          #set($hideUploadProject = ${projectUploadLock})
-          #if (!${hideUploadProject})
+          #if (!$hideUploadProjectButton)
             <button id="project-upload-btn" class="btn btn-sm btn-primary">
               <span class="glyphicon glyphicon-upload"></span> Upload
             </button>

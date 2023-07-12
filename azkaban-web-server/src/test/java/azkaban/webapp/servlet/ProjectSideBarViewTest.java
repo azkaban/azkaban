@@ -39,6 +39,7 @@ public class ProjectSideBarViewTest {
     context.put("projectUploadLock", project.isUploadLocked());
     context.put("adhocUpload", project.isAdhocUploadEnabled());
     context.put("showUploadLockPanel", true);
+    context.put("showAdhocUploadFeature", true);
 
     context.put("admins", "admin_name");
     context.put("userpermission", "admin_permission");

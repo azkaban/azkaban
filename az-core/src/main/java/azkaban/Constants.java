@@ -199,6 +199,10 @@ public class Constants {
    * Disable adhoc upload on upload-locked projects
    */
   public static final String AZKABAN_DISABLE_ADHOC_UPLOAD_ON_LOCKED = "azkaban.disable.adhoc.upload.on.locked";
+  /*
+   * Disable job properties edit via UI or API on upload-locked projects
+   */
+  public static final String AZKABAN_DISABLE_JOB_PROPS_OVERRIDE_ON_LOCKED = "azkaban.disable.job.props.override.on.locked";
 
   // Azkaban event reporter constants
   public static class EventReporterConstants {

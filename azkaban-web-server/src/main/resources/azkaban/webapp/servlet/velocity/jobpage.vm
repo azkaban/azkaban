@@ -102,8 +102,10 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <div class="pull-right">
-              <button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${projectName}", "${flowid}", "${jobid}")'>Edit
-              </button>
+              #if (!$hideJobPropsEdit)
+                <button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${projectName}", "${flowid}", "${jobid}")'>Edit
+                </button>
+              #end
             </div>
             Job Properties
           </div>
