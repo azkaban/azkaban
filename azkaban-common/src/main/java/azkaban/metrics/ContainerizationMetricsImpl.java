@@ -204,7 +204,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   }
 
   @Override
-  public void markCleanupStaleStatusFlowNumber(String status, long n){
+  public void addCleanupStaleStatusFlowNumber(String status, long n){
     if (this.cleanupStaleFlowCounterGauges.containsKey(status)) {
       this.cleanupStaleFlowCounterGauges.get(status).add(n);
     }

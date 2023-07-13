@@ -121,7 +121,7 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
   }
 
   @Override
-  public void markCleanupStaleStatusFlowNumber(String status, long n) {
+  public void addCleanupStaleStatusFlowNumber(String status, long n) {
 
   }
 

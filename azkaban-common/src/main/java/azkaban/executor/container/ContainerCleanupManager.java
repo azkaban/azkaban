@@ -471,7 +471,7 @@ public class ContainerCleanupManager {
     try {
       staleFlows = this.executorLoader.fetchStaleFlowsForStatus(status, this.validityMap);
       // emit metrics around stale flows of this status
-      this.containerizationMetrics.markCleanupStaleStatusFlowNumber(status.name(), staleFlows.size());
+      this.containerizationMetrics.addCleanupStaleStatusFlowNumber(status.name(), staleFlows.size());
     } catch (final Exception e) {
       logger.error("Exception occurred while fetching stale flows during clean up." + e);
       return;
