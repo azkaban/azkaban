@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
  * CONTAINERIZED or during unit test
  */
 public class DummyContainerizationMetricsImpl implements ContainerizationMetrics {
+
   private static final Logger logger = Logger.getLogger(ContainerizationMetricsImpl.class);
 
   @Override
@@ -111,11 +112,16 @@ public class DummyContainerizationMetricsImpl implements ContainerizationMetrics
 
   @Override
   public void sendCleanupContainerHeartBeat() {
-    
+
   }
 
   @Override
   public void sendCleanupStaleFlowHeartBeat() {
+
+  }
+
+  @Override
+  public void addCleanupStaleStatusFlowNumber(String status, long n) {
 
   }
 

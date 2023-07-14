@@ -16,11 +16,14 @@
 
 package azkaban.metrics;
 
+import azkaban.executor.Status;
 import azkaban.utils.Props;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,7 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   private Timer cleanupStaleFlowTimer, cleanupContainerTimer, cleanupYarnAppTimer;
   private Histogram timeToDispatch;
   private volatile boolean isInitialized = false;
+  private Map<String, CounterGauge> cleanupStaleFlowCounterGauges;
 
   @Inject
   public ContainerizationMetricsImpl(MetricsManager metricsManager) {
@@ -76,6 +80,20 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
     this.cleanupStaleFlowTimer = this.metricsManager.addTimer("Cleanup-Stale-Flow-Timer");
     this.cleanupContainerTimer = this.metricsManager.addTimer("Cleanup-Container-Timer");
     this.cleanupYarnAppTimer = this.metricsManager.addTimer("Cleanup-Yarn-Application-Timer");
+
+    this.cleanupStaleFlowCounterGauges = new HashMap<>();
+    cleanupStaleFlowCounterGauges.put(Status.DISPATCHING.name(),
+        this.metricsManager.addCounterGauge("Cleanup-Stale-Dispatching-Flow-Number"));
+    cleanupStaleFlowCounterGauges.put(Status.PREPARING.name(),
+        this.metricsManager.addCounterGauge("Cleanup-Stale-Preparing-Flow-Number"));
+    cleanupStaleFlowCounterGauges.put(Status.RUNNING.name(),
+        this.metricsManager.addCounterGauge("Cleanup-Stale-Running-Flow-Number"));
+    cleanupStaleFlowCounterGauges.put(Status.PAUSED.name(),
+        this.metricsManager.addCounterGauge("Cleanup-Stale-Paused-Flow-Number"));
+    cleanupStaleFlowCounterGauges.put(Status.KILLING.name(),
+        this.metricsManager.addCounterGauge("Cleanup-Stale-Killing-Flow-Number"));
+    cleanupStaleFlowCounterGauges.put(Status.FAILED_FINISHING.name(),
+        this.metricsManager.addCounterGauge("Cleanup-Stale-Failed_Finishing-Flow-Number"));
   }
 
   @Override
@@ -183,6 +201,13 @@ public class ContainerizationMetricsImpl implements ContainerizationMetrics {
   @Override
   public void sendCleanupStaleFlowHeartBeat() {
     cleanupStaleFlowHeartBeat.mark();
+  }
+
+  @Override
+  public void addCleanupStaleStatusFlowNumber(String status, long n){
+    if (this.cleanupStaleFlowCounterGauges.containsKey(status)) {
+      this.cleanupStaleFlowCounterGauges.get(status).add(n);
+    }
   }
 
   @Override

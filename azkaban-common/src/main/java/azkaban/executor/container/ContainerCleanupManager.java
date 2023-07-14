@@ -163,6 +163,8 @@ public class ContainerCleanupManager {
           .info("NumberFormatException while parsing value for: " + AZKABAN_MAX_FLOW_RUNNING_MINS);
     }
 
+    // When adding new status in this map, also update ContainerizationMetricsImpl to add the
+    // corresponding metrics for the status.
     this.validityMap = new Builder<Status,
         Pair<Duration, String>>()
         .put(Status.DISPATCHING,
@@ -468,6 +470,8 @@ public class ContainerCleanupManager {
     List<ExecutableFlow> staleFlows;
     try {
       staleFlows = this.executorLoader.fetchStaleFlowsForStatus(status, this.validityMap);
+      // emit metrics around stale flows of this status
+      this.containerizationMetrics.addCleanupStaleStatusFlowNumber(status.name(), staleFlows.size());
     } catch (final Exception e) {
       logger.error("Exception occurred while fetching stale flows during clean up." + e);
       return;
