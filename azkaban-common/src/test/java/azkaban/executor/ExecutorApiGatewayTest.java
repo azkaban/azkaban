@@ -16,17 +16,18 @@
 
 package azkaban.executor;
 
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME;
-import static azkaban.Constants.ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_PORT;
+import static azkaban.Constants.ConfigurationKeys.*;
 import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_HOST;
 import static azkaban.executor.ExecutorApiClientTest.REVERSE_PROXY_PORT;
+import static azkaban.executor.ExecutorApiGateway.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
 import azkaban.utils.JSONUtils;
@@ -109,11 +110,47 @@ public class ExecutorApiGatewayTest {
         path);
   }
 
+  @Test
+  public void testPathWithContainerizedNoProxyConfigs() throws ExecutorManagerException {
+    final ExecutorApiGateway gateway = gatewayWithConfigs(this.client, containerizationEnabledNoProxyProps());
+    final String path = gateway.createExecutionPath(Optional.of(12345), DispatchMethod.CONTAINERIZED);
+    // If no reverse proxy is used, the execution qualifier "[cluster]-[execId]" will not be included in the path.
+    Assert.assertEquals("/" + ExecutorApiGateway.CONTAINERIZED_EXECUTION_RESOURCE, path);
+  }
+
+  @Test
+  public void testGetContainerizedExecutor() {
+    Props azkProps = containerizationEnabledProps();
+    // Add the cluster name, pod name prefix and k8s namespace to props
+    azkProps.put(ConfigurationKeys.AZKABAN_CLUSTER_NAME, "holdem");
+    azkProps.put(Constants.ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_NAME_PREFIX, "fc-svc");
+    azkProps.put(Constants.ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "cop-dev");
+    azkProps.put(Constants.ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT, "54343");
+
+    final ExecutorApiGateway gateway = gatewayWithConfigs(this.client, azkProps);
+    ExecutionReference executionReference = new ExecutionReference(12345, DispatchMethod.CONTAINERIZED);
+
+    Executor executor = gateway.getExecutor(executionReference);
+
+    // For containerized executions, the returned executor points to the callable endpoint of the flow pod.
+    Assert.assertEquals("fc-svc-holdem-12345.cop-dev", executor.getHost());
+    Assert.assertEquals(54343, executor.getPort());
+  }
+
   private Props containerizationEnabledProps() {
     final Props containerizedProps = new Props();
     containerizedProps.put(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "true");
     containerizedProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_HOSTNAME, REVERSE_PROXY_HOST);
     containerizedProps.put(AZKABAN_EXECUTOR_REVERSE_PROXY_PORT, REVERSE_PROXY_PORT);
+    containerizedProps.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+        DispatchMethod.CONTAINERIZED.name());
+    return containerizedProps;
+  }
+
+  private Props containerizationEnabledNoProxyProps() {
+    final Props containerizedProps = new Props();
+    // Create props which enable containerization but no reverse proxy is used.
+    containerizedProps.put(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, "false");
     containerizedProps.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
         DispatchMethod.CONTAINERIZED.name());
     return containerizedProps;
@@ -145,8 +182,7 @@ public class ExecutorApiGatewayTest {
 
   @Test
   public void testPingWithContainerization() throws Exception {
-    final Props props = new Props();
-    props.put(ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD, DispatchMethod.CONTAINERIZED.name());
+    final Props props = containerizationEnabledProps();
     final ExecutorApiClient clientSpy = Mockito.spy(new SendDisabledExecutorApiClient(props));
     final ExecutorApiGateway gateway = gatewayWithConfigs(clientSpy, props);
     final String apiAction = ConnectorParams.PING_ACTION;
@@ -155,7 +191,9 @@ public class ExecutorApiGatewayTest {
     final Map<String, Object> response = gateway.callWithExecutionId(apiHost, apiPort, apiAction,
         1, "bond", DispatchMethod.CONTAINERIZED, Optional.of(5000));
 
-    final URI expectedUri = new URI("http://host1:1234/azkaban-1/container");
+    // The expected invoked URI should be the reverse proxy.
+    final URI expectedUri = new URI(
+        String.format("http://%s:%s/azkaban-1/container", REVERSE_PROXY_HOST, REVERSE_PROXY_PORT));
     final List<Pair<String, String>> expectedParams = ImmutableList.of(
         new Pair<>("action", "ping"),
         new Pair<>("execid", "1"),

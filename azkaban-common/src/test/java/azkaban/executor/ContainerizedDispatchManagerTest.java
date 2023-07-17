@@ -115,6 +115,7 @@ public class ContainerizedDispatchManagerTest {
     this.props.put(Constants.ConfigurationKeys.MAX_CONCURRENT_RUNS_ONEFLOW, 1);
     this.props.put(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
         ContainerizedImplType.KUBERNETES.name());
+    this.props.put(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE, "cop-dev");
     props.put(Constants.
             ContainerizedDispatchManagerProperties.CONTAINERIZED_FLOW_FILTER_FILE,
         "src/test/resources/flow_filter.txt");
