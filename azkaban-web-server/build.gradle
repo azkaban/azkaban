@@ -15,7 +15,8 @@ buildscript {
 // manage NodeJS distributions, use them from there.
 // ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
 plugins {
-    id "com.moowork.node" version "1.2.0"
+//    id "com.moowork.node" version "1.2.0"
+    id("com.github.node-gradle.node") version "2.2.0"
 }
 
 node {

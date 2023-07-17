@@ -131,12 +131,19 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
   public URI buildExecutorUri(final String host, final int port, final String path,
       final boolean isHttp, final DispatchMethod dispatchMethod,
       final Pair<String, String>... params) throws IOException {
-    if (null != dispatchMethod && dispatchMethod == DispatchMethod.CONTAINERIZED
-        && isReverseProxyEnabled) {
-      checkState(reverseProxyHost.isPresent());
-      checkState(reverseProxyPort.isPresent());
-      return RestfulApiClient.buildUri(reverseProxyHost.get(), reverseProxyPort.get(), path,
-              !isTlsEnabled, params);
+    if (dispatchMethod == DispatchMethod.CONTAINERIZED) {
+      // In containerized mode, [host]:[port] represents the service endpoint of the flow pod which can be accessed by
+      // another pod in the same k8s cluster. If reverse proxy is enabled, then use the proxy's host and port instead.
+      if (isReverseProxyEnabled) {
+        checkState(reverseProxyHost.isPresent());
+        checkState(reverseProxyPort.isPresent());
+      }
+      return RestfulApiClient.buildUri(
+          isReverseProxyEnabled ? reverseProxyHost.get() : host,
+          isReverseProxyEnabled ? reverseProxyPort.get() : port,
+          path,
+          !isTlsEnabled,
+          params);
     } else {
       return RestfulApiClient.buildUri(host, port, path, isHttp, params);
     }
@@ -224,7 +231,7 @@ public class ExecutorApiClient extends RestfulApiClient<String> {
           throws IOException {
     // If in future tls support is added for POLL based model, then following condition
     // can be simplified
-    if (isTlsEnabled && null != dispatchMethod && dispatchMethod == DispatchMethod.CONTAINERIZED) {
+    if (isTlsEnabled && dispatchMethod == DispatchMethod.CONTAINERIZED) {
       return this.httpsPost(uri, httpTimeout, params);
     } else {
       return this.httpPost(uri, httpTimeout, params);
