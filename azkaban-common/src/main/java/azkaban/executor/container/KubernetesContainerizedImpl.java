@@ -1351,7 +1351,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @param executionId the execution ID
    * @return a {@link Pair} consisting of the endpoint host and port
    */
-  public static Pair<String, Integer> getFlowServiceEndpoint(final Props azkProps, int executionId) {
+  public static Pair<String, Integer> getFlowServiceEndpoint(final Props azkProps, final int executionId) {
     requireNonNull(azkProps, "azkaban properties must not be null");
     final String clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
         DEFAULT_CLUSTER_NAME);
@@ -1614,7 +1614,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getPodName(final int executionId) {
-    return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
+    return getPodNameHelper(this.podPrefix, this.clusterName, executionId);
   }
 
   /**
@@ -1629,6 +1629,20 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
       final String clusterName,
       final int executionId) {
     return String.join("-", serviceNamePrefix, clusterName, String.valueOf(executionId));
+  }
+
+  /**
+   * A helper method to generate a k8s pod name of the given flow execution ID.
+   * @param podNamePrefix prefix of the k8s pod of the flow execution
+   * @param clusterName current cluster's name
+   * @param executionId ID of the execution on the pod
+   * @return the k8s pod name of the given flow execution ID
+   */
+  public static String getPodNameHelper(
+      final String podNamePrefix,
+      final String clusterName,
+      final int executionId) {
+    return String.join("-", podNamePrefix, clusterName, String.valueOf(executionId));
   }
 
   private final Set<State> getImageVersionState(Map<String, String> flowParams) {
