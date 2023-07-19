@@ -1360,7 +1360,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     final String namespace = azkProps
         .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
 
-    String serviceName = getServiceNameHelper(serviceNamePrefix, clusterName, executionId);
+    String serviceName = getK8sEntityName(serviceNamePrefix, clusterName, executionId);
     Integer servicePort = azkProps.getInt(Constants.ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
         DEFAULT_KUBERNETES_SERVICE_PORT);
     return new Pair<>(String.join(".", serviceName, namespace), servicePort);
@@ -1592,7 +1592,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getVPAName(final int recommendationId) {
-    return String.join("-", this.vpaPrefix, this.clusterName, String.valueOf(recommendationId));
+    return getK8sEntityName(this.vpaPrefix, this.clusterName, recommendationId);
   }
 
   /**
@@ -1603,7 +1603,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getServiceName(final int executionId) {
-    return getServiceNameHelper(this.servicePrefix, this.clusterName, executionId);
+    return getK8sEntityName(this.servicePrefix, this.clusterName, executionId);
   }
 
   /**
@@ -1614,35 +1614,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getPodName(final int executionId) {
-    return getPodNameHelper(this.podPrefix, this.clusterName, executionId);
+    return getK8sEntityName(this.podPrefix, this.clusterName, executionId);
   }
 
   /**
-   * A helper method to generate a k8s service name of the given execution ID.
-   * @param serviceNamePrefix prefix of the k8s service
+   * A helper method to get name of a k8s entity (e.g. Pod or Service) associated with a resource on Azkaban (e.g.
+   * Execution or VPA).
+   * @param prefix name prefix
    * @param clusterName current cluster's name
-   * @param executionId ID of the execution on the pod
-   * @return the k8s service name of the given execution ID
+   * @param resourceId ID of the Azkaban resource
+   * @return the k8s entity name of the given Azkaban resource ID
    */
-  public static String getServiceNameHelper(
-      final String serviceNamePrefix,
-      final String clusterName,
-      final int executionId) {
-    return String.join("-", serviceNamePrefix, clusterName, String.valueOf(executionId));
-  }
-
-  /**
-   * A helper method to generate a k8s pod name of the given flow execution ID.
-   * @param podNamePrefix prefix of the k8s pod of the flow execution
-   * @param clusterName current cluster's name
-   * @param executionId ID of the execution on the pod
-   * @return the k8s pod name of the given flow execution ID
-   */
-  public static String getPodNameHelper(
-      final String podNamePrefix,
-      final String clusterName,
-      final int executionId) {
-    return String.join("-", podNamePrefix, clusterName, String.valueOf(executionId));
+  public static String getK8sEntityName(final String prefix, final String clusterName, final int resourceId) {
+    return String.join("-", prefix, clusterName, String.valueOf(resourceId));
   }
 
   private final Set<State> getImageVersionState(Map<String, String> flowParams) {
