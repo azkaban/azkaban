@@ -41,8 +41,8 @@ public class ExecutionControllerUtilsRestartFlowTest {
   private ExecutionLogsLoader offlineExecutionLogsLoader;
   private User user;
   private ContainerizedDispatchManager containerizedDispatchManager;
-  private final CommonMetrics commonMetrics = new CommonMetrics(
-      new MetricsManager(new MetricRegistry()));
+  private MetricsManager metricsManager = new MetricsManager(new MetricRegistry());
+  private final CommonMetrics commonMetrics = new CommonMetrics(metricsManager);
   private ProjectManager projectManager;
   private static final int executionId = 111;
   private static final int projectId = 1;
@@ -84,7 +84,7 @@ public class ExecutionControllerUtilsRestartFlowTest {
         null, new DummyEventListener(), new DummyContainerizationMetricsImpl(), null);
 
     this.listener = new OnContainerizedExecutionEventListener(this.executorLoader,
-        this.containerizedDispatchManager, this.projectManager);
+        this.containerizedDispatchManager, this.projectManager, this.metricsManager);
     ExecutionControllerUtils.onExecutionEventListener = this.listener;
   }
 
