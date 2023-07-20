@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.DispatchMethod;
+import azkaban.executor.container.KubernetesContainerizedImpl;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -56,18 +57,20 @@ public class ExecutorApiGateway {
   private final static BiFunction<String, String, String> executionResourceNameModifier =
       ((e,r) -> String.join("/",  e, r));
 
-  private final static Executor defaultEmptyExecutor = new Executor(-1, "", 1, false);
+  private final Props azkProps;
   private final ExecutorApiClient apiClient;
   private final String clusterName;
   private final Optional<Integer> httpTimeout;
+  private final boolean isReverseProxyEnabled;
 
   @Inject
   public ExecutorApiGateway(final ExecutorApiClient apiClient, Props azkProps) {
     requireNonNull(apiClient, "api client must not be null");
     requireNonNull(azkProps, "azkaban properties must not be null");
     this.apiClient = apiClient;
-    this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
-        DEFAULT_CLUSTER_NAME);
+    this.azkProps = azkProps;
+    this.clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+    this.isReverseProxyEnabled = azkProps.getBoolean(ConfigurationKeys.AZKABAN_EXECUTOR_REVERSE_PROXY_ENABLED, false);
     this.httpTimeout = Optional.empty();
   }
 
@@ -80,8 +83,7 @@ public class ExecutorApiGateway {
 
   Map<String, Object> callWithReference(final ExecutionReference ref, final String action,
       final Pair<String, String>... params) throws ExecutorManagerException {
-    final Executor executor = (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED
-        ? defaultEmptyExecutor : ref.getExecutor().get());
+    final Executor executor = getExecutor(ref);
     return callWithExecutionId(executor.getHost(), executor.getPort(), action, ref.getExecId(),
         null, ref.getDispatchMethod(), this.httpTimeout, params);
   }
@@ -89,8 +91,7 @@ public class ExecutorApiGateway {
   public Map<String, Object> callWithReferenceByUser(final ExecutionReference ref,
       final String action, final String user, final Pair<String, String>... params)
       throws ExecutorManagerException {
-    final Executor executor = (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED
-        ? defaultEmptyExecutor : ref.getExecutor().get());
+    final Executor executor = getExecutor(ref);
     return callWithExecutionId(executor.getHost(), executor.getPort(), action,
         ref.getExecId(), user, ref.getDispatchMethod(), this.httpTimeout, params);
   }
@@ -102,8 +103,14 @@ public class ExecutorApiGateway {
 
   @VisibleForTesting
   String createExecutionPath(final Optional<Integer> executionId, DispatchMethod dispatchMethod) throws ExecutorManagerException {
-    if (null == dispatchMethod || dispatchMethod != DispatchMethod.CONTAINERIZED) {
+    if (dispatchMethod != DispatchMethod.CONTAINERIZED) {
       return "/" + DEFAULT_EXECUTION_RESOURCE;
+    }
+
+    if (!this.isReverseProxyEnabled) {
+      // If reverse proxy is not enabled, we will call the flow container Service directly; no need to add
+      // /[cluster]-[execId]/ in the path.
+      return "/" + CONTAINERIZED_EXECUTION_RESOURCE;
     }
 
     if(!executionId.isPresent()) {
@@ -221,4 +228,20 @@ public class ExecutorApiGateway {
         this.httpTimeout, executionIds, updateTimes);
   }
 
+  /**
+   * Given an {@link ExecutionReference}, get the executor of the execution. Under containerized mode, the returned
+   * executor represents the service endpoint of the flow pod; otherwise, the bare metal executor will be returned.
+   * @param ref an {@link ExecutionReference}
+   * @return the {@link Executor} which performs the execution; it could be a BM executor or a pod's service on k8s.
+   */
+  @VisibleForTesting
+  Executor getExecutor(final ExecutionReference ref) {
+    if (ref.getDispatchMethod() == DispatchMethod.CONTAINERIZED) {
+      final Pair<String, Integer> flowPodEndpoint =
+          KubernetesContainerizedImpl.getFlowServiceEndpoint(this.azkProps, ref.getExecId());
+      return new Executor(-1, flowPodEndpoint.getFirst(), flowPodEndpoint.getSecond(), false);
+    } else {
+      return ref.getExecutor().get();
+    }
+  }
 }

@@ -15,7 +15,6 @@
  */
 package azkaban.executor.container;
 
-import static azkaban.Constants.JobProperties.*;
 import static azkaban.executor.ExecutionControllerUtils.clusterQualifiedExecId;
 import static java.util.Objects.requireNonNull;
 
@@ -23,7 +22,6 @@ import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.Constants.ContainerizedDispatchManagerProperties;
 import azkaban.Constants.FlowParameters;
-import azkaban.Constants.JobProperties;
 import azkaban.container.models.AzKubernetesV1PodBuilder;
 import azkaban.container.models.AzKubernetesV1PodTemplate;
 import azkaban.container.models.AzKubernetesV1ServiceBuilder;
@@ -40,9 +38,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.executor.container.watch.KubernetesWatch;
-import azkaban.flow.Flow;
 import azkaban.flow.FlowResourceRecommendation;
-import azkaban.flow.ImmutableFlowProps;
 import azkaban.imagemgmt.exception.ImageMgmtException;
 import azkaban.imagemgmt.models.ImageVersion.State;
 import azkaban.imagemgmt.rampup.ImageRampupManager;
@@ -51,16 +47,14 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.imagemgmt.version.VersionSetBuilder;
 import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.metrics.ContainerizationMetrics;
-import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.spi.EventType;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import io.kubernetes.client.custom.Quantity;
-import io.kubernetes.client.custom.QuantityFormatException;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
@@ -71,25 +65,16 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
-import io.kubernetes.client.util.ClientBuilder;
-import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.Yaml;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -154,6 +139,8 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
   public static final String DISABLE_CLEANUP_LABEL_NAME = "cleanup-disabled";
   public static final String DEFAULT_AZKABAN_BASE_IMAGE_NAME = "azkaban-base";
   public static final String DEFAULT_AZKABAN_CONFIG_IMAGE_NAME = "azkaban-config";
+  public static final int DEFAULT_KUBERNETES_SERVICE_PORT = 54343;
+
   private static final int DEFAULT_EXECUTION_ID = -1;
 
   private static final VPARecommendation EMPTY_VPA_RECOMMENDATION = new VPARecommendation(null,
@@ -307,7 +294,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
             DEFAULT_MAX_DISK);
     this.servicePort =
         this.azkProps.getInt(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
-            54343);
+            DEFAULT_KUBERNETES_SERVICE_PORT);
     this.serviceTimeout =
         this.azkProps
             .getLong(ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_CREATION_TIMEOUT_MS,
@@ -1354,6 +1341,31 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
     return selectorBuilder.toString();
   }
 
+  /**
+   * Given a flow ID, return the callable endpoint of the flow pod's service where the flow is executed on. The endpoint
+   * is accessible by another pod which resides in the same k8s cluster.
+   * Naming rule of the endpoint: "[serviceName].[namespace]:[servicePort]"
+   * The returned endpoint is presented by a {@link Pair} consisting of the host name and port.
+   *
+   * @param azkProps the Azkaban props
+   * @param executionId the execution ID
+   * @return a {@link Pair} consisting of the endpoint host and port
+   */
+  public static Pair<String, Integer> getFlowServiceEndpoint(final Props azkProps, final int executionId) {
+    requireNonNull(azkProps, "azkaban properties must not be null");
+    final String clusterName = azkProps.getString(ConfigurationKeys.AZKABAN_CLUSTER_NAME,
+        DEFAULT_CLUSTER_NAME);
+    final String serviceNamePrefix = azkProps.getString(
+        ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_NAME_PREFIX, DEFAULT_SERVICE_NAME_PREFIX);
+    final String namespace = azkProps
+        .getString(ContainerizedDispatchManagerProperties.KUBERNETES_NAMESPACE);
+
+    String serviceName = getK8sEntityName(serviceNamePrefix, clusterName, executionId);
+    Integer servicePort = azkProps.getInt(Constants.ContainerizedDispatchManagerProperties.KUBERNETES_SERVICE_PORT,
+        DEFAULT_KUBERNETES_SERVICE_PORT);
+    return new Pair<>(String.join(".", serviceName, namespace), servicePort);
+  }
+
   @Override
   public void setVPARampUp(final int rampUp) {
     this.vpaRampUp = rampUp;
@@ -1580,7 +1592,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getVPAName(final int recommendationId) {
-    return String.join("-", this.vpaPrefix, this.clusterName, String.valueOf(recommendationId));
+    return getK8sEntityName(this.vpaPrefix, this.clusterName, recommendationId);
   }
 
   /**
@@ -1591,7 +1603,7 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getServiceName(final int executionId) {
-    return String.join("-", this.servicePrefix, this.clusterName, String.valueOf(executionId));
+    return getK8sEntityName(this.servicePrefix, this.clusterName, executionId);
   }
 
   /**
@@ -1602,7 +1614,19 @@ public class KubernetesContainerizedImpl extends EventHandler implements Contain
    * @return
    */
   private String getPodName(final int executionId) {
-    return String.join("-", this.podPrefix, this.clusterName, String.valueOf(executionId));
+    return getK8sEntityName(this.podPrefix, this.clusterName, executionId);
+  }
+
+  /**
+   * A helper method to get name of a k8s entity (e.g. Pod or Service) associated with a resource on Azkaban (e.g.
+   * Execution or VPA).
+   * @param prefix name prefix
+   * @param clusterName current cluster's name
+   * @param resourceId ID of the Azkaban resource
+   * @return the k8s entity name of the given Azkaban resource ID
+   */
+  public static String getK8sEntityName(final String prefix, final String clusterName, final int resourceId) {
+    return String.join("-", prefix, clusterName, String.valueOf(resourceId));
   }
 
   private final Set<State> getImageVersionState(Map<String, String> flowParams) {
