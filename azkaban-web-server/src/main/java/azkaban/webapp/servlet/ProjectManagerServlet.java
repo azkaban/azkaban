@@ -442,7 +442,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       } else if (API_SET_JOB_OVERRIDE_PROPERTY.equals(ajaxName)) {
         if (uploadPrivilegeUser != null && disableJobPropsOverrideWhenProjectUploadLocked && project.isUploadLocked()) {
-          ret.put(ERROR_PARAM, "Project " + projectName + "is locked for edit job property while upload privilege user "
+          ret.put(ERROR_PARAM, "Project " + projectName + "is locked for editing job property while upload privilege user "
               + "is set to " + uploadPrivilegeUser + ". If you really need to edit job property, "
               + "please contact oncall to remove this lock.");
           resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -1400,22 +1400,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("projectName", project.getName());
         page.add("projectId", project.getId());
         //params for projectsidebar
-        page.add("description",project.getDescription());
-        page.add("createTimestamp",project.getCreateTimestamp());
-        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
-        page.add("lastModifiedUser",project.getLastModifiedUser());
-
-        // params for project upload
-        // show if a project has prod identifier
-        page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
-        page.add("adhocUpload", project.isAdhocUploadEnabled());
-        page.add("showUploadLockPanel", uploadPrivilegeUser != null);
-        // only show adhocUpload changeable button when this feature is enabled
-        page.add("showAdhocUploadFeature",
-            uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked);
-        // hide upload project button when project prod identifier is set
-        page.add("hideUploadProjectButton",
-            uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked && project.isUploadLocked());
+        addProjectSidebarProperties(page, project);
 
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
@@ -1536,23 +1521,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
 
         page.add("projectName", project.getName());
-        //params for projectsidebar
-        page.add("description",project.getDescription());
-        page.add("createTimestamp",project.getCreateTimestamp());
-        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
-        page.add("lastModifiedUser",project.getLastModifiedUser());
-
-        // params for project upload
-        // show if a project has prod identifier
-        page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
-        page.add("adhocUpload", project.isAdhocUploadEnabled());
-        page.add("showUploadLockPanel", uploadPrivilegeUser != null);
-        // only show adhocUpload changeable button when this feature is enabled
-        page.add("showAdhocUploadFeature",
-            uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked);
-        // hide upload project button when project prod identifier is set
-        page.add("hideUploadProjectButton",
-            uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked && project.isUploadLocked());
+        addProjectSidebarProperties(page, project);
 
         page.add("username", user.getUserId());
         page.add("admins", Utils.flattenToString(
@@ -1590,6 +1559,32 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     page.render();
+  }
+
+  /**
+   * Project sidebar properties shared by multiple web pages are added here.
+   *
+   * @param page the page to add properties to
+   * @param project the current project to add properties from
+   * */
+  private void addProjectSidebarProperties(Page page, Project project) {
+    // basic project properties
+    page.add("description", project.getDescription());
+    page.add("createTimestamp", project.getCreateTimestamp());
+    page.add("lastModifiedTimestamp", project.getLastModifiedTimestamp());
+    page.add("lastModifiedUser", project.getLastModifiedUser());
+
+    // params for project upload
+    // show if a project has prod identifier
+    page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
+    page.add("adhocUpload", project.isAdhocUploadEnabled());
+    page.add("showUploadLockPanel", uploadPrivilegeUser != null);
+    // only show adhocUpload changeable button when this feature is enabled
+    page.add("showAdhocUploadFeature",
+        uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked);
+    // hide upload project button when project prod identifier is set
+    page.add("hideUploadProjectButton",
+        uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked && project.isUploadLocked());
   }
 
   private void handleJobPage(final HttpServletRequest req, final HttpServletResponse resp,
@@ -1884,22 +1879,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("projectName", project.getName());
         page.add("projectId", project.getId());
         //params for projectsidebar
-        page.add("description",project.getDescription());
-        page.add("createTimestamp",project.getCreateTimestamp());
-        page.add("lastModifiedTimestamp",project.getLastModifiedTimestamp());
-        page.add("lastModifiedUser",project.getLastModifiedUser());
-
-        // params for project upload
-        // show if a project has prod identifier
-        page.add("projectUploadLock", uploadPrivilegeUser != null && project.isUploadLocked());
-        page.add("adhocUpload", project.isAdhocUploadEnabled());
-        page.add("showUploadLockPanel", uploadPrivilegeUser != null);
-        // only show adhocUpload changeable button when this feature is enabled
-        page.add("showAdhocUploadFeature",
-            uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked);
-        // hide upload project button when project prod identifier is set
-        page.add("hideUploadProjectButton",
-            uploadPrivilegeUser != null && disableAdhocUploadWhenProjectUploadLocked && project.isUploadLocked());
+        addProjectSidebarProperties(page, project);
 
         page.add("admins", Utils.flattenToString(
             project.getUsersWithPermission(Type.ADMIN), ","));
