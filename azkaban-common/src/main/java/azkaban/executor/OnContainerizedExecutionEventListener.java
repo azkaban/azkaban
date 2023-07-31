@@ -24,9 +24,9 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
   private final ExecutorLoader executorLoader;
   private final ExecutorManagerAdapter executorManagerAdapter;
   private final ProjectManager projectManager;
-  // number of missed schedules with no back execution enabled
+  // number flow retries using "RetryAsNew" strategy
   private final Counter flowRetryRetryAsNewStrategyCounter;
-  // number of missed schedules with back execution enabled
+  // number flow retries using "DisableSucceededNodes" strategy
   private final Counter flowRetryDisableSucceededNodesStrategyCounter;
 
 
