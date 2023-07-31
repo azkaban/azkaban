@@ -7,8 +7,10 @@ import azkaban.Constants.FlowRetryStrategy;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import com.codahale.metrics.Counter;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -22,13 +24,23 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
   private final ExecutorLoader executorLoader;
   private final ExecutorManagerAdapter executorManagerAdapter;
   private final ProjectManager projectManager;
+  // number flow retries using "RetryAsNew" strategy
+  private final Counter flowRetryRetryAsNewStrategyCounter;
+  // number flow retries using "DisableSucceededNodes" strategy
+  private final Counter flowRetryDisableSucceededNodesStrategyCounter;
+
 
   @Inject
   public OnContainerizedExecutionEventListener(final ExecutorLoader executorLoader,
-      ExecutorManagerAdapter executorManagerAdapter, ProjectManager projectManager) {
+      ExecutorManagerAdapter executorManagerAdapter, ProjectManager projectManager,
+      final MetricsManager metricsManager) {
     this.executorLoader = executorLoader;
     this.executorManagerAdapter = executorManagerAdapter;
     this.projectManager = projectManager;
+    this.flowRetryRetryAsNewStrategyCounter = metricsManager
+        .addCounter("flow-retry-retry-as-new-count");
+    this.flowRetryDisableSucceededNodesStrategyCounter = metricsManager
+        .addCounter("flow-retry-disable-succeeded-nodes-count");
   }
 
   @Override
@@ -72,6 +84,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
     switch (retryStrategy) {
       case DISABLE_SUCCEEDED_NODES:
         try {
+          this.flowRetryDisableSucceededNodesStrategyCounter.inc();
           disableSucceededSkippedJobsInRetryFlow(originalExFlow, retryExFlow);
         } catch (ExecutorManagerException e){
           // TODO: consider notify user via email too
@@ -83,6 +96,7 @@ public class OnContainerizedExecutionEventListener implements OnExecutionEventLi
         }
         break;
       default:
+        this.flowRetryRetryAsNewStrategyCounter.inc();
         logger.info(String.format("Use default strategy when restarting the execution %s",
           originalExFlow.getExecutionId()));
     }

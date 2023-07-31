@@ -12,9 +12,11 @@ import static org.mockito.Mockito.when;
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowUtils;
+import azkaban.metrics.MetricsManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.TestUtils;
+import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +54,8 @@ public class OnContainerizedExecutionEventListenerTest {
     this.onContainerizedExecutionEventListener = new OnContainerizedExecutionEventListener(
         this.executorLoader,
         this.executorManagerAdapter,
-        mock(ProjectManager.class)
+        mock(ProjectManager.class),
+        new MetricsManager(new MetricRegistry())
     );
   }
 
