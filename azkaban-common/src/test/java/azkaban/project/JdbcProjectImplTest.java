@@ -30,6 +30,7 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.HashUtils;
 import azkaban.utils.Props;
+import azkaban.utils.SecurityTag;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
@@ -92,11 +93,11 @@ public class JdbcProjectImplTest {
     this.loader.createNewProject(projectName, projectDescription, user);
     final String projectName2 = "mytestProject2";
     final String projectDescription2 = "This is my new project2";
-    this.loader.createNewProject(projectName2, projectDescription2, user);
+    this.loader.createNewProject(projectName2, projectDescription2, user, SecurityTag.NEW_PROJECT);
     final String projectName3 = "mytestProject3";
     final String projectDescription3 = "This is my new project3";
     final User user2 = new User("testUser2");
-    this.loader.createNewProject(projectName3, projectDescription3, user2);
+    this.loader.createNewProject(projectName3, projectDescription3, user2, SecurityTag.NEW_PROJECT);
   }
 
   @Test
@@ -225,6 +226,16 @@ public class JdbcProjectImplTest {
     Assert.assertEquals(sameProject.getUserPermissions().size(), 1);
     Assert.assertEquals(sameProject.getUserPermissions().get(0).getFirst(), "testUser1");
     Assert.assertEquals(sameProject.getUserPermissions().get(0).getSecond().toString(), "ADMIN");
+  }
+
+  @Test
+  public void testSecurityTag() throws Exception {
+    createThreeProjects();
+    final Project project = this.loader.fetchProjectByName("mytestProject");
+    Assert.assertEquals(null, project.getSecurityTag());
+
+    final Project project2 = this.loader.fetchProjectByName("mytestProject2");
+    Assert.assertEquals(SecurityTag.NEW_PROJECT, project2.getSecurityTag());
   }
 
   @Test

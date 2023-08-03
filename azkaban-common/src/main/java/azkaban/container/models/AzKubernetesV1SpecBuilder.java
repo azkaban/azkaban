@@ -162,7 +162,8 @@ public class AzKubernetesV1SpecBuilder {
     }
     public AzKubernetesV1SpecBuilder addSecurityInitContainer(String image,
         ImagePullPolicy imagePullPolicy,
-        final InitContainerType initContainerType, Set<String> proxyUserList, String projectUploadUser ) {
+        final InitContainerType initContainerType,
+        Set<String> proxyUserList, String projectUploadUser, Boolean fetchAdhocCert) {
         V1EnvVar proxyUserEnv = new V1EnvVarBuilder()
             .withName(initContainerType.mountPathKey)
             .withValue(String.join(",", proxyUserList))
@@ -171,9 +172,13 @@ public class AzKubernetesV1SpecBuilder {
             .withName("PROJECT_UPLOAD_USER")
             .withValue(projectUploadUser)
             .build();
+        V1EnvVar fetchAdhocCertEnv = new V1EnvVarBuilder()
+            .withName("FETCH_ADHOC_CERT")
+            .withValue(fetchAdhocCert.toString())
+            .build();
         V1Container initContainer = new V1ContainerBuilder()
             .withName(initContainerType.initPrefix)
-            .addToEnv(proxyUserEnv, projectUploadUserEnv)
+            .addToEnv(proxyUserEnv, projectUploadUserEnv, fetchAdhocCertEnv)
             .withImagePullPolicy(imagePullPolicy.getPolicyVal())
             .withImage(image)
             .build();

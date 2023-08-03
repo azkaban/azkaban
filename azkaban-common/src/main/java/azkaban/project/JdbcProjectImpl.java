@@ -43,6 +43,7 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.SecurityTag;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -169,17 +170,28 @@ public class JdbcProjectImpl implements ProjectLoader {
    * It will throw an exception if it finds an active project of the same name, or the SQL fails
    */
   @Override
+  public synchronized Project createNewProject(String name, String description, User creator)
+      throws ProjectManagerException {
+    return createNewProject(name, description, creator, null);
+  }
+
+  /**
+   * Creates a Project in the db with security tag.
+   * <p>
+   * It will throw an exception if it finds an active project of the same name, or the SQL fails
+   */
+  @Override
   public synchronized Project createNewProject(final String name, final String description,
-      final User creator)
+      final User creator, final SecurityTag securityTag)
       throws ProjectManagerException {
 
     final String INSERT_PROJECT =
-        "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob) values (?,?,?,?,?,?,?,?,?)";
+        "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob, security_tag) values (?,?,?,?,?,?,?,?,?,?)";
     final SQLTransaction<Integer> insertProject = transOperator -> {
       final long time = System.currentTimeMillis();
       return transOperator
           .update(INSERT_PROJECT, name, true, time, time, null, creator.getUserId(), description,
-              this.defaultEncodingType.getNumVal(), null);
+              this.defaultEncodingType.getNumVal(), null, securityTag == null ? null : securityTag.name());
     };
 
     // Insert project
@@ -1199,7 +1211,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     List<Project> projects = Collections.emptyList();
     final String name = StringUtils.join(ids, ',').toString();
     final String SELECT_PROJECT_BY_IDS = "SELECT "
-        + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+        + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj.last_modified_by, prj.description, prj.enc_type, prj.settings_blob, prj.security_tag, "
         + "prm.name, prm.permissions, prm.isGroup, prjver.uploader "
         + "FROM projects prj "
         + "LEFT JOIN project_versions prjver ON prj.id = prjver.project_id "

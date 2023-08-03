@@ -25,6 +25,7 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
+import azkaban.utils.SecurityTag;
 import com.google.common.collect.ImmutableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -50,6 +51,8 @@ public class Project extends EventHandler {
   private final HashSet<String> proxyUsers = new HashSet<>();
   private boolean active = true;
   private boolean isUploadLocked = false;
+
+  private SecurityTag securityTag;
 
   private Map<FeatureFlag, Object> featureFlags = new HashMap<>();
   private String description;
@@ -101,6 +104,7 @@ public class Project extends EventHandler {
         (Map<String, Object>) projectObject.get("metadata");
     final Map<String, Object> featureFlagsMap = (Map<String, Object>) projectObject.get("featureFlags");
     final Boolean isUploadLocked = (Boolean) projectObject.get("isUploadLocked");
+    final String tag = (String) projectObject.get("securityTag");
     final Project project = new Project(id, name);
     project.setVersion(version);
     project.setDescription(description);
@@ -111,6 +115,10 @@ public class Project extends EventHandler {
     project.setUploadUser(uploadUser);
     if (isUploadLocked != null) {
       project.setUploadLock(isUploadLocked);
+    }
+
+    if (tag != null) {
+      project.setSecurityTag(SecurityTag.valueOf(tag));
     }
 
     if (featureFlagsMap != null) {
@@ -378,6 +386,9 @@ public class Project extends EventHandler {
 
     projectObject.put("featureFlags", this.featureFlags);
     projectObject.put("isUploadLocked", this.isUploadLocked);
+    if (this.securityTag != null) {
+      projectObject.put("securityTag", this.securityTag.name());
+    }
 
     return projectObject;
   }
@@ -483,6 +494,14 @@ public class Project extends EventHandler {
 
   public void setSource(final String source) {
     this.source = source;
+  }
+
+  public SecurityTag getSecurityTag() {
+    return this.securityTag;
+  }
+
+  public void setSecurityTag(final SecurityTag securityTag) {
+    this.securityTag = securityTag;
   }
 
   public Map<String, Object> getMetadata() {

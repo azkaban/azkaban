@@ -22,6 +22,7 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
+import azkaban.utils.SecurityTag;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -45,6 +46,9 @@ public interface ProjectLoader {
    */
   Project fetchProjectByName(String name) throws ProjectManagerException;
 
+  Project createNewProject(String name, String description, User creator)
+      throws ProjectManagerException;
+
   /**
    * Should create an empty project with the given name and user and adds it to the data store. It
    * will auto assign a unique id for this project if successful.
@@ -54,7 +58,7 @@ public interface ProjectLoader {
    *
    * @throws ProjectManagerException if an active project of the same name exists.
    */
-  Project createNewProject(String name, String description, User creator)
+  Project createNewProject(String name, String description, User creator, SecurityTag securityTag)
       throws ProjectManagerException;
 
   /**

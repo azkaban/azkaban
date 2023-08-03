@@ -40,6 +40,7 @@ import azkaban.storage.ProjectStorageManager;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.SecurityTag;
 import azkaban.utils.Utils;
 import azkaban.utils.ValidatorUtils;
 import java.io.File;
@@ -81,6 +82,8 @@ class AzkabanProjectLoader {
   private final Storage storage;
   private final ValidatorUtils validatorUtils;
 
+  private boolean enableSecurityCertManagement = false;
+
   @Inject
   AzkabanProjectLoader(final Props props, final CommonMetrics commonMetrics, final ProjectLoader projectLoader,
       final ProjectStorageManager projectStorageManager, final FlowLoaderFactory flowLoaderFactory,
@@ -108,6 +111,7 @@ class AzkabanProjectLoader {
     }
     this.projectVersionRetention = props.getInt(ConfigurationKeys.PROJECT_VERSION_RETENTION, 3);
     log.info("Project version retention is set to " + this.projectVersionRetention);
+    this.enableSecurityCertManagement = props.getBoolean(ConfigurationKeys.ENABLE_SECURITY_CERT_MANAGEMENT, false);
   }
 
   public Map<String, ValidationReport> uploadProject(final Project project,
@@ -271,11 +275,38 @@ class AzkabanProjectLoader {
       final File projectDir, final File startupDependencies, final User uploader,
       final String uploaderIPAddr) throws ProjectManagerException {
     synchronized (project) {
+      // record the existing project flows before upload
+      final List<String> existingFlows = project.getFlows().stream().map(Flow::getId).collect(Collectors.toList());
+
       final int newProjectVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
       final Map<String, Flow> flows = loader.getFlowMap();
       for (final Flow flow : flows.values()) {
         flow.setProjectId(project.getId());
         flow.setVersion(newProjectVersion);
+        if (!enableSecurityCertManagement) {
+          flow.unsetSecurityTag();
+          continue;
+        }
+        if (project.getSecurityTag() == SecurityTag.NEW_PROJECT) {
+          flow.setSecurityTag(SecurityTag.NEW_FLOW);
+          continue;
+        }
+        if (existingFlows.contains(flow.getId())) {
+          Flow existingFlow = project.getFlow(flow.getId());
+          if (existingFlow.getSecurityTag() != null) {
+            log.debug("flow {} already has security tag {}, inherit existing security tag",
+                flow.getId(), existingFlow.getSecurityTag());
+            flow.setSecurityTag(existingFlow.getSecurityTag());
+          } else {
+            log.debug("flow {} already exists in project {}, set security tag to legacy",
+                flow.getId(), project.getName());
+            flow.setSecurityTag(SecurityTag.LEGACY_FLOW);
+          }
+        } else {
+          log.debug("flow {} is new in project {}, set security tag to new",
+              flow.getId(), project.getName());
+          flow.setSecurityTag(SecurityTag.NEW_FLOW);
+        }
       }
 
       this.projectStorageManager.uploadProject(project, newProjectVersion, archive,

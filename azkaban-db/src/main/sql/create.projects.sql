@@ -13,3 +13,6 @@ CREATE TABLE projects (
 
 CREATE INDEX project_name
   ON projects (name);
+
+ALTER TABLE projects
+  ADD COLUMN security_tag VARCHAR(64);
