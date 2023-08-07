@@ -38,6 +38,8 @@ public class JavaProcessJob extends ProcessJob {
   public static final String MAIN_ARGS = "main.args";
   public static final String JVM_PARAMS = "jvm.args";
   public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
+  public static final String RUN_ON_JAVA11_PARAMS = "job.run.on.java11";
+  public static final String JAVA11_BINARY_PATH = "java11.binary.path";
   public static final String DEPENDENCY_CLS_RAMP_PROP_PREFIX = "azkaban.ramp.jar:";
   public static final String DEPENDENCY_REG_RAMP_PROP_PREFIX = "azkaban.ramp.reg:";
   public static final String DEPENDENCY_CFG_RAMP_PROP_PREFIX = "azkaban.ramp.cfg:";
@@ -48,6 +50,7 @@ public class JavaProcessJob extends ProcessJob {
   public static final String NATIVE_LIBRARY_PATH_PREFIX = "native.library.path.";
 
   public static String JAVA_COMMAND = "java";
+  public static String DEFAULT_JAVA11_COMMAND = "java11";
 
   public JavaProcessJob(final String jobid, final Props sysProps, final Props jobProps,
       final Logger logger) {
@@ -67,8 +70,9 @@ public class JavaProcessJob extends ProcessJob {
   }
 
   protected String createCommandLine() {
-    String command = JAVA_COMMAND + " ";
-    command += getJVMArguments() + " ";
+    String java11_command = getSysProps().getString(JAVA11_BINARY_PATH, DEFAULT_JAVA11_COMMAND);
+    String command = getJobProps().getBoolean(RUN_ON_JAVA11_PARAMS, false) ? java11_command : JAVA_COMMAND;
+    command += " " + getJVMArguments() + " ";
     command += "-Xms" + getInitialMemorySize() + " ";
     command += "-Xmx" + getMaxMemorySize() + " ";
     command += getClassPathParam();

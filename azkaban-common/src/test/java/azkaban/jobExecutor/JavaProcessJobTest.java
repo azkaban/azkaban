@@ -128,6 +128,20 @@ public class JavaProcessJobTest {
   }
 
   @Test
+  public void testJava11Job() throws Exception {
+    this.props.put(JavaProcessJob.JAVA11_BINARY_PATH,
+        "java");
+    this.props.put(JavaProcessJob.RUN_ON_JAVA11_PARAMS, "true");
+    this.props.put(JavaProcessJob.JAVA_CLASS,
+        "azkaban.jobExecutor.WordCountLocal");
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+    this.props.put("classpath", classPaths);
+
+    this.job.run();
+  }
+
+  @Test
   public void noClassPath() throws Exception {
     copyJarToJobDirectory();
     this.props.put(JavaProcessJob.JAVA_CLASS, "azkaban.jobExecutor.WordCountLocal");
