@@ -22,6 +22,7 @@ public class ExecutionOptionsTest {
     );
     options1.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
     options1.setMailCreator("dummy");
+    options1.setConcurrentOption("happy");
 
     ExecutionOptions overwrite = new ExecutionOptions();
     overwrite.addAllFlowParameters(
@@ -30,11 +31,12 @@ public class ExecutionOptionsTest {
             FlowParameters.FLOW_PARAM_ALLOW_RESTART_ON_EXECUTION_STOPPED, "false",
             FlowParameters.FLOW_PARAM_MAX_RETRIES, "1")
     );
-    overwrite.setFailureAction(FailureAction.CANCEL_ALL);
+    overwrite.setFailureAction(null);
     overwrite.setMemoryCheck(true);
     overwrite.setSuccessEmails(ImmutableSet.of("abcd@linkedin.com"));
     overwrite.setPipelineExecutionId(123);
     overwrite.setMailCreator("  ");
+    overwrite.setConcurrentOption(null);
     overwrite.addAllRuntimeProperties(
         ImmutableMap.of("property1", ImmutableMap.of("key", "value")));
 
@@ -52,7 +54,9 @@ public class ExecutionOptionsTest {
 
     ExecutionOptions expected = ExecutionOptions.createFromObject(overwrite.toObject());
     expected.addAllFlowParameters(expectFlowParams);
+    expected.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
     expected.setMailCreator("dummy");
+    expected.setConcurrentOption("happy");
     assertEquals(expected.toJSON(), options1.toJSON());
   }
 }

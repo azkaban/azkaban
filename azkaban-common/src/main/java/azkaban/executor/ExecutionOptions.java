@@ -74,15 +74,17 @@ public class ExecutionOptions {
 
   private Integer pipelineLevel = null;
   private Integer pipelineExecId = null;
-  private Integer queueLevel = 0;
-  private String concurrentOption = CONCURRENT_OPTION_IGNORE;
-  private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+  private Integer queueLevel = null;
+  private String concurrentOption = null;
+  private String mailCreator = null;
   private boolean memoryCheck = true;
+  private FailureAction failureAction = null;
+
   private Map<String, String> flowParameters = new HashMap<>();
   private Map<String, Map<String, String>> runtimeProperties = new HashMap<>();
-  private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
   private List<DisabledJob> initiallyDisabledJobs = new ArrayList<>();
   private List<SlaOption> slaOptions = new ArrayList<>();
+
   private Map<String, FailureAction> FAILURE_OPTION_TO_FAILURE_ACTION_MAP =
       ImmutableMap.of(
           "finish_currently_running", FailureAction.FINISH_CURRENTLY_RUNNING,
@@ -128,8 +130,7 @@ public class ExecutionOptions {
 
     // Failure action
     options.failureAction =
-        FailureAction.valueOf(wrapper.getString(FAILURE_ACTION,
-            options.failureAction.toString()));
+        FailureAction.valueOf(wrapper.getString(FAILURE_ACTION));
     options.pipelineLevel =
         wrapper.getInt(PIPELINE_LEVEL, options.pipelineLevel);
     options.pipelineExecId =
@@ -228,7 +229,7 @@ public class ExecutionOptions {
   }
 
   public FailureAction getFailureAction() {
-    return this.failureAction;
+    return this.failureAction == null ? FailureAction.FINISH_CURRENTLY_RUNNING : this.failureAction;
   }
 
   public void setFailureAction(final FailureAction action) {
@@ -236,7 +237,7 @@ public class ExecutionOptions {
   }
 
   public String getConcurrentOption() {
-    return this.concurrentOption;
+    return this.concurrentOption == null ? CONCURRENT_OPTION_IGNORE : this.concurrentOption;
   }
 
   public void setConcurrentOption(final String concurrentOption) {
@@ -244,7 +245,7 @@ public class ExecutionOptions {
   }
 
   public String getMailCreator() {
-    return this.mailCreator;
+    return this.mailCreator == null ? DefaultMailCreator.DEFAULT_MAIL_CREATOR : this.mailCreator;
   }
 
   public void setMailCreator(final String mailCreator) {
@@ -268,7 +269,7 @@ public class ExecutionOptions {
   }
 
   public Integer getQueueLevel() {
-    return this.queueLevel;
+    return this.queueLevel == null ? 0 : this.queueLevel;
   }
 
   public List<DisabledJob> getDisabledJobs() {
@@ -304,7 +305,7 @@ public class ExecutionOptions {
     flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
     flowOptionObj.put(SUCCESS_EMAILS, this.successEmails);
     flowOptionObj.put(FAILURE_EMAILS, this.failureEmails);
-    flowOptionObj.put(FAILURE_ACTION, this.failureAction.toString());
+    flowOptionObj.put(FAILURE_ACTION, this.getFailureAction());
     flowOptionObj.put(PIPELINE_LEVEL, this.pipelineLevel);
     flowOptionObj.put(PIPELINE_EXECID, this.pipelineExecId);
     flowOptionObj.put(QUEUE_LEVEL, this.queueLevel);
@@ -359,10 +360,11 @@ public class ExecutionOptions {
     if (overwriteOptions.queueLevel != null) {
       this.queueLevel = overwriteOptions.queueLevel;
     }
-    if (!overwriteOptions.concurrentOption.isEmpty()) {
+    if (overwriteOptions.concurrentOption != null &&
+        !overwriteOptions.concurrentOption.trim().isEmpty()) {
       this.concurrentOption = overwriteOptions.concurrentOption;
     }
-    if (!overwriteOptions.mailCreator.trim().isEmpty()) {
+    if (overwriteOptions.mailCreator != null && !overwriteOptions.mailCreator.trim().isEmpty()) {
       this.mailCreator = overwriteOptions.mailCreator;
     }
     if (!overwriteOptions.flowParameters.isEmpty()) {
