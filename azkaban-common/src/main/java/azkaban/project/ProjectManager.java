@@ -37,6 +37,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.SecurityTag;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import java.io.File;
@@ -211,6 +212,11 @@ public class ProjectManager {
 
   public Project createProject(final String projectName, final String description,
       final User creator) throws ProjectManagerException {
+    return createProject(projectName, description, creator, null);
+  }
+
+  public Project createProject(final String projectName, final String description,
+      final User creator, final SecurityTag securityTag) throws ProjectManagerException {
     if (projectName == null || projectName.trim().isEmpty()) {
       throw new ProjectManagerException("Project name cannot be empty.");
     } else if (description == null || description.trim().isEmpty()) {
@@ -228,7 +234,7 @@ public class ProjectManager {
         throw new ProjectManagerException("Project already exists.");
       }
       logger.info("Trying to create {} by user {}", projectName, creator.getUserId());
-      newProject = this.projectLoader.createNewProject(projectName, description, creator);
+      newProject = this.projectLoader.createNewProject(projectName, description, creator, securityTag);
       this.cache.putProject(newProject);
     }
 

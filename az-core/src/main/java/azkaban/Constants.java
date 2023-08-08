@@ -463,6 +463,9 @@ public class Constants {
 
     public static final String SECURITY_USER_GROUP = "azkaban.security.user.group";
 
+    // A config to control whether to enable new security model to dynamically change ACLs
+    public static final String ENABLE_SECURITY_CERT_MANAGEMENT = "azkaban.enable.security.cert.management";
+
     public static final String CSR_KEYSTORE_LOCATION = "azkaban.csr.keystore.location";
 
     // dir to keep dependency plugins
@@ -592,6 +595,12 @@ public class Constants {
     * is uploaded by "upload.privilege.user".
     * */
     public static final String AZKABAN_FLOW_PRODUCTION_MARKER = "azkaban.flow.production.marker";
+    /*
+    * A flag to indicate whether the flow should use adhoc certificate or not.
+    * If the flag is set to true, the flow would use adhoc certificate in init container.
+    * Otherwise, the flow would use the existing/default certificate in init container.
+    * */
+    public static final String AZKABAN_FLOW_ADHOC_CERTIFICATE = "azkaban.flow.adhoc.certificate";
   }
 
   public static class JobProperties {

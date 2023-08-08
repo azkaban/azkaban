@@ -55,6 +55,7 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.SecurityTag;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import com.google.common.annotations.VisibleForTesting;
@@ -95,7 +96,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static azkaban.Constants.*;
-import static azkaban.project.FeatureFlag.*;
+import static azkaban.Constants.ConfigurationKeys.ENABLE_SECURITY_CERT_MANAGEMENT;
+import static azkaban.project.FeatureFlag.ENABLE_PROJECT_ADHOC_UPLOAD;
 
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
@@ -156,6 +158,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private boolean lockdownCreateProjects = false;
   private boolean lockdownUploadProjects = false;
   private boolean enableQuartz = false;
+  private boolean enableSecurityCertManagement = false;
   private boolean disableAdhocUploadWhenProjectUploadLocked = false;
   private boolean disableJobPropsOverrideWhenProjectUploadLocked = false;
   private String uploadPrivilegeUser;
@@ -180,6 +183,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
     this.scheduler = server.getFlowTriggerScheduler();
+    this.enableSecurityCertManagement = server.getServerProps().getBoolean(ENABLE_SECURITY_CERT_MANAGEMENT, false);
     this.lockdownCreateProjects =
         server.getServerProps().getBoolean(ConfigurationKeys.LOCKDOWN_CREATE_PROJECTS_KEY, false);
     this.enableQuartz = server.getServerProps().getBoolean(ConfigurationKeys.ENABLE_QUARTZ, false);
@@ -1948,7 +1952,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       status = ERROR_PARAM;
     } else {
       try {
-        this.projectManager.createProject(projectName, projectDescription, user);
+        this.projectManager.createProject(projectName, projectDescription, user,
+            enableSecurityCertManagement ? SecurityTag.NEW_PROJECT : null);
         status = "success";
         action = "redirect";
         final String redirect = "manager?project=" + projectName;

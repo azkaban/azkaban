@@ -26,6 +26,7 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.SecurityTag;
 import azkaban.utils.ThinArchiveUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +52,7 @@ class JdbcProjectHandlerSet {
 
     private static final String BASE_QUERY = "SELECT "
         + "prj.id, prj.name, prj.active, prj.modified_time, prj.create_time, prj.version, prj"
-        + ".last_modified_by, prj.description, prj.enc_type, prj.settings_blob, "
+        + ".last_modified_by, prj.description, prj.enc_type, prj.settings_blob, prj.security_tag, "
         + "prm.name, prm.permissions, prm.isGroup, prjver.uploader "
         + "FROM projects prj LEFT JOIN project_versions prjver ON prj.id = prjver.project_id ";
 
@@ -91,6 +92,7 @@ class JdbcProjectHandlerSet {
           final String description = rs.getString(8);
           final int encodingType = rs.getInt(9);
           final byte[] data = rs.getBytes(10);
+          final String securityTag = rs.getString(11);
           final Project project;
           if (data != null) {
             final EncodingType encType = EncodingType.fromInteger(encodingType);
@@ -122,15 +124,16 @@ class JdbcProjectHandlerSet {
           project.setVersion(version);
           project.setLastModifiedUser(lastModifiedBy);
           project.setDescription(description);
+          project.setSecurityTag(securityTag != null ? SecurityTag.valueOf(securityTag) : null);
 
           projects.put(id, project);
         }
 
         // Add the permission to the project
-        final String username = rs.getString(11);
-        final int permissionFlag = rs.getInt(12);
-        final boolean isGroup = rs.getBoolean(13);
-        final String uploader = rs.getString(14);
+        final String username = rs.getString(12);
+        final int permissionFlag = rs.getInt(13);
+        final boolean isGroup = rs.getBoolean(14);
+        final String uploader = rs.getString(15);
         // Setting upload user in project Object
         if (uploader != null) {
           projects.get(id).setUploadUser(uploader);

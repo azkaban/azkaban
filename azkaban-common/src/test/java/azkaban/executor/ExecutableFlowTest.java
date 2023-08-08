@@ -27,6 +27,7 @@ import azkaban.sla.SlaType;
 import azkaban.test.executions.ExecutionsTestUtil;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import azkaban.utils.SecurityTag;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.time.Duration;
@@ -291,6 +292,46 @@ public class ExecutableFlowTest {
 
     final ExecutableFlow parsedExFlow =
         ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
+    testEquals(exFlow, parsedExFlow);
+  }
+
+  @Test
+  public void testAdhocCertTrue() throws Exception {
+    final Flow flow = this.project.getFlow("jobe");
+    flow.setSecurityTag(SecurityTag.NEW_FLOW);
+    this.project.setUploadLock(false);
+
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    exFlow.setDispatchMethod(DispatchMethod.CONTAINERIZED);
+
+    final Object obj = exFlow.toObject();
+    final String exFlowJSON = JSONUtils.toJSON(obj);
+    final Map<String, Object> flowObjMap =
+        (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
+
+    final ExecutableFlow parsedExFlow =
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
+    Assert.assertEquals(true, parsedExFlow.isFetchAdhocCert());
+    testEquals(exFlow, parsedExFlow);
+  }
+
+  @Test
+  public void testAdhocCertFalse() throws Exception {
+    final Flow flow = this.project.getFlow("jobe");
+    flow.setSecurityTag(SecurityTag.NEW_FLOW);
+    this.project.setUploadLock(true);
+
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    exFlow.setDispatchMethod(DispatchMethod.CONTAINERIZED);
+
+    final Object obj = exFlow.toObject();
+    final String exFlowJSON = JSONUtils.toJSON(obj);
+    final Map<String, Object> flowObjMap =
+        (Map<String, Object>) JSONUtils.parseJSONFromString(exFlowJSON);
+
+    final ExecutableFlow parsedExFlow =
+        ExecutableFlow.createExecutableFlow(flowObjMap, exFlow.getStatus());
+    Assert.assertEquals(false, parsedExFlow.isFetchAdhocCert());
     testEquals(exFlow, parsedExFlow);
   }
 

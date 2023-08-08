@@ -20,6 +20,7 @@ import static azkaban.Constants.EventReporterConstants.FLOW_RETRY_PARENT_EXECUTI
 import static azkaban.Constants.EventReporterConstants.FLOW_RETRY_ROOT_EXECUTION_ID;
 import static azkaban.Constants.EventReporterConstants.SYSTEM_DEFINED_FLOW_RETRY_COUNT_PARAM;
 import static azkaban.Constants.EventReporterConstants.USER_DEFINED_FLOW_RETRY_COUNT_PARAM;
+import static azkaban.Constants.FlowProperties.AZKABAN_FLOW_ADHOC_CERTIFICATE;
 
 import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
@@ -27,6 +28,7 @@ import azkaban.imagemgmt.version.VersionSet;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
+import azkaban.utils.SecurityTag;
 import azkaban.utils.TypedMapWrapper;
 import com.sun.istack.NotNull;
 import java.util.ArrayList;
@@ -116,6 +118,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private VersionSet versionSet;
   private Set<String> proxyUsersFromFlowObj;
 
+  private boolean fetchAdhocCert = false;
+
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
     this.projectName = project.getName();
@@ -128,6 +132,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
     setLocked(flow.isLocked());
     setProductionFlowMarker(project.isUploadLocked());
     setFlowLockErrorMessage(flow.getFlowLockErrorMessage());
+    if (!project.isUploadLocked() && flow.getSecurityTag() == SecurityTag.NEW_FLOW) {
+      this.fetchAdhocCert = true;
+    }
     this.setFlow(project, flow);
   }
 
@@ -306,6 +313,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public boolean getProductionFlowMarker() {
     return this.isProductionFlow;
   }
+  public boolean isFetchAdhocCert() {
+    return fetchAdhocCert;
+  }
 
   public boolean isOOMKilled() { return this.isOOMKilled; }
 
@@ -417,6 +427,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(IS_PRODUCTION_FLOW_PARAM, this.isProductionFlow);
+    flowObj.put(AZKABAN_FLOW_ADHOC_CERTIFICATE, this.fetchAdhocCert);
+
     flowObj.put(IS_OOM_Killed_PARAM, this.isOOMKilled);
     flowObj.put(IS_VPA_Enabled_PARAM, this.isVPAEnabled);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
@@ -498,6 +510,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setProductionFlowMarker(flowObj.getBool(IS_PRODUCTION_FLOW_PARAM, false));
+    this.fetchAdhocCert = flowObj.getBool(AZKABAN_FLOW_ADHOC_CERTIFICATE, false);
+
     this.setOOMKilled(flowObj.getBool(IS_OOM_Killed_PARAM, false));
     this.setVPAEnabled(flowObj.getBool(IS_VPA_Enabled_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));

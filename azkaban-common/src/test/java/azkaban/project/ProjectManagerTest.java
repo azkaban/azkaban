@@ -162,7 +162,7 @@ public class ProjectManagerTest {
     final String projectName = "mytestproject";
     final String projectDescription = "This is my new project with lower cases.";
     final User user = new User("testUser1");
-    when(this.projectLoader.createNewProject(projectName, projectDescription, user))
+    when(this.projectLoader.createNewProject(projectName, projectDescription, user, null))
         .thenReturn(new Project(1, projectName));
     this.manager.createProject(projectName, projectDescription, user);
     final String projectName2 = "MYTESTPROJECT";

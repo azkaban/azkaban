@@ -21,6 +21,7 @@ import static azkaban.flow.CommonJobProperties.FAILURE_ACTION_PROPERTY;
 import azkaban.Constants;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.Pair;
+import azkaban.utils.SecurityTag;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,6 +51,7 @@ public class Flow {
   private static final String ERRORS_PROPERTY = "errors";
   private static final String IS_LOCKED_PROPERTY = "isLocked";
   private static final String FLOW_LOCK_ERROR_MESSAGE_PROPERTY = "flowLockErrorMessage";
+  private static final String SECURITY_TAG_PROPERTY = "securityTag";
 
   private final String id;  // This is actually the node path. I.e. rootFlow:subFlow1:subFlow2
   private int projectId;
@@ -65,6 +67,7 @@ public class Flow {
   private final List<String> failureEmail = new ArrayList<>();
   private final List<String> successEmail = new ArrayList<>();
   private final List<String> overrideEmail = new ArrayList<>();
+  private SecurityTag securityTag;
 
   public String getFailureAction() {
     return failureAction;
@@ -130,6 +133,7 @@ public class Flow {
     final String failureAction = (String) flowObject.getOrDefault(
         FAILURE_ACTION_PROPERTY, flow.getFailureAction()
     );
+    final String securityTag = (String) flowObject.get(SECURITY_TAG_PROPERTY);
     flow.setLayedOut(layedout);
     flow.setEmbeddedFlow(isEmbeddedFlow);
     flow.setAzkabanFlowVersion(azkabanFlowVersion);
@@ -143,6 +147,7 @@ public class Flow {
     flow.addSuccessEmails(successEmails);
     flow.setMailCreator(mailCreator);
     flow.setFailureAction(failureAction);
+    flow.setSecurityTag(securityTag != null ? SecurityTag.valueOf(securityTag) : null);
     // Loading projects
     final Map<String, ImmutableFlowProps> properties = loadPropertiesFromObject(propertiesList);
     flow.addAllFlowProperties(properties.values());
@@ -414,6 +419,9 @@ public class Flow {
     flowObj.put(CONDITION_PROPERTY, this.condition);
     flowObj.put(IS_LOCKED_PROPERTY, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PROPERTY, this.flowLockErrorMessage);
+    if (this.securityTag != null) {
+      flowObj.put(SECURITY_TAG_PROPERTY, this.securityTag.name());
+    }
 
     if (this.failureAction != null) {
       flowObj.put(FAILURE_ACTION_PROPERTY, this.failureAction);
@@ -544,5 +552,17 @@ public class Flow {
 
   public void setFlowLockErrorMessage(final String flowLockErrorMessage) {
     this.flowLockErrorMessage = flowLockErrorMessage;
+  }
+
+  public SecurityTag getSecurityTag() {
+    return this.securityTag;
+  }
+
+  public void setSecurityTag(final SecurityTag securityTag) {
+    this.securityTag = securityTag;
+  }
+
+  public void unsetSecurityTag() {
+    this.securityTag = null;
   }
 }
