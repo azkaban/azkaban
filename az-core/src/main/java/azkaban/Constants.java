@@ -935,7 +935,7 @@ public class Constants {
 
     public static FlowRetryStrategy valueFromName(String name) {
       for(FlowRetryStrategy s: FlowRetryStrategy.values()) {
-        if(s.name.equals(name)) {
+        if(s.name.equals(name) || s.name().equals(name)) {
           return s;
         }
       }
