@@ -87,6 +87,9 @@ public final class HttpRequestUtilsTest {
   public void TestFilterNonAdminOnlyFlowParams() throws IOException,
       ExecutorManagerException, UserManagerException {
     final ExecutableFlow flow = createExecutableFlow();
+    flow.getExecutionOptions().getFlowParameters().put("azkaban.flow.submituser", "abc");
+    flow.getExecutionOptions().getFlowParameters().put("azkaban.job.id", "123");
+
     final UserManager manager = TestUtils.createTestXmlUserManager();
     final User user = manager.getUser("testUser", "testUser");
 
@@ -97,6 +100,10 @@ public final class HttpRequestUtilsTest {
         .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.USE_EXECUTOR));
+    Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
+        .containsKey("azkaban.flow.submituser"));
+    Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
+        .containsKey("azkaban.job.id"));
   }
 
   /* Test that flow properties are retained for admin user */
@@ -104,6 +111,9 @@ public final class HttpRequestUtilsTest {
   public void TestFilterAdminOnlyFlowParams() throws IOException,
       ExecutorManagerException, UserManagerException {
     final ExecutableFlow flow = createExecutableFlow();
+    flow.getExecutionOptions().getFlowParameters().put("azkaban.flow.submituser", "abc");
+    flow.getExecutionOptions().getFlowParameters().put("azkaban.job.id", "123");
+
     final UserManager manager = TestUtils.createTestXmlUserManager();
     final User user = manager.getUser("testAdmin", "testAdmin");
 
@@ -114,6 +124,10 @@ public final class HttpRequestUtilsTest {
         .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
         .containsKey(ExecutionOptions.USE_EXECUTOR));
+    Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
+        .containsKey("azkaban.flow.submituser"));
+    Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
+        .containsKey("azkaban.job.id"));
   }
 
   /* Test exception, if param is a valid integer */
