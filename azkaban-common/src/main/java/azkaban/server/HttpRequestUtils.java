@@ -238,7 +238,7 @@ public class HttpRequestUtils {
     if (flowParameters.containsKey(FlowParameters.FLOW_PARAM_RETRY_STRATEGY)){
       String restartStrategy = flowParameters.get(FlowParameters.FLOW_PARAM_RETRY_STRATEGY);
       try {
-        FlowRetryStrategy restartStrategyEnum = FlowRetryStrategy.valueOf(restartStrategy);
+        FlowRetryStrategy restartStrategyEnum = FlowRetryStrategy.valueFromName(restartStrategy);
       } catch (IllegalArgumentException e){
         errMsg.add(String.format("Invalid %s = %s. Valid values are: %s",
             FlowParameters.FLOW_PARAM_RETRY_STRATEGY, restartStrategy,
