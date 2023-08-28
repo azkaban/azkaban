@@ -17,6 +17,9 @@
 package azkaban.scheduler;
 
 import azkaban.executor.ExecutionOptions;
+import azkaban.project.Project;
+import azkaban.project.ProjectLogEvent;
+import azkaban.project.ProjectManager;
 import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import javax.validation.constraints.NotNull;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
@@ -48,6 +52,7 @@ public class ScheduleManager implements TriggerAgent {
   private final DateTimeFormatter _dateFormat = DateTimeFormat
       .forPattern("MM-dd-yyyy HH:mm:ss:SSS");
   private final ScheduleLoader loader;
+  private final ProjectManager projectManager;
 
   private final Map<Integer, Schedule> scheduleIDMap =
       new ConcurrentHashMap<>();
@@ -58,7 +63,8 @@ public class ScheduleManager implements TriggerAgent {
    * Give the schedule manager a loader class that will properly load the schedule.
    */
   @Inject
-  public ScheduleManager(final ScheduleLoader loader) {
+  public ScheduleManager(final ScheduleLoader loader, final ProjectManager projectManager) {
+    this.projectManager = projectManager;
     this.loader = loader;
   }
 
@@ -102,6 +108,17 @@ public class ScheduleManager implements TriggerAgent {
   }
 
   private void onScheduleExpire(final Schedule s) {
+    Project project = this.projectManager.getProject(s.getProjectId());
+    if (project != null) {
+      String logMessage = "Schedule " + s + " with expiration date " + new DateTime(s.getEndSchedTime()).toDateTimeISO()
+          + " has expired and will be removed.";
+      logger.info(logMessage);
+      this.projectManager.postProjectEvent(
+          project,
+          ProjectLogEvent.EventType.SCHEDULE,
+          "azkaban",
+          logMessage);
+    }
     removeSchedule(s);
   }
 
