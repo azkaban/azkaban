@@ -102,7 +102,7 @@ public class Schedule {
   public String toString() {
 
     final String underlying =
-        this.projectName + "." + this.flowName + " (" + this.projectId + ")"
+        "id " + this.scheduleId + " for " + this.projectName + "." + this.flowName + " (" + this.projectId + ")"
             + " to be run at (starting) " + new DateTime(
             this.firstSchedTime).toDateTimeISO();
     if (this.period == null && this.cronExpression == null) {

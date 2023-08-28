@@ -764,12 +764,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.writeJSON(resp, ret);
   }
 
-  private void removeAssociatedSchedules(final Project project) throws ServletException {
+  private void removeAssociatedSchedules(final Project project, final User user) throws ServletException {
     // remove regular schedules
     try {
       for (final Schedule schedule : this.scheduleManager.getSchedules()) {
         if (schedule.getProjectId() == project.getId()) {
-          logger.info("removing schedule {} for project {}", schedule.getScheduleId(), project.getName());
+          logger.info("removing schedule {} for project {} due to project being removed",
+              schedule.getScheduleId(), project.getName());
+          this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
+              "removing schedule due to project removed " + schedule.getScheduleId());
           this.scheduleManager.removeSchedule(schedule);
         }
       }
@@ -809,7 +812,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    removeAssociatedSchedules(project);
+    removeAssociatedSchedules(project, user);
 
     try {
       this.projectManager.removeProject(project, user);
@@ -2069,7 +2072,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         logger.info("Removed schedule with id {} of renamed/deleted flow: {} from project: {}.",
                 schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
         this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
-                "Schedule " + schedule.toString() + " has been removed.");
+                "Schedule " + schedule.toString() +
+                    " has been removed due to the flow has been removed or renamed during upload process.");
       });
 
       // uploader is upload privilege user and the project is not protected by feature flag enable.project.adhoc.upload

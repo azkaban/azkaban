@@ -400,9 +400,11 @@ public class Trigger {
       actionsString.append(", ");
       actionsString.append(act.getDescription());
     }
-    return "Trigger from " + getSource() + " with trigger condition of "
-        + this.triggerCondition.getExpression() + " and expire condition of "
-        + this.expireCondition.getExpression() + actionsString;
+    return "Trigger from " + getSource() + " with trigger condition's nextCheckTime of "
+        + new DateTime(this.triggerCondition.getNextCheckTime()).toDateTimeISO()
+        + " and expire condition's nextCheckTime of "
+        + new DateTime(this.expireCondition.getNextCheckTime()).toDateTimeISO()
+        + actionsString;
   }
 
   public void stopCheckers() {

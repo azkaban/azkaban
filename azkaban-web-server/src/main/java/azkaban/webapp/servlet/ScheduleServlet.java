@@ -415,7 +415,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.scheduleManager.removeSchedule(sched);
-    logger.info("User '" + user.getUserId() + " has removed schedule " + sched.getScheduleName());
+    logger.info("User " + user.getUserId() + " has removed schedule " + sched.getScheduleName());
     this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
         "Schedule " + sched.toString() + " has been removed.");
 
