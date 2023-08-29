@@ -168,9 +168,7 @@ public class BasicTimeChecker implements ConditionChecker {
   public void reset() {
     final NextCheckTime nextCheckTimeObj = calculateNextCheckTime();
     this.nextCheckTime = nextCheckTimeObj.nextValidCheckTimeFromNow;
-    if (nextCheckTimeObj.missedCheckTimeBeforeNow.size() > 0) {
-      nextCheckTimeObj.missedCheckTimeBeforeNow.remove(nextCheckTimeObj.missedCheckTimeBeforeNow.size() - 1);
-    }
+    nextCheckTimeObj.missedCheckTimeBeforeNow.remove(nextCheckTimeObj.missedCheckTimeBeforeNow.size() - 1);
     this.missedCheckTimesBeforeNow = nextCheckTimeObj.missedCheckTimeBeforeNow;
   }
 
