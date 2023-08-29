@@ -391,7 +391,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
           }
         } catch (final Throwable th) {
           //skip this trigger, moving on to the next one
-          TriggerManager.logger.error("Failed to process trigger with id : " + t, th.fillInStackTrace());
+          TriggerManager.logger.error("Failed to process trigger with id : " + t, th);
         } finally {
           t.unlock();
         }
