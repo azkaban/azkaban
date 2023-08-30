@@ -16,6 +16,7 @@
 
 package azkaban.trigger;
 
+import static azkaban.Constants.*;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -33,7 +34,11 @@ import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableMap;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +51,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
+
 // todo HappyRay: fix these slow tests or delete them.
 public class TriggerManagerTest {
 
@@ -55,6 +60,9 @@ public class TriggerManagerTest {
   private static ProjectManager projectManager;
   private TriggerManager triggerManager;
   private static MetricsManager metricsManager;
+  private static Meter heartbeatMeter;
+
+  private static Timer scannerThreadLatencyMetrics;
 
   @BeforeClass
   public static void prepare() {
@@ -62,6 +70,10 @@ public class TriggerManagerTest {
     executorManagerAdapter = mock(ExecutorManagerAdapter.class);
     projectManager = mock(ProjectManager.class);
     metricsManager = mock(MetricsManager.class);
+    heartbeatMeter = mock(Meter.class);
+    when(metricsManager.addMeter("cron-scheduler-heartbeat")).thenReturn(heartbeatMeter);
+    scannerThreadLatencyMetrics = mock(Timer.class);
+    when(metricsManager.addTimer("cron-scheduler-thread-latency")).thenReturn(scannerThreadLatencyMetrics);
   }
 
   @Before
@@ -92,7 +104,51 @@ public class TriggerManagerTest {
     this.triggerManager.shutdown();
   }
 
+  /**
+   * Test a normal trigger would not change status after adding to loop;
+   * but expired trigger should be changed to EXPIRED status.
+   * This test is to examine if the updateNextTime inside triggerThread.addTrigger() works as expected.
+   * */
   @Test
+  public void testTriggerStatusUpdateOnCreate() throws TriggerManagerException {
+    // create one minute frequency trigger
+    final Trigger t1 = createNormalTrigger("0 * * * * ?");
+    // create an expired trigger
+    final Trigger t2 = createNormalTrigger("0 15 10 8 8 ? 2005");
+    assertTrue(t1.getStatus() == TriggerStatus.READY);
+    assertTrue(t2.getStatus() == TriggerStatus.READY);
+    this.triggerManager.insertTrigger(t1);
+    this.triggerManager.insertTrigger(t2);
+    assertTrue(t1.getStatus() == TriggerStatus.READY);
+    assertTrue(t2.getStatus() == TriggerStatus.EXPIRED);
+  }
+
+  /**
+   * Test an expiring trigger should be changed to EXPIRED status after it is expired.
+   * This test is to examine if the updateNextTime inside resetTriggerConditions of triggerThread's run process
+   * works as expected.
+   * */
+  @Test
+  public void testTriggerStatusUpdateAfterCreate() throws TriggerManagerException {
+    // create one minute frequency trigger
+    LocalDateTime dateTime = LocalDateTime.now();
+    LocalDateTime newTime = dateTime.plus(1, ChronoUnit.MINUTES);
+    // create a soon-expired trigger in one minute,
+    // minute is the minimum granularity in cron-expression that azkaban scheduler uses
+    final Trigger trigger = createNormalTrigger(newTime.getSecond() + " " + newTime.getMinute() + " " + newTime.getHour() + " "
+        + newTime.getDayOfMonth()+ " " + newTime.getMonthValue()+ " ? " + newTime.getYear());
+    this.triggerManager.insertTrigger(trigger);
+    // before expiring it should not change the status
+    assertTrue(trigger.getStatus() == TriggerStatus.READY);
+    sleep(300);
+    assertTrue(trigger.getStatus() == TriggerStatus.READY);
+    // one minute it should be marked expired
+    sleep(60000);
+    assertTrue(trigger.getStatus() == TriggerStatus.EXPIRED);
+  }
+
+  @Test
+  @Ignore
   public void neverExpireTriggerTest() throws TriggerManagerException {
 
     final Trigger t1 = createNeverExpireTrigger("triggerLoader", 10);
@@ -120,6 +176,7 @@ public class TriggerManagerTest {
 
 
   @Test
+  @Ignore
   public void timeCheckerAndExpireTriggerTest() throws TriggerManagerException {
 
     final long curr = System.currentTimeMillis();
@@ -211,6 +268,38 @@ public class TriggerManagerTest {
         getTriggerActions()).build();
 
     timeTrigger.setResetOnTrigger(false);
+    timeTrigger.setResetOnExpire(true);
+    return timeTrigger;
+  }
+
+  private Trigger createNormalTrigger(String cronExpression) {
+    final Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
+    final Map<String, ConditionChecker> expireCheckers = new HashMap<>();
+
+    final ConditionChecker triggerChecker = new BasicTimeChecker("BasicTimeChecker_1",
+        System.currentTimeMillis(), DateTimeZone.getDefault(), true, true,
+        null, cronExpression);
+
+    // End time is 3 seconds past now.
+    final ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,
+        DateTimeZone.getDefault(), DEFAULT_SCHEDULE_END_EPOCH_TIME, false, false,
+        null, null);
+    triggerCheckers.put(triggerChecker.getId(), triggerChecker);
+    expireCheckers.put(endTimeChecker.getId(), endTimeChecker);
+
+    final String triggerExpr = triggerChecker.getId() + ".eval()";
+    final String expireExpr = endTimeChecker.getId() + ".eval()";
+
+    final Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+    final Condition expireCond = new Condition(expireCheckers, expireExpr);
+
+    final Trigger timeTrigger = new Trigger.TriggerBuilder("azkaban",
+        "",
+        triggerCond,
+        expireCond,
+        getTriggerActions()).build();
+
+    timeTrigger.setResetOnTrigger(true);
     timeTrigger.setResetOnExpire(true);
     return timeTrigger;
   }
