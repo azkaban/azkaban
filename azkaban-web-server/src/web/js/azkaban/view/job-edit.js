@@ -29,7 +29,7 @@ azkaban.JobEditView = Backbone.View.extend({
   },
 
   initialize: function (setting) {
-    this.projectURL = contextURL + "manager"
+    this.projectURL = contextURL + "/manager"
     this.generalParams = {}
     this.overrideParams = {}
   },

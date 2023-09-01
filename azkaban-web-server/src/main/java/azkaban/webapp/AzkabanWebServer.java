@@ -444,7 +444,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   }
 
   private void configureRoutes() throws TriggerManagerException {
-    final Context root = new Context(this.server, "/", Context.SESSIONS);
+    final Context root = new Context(this.server, this.props.getString("jetty.contextPath" , "/") , Context.SESSIONS); 
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
     root.setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this);
 
