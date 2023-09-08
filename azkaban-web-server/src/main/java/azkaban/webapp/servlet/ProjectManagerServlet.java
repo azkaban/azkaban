@@ -786,7 +786,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         this.scheduler.unschedule(project);
       }
     } catch (final SchedulerException e) {
-      logger.error("");
+      logger.error("Error removing flow trigger schedules for project {} in removing project process",
+          project.getName(), e);
       throw new ServletException(e);
     }
   }

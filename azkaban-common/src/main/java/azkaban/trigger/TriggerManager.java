@@ -364,13 +364,8 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         t.lock();
         try {
           TriggerManager.this.scannerStage = "Checking for trigger " + t.getTriggerId();
-          if (t.getStatus().equals(TriggerStatus.INVALID)) {
-            removeTrigger(t);
-            continue;
-          }
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
-
             /**
              * Prior to this change, expiration condition should never be called though
              * we have some related code here. ExpireCondition used the same BasicTimeChecker
@@ -378,20 +373,21 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
              * the previous ExpireCondition and this commit's ExpireCondition.
              */
             if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.expireConditionMet()) {
+              // expire condition met, or end time reached, we pause the trigger not removing it
+              // because we don't find a good way to define the expiration of a trigger, currently it is set to 2050/01/01
               onTriggerPause(t);
             } else if (t.triggerConditionMet()) {
+              // fire the trigger based on the trigger action, and update the next check time
               onTriggerTrigger(t);
             }
           }
           if ((t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban"))
               || t.getStatus().equals(TriggerStatus.INVALID)) {
             removeTrigger(t);
-          } else {
-            t.updateNextCheckTime();
           }
         } catch (final Throwable th) {
           //skip this trigger, moving on to the next one
-          TriggerManager.logger.error("Failed to process trigger with id : " + t, th);
+          TriggerManager.logger.error("Failed to process trigger with id : " + t, th.fillInStackTrace());
         } finally {
           t.unlock();
         }
