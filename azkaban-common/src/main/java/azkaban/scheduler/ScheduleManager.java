@@ -54,6 +54,8 @@ public class ScheduleManager implements TriggerAgent {
   private final ScheduleLoader loader;
   private final ProjectManager projectManager;
 
+  private final ScheduleChangeEmailerManager scheduleChangeEmailerManager;
+
   private final Map<Integer, Schedule> scheduleIDMap =
       new ConcurrentHashMap<>();
   private final Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap =
@@ -63,9 +65,12 @@ public class ScheduleManager implements TriggerAgent {
    * Give the schedule manager a loader class that will properly load the schedule.
    */
   @Inject
-  public ScheduleManager(final ScheduleLoader loader, final ProjectManager projectManager) {
+  public ScheduleManager(final ScheduleLoader loader,
+      final ProjectManager projectManager,
+      final ScheduleChangeEmailerManager scheduleChangeEmailerManager) {
     this.projectManager = projectManager;
     this.loader = loader;
+    this.scheduleChangeEmailerManager = scheduleChangeEmailerManager;
   }
 
   /**
@@ -120,6 +125,7 @@ public class ScheduleManager implements TriggerAgent {
           logMessage);
     }
     removeSchedule(s);
+    this.scheduleChangeEmailerManager.addNotificationTaskOnScheduleDelete(s, "azkaban", "Schedule Expired" );
   }
 
   /**

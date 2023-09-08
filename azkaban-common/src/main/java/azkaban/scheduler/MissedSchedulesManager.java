@@ -25,26 +25,17 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.spi.AzkabanException;
 import azkaban.trigger.builtin.ExecuteFlowAction;
-import azkaban.utils.DaemonThreadFactory;
 import azkaban.utils.Emailer;
 import azkaban.utils.Props;
 import azkaban.utils.TimeUtils;
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.text.MessageFormat;
-import java.time.Duration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
@@ -57,18 +48,10 @@ import org.slf4j.LoggerFactory;
  * to execute tasks including send email notification or back execute flow.
  * */
 @Singleton
-public class MissedSchedulesManager {
-  private static final Logger LOG = LoggerFactory.getLogger(MissedSchedulesManager.class);
+public class MissedSchedulesManager extends ScheduleEmailerManager {
 
-  private ExecutorService missedSchedulesExecutor;
   private final boolean missedSchedulesManagerEnabled;
   private final ProjectManager projectManager;
-  // TODO: Refactored to AlerterHolder to support missed scheduler use case
-  private final Emailer emailer;
-
-  // parameters to adjust MissScheduler
-  private final int threadPoolSize;
-  private final int DEFAULT_THREAD_POOL_SIZE = 5;
   private final Counter emailCounter;
   private final Counter missScheduleCounter; // total number of missed schedules
   private final Counter missScheduleWithNonBackExecutionEnabledCounter; // number of missed schedules with no back execution enabled
@@ -80,9 +63,8 @@ public class MissedSchedulesManager {
                                 final ProjectManager projectManager,
                                 final Emailer emailer,
                                 final MetricsManager metricsManager) {
+    super(azkProps, emailer, "azk-missed-schedules-task-pool");
     this.projectManager = projectManager;
-    this.emailer = emailer;
-    this.threadPoolSize = azkProps.getInt(Constants.MISSED_SCHEDULE_THREAD_POOL_SIZE, this.DEFAULT_THREAD_POOL_SIZE);
     this.missedSchedulesManagerEnabled = azkProps.getBoolean(Constants.MISSED_SCHEDULE_MANAGER_ENABLED, false);
     this.emailCounter = metricsManager.addCounter("missed-schedule-email-notification-count");
     this.missScheduleCounter = metricsManager.addCounter("missed-schedule-count");
@@ -95,7 +77,7 @@ public class MissedSchedulesManager {
     if (this.missedSchedulesManagerEnabled && this.threadPoolSize <= 0) {
       final String errorMsg =
           "MissedSchedulesManager is enabled but thread pool size is not positive: " + this.threadPoolSize;
-      LOG.error(errorMsg);
+      this.log.error(errorMsg);
       throw new AzkabanException(errorMsg);
     }
   }
@@ -111,21 +93,14 @@ public class MissedSchedulesManager {
       @NotNull final ExecuteFlowAction action,
       final boolean backExecutionEnabled) throws NoSuchAzkabanResourceException {
     if (!this.missedSchedulesManagerEnabled) {
-      LOG.warn("missed Schedule manager is not enabled, can not add tasks.");
+      this.log.warn("missed Schedule manager is not enabled, can not add tasks.");
       return false;
     }
-    final int projectId = action.getProjectId();
-    final String flowName = action.getFlowName();
-    final Project project = FlowUtils.getProject(projectManager, projectId);
-    final Flow flow = FlowUtils.getFlow(project, flowName);
-    LOG.info("received a missed schedule on times {} by action {}", missedScheduleTimesInMs, action.toJson());
-    List<String> emailRecipients = flow.getFailureEmails();
-    if (action.getExecutionOptions().isFailureEmailsOverridden()) {
-      emailRecipients = action.getExecutionOptions().getFailureEmails();
-    }
+    this.log.info("received a missed schedule on times {} by action {}", missedScheduleTimesInMs, action.toJson());
+    List<String> emailRecipients = getEmailRecipientsFromFlow(action);
 
     try {
-      final Future taskFuture = this.missedSchedulesExecutor.submit(
+      final Future taskFuture = this.executor.submit(
           new MissedSchedulesOperationTask(missedScheduleTimesInMs, this.emailer, emailRecipients, backExecutionEnabled,
               action));
       this.missScheduleCounter.inc(missedScheduleTimesInMs.size());
@@ -135,45 +110,39 @@ public class MissedSchedulesManager {
       if (backExecutionEnabled) {
         this.backExecutionCounter.inc();
         this.missScheduleWithBackExecutionEnabledCounter.inc(missedScheduleTimesInMs.size());
-        LOG.info("Missed schedule task submitted with email recipients {} and action {}", emailRecipients, action);
+        this.log.info("Missed schedule task submitted with email recipients {} and action {}", emailRecipients, action);
       } else {
         this.missScheduleWithNonBackExecutionEnabledCounter.inc(missedScheduleTimesInMs.size());
       }
       return true;
     } catch (final RejectedExecutionException e) {
-      LOG.error("Failed to add more missed schedules tasks to the thread pool", e);
+      this.log.error("Failed to add more missed schedules tasks to the thread pool", e);
       return false;
     }
   }
 
-  public void start() {
-    // TODO: add metrics to monitor active threads count, total number of missed schedule tasks, etc.
-    // Create the thread pool
-    this.missedSchedulesExecutor =
-        this.missedSchedulesManagerEnabled ? Executors.newFixedThreadPool(this.threadPoolSize,
-            new DaemonThreadFactory("azk-missed-schedules-task-pool")) : null;
-    if (this.missedSchedulesManagerEnabled) {
-      LOG.info("Missed Schedule Manager is ready to take tasks.");
-    } else {
-      LOG.info("Missed Schedule Manager is disabled.");
-    }
+  @Override
+  public boolean isEmailerManagerEnabled() {
+    return this.missedSchedulesManagerEnabled;
   }
 
-  public boolean stop() throws InterruptedException {
-    if (this.missedSchedulesExecutor != null) {
-      this.missedSchedulesExecutor.shutdown();
-      if (!this.missedSchedulesExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-        this.missedSchedulesExecutor.shutdownNow();
-      }
+  private List<String> getEmailRecipientsFromFlow(ExecuteFlowAction action) {
+    final int projectId = action.getProjectId();
+    final String flowName = action.getFlowName();
+    final Project project = FlowUtils.getProject(this.projectManager, projectId);
+    final Flow flow = FlowUtils.getFlow(project, flowName);
+    List<String> emailRecipients = flow.getFailureEmails();
+    if (action.getExecutionOptions().isFailureEmailsOverridden()) {
+      emailRecipients = action.getExecutionOptions().getFailureEmails();
     }
-    return true;
+    return emailRecipients;
   }
 
   /**
    * A MissedSchedule Task is a unit that store the critical information to execute a missedSchedule operation.
    * A Task is capable to
    * 1. notice user
-   * 2. execute back execution if enabled feature flag (TODO)
+   * 2. execute back execution if enabled feature flag
    * when a missed schedule happens.
    * */
   public static class MissedSchedulesOperationTask implements Runnable {

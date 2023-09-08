@@ -27,6 +27,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
+import azkaban.scheduler.ScheduleChangeEmailerManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.AzkabanAPI;
@@ -86,6 +87,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final Logger logger = LoggerFactory.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
+  private ScheduleChangeEmailerManager scheduleChangeEmailerManager;
   private UserManager userManager;
   private Map<String, List<HTMLFormElement>> alerterPlugins;
 
@@ -100,6 +102,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     this.userManager = server.getUserManager();
     this.projectManager = server.getProjectManager();
     this.scheduleManager = server.getScheduleManager();
+    this.scheduleChangeEmailerManager = server.getScheduleChangeEmailerManager();
     final Map<String, List<HTMLFormElement>> alerterPlugins = new HashMap<>();
     server.getAlerterPlugins().forEach((name, alerter) -> alerterPlugins.put(name,
         (alerter.getViewParameters() != null ? alerter.getViewParameters()
@@ -416,6 +419,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     this.scheduleManager.removeSchedule(sched);
     logger.info("User " + user.getUserId() + " has removed schedule " + sched.getScheduleName());
+    this.scheduleChangeEmailerManager.addNotificationTaskOnScheduleDelete(sched, user.getUserId(), "User Operation");
     this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
         "Schedule " + sched.toString() + " has been removed.");
 

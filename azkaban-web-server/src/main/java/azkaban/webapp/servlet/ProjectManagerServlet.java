@@ -39,6 +39,7 @@ import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
+import azkaban.scheduler.ScheduleChangeEmailerManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.AzkabanAPI;
@@ -152,6 +153,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManagerAdapter;
   private ScheduleManager scheduleManager;
+  private ScheduleChangeEmailerManager scheduleChangeEmailerManager;
   private UserManager userManager;
   private FlowTriggerScheduler scheduler;
   private int downloadBufferSize;
@@ -183,6 +185,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     this.scheduleManager = server.getScheduleManager();
     this.userManager = server.getUserManager();
     this.scheduler = server.getFlowTriggerScheduler();
+    this.scheduleChangeEmailerManager = server.getScheduleChangeEmailerManager();
     this.enableSecurityCertManagement = server.getServerProps().getBoolean(ENABLE_SECURITY_CERT_MANAGEMENT, false);
     this.lockdownCreateProjects =
         server.getServerProps().getBoolean(ConfigurationKeys.LOCKDOWN_CREATE_PROJECTS_KEY, false);
@@ -774,6 +777,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           this.projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(),
               "removing schedule due to project removed " + schedule.getScheduleId());
           this.scheduleManager.removeSchedule(schedule);
+          this.scheduleChangeEmailerManager.addNotificationTaskOnScheduleDelete(schedule, user.getUserId(), "Project Removal");
         }
       }
     } catch (final ScheduleManagerException e) {
@@ -2068,7 +2072,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       lockFlowsForProject(project, lockedFlows);
 
       // remove schedule of renamed/deleted flows
-      removeScheduleOfDeletedFlows(project, this.scheduleManager, (schedule) -> {
+      removeScheduleOfDeletedFlows(project, this.scheduleManager, this.scheduleChangeEmailerManager, (schedule) -> {
         logger.info("Removed schedule with id {} of renamed/deleted flow: {} from project: {}.",
                 schedule.getScheduleId(), schedule.getFlowName(), schedule.getProjectName());
         this.projectManager.postProjectEvent(project, EventType.SCHEDULE, "azkaban",
@@ -2174,7 +2178,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * @param onDeletedSchedule a callback function to execute with every deleted schedule
    */
   static void removeScheduleOfDeletedFlows(final Project project,
-      final ScheduleManager scheduleManager, final Consumer<Schedule> onDeletedSchedule) {
+      final ScheduleManager scheduleManager,
+      final ScheduleChangeEmailerManager scheduleChangeEmailerManager,
+      final Consumer<Schedule> onDeletedSchedule) {
     final Set<String> flowNameList = project.getFlows().stream().map(f -> f.getId()).collect(
         Collectors.toSet());
 
@@ -2183,6 +2189,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           !flowNameList.contains(schedule.getFlowName())) {
         scheduleManager.removeSchedule(schedule);
         onDeletedSchedule.accept(schedule);
+        scheduleChangeEmailerManager.addNotificationTaskOnScheduleDelete(schedule, "azkaban", "Flow Deleted/Renamed");
       }
     }
   }
