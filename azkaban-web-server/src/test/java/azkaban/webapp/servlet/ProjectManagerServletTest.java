@@ -29,6 +29,7 @@ import azkaban.project.DirectoryYamlFlowLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
+import azkaban.scheduler.ScheduleChangeEmailerManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.session.Session;
 import azkaban.test.executions.ExecutionsTestUtil;
@@ -55,6 +56,7 @@ public class ProjectManagerServletTest {
 
   private final ScheduleManager scheduleManager = mock(ScheduleManager.class);
   private final ProjectManagerServlet projectManagerServlet = mock(ProjectManagerServlet.class);
+  private final ScheduleChangeEmailerManager scheduleChangeEmailerManager = mock(ScheduleChangeEmailerManager.class);
 
   @Test
   public void testRemoveScheduleOfDeletedFlows() throws Exception {
@@ -83,7 +85,7 @@ public class ProjectManagerServletTest {
     doAnswer(invocation -> schedules.remove(invocation.getArguments()[0]))
         .when(this.scheduleManager).removeSchedule(any(Schedule.class));
     this.projectManagerServlet
-        .removeScheduleOfDeletedFlows(project, this.scheduleManager, schedule -> {
+        .removeScheduleOfDeletedFlows(project, this.scheduleManager, this.scheduleChangeEmailerManager, schedule -> {
         });
     Assert.assertEquals(2, schedules.size());
     Assert.assertTrue(schedules.containsAll(Arrays.asList(sched2, sched3)));

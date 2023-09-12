@@ -57,6 +57,7 @@ import azkaban.metrics.AzkabanAPIMetrics;
 import azkaban.metrics.ContainerizationMetrics;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.MissedSchedulesManager;
+import azkaban.scheduler.ScheduleChangeEmailerManager;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.AzkabanServer;
@@ -170,6 +171,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
   private final MissedSchedulesManager missedSchedulesManager;
+  private final ScheduleChangeEmailerManager scheduleChangeEmailerManager;
   private final WebMetrics webMetrics;
   private final Props props;
   private final SessionCache sessionCache;
@@ -190,6 +192,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
       final ScheduleManager scheduleManager,
       final TriggerManager triggerManager,
       final MissedSchedulesManager missedSchedulesManager,
+      final ScheduleChangeEmailerManager scheduleChangeEmailerManager,
       final WebMetrics webMetrics,
       final SessionCache sessionCache,
       final UserManager userManager,
@@ -211,6 +214,8 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
     this.missedSchedulesManager = requireNonNull(missedSchedulesManager, "missScheduleManager is null");
+    this.scheduleChangeEmailerManager = requireNonNull(scheduleChangeEmailerManager,
+        "scheduleChangeEmailerManager is null");
     this.webMetrics = requireNonNull(webMetrics, "webMetrics is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.userManager = requireNonNull(userManager, "userManager is null.");
@@ -427,6 +432,10 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     return this.flowTriggerScheduler;
   }
 
+  public ScheduleChangeEmailerManager getScheduleChangeEmailerManager() {
+    return this.scheduleChangeEmailerManager;
+  }
+
   private void validateDatabaseVersion() throws IOException, SQLException {
     final boolean checkDB = this.props
         .getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
@@ -556,6 +565,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.executorManagerAdapter.start();
     this.executionLogsCleaner.start();
     this.missedSchedulesManager.start();
+    this.scheduleChangeEmailerManager.start();
 
     configureRoutes();
     startWebMetrics();
@@ -788,6 +798,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     this.containerCleanupManager.ifPresent(ContainerCleanupManager::shutdown);
     try {
       this.missedSchedulesManager.stop();
+      this.scheduleChangeEmailerManager.stop();
       this.server.stop();
     } catch (final Exception e) {
       // Catch all while closing server
