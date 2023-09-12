@@ -53,7 +53,7 @@ echo "CLASSPATH: ${CLASSPATH}";
 executorport=$(grep executor.port "${conf}/azkaban.properties" | cut -d = -f 2)
 serverpath=$(pwd)
 
-AZKABAN_OPTS=" -Xmx512M -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
+AZKABAN_OPTS=" -Xmx3G -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
     -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
 
 # Set the log4j configuration file
