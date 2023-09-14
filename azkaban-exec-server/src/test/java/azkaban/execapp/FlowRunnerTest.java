@@ -322,7 +322,9 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     assertStatus("job-retry", Status.SUCCEEDED);
     assertStatus("job-pass", Status.SUCCEEDED);
     assertStatus("job-retry-fail", Status.FAILED);
+    assertStatus("job-retry-exponential", Status.SUCCEEDED);
     assertAttempts("job-retry", 3);
+    assertAttempts("job-retry-exponential", 3);
     assertAttempts("job-pass", 0);
     assertAttempts("job-retry-fail", 2);
 
