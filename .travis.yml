@@ -28,7 +28,7 @@ notifications:
 
 env:
   global:
-    - GRADLE_OPTS="-Xms512m -Xmx4096m"
+    - GRADLE_OPTS="-Xms512m -Xmx8192m"
 
 after_success:
   # avoid to double trigger test and increase build time
