@@ -123,6 +123,15 @@ public class XmlValidatorManager implements ValidatorManager {
     final DocumentBuilderFactory docBuilderFactory =
         DocumentBuilderFactory.newInstance();
     DocumentBuilder builder = null;
+
+    docBuilderFactory.setNamespaceAware(true);
+    docBuilderFactory.setXIncludeAware(false);
+    docBuilderFactory.setExpandEntityReferences(false);
+    docBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    docBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+    docBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+    docBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+    
     try {
       builder = docBuilderFactory.newDocumentBuilder();
     } catch (final ParserConfigurationException e) {
