@@ -1830,17 +1830,17 @@ A response sample:
 
 .. code-block:: guess
 
-{
-  "columns" : [ "user", "time", "type", "message" ],
-  "logData" : [ 
-    [ "test_user1", 1543615522936, "PROPERTY_OVERRIDE", "Modified Properties: .... " ],
-    [ "test_user2", 1542346639933, "UPLOADED", "Uploaded project files zip " ],
-    [ "test_user3", 1519908889338, "CREATED", null ],
-    ... 
-  ],
-  "project" : "azkaban-test-project",
-  "projectId" : 1
-}
+  {
+    "columns" : [ "user", "time", "type", "message" ],
+    "logData" : [ 
+      [ "test_user1", 1543615522936, "PROPERTY_OVERRIDE", "Modified Properties: .... " ],
+      [ "test_user2", 1542346639933, "UPLOADED", "Uploaded project files zip " ],
+      [ "test_user3", 1519908889338, "CREATED", null ],
+      ... 
+    ],
+    "project" : "azkaban-test-project",
+    "projectId" : 1
+  }
 
 .. _api-image-management-api:
 
