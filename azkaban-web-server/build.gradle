@@ -117,7 +117,7 @@ task jsTest(dependsOn: ['npm_install'], type: NodeTask) {
     script = file('node_modules/mocha/bin/mocha')
 
     // args keep the test files' location
-    args = ['src/web/js/azkaban/test/']
+    args = ['src/web/js/azkaban/test/test.js']
 }
 test.dependsOn jsTest
 
