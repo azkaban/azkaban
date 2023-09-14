@@ -373,6 +373,7 @@ public class ReportalMailCreator implements MailCreator {
                   "It is too big to be attached in this message. Please use the link above titled Result Data to download the reports</tr>");
     }
     message.println("</body>").println("</html>");
+    logger.info("Total size of attached files is " + totalFileSize/1024/1024 + "MB");
 
     return true;
   }
