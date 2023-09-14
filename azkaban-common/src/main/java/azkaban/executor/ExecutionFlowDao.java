@@ -491,6 +491,18 @@ public class ExecutionFlowDao {
     }
   }
 
+  public int checkExecutionQueueSize(int executor_id, boolean isActive) {
+    final String selectExecutionForUpdate = isActive ?
+            SelectFromExecutionFlows.COUNT_EXECUTION_FOR_UPDATE_ACTIVE :
+            SelectFromExecutionFlows.COUNT_EXECUTION_FOR_UPDATE_INACTIVE;
+    try {
+      List<Integer> query = this.dbOperator.query(selectExecutionForUpdate, new SelectFromExecutionFlows(), Status.READY.getNumVal(), executor_id);
+      return query.isEmpty() ? 0 : query.get(0);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
       final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
@@ -644,6 +656,21 @@ public class ExecutionFlowDao {
     // Select flows that are in preparing state for more than a certain duration.
     private static final String SELECT_EXECUTIONS_QUEUED_FOR_LONG_TIME =
         SELECT_EXECUTION_BASE_QUERY + QUEUED_FOR_LONG_TIME;
+
+    private static final String COUNT_EXECUTION_FOR_UPDATE_FORMAT =
+            "SELECT COUNT(exec_id) FROM execution_flows " +
+                    "WHERE status = ? " +
+                    "AND executor_id IS NULL " +
+                    "AND flow_data IS NOT NULL " +
+                    "AND %s " +
+                    "ORDER BY flow_priority DESC, update_time ASC, exec_id ASC";
+
+    public static final String COUNT_EXECUTION_FOR_UPDATE_ACTIVE =
+            String.format(COUNT_EXECUTION_FOR_UPDATE_FORMAT,
+              "(use_executor is NULL or use_executor = ?)");
+
+    public static final String COUNT_EXECUTION_FOR_UPDATE_INACTIVE =
+            String.format(COUNT_EXECUTION_FOR_UPDATE_FORMAT, "use_executor = ?");
 
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {

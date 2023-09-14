@@ -323,6 +323,9 @@ public interface ExecutorLoader {
   int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
+  int checkExecutionQueueSize(int executor_id, boolean isActive)
+      throws ExecutorManagerException;
+
   /**
    * This method is used to select executions in batch. It will apply lock and fetch executions. It
    * will also update the status of those executions as mentioned in updatedStatus field.

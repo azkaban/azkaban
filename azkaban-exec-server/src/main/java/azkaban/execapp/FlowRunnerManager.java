@@ -68,6 +68,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -84,6 +86,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -163,6 +166,8 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
   private final int jobLogNumFiles;
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private final boolean validateProxyUser;
+  private final Method onIdle;
+  private final Method onBusy;
   private final ClusterRouter clusterRouter;
   private PollingService pollingService;
   private int threadPoolQueueSize = -1;
@@ -191,6 +196,22 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
     this.azkabanProps = props;
 
     this.azkabanEventReporter = azkabanEventReporter;
+
+    Method onIdle = null;
+    Method onBusy = null;
+    final String idleMonitorClass = props.getString("azkaban.idleMonitor.class", "");
+    if(null != idleMonitorClass && !idleMonitorClass.isEmpty()) {
+      try {
+        Class<?> idleMontorClass = this.getClass().getClassLoader().loadClass(idleMonitorClass);
+        onIdle = idleMontorClass.getMethod("onIdle");
+        onBusy = idleMontorClass.getMethod("onBusy");
+      } catch (NoSuchMethodException | ClassNotFoundException e) {
+        LOGGER.warn("Error initializing idle/busy monitor", e);
+      }
+    }
+    this.onIdle = onIdle;
+    this.onBusy = onBusy;
+
 
     this.executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
     if (!this.executionDirectory.exists()) {
@@ -384,6 +405,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
           "Set active action ignored. Executor is already " + (isActive ? "active" : "inactive"));
     }
     this.active = isActive;
+    updateIdleState();
     if (!this.active) {
       // When deactivating this executor, this call will wait to return until every thread in {@link
       // #createFlowRunner} has finished. When deploying new executor, old running executor will be
@@ -398,6 +420,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
 
   public void setActiveInternal(final boolean isActive) {
     this.active = isActive;
+    updateIdleState();
   }
 
   /**
@@ -547,7 +570,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
   }
 
   private void submitFlowRunner(final FlowRunner runner) throws ExecutorManagerException {
-    this.runningFlows.put(runner.getExecutionId(), runner);
+    putFlowRunner(runner);
     try {
       // The executorService already has a queue.
       // The submit method below actually returns an instance of FutureTask,
@@ -559,7 +582,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
       // update the last submitted time.
       this.lastFlowSubmittedDate = System.currentTimeMillis();
     } catch (final RejectedExecutionException re) {
-      this.runningFlows.remove(runner.getExecutionId());
+      removeFlow(runner.getExecutionId());
       final StringBuffer errorMsg = new StringBuffer(
           "Azkaban executor can't execute any more flows. ");
       if (this.executorService.isShutdown()) {
@@ -568,6 +591,53 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
       throw new ExecutorManagerException(errorMsg.toString(), re);
     }
   }
+
+  private final AtomicBoolean isIdle = new AtomicBoolean(true);
+  private void onIdle() {
+    if(!FlowRunnerManager.this.active && !isIdle.getAndSet(true)) {
+      LOGGER.info("Executor is idle");
+      if(onIdle != null) {
+        try {
+          onIdle.invoke(null);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          LOGGER.warn("Error calling onIdle", e);
+        }
+      }
+    }
+  }
+
+  private void putFlowRunner(FlowRunner runner) {
+    synchronized (this.runningFlows) {
+      if (this.runningFlows.isEmpty()) onBusy();
+      this.runningFlows.put(runner.getExecutionId(), runner);
+    }
+  }
+
+  private boolean isBusy() {
+    return !this.runningFlows.isEmpty();
+  }
+
+  private void onBusy() {
+        if(isIdle.getAndSet(false)) {
+            LOGGER.info("Executor is busy");
+            if(onBusy != null) {
+                try {
+                    onBusy.invoke(null);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                  LOGGER.warn("Error calling onBusy", e);
+                }
+            }
+        }
+    }
+
+    private FlowRunner removeFlow(int executionId) {
+        FlowRunner removed;
+        synchronized (this.runningFlows) {
+            removed = this.runningFlows.remove(executionId);
+            if(this.runningFlows.isEmpty()) onIdle();
+        }
+        return removed;
+    }
 
   /**
    * Configure Azkaban metrics tracking for a new flowRunner instance
@@ -706,7 +776,7 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
 
         LOGGER.info("Flow " + flow.getExecutionId()
             + " is finished. Adding it to recently finished flows list.");
-        this.runningFlows.remove(flow.getExecutionId());
+        removeFlow(flow.getExecutionId());
         this.deleteExecutionDir(flow.getExecutionId());
       } else if (event.getType() == EventType.FLOW_STARTED) {
         // add flow level SLA checker
@@ -1167,6 +1237,33 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
         }
       } else if (this.pollingCriteria.shouldPoll()) {
         try {
+          int queueSize = executorLoader.checkExecutionQueueSize(executorId, active);
+          if(queueSize > 0) {
+            onBusy();
+            try {
+              poll();
+            } finally {
+              updateIdleState();
+            }
+          }
+        } catch (final Exception e) {
+          FlowRunnerManager.LOGGER.error("Failed to submit flow ", e);
+          FlowRunnerManager.this.commonMetrics.markDispatchFail();
+          this.numRetries = this.numRetries + 1;
+          try {
+            // Implement exponential backoff retries when flow submission fails,
+            // i.e., sleep 1s, 2s, 4s, 8s ... before next retries.
+            Thread.sleep((long) (Math.pow(2, this.numRetries) * 1000));
+          } catch (final InterruptedException ie) {
+            FlowRunnerManager.LOGGER
+              .warn("Sleep after flow submission failure was interrupted - ignoring");
+          }
+        }
+      }
+    }
+
+    private void poll() throws ExecutorManagerException {
+      try {
           final int execId;
           if (FlowRunnerManager.this.azkabanProps
               .getBoolean(ConfigurationKeys.AZKABAN_POLLING_LOCK_ENABLED, false)) {
@@ -1207,11 +1304,20 @@ public class FlowRunnerManager implements IFlowRunnerManager, EventListener<Even
           }
         }
       }
-    }
 
     public void shutdown() {
       this.scheduler.shutdown();
       this.scheduler.shutdownNow();
+    }
+  }
+
+  private void updateIdleState() {
+    synchronized (runningFlows) {
+      if(this.active || isBusy()) {
+        onBusy();
+      } else {
+        onIdle();
+      }
     }
   }
 
