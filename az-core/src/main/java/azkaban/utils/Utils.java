@@ -43,6 +43,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.quartz.CronExpression;
+import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiveFormat;
+import org.rauschig.jarchivelib.ArchiverFactory;
 
 
 /**
@@ -210,25 +213,8 @@ public class Utils {
             "Extracting zip entry would have resulted in a file outside the specified destination"
                 + " directory.");
       }
-
-      if (entry.isDirectory()) {
-        newFile.mkdirs();
-      } else {
-        newFile.getParentFile().mkdirs();
-        final InputStream src = source.getInputStream(entry);
-        try {
-          final OutputStream output =
-              new BufferedOutputStream(new FileOutputStream(newFile));
-          try {
-            IOUtils.copy(src, output);
-          } finally {
-            output.close();
-          }
-        } finally {
-          src.close();
-        }
-      }
     }
+    ArchiverFactory.createArchiver(ArchiveFormat.ZIP).extract(new File(source.getName()), dest);
   }
 
   public static String flattenToString(final Collection<?> collection,

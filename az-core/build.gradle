@@ -47,4 +47,5 @@ dependencies {
     compile deps.hibernateValidator
     compile deps.javaxElApi
     compile deps.javaxEl
+    compile deps.jarchivelib
 }
