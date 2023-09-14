@@ -11,6 +11,7 @@ public class EmailMessageCreatorTest {
   private static final String SENDER = "somebody@domain.com";
   private static final String USER = "somebody@domain.com";
   private static final String PASSWORD = "pwd";
+  private static final String PROTOCOL = "smtp";
 
   @Test
   public void createMessage() {
@@ -19,6 +20,7 @@ public class EmailMessageCreatorTest {
     props.put("mail.password", PASSWORD);
     props.put("mail.sender", SENDER);
     props.put("mail.host", HOST);
+    props.put("mail.protocol", PROTOCOL);
     props.put("mail.port", MAIL_PORT);
     final EmailMessageCreator creator = new EmailMessageCreator(props);
     final EmailMessage message = creator.createMessage();
