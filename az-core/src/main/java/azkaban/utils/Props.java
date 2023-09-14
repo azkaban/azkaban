@@ -727,13 +727,14 @@ public class Props {
    */
   public Properties toAllProperties() {
     final Properties allProp = new Properties();
-    // import local properties
-    allProp.putAll(toProperties());
 
     // import parent properties
     if (this._parent != null) {
       allProp.putAll(this._parent.toProperties());
     }
+
+    // import local properties
+    allProp.putAll(toProperties());
 
     return allProp;
   }
