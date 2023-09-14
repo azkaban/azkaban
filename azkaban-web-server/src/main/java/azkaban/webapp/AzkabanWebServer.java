@@ -84,6 +84,7 @@ import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
+import azkaban.webapp.servlet.AdminServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
 import azkaban.webapp.servlet.FlowTriggerInstanceServlet;
 import azkaban.webapp.servlet.FlowTriggerServlet;
@@ -533,6 +534,7 @@ public class AzkabanWebServer extends AzkabanServer implements IMBeanRegistrable
     routesMap.put("/", new IndexRedirectServlet(defaultServletPath));
 
     routesMap.put("/status", new StatusServlet(this.statusService));
+    routesMap.put("/admin", new AdminServlet());
 
     if (isContainerizedDispatchMethodEnabled()) {
       routesMap.put("/imageTypes/*", new ImageTypeServlet());
