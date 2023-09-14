@@ -181,6 +181,7 @@ public class CommonJobProperties {
   /**
    * Properties for passing the flow start time to the jobs.
    */
+  public static final String FLOW_START_EPOCHSECOND = "azkaban.flow.start.epochsecond";
   public static final String FLOW_START_TIMESTAMP =
       "azkaban.flow.start.timestamp";
   public static final String FLOW_START_YEAR = "azkaban.flow.start.year";

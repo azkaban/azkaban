@@ -27,6 +27,8 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.utils.Props;
 import com.google.gson.Gson;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.joda.time.DateTime;
@@ -49,7 +51,9 @@ public class FlowUtils {
     props.put(CommonJobProperties.EXECUTION_SOURCE, flow.getExecutionSource());
 
     final DateTime loadTime = new DateTime();
+    final long epochSecond = Instant.now().getEpochSecond();
 
+    props.put(CommonJobProperties.FLOW_START_EPOCHSECOND,epochSecond);
     props.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
     props.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
     props.put(CommonJobProperties.FLOW_START_MONTH, loadTime.toString("MM"));
