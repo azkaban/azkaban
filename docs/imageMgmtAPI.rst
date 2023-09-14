@@ -58,6 +58,7 @@ owner (these APIs will be provided later). ``GUEST`` role can have only read/get
 
 - **Method:** POST
 - **Request URL:** /imageTypes
+- **Example Request URL:** https://{cluster_url}:{cluster_port}/imageTypes/?session.id={Replace browser session id here}
 - **Request Body:**
 
 +-----------------+-------------+--------------------------------------+
@@ -82,6 +83,40 @@ owner (these APIs will be provided later). ``GUEST`` role can have only read/get
 
   Status: 201 Created
   Header -> Location: /imageTypes/{id}
+  
+Update image type (Update)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To update the owners of a image created in the database, we can use the 
+
+- **Method:** POST
+- **Request URL:** /imageTypes
+- **Required Request Parameters:** 
+    session.id={Replace browser session id here}
+    updateImageOwners=addImageOwners/removeImageOwners 
+
+- **Example Request URL:** https://{cluster_url}:{cluster_port}/imageTypes/?session.id={Replace browser session id here}&updateImageOwners=addImageOwners
+- **Request Body:**
+
++-----------------+-------------+--------------------------------------+
+|   Field Name    |     Type    |            Description               |
++=================+=============+======================================+
+|  ``imageType``  |   String    |  Image Type Name (PK)                |  |
++-----------------+-------------+--------------------------------------+
+|  ``ownerships`` | JSON String | List of:                             |
+|                 |             | {"owner": <user-id>, "role": <role>} |
+|                 |             |                                      |
+|                 |             | Possible roles: ``ADMIN``,           |
+|                 |             | ``MEMBER`` or ``GUEST``              |
++-----------------+-------------+--------------------------------------+
+
+**Response:**
+
+.. code-block:: guess
+
+  Status: 201 Created
+  Header -> Location: /imageTypes/{id}
+
+
 
 /imageVersions
 **************
