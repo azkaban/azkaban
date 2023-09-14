@@ -351,7 +351,7 @@ public class ProcessJob extends AbstractProcessJob {
     final String execId = jobProps.getString(CommonJobProperties.EXEC_ID);
     final String krb5ccname =
         String.format("/tmp/krb5cc__%s__%s__%s__%s__%s", projectName, flowId,
-            jobId, execId, effectiveUser);
+            jobId, execId, effectiveUser).replace(":", "_");
 
     return krb5ccname;
   }
