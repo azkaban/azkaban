@@ -1,4 +1,8 @@
 #!/bin/bash
+if [[ -z "$AZKABAN_OPTS" ]]; then
+  AZKABAN_OPTS="-Xmx512M"
+fi
+
 # This script starts the solo server
 set -o nounset   # exit the script if you try to use an uninitialised variable
 set -o errexit   # exit the script if any statement returns a non-true return value
@@ -53,7 +57,7 @@ echo "CLASSPATH: ${CLASSPATH}";
 executorport=$(grep executor.port "${conf}/azkaban.properties" | cut -d = -f 2)
 serverpath=$(pwd)
 
-AZKABAN_OPTS=" -Xmx512M -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
+AZKABAN_OPTS="$AZKABAN_OPTS -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
     -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
 
 # Set the log4j configuration file
