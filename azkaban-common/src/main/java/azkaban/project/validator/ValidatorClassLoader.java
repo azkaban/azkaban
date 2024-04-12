@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.jar.JarFile;
-import sun.net.www.protocol.jar.JarURLConnection;
+import java.net.JarURLConnection;
 
 /**
  * Workaround for jdk 6 disgrace with open jar files & native libs, which is a reason of

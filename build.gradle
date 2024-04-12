@@ -66,7 +66,7 @@ ext.versions = [hadoop: '2.10.0',
                 hive  : '1.1.0',
                 pig   : '0.11.0',
                 restli: '29.16.0',
-                slf4j : '1.7.18',]
+                slf4j : '1.7.21',]
 
 ext.deps = [
     // External dependencies
@@ -130,6 +130,7 @@ ext.deps = [
     restliTools          : 'com.linkedin.pegasus:restli-tools:' + versions.restli,
     slf4j                : 'org.slf4j:slf4j-api:' + versions.slf4j,
     slf4jLog4j           : 'org.slf4j:slf4j-log4j12:' + versions.slf4j,
+    slf4jSimple          : 'org.slf4j:slf4j-simple:' + versions.slf4j,
     sparkCore            : 'org.apache.spark:spark-core_2.12:3.3.0',
     springTest           : 'org.springframework:spring-test:3.2.18.RELEASE',
     snakeyaml            : 'org.yaml:snakeyaml:1.18',
