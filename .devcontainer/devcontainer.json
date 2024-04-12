@@ -1,0 +1,13 @@
+{
+    "name": "java",
+    "image": "mcr.microsoft.com/devcontainers/java:dev-8-jdk-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/java": {
+            "version": "none",
+            "installGradle": "true"
+        },
+        "ghcr.io/devcontainers/features/node": {
+            "version": 8
+        }
+    }
+}
