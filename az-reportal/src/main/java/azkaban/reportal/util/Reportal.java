@@ -284,7 +284,7 @@ public class Reportal {
       final long endScheduleTime = report.endSchedule == null ?
           DEFAULT_SCHEDULE_END_EPOCH_TIME : parseDateToEpoch(report.endSchedule);
 
-      logger.info("This report scheudle end time is " + endScheduleTime);
+      logger.info("This report schedule end time is " + endScheduleTime);
 
       scheduleManager.scheduleFlow(-1, this.project.getId(), this.project.getName(),
           flow.getId(), "ready", firstSchedTime.getMillis(), endScheduleTime,
