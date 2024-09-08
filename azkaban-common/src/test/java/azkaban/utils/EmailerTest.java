@@ -20,17 +20,14 @@ import static azkaban.Constants.ConfigurationKeys.JETTY_USE_SSL;
 import static azkaban.Constants.EventReporterConstants.MODIFIED_BY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.Executor;
-import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.MockExecutorLoader;
+import azkaban.executor.*;
 import azkaban.executor.mail.DefaultMailCreatorTest;
 import azkaban.flow.Flow;
 import azkaban.metrics.CommonMetrics;
@@ -38,18 +35,28 @@ import azkaban.metrics.MetricsManager;
 import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.test.executions.ExecutionsTestUtil;
-import com.codahale.metrics.MetricRegistry;
+
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.mail.internet.AddressException;
+
+import com.codahale.metrics.MetricRegistry;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.BDDMockito;
 import org.mockito.stubbing.Answer;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(TimeUtils.class)
 public class EmailerTest {
 
   private static final String receiveAddr = "receive@domain.com";//receiver email address
@@ -60,6 +67,8 @@ public class EmailerTest {
   private EmailMessageCreator messageCreator;
   private EmailMessage message;
   private ExecutorLoader executorLoader;
+
+  private final CommonMetrics mockedCommonMetrics = mock(CommonMetrics.class);
 
   public static EmailMessageCreator mockMessageCreator(final EmailMessage message) {
     final EmailMessageCreator mock = mock(EmailMessageCreator.class);
@@ -122,6 +131,44 @@ public class EmailerTest {
     verify(this.message).setSubject("Flow 'jobe' has FAILED on azkaban");
     assertThat(TestUtils.readResource("errorEmail2.html", this))
         .isEqualToIgnoringWhitespace(this.message.getBody());
+  }
+
+  @Test
+  public void testSendErrorEmailWithPast72Error() throws Exception {
+    // given - mocked executable flow and its execution option
+    final ExecutableFlow exFlow = mock(ExecutableFlow.class);
+    final ExecutionOptions executionOptions = mock(ExecutionOptions.class);
+    //       - for getting the receiver email configuration
+    BDDMockito.given(executionOptions.getFailureEmails()).willReturn(this.receiveAddrList);
+    BDDMockito.given(exFlow.getExecutionOptions()).willReturn(executionOptions);
+    //       - for supporting the mail.DefaultMailCreator.createErrorEmail format information
+    BDDMockito.given(exFlow.getExecutionId()).willReturn(-1);
+    BDDMockito.given(exFlow.getFlowId()).willReturn("jobe");
+    BDDMockito.given(exFlow.getStartTime()).willReturn(Duration.ofHours(72).toMillis());
+    BDDMockito.given(exFlow.getEndTime()).willReturn(1000L + Duration.ofHours(72).toMillis());
+    BDDMockito.given(exFlow.getStatus()).willReturn(Status.READY);
+    BDDMockito.given(exFlow.getProjectName()).willReturn(this.project.getName());
+    //       - for avoiding the UT carrying the timezone information
+    PowerMockito.mockStatic(TimeUtils.class);
+    when(TimeUtils.formatDuration(anyLong(), anyLong())).thenReturn("-");
+    when(TimeUtils.formatDateTimeZone(anyLong())).thenReturn("-");
+    //       - mocked DB layer
+    ExecutorLoader loader = mock(ExecutorLoader.class);
+    BDDMockito.given(loader.fetchFlowHistory(0, "jobe", 0)).willReturn(
+    //       - mock the DB fetching
+            Arrays.asList(exFlow, exFlow)
+    );
+    final Emailer emailer = new Emailer(this.props, mockedCommonMetrics, this.messageCreator,
+            loader);
+    // when - build the alert on error
+    emailer.alertOnError(exFlow);
+    // then - Message will get the receiver list
+    verify(this.message).addAllToAddress(this.receiveAddrList);
+    //      - Message.setSubject will be called
+    verify(this.message).setSubject("Flow 'jobe' has FAILED on azkaban");
+    //      - there must be "Executions from past 72 hours (0 out 2) failed" inside the mail
+    assertThat(TestUtils.readResource("errorEmailWithPast72.html", this))
+            .isEqualToIgnoringWhitespace(this.message.getBody());
   }
 
   @Test
