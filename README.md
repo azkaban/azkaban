@@ -82,3 +82,39 @@ open -a "Google Chrome" _build/html/index.html
 
 **[July, 2018]** We are actively improving our documentation. Everyone in the AZ community is 
 welcome to submit a pull request to edit/fix the documentation.
+
+## Troubleshooting
+
+### Certificate Issues with JFrog Artifactory
+
+If you encounter SSL certificate issues during the Gradle build process, you may need to import the JFrog Artifactory certificates into your Java truststore. Follow these steps:
+
+1. Download the full certificate chain:
+```bash
+echo | openssl s_client -showcerts -connect linkedin.jfrog.io:443 -servername linkedin.jfrog.io >> jfrog.crt
+```
+
+2. Split the certificates into separate files:
+```bash
+awk 'BEGIN {c=0;} /BEGIN CERT/{c++} { print > "jfrog" c ".crt" }' < jfrog.crt
+```
+
+3. Import each certificate into the Java truststore:
+```bash
+keytool -import -alias jfrog1 -file jfrog1.crt -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit -noprompt
+keytool -import -alias jfrog2 -file jfrog2.crt -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit -noprompt
+keytool -import -alias jfrog3 -file jfrog3.crt -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit -noprompt
+keytool -import -alias jfrog4 -file jfrog4.crt -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit -noprompt
+keytool -import -alias jfrog5 -file jfrog5.crt -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit -noprompt
+keytool -import -alias jfrog6 -file jfrog6.crt -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit -noprompt
+```
+
+4. Verify the certificates are imported:
+```bash
+keytool -list -keystore /opt/java/jdk8u402-b06/jre/lib/security/cacerts -storepass changeit | grep jfrog
+```
+
+5. Clean up temporary files:
+```bash
+rm jfrog*.crt
+```
