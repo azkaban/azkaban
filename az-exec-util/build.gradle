@@ -14,9 +14,32 @@
  * the License.
  */
 apply plugin: 'c'
+def osName = System.getProperty("os.name").toLowerCase()
 model {
+    platforms {
+        if (osName.contains("mac")) {
+            osx_arm64 {
+                architecture "arm64"
+                operatingSystem "macos"
+            }
+        } else if (osName.contains("win")) {
+            windows_x64 {
+                architecture "x86_64"
+                operatingSystem "windows"
+            }
+        } else {
+            linux_x64 {
+                architecture "x86_64"
+                operatingSystem "linux"
+            }
+        }
+    }
+
+
     components {
         main(NativeExecutableSpec) {
+            targetPlatform "osx_arm64"
+
             sources {
                 c {
                     source {
@@ -28,3 +51,4 @@ model {
         }
     }
 }
+
