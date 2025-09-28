@@ -650,6 +650,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
   }
 
+  private String sanitize(final String input) {
+    // Added to prevent CRLF injection
+    return input.replaceAll("[\r\n]", "");
+  }
+
+
   private void handleAjaxLoginAction(final String username, final String password,
       final String ip, final HttpServletResponse resp, final Map<String, Object> ret) {
     Session session = null;
@@ -668,8 +674,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         getApplication().getSessionCache().findSessionsByIP(session.getIp());
     // Check potential DDoS attack by bad hosts.
     logger.info(
-        "Session id created for user '" + session.getUser().getUserId() + "' and ip " + session
-            .getIp() + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
+        "Session id created for user '" + sanitize(session.getUser().getUserId()) + "' and ip " + sanitize(session
+            .getIp()) + ", " + sessionsOfSameIP.size() + " session(s) found from this IP");
 
     final boolean sessionAdded = getApplication().getSessionCache().addSession(session);
     if (sessionAdded) {
@@ -696,7 +702,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected boolean isAjaxCall(final HttpServletRequest req) {
     final String value = req.getHeader("X-Requested-With");
     if (value != null) {
-      logger.info("has X-Requested-With " + value);
+      logger.info("has X-Requested-With " + sanitize(value));
       return value.equals("XMLHttpRequest");
     }
 
